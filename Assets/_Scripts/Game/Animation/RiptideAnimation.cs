@@ -4,10 +4,8 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    [RequireComponent(typeof(ShipStatus))]
     public class RiptideAnimation : ShipAnimation
     {
-        ShipStatus shipData;
         [SerializeField] Transform DriftHandle;
         [SerializeField] Transform Chassis;
 
@@ -36,21 +34,16 @@ namespace CosmicShore.Game.Animation
 
         [SerializeField] int JawResourceIndex;
 
-        private void OnEnable()
-        {
-            
-        }
         private void OnDisable()
         {
-            if (topJaw) Ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
+            if (topJaw) ShipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
         }
-        public override void Initialize(IShip ship)
+        public override void Initialize(IShipStatus shipStatus)
         {
-            base.Initialize(ship);
+            base.Initialize(shipStatus);
 
-            if (topJaw) Ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+            if (topJaw) ShipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
 
-            shipData = Ship.ShipStatus;
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
         }
 
@@ -65,9 +58,9 @@ namespace CosmicShore.Game.Animation
                         roll * animationScaler,
                         Vector3.zero);
 
-            if (shipData.Drifting)
+            if (ShipStatus.Drifting)
             {
-                DriftHandle.rotation = Quaternion.LookRotation(shipData.Course, transform.up);
+                DriftHandle.rotation = Quaternion.LookRotation(ShipStatus.Course, transform.up);
                 RightWing.parent = DriftHandle;
                 LeftWing.parent = DriftHandle;
                 wingPosition = forwardWingPosition;

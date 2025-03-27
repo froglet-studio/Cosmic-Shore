@@ -27,7 +27,7 @@ namespace CosmicShore.Game.UI
 
         IEnumerator InitializeCoroutine()
         {
-            yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
+            yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
 
             playerReady = true;
         }
@@ -36,7 +36,7 @@ namespace CosmicShore.Game.UI
         {
             if (!playerReady) return;
 
-            if (Player.ActivePlayer.Ship.InputController.Portrait)
+            if (Player.ActivePlayer.Ship.ShipStatus.InputController.Portrait)
             {
                 // Set the anchorMin and anchorMax values to center the RectTransform
                 rectTransform.anchorMin = portraitAnchorMin;

@@ -19,13 +19,9 @@ namespace CosmicShore
 
         public void Initialize(IShip ship)
         {
-            
-
             Ship = ship;
-            cameraManager = Ship.CameraManager;
-            cameraManager.FollowOverride = false;
+            cameraManager = CameraManager.Instance;
             cameraManager.isOrthographic = isOrthographic;
-            
 
             BindElementalFloats(Ship);
             ApplyShipControlOverrides(ControlOverrides);
@@ -35,7 +31,7 @@ namespace CosmicShore
         {
 
             // Camera controls are only relevant for human pilots
-            if (Ship.AIPilot.AutoPilotEnabled)
+            if (Ship.ShipStatus.AIPilot.AutoPilotEnabled)
                 return;
 
             foreach (ShipCameraOverrides effect in controlOverrides)
@@ -54,7 +50,6 @@ namespace CosmicShore
                         goto case ShipCameraOverrides.ChangeFollowTarget;
                     case ShipCameraOverrides.ChangeFollowTarget:
                         cameraManager.FollowOverride = true;
-                        cameraManager.OverrideOffset = FollowTargetPosition;
                         cameraManager.SetupGamePlayCameras();
                         break;
                     

@@ -17,8 +17,6 @@ namespace CosmicShore.Game.Animation
         const float animationScalar = 82f;
         const float exaggeratedAnimationScalar = 1.05f * animationScalar;
 
-        ShipStatus shipData => Ship.ShipStatus;
-
         protected override void AssignTransforms()
         {
             Transforms.Add(Fusilage);
@@ -46,7 +44,7 @@ namespace CosmicShore.Game.Animation
 
         protected override void RotatePart(Transform part, float pitch, float yaw, float roll)
         {
-            Quaternion rotation = shipData.Portrait ? Quaternion.Euler(yaw, -pitch, -roll) : Quaternion.Euler(pitch, yaw, roll);
+            Quaternion rotation = ShipStatus.Portrait ? Quaternion.Euler(yaw, -pitch, -roll) : Quaternion.Euler(pitch, yaw, roll);
 
             part.localRotation = Quaternion.Lerp(
                                     part.localRotation,

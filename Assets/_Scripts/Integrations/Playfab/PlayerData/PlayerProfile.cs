@@ -10,7 +10,16 @@ namespace CosmicShore
         public string Email { get; set; }
         public string DisplayName { get; set; }
         public bool IsNewlyCreated { get; set; }
-        public int ProfileIconId => int.Parse(AvatarUrl);
+        public int ProfileIconId
+        {
+            get
+            {
+                if (AvatarUrl == null)
+                    return 1;
+
+                return int.Parse(AvatarUrl);
+            }
+        }
 
         public const string DefaultPlayerName = "Player";
 

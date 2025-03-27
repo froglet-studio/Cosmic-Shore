@@ -1,4 +1,3 @@
-using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
@@ -13,21 +12,22 @@ namespace CosmicShore.Game.Projectiles
 
     public class Gun : MonoBehaviour
     {
-        [SerializeField] AudioClip FireSound;
         public float firePeriod = .2f;
-        public Teams Team;
-        public IShip Ship;
+
+        public Teams Team { get; private set; }
+        public IShip Ship { get; private set; }
+
         bool onCooldown = false;
         float sideLength = 2;
         float barrelLength = 0;
-        public Coroutine MoveCoroutine;
+        Coroutine MoveCoroutine;
 
         Projectile projectile;
 
-        void Start()
-        {
-            Ship = gameObject.GetComponentInParent<Ship>();
-            Team = Ship.Team;
+        public void Initialize(IShip ship)
+        {          
+            Ship = ship;
+            Team = Ship.ShipStatus.Team;
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,
@@ -119,12 +119,12 @@ namespace CosmicShore.Game.Projectiles
             transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
             Quaternion.LookRotation(normalizedVelocity) // rotation
             ).GetComponent<Projectile>();
+            projectileInstance.Initialize(Ship);
 
             projectileInstance.transform.localScale = projectileScale * projectileInstance.InitialScale;
             projectileInstance.transform.parent = containerTransform;
             projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
             projectileInstance.Team = Team;
-            projectileInstance.Ship = Ship;
             if (projectileInstance.TryGetComponent(out Gun projectileGun))
             {
                 projectileGun.Team = Team;
@@ -133,9 +133,6 @@ namespace CosmicShore.Game.Projectiles
             if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
             projectile = projectileInstance;
             projectile.LaunchProjectile(projectileTime);
-            
-            if (FireSound != null)
-                AudioSystem.Instance.PlaySFXClip(FireSound);
         }
 
         private string GetPoolTag(int energy)

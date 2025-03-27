@@ -60,7 +60,7 @@ public class SingleStickShipTransformer : ShipTransformer
         float boostAmount = 1f;
         if (shipStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
         {
-            boostAmount = Ship.BoostMultiplier;
+            boostAmount = Ship.ShipStatus.BoostMultiplier;
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)

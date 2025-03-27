@@ -1,16 +1,17 @@
 using CosmicShore.Core;
 using UnityEngine;
 
+[RequireComponent(typeof(ShipStatus))]
 public class Pip : MonoBehaviour
 {
     [SerializeField] Camera pipCamera;
     [SerializeField] bool mirrored;
 
-    // Start is called before the first frame update
+
     void Start()
     {
-        Ship ship = GetComponent<Ship>();
-        if (ship.Player.GameCanvas != null) ship.Player.GameCanvas.MiniGameHUD.SetPipActive(!ship.AIPilot.AutoPilotEnabled, mirrored);
-        if (pipCamera != null) pipCamera.gameObject.SetActive(!ship.AIPilot.AutoPilotEnabled);
+        ShipStatus shipStatus = GetComponent<ShipStatus>();
+        if (shipStatus.Player.GameCanvas != null) shipStatus.Player.GameCanvas.MiniGameHUD.SetPipActive(!shipStatus.AIPilot.AutoPilotEnabled, mirrored);
+        if (pipCamera != null) pipCamera.gameObject.SetActive(!shipStatus.AIPilot.AutoPilotEnabled);
     }
 }

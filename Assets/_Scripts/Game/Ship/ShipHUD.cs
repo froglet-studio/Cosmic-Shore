@@ -1,6 +1,4 @@
 using CosmicShore.Core;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore
@@ -13,16 +11,16 @@ namespace CosmicShore
 
             var shipHUD = GetComponentInChildren<Game.UI.MiniGameHUD>();
 
-            if (ship.Player.GameCanvas != null)
+            if (ship.ShipStatus.Player.GameCanvas != null)
             {
                 // Disable the default HUD
-                ship.Player.GameCanvas.MiniGameHUD.gameObject.SetActive(false);
+                ship.ShipStatus.Player.GameCanvas.MiniGameHUD.gameObject.SetActive(false);
 
                 // Enable the modified HUD in the child
                 shipHUD.gameObject.SetActive(true);
 
                 // Assign the modified HUD to the ship's player
-                ship.Player.GameCanvas.MiniGameHUD = shipHUD;
+                ship.ShipStatus.Player.GameCanvas.MiniGameHUD = shipHUD;
             }
         }
     }

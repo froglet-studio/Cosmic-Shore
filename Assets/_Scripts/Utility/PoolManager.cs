@@ -15,11 +15,11 @@ public class PoolManager : PoolManagerBase
     IEnumerator WaitForShipInitialization()
     {
         // Wait until we have a valid ship reference and its player is initialized
-        while (ship == null || ship.Player == null)
+        while (ship == null || ship.ShipStatus.Player == null)
         {
             yield return new WaitForEndOfFrame();
         }
         
-        transform.parent = ship.Player.Transform;
+        transform.parent = ship.ShipStatus.Player.Transform;
     }
 }

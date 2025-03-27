@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using System.Collections;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
+using CosmicShore.Game;
 
 public class ChargedFireGunAction : ShipAction
 {
@@ -9,7 +10,6 @@ public class ChargedFireGunAction : ShipAction
     [SerializeField] Gun gun;
     [SerializeField] float chargePerSecond = 1;
 
-    ShipStatus shipStatus;
     [SerializeField] GameObject projectileContainer;
 
     [SerializeField] int EnergyResourceIndex = 0;
@@ -19,25 +19,24 @@ public class ChargedFireGunAction : ShipAction
 
     Coroutine gainEnergy;
 
-    protected override void Start()
+    public override void Initialize(IShip ship)
     {
-        base.Start();
+        base.Initialize(ship);
         //projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
-        shipStatus = Ship.ShipStatus;
     }
     public override void StartAction()
     {
-        if (shipStatus.LiveProjectiles) gun.StopProjectile();
+        if (ShipStatus.LiveProjectiles) gun.StopProjectile();
         else gainEnergy = StartCoroutine(GainEnergyCoroutine());
     }
 
     IEnumerator GainEnergyCoroutine()
     {
         var chargePeriod = .1f;
-        while (resourceSystem.Resources[EnergyResourceIndex].CurrentAmount < resourceSystem.Resources[EnergyResourceIndex].MaxAmount)
+        while (ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount < ResourceSystem.Resources[EnergyResourceIndex].MaxAmount)
         {
             yield return new WaitForSeconds(chargePeriod);
-            resourceSystem.ChangeResourceAmount(EnergyResourceIndex, chargePerSecond * chargePeriod);
+            ResourceSystem.ChangeResourceAmount(EnergyResourceIndex, chargePerSecond * chargePeriod);
         }
     }
 
@@ -47,10 +46,10 @@ public class ChargedFireGunAction : ShipAction
     {
         while (projectileContainer.GetComponentsInChildren<Projectile>().Length > 0)
         {
-            shipStatus.LiveProjectiles = true;
+            ShipStatus.LiveProjectiles = true;
             yield return null;
         }
-        shipStatus.LiveProjectiles = false;
+        ShipStatus.LiveProjectiles = false;
     }
 
     void StartCheckProjectiles()
@@ -63,25 +62,25 @@ public class ChargedFireGunAction : ShipAction
 
     public override void StopAction()
     {
-        if (shipStatus.LiveProjectiles) gun.DetonateProjectile();
+        if (ShipStatus.LiveProjectiles) gun.DetonateProjectile();
         else 
         {
             StopCoroutine(gainEnergy);
 
-            if (resourceSystem.Resources[AmmoResourceIndex].CurrentAmount > resourceSystem.Resources[EnergyResourceIndex].CurrentAmount)
+            if (ResourceSystem.Resources[AmmoResourceIndex].CurrentAmount > ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount)
             {
-                resourceSystem.ChangeResourceAmount(AmmoResourceIndex, -resourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
+                ResourceSystem.ChangeResourceAmount(AmmoResourceIndex, -ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
 
                 Vector3 inheritedDirection;
-                if (shipStatus.Attached || shipStatus.Stationary) inheritedDirection = transform.forward;
-                else inheritedDirection = shipStatus.Course;
+                if (ShipStatus.Attached || ShipStatus.Stationary) inheritedDirection = transform.forward;
+                else inheritedDirection = ShipStatus.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * shipStatus.Speed, ProjectileScale * resourceSystem.Resources[EnergyResourceIndex].CurrentAmount, true, float.MaxValue, resourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
+                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * ShipStatus.Speed, ProjectileScale * ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount, true, float.MaxValue, ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
                 StartCheckProjectiles();
             }
 
-            resourceSystem.ResetResource(EnergyResourceIndex);
+            ResourceSystem.ResetResource(EnergyResourceIndex);
         }
         
     }

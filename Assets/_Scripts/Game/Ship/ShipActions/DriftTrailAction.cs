@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using System.Collections;
 using UnityEngine;
 public class DriftTrailAction : ShipAction
@@ -8,12 +9,11 @@ public class DriftTrailAction : ShipAction
     public event ChangeDriftAltitude OnChangeDriftAltitude;
     #endregion
 
-    TrailSpawner trailSpawner;
+    TrailSpawner trailSpawner => ShipStatus.TrailSpawner;
 
-    protected override void Start()
+    public override void Initialize(IShip ship)
     {
-        base.Start();
-        trailSpawner = Ship.TrailSpawner;
+        base.Initialize(ship);
     }
 
     public override void StartAction()
@@ -39,7 +39,4 @@ public class DriftTrailAction : ShipAction
             yield return new WaitForSeconds(.05f);
         }
     }
-
-
-
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Game.IO;
 using CosmicShore.Core;
 using UnityEngine;
-using CosmicShore.App.Systems.Audio;
+
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Projectiles
     {
         public Vector3 Velocity;
         public Teams Team;
-        public IShip Ship;
+        public IShip Ship { get; private set; }
         public bool ImpactOnEnd;
         public float Inertia = 1;
         
@@ -44,9 +44,14 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
+        public void Initialize(IShip ship) => Ship = ship;
+
         protected virtual void OnTriggerEnter(Collider other)
         {
-           HandleCollision(other);
+            if (Ship == null)
+                return;
+
+            HandleCollision(other);
         }
 
         void HandleCollision(Collider other)
@@ -61,7 +66,7 @@ namespace CosmicShore.Game.Projectiles
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
                 //Debug.Log($"projectile hit ship {shipGeometry}");
-                if (shipGeometry.Ship.Team == Team)
+                if (shipGeometry.Ship.ShipStatus.Team == Team)
                     return;
 
                 PerformShipImpactEffects(shipGeometry);
@@ -82,10 +87,10 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, Ship.Team, Ship.Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, Ship.ShipStatus.Team, Ship.ShipStatus.Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trailBlock.Steal(Ship.Player, Team);
+                        trailBlockProperties.trailBlock.Steal(Ship.ShipStatus.Player, Team);
                         break;
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
@@ -135,8 +140,8 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case ShipImpactEffects.TrailSpawnerCooldown:
-                        shipGeometry.Ship.TrailSpawner.PauseTrailSpawner();
-                        shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
+                        shipGeometry.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+                        shipGeometry.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
                     case ShipImpactEffects.PlayHaptics:
                         if (!shipGeometry.Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
@@ -146,13 +151,13 @@ namespace CosmicShore.Game.Projectiles
                         break;
                     case ShipImpactEffects.Knockback:
                         //shipGeometry.Ship.transform.localPosition += Velocity/2f;
-                        shipGeometry.Ship.ShipTransformer.ModifyVelocity(Velocity * 100,2);
+                        shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyVelocity(Velocity * 100,2);
                         break;
                     case ShipImpactEffects.Stun:
-                        shipGeometry.Ship.ShipTransformer.ModifyThrottle(.1f, 10);
+                        shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 10);
                         break;
                     case ShipImpactEffects.Charm:
-                        shipGeometry.Ship.TrailSpawner.Charm(Ship, 7);
+                        shipGeometry.Ship.ShipStatus.TrailSpawner.Charm(Ship, 7);
                         break;
                 }
             }
@@ -177,7 +182,7 @@ namespace CosmicShore.Game.Projectiles
                         crystalProperties.crystal.Steal(Team, 7f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
-                        Ship.ResourceSystem.ChangeResourceAmount(0, Ship.ResourceSystem.Resources[0].MaxAmount); // Move to single system
+                        Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(0, Ship.ShipStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
                         break;
                 }
             }

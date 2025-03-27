@@ -32,18 +32,18 @@ namespace CosmicShore.Core
             activeAnimatorsList.AddRange(activeAnimators);
 
             int scalingCount = 0;
-            foreach (var blockAnimator in activeAnimatorsList)
+            foreach (var block in activeAnimatorsList)
             {
-                if (blockAnimator == null || !blockAnimator.enabled || !blockAnimator.IsScaling) continue;
+                if (block == null || !block.enabled || !block.IsScaling) continue;
 
-                var targetScale = Vector3.Min(Vector3.Max(blockAnimator.TargetScale, blockAnimator.MinScale), blockAnimator.MaxScale);
+                var targetScale = Vector3.Min(Vector3.Max(block.TargetScale, block.MinScale), block.MaxScale);
                 animationData[scalingCount] = new ScaleAnimationData
                 {
-                    currentScale = blockAnimator.transform.localScale,
+                    currentScale = block.transform.localScale,
                     targetScale = targetScale,
-                    growthRate = blockAnimator.GrowthRate,
-                    minScale = blockAnimator.MinScale,
-                    maxScale = blockAnimator.MaxScale,
+                    growthRate = block.GrowthRate,
+                    minScale = block.MinScale,
+                    maxScale = block.MaxScale,
                     blockIndex = scalingCount
                 };
                 scalingCount++;

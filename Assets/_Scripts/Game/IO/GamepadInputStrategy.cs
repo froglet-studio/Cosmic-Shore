@@ -20,7 +20,7 @@ namespace CosmicShore.Game.IO
             ResetInput();
         }
 
-        public override void ProcessInput(IShip ship)
+        public override void ProcessInput()
         {
             if (Gamepad.current == null) return;
 
@@ -32,6 +32,7 @@ namespace CosmicShore.Game.IO
 
         private void ProcessStickInput()
         {
+            InputStatus.Throttle = Gamepad.current.rightShoulder.ReadValue();
             leftStickRaw = Gamepad.current.leftStick.ReadValue();
             rightStickRaw = Gamepad.current.rightStick.ReadValue();
         }

@@ -39,17 +39,13 @@ namespace CosmicShore.Core
                 OnResourceChange?.Invoke(currentAmount);
             }
         }
-
     }
 
     public class ResourceSystem : ElementalShipComponent
     {
-        
         [SerializeField] public List<Resource> Resources;
 
         public static readonly float OneFuelUnit = 1 / 10f;
-        ShipStatus shipData;
-
 
         private void Awake()
         {
@@ -59,20 +55,9 @@ namespace CosmicShore.Core
             }
         }
 
-        void Start()
-        {
-            
-            shipData = GetComponent<ShipStatus>();
-
-            StartCoroutine(LateStart());
-        }
-
-        // Give time for components to initialize before notifying of initial resource levels
-        IEnumerator LateStart()
+        IEnumerator Start()
         {
             yield return new WaitForSeconds(.5f);
-
-            BindElementalFloats(GetComponent<Ship>());
 
             foreach (var resource in Resources)
             {
@@ -104,7 +89,6 @@ namespace CosmicShore.Core
 
         void Update()
         {
-
             // These four fields are serialized for visibility during class creation and tuning
             // Use the test harness assigned value if it's been set, otherwise use the real value
             if (ElementalLevels.Count > 0)

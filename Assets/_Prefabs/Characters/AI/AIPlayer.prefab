@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &1822534880902319776
+--- !u!1 &3685944913701838578
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,7 +8,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 300717832328829898}
+  - component: {fileID: 6334507936303315541}
   m_Layer: 0
   m_Name: ShipContainer
   m_TagString: Untagged
@@ -16,22 +16,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &300717832328829898
+--- !u!4 &6334507936303315541
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1822534880902319776}
+  m_GameObject: {fileID: 3685944913701838578}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 5739753832413709805}
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
---- !u!1 &9025007374710581128
+  m_Father: {fileID: 9106189021102876761}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &9106189021102876753
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -39,10 +39,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5739753832413709805}
-  - component: {fileID: 3472199493741543777}
-  - component: {fileID: 8613574375029025008}
-  - component: {fileID: 3150585529133332039}
+  - component: {fileID: 9106189021102876761}
+  - component: {fileID: 9106189021102876760}
+  - component: {fileID: 9106189021102876755}
   m_Layer: 0
   m_Name: AIPlayer
   m_TagString: red
@@ -50,81 +49,71 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &5739753832413709805
+--- !u!4 &9106189021102876761
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9025007374710581128}
+  m_GameObject: {fileID: 9106189021102876753}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 55.05, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -200.6, y: 0, z: -64.9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 300717832328829898}
-  - {fileID: 4519260151295778658}
+  - {fileID: 6334507936303315541}
+  - {fileID: 5577729423146840958}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &3472199493741543777
+--- !u!33 &9106189021102876760
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9025007374710581128}
+  m_GameObject: {fileID: 9106189021102876753}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &8613574375029025008
+--- !u!114 &9106189021102876755
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9025007374710581128}
+  m_GameObject: {fileID: 9106189021102876753}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerName: FriendlyOne
-  shipContainer: {fileID: 1822534880902319776}
+  playerName: Red
+  shipContainer: {fileID: 3685944913701838578}
   UseHangarConfiguration: 1
   IsAI: 0
   InitializeData:
-    DefaultShipType: 2
-    Team: 1
-    PlayerName: Friendly One
-    PlayerUUID: FriendlyOne
-    Name: Friendly One
---- !u!114 &3150585529133332039
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9025007374710581128}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Portrait: 0
-  AutoPilotEnabled: 0
---- !u!1001 &7835903415227328219
+    DefaultShipType: 0
+    Team: 0
+    PlayerName: 
+    PlayerUUID: 
+    Name: 
+--- !u!1001 &2261098184553810631
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 5739753832413709805}
+    m_TransformParent: {fileID: 9106189021102876761}
     m_Modifications:
+    - target: {fileID: 5911286265880590776, guid: 47bb21d46e4f57b4da0555f8d83b048f,
+        type: 3}
+      propertyPath: Ship
+      value: 
+      objectReference: {fileID: 9106189021102876755}
     - target: {fileID: 5911286265880590776, guid: 47bb21d46e4f57b4da0555f8d83b048f,
         type: 3}
       propertyPath: player
       value: 
-      objectReference: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
-        type: 3}
+      objectReference: {fileID: 9106189021102876755}
     - target: {fileID: 5911286265880590777, guid: 47bb21d46e4f57b4da0555f8d83b048f,
         type: 3}
       propertyPath: m_RootOrder
@@ -185,11 +174,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunner
       objectReference: {fileID: 0}
-    - target: {fileID: 5911286265880590778, guid: 47bb21d46e4f57b4da0555f8d83b048f,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5911286266674641548, guid: 47bb21d46e4f57b4da0555f8d83b048f,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -200,9 +184,9 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 47bb21d46e4f57b4da0555f8d83b048f, type: 3}
---- !u!4 &4519260151295778658 stripped
+--- !u!4 &5577729423146840958 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5911286265880590777, guid: 47bb21d46e4f57b4da0555f8d83b048f,
     type: 3}
-  m_PrefabInstance: {fileID: 7835903415227328219}
+  m_PrefabInstance: {fileID: 2261098184553810631}
   m_PrefabAsset: {fileID: 0}

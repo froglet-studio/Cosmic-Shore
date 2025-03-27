@@ -28,7 +28,7 @@ namespace CosmicShore.Core
                     shipControlActions[inputEventShipAction.InputEvent].AddRange(inputEventShipAction.ShipActions);
 
             foreach (var shipAction in shipControlActions.Keys.SelectMany(key => shipControlActions[key]))
-                shipAction.Ship = ship;
+                shipAction.Initialize(ship);
         }
 
         public static void InitializeClassResourceActions(IShip ship,
@@ -42,7 +42,7 @@ namespace CosmicShore.Core
                     classResourceActions[resourceEventClassAction.ResourceEvent].AddRange(resourceEventClassAction.ClassActions);
 
             foreach (var classAction in classResourceActions.Keys.SelectMany(key => classResourceActions[key]))
-                classAction.Ship = ship;
+                classAction.Initialize(ship);
         }
 
         public static void Teleport(Transform shipTransform, Transform targetTransform) => shipTransform.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);

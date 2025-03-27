@@ -2,12 +2,15 @@
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.UI;
+using CosmicShore.Game.Projectiles;
 
 namespace CosmicShore.Game
 {
     [System.Serializable]
     public class Player : MonoBehaviour, IPlayer
     {
+        [SerializeField] bool _selfSpawn;
+
         [SerializeField] string playerName;
 
         [SerializeField] GameObject shipContainer;
@@ -16,22 +19,14 @@ namespace CosmicShore.Game
         [SerializeField] bool IsAI = false;
         [SerializeField] IPlayer.InitializeData InitializeData;
 
+        [SerializeField] Gun gun;
+
         public static Player ActivePlayer;
 
-        public ShipTypes DefaultShipType { get; set; }
+        public ShipTypes ShipType { get; set; }
         public Teams Team { get; set; }
         public string Name { get; private set; }
-        public string PlayerName
-        {
-            get
-            {
-                return _playerName;
-            }
-            set
-            {
-                _playerName = value;
-            }
-        }
+        public string PlayerName { get; private set; }
         public string PlayerUUID { get; set; }
         public IShip Ship { get; private set; }
         public bool IsActive { get; private set; }
@@ -47,25 +42,34 @@ namespace CosmicShore.Game
 
         protected GameManager gameManager;
         GameCanvas _gameCanvas;
-        string _playerName;
 
-        /*void Start()
+        void Start()
         {
-            Initialize(InitializeData);
-        }*/
+            if (_selfSpawn)
+                Initialize(InitializeData);
+        }
 
         public void Initialize(IPlayer.InitializeData data)
         {
             InitializeData = data;
             gameManager = GameManager.Instance;
-            DefaultShipType = data.DefaultShipType;
+            ShipType = data.DefaultShipType;
             Team = data.Team;
-            _playerName = data.PlayerName;
+            PlayerName = data.PlayerName;
             PlayerUUID = data.PlayerUUID;
             Name = data.PlayerName;
 
             Setup();
         }
+
+        public void InitializeShip(ShipTypes shipType, Teams team)
+        {
+            ShipType = shipType;
+            Team = team;
+        }
+
+        public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
+        public void ToggleActive(bool active) => IsActive = active;
 
         void Setup()
         {
@@ -100,14 +104,14 @@ namespace CosmicShore.Game
                     case "PlayerFour":
                     default: // Default will be the players Playfab username
                         Debug.Log($"Player.Start - Instantiate Ship: {PlayerName}");
-                        SetupPlayerShip(Hangar.Instance.LoadPlayerShip(DefaultShipType, Team));
+                        SetupPlayerShip(Hangar.Instance.LoadPlayerShip(ShipType, Team));
                         break;
                 }
             }
             else
             {
                 if (IsAI)
-                    SetupAIShip(Hangar.Instance.LoadShip(DefaultShipType, Team));
+                    SetupAIShip(Hangar.Instance.LoadShip(ShipType, Team));
                 else
                 {
                     SetupPlayerShip(Hangar.Instance.LoadPlayerShip());
@@ -115,21 +119,17 @@ namespace CosmicShore.Game
             }
         }
 
-        public void SetDefaultShipType(ShipTypes shipType) => DefaultShipType = shipType;
-
-        public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
-        public void ToggleActive(bool active) => IsActive = active;
-
         void SetupPlayerShip(IShip ship)
         {
             Ship = ship;
             Ship.Transform.SetParent(shipContainer.transform, false);
-            Ship.AIPilot.enabled = false;
+            Ship.ShipStatus.AIPilot.enabled = false;
 
             GameCanvas.MiniGameHUD.Ship = Ship;
 
             InitializeShip();
             InputController.Initialize(Ship);
+            gun.Initialize(Ship);
 
             gameManager.WaitOnPlayerLoading();
         }
@@ -143,14 +143,14 @@ namespace CosmicShore.Game
             // TODO: Verify this works in arcade games
             Ship.Transform.SetParent(shipContainer.transform, false);
 
-            Ship.AIPilot.enabled = true;
+            Ship.ShipStatus.AIPilot.enabled = true;
 
             InitializeShip();
             InputController.Initialize(Ship);
 
-            gameManager.WaitOnAILoading(Ship.AIPilot);
+            gameManager.WaitOnAILoading(Ship.ShipStatus.AIPilot);
         }
 
-        void InitializeShip() => Ship.Initialize(this, Team);
+        void InitializeShip() => Ship.Initialize(this);
     }
 }

@@ -16,14 +16,11 @@ namespace CosmicShore
         [Header("Mission Configuration")]
         [SerializeField] SO_Mission MissionData;
         [SerializeField] List<Transform> SpawnLocations;
-        [SerializeField] Player aiPlayerPrefab;
-        //[SerializeField] string aiPlayerName = "HostileOne";
-
-        //[SerializeField] Player SquadMateOne;
-        //[SerializeField] Player SquadMateTwo;
-        //[SerializeField] Player HostileAIOne;
-        //[SerializeField] Player HostileAITwo;
-        //[SerializeField] Player HostileAIThree;
+        [SerializeField] Player SquadMateOne;
+        [SerializeField] Player SquadMateTwo;
+        [SerializeField] Player HostileAIOne;
+        [SerializeField] Player HostileAITwo;
+        [SerializeField] Player HostileAIThree;
         [SerializeField] List<ShipTypes> EnemyShipClasses = new()
         {
             ShipTypes.Rhino,
@@ -33,12 +30,6 @@ namespace CosmicShore
             ShipTypes.Sparrow,
             ShipTypes.Squirrel,
         };
-
-
-        public ThreatSpawner ThreatSpawner;
-
-        float elapsedTime;
-        float elapsedThreat;
 
         [Range(1, 9)] public int CurrentDifficulty = 5;
         [SerializeField] float faunaOnlyLimit = 1000; // If the team volume is above this limit, only fauna threats will spawn
@@ -54,12 +45,12 @@ namespace CosmicShore
             base.Start();
             CurrentDifficulty = IntensityLevel;
             Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
-            Players[0].DefaultShipType = SquadSystem.SquadLeader.Ship.Class;
-            
-            initializeAIPlayer("FriendlyOne", SquadSystem.RogueOne.Ship.Class, Teams.Jade);
-            initializeAIPlayer("FriendlyTwo", SquadSystem.RogueTwo.Ship.Class, Teams.Jade);
-            //initializeAIPlayer("HostileOne", EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)], Teams.Ruby);
-            
+            Players[0].ShipType = SquadSystem.SquadLeader.Ship.Class;
+            SquadMateOne.ShipType = SquadSystem.RogueOne.Ship.Class;
+            SquadMateTwo.ShipType = SquadSystem.RogueTwo.Ship.Class;
+            HostileAIOne.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            HostileAITwo.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
             node = NodeControlManager.Instance.GetNearestNode(Vector3.zero);
         }
@@ -68,31 +59,9 @@ namespace CosmicShore
         {
             StartCoroutine(ThreatWaveCoroutine());
             base.StartNewGame();
-        }
-
-        void initializeAIPlayer(string playerName, ShipTypes shipType, Teams team)
-        {
-            var aiPlayerClone = Instantiate(aiPlayerPrefab);
-            aiPlayerClone.TryGetComponent(out IPlayer aiPlayer);
-            aiPlayerClone.name = playerName;
-            if (aiPlayer == null)
-            {
-                Debug.LogError($"Non player prefab provided to aiPlayerPrefab");
-                return;
-            }
-
-            IPlayer.InitializeData data = new()
-            {
-                DefaultShipType = shipType,
-                Team = team,
-                PlayerName = playerName,
-                PlayerUUID = playerName,
-                Name = playerName
-            };
-            aiPlayer.Initialize(data);
-            aiPlayer.ToggleGameObject(true);
-            aiPlayer.ToggleActive(true);
-            aiPlayerClone.Ship.AIPilot.SkillLevel = .4f + IntensityLevel * .15f;
+            SquadMateOne.gameObject.SetActive(true);
+            SquadMateTwo.gameObject.SetActive(true);
+            HostileAIOne.gameObject.SetActive(true);
         }
 
         // Method to roll a single threat based on weights
@@ -145,6 +114,13 @@ namespace CosmicShore
 
             return wave;
         }
+
+        
+
+        public ThreatSpawner ThreatSpawner;
+
+        float elapsedTime;
+        float elapsedThreat;
 
         public IEnumerator ThreatWaveCoroutine()
         {

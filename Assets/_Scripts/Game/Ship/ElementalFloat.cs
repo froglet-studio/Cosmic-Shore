@@ -33,7 +33,7 @@ public class ElementalFloat
             if (Enabled)
             {
                 ship.BindElementalFloat(name, element);
-                ship.ResourceSystem.OnElementLevelChange += ScaleValueWithLevel;
+                ship.ShipStatus.ResourceSystem.OnElementLevelChange += ScaleValueWithLevel;
             }
         }
     }

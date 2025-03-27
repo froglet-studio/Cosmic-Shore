@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 
 namespace CosmicShore
@@ -15,19 +16,19 @@ namespace CosmicShore
         [SerializeField] int resourceIndex = 0;
         Assembler currentAssembler;
 
-        protected override void Start()
+        public override void Initialize(IShip ship)
         {
-            base.Start();
-            spawner = Ship.TrailSpawner;
+            base.Initialize(ship);
+            spawner = Ship.ShipStatus.TrailSpawner;
         }
 
         public override void StartAction()
         {
-            float ammoRequiredPerUse = resourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
+            float ammoRequiredPerUse = ResourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
 
-            if (resourceSystem.Resources[resourceIndex].CurrentAmount >= ammoRequiredPerUse)
+            if (ResourceSystem.Resources[resourceIndex].CurrentAmount >= ammoRequiredPerUse)
             {
-                resourceSystem.ChangeResourceAmount(resourceIndex, -ammoRequiredPerUse);
+                ResourceSystem.ChangeResourceAmount(resourceIndex, -ammoRequiredPerUse);
                 var trailBlock = spawner.Trail.TrailList.Last().gameObject;
                 
                 var newAssembler = trailBlock.AddComponent(assembler.GetType()) as Assembler;

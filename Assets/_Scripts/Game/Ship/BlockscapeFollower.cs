@@ -20,7 +20,7 @@ namespace CosmicShore.Core
         private void Start()
         {
             ship = GetComponent<IShip>();
-            team = ship.Team;
+            team = ship.ShipStatus.Team;
             shipData = GetComponent<ShipStatus>();
         }
 

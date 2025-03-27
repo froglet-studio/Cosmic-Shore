@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 namespace CosmicShore
 {
@@ -14,18 +15,18 @@ namespace CosmicShore
         [SerializeField] int resourceIndex = 0;
         float resourceCost;
 
-        protected override void Start()
+        public override void Initialize(IShip ship)
         {
-            base.Start();
-            spawner = Ship.TrailSpawner;
-            resourceCost = resourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
+            base.Initialize(ship);
+            spawner = Ship.ShipStatus.TrailSpawner;
+            resourceCost = ResourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
         }
 
         public override void StartAction()
         {
-            if (resourceSystem.Resources[resourceIndex].CurrentAmount > resourceCost)
+            if (ResourceSystem.Resources[resourceIndex].CurrentAmount > resourceCost)
             {
-                resourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
+                ResourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
                 var BlockObject = spawner.Trail.TrailList.Last().gameObject;
                 BlockObject.GetComponent<TrailBlock>().ActivateSuperShield();
                 var assembler = BlockObject.AddComponent<GyroidAssembler>();

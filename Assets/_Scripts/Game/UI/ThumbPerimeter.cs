@@ -58,12 +58,12 @@ namespace CosmicShore.Game.UI
         // Wait until the input controller is wired up then only show if there is no gamepad and the left one when flying with single stick controls 
         IEnumerator InitializeCoroutine()
         {
-            yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
+            yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
             bool isActive = Gamepad.current == null && !Player.ActivePlayer.Ship.ShipStatus.CommandStickControls && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls);
             if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
             {
                 gameObject.SetActive(isActive);
-                _inputController = Player.ActivePlayer.Ship.InputController;
+                _inputController = Player.ActivePlayer.Ship.ShipStatus.InputController;
                 initialized = isActive;
             }               
         }

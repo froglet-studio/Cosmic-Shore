@@ -32,11 +32,12 @@ namespace CosmicShore.Game.Projectiles
         // Material and Team
         [HideInInspector] public Material Material { get; set; }
         [HideInInspector] public Teams Team;
-        [HideInInspector] public IShip Ship;
+        public IShip Ship { get; private set; }
         [HideInInspector] public bool AnonymousExplosion;
 
-        protected virtual void Start()
+        public virtual void Initialize(IShip ship)
         {
+            Ship = ship;
             InitializeProperties();
             StartCoroutine(ExplodeCoroutine());
         }
@@ -47,9 +48,9 @@ namespace CosmicShore.Game.Projectiles
             if (container == null) container = new GameObject("AOEContainer");
 
             if (Team == Teams.Unassigned)
-                Team = Ship.Team;
+                Team = Ship.ShipStatus.Team;
             if (Material == null)
-                Material = new Material(Ship.AOEExplosionMaterial);
+                Material = new Material(Ship.ShipStatus.AOEExplosionMaterial);
 
             // SetParent with false to take container's world position
             transform.SetParent(container.transform, worldPositionStays: false);
@@ -81,11 +82,11 @@ namespace CosmicShore.Game.Projectiles
                 if (AnonymousExplosion)
                     trailBlock.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
                 else
-                    trailBlock.Damage(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
+                    trailBlock.Damage(impactVector, Ship.ShipStatus.Team, Ship.ShipStatus.Player.PlayerName, devastating);
             }
             else if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
-                if (shipGeometry.Ship.Team == Team && !affectSelf)
+                if (shipGeometry.Ship.ShipStatus.Team == Team && !affectSelf)
                     return;
 
                 PerformShipImpactEffects(shipGeometry, impactVector);
@@ -123,27 +124,27 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case ShipImpactEffects.TrailSpawnerCooldown:
-                        shipGeometry.Ship.TrailSpawner.PauseTrailSpawner();
-                        shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
+                        shipGeometry.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+                        shipGeometry.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
                     case ShipImpactEffects.PlayHaptics:
                         if (!shipGeometry.Ship.ShipStatus.AutoPilotEnabled)
                             HapticController.PlayHaptic(HapticType.ShipCollision);
                         break;
                     case ShipImpactEffects.SpinAround:
-                        shipGeometry.Ship.ShipTransformer.SpinShip(impactVector);
+                        shipGeometry.Ship.ShipStatus.ShipTransformer.SpinShip(impactVector);
                         break;
                     case ShipImpactEffects.Knockback:
-                        if (shipGeometry.Ship.Team == Team)
+                        if (shipGeometry.Ship.ShipStatus.Team == Team)
                         {
-                            shipGeometry.Ship.ShipTransformer.ModifyVelocity(impactVector * 100, 2);
-                            shipGeometry.Ship.ShipTransformer.ModifyThrottle(10, 6); // TODO: the magic number here needs tuning after switch to additive
+                            shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyVelocity(impactVector * 100, 2);
+                            shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyThrottle(10, 6); // TODO: the magic number here needs tuning after switch to additive
                         }
-                        else shipGeometry.Ship.ShipTransformer.ModifyVelocity(impactVector * 100, 3);
+                        else shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyVelocity(impactVector * 100, 3);
                         //shipGeometry.Ship.transform.localPosition += impactVector / 2f;
                         break;
                     case ShipImpactEffects.Stun:
-                        shipGeometry.Ship.ShipTransformer.ModifyThrottle(.6f, 5);
+                        shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyThrottle(.6f, 5);
                         
                         break;
                 }

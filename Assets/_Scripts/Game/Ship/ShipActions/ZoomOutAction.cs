@@ -7,12 +7,12 @@ public class ZoomOutAction : ShipAction
 
     public override void StartAction()
     {
-        if (!Ship.ShipStatus.AutoPilotEnabled) Ship.CameraManager.ZoomCloseCameraOut(ZoomOutRate);
+        if (!Ship.ShipStatus.AutoPilotEnabled) Ship.ShipStatus.CameraManager.ZoomCloseCameraOut(ZoomOutRate);
     }
 
     public override void StopAction()
     {
-        if (!Ship.ShipStatus.AutoPilotEnabled) Ship.CameraManager.ResetCloseCameraToNeutral(ZoomInRate.Value);
+        if (!Ship.ShipStatus.AutoPilotEnabled) Ship.ShipStatus.CameraManager.ResetCloseCameraToNeutral(ZoomInRate.Value);
     }
 
 }

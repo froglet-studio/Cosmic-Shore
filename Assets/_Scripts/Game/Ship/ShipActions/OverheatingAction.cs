@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 public class OverheatingAction : ShipAction
 {
@@ -10,23 +11,13 @@ public class OverheatingAction : ShipAction
     [SerializeField] ElementalFloat heatDecayRate = new(0.04f);
     [SerializeField] float overheatDuration = 3f;
 
-    ShipStatus shipStatus;
     Resource heatResource;
     bool isOverheating = false;
 
-    protected override void Start()
+    public override void Initialize(IShip ship)
     {
-        base.Start();
-        shipStatus = Ship.ShipStatus;
-
-        BindElementalFloats(Ship);
-    }
-
-    protected override void InitializeShipAttributes()
-    {
-        base.InitializeShipAttributes();
-        wrappedAction.Ship = Ship;
-        heatResource = resourceSystem.Resources[heatResourceIndex];
+        base.Initialize(ship);
+        heatResource = ResourceSystem.Resources[heatResourceIndex];
     }
 
     public override void StartAction()
@@ -53,19 +44,19 @@ public class OverheatingAction : ShipAction
     {
         while (heatResource.CurrentAmount < heatResource.MaxAmount)
         {
-            resourceSystem.ChangeResourceAmount(heatResourceIndex, heatBuildRate);
+            ResourceSystem.ChangeResourceAmount(heatResourceIndex, heatBuildRate);
             yield return new WaitForSeconds(0.1f);
         }
 
         isOverheating = true;
-        shipStatus.Overheating = true;
+        ShipStatus.Overheating = true;
         heatResource.CurrentAmount = heatResource.MaxAmount;
         wrappedAction.StopAction();
 
         yield return new WaitForSeconds(overheatDuration);
 
         isOverheating = false;
-        shipStatus.Overheating = false;
+        ShipStatus.Overheating = false;
         StartCoroutine(DecayHeatCoroutine());
     }
 
@@ -73,7 +64,7 @@ public class OverheatingAction : ShipAction
     {
         while (heatResource.CurrentAmount > 0)
         {
-            resourceSystem.ChangeResourceAmount(heatResourceIndex, -heatDecayRate.Value);
+            ResourceSystem.ChangeResourceAmount(heatResourceIndex, -heatDecayRate.Value);
             yield return new WaitForSeconds(0.1f);
         }
         

@@ -5,12 +5,37 @@ using CosmicShore.Core;
 /// Displays and controls toggles and buttons on the Pause Menu Panel
 /// </summary>
 
-// TODO: Move the remaining functions into Settings Modal and get rid of this script
+// TODO: P1 - Need to unify this menu code with Main Menu Code
 namespace CosmicShore.App.UI.Screens
 {
     public class PauseMenu : MonoBehaviour
     {
+        //[SerializeField] GameMenu gameMenu;
         [SerializeField] GameObject MiniGameHUD;
+
+        GameSetting gameSetting;
+
+        // Start is called before the first frame update
+        void Start()
+        {
+            gameSetting = GameSetting.Instance;
+        }
+
+        /// <summary>
+        /// Toggles the Master Volume On/Off
+        /// </summary>
+        public void OnClickToggleMusic()
+        {
+            gameSetting.ChangeMusicEnabledSetting();
+        }
+
+        /// <summary>
+        /// Toggles the Inverted Y Axis Controls
+        /// </summary>
+        public void OnClickToggleInvertY()
+        {
+            gameSetting.ChangeInvertYEnabledStatus();
+        }
 
         public void OnClickReplayButton()
         {
@@ -23,6 +48,7 @@ namespace CosmicShore.App.UI.Screens
         public void OnClickResumeGameButton()
         {
             GameManager.UnPauseGame();
+            MiniGameHUD.SetActive(true);
         }
 
         /// <summary>
@@ -31,6 +57,7 @@ namespace CosmicShore.App.UI.Screens
         public void OnClickPauseGameButton()
         {
             GameManager.PauseGame();
+            MiniGameHUD.SetActive(false);
         }
 
         public void OnClickMainMenu()

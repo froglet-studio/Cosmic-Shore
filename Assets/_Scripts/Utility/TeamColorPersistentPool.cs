@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using CosmicShore.Core;
 using System.Collections;
 
@@ -66,7 +67,10 @@ public class TeamColorPersistentPool : PoolManagerBase
     //the following coroutine waits for the thememanager to initialize before creating the team pools
     IEnumerator WaitForThemeManagerInitialization()
     {
-        yield return new WaitUntil(() => ThemeManager.Instance != null);
+        while (ThemeManager.Instance == null)
+        {
+            yield return new WaitForEndOfFrame();
+        }
         
         // Initialize all team pools
         InitializeTeamPools(fossilBlockPrefab, poolSizePerTeam);

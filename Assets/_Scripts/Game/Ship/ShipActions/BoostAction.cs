@@ -1,21 +1,19 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 public class BoostAction : ShipAction
 {
-    ShipStatus shipStatus;
-
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
-        shipStatus = Ship.ShipStatus;
+        base.Initialize(ship);
     }
     public override void StartAction()
     {
-        if (shipStatus) shipStatus.Boosting = true;
+        if (ShipStatus != null) ShipStatus.Boosting = true;
     }
 
     public override void StopAction()
     {
-        shipStatus.Boosting = false;
+        ShipStatus.Boosting = false;
     }
 }

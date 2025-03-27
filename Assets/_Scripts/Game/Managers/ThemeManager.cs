@@ -1,5 +1,4 @@
 using CosmicShore.Utility.Singleton;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,11 +6,9 @@ namespace CosmicShore.Core
 {
     public class ThemeManager : SingletonPersistent<ThemeManager>
     {
+
         [SerializeField] SO_MaterialSet BaseMaterialSet;
         [SerializeField] SO_ColorSet ColorSet;
-        [SerializeField] float InitializationDelaySeconds = 0f;
-
-        bool Initialized = false;
 
         SO_MaterialSet GreenTeamMaterialSet;
         SO_MaterialSet RedTeamMaterialSet;
@@ -20,35 +17,23 @@ namespace CosmicShore.Core
 
         public Dictionary<Teams, SO_MaterialSet> TeamMaterialSets { get; private set; }
 
+
         public override void Awake()
         {
             base.Awake();
 
-            if (!Instance.Initialized)
-            {
-                //StartCoroutine(InitializeCoroutine());
-                Instance.Initialized = true;
+            GreenTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.JadeColors, "Green");
+            RedTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.RubyColors, "Red");
+            GoldTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.GoldColors, "Gold");
+            BlueTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.BlueColors, "Blue");
 
-                GreenTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.JadeColors, "Green");
-                RedTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.RubyColors, "Red");
-                GoldTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.GoldColors, "Gold");
-                BlueTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.BlueColors, "Blue");
-
-                TeamMaterialSets = new() {
+            TeamMaterialSets = new() {
                 { Teams.Jade, GreenTeamMaterialSet },
-                { Teams.Ruby, RedTeamMaterialSet },
-                { Teams.Blue, BlueTeamMaterialSet },
-                { Teams.Gold, GoldTeamMaterialSet },
-                { Teams.Unassigned, BlueTeamMaterialSet },
+                { Teams.Ruby,   RedTeamMaterialSet },
+                { Teams.Blue,  BlueTeamMaterialSet },
+                { Teams.Gold,  GoldTeamMaterialSet },
+                { Teams.Unassigned,  BlueTeamMaterialSet },
             };
-            }
-        }
-
-        IEnumerator InitializeCoroutine()
-        {
-            yield return null;// new WaitForSeconds(InitializationDelaySeconds);
-
-
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)

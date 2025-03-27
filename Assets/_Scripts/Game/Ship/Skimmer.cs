@@ -19,8 +19,6 @@ namespace CosmicShore.Core
 
         [SerializeField] float particleDurationAtSpeedOne = 300f;
         [SerializeField] bool affectSelf = true;
-        [Tooltip("Number of seconds before the skimmer impacts its own blocks")]
-        [SerializeField] float selfSkimDelay = 2f;
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool visible;
@@ -99,16 +97,16 @@ namespace CosmicShore.Core
                 return;
             }
 
-            Player = Ship.Player;
-            Team = Ship.Team;
+            Player = Ship.ShipStatus.Player;
+            Team = Ship.ShipStatus.Team;
             BindElementalFloats(Ship);
-            resourceSystem = Ship.ResourceSystem;
+            resourceSystem = Ship.ShipStatus.ResourceSystem;
             if (visible)
-                GetComponent<MeshRenderer>().material = new Material(Ship.SkimmerMaterial);
+                GetComponent<MeshRenderer>().material = new Material(Ship.ShipStatus.SkimmerMaterial);
 
-            initialGap = Ship.TrailSpawner.Gap;
+            initialGap = Ship.ShipStatus.TrailSpawner.Gap;
 
-            if (markerContainer) markerContainer.transform.parent = ship.Player.Transform;
+            if (markerContainer) markerContainer.transform.parent = ship.ShipStatus.Player.Transform;
         }
 
         // TODO: p1- review -- Maja added this to try and enable shark skimmer smashing
@@ -122,7 +120,7 @@ namespace CosmicShore.Core
                         if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(Ship.ShipStatus.Course * Ship.ShipStatus.Speed * Ship.GetInertia, Team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(Ship.ShipStatus.Course * Ship.ShipStatus.Speed * Ship.ShipStatus.GetInertia, Team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
@@ -147,6 +145,9 @@ namespace CosmicShore.Core
 
         void PerformShipImpactEffects(ShipGeometry shipGeometry)
         {
+            if (Ship == null)
+                return;
+
             if (StatsManager.Instance != null)
                 StatsManager.Instance.SkimmerShipCollision(Ship, shipGeometry.Ship);
             foreach (ShipImpactEffects effect in shipImpactEffects)
@@ -154,17 +155,17 @@ namespace CosmicShore.Core
                 switch (effect)
                 {
                     case ShipImpactEffects.TrailSpawnerCooldown:
-                        shipGeometry.Ship.TrailSpawner.PauseTrailSpawner();
-                        shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
+                        shipGeometry.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+                        shipGeometry.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
                     case ShipImpactEffects.PlayHaptics:
                         if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.AreaOfEffectExplosion:
-                        if (onCoolDown || shipGeometry.Ship.Team == Team) break;
+                        if (onCoolDown || shipGeometry.Ship.ShipStatus.Team == Team) break;
 
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Ship = Ship;
+                        AOEExplosion.Initialize(Ship);
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         AOEExplosion.MaxScale = Ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
                         StartCoroutine(CooldownCoroutine(AOEPeriod));
@@ -227,17 +228,13 @@ namespace CosmicShore.Core
 
         void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry) && shipGeometry.Ship != Ship)
+            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
                 PerformShipImpactEffects(shipGeometry);
             }
 
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != Team))
             {
-                // Don't skim off of your own trail as you're laying it down
-                if (affectSelf && Time.time - trailBlock.TrailBlockProperties.TimeCreated < selfSkimDelay)
-                    return;
-
                 StartSkim(trailBlock);
                 PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
             }
@@ -341,7 +338,7 @@ namespace CosmicShore.Core
         void ScaleTrailAndCamera()
         {
             var normalizedDistance = Mathf.InverseLerp(15f, sqrRadius, minMatureBlockSqrDistance);
-            Ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
+            Ship.ShipStatus.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
             if (cameraManager != null && !Ship.ShipStatus.AutoPilotEnabled) 
                 cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);
@@ -349,7 +346,7 @@ namespace CosmicShore.Core
 
         void ScaleGap(float combinedWeight)
         {
-            Ship.TrailSpawner.Gap = Mathf.Lerp(initialGap, Ship.TrailSpawner.MinimumGap, combinedWeight);
+            Ship.ShipStatus.TrailSpawner.Gap = Mathf.Lerp(initialGap, Ship.ShipStatus.TrailSpawner.MinimumGap, combinedWeight);
         }
 
         /*
@@ -378,11 +375,11 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
             // Apply velocity nudging to maintain sweet spot distance
             if (minMatureBlockSqrDistance < sqrSweetSpot - 3)
             {
-                Ship.ShipTransformer.ModifyVelocity(-normNextBlockDistance * 4f, Time.deltaTime * 2f);
+                Ship.ShipStatus.ShipTransformer.ModifyVelocity(-normNextBlockDistance * 4f, Time.deltaTime * 2f);
             }
             else if (minMatureBlockSqrDistance > sqrSweetSpot + 3)
             {
-                Ship.ShipTransformer.ModifyVelocity(normNextBlockDistance * 4f, Time.deltaTime * 2f);
+                Ship.ShipStatus.ShipTransformer.ModifyVelocity(normNextBlockDistance * 4f, Time.deltaTime * 2f);
             }
 
             // Get the tube's forward direction from a block further ahead
@@ -405,19 +402,19 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
 
             // Apply the gentle spin with speed-based interpolation
             float alignSpeed = Ship.ShipStatus.Speed * Time.deltaTime / 15f;
-            Ship.ShipTransformer.GentleSpinShip(targetForward, targetUp, alignSpeed);
+            Ship.ShipStatus.ShipTransformer.GentleSpinShip(targetForward, targetUp, alignSpeed);
         }
 
         void VizualizeDistance(float combinedWeight)
         {
-            Ship.ResourceSystem.ChangeResourceAmount(resourceIndex, - Ship.ResourceSystem.Resources[resourceIndex].CurrentAmount);
-            Ship.ResourceSystem.ChangeResourceAmount(resourceIndex, combinedWeight);
+            Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, - Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].CurrentAmount);
+            Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, combinedWeight);
         }
 
         void ScalePitchAndYaw(float combinedWeight)
         {
             //ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 150 * (1 + (.5f*combinedWeight));
-            Ship.ShipTransformer.PitchScaler = Ship.ShipTransformer.YawScaler = 150 + (120 * combinedWeight);
+            Ship.ShipStatus.ShipTransformer.PitchScaler = Ship.ShipStatus.ShipTransformer.YawScaler = 150 + (120 * combinedWeight);
         }
 
         void ScaleHapticWithDistance(float combinedWeight)
@@ -430,7 +427,7 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
         void Boost(float combinedWeight)
         {
             Ship.ShipStatus.Boosting = true;
-            Ship.BoostMultiplier = 1 + (2.5f * combinedWeight);
+            Ship.ShipStatus.BoostMultiplier = 1 + (2.5f * combinedWeight);
         }
 
         // Function to compute the Gaussian value at a given x
@@ -492,8 +489,11 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
                 markers.Add(marker);
             }
             yield return new WaitForSeconds(2f);
+
             foreach (GameObject marker in markers)
             {
+                if (marker == null) continue;
+
                 shardPositions.Remove(marker.transform.position);
                 markerContainer.ReturnToPool(marker, "Shard");
             }

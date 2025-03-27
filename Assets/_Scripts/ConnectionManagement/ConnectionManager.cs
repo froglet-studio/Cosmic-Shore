@@ -1,7 +1,6 @@
 using CosmicShore.Utilities.Network;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using Unity.Netcode;
 using UnityEngine;
 using VContainer;
@@ -77,7 +76,8 @@ namespace CosmicShore.NetworkManagement
         private ConnectionState _currentState;
         internal ConnectionState CurrentState => _currentState;
 
-        public int MaxConnectedPlayers = 4;
+        [SerializeField] int _maxConnectedPlayers = 4;
+        public int MaxConnectedPlayers => _maxConnectedPlayers;
 
         private void Awake()
         {

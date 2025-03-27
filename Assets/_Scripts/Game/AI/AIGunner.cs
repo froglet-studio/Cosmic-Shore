@@ -1,6 +1,7 @@
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
+
 namespace CosmicShore.Game.AI
 {
     public class AIGunner : MonoBehaviour
@@ -9,12 +10,14 @@ namespace CosmicShore.Game.AI
         [SerializeField] GameObject gunMount;
 
         public Teams Team;
-        public IShip Ship;
+
+        /*[RequireInterface(typeof(IShip))]
+        public MonoBehaviour Ship;*/
         
-        void Start()
+        /*void Start()
         {
             gun.Team = Team;
-            gun.Ship = Ship;
-        }
+            gun.Ship = Ship as IShip;
+        }*/
     }
 }

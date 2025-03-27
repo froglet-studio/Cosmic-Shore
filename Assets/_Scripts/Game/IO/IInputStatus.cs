@@ -9,6 +9,7 @@
         float YSum { get; set; }
         float XDiff { get; set; }
         float YDiff { get; set; }
+        float Throttle { get; set; }
 
         // Booleans
         bool Idle { get; set; }

@@ -91,14 +91,11 @@ namespace CosmicShore.Utilities
 
         public void StopLoadingScreen()
         {
-            if (m_LoadingScreenRunning)
+            if (m_FadeOutCoroutine != null)
             {
-                if (m_FadeOutCoroutine != null)
-                {
-                    StopCoroutine(m_FadeOutCoroutine);
-                }
-                m_FadeOutCoroutine = StartCoroutine(FadeOutCoroutine());
+                StopCoroutine(m_FadeOutCoroutine);
             }
+            m_FadeOutCoroutine = StartCoroutine(FadeOutCoroutine());
         }
 
         IEnumerator FadeOutCoroutine()

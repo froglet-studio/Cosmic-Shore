@@ -6,9 +6,9 @@ namespace CosmicShore.Void
 {
     public class HapticEffect : IImpactEffect
     {
-        public static void ApplyEffect(IShip ship, ImpactProperties impactProperties)
+        public static void ApplyEffect(bool autoPilotEnabled, ImpactProperties impactProperties)
         {
-            if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(impactProperties.hapticType);
+            if (!autoPilotEnabled) HapticController.PlayHaptic(impactProperties.hapticType);
         }
     }
 }

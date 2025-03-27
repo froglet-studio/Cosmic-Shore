@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,14 +15,15 @@ public class EnergizeAction : ShipAction
     [SerializeField] int Energy = 1;
     int defaultEnergy;
 
-    protected override void Start()
+    public override void Initialize(IShip ship)
     {
+        base.Initialize(ship);
+
         var firstGun = fireActions[0];
 
         defaultSpeed = firstGun.Speed;
         defaultProjectileTime = firstGun.ProjectileTime.Value;
         defaultEnergy = firstGun.Energy;
-
     }
 
     public override void StartAction()

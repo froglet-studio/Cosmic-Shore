@@ -24,8 +24,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     bool zoomingOut;
 
     public bool FollowOverride = false;
-    public Vector3 OverrideOffset = new Vector3(0, 0, 0);
-
     public bool isOrthographic = false;
 
     public float CloseCamDistance;
@@ -69,7 +67,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetupGamePlayCameras()
     {
-        playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.Transform;
+        playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipStatus.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.Transform;
         SetupGamePlayCameras(playerFollowTarget);
     }
 
@@ -141,11 +139,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         transposer = vCam.GetComponent<CinemachineFollow>();
 
-        if (FollowOverride)
-        {
-            transposer.FollowOffset = OverrideOffset;
-        }
-        else if (transposer.FollowOffset != new Vector3(0, 0, normalizedDistance))
+        if (transposer.FollowOffset != new Vector3(0, 0, normalizedDistance))
         {
             ClipPlaneAndOffsetLerper(normalizedDistance);
         }  

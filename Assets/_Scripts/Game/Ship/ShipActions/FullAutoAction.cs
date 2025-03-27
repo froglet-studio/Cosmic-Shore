@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace CosmicShore
         // TODO: WIP gun firing needs to be reworked
         [SerializeField] Gun gunContainer;
         List<Gun> guns = new();
-        ShipStatus shipStatus;
+
         [SerializeField] PoolManager projectileContainer;
 
         [SerializeField] int ammoIndex = 0;
@@ -30,16 +31,18 @@ namespace CosmicShore
         bool firing = false;
         [SerializeField] float firingRate = 1f;
 
+        Coroutine fireGunsCoroutine = null;
+
         void CopyValues<T>(T from, T to)
         {
             var json = JsonUtility.ToJson(from);
             JsonUtility.FromJsonOverwrite(json, to);
         }
 
-        Coroutine fireGunsCoroutine = null;
-        protected override void Start()
+
+        public override void Initialize(IShip ship)
         {
-            base.Start();
+            base.Initialize(ship);
             var gunTemplate = gunContainer.GetComponent<Gun>();
             foreach (var child in gunContainer.GetComponentsInChildren<Transform>())
             {
@@ -52,10 +55,7 @@ namespace CosmicShore
                 //child.Rotate(0, 180, 0);
             }
 
-            BindElementalFloats(Ship);
-
             //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
-            shipStatus = Ship.ShipStatus;
         }
 
         public override void StartAction()
@@ -74,7 +74,7 @@ namespace CosmicShore
         {
             while (firing) 
             {
-                if (resourceSystem.Resources[ammoIndex].CurrentAmount >= ammoCost)
+                if (ResourceSystem.Resources[ammoIndex].CurrentAmount >= ammoCost)
                 {
                     Vector3 inheritedVelocity;
                     // TODO: WIP magic numbers
@@ -82,13 +82,13 @@ namespace CosmicShore
                     {
                         if (inherit)
                         {
-                            if (shipStatus.Attached) inheritedVelocity = gun.transform.forward;
-                            else inheritedVelocity = shipStatus.Course;
+                            if (ShipStatus.Attached) inheritedVelocity = gun.transform.forward;
+                            else inheritedVelocity = ShipStatus.Course;
                         }
                         else inheritedVelocity = Vector3.zero;
-                        gun.FireGun(projectileContainer.transform, speed.Value, inheritedVelocity * shipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
+                        gun.FireGun(projectileContainer.transform, speed.Value, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                     }
-                    resourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
+                    ResourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
                 }
                 yield return new WaitForSeconds(1/firingRate);
             }

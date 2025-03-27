@@ -37,9 +37,10 @@ namespace CosmicShore.Integrations
         {
             try
             {
-                AuthenticationService.Instance.ClearSessionToken();
+                /*if (AuthenticationService.Instance.IsAuthorized)
+                    AuthenticationService.Instance.ClearSessionToken();*/
 
-                await Unity.Services.Core.UnityServices.InitializeAsync(initializationOptions);
+                await UnityServices.InitializeAsync(initializationOptions);
 
                 if (!AuthenticationService.Instance.IsSignedIn)
                 {

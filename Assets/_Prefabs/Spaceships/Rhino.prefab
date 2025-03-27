@@ -1370,7 +1370,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   impactProperties: []
   Name: Rhino
-  ShipType: 3
+  _shipType: 3
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 7569251362483239328}
   shipGeometries:
@@ -1415,27 +1415,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  ChargedBoostDischarging: 0
-  Drifting: 0
-  Turret: 0
-  Portrait: 0
-  SingleStickControls: 0
-  CommandStickControls: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedResourceGain: 0
-  ChargedBoostCharge: 1
-  AutoPilotEnabled: 0
-  AlignmentEnabled: 0
-  Slowed: 0
-  Overheating: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 1}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &2456609266732234764
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1448,20 +1427,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
-  DefaultMinimumSpeed: 15
-  DefaultThrottleScaler: 60
+  DefaultMinimumSpeed: 10
+  DefaultThrottleScaler: 50
   ThrottleScalerMultiplier:
     Enabled: 0
     Value: 1
     Min: 0
     Max: 0
     element: 0
-  PitchScaler: 85
-  YawScaler: 85
-  RollScaler: 85
-  RotationThrottleScaler: 0.1
+  PitchScaler: 70
+  YawScaler: 70
+  RollScaler: 70
+  RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12272,6 +12252,16 @@ PrefabInstance:
     - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
         type: 3}
       propertyPath: Ship
+      value: 
+      objectReference: {fileID: 874579555101021527}
+    - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
+        type: 3}
+      propertyPath: _shipMono
+      value: 
+      objectReference: {fileID: 874579555101021527}
+    - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
+        type: 3}
+      propertyPath: _shipObject
       value: 
       objectReference: {fileID: 874579555101021527}
     - target: {fileID: 6349275177958244260, guid: 8b6f43f781b1f9149be91e3e9e59326f,

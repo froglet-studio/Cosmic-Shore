@@ -38,7 +38,7 @@ namespace CosmicShore.Game.IO
             InputStatus.RightJoystickHome = new Vector2(Screen.currentResolution.width - Screen.dpi, Screen.dpi);
         }
 
-        public override void ProcessInput(IShip ship)
+        public override void ProcessInput()
         {
             if (Keyboard.current == null || Mouse.current == null) return;
 

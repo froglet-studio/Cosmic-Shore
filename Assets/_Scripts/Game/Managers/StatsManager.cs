@@ -63,23 +63,23 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!EnsureDictionaryEntriesExist(ship.Team, ship.Player.PlayerName))
+        if (!EnsureDictionaryEntriesExist(ship.ShipStatus.Team, ship.ShipStatus.Player.PlayerName))
             return;
 
         
-        TeamStats[ship.Team].CrystalsCollected++;
-        PlayerStats[ship.Player.PlayerName].CrystalsCollected++;
+        TeamStats[ship.ShipStatus.Team].CrystalsCollected++;
+        PlayerStats[ship.ShipStatus.Player.PlayerName].CrystalsCollected++;
 
         switch (crystalProperties.Element)
         {
             case Element.Omni:
-                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats => {
+                UpdateStatForTeamAndPlayer(ship.ShipStatus.Team, ship.ShipStatus.Player.PlayerName, stats => {
                     stats.OmniCrystalsCollected++; 
                     });
                 break;
 
             case Element.Charge:
-                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats =>
+                UpdateStatForTeamAndPlayer(ship.ShipStatus.Team, ship.ShipStatus.Player.PlayerName, stats =>
                 {
                     stats.ElementalCrystalsCollected++;
                     stats.ChargeCrystalValue += crystalProperties.crystalValue;
@@ -87,7 +87,7 @@ public class StatsManager : Singleton<StatsManager>
                 break;
 
             case Element.Mass:
-                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats =>
+                UpdateStatForTeamAndPlayer(ship.ShipStatus.Team, ship.ShipStatus.Player.PlayerName, stats =>
                 {
                     stats.ElementalCrystalsCollected++;
                     stats.MassCrystalValue += crystalProperties.crystalValue;
@@ -95,7 +95,7 @@ public class StatsManager : Singleton<StatsManager>
                 break;
 
             case Element.Space:
-                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats =>
+                UpdateStatForTeamAndPlayer(ship.ShipStatus.Team, ship.ShipStatus.Player.PlayerName, stats =>
                 {
                     stats.ElementalCrystalsCollected++;
                     stats.SpaceCrystalValue += crystalProperties.crystalValue;
@@ -103,7 +103,7 @@ public class StatsManager : Singleton<StatsManager>
                 break;
 
             case Element.Time:
-                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats =>
+                UpdateStatForTeamAndPlayer(ship.ShipStatus.Team, ship.ShipStatus.Player.PlayerName, stats =>
                 {
                     stats.ElementalCrystalsCollected++;
                     stats.TimeCrystalValue += crystalProperties.crystalValue;
@@ -127,16 +127,16 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!EnsureDictionaryEntriesExist(skimmingShip.Team, skimmingShip.Player.PlayerName))
+        if (!EnsureDictionaryEntriesExist(skimmingShip.ShipStatus.Team, skimmingShip.ShipStatus.Player.PlayerName))
             return;
 
-        var roundStats = TeamStats[skimmingShip.Team];
+        var roundStats = TeamStats[skimmingShip.ShipStatus.Team];
         roundStats.SkimmerShipCollisions++;
-        TeamStats[skimmingShip.Team] = roundStats;
+        TeamStats[skimmingShip.ShipStatus.Team] = roundStats;
 
-        roundStats = PlayerStats[skimmingShip.Player.PlayerName];
+        roundStats = PlayerStats[skimmingShip.ShipStatus.Player.PlayerName];
         roundStats.SkimmerShipCollisions++;
-        PlayerStats[skimmingShip.Player.PlayerName] = roundStats;
+        PlayerStats[skimmingShip.ShipStatus.Player.PlayerName] = roundStats;
     }
 
     public void BlockCreated(Teams creatingTeam, string creatingPlayerName, TrailBlockProperties createdTrailBlockProperties)

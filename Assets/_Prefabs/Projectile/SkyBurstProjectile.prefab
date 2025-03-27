@@ -63,9 +63,6 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -4877,6 +4874,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Velocity: {x: 0, y: 0, z: 0}
   Team: 0
+  Ship: {fileID: 0}
   ImpactOnEnd: 1
   Inertia: 1
   InitialScale: {x: 0, y: 0, z: 0}
@@ -4893,7 +4891,6 @@ MonoBehaviour:
   - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
   minExplosionScale: 100
   maxExplosionScale: 100
-  DetonateSound: {fileID: 8300000, guid: 344717d80e0cff647b014b539b284122, type: 3}
   Charge: 0
 --- !u!199 &8504388981194176713
 ParticleSystemRenderer:
@@ -4913,9 +4910,6 @@ ParticleSystemRenderer:
   m_ReflectionProbeUsage: 0
   m_RayTracingMode: 0
   m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:

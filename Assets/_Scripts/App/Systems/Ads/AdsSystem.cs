@@ -1,7 +1,4 @@
 using System;
-using System.Collections;
-
-
 #if !UNITY_WEBGL
 using CosmicShore.Integrations.Firebase.Controller;
 #endif
@@ -39,7 +36,7 @@ namespace CosmicShore.App.Systems.Ads
         public static event OnAdShowFailure AdShowFailure;
         void Awake()
         {
-            StartCoroutine(InitializeCoroutine());
+            Initialize();
         }
 
         private void OnEnable()
@@ -56,14 +53,7 @@ namespace CosmicShore.App.Systems.Ads
 #endif
         }
 
-        IEnumerator InitializeCoroutine()
-        {
-            yield return new WaitForSeconds(1.5f);
-
-            Initialize();
-        }
-
-        void Initialize()
+        public void Initialize()
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
             // Default to android settings

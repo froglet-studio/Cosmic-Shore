@@ -30,7 +30,7 @@ namespace CosmicShore.Game.Arcade
             SegmentSpawner.Initialize();
 
             Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
 
             FormRing();
         }
