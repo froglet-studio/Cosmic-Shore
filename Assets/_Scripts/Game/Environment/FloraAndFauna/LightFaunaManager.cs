@@ -13,6 +13,7 @@ public class LightFaunaManager : Population
     [SerializeField] float formationSpread = 5f;
     [SerializeField] float PhaseIncrease;
 
+
     private List<LightFauna> activeFauna = new List<LightFauna>();
 
     protected override void Start()

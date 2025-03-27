@@ -17,13 +17,10 @@ namespace CosmicShore.App.UI.Modals
         protected virtual void Start()
         {
             windowAnimator = GetComponent<Animator>();
-            
-            // We want the elements inside of modal windows to have a chance to run their start functions
-            //StartCoroutine(DisableWindow());
             gameObject.SetActive(false);
         }
 
-        public virtual void ModalWindowIn()
+        public void ModalWindowIn()
         {
             gameObject.SetActive(true);
 
@@ -42,7 +39,7 @@ namespace CosmicShore.App.UI.Modals
             }
         }
 
-        public virtual void ModalWindowOut()
+        public void ModalWindowOut()
         {
             if (isOn)
             {

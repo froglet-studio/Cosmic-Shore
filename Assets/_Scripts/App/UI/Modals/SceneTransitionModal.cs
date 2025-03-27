@@ -7,8 +7,8 @@ namespace CosmicShore
     {
         void Start()
         {
-            Arcade.Instance?.RegisterSceneTransitionAnimator(GetComponent<Animator>());
-            GameManager.Instance?.RegisterSceneTransitionAnimator(GetComponent<Animator>());
+            Arcade.Instance.RegisterSceneTransitionAnimator(GetComponent<Animator>());
+            GameManager.Instance.RegisterSceneTransitionAnimator(GetComponent<Animator>());
         }
     }
 }

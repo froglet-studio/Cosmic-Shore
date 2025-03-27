@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using TMPro;
 using UnityEngine;
@@ -11,7 +12,6 @@ namespace CosmicShore.Game.UI
         public TMP_Text LeftNumberDisplay;
         public TMP_Text RightNumberDisplay;
 
-        public TMP_Text WarningTimeDisplay;
         public TMP_Text RoundTimeDisplay;
         public Image CountdownDisplay;
         public Button ReadyButton;

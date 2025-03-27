@@ -1370,7 +1370,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   impactProperties: []
   Name: Rhino
-  ShipType: 3
+  _shipType: 3
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 7569251362483239328}
   shipGeometries:
@@ -1430,18 +1430,18 @@ MonoBehaviour:
   toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
-  DefaultMinimumSpeed: 15
-  DefaultThrottleScaler: 60
+  DefaultMinimumSpeed: 10
+  DefaultThrottleScaler: 50
   ThrottleScalerMultiplier:
     Enabled: 0
     Value: 1
     Min: 0
     Max: 0
     element: 0
-  PitchScaler: 85
-  YawScaler: 85
-  RollScaler: 85
-  RotationThrottleScaler: 0.1
+  PitchScaler: 70
+  YawScaler: 70
+  RollScaler: 70
+  RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
