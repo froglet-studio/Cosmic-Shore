@@ -96,7 +96,7 @@ EditorBuildSettings:
     path: Assets/_Scenes/MissionProtect.unity
     guid: e27e800962fc90d4485febc4dd78f72d
   - enabled: 1
-    path: Assets/_Scenes/Multiplayer Scenes/MinigameMultiplayerFreestyle.unity
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameMultiplayerLobby.unity
     guid: 7837c6d27ab762942b2cd2411f2aeae6
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameFreestyleMultiplayer_CharacterSelect.unity
