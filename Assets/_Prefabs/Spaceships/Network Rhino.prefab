@@ -1408,8 +1408,19 @@ MonoBehaviour:
   - {fileID: 3947427428015649370}
   - {fileID: 284393576699141201}
   - {fileID: 2131910783175408860}
+  AOEPrefab: {fileID: 0}
   _farFieldSkimmer: {fileID: 0}
+  resourceIndex: 0
+  ammoResourceIndex: 0
+  boostResourceIndex: 0
+  crystalImpactEffects: 
+  minExplosionScale: 50
+  maxExplosionScale: 400
+  trailBlockImpactEffects: 
+  blockChargeChange: 0
+  boostMultiplier: 4
   _bottomEdgeButtons: 0
+  Inertia: 70
   _inputEventShipActions:
   - InputEvent: 0
     ShipActions:
@@ -1418,6 +1429,7 @@ MonoBehaviour:
     - {fileID: 5565916779484709519}
     - {fileID: 7881301509579309438}
   _resourceEventClassActions: []
+  ElementStats: []
 --- !u!114 &2697454854697288262
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1467,7 +1479,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleManualThrottle: 1
+  toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
@@ -1575,7 +1587,6 @@ MonoBehaviour:
   Y: 0
   raycastHeight: 2
   raycastWidth: 2
-  AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 1
   drift: 0
