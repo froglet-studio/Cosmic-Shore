@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore;
-using CosmicShore.Core;
 
 public class WormManager : Population
 {
@@ -10,7 +9,6 @@ public class WormManager : Population
     [SerializeField] int initialWormCount = 3;
     [SerializeField] float spawnRadius = 50f;
     [SerializeField] float growthInterval = 10f;
-    [SerializeField] int maxWormsAllowed = 10;
     [SerializeField] float targetUpdateInterval = 5f;
 
     Vector3 headSpacing;

@@ -1,7 +1,5 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
-using System.Collections;
-using UnityEngine;
 
 public abstract class ShipAction : ElementalShipComponent
 {

@@ -109,7 +109,6 @@ namespace CosmicShore.Core
             if (markerContainer) markerContainer.transform.parent = ship.ShipStatus.Player.Transform;
         }
 
-        // TODO: p1- review -- Maja added this to try and enable shark skimmer smashing
         void PerformBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             foreach (TrailBlockImpactEffects effect in blockImpactEffects)
@@ -117,13 +116,12 @@ namespace CosmicShore.Core
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.PlayHaptics:
-                        if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
+                        if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         trailBlockProperties.trailBlock.Damage(Ship.ShipStatus.Course * Ship.ShipStatus.Speed * Ship.ShipStatus.GetInertia, Team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
                         trailBlockProperties.trailBlock.Steal(Player, Team);
                         break;
                     case TrailBlockImpactEffects.GainResourceByVolume:
@@ -135,10 +133,6 @@ namespace CosmicShore.Core
                     case TrailBlockImpactEffects.FX:
                         StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlockProperties.trailBlock));
                         break;
-                        // This is actually redundant with Skimmer's built in "Fuel Amount" variable
-                        //case TrailBlockImpactEffects.ChangeFuel:
-                        //FuelSystem.ChangeFuelAmount(ship.blockFuelChange);
-                        //break;
                 }
             }
         }

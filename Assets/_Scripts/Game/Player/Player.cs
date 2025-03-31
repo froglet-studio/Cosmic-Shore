@@ -142,7 +142,7 @@ namespace CosmicShore.Game
 
             Ship = ship;
 
-            // TODO: Verify this works in arcade games
+            // TODO: P0 - Verify this works in arcade games
             Ship.Transform.SetParent(shipContainer.transform, false);
 
             Ship.ShipStatus.AIPilot.enabled = true;
