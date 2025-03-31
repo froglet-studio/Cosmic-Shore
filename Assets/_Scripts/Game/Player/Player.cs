@@ -129,7 +129,9 @@ namespace CosmicShore.Game
 
             InitializeShip();
             InputController.Initialize(Ship);
-            gun.Initialize(Ship);
+            // TODO: P0 - this is a stop gap to get ships loading again, but is not a full fix
+            if (gun != null)
+                gun.Initialize(Ship);
 
             gameManager.WaitOnPlayerLoading();
         }

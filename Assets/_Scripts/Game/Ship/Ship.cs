@@ -60,6 +60,10 @@ namespace CosmicShore.Core
             get
             {
                 _shipStatus = _shipStatus != null ? _shipStatus : GetComponent<ShipStatus>();
+                _shipStatus.Name = name;
+
+                _shipStatus.ShipType = _shipType;
+                _shipStatus.ShipTransform = transform;
                 return _shipStatus;
             }
         }
@@ -146,7 +150,8 @@ namespace CosmicShore.Core
             ShipStatus.Silhouette.Initialize(this);
             ShipStatus.ShipTransformer.Initialize(this);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
-            ShipStatus.AIPilot.Initialize(false);
+            //ShipStatus.AIPilot.Initialize(false);
+            ShipStatus.AIPilot.Initialize(player.Ship.ShipStatus.AIPilot.AutoPilotEnabled);
             nearFieldSkimmer?.Initialize(this);
             farFieldSkimmer?.Initialize(this);
             ShipStatus.ShipCameraCustomizer.Initialize(this);
