@@ -202,9 +202,6 @@ namespace CosmicShore.Core
             {
                 switch (effect)
                 {
-                    case CrystalImpactEffects.PlayHaptics:
-                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
-                        break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         aoeExplosion.Initialize(this);

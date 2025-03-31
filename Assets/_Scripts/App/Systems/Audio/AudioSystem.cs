@@ -73,20 +73,10 @@ namespace CosmicShore.App.Systems.Audio
         {
             InitializeMenuAudioClips();
 
-            // TODO: P1 - revisit necessity of this
-            if (musicSource1 == null || musicSource2 == null)
-            {
-                Debug.LogError("Missing Music Source for Audio System. Disabling Audio.");
-                musicEnabled = false;
-            }
-            else
-            {
-                musicEnabled = GameSetting.Instance.MusicEnabled;
-            }
+            musicEnabled = GameSetting.Instance.MusicEnabled;
             sfxEnabled = GameSetting.Instance.SFXEnabled;
             ChangeMusicLevel(GameSetting.Instance.MusicLevel);
             ChangeSFXLevel(GameSetting.Instance.SFXLevel);
-
             ChangeMusicEnabledStatus(musicEnabled);
         }
 
