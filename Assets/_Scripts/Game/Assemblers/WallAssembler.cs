@@ -2,11 +2,9 @@ using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace CosmicShore
 {
-
     public class WallAssembler : Assembler
     {
         public struct BondMate
@@ -57,7 +55,6 @@ namespace CosmicShore
         float separationDistance = 2f;
         [SerializeField] int colliderTheshold = 25;
         [SerializeField] float radius = 40f;
-        bool seed = false;
         bool isStopped = true;
 
         int depth = -1;
@@ -79,7 +76,6 @@ namespace CosmicShore
 
         public override void SeedBonding()
         {
-            seed = true;
             StartBonding();
         }
 
@@ -499,13 +495,5 @@ namespace CosmicShore
             isStopped = true;
             Debug.Log("Assembly Stopped");
         }
-
-        //private void OnDisable()
-        //{
-        //    if (seed == this)
-        //    {
-        //        StopAssembly();
-        //    }
-        //}
     }
 }

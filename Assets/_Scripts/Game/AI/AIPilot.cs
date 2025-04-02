@@ -146,6 +146,12 @@ namespace CosmicShore.Game.AI
             CrystalPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
         }
 
+
+        public void AssignShip(IShip ship)
+        {
+            _ship = ship;
+        }
+
         public void Initialize(bool enableAutoPilot)
         {
             AutoPilotEnabled = enableAutoPilot;
@@ -225,12 +231,6 @@ namespace CosmicShore.Game.AI
                 throttle += throttleIncrease * Time.deltaTime;
             }
         }
-
-        public void Initialize(IShip ship)
-        {
-            _ship = ship;
-        }
-
         Vector3 ShootLaser(Vector3 position)
         {
             if (Physics.Raycast(transform.position + position, transform.forward, out hit, maxDistance))

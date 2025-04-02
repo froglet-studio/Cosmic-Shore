@@ -51,6 +51,9 @@ SkinnedMeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 3
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -215,6 +218,7 @@ MonoBehaviour:
     spaceCrystalAnimator: {fileID: 1117890586458808163}
   shipImpactEffects: 0
   RespawnOnImpact: 0
+  ImpactHapticType: 4
   crystalImpactEffects: 080000000b000000
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
@@ -231,6 +235,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: -5826038557329902450, guid: 1cf03307ae00ea44284cc75693abbb07,
     type: 2}
   m_audioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
+  m_Resource: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1

@@ -303,7 +303,7 @@ namespace CosmicShore.Game.Arcade
                 LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
                 DailyChallengeSystem.Instance.ReportScore(ScoreTracker.GetHighScore());
 
-                // TODO: Hide play again button, or map it to use another ticket
+                // TODO: P1 Hide play again button, or map it to use another ticket
 
             }
             else if (IsMission)
