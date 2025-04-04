@@ -14,7 +14,7 @@ public class LightFauna : Fauna
 
     [Header("Behavior Weights")]
     [SerializeField] float separationWeight = 100f;
-    [SerializeField] float cohesionWeight = 1.0f;
+    //[SerializeField] float cohesionWeight = 1.0f;
     [SerializeField] float goalWeight = 1.5f;
 
     [Header("Movement")]

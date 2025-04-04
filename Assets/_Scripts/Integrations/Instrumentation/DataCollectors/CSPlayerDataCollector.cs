@@ -10,6 +10,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
         private readonly IPlayerAnalyzable _playerDataCollectorFirebase = new CSPlayerDataCollectorFirebase();
         public async Task InitSDK()
         {
+            await Task.Delay(1);    // Hide console warning until this is connected
             Debug.Log("CSPlayerDataCollector - Initializing Player Data Collector.");
         }
 

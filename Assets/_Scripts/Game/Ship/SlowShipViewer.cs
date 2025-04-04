@@ -26,7 +26,7 @@ namespace CosmicShore
             target = null;
             lineRenderer.SetPosition(0, transform.position);
             lineRenderer.enabled = false;
-            if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Ship == shipStatus)
+            if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Ship.ShipStatus == shipStatus)
             {
                 var distance = float.PositiveInfinity;
                 foreach (var shipTransform in Hangar.Instance.SlowedShipTransforms)

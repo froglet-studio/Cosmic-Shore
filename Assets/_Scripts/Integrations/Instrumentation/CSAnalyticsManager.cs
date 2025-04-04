@@ -28,7 +28,8 @@ namespace CosmicShore.Integrations.Instrumentation
         
         private async void Start()
         {
-            // await InitSDK();
+            // await InitSDK(); // This is commented out since the analytics system is not currently used and it causes an infinite hang on Android
+            await Task.Delay(1);    // Hide console warning until this is connected
         }
 
         public async Task InitSDK()

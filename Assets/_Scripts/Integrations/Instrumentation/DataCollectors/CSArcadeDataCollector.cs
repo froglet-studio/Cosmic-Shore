@@ -11,6 +11,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
         private readonly IArcadeAnalyzable _arcadeDataCollectorFirebase = new CSArcadeDataCollectorFirebase();
         public async Task InitSDK()
         {
+            await Task.Delay(1);    // Hide console warning until this is connected
             Debug.Log("CSArcadeDataCollector - Initializing Arcade Data Collector.");
         }
 

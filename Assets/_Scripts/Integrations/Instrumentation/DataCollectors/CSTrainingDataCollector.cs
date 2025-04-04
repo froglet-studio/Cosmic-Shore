@@ -11,6 +11,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
         private readonly ITrainingAnalyzable _trainingDataCollectorFirebase = new CSTrainingDataCollectorFirebase();
         public async Task InitSDK()
         {
+            await Task.Delay(1);    // Hide console warning until this is connected
             Debug.Log("CSTrainingDataCollector - Initializing Training Data Collector.");
         }
 

@@ -1,12 +1,11 @@
 ﻿using UnityEngine;
 using System;
-using CosmicShore.Environment.FlowField;
 
 [Serializable]
 public class ExtraOmniCrystals : CellModifier
 {
     [SerializeField] private int additionalCrystals = 1;
-    [SerializeField] private float spawnRadius = 50f;
+    //[SerializeField] private float spawnRadius = 50f;
 
     public override void Apply(Node cell)
     {
