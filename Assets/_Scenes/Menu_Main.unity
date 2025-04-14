@@ -19808,12 +19808,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 608967449}
   m_CullTransparentMesh: 1
---- !u!1 &611885209 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 9218587489318853437, guid: 50fad7f9ece027942a19eaa47b068b47,
-    type: 3}
-  m_PrefabInstance: {fileID: 9218587488716422052}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &611885210 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 9218587489318853438, guid: 50fad7f9ece027942a19eaa47b068b47,
@@ -19826,25 +19820,12 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 9218587488716422052}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 611885209}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 495a162af64dab346a8bde5340aa5ad7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &611885215
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 611885209}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  category: 1
 --- !u!1 &612634754
 GameObject:
   m_ObjectHideFlags: 0
@@ -32947,6 +32928,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 495a162af64dab346a8bde5340aa5ad7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &956105934 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 611885214, guid: 50fad7f9ece027942a19eaa47b068b47,
+    type: 3}
+  m_PrefabInstance: {fileID: 956105931}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &961386403
@@ -48288,6 +48281,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 495a162af64dab346a8bde5340aa5ad7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1441190799 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 611885214, guid: 50fad7f9ece027942a19eaa47b068b47,
+    type: 3}
+  m_PrefabInstance: {fileID: 1441190796}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1441228050
 GameObject:
   m_ObjectHideFlags: 0
@@ -50150,6 +50155,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1492910619}
   - component: {fileID: 1492910620}
+  - component: {fileID: 1492910621}
   m_Layer: 0
   m_Name: ApplicationService
   m_TagString: Untagged
@@ -50194,6 +50200,26 @@ MonoBehaviour:
   _networkManager: {fileID: 756088746}
   _sceneNameList: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
   _popupManager: {fileID: 1112127752}
+--- !u!114 &1492910621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492910618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eacb731405242894d9f7ec8f631c1ef5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  parentReference:
+    TypeName: CosmicShore.App.ApplicationService
+  autoRun: 1
+  autoInjectGameObjects: []
+  _nameGenerationData: {fileID: 11400000, guid: 24d942c302c0a3040a03308f86e5c1e0,
+    type: 2}
+  _multiplayerUIMediator: {fileID: 1847035623}
+  _signInSpinner: {fileID: 26247731}
 --- !u!1 &1495744678
 GameObject:
   m_ObjectHideFlags: 0
@@ -63613,6 +63639,8 @@ GameObject:
   - component: {fileID: 1847035621}
   - component: {fileID: 1847035620}
   - component: {fileID: 1847035622}
+  - component: {fileID: 1847035623}
+  - component: {fileID: 1847035624}
   m_Layer: 5
   m_Name: ArcadeGameConfigureModal
   m_TagString: Untagged
@@ -63704,6 +63732,37 @@ MonoBehaviour:
   - {fileID: 1830221718}
   - {fileID: 554643661}
   RespectInventoryForShipSelection: 0
+--- !u!114 &1847035623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1847035616}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5abd6bc140b2ed24ca1cd28f1052166c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _canvasGroup: {fileID: 1847035621}
+  _loadingSpinner: {fileID: 26247731}
+  _onePlayerBtn: {fileID: 9218587488716422053}
+  _twoPlayerBtn: {fileID: 956105934}
+  _threePlayerBtn: {fileID: 1441190799}
+  _playBtn: {fileID: 4125016652611855919}
+  _selectedGame: {fileID: 11400000, guid: c581dd92f626a91479f0c50a2d58ddae, type: 2}
+--- !u!114 &1847035624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1847035616}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bce42217e29854347a95384b8020d3fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1850723631
 GameObject:
   m_ObjectHideFlags: 0
@@ -76010,7 +76069,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 5141264315624943815}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1847035624}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.ClassSelectionController, Assembly-CSharp
+        m_MethodName: SelectShip
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 2
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &394535220820777106
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80449,7 +80520,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 5423972550436067367}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1847035624}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.ClassSelectionController, Assembly-CSharp
+        m_MethodName: SelectShip
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 1
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2060384715544532918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82633,7 +82716,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 446993530813787471}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1847035624}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.ClassSelectionController, Assembly-CSharp
+        m_MethodName: SelectShip
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &2971492975692379932
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -84826,7 +84921,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 9006531742088965962}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1847035624}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.ClassSelectionController, Assembly-CSharp
+        m_MethodName: SelectShip
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 4
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!224 &3824347127393508950
 RectTransform:
   m_ObjectHideFlags: 0
@@ -85076,7 +85183,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 4973367439316611163}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1847035624}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.ClassSelectionController, Assembly-CSharp
+        m_MethodName: SelectShip
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 3
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &3900890942675467021
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -101922,7 +102041,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1782404178520832889}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1847035624}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.ClassSelectionController, Assembly-CSharp
+        m_MethodName: SelectShip
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 5
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &9187305922315670587
 GameObject:
   m_ObjectHideFlags: 0
@@ -102041,7 +102172,7 @@ PrefabInstance:
     - target: {fileID: 611885214, guid: 50fad7f9ece027942a19eaa47b068b47, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
-      objectReference: {fileID: 611885215}
+      objectReference: {fileID: 0}
     - target: {fileID: 611885214, guid: 50fad7f9ece027942a19eaa47b068b47, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_CallState
       value: 2
@@ -102062,6 +102193,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: PlayerCountButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 9218587489318853437, guid: 50fad7f9ece027942a19eaa47b068b47,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9218587489318853438, guid: 50fad7f9ece027942a19eaa47b068b47,
         type: 3}
@@ -102171,12 +102307,20 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 9218587489318853437, guid: 50fad7f9ece027942a19eaa47b068b47,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 611885215}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 50fad7f9ece027942a19eaa47b068b47, type: 3}
+--- !u!114 &9218587488716422053 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 611885214, guid: 50fad7f9ece027942a19eaa47b068b47,
+    type: 3}
+  m_PrefabInstance: {fileID: 9218587488716422052}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

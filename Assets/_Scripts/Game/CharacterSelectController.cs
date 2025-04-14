@@ -1,4 +1,5 @@
-﻿using CosmicShore.App.UI.Views;
+﻿using CosmicShore.App.UI.Controllers;
+using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Utilities;
 using System;
@@ -22,6 +23,8 @@ namespace CosmicShore.Game
 
         [SerializeField]
         CharacterSelectionView _characterSelectionView;
+        [SerializeField]
+        CharacterSelectUIController _characterSelectUIController;
 
         // NetworkList holding each client's selection.
         public NetworkList<CharacterSelectData> CharacterSelections = new();
@@ -127,6 +130,48 @@ namespace CosmicShore.Game
             }
         }
 
+        public void OnUnreadyButtonClicked()
+        {
+            ulong clientId = NetworkManager.Singleton.LocalClientId;
+            OnUnreadyButtonClicked_ServerRpc(clientId);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void OnUnreadyButtonClicked_ServerRpc(ulong clientId)
+        {
+            bool found = false;
+            for (int i = 0; i < CharacterSelections.Count; i++)
+            {
+                if (CharacterSelections[i].ClientId == clientId)
+                {
+                    if (CharacterSelections[i].IsReady) // Only update if currently ready
+                    {
+                        CharacterSelectData updatedData = new(
+                            clientId,
+                            CharacterSelections[i].ShipTypeIndex,
+                            CharacterSelections[i].TeamIndex,
+                            false); // Force unready state
+                        CharacterSelections[i] = updatedData;
+                        _readyCount--;
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                // If no entry exists, add one with ready state set to false.
+                CharacterSelections.Add(new CharacterSelectData(clientId, 0, 0, false));
+            }
+
+            ClientRpcParams rpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new List<ulong> { clientId } }
+            };
+            // Update UI for unready state (commented out as per your UI integration needs)
+            ToggleReadyButtonTextClientRpc(false, rpcParams);
+        }
+
 
         [ServerRpc(RequireOwnership = false)]
         void OnReadyButtonClicked_ServerRpc(ulong clientId)
@@ -140,10 +185,10 @@ namespace CosmicShore.Game
                     bool currentReady = CharacterSelections[i].IsReady;
                     // Toggle the ready state.
                     updatedReadyState = !currentReady;
-                    CharacterSelectData updatedData = new (
-                        clientId, 
-                        CharacterSelections[i].ShipTypeIndex, 
-                        CharacterSelections[i].TeamIndex, 
+                    CharacterSelectData updatedData = new(
+                        clientId,
+                        CharacterSelections[i].ShipTypeIndex,
+                        CharacterSelections[i].TeamIndex,
                         updatedReadyState);
 
                     CharacterSelections[i] = updatedData;
@@ -192,7 +237,7 @@ namespace CosmicShore.Game
         [ClientRpc]
         void ToggleReadyButtonTextClientRpc(bool isReady, ClientRpcParams clientRpcParams = default)
         {
-            _characterSelectionView.ToggleReadyButtonText(isReady);
+            _characterSelectUIController.SwapReadyButton(isReady);
         }
 
         // Async method to wait 3 seconds before loading the scene.
@@ -218,11 +263,13 @@ namespace CosmicShore.Game
                 List<SO_Captain> filteredCaptains = _selectedGame.Captains
                     .Where(x => CaptainManager.Instance.UnlockedShips.Contains(x.Ship))
                     .ToList();
-                _characterSelectionView.AssignModels(filteredCaptains.ConvertAll(x => (ScriptableObject)x.Ship));
+                _characterSelectUIController.LogAllShips(_selectedGame);
+                // _characterSelectionView.AssignModels(filteredCaptains.ConvertAll(x => (ScriptableObject)x.Ship));
             }
             else
             {
-                _characterSelectionView.AssignModels(_selectedGame.Captains.ConvertAll(x => (ScriptableObject)x.Ship));
+                _characterSelectUIController.LogAllShips(_selectedGame);
+                // _characterSelectionView.AssignModels(_selectedGame.Captains.ConvertAll(x => (ScriptableObject)x.Ship));
             }
         }
 
@@ -281,8 +328,9 @@ namespace CosmicShore.Game
             }
 
             // Convenience constructor with default IsReady = false.
-            public CharacterSelectData(ulong clientId, int shipIndex, int teamIndex) : 
-                this(clientId, shipIndex, teamIndex, false) { }
+            public CharacterSelectData(ulong clientId, int shipIndex, int teamIndex) :
+                this(clientId, shipIndex, teamIndex, false)
+            { }
 
             // Public accessors.
             public ulong ClientId => _clientId;
@@ -302,9 +350,9 @@ namespace CosmicShore.Game
             // IEquatable implementation.
             public bool Equals(CharacterSelectData other)
             {
-                return _clientId == other._clientId && 
-                    _shipTypeIndex == other._shipTypeIndex && 
-                    _teamIndex == other.TeamIndex && 
+                return _clientId == other._clientId &&
+                    _shipTypeIndex == other._shipTypeIndex &&
+                    _teamIndex == other.TeamIndex &&
                     _isReady == other._isReady;
             }
 

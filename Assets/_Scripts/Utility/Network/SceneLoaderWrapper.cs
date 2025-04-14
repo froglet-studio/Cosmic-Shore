@@ -91,27 +91,20 @@ namespace CosmicShore.Utilities
         /// <param name="sceneName">Name or path of the Scene to load.</param>
         /// <param name="useNetworkSceneManager">If true, uses NetworkSceneManager, else uses SceneManager</param>
         /// <param name="loadSceneMode">If LoadSceneMode.Single then all current Scenes will be unloaded before loading.</param>
-        public virtual void LoadScene(string sceneName, bool useNetworkSceneManager, LoadSceneMode loadSceneMode = LoadSceneMode.Single)
+        public virtual void LoadScene(string sceneName, bool useNetworkSceneManager, bool showLoadingScreen = false, LoadSceneMode loadSceneMode = LoadSceneMode.Single)
         {
-            if (useNetworkSceneManager)
+            if (useNetworkSceneManager && IsSpawned && IsNetworkSceneManagementEnabled && !NetworkManager.ShutdownInProgress)
             {
-                if (IsSpawned && IsNetworkSceneManagementEnabled && !NetworkManager.ShutdownInProgress)
-                {
-                    if (NetworkManager.IsServer)
-                    {
-                        // If is active server and NetworkManager uses scene management, load scene using NetworkManager's SceneManager
-                        NetworkManager.SceneManager.LoadScene(sceneName, loadSceneMode);
-                    }
-                }
+                if (NetworkManager.IsServer)
+                    NetworkManager.SceneManager.LoadScene(sceneName, loadSceneMode);
             }
             else
             {
-                // Load using SceneManager
-                var loadOperation = SceneManager.LoadSceneAsync(sceneName, loadSceneMode);
-                if (loadSceneMode == LoadSceneMode.Single)
+                var loadOp = SceneManager.LoadSceneAsync(sceneName, loadSceneMode);
+                if (showLoadingScreen && loadSceneMode == LoadSceneMode.Single)
                 {
                     m_clientLoadingScreen.StartLoadingScreen(sceneName);
-                    m_clientLoadingScreen.LocalLoadOperation = loadOperation;
+                    m_clientLoadingScreen.LocalLoadOperation = loadOp;
                 }
             }
         }

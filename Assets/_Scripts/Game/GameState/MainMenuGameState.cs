@@ -25,7 +25,7 @@ namespace CosmicShore.Game.GameState
         NameGenerationData _nameGenerationData;
 
         [SerializeField]
-        LobbyUIMediator _lobbyUIMediator;
+        MultiplayerUIMediator _multiplayerUIMediator;
 
         [SerializeField]
         GameObject _signInSpinner;
@@ -51,7 +51,9 @@ namespace CosmicShore.Game.GameState
         {
             base.Configure(builder);
             builder.RegisterComponent(_nameGenerationData);
-            builder.RegisterComponent(_lobbyUIMediator);
+            builder.RegisterComponent(_multiplayerUIMediator);
+       //     builder.RegisterComponentInHierarchy<ClassSelectionController>()
+       //.As<ICharacterSelectionController>();
         }
 
 
