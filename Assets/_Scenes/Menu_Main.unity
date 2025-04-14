@@ -18720,6 +18720,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: IntensitySelectButton
       objectReference: {fileID: 0}
+    - target: {fileID: 8336664064087418161, guid: 50911fecda6127f4daa74172509402ff,
+        type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -22061,6 +22066,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: IntensitySelectButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 8336664064087418161, guid: 50911fecda6127f4daa74172509402ff,
+        type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -63238,6 +63248,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: IntensitySelectButton
       objectReference: {fileID: 0}
+    - target: {fileID: 8336664064087418161, guid: 50911fecda6127f4daa74172509402ff,
+        type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -63626,6 +63641,7 @@ GameObject:
   - component: {fileID: 1847035621}
   - component: {fileID: 1847035620}
   - component: {fileID: 1847035622}
+  - component: {fileID: 1847035625}
   - component: {fileID: 1847035623}
   - component: {fileID: 1847035624}
   m_Layer: 5
@@ -63731,6 +63747,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5abd6bc140b2ed24ca1cd28f1052166c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _canvasGroup: {fileID: 1847035621}
   _loadingSpinner: {fileID: 26247731}
   _onePlayerBtn: {fileID: 9218587488716422053}
@@ -63750,6 +63767,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bce42217e29854347a95384b8020d3fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1847035625
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1847035616}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 1696278647
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!1 &1850723631
 GameObject:
   m_ObjectHideFlags: 0
@@ -68357,6 +68399,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: IntensitySelectButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 8336664064087418161, guid: 50911fecda6127f4daa74172509402ff,
+        type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -86601,18 +86648,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 149703240736415088}
-        m_TargetAssemblyTypeName: ExploreMenu, Assembly-CSharp
-        m_MethodName: PlaySelectedGame
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 1726012253}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio

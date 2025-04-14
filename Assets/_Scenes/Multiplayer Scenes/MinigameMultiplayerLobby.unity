@@ -1129,7 +1129,7 @@ MonoBehaviour:
   autoInjectGameObjects: []
   _nameGenerationData: {fileID: 11400000, guid: 24d942c302c0a3040a03308f86e5c1e0,
     type: 2}
-  _lobbyUIMediator: {fileID: 1792314687}
+  _multiplayerUIMediator: {fileID: 0}
   _signInSpinner: {fileID: 1533134793}
 --- !u!1 &749184361
 GameObject:

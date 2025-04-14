@@ -17,7 +17,7 @@ using static CosmicShore.Game.CharacterSelectController;
 
 namespace CosmicShore.Game.UI
 {
-    public class MultiplayerUIMediator : MonoBehaviour
+    public class MultiplayerUIMediator : NetworkBehaviour
     {
         private const string DEFAULT_LOBBY_NAME = "MinigameFreestyleMultiplayer_Gameplay";
         private const string GAME_SCENE_NAME = "MinigameFreestyleMultiplayer_Gameplay";
@@ -305,7 +305,7 @@ namespace CosmicShore.Game.UI
                 if (CharacterSelections[i].ClientId == clientId)
                 {
                     var cs = CharacterSelections[i];
-                    CharacterSelections[i] = new CharacterSelectData(clientId, index, cs.TeamIndex, cs.IsReady);
+                    CharacterSelections[i] = new CharacterSelectData(clientId, index, 0, cs.IsReady);
                     updated = true;
                     break;
                 }
