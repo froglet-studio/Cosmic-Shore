@@ -99,6 +99,7 @@ MonoBehaviour:
     spaceCrystalAnimator: {fileID: 0}
   shipImpactEffects: 0
   RespawnOnImpact: 0
+  ImpactHapticType: 4
   crystalImpactEffects: 080000000b000000
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
@@ -115,6 +116,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: -5826038557329902450, guid: 1cf03307ae00ea44284cc75693abbb07,
     type: 2}
   m_audioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
+  m_Resource: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -295,7 +297,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2073129193669181770, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
         type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: eef8363bb7a88b5458b7435276b48516, type: 2}
     - target: {fileID: 2346576036425758002, guid: a089e5ab0159cc54aa784d6ebf15d2e4,

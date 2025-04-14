@@ -33,8 +33,8 @@ namespace CosmicShore.Game.IO
         Button button;
         void Start()
         {
-            eventSystem = FindObjectOfType<EventSystem>();
-            screenSwitcher = FindObjectOfType<ScreenSwitcher>();
+            eventSystem = FindAnyObjectByType<EventSystem>();
+            screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             button = GetComponent<Button>();
 
             if (Gamepad.current is DualShockGamepad)

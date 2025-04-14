@@ -43,7 +43,7 @@ public class RuntimeTextureMemoryUsageWindow : EditorWindow
         Dictionary<Texture2D, long> textureMemoryUsage = new Dictionary<Texture2D, long>();
 
         // Find all active renderers in the scene
-        Renderer[] renderers = FindObjectsOfType<Renderer>();
+        Renderer[] renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
         foreach (var renderer in renderers)
         {
             // Iterate through all materials in the renderer
@@ -70,7 +70,7 @@ public class RuntimeTextureMemoryUsageWindow : EditorWindow
         }
 
         // Find all UI Images
-        Image[] uiImages = FindObjectsOfType<Image>();
+        Image[] uiImages = FindObjectsByType<Image>(FindObjectsSortMode.None);
         foreach (var uiImage in uiImages)
         {
             if (uiImage.sprite != null && uiImage.sprite.texture != null)
@@ -85,7 +85,7 @@ public class RuntimeTextureMemoryUsageWindow : EditorWindow
         }
 
         // Find all UI RawImages
-        RawImage[] rawImages = FindObjectsOfType<RawImage>();
+        RawImage[] rawImages = FindObjectsByType<RawImage>(FindObjectsSortMode.None);
         foreach (var rawImage in rawImages)
         {
             if (rawImage.texture is Texture2D texture2D)
@@ -99,7 +99,7 @@ public class RuntimeTextureMemoryUsageWindow : EditorWindow
         }
 
         // Find all Terrain components
-        Terrain[] terrains = FindObjectsOfType<Terrain>();
+        Terrain[] terrains = FindObjectsByType<Terrain>(FindObjectsSortMode.None);
         foreach (var terrain in terrains)
         {
             foreach (var texture in terrain.terrainData.terrainLayers.Select(layer => layer.diffuseTexture).OfType<Texture2D>())

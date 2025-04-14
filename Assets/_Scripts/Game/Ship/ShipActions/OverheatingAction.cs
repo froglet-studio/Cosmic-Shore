@@ -17,6 +17,7 @@ public class OverheatingAction : ShipAction
     public override void Initialize(IShip ship)
     {
         base.Initialize(ship);
+        wrappedAction.Initialize(ship);
         heatResource = ResourceSystem.Resources[heatResourceIndex];
     }
 

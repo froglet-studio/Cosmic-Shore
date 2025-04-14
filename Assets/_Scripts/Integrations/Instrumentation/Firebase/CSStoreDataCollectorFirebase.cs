@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using Firebase.Analytics;
-using UnityEngine.Device;
+using UnityEngine;
 
 namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
@@ -9,6 +9,8 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
     {
         public async Task InitSDK()
         {
+            await Task.Delay(1);    // Hide console warning until this is connected
+            Debug.Log("CSStoreDataCollectorFirebase - Initializing Training Data Collector.");
         }
 
         public void LogEventPurchaseCaptain(string captainName)
@@ -47,7 +49,7 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
             
             var parameters = new Parameter[]
             {
-                new (CSCustomKeysFirebase.UserId, SystemInfo.deviceUniqueIdentifier),
+                new (CSCustomKeysFirebase.UserId, UnityEngine.Device.SystemInfo.deviceUniqueIdentifier),
                 new (CSCustomKeysFirebase.SessionId, sessionId)
             };
             
@@ -62,7 +64,7 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
             
             var parameters = new Parameter[]
             {
-                new (CSCustomKeysFirebase.UserId, SystemInfo.deviceUniqueIdentifier),
+                new (CSCustomKeysFirebase.UserId, UnityEngine.Device.SystemInfo.deviceUniqueIdentifier),
                 new (CSCustomKeysFirebase.SessionId, sessionId)
             };
             

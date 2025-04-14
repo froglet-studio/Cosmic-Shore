@@ -1,4 +1,3 @@
-using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
 
@@ -20,7 +19,6 @@ namespace CosmicShore.Game.Projectiles
         bool onCooldown = false;
         float sideLength = 2;
         float barrelLength = 0;
-        Coroutine MoveCoroutine;
 
         Projectile projectile;
 

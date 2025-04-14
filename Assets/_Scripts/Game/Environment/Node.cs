@@ -9,7 +9,7 @@ using CosmicShore.Core;
 public class Node : MonoBehaviour
 {
     [SerializeField] public string ID;
-    [SerializeField] float volumeControlThreshold = 100f;
+    //[SerializeField] float volumeControlThreshold = 100f;
 
     [SerializeField] Crystal Crystal;
 

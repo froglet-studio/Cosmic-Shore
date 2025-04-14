@@ -126,7 +126,7 @@ namespace CosmicShore.App.Systems.RewindSystem
         }
         private void Awake()
         {
-            _rewoundObjects = FindObjectsOfType<RewindBase>().ToList();
+            _rewoundObjects = FindObjectsByType<RewindBase>(FindObjectsSortMode.None).ToList();
 
             if (Instance != null && Instance != this)
             {

@@ -128,10 +128,9 @@ namespace CosmicShore.Core
 
 
         public float GetInertia { get; set; }
-        public float BoostMultiplier { get; set; }      // TODO - Set should not be public
+        public float BoostMultiplier { get; set; }
         public float Speed { get; set; }
         public float ChargedBoostCharge { get; set; }
-
         public bool Boosting { get; set; }
         public bool ChargedBoostDischarging { get; set; }
         public bool Drifting { get; set; }
