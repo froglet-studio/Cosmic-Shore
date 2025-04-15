@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8247738837517299387}
   - component: {fileID: 5947369674864067525}
   - component: {fileID: 3335835471151823723}
+  - component: {fileID: 3213854922473899074}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Untagged
@@ -88,8 +89,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   _defaultShipType: 1
-  NetDefaultShipType:
-    m_InternalValue: 1
+  _defaultTeam: 0
 --- !u!114 &5947369674864067525
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -116,3 +116,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3213854922473899074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3140527607295334043}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a6dd617f69e98f4f82202777ae94eae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  _shipType: 0

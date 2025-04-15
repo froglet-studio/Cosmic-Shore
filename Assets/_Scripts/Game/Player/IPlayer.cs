@@ -19,7 +19,6 @@ namespace CosmicShore.Game
 
         public void Initialize(InitializeData data);
         public void ToggleActive(bool active);
-        public void InitializeShip(ShipTypes shipType, Teams team);
         public void ToggleGameObject(bool toggle);
 
         [System.Serializable]

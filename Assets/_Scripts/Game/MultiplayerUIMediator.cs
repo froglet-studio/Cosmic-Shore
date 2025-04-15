@@ -14,7 +14,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using VContainer;
-using static CosmicShore.Game.CharacterSelectController;
+
+
 
 namespace CosmicShore.Game.UI
 {
@@ -30,8 +31,6 @@ namespace CosmicShore.Game.UI
         [SerializeField] Button _threePlayerBtn;
         [SerializeField] Button _playBtn;
 
-        public NetworkList<CharacterSelectData> CharacterSelections = new();
-
         // injected services
         UnityAuthenticationServiceFacade _auth;
         LobbyServiceFacade _lobbyFacade;
@@ -40,7 +39,6 @@ namespace CosmicShore.Game.UI
         ConnectionManager _connectionManager;
         NameGenerationData _nameGen;
         ISubscriber<ConnectStatus> _statusSub;
-        ICharacterSelectionController _charSelectController;
 
         int _selectedMaxPlayers = 3;
 
@@ -65,16 +63,6 @@ namespace CosmicShore.Game.UI
 
             RegenerateName();
             _statusSub.Subscribe(OnConnectStatus);
-        }
-
-        void Awake()
-        {
-            // Grab the ClassSelectionController that’s on the same GameObject
-            _charSelectController = GetComponent<ClassSelectionController>();
-            if (_charSelectController == null)
-                Debug.LogError("You must have a ClassSelectionController on this GameObject!");
-
-            _charSelectController.OnShipSelected += OnShipChoose;
         }
 
         void Start()
@@ -201,40 +189,9 @@ namespace CosmicShore.Game.UI
         void OnJoinedLobby(Lobby remote)
         {
             _lobbyFacade.SetRemoteLobby(remote);
+
             Debug.Log($"Joined lobby {remote.Id}, starting client…");
             _connectionManager.StartClientLobby(_localUser.PlayerName);
-
-            ulong clientId = NetworkManager.Singleton.LocalClientId;
-            OnShipChoose_ServerRpc(_shipTypeIndex, clientId);
-        }
-
-        // Retain only network RPCs; remove UI-specific methods
-        void OnShipChoose(int index)
-        {
-            _shipTypeIndex = index;
-        }
-
-        int _shipTypeIndex;
-
-        [ServerRpc(RequireOwnership = false)]
-        void OnShipChoose_ServerRpc(int index, ulong clientId)
-        {
-            // existing server-side handling
-            bool updated = false;
-            for (int i = 0; i < CharacterSelections.Count; i++)
-            {
-                if (CharacterSelections[i].ClientId == clientId)
-                {
-                    var cs = CharacterSelections[i];
-                    CharacterSelections[i] = new CharacterSelectData(clientId, index, 0, cs.IsReady);
-                    updated = true;
-                    break;
-                }
-            }
-            if (!updated)
-            {
-                CharacterSelections.Add(new CharacterSelectData(clientId, index, 0, false));
-            }
         }
     }
 }

@@ -2,7 +2,6 @@
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -106,27 +105,6 @@ namespace CosmicShore.Game
             }
         }
 
-        void SpawnAllShips()
-        {
-            for (int i = 0; i < CharacterSelections.Count; i++)
-            {
-                // Convert the selected index to a ShipTypes value.
-                Teams newTeam = GetTeamFromIndex(CharacterSelections[i].TeamIndex);
-                ShipTypes newShipType = GetShipTypeFromIndex(CharacterSelections[i].ShipTypeIndex);
-
-                // Retrieve the player's NetworkObject and update their default ship type.
-                NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(CharacterSelections[i].ClientId);
-                if (playerNetObj != null)
-                {
-                    NetworkPlayer player = playerNetObj.GetComponent<NetworkPlayer>();
-                    if (player != null)
-                    {
-                        player.InitializeShip(newShipType, newTeam);
-                    }
-                }
-            }
-        }
-
         public void OnUnreadyButtonClicked()
         {
             ulong clientId = NetworkManager.Singleton.LocalClientId;
@@ -221,36 +199,12 @@ namespace CosmicShore.Game
                 }
             };
             ToggleReadyButtonTextClientRpc(updatedReadyState, rpcParams);
-
-            // If all connected players are ready, load the multiplayer scene after 3 seconds using async/await.
-            if (_readyCount == NetworkManager.Singleton.ConnectedClients.Count && IsServer)
-            {
-                // Fire-and-forget async method (on server)
-                SpawnAllShips();
-                // DelayedSceneLoadAsync();
-            }
         }
 
         [ClientRpc]
         void ToggleReadyButtonTextClientRpc(bool isReady, ClientRpcParams clientRpcParams = default)
         {
             _characterSelectUIController.SwapReadyButton(isReady);
-        }
-
-        // Async method to wait 3 seconds before loading the scene.
-        private async void DelayedSceneLoadAsync()
-        {
-            await Task.Delay(3000);
-            Debug.Log("3 seconds elapsed. Attempting to load scene: " + _sceneNameList.MultiplayerScene);
-            if (SceneLoaderWrapper.Instance == null)
-            {
-                Debug.LogError("SceneLoaderWrapper.Instance is null! Cannot load scene.");
-            }
-            else
-            {
-                SceneLoaderWrapper.Instance.LoadScene(_sceneNameList.MultiplayerScene, true);
-                Debug.Log("LoadScene called on SceneLoaderWrapper.Instance.");
-            }
         }
 
         void InitializeShipSelectionView()
@@ -306,70 +260,6 @@ namespace CosmicShore.Game
                 2 => Teams.Blue,
                 _ => Teams.Gold,
             };
-        }
-
-        public struct CharacterSelectData : INetworkSerializable, IEquatable<CharacterSelectData>
-        {
-            private ulong _clientId;
-            private int _shipTypeIndex;
-            private int _teamIndex;
-            private bool _isReady;
-
-            // Constructor to initialize the fields.
-            public CharacterSelectData(ulong clientId, int shipTypeIndex, int teamIndex, bool isReady)
-            {
-                _clientId = clientId;
-                _shipTypeIndex = shipTypeIndex;
-                _teamIndex = teamIndex;
-                _isReady = isReady;
-            }
-
-            // Convenience constructor with default IsReady = false.
-            public CharacterSelectData(ulong clientId, int shipIndex, int teamIndex) :
-                this(clientId, shipIndex, teamIndex, false)
-            { }
-
-            // Public accessors.
-            public ulong ClientId => _clientId;
-            public int ShipTypeIndex => _shipTypeIndex;
-            public int TeamIndex => _teamIndex;
-            public bool IsReady => _isReady;
-
-            // INetworkSerializable implementation.
-            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-            {
-                serializer.SerializeValue(ref _clientId);
-                serializer.SerializeValue(ref _shipTypeIndex);
-                serializer.SerializeValue(ref _teamIndex);
-                serializer.SerializeValue(ref _isReady);
-            }
-
-            // IEquatable implementation.
-            public bool Equals(CharacterSelectData other)
-            {
-                return _clientId == other._clientId &&
-                    _shipTypeIndex == other._shipTypeIndex &&
-                    _teamIndex == other.TeamIndex &&
-                    _isReady == other._isReady;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is CharacterSelectData other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    int hash = 17;
-                    hash = hash * 23 + _clientId.GetHashCode();
-                    hash = hash * 23 + _shipTypeIndex.GetHashCode();
-                    hash = hash * 23 + _teamIndex.GetHashCode();
-                    hash = hash * 23 + _isReady.GetHashCode();
-                    return hash;
-                }
-            }
         }
     }
 }

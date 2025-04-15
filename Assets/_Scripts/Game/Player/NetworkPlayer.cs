@@ -24,9 +24,6 @@ namespace CosmicShore.Game
 
         public ShipTypes ShipType { get => _defaultShipType; set => _defaultShipType = value; }
 
-        // Declare the NetworkVariable without initializing its value.
-        public NetworkVariable<ShipTypes> NetDefaultShipType = new();
-        public NetworkVariable<Teams> NetTeam = new();
 
         public Teams Team { get; private set; }
         public string PlayerName { get; private set; }
@@ -50,35 +47,12 @@ namespace CosmicShore.Game
 
             gameObject.name = "PersistentPlayer_" + OwnerClientId;
 
-            if (IsServer)
-            {
-                // Initialize the network variable with the default value from the inspector.
-                NetDefaultShipType.Value = _defaultShipType;
-                NetTeam.Value = _defaultTeam;
-            }
-
             InputController.enabled = IsOwner;
-
-            NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
-            NetTeam.OnValueChanged += OnNetTeamValueChanged;
         }
 
         public override void OnNetworkDespawn()
         {
             NppList.Remove(this);
-
-            NetDefaultShipType.OnValueChanged -= OnNetDefaultShipTypeValueChanged;
-            NetTeam.OnValueChanged -= OnNetTeamValueChanged;
-        }
-
-        private void OnNetDefaultShipTypeValueChanged(ShipTypes previousValue, ShipTypes newValue)
-        {
-            ShipType = newValue;
-        }
-
-        private void OnNetTeamValueChanged(Teams previousValue, Teams newValue)
-        {
-            Team = newValue;
         }
 
         public void Initialize(IPlayer.InitializeData data)
@@ -116,22 +90,6 @@ namespace CosmicShore.Game
             }
         }
 
-        /// <summary>
-        /// Sets the default ship type via the network variable.
-        /// This method should only be called on the server.
-        /// </summary>
-        public void InitializeShip(ShipTypes shipType, Teams team)
-        {
-            if (IsServer)
-            {
-                NetDefaultShipType.Value = shipType;
-                NetTeam.Value = team;
-            }
-            else
-            {
-                Debug.LogWarning("Only the server can update the default ship type.");
-            }
-        }
 
         public void ToggleGameObject(bool toggle) =>
             gameObject.SetActive(toggle);

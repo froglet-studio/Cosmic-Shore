@@ -147,8 +147,8 @@ namespace CosmicShore.Game.GameState
                 return;
             }
 
-            Teams team = networkPlayer.NetTeam.Value;
-            ShipTypes shipTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
+            // Teams team = Teams.Jade;// networkPlayer.NetTeam.Value;
+            ShipTypes shipTypeToSpawn = ShipTypes.Serpent; // networkPlayer.NetShipType.Value;
 
             NetworkObject prefab = GetPrefab(shipTypeToSpawn);
             if (prefab == null)
