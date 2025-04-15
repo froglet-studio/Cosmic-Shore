@@ -28,7 +28,7 @@ namespace CosmicShore.NetworkManagement
         {
             // The "Cosmos" server always advances to CharSelect immediately on Start.
             // Different games may do this differently.
-            SceneLoaderWrapper.Instance.LoadScene(_sceneNameList.CharSelectScene, useNetworkSceneManager: true);
+            SceneLoaderWrapper.Instance.LoadScene(_sceneNameList.MultiplayerScene, useNetworkSceneManager: true);
 
             if (_lobbyServiceFacade.CurrentUnityLobby != null)
             {

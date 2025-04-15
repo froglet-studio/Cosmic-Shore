@@ -35,9 +35,6 @@ namespace CosmicShore.Game
         // server -side datas
         int _readyCount = 0;
 
-        // Remove Coroutine field since we're using async/await
-        // Coroutine _loadGameRoutine;
-
         public override void OnNetworkSpawn()
         {
             InitializeShipSelectionView();
@@ -230,7 +227,7 @@ namespace CosmicShore.Game
             {
                 // Fire-and-forget async method (on server)
                 SpawnAllShips();
-                DelayedSceneLoadAsync();
+                // DelayedSceneLoadAsync();
             }
         }
 

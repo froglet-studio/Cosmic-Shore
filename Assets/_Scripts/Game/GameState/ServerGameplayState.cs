@@ -126,7 +126,7 @@ namespace CosmicShore.Game.GameState
             if (clientId == NetworkManager.Singleton.LocalClientId)
             {
                 Debug.Log("Server disconnect detected; loading character select scene.");
-                SceneLoaderWrapper.Instance.LoadScene(_sceneNameList.CharSelectScene, useNetworkSceneManager: true);
+                SceneLoaderWrapper.Instance.LoadScene(_sceneNameList.MainMenuScene, useNetworkSceneManager: true);
             }
         }
 

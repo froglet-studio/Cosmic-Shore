@@ -19,8 +19,7 @@ namespace CosmicShore.Game.UI
 {
     public class MultiplayerUIMediator : NetworkBehaviour
     {
-        private const string DEFAULT_LOBBY_NAME = "MinigameFreestyleMultiplayer_Gameplay";
-        private const string GAME_SCENE_NAME = "MinigameFreestyleMultiplayer_Gameplay";
+        const string k_DefaultLobbyName = "New_Lobby";
 
         [Header("UI References")]
         [SerializeField] CanvasGroup _canvasGroup;
@@ -29,8 +28,6 @@ namespace CosmicShore.Game.UI
         [SerializeField] Button _twoPlayerBtn;
         [SerializeField] Button _threePlayerBtn;
         [SerializeField] Button _playBtn;
-        //[SerializeField] TMP_InputField _lobbyNameInput;   // optional: custom name
-        //[SerializeField] TMP_InputField _lobbyCodeInput;   // for manual join (if you still want)
 
         public NetworkList<CharacterSelectData> CharacterSelections = new();
 
@@ -39,15 +36,12 @@ namespace CosmicShore.Game.UI
         LobbyServiceFacade _lobbyFacade;
         LocalLobbyUser _localUser;
         LocalLobby _localLobby;
-        ConnectionManager _connMgr;
+        ConnectionManager _connectionManager;
         NameGenerationData _nameGen;
         ISubscriber<ConnectStatus> _statusSub;
         ICharacterSelectionController _charSelectController;
 
-        [SerializeField]
-        SO_ArcadeGame _selectedGame;
-
-        int _selectedMaxPlayers = 1;
+        int _selectedMaxPlayers = 3;
 
         [Inject]
         void Inject(
@@ -58,18 +52,15 @@ namespace CosmicShore.Game.UI
             NameGenerationData nameGen,
             ISubscriber<ConnectStatus> statusSub,
             ConnectionManager connMgr
-            //ICharacterSelectionController charSelectController
         )
         {
             _auth = auth;
             _lobbyFacade = lobbyFacade;
             _localUser = localUser;
             _localLobby = localLobby;
-            _connMgr = connMgr;
+            _connectionManager = connMgr;
             _nameGen = nameGen;
             _statusSub = statusSub;
-            //_charSelectController = charSelectController;
-
 
             RegenerateName();
             _statusSub.Subscribe(OnConnectStatus);
@@ -81,31 +72,30 @@ namespace CosmicShore.Game.UI
             _charSelectController = GetComponent<ClassSelectionController>();
             if (_charSelectController == null)
                 Debug.LogError("You must have a ClassSelectionController on this GameObject!");
-            _charSelectController.OnShipSelected += HandleShipSelected;
 
+            _charSelectController.OnShipSelected += OnShipChoose;
         }
 
         void Start()
         {
             // wire up your three room-size buttons
-            _onePlayerBtn.onClick.AddListener(() => SelectSize(1));
-            _twoPlayerBtn.onClick.AddListener(() => SelectSize(2));
-            _threePlayerBtn.onClick.AddListener(() => SelectSize(3));
+            _onePlayerBtn.onClick.AddListener(() => SelectPlayerCount(1));
+            _twoPlayerBtn.onClick.AddListener(() => SelectPlayerCount(2));
+            _threePlayerBtn.onClick.AddListener(() => SelectPlayerCount(3));
             // and the play button
             _playBtn.onClick.AddListener(JoinOrCreateLobby);
 
-            _charSelectController.Initialize(_selectedGame.Captains);
-
             // default selection
-            SelectSize(1);
+            SelectPlayerCount(1);
         }
 
-        void OnDestroy()
+        public override void OnDestroy()
         {
+            base.OnDestroy();
             _statusSub?.Unsubscribe(OnConnectStatus);
         }
 
-        void SelectSize(int n)
+        void SelectPlayerCount(int n)
         {
             _selectedMaxPlayers = n;
             // TODO: update button visuals to show which is selected
@@ -122,114 +112,54 @@ namespace CosmicShore.Game.UI
                 return;
             }
 
-            // 1) Try to find an existing lobby with this max?players
-            var queryOptions = new QueryLobbiesOptions
-            {
-                Count = 5,
-                Filters = new List<QueryFilter>
-                {
-                    // only lobbies that still have slots
-                    new QueryFilter(
-                        field: QueryFilter.FieldOptions.AvailableSlots,
-                        op:    QueryFilter.OpOptions.GT,
-                        value: "0"
-                    ),
-                    // and whose MaxPlayers custom data matches our selection
-                    new QueryFilter(
-                        field: QueryFilter.FieldOptions.S2,   // we’ll stash it in S2
-                        op:    QueryFilter.OpOptions.EQ,
-                        value: _selectedMaxPlayers.ToString()
-                    )
-                }
-            };
 
-            QueryResponse resp = await LobbyService.Instance.QueryLobbiesAsync(queryOptions);
-            if (resp.Results.Count > 0)
+            var result = await _lobbyFacade.TryQuickJoinLobbyAsync();
+
+            if (result.Success)
             {
-                // join the first one
-                var toJoin = resp.Results[0];
-                Debug.Log($"Found lobby {toJoin.Id} with slots. Joining…");
-                var joinResult = await _lobbyFacade.TryJoinLobbyAsync(toJoin.Id, null);
-                if (joinResult.Success)
-                {
-                    OnJoinedLobby(joinResult.Lobby);
-                    return;
-                }
-                else
-                {
-                    Debug.LogWarning("Failed to join existing lobby, will create new one.");
-                }
+                OnJoinedLobby(result.Lobby);
             }
-
-            // 2) no suitable lobby found (or join failed) -> create a fresh one
-            //string lobbyName = string.IsNullOrEmpty(_lobbyNameInput.text)
-            //    ? DEFAULT_LOBBY_NAME
-            //    : _lobbyNameInput.text;
-
-            // build custom lobby data so we can filter on MaxPlayers next time
-            var data = new Dictionary<string, DataObject>
+            else
             {
-                {
-                    "MaxPlayers",
-                    new DataObject(
-                        visibility: DataObject.VisibilityOptions.Public,
-                        value:      _selectedMaxPlayers.ToString()
-                    )
-                }
-            };
-
-            try
-            {
-                var options = new CreateLobbyOptions
-                {
-                    IsPrivate = false,
-                    Data = new Dictionary<string, DataObject>
-        {
-            { "MaxPlayers", new DataObject(
-                  visibility: DataObject.VisibilityOptions.Public,
-                  value:      _selectedMaxPlayers.ToString(),
-                  index:      DataObject.IndexOptions.N1
-              )
-            }
-        }
-                };
-
-                string lobbyName = LobbyNameUtility.GenerateRandomLobbyName(10);
-
-                // pass maxPlayers as the 2nd parameter, options as the 3rd
-                Lobby created = await LobbyService.Instance
-                    .CreateLobbyAsync(lobbyName, _selectedMaxPlayers, options);
-
-                _localUser.IsHost = true;
-                _lobbyFacade.SetRemoteLobby(created);
-                _connMgr.StartHostLobby(_localUser.PlayerName);
-
-                //OnJoinedLobby(created);
-            }
-            catch (LobbyServiceException e)
-            {
-                Debug.LogError($"Failed to create lobby: {e.Message}");
-                UnblockUI();
+                Debug.LogWarning($"Quick join failed: {result}");
+                OnQuickJoinFailed();
             }
         }
 
-        public async void JoinLobbyWithCodeRequest()
+        void OnQuickJoinFailed()
         {
-            BlockUI();
-            if (string.IsNullOrEmpty(""))
+            CreateLobbyRequest();
+        }
+
+        async void CreateLobbyRequest(bool isPrivate = false, string lobbyName = null)
+        {
+            // before sending request to lobby service, populate an empty lobby name, if necessary
+            if (string.IsNullOrEmpty(lobbyName))
             {
-                Debug.LogError("Please enter a valid lobby code!");
+                lobbyName = k_DefaultLobbyName;
+            }
+
+            bool playerIsAuthorized = await _auth.EnsurePlayerIsAuthorized();
+
+            if (!playerIsAuthorized)
+            {
                 UnblockUI();
                 return;
             }
 
-            var joinAttempt = await _lobbyFacade.TryJoinLobbyAsync(null, "");
-            if (joinAttempt.Success)
+            var lobbyCreationAttempt = await _lobbyFacade.TryCreateLobbyAsync(lobbyName, _connectionManager.MaxConnectedPlayers, isPrivate);
+
+            if (lobbyCreationAttempt.Success)
             {
-                OnJoinedLobby(joinAttempt.Lobby);
+                _localUser.IsHost = true;
+                _lobbyFacade.SetRemoteLobby(lobbyCreationAttempt.Lobby);
+
+                Debug.Log($"Created lobby with ID: {_localLobby.LobbyID} and code {_localLobby.LobbyCode}");
+                _connectionManager.StartHostLobby(_localUser.PlayerName);
             }
             else
             {
+                Debug.LogWarning($"Lobby creation failed! {lobbyCreationAttempt}");
                 UnblockUI();
             }
         }
@@ -257,39 +187,25 @@ namespace CosmicShore.Game.UI
         void OnConnectStatus(ConnectStatus status)
         {
             if (status is ConnectStatus.GenericDisconnect or ConnectStatus.StartClientFailed)
-                UnblockUI();
-        }
+            {
+                Debug.LogWarning($"Connnection status error: {status}");
+            }
 
-        [Inject] SceneNameListSO _sceneNameList;
+            if (status is ConnectStatus.Success)
+            {
+                // Do something when the connection is successful
+            }
+        }
 
         void OnJoinedLobby(Lobby remote)
         {
             _lobbyFacade.SetRemoteLobby(remote);
             Debug.Log($"Joined lobby {remote.Id}, starting client…");
-            _connMgr.StartClientLobby(_localUser.PlayerName);
-
-            // now load the game scene via your SceneLoaderWrapper
-            if (SceneLoaderWrapper.Instance == null)
-            {
-                Debug.LogError("SceneLoaderWrapper.Instance is null! Cannot load scene.");
-            }
-            else
-            {
-                string sceneToLoad = _sceneNameList.CharSelectScene;
-                Debug.Log($"Loading scene '{sceneToLoad}' via SceneLoaderWrapper…");
-                SceneLoaderWrapper.Instance.LoadScene(sceneToLoad, true, showLoadingScreen: false);
-            }
-        }
-
-
-        private void HandleShipSelected(int index)
-        {
-            // Delegate selection to server via existing method
-            OnShipChoose(index);
+            _connectionManager.StartClientLobby(_localUser.PlayerName);
         }
 
         // Retain only network RPCs; remove UI-specific methods
-        public void OnShipChoose(int index)
+        void OnShipChoose(int index)
         {
             ulong clientId = NetworkManager.Singleton.LocalClientId;
             OnShipChoose_ServerRpc(index, clientId);

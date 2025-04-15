@@ -18,26 +18,31 @@ namespace CosmicShore.Game.UI
         /// <summary>
         /// Initialize the selection UI with a list of captains.
         /// </summary>
-        void Initialize(List<SO_Captain> captains);
+        void Initialize();
     }
 
     [RequireComponent(typeof(CanvasGroup))]
     public class ClassSelectionController : MonoBehaviour, ICharacterSelectionController
     {
+        [SerializeField]
+        SO_ArcadeGame _selectedGame;
+
         private List<SO_Ship> _availableShips;
-        private SO_Ship _currentShip;
 
         public event Action<int> OnShipSelected;
 
-        [Inject]
-        void Construct() { }
+        private void Start()
+        {
+            Initialize();
+        }
+
 
         /// <summary>
         /// Populates UI buttons and sets default selection.
         /// </summary>
-        public void Initialize(List<SO_Captain> captains)
+        public void Initialize()
         {
-            _availableShips = captains.Select(c => c.Ship).ToList();
+            _availableShips = _selectedGame.Captains.Select(c => c.Ship).ToList();
             //CreateButtons();
             if (_availableShips.Count > 0)
                 SelectShip(0);
@@ -65,7 +70,6 @@ namespace CosmicShore.Game.UI
 
         public void SelectShip(int index)
         {
-            _currentShip = _availableShips[index];
             //SpawnShipPreview();
             OnShipSelected?.Invoke(index);
             Debug.Log($"Ship selected and locked: Index {index}");

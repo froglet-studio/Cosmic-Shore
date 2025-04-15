@@ -12,7 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8900859f497a15741bea2bf134d44819, type: 3}
   m_Name: MultiplayerSceneNameList
   m_EditorClassIdentifier: 
-  StartUpScene: Menu_Main
-  MainMenuScene: MinigameMultiplayerLobby
-  CharSelectScene: MinigameFreestyleMultiplayer_Gameplay
+  MainMenuScene: Menu_Main
   MultiplayerScene: MinigameFreestyleMultiplayer_Gameplay

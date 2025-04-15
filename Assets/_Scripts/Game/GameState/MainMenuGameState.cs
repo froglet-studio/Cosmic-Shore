@@ -31,9 +31,6 @@ namespace CosmicShore.Game.GameState
         GameObject _signInSpinner;
 
         [Inject]
-        SceneNameListSO _sceneNameList;
-
-        [Inject]
         UnityAuthenticationServiceFacade _authServiceFacade;
 
         [Inject]
