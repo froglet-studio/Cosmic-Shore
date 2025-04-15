@@ -3,6 +3,7 @@ using CosmicShore.Integrations;
 using CosmicShore.NetworkManagement;
 using CosmicShore.Utilities;
 using CosmicShore.Utilities.Network;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -202,14 +203,18 @@ namespace CosmicShore.Game.UI
             _lobbyFacade.SetRemoteLobby(remote);
             Debug.Log($"Joined lobby {remote.Id}, starting client…");
             _connectionManager.StartClientLobby(_localUser.PlayerName);
+
+            ulong clientId = NetworkManager.Singleton.LocalClientId;
+            OnShipChoose_ServerRpc(_shipTypeIndex, clientId);
         }
 
         // Retain only network RPCs; remove UI-specific methods
         void OnShipChoose(int index)
         {
-            ulong clientId = NetworkManager.Singleton.LocalClientId;
-            OnShipChoose_ServerRpc(index, clientId);
+            _shipTypeIndex = index;
         }
+
+        int _shipTypeIndex;
 
         [ServerRpc(RequireOwnership = false)]
         void OnShipChoose_ServerRpc(int index, ulong clientId)
