@@ -91,7 +91,7 @@ namespace CosmicShore.Game.UI
             Debug.Log($"Selected room size: {n}");
         }
 
-        async void JoinOrCreateLobby()
+        internal async void JoinOrCreateLobby()
         {
             BlockUI();
             bool ok = await _auth.EnsurePlayerIsAuthorized();

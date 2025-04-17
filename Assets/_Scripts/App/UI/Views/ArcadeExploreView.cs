@@ -5,6 +5,7 @@ using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.UI;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections.Generic;
@@ -27,7 +28,7 @@ namespace CosmicShore.App.UI.Views
         [Header("Test Settings")]
         [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
         [SerializeField] bool RespectInventoryForGameSelection = false;
-
+        [SerializeField] MultiplayerUIMediator MultiplayerUIMediator;
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
 
@@ -152,8 +153,13 @@ namespace CosmicShore.App.UI.Views
 
         public void PlaySelectedGame()
         {
-            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerShipType, SelectedGame.Mode));
+            if (SelectedGame.Mode == GameModes.MultiplayerFreestyle)
+            {
+                MultiplayerUIMediator.JoinOrCreateLobby();
+                return;
+            }
 
+            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerShipType, SelectedGame.Mode));
             Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerShipType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, false);
         }
 
