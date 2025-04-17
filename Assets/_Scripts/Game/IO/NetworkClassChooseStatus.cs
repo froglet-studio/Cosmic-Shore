@@ -59,6 +59,19 @@ namespace CosmicShore.Core
 
         readonly NetworkList<ShipSelectData> ShipSelections = new();
 
+        public int GetShipIndex(ulong clientId)
+        {
+            foreach (var shipData in ShipSelections)
+            {
+                if (shipData.ClientId == clientId)
+                {
+                    return shipData.ShipTypeIndex;
+                }
+            }
+
+            return 0;
+        }
+
         public override void OnNetworkSpawn()
         {
             if (IsOwner)

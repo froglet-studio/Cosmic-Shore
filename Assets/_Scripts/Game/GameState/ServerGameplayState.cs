@@ -1,4 +1,5 @@
-﻿using CosmicShore.NetworkManagement;
+﻿using CosmicShore.Core;
+using CosmicShore.NetworkManagement;
 using CosmicShore.Utilities;
 using CosmicShore.Utilities.Network;
 using System.Collections;
@@ -147,8 +148,15 @@ namespace CosmicShore.Game.GameState
                 return;
             }
 
+            NetworkClassChooseStatus networkClassChooseStatus = playerNetworkObject.GetComponent<NetworkClassChooseStatus>();
+            if (networkClassChooseStatus == null)
+            {
+                Debug.LogError($"SpawnPlayerAndShipForClient: NetworkClassChooseStatus component not found for client {clientId}.");
+                return;
+            }
+
             // Teams team = Teams.Jade;// networkPlayer.NetTeam.Value;
-            ShipTypes shipTypeToSpawn = ShipTypes.Serpent; // networkPlayer.NetShipType.Value;
+            ShipTypes shipTypeToSpawn = (ShipTypes)networkClassChooseStatus.GetShipIndex(clientId);
 
             NetworkObject prefab = GetPrefab(shipTypeToSpawn);
             if (prefab == null)

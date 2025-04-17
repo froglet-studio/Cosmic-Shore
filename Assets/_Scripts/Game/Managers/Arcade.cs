@@ -62,6 +62,9 @@ namespace CosmicShore.Core
 
         public void LaunchArcadeGame(GameModes gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
+            if (gameMode == GameModes.MultiplayerFreestyle)
+                return;
+
             MiniGame.PlayerShipType = ship;
             MiniGame.ResourceCollection = shipResources;
             MiniGame.IntensityLevel = intensity;
