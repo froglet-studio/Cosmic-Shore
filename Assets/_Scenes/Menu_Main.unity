@@ -63742,7 +63742,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1847035616}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5abd6bc140b2ed24ca1cd28f1052166c, type: 3}
   m_Name: 
@@ -63761,12 +63761,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1847035616}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bce42217e29854347a95384b8020d3fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _selectedGame: {fileID: 11400000, guid: c581dd92f626a91479f0c50a2d58ddae, type: 2}
+  _shipTypeData: {fileID: 11400000, guid: 61421bfd14376a6489e1eed5cb52c826, type: 2}
 --- !u!114 &1847035625
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63774,7 +63775,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1847035616}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
@@ -75607,6 +75608,7 @@ MonoBehaviour:
   DailyChallengeCard: {fileID: 353572116}
   ArcadeGameConfigureModal: {fileID: 1847035622}
   RespectInventoryForGameSelection: 0
+  MultiplayerUIMediator: {fileID: 1847035623}
 --- !u!224 &175867981159570580
 RectTransform:
   m_ObjectHideFlags: 0

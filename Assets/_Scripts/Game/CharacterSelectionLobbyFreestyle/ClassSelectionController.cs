@@ -1,3 +1,4 @@
+using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,8 @@ namespace CosmicShore.Game.UI
         [SerializeField]
         SO_ArcadeGame _selectedGame;
 
+        [SerializeField] IntDataSO _shipTypeData;
+
         private List<SO_Ship> _availableShips;
 
         public event Action<int> OnShipSelected;
@@ -49,40 +52,13 @@ namespace CosmicShore.Game.UI
             Debug.Log($"Initialization Completed!");
         }
 
-        private void CreateButtons()
-        {
-            // Clear old buttons
-            //foreach (Transform child in _buttonContainer)
-            //    Destroy(child.gameObject);
-
-            //// Create a button for each ship
-            //for (int i = 0; i < _availableShips.Count; i++)
-            //{
-            //    var ship = _availableShips[i];
-            //    var btnObj = Instantiate(_shipButtonPrefab, _buttonContainer);
-            //    var button = btnObj.GetComponent<Button>();
-            //    var label = btnObj.GetComponentInChildren<TMP_Text>();
-            //    label.text = ship.Name;
-            //    int index = i; // capture
-            //    button.onClick.AddListener(() => SelectShip(index));
-            //}
-        }
-
         public void SelectShip(int index)
         {
+            _shipTypeData.Value = index;
+
             //SpawnShipPreview();
             OnShipSelected?.Invoke(index);
             Debug.Log($"Ship selected and locked: Index {index}");
-        }
-
-        private void SpawnShipPreview()
-        {
-            // Remove previous preview
-            //foreach (Transform child in _spawnPlaceholder)
-            //    Destroy(child.gameObject);
-
-            // Instantiate new ship prefab under placeholder
-            //Instantiate(_currentShip.Prefab, _spawnPlaceholder);
         }
     }
 }

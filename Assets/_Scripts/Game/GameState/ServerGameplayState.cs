@@ -133,65 +133,51 @@ namespace CosmicShore.Game.GameState
 
         void SpawnShipForClient(ulong clientId, bool lateJoin)
         {
-            NetworkObject playerNetworkObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (playerNetworkObject == null)
+            Debug.Log($"SpawnShipForClient for client {clientId} (lateJoin={lateJoin})");
+
+            // 1) grab their selected ship index from your SO‑powered component
+            var playerObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+            if (playerObj == null)
             {
-                Debug.LogError($"SpawnPlayerAndShipForClient: Player NetworkObject not found for client {clientId}.");
+                Debug.LogError($"No player NetworkObject for {clientId}.");
                 return;
             }
 
-            // Get the ship type from the NetworkPlayer.
-            NetworkPlayer networkPlayer = playerNetworkObject.GetComponent<NetworkPlayer>();
-            if (networkPlayer == null)
+            var chooser = playerObj.GetComponent<NetworkClassChooseStatus>();
+            if (chooser == null)
             {
-                Debug.LogError($"SpawnPlayerAndShipForClient: NetworkPlayer component not found for client {clientId}.");
+                Debug.LogError($"No NetworkClassChooseStatus on player {clientId}.");
                 return;
             }
 
-            NetworkClassChooseStatus networkClassChooseStatus = playerNetworkObject.GetComponent<NetworkClassChooseStatus>();
-            if (networkClassChooseStatus == null)
+            // 2) convert that int back to your enum
+            int shipType = chooser.GetShipIndex(clientId);
+
+            // 3) fetch the right prefab (handles Random too)
+            var prefabNetObj = GetPrefabByIndex(shipType);
+            if (prefabNetObj == null)
             {
-                Debug.LogError($"SpawnPlayerAndShipForClient: NetworkClassChooseStatus component not found for client {clientId}.");
+                Debug.LogError($"SpawnShipForClient: no prefab found for {shipType}.");
                 return;
             }
 
-            // Teams team = Teams.Jade;// networkPlayer.NetTeam.Value;
-            ShipTypes shipTypeToSpawn = (ShipTypes)networkClassChooseStatus.GetShipIndex(clientId);
+            // 4) instantiate & spawn with ownership
+            var spawnedShip = Instantiate(prefabNetObj);
+            spawnedShip.SpawnWithOwnership(clientId, true);
+            Debug.Log($"→ Spawned {shipType} for client {clientId}.");
 
-            NetworkObject prefab = GetPrefab(shipTypeToSpawn);
-            if (prefab == null)
-            {
-                Debug.LogError($"SpawnPlayerAndShipForClient: No matching ship prefab found for ship type {shipTypeToSpawn} for client {clientId}.");
-                return;
-            }
-
-            // Instantiate and spawn the ship.
-            NetworkObject networkShip = Instantiate(prefab);
-            Assert.IsTrue(networkShip != null, $"Matching ship network object for client {clientId} not found!");
-            networkShip.SpawnWithOwnership(clientId, true);
-            Debug.Log($"Spawned ship for client {clientId} using ship type {shipTypeToSpawn}.");
-
+            // 5) position it
             if (lateJoin)
             {
-                SessionPlayerData? sessionPlayerData = SessionManager<SessionPlayerData>.Instance.GetPlayerData(clientId);
-                if (sessionPlayerData is { HasCharacterSpawned: true })
-                {
-                    networkShip.transform.SetPositionAndRotation(sessionPlayerData.Value.PlayerPosition, sessionPlayerData.Value.PlayerRotation);
-                    Debug.Log($"Late join: Set position for client {clientId} from session data.");
-                }
+                var data = SessionManager<SessionPlayerData>.Instance.GetPlayerData(clientId);
+                if (data?.HasCharacterSpawned == true)
+                    spawnedShip.transform.SetPositionAndRotation(data.Value.PlayerPosition, data.Value.PlayerRotation);
             }
             else
             {
-                Transform spawnPoint = GetRandomSpawnPoint();
+                var spawnPoint = GetRandomSpawnPoint();
                 if (spawnPoint != null)
-                {
-                    networkShip.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-                    Debug.Log($"Spawned client {clientId} at random spawn point.");
-                }
-                else
-                {
-                    Debug.LogError("No available spawn point found!");
-                }
+                    spawnedShip.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
             }
         }
 
@@ -226,15 +212,31 @@ namespace CosmicShore.Game.GameState
         /// </summary>
         /// <param name="shipTypeToSpawn">The ShipTypes to look for.</param>
         /// <returns>The matching NetworkObject prefab or null if not found.</returns>
-        NetworkObject GetPrefab(ShipTypes shipTypeToSpawn)
+        NetworkObject GetPrefabByIndex(int index)
         {
             if (_shipPrefabs == null || _shipPrefabs.Length == 0)
             {
-                Debug.LogError("ShipPrefabs array is not set or empty.");
+                Debug.LogError("No ship prefabs assigned.");
                 return null;
             }
 
-            return _shipPrefabs.FirstOrDefault(prefab => prefab.ShipStatus.ShipType == shipTypeToSpawn).GetComponent<NetworkObject>();
+            // clamp or random‑fallback if out of range
+            if (index < 0 || index >= _shipPrefabs.Length)
+            {
+                Debug.LogWarning($"Invalid ship index {index}; picking random instead.");
+                index = Random.Range(0, _shipPrefabs.Length);
+            }
+
+            var chosen = _shipPrefabs[index];
+            if (!chosen.TryGetComponent<NetworkObject>(out var netObj))
+            {
+                Debug.LogError($"Prefab at slot {index} has no NetworkObject component!");
+            }
+            else
+            {
+                Debug.Log($"GetPrefabByIndex: using slot {index} => {chosen.ShipStatus.ShipType}");
+            }
+            return netObj;
         }
     }
 }

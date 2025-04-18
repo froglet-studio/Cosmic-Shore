@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Game;
+using CosmicShore.Utilities;
 using System;
 using System.Collections;
 using Unity.Netcode;
@@ -11,18 +12,15 @@ namespace CosmicShore.Core
         private ulong _clientId;
         private int _shipTypeIndex;
 
-        // Constructor to initialize the fields.
         public ShipSelectData(ulong clientId, int shipTypeIndex)
         {
             _clientId = clientId;
             _shipTypeIndex = shipTypeIndex;
         }
 
-        // Public accessors.
         public ulong ClientId => _clientId;
         public int ShipTypeIndex => _shipTypeIndex;
 
-        // INetworkSerializable implementation.
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref _clientId);
@@ -31,7 +29,13 @@ namespace CosmicShore.Core
 
         public override bool Equals(object obj)
         {
-            return obj is CharacterSelectData other && Equals(other);
+            return obj is ShipSelectData other && Equals(other);
+        }
+
+        public bool Equals(ShipSelectData other)
+        {
+            return _clientId == other._clientId &&
+                   _shipTypeIndex == other._shipTypeIndex;
         }
 
         public override int GetHashCode()
@@ -44,31 +48,21 @@ namespace CosmicShore.Core
                 return hash;
             }
         }
-
-        public bool Equals(ShipSelectData other)
-        {
-            return _clientId == other.ClientId &&
-                _shipTypeIndex == other.ShipTypeIndex;
-        }
     }
 
     public class NetworkClassChooseStatus : NetworkBehaviour
     {
-        [SerializeField]
-        int _shipType;
+        [SerializeField] private IntDataSO _shipTypeData;
 
-        readonly NetworkList<ShipSelectData> ShipSelections = new();
+        private readonly NetworkList<ShipSelectData> ShipSelections = new();
 
         public int GetShipIndex(ulong clientId)
         {
             foreach (var shipData in ShipSelections)
             {
                 if (shipData.ClientId == clientId)
-                {
                     return shipData.ShipTypeIndex;
-                }
             }
-
             return 0;
         }
 
@@ -76,17 +70,17 @@ namespace CosmicShore.Core
         {
             if (IsOwner)
             {
+                Debug.Log($"Ship to spawn is {_shipTypeData.Value}");
                 ulong clientId = NetworkManager.Singleton.LocalClientId;
-                OnShipChoose_ServerRpc(_shipType, clientId);
+                OnShipChoose_ServerRpc(_shipTypeData.Value, clientId);
             }
 
             StartCoroutine(SpawnShips());
         }
 
         [ServerRpc(RequireOwnership = false)]
-        void OnShipChoose_ServerRpc(int index, ulong clientId)
+        private void OnShipChoose_ServerRpc(int index, ulong clientId)
         {
-            // Update the client's ship selection while preserving its current ready state.
             bool updated = false;
             for (int i = 0; i < ShipSelections.Count; i++)
             {
@@ -99,16 +93,13 @@ namespace CosmicShore.Core
             }
             if (!updated)
             {
-                // New entry with IsReady set to false by default.
                 ShipSelections.Add(new ShipSelectData(clientId, index));
             }
         }
 
-        IEnumerator SpawnShips()
+        private IEnumerator SpawnShips()
         {
-            yield return new WaitForSeconds(5f);
-
-            // Do debug in green color, spawn ships
+            yield return new WaitForSeconds(2f);
             Debug.Log("<color=green>Spawning ships...</color>");
         }
     }

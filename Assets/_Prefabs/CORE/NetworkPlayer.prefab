@@ -129,4 +129,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _shipType: 7
+  _shipTypeData: {fileID: 11400000, guid: 61421bfd14376a6489e1eed5cb52c826, type: 2}
