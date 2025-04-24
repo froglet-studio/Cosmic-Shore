@@ -136,7 +136,7 @@ namespace CosmicShore.Game.UI
                 return;
             }
 
-            var lobbyCreationAttempt = await _lobbyFacade.TryCreateLobbyAsync(lobbyName, _connectionManager.MaxConnectedPlayers, isPrivate);
+            var lobbyCreationAttempt = await _lobbyFacade.TryCreateLobbyAsync(lobbyName, 4, false);
 
             if (lobbyCreationAttempt.Success)
             {
