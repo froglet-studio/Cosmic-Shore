@@ -141,19 +141,17 @@ namespace CosmicShore.Utilities.Network
         /// <param name="maxPlayers"> Maximum number of players allowed in the lobby</param>
         /// <param name="isPrivate">Is the lobby private</param>
         /// <returns></returns>
-        public async Task<(bool Success, Lobby Lobby)> TryCreateLobbyAsync(string lobbyName, int maxPlayers, bool isPrivate)
+        public async Task<(bool Success, Lobby Lobby)> TryCreateLobbyAsync(string lobbyName, int maxPlayers, bool isPrivate, CreateLobbyOptions options)
         {
             if (!_rateLimitHost.CanCall)
             {
-                Debug.LogWarning("Create Lobby hit the rate limit.");
+                Debug.LogWarning("?? Create Lobby hit the rate limit.");
                 return (false, null);
             }
 
             try
             {
-                Lobby lobby = await _lobbyApiInterface.CreateLobby(_localLobbyUser.ID, lobbyName, maxPlayers, isPrivate,
-                    _localLobbyUser.GetDataForUnityServices(), null);
-
+                Lobby lobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayers, options);
                 return (true, lobby);
             }
             catch (LobbyServiceException e)
@@ -170,6 +168,7 @@ namespace CosmicShore.Utilities.Network
 
             return (false, null);
         }
+
 
 
         /// <summary>
@@ -245,7 +244,18 @@ namespace CosmicShore.Utilities.Network
 
             try
             {
-                Lobby lobby = await _lobbyApiInterface.QuickJoinLobby(_localLobbyUser.ID, _localLobbyUser.GetDataForUnityServices());
+                var options = new QuickJoinLobbyOptions
+                {
+                    Filter = new List<QueryFilter>
+            {
+                new QueryFilter(
+                    field: QueryFilter.FieldOptions.S2,
+                    op: QueryFilter.OpOptions.EQ,
+                    value: "cosmic_game_mode") // Your custom lobby identifier
+            }
+                };
+
+                Lobby lobby = await LobbyService.Instance.QuickJoinLobbyAsync(options);
                 return (true, lobby);
             }
             catch (LobbyServiceException e)
@@ -259,8 +269,10 @@ namespace CosmicShore.Utilities.Network
                     PublishError(e);
                 }
             }
+
             return (false, null);
         }
+
 
 
         /// <summary>

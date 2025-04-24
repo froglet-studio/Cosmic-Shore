@@ -1,17 +1,12 @@
-using CosmicShore.App.UI.Controllers;
 using CosmicShore.Integrations;
 using CosmicShore.NetworkManagement;
 using CosmicShore.Utilities;
 using CosmicShore.Utilities.Network;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using TMPro;
 using Unity.Netcode;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using VContainer;
 
@@ -122,36 +117,46 @@ namespace CosmicShore.Game.UI
 
         async void CreateLobbyRequest(bool isPrivate = false, string lobbyName = null)
         {
-            // before sending request to lobby service, populate an empty lobby name, if necessary
-            if (string.IsNullOrEmpty(lobbyName))
+            if (string.IsNullOrWhiteSpace(lobbyName))
             {
                 lobbyName = k_DefaultLobbyName;
             }
 
             bool playerIsAuthorized = await _auth.EnsurePlayerIsAuthorized();
-
             if (!playerIsAuthorized)
             {
                 UnblockUI();
                 return;
             }
 
-            var lobbyCreationAttempt = await _lobbyFacade.TryCreateLobbyAsync(lobbyName, 4, false);
+            var options = new CreateLobbyOptions
+            {
+                IsPrivate = isPrivate,
+                Data = new Dictionary<string, DataObject>
+                {
+                    { 
+                        "S2", new DataObject(DataObject.VisibilityOptions.Public, "cosmic_game_mode") 
+                    } 
+                }
+            };
+
+            var lobbyCreationAttempt = await _lobbyFacade.TryCreateLobbyAsync(lobbyName, 4, isPrivate, options);
 
             if (lobbyCreationAttempt.Success)
             {
                 _localUser.IsHost = true;
                 _lobbyFacade.SetRemoteLobby(lobbyCreationAttempt.Lobby);
 
-                Debug.Log($"Created lobby with ID: {_localLobby.LobbyID} and code {_localLobby.LobbyCode}");
+                Debug.Log($"Created lobby with ID: {_localLobby.LobbyID}, Code: {_localLobby.LobbyCode}");
                 _connectionManager.StartHostLobby(_localUser.PlayerName);
             }
             else
             {
-                Debug.LogWarning($"Lobby creation failed! {lobbyCreationAttempt}");
+                Debug.LogWarning($"Lobby creation failed: {lobbyCreationAttempt}");
                 UnblockUI();
             }
         }
+
 
         void RegenerateName()
         {
