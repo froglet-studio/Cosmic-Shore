@@ -9,6 +9,7 @@ using Unity.Netcode;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 
 namespace CosmicShore.App
@@ -45,6 +46,8 @@ namespace CosmicShore.App
         LobbyServiceFacade _lobbyServiceFacade;
 
         IDisposable _subscriptionsDisposable;
+        
+        private static ApplicationService _instance;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -88,6 +91,19 @@ namespace CosmicShore.App
             // builder.Register<AudioPool>(Lifetime.Singleton);
         }
 
+        protected override void Awake()
+        {
+            if (_instance != null)
+            {
+                Destroy(this.gameObject); // kill duplicate if any
+                return;
+            }
+
+            _instance = this;
+            DontDestroyOnLoad(this.gameObject);
+            base.Awake();
+        }
+
         private void Start()
         {
             _localLobby = Container.Resolve<LocalLobby>();
@@ -114,10 +130,10 @@ namespace CosmicShore.App
                 _subscriptionsDisposable.Dispose();
             }
 
-            if (_lobbyServiceFacade != null)
-            {
-                _lobbyServiceFacade.EndTracking();
-            }
+            //if (_lobbyServiceFacade != null)
+            //{
+            //    _lobbyServiceFacade.EndTracking();
+            //}
 
             base.OnDestroy();
         }

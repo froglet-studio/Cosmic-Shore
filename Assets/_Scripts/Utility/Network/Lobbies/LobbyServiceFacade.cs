@@ -48,6 +48,8 @@ namespace CosmicShore.Utilities.Network
 
         private LobbyEventConnectionState _lobbyEventConnectionState = LobbyEventConnectionState.Unknown;
 
+        
+
         public void Start()
         {
             _serviceLifetimeScope = _parentLifetimeScope.CreateChild(
@@ -336,8 +338,9 @@ namespace CosmicShore.Utilities.Network
         /// <returns>The task object representing the asynchronous operation</returns>
         public async Task UpdateLobbyDataAndUnlockAsync()
         {
-            if (!_rateLimitQuery.CanCall)
+            if (!_rateLimitQuery.CanCall || CurrentUnityLobby == null)
             {
+                Debug.LogWarning("[LobbyServiceFacade] Skipped UpdateLobbyDataAndUnlockAsync: lobby is null or rate-limited.");
                 return;
             }
 
@@ -381,6 +384,7 @@ namespace CosmicShore.Utilities.Network
                 }
             }
         }
+
 
 
         /// <summary>

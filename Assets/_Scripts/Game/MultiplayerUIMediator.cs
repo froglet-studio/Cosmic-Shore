@@ -14,6 +14,8 @@ using VContainer;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 using Unity.Netcode.Transports.UTP;
+using System.Threading.Tasks;
+using System;
 
 namespace CosmicShore.Game.UI
 {
@@ -78,32 +80,35 @@ namespace CosmicShore.Game.UI
 
         void Update()
         {
-            if (_isLobbyHost)
+            if (enabled)
             {
-                _heartbeatTimer += Time.deltaTime;
-                if (_heartbeatTimer >= _heartbeatInterval)
+                if (_localUser != null && _localUser.IsHost && !string.IsNullOrEmpty(_localLobby.LobbyID))
                 {
-                    _heartbeatTimer = 0f;
-                    _ = SendLobbyHeartbeat();
+                    _heartbeatTimer += Time.deltaTime;
+                    if (_heartbeatTimer >= _heartbeatInterval)
+                    {
+                        _heartbeatTimer = 0f;
+                        _ = SendLobbyHeartbeat();
+                    }
                 }
             }
         }
 
-        async System.Threading.Tasks.Task SendLobbyHeartbeat()
+        async Task SendLobbyHeartbeat()
         {
-            if (_localLobby != null && !string.IsNullOrEmpty(_localLobby.LobbyID))
+            if (!_isLobbyHost || string.IsNullOrEmpty(_localLobby.LobbyID))
+                return;
+
+            try
             {
-                try
-                {
-                    await LobbyService.Instance.SendHeartbeatPingAsync(_localLobby.LobbyID);
-                    Debug.Log("Heartbeat sent to lobby.");
-                }
-                catch (LobbyServiceException e)
-                {
-                    Debug.LogWarning($"Failed to send heartbeat: {e}");
-                }
+                await LobbyService.Instance.SendHeartbeatPingAsync(_localLobby.LobbyID);
+            }
+            catch (LobbyServiceException e)
+            {
+                Debug.LogWarning($"Heartbeat failed ({e.Reason})");
             }
         }
+
 
         public override void OnDestroy()
         {
@@ -117,110 +122,113 @@ namespace CosmicShore.Game.UI
             Debug.Log($"Selected room size: {n}");
         }
 
+        // at the top of your class
+        bool _joinOrCreateInProgress = false;
+
+
         internal async void JoinOrCreateLobby()
         {
+            if (_joinOrCreateInProgress)
+            {
+                Debug.Log("Join/create already in progress, ignoring click.");
+                return;
+            }
+            _joinOrCreateInProgress = true;
             BlockUI();
 
-            Debug.Log("JoinOrCreateLobby: Ensuring player is authorized...");
             if (!await _auth.EnsurePlayerIsAuthorized())
             {
-                Debug.LogWarning("JoinOrCreateLobby: Authorization failed – aborting.");
+                Debug.LogWarning("Not authorized – aborting.");
+                _joinOrCreateInProgress = false;
                 UnblockUI();
                 return;
             }
 
-            Debug.Log("JoinOrCreateLobby: Attempting TryQuickJoinLobbyAsync...");
-            var quickResult = await _lobbyFacade.TryQuickJoinLobbyAsync();
-            if (quickResult.Success)
-            {
-                Debug.Log($"JoinOrCreateLobby: Quick-join succeeded ? Id={quickResult.Lobby.Id}, Code={quickResult.Lobby.LobbyCode}");
-                OnJoinedLobby(quickResult.Lobby);
-                return;
-            }
-            Debug.Log($"JoinOrCreateLobby: Quick-join failed. Proceeding to manual query.");
-
-            List<Lobby> availableLobbies = null;
+            // just grab *any* lobby (up to 10)
+            List<Lobby> all;
             try
             {
-                Debug.Log("JoinOrCreateLobby: Querying up to 20 lobbies...");
-                var queryOptions = new QueryLobbiesOptions { Count = 20 };
-                var queryResponse = await LobbyService.Instance.QueryLobbiesAsync(queryOptions);
-                availableLobbies = queryResponse.Results.ToList();
-
-                Debug.Log($"JoinOrCreateLobby: Found {availableLobbies.Count} open lobbies:");
-                foreach (var lob in availableLobbies)
-                {
-                    Debug.Log($"  • Id={lob.Id}  Players={lob.Players.Count}/{lob.MaxPlayers}");
-                }
+                var opts = new QueryLobbiesOptions { Count = 10 };
+                var resp = await LobbyService.Instance.QueryLobbiesAsync(opts);
+                all = resp.Results.ToList();
             }
-            catch (LobbyServiceException e)
+            catch (Exception e)
             {
-                Debug.LogWarning($"JoinOrCreateLobby: Query failed: {e.Reason} ({e.ErrorCode}): {e.Message}");
+                Debug.LogWarning($"Query failed ({e.Message})");
+                all = new List<Lobby>();
             }
 
-            if (availableLobbies != null && availableLobbies.Count > 0)
+            if (all.Count > 0)
             {
-                var first = availableLobbies[0];
-                Debug.Log($"Joining by ID ? Id={first.Id}");
                 try
                 {
-                    Lobby joined = await LobbyService.Instance.JoinLobbyByIdAsync(first.Id);
-                    Debug.Log($"JoinLobbyByIdAsync succeeded ? Id={joined.Id}, Code={joined.LobbyCode}");
+                    var joined = await LobbyService.Instance.JoinLobbyByIdAsync(all[0].Id);
+                    Debug.Log($" Joined existing lobby {joined.Id}");
                     OnJoinedLobby(joined);
-                    return;
+                    return;   // ? never create
                 }
                 catch (LobbyServiceException e)
                 {
-                    Debug.LogWarning($"Join by ID failed: {e.Reason} ({e.ErrorCode})");
+                    Debug.LogError($"Join failed ({e.Reason}) – giving up.");
+                    _joinOrCreateInProgress = false;
+                    UnblockUI();
+                    return;
                 }
             }
 
-            Debug.Log("JoinOrCreateLobby: No joinable lobby found – creating a new lobby now.");
-            CreateLobbyRequest();
+            // nothing to join ? create one
+            await CreateLobbyRequestAsync();
         }
 
-        async void CreateLobbyRequest(bool isPrivate = false, string lobbyName = null)
+        async Task CreateLobbyRequestAsync(bool isPrivate = false, string lobbyName = null)
         {
+            // — guard to never recreate if we're already host or have an ID —
+            if (_isLobbyHost || !string.IsNullOrEmpty(_localLobby.LobbyID))
+            {
+                Debug.Log("Already hosting or have a lobby—skipping Create.");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(lobbyName))
                 lobbyName = k_DefaultLobbyName;
 
             if (!await _auth.EnsurePlayerIsAuthorized())
             {
+                Debug.LogWarning("Not authorized – aborting creation.");
+                _joinOrCreateInProgress = false;
                 UnblockUI();
                 return;
             }
 
-            var options = new CreateLobbyOptions
+            // no Data payload at all, just a plain lobby
+            var opts = new CreateLobbyOptions { IsPrivate = isPrivate };
+
+            var attempt = await _lobbyFacade.TryCreateLobbyAsync(
+                lobbyName,
+                _selectedMaxPlayers,
+                isPrivate,
+                opts
+            );
+
+            if (!attempt.Success)
             {
-                IsPrivate = isPrivate,
-                Data = new Dictionary<string, DataObject>
-        {
-            { "S2", new DataObject(DataObject.VisibilityOptions.Public, "cosmic_game_mode") }
-        }
-            };
-
-            var lobbyCreationAttempt = await _lobbyFacade.TryCreateLobbyAsync(lobbyName, 4, isPrivate, options);
-
-            if (lobbyCreationAttempt.Success)
-            {
-                Lobby createdLobby = lobbyCreationAttempt.Lobby;
-
-                _localUser.IsHost = true;
-                _isLobbyHost = true;
-
-                _lobbyFacade.SetRemoteLobby(createdLobby);
-
-                Debug.Log($"Created lobby with ID: {createdLobby.Id}, Code: {createdLobby.LobbyCode}");
-
-                // ? Pass the created lobby directly
-                await SetupRelayAndSaveToLobby(createdLobby);
-                _connectionManager.StartHostLobby(_localUser.PlayerName);
-            }
-            else
-            {
-                Debug.LogWarning($"Lobby creation failed: {lobbyCreationAttempt}");
+                Debug.LogWarning($"CreateLobby failed: {attempt}");
+                _joinOrCreateInProgress = false;
                 UnblockUI();
+                return;
             }
+
+            var created = attempt.Lobby;
+            _localUser.IsHost = true;
+            _isLobbyHost = true;
+            _lobbyFacade.SetRemoteLobby(created);
+
+            Debug.Log($" Created lobby {created.Id}");
+            await SetupRelayAndSaveToLobby(created);
+            _connectionManager.StartHostLobby(_localUser.PlayerName);
+            enabled = false;
+            // leave _joinOrCreateInProgress true so no extra calls
+            UnblockUI();
         }
 
 
@@ -233,7 +241,7 @@ namespace CosmicShore.Game.UI
 
                 Debug.Log($"[Host] Relay Join Code: {relayJoinCode}");
 
-                // ? Use lobby ID from the passed lobby (not _localLobby)
+                // ? Use lobby ID from the passed lobby (not _localLobby
                 await LobbyService.Instance.UpdateLobbyAsync(createdLobby.Id, new UpdateLobbyOptions
                 {
                     Data = new Dictionary<string, DataObject>
@@ -258,7 +266,7 @@ namespace CosmicShore.Game.UI
         }
 
 
-        void OnJoinedLobby(Lobby remote)
+        async void OnJoinedLobby(Lobby remote)
         {
             _lobbyFacade.SetRemoteLobby(remote);
             Debug.Log($"Joined lobby {remote.Id} (Code: {remote.LobbyCode}), starting client...");
@@ -268,7 +276,12 @@ namespace CosmicShore.Game.UI
             {
                 string relayJoinCode = relayJoinCodeData.Value;
                 Debug.Log($"[Client] RelayJoinCode found: {relayJoinCode}");
-                StartCoroutine(DelayedRelayJoin(relayJoinCode));
+
+                await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(1.5));
+
+                await SetupRelayClient(relayJoinCode);
+
+                //StartCoroutine(DelayedRelayJoin(relayJoinCode));
 
             }
             else
@@ -276,18 +289,9 @@ namespace CosmicShore.Game.UI
                 Debug.LogError("RelayJoinCode not found in lobby data!");
             }
 
-            _connectionManager.StartClientLobby(_localUser.PlayerName);
         }
 
-        IEnumerator DelayedRelayJoin(string relayJoinCode)
-        {
-            Debug.Log("[Client] Waiting briefly before joining Relay...");
-            yield return new WaitForSeconds(1.5f); // Delay for Relay backend to sync
-            SetupRelayClient(relayJoinCode);
-        }
-
-
-        async void SetupRelayClient(string joinCode)
+        async Task SetupRelayClient(string joinCode)
         {
             int retries = 3;
             while (retries-- > 0)
@@ -306,18 +310,24 @@ namespace CosmicShore.Game.UI
                         joinAllocation.HostConnectionData
                     );
 
-                    Debug.Log("[Client] Successfully joined Relay.");
+                    Debug.Log("[Client] Successfully joined Relay. Now starting client...");
+                    await Task.Delay(1500);
+
+                    // Add another safety: Check that transport config is not null
+                    Debug.Log("Client Relay IP: " + transport.ConnectionData.Address);
+                    _connectionManager.StartClientLobby(_localUser.PlayerName);
                     return;
                 }
                 catch (RelayServiceException e)
                 {
                     Debug.LogWarning($"Relay join failed: {e.Message} — retries left: {retries}");
-                    await System.Threading.Tasks.Task.Delay(1000); // 1 second delay
+                    await System.Threading.Tasks.Task.Delay(1000);
                 }
             }
 
             Debug.LogError("?? Final attempt to join Relay failed.");
         }
+
 
 
         void RegenerateName()
