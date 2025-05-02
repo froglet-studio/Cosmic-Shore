@@ -35,7 +35,7 @@ namespace CosmicShore.Game.Projectiles
         public IShip Ship { get; private set; }
         [HideInInspector] public bool AnonymousExplosion;
 
-        public virtual void Initialize(IShip ship)
+        public virtual void Detonate(IShip ship)
         {
             Ship = ship;
             InitializeProperties();
