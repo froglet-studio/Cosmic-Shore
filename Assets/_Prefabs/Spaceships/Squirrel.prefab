@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pools:
-  - prefab: {fileID: 5258412105609794183, guid: d2af5f5040e134141a94c2b496074a65,
+  - prefab: {fileID: 5258412105609794183, guid: 1036c80a1969a2745950d2eb03a87b63,
       type: 3}
     size: 3000
   ship: {fileID: 874579555101021527}
@@ -305,7 +305,7 @@ MonoBehaviour:
     hapticType: 0
     trailBlock: {fileID: 0}
   Name: Squirrel
-  ShipType: 6
+  _shipType: 6
   nearFieldSkimmer: {fileID: 708149374973573223}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
@@ -349,27 +349,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  ChargedBoostDischarging: 0
-  Drifting: 0
-  Turret: 0
-  Portrait: 0
-  SingleStickControls: 0
-  CommandStickControls: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedResourceGain: 0
-  ChargedBoostCharge: 1
-  AutoPilotEnabled: 0
-  AlignmentEnabled: 1
-  Slowed: 0
-  Overheating: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 1}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &7686683633640807837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -382,6 +361,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
@@ -489,7 +469,6 @@ MonoBehaviour:
   Y: 0
   raycastHeight: 2
   raycastWidth: 2
-  AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 0
   drift: 0
