@@ -120,6 +120,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: trailchevron
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ac7426dec8a0dc9498eebc195ef98f98,
+        type: 3}
+      propertyPath: m_Layer
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ac7426dec8a0dc9498eebc195ef98f98,
+        type: 3}
+      propertyPath: m_TagString
+      value: Untagged
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 3451118302482216456, guid: ac7426dec8a0dc9498eebc195ef98f98, type: 3}
     m_RemovedGameObjects: []
@@ -155,7 +165,7 @@ MonoBehaviour:
   boostResourceIndex: 0
   MaxBoostMultiplier: 2
   BoostDischargeRate: 0.25
-  Prism: {fileID: 0}
+  Prisms: []
 --- !u!65 &7016108700624524208
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -171,7 +181,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3

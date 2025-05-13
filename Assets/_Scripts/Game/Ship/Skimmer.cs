@@ -42,6 +42,7 @@ namespace CosmicShore.Core
         [SerializeField] float AOEPeriod;
         [SerializeField] private Material lineMaterial;
         [SerializeField] PoolManager markerContainer;
+        [SerializeField] int markerDistance = 70;
 
         [SerializeField] int resourceIndex = 0;
 
@@ -353,11 +354,9 @@ namespace CosmicShore.Core
 
         void MakeBoosters(TrailBlock trailBlock)
         {
-            Debug.Log("MakeBoosters");
             var markerCount = 5;
-            var markerDistance = 70;
             var cooldown = 4f;
-            if (Time.time - boosterTimer < markerCount - 1) return;
+            if (Time.time - boosterTimer < cooldown) return;
             boosterTimer = Time.time;
             var nextBlocks = FindNextBlocks(trailBlock, markerCount*markerDistance);
             if (markerContainer)
@@ -541,10 +540,10 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
                 }
                 shardPositions.Add(marker.transform.position);
                 marker.transform.localScale = blockTransform.localScale/2;
-                marker.GetComponentInChildren<NudgeShard>().Prism = blockTransform.GetComponent<TrailBlock>();
+                marker.GetComponentInChildren<NudgeShard>().Prisms = FindNextBlocks(blockTransform.GetComponent<TrailBlock>(), markerDistance * Ship.ShipStatus.ResourceSystem.Resources[0].CurrentAmount);
                 markers.Add(marker);
             }
-            yield return new WaitForSeconds(5f);
+            yield return new WaitForSeconds(8f);
 
             foreach (GameObject marker in markers)
             {
