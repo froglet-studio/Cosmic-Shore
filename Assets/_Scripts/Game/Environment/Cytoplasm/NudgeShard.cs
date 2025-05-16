@@ -12,6 +12,7 @@ namespace CosmicShore
         float Displacement = 40f;
         float Duration = .3f;
         [SerializeField] int energyResourceIndex = 0;
+        [SerializeField] float energyAmount = 0.05f;
 
         public List<TrailBlock> Prisms;
 
@@ -34,9 +35,10 @@ namespace CosmicShore
                 var shipStatus = shipGeometry.Ship.ShipStatus;
                 shipStatus.ShipTransformer.ModifyVelocity(transform.parent.forward * Displacement, Duration);
 
+
                 if (shipStatus.ShipType == ShipTypes.Squirrel)
                 {
-                    shipStatus.ResourceSystem.ChangeResourceAmount(energyResourceIndex, .05f);
+                    shipStatus.ResourceSystem.ChangeResourceAmount(energyResourceIndex, energyAmount);
                     foreach (var prism in Prisms)
                     {
                         prism.Steal(shipStatus.Player);

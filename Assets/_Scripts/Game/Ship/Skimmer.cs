@@ -523,7 +523,7 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
 
         IEnumerator DrawCircle(Transform blockTransform, float radius)
         {
-            int segments = (int)(Mathf.PI * 2f * radius / blockTransform.localScale.x);// 8;
+            int segments = Mathf.Min((int)(Mathf.PI * 2f * radius / blockTransform.localScale.x),360);// 8;
             var anglePerSegment = blockTransform.localScale.x / (radius); //Mathf.PI * 2f / segments; //blockTransform.localScale.x / (2 * radius)  // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
             List<GameObject> markers = new();
             for (int i = -segments/2; i < segments/2; i++)

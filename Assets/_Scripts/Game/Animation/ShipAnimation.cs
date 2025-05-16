@@ -122,5 +122,31 @@ namespace CosmicShore.Game.Animation
             }
             SkinnedMeshRenderer.SetBlendShapeWeight(index, level / 10f);
         }
+
+        public virtual void FlareEngine()
+        {
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[3].SetFloat("_ColorMultiplier",5f);
+        }
+
+        public virtual void StopFlareEngine()
+        {
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[3].SetFloat("_ColorMultiplier", 1f);
+        }
+        
+        public virtual void FlareBody()
+        {
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[0].SetFloat("_ColorMultiplier",5f);
+        }
+        public virtual void FlareBody(float amount)
+        {
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[0].SetFloat("_ColorMultiplier",1 + amount*4f);
+        }
+
+        public virtual void StopFlareBody()
+        {
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[0].SetFloat("_ColorMultiplier", 1f);
+        }
+
+
     }
 }
