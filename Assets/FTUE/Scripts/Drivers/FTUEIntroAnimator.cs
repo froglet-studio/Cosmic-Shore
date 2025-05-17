@@ -53,15 +53,17 @@ namespace CosmicShore.FTUE
 
         public IEnumerator PlayOutro(System.Action onComplete)
         {
-            yield return textBoxPanel.GetComponent<CanvasGroup>().DOFade(0f, fadeDuration).SetUpdate(true)
+
+            yield return textBoxPanel.GetComponent<CanvasGroup>().DOFade(0f, 0.3f).SetUpdate(true)
                 .WaitForCompletion();
             //yield return new WaitForSeconds(fadeDuration);
 
             yield return captainImage.DOLocalMoveX(1201f, moveDuration).SetEase(Ease.InBack).SetUpdate(true).WaitForCompletion(); ;
             //yield return new WaitForSeconds(moveDuration);
 
-            yield return blackOverlay.DOFade(0.7f, fadeDuration).SetUpdate(true)
+            yield return blackOverlay.DOFade(0.7f, 1f).SetUpdate(true)
                 .WaitForCompletion();
+            tutorialUIView.textDisplay.text = "";
             //yield return new WaitForSeconds(fadeDuration);
             tutorialUIView.ToggleFTUECanvas(false);
 
