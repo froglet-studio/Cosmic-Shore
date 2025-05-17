@@ -8,7 +8,7 @@ namespace CosmicShore.FTUE
 {
     public class TutorialUIView : MonoBehaviour
     {
-        [SerializeField] private TextMeshProUGUI textDisplay;
+        [SerializeField] internal TextMeshProUGUI textDisplay;
         [SerializeField] private GameObject arrowIndicator;
         [SerializeField] private Button nextButton;
         [SerializeField] internal Button skipButton;
@@ -43,7 +43,7 @@ namespace CosmicShore.FTUE
 
         public void ShowStep(string text, bool showArrow, System.Action onComplete)
         {
-            _fullText = "";
+            textDisplay.text = "";
 
             gameObject.SetActive(true);
             _fullText = text;
