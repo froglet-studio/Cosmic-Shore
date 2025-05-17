@@ -42,12 +42,13 @@ namespace CosmicShore.Core
         [SerializeField] float AOEPeriod;
         [SerializeField] private Material lineMaterial;
         [SerializeField] PoolManager markerContainer;
+        [SerializeField] int markerDistance = 70;
 
         [SerializeField] int resourceIndex = 0;
 
         float minMatureBlockSqrDistance = Mathf.Infinity;
         TrailBlock minMatureBlock;
-        List<TrailBlock> nextBlocks;
+        List<TrailBlock> nextBlocks = new();
         float fuel = 0;
 
         float distanceWeight;
@@ -231,6 +232,7 @@ namespace CosmicShore.Core
             {
                 StartSkim(trailBlock);
                 PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
+                MakeBoosters(trailBlock);
             }
         }
 
@@ -271,14 +273,33 @@ namespace CosmicShore.Core
             if (Time.time - trailBlock.TrailBlockProperties.TimeCreated > 4)
             {
                 minMatureBlockSqrDistance = Mathf.Min(minMatureBlockSqrDistance, sqrDistance);
-      
+
                 if (sqrDistance == minMatureBlockSqrDistance)
                 {
-                    minMatureBlock = trailBlock;
-                    nextBlocks = FindNextBlocks(minMatureBlock);
+                    bool shouldUpdateMinMatureBlock = true;
 
-                    if (markerContainer) VisualizeTubeAroundBlock(nextBlocks[^1]);
-                }     
+                    // Check reference equality directly
+                    //if (trailBlock != null && nextBlocks.Count > 0)
+                    //{
+                    //    foreach (var block in tempNextBlocks)
+                    //    {
+                    //        if (block.TrailBlockProperties.Index == trailBlock.TrailBlockProperties.Index)
+                    //        {
+                    //            shouldUpdateMinMatureBlock = false;
+                    //            break;
+                    //        }
+                    //    }
+                    //}
+
+                    minMatureBlock = trailBlock;
+                    nextBlocks = FindNextBlocks(minMatureBlock, 20);
+
+                    //if (shouldUpdateMinMatureBlock)
+                    //{
+                    //    tempNextBlocks = nextBlocks;
+                    //    if (markerContainer) VisualizeTubeAroundBlock(nextBlocks[^1]);
+                    //}
+                }
             }
 
 
@@ -325,6 +346,46 @@ namespace CosmicShore.Core
                     activelySkimmingBlockCount--;
                     if (activelySkimmingBlockCount < 1) 
                         PerformBlockStayEffects(0);
+                }
+            }
+        }
+
+        float boosterTimer = 0;
+
+        void MakeBoosters(TrailBlock trailBlock)
+        {
+            var markerCount = 5;
+            var cooldown = 4f;
+            if (Time.time - boosterTimer < cooldown) return;
+            boosterTimer = Time.time;
+            var nextBlocks = FindNextBlocks(trailBlock, markerCount*markerDistance);
+            if (markerContainer)
+            {
+                // Handle the case where there are no blocks or only 1 marker needed
+                if (nextBlocks.Count == 0 || markerCount <= 0)
+                    return;
+
+                // Always visualize the last element
+                VisualizeTubeAroundBlock(nextBlocks[nextBlocks.Count - 1]);
+
+                // If we only need one marker, we're done
+                if (markerCount == 1)
+                    return;
+
+                // Calculate the step size for even spacing between markers
+                float stepSize = (float)(nextBlocks.Count - 1) / (markerCount - 1);
+
+                // Visualize the remaining markers with even spacing
+                for (int i = 1; i < markerCount - 1; i++)
+                {
+                    // Calculate the index, rounding to nearest integer
+                    int index = nextBlocks.Count - 1 - (int)Mathf.Round(i * stepSize);
+
+                    // Ensure index is within valid range
+                    if (index >= 0 && index < nextBlocks.Count)
+                    {
+                        VisualizeTubeAroundBlock(nextBlocks[index]);
+                    }
                 }
             }
         }
@@ -462,8 +523,8 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
 
         IEnumerator DrawCircle(Transform blockTransform, float radius)
         {
-            int segments = 8;
-            var anglePerSegment = blockTransform.localScale.x / (2 * radius);//Mathf.PI * 2f / segments;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
+            int segments = Mathf.Min((int)(Mathf.PI * 2f * radius / blockTransform.localScale.x),360);// 8;
+            var anglePerSegment = blockTransform.localScale.x / (radius); //Mathf.PI * 2f / segments; //blockTransform.localScale.x / (2 * radius)  // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
             List<GameObject> markers = new();
             for (int i = -segments/2; i < segments/2; i++)
             {
@@ -471,7 +532,7 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
                 Vector3 localPosition = (Mathf.Cos(angle + (Mathf.PI / 2)) * blockTransform.right + Mathf.Sin(angle + (Mathf.PI / 2)) * blockTransform.up) * radius;
                 Vector3 worldPosition = blockTransform.position + localPosition;
                 GameObject marker = markerContainer.SpawnFromPool("Shard", worldPosition,
-                    Quaternion.LookRotation(blockTransform.forward, localPosition));
+                    Quaternion.LookRotation(directionWeight * blockTransform.forward, localPosition));
                 if (shardPositions.Contains(marker.transform.position))
                 {
                     markerContainer.ReturnToPool(marker, "Shard");
@@ -479,10 +540,10 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
                 }
                 shardPositions.Add(marker.transform.position);
                 marker.transform.localScale = blockTransform.localScale/2;
-                marker.GetComponentInChildren<NudgeShard>().Prism = blockTransform.GetComponent<TrailBlock>();
+                marker.GetComponentInChildren<NudgeShard>().Prisms = FindNextBlocks(blockTransform.GetComponent<TrailBlock>(), markerDistance * Ship.ShipStatus.ResourceSystem.Resources[0].CurrentAmount);
                 markers.Add(marker);
             }
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(8f);
 
             foreach (GameObject marker in markers)
             {
