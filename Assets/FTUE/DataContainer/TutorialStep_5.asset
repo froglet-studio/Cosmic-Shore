@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 436116e384617a4418b4d7ae348ade29, type: 3}
+  m_Name: TutorialStep_5
+  m_EditorClassIdentifier: 
+  stepType: 4
+  tutorialText: "You\u2019re clear for launch, Captain.\nThis isn\u2019t just practice
+    \u2014 it\u2019s performance.\nDrift like a comet. Break atmosphere like a god.\nSlam
+    that Start Freestyle button like it's the ignition of a new era.\nThe void is
+    watching.\nSo glide like you're made of stardust."
+  showArrow: 0
+  sceneToLoadIfNeeded: 
+  payload:
+    payloadType: 0

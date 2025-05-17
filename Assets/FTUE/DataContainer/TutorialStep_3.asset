@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 436116e384617a4418b4d7ae348ade29, type: 3}
+  m_Name: TutorialStep_3
+  m_EditorClassIdentifier: 
+  stepType: 3
+  tutorialText: "This is your launchpad.\nThat glow? It\u2019s the Arcade Interface.\nTap
+    it. Feel the hum.\nFreestyle lives inside \u2014 raw and untamed.\nNo goals.
+    No rules. Just you, your ship... and silence.\nStep in, pilot.\nThe stars won\u2019t
+    wait."
+  showArrow: 0
+  sceneToLoadIfNeeded: 
+  payload:
+    payloadType: 2
