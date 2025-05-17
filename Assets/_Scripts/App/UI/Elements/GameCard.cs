@@ -1,5 +1,6 @@
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.UI.Views;
+using CosmicShore.FTUE;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -57,6 +58,12 @@ namespace CosmicShore.App.UI.Elements
             GameTitle.text = game.DisplayName;
             BackgroundImage.sprite = game.CardBackground;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
+
+            if (game.CallToActionTargetType == Systems.CTA.CallToActionTargetType.PlayGameFreestyle)
+            {
+                GetComponent<Button>().onClick.AddListener(delegate { FindAnyObjectByType<TutorialFlowController>().JumpToStep(TutorialStepType.FreestylePrompt); });
+            }
+
         }
 
         public void ToggleFavorite()
@@ -75,6 +82,7 @@ namespace CosmicShore.App.UI.Elements
             //LoadoutView.ExpandLoadout(Index);
 
             Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+
         }
     }
 }

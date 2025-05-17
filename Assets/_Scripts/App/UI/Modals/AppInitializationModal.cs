@@ -1,3 +1,4 @@
+using CosmicShore.FTUE;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Integrations.PlayFab.PlayerData;
@@ -16,6 +17,9 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] GameObject Menu;
         [SerializeField] Image ProgressIndicator;
         [SerializeField] Image ProgressIndicatorBackground;
+
+        // new
+        [SerializeField] private TutorialFlowController _tutorialFlowController;
 
         static bool NetworkInitialized = false;
 
@@ -90,6 +94,7 @@ namespace CosmicShore.App.UI.Modals
 
             Animator.StopPlayback();
             gameObject.SetActive(false);
+            _tutorialFlowController.StartFTUE();
         }
 
         void OnAuthenticated()

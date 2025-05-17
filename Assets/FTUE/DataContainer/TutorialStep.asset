@@ -9,10 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5036021d466225f49bc9dce12f7e4064, type: 3}
+  m_Script: {fileID: 11500000, guid: 436116e384617a4418b4d7ae348ade29, type: 3}
   m_Name: TutorialStep
   m_EditorClassIdentifier: 
-  stepType: 0
-  stepText: 
-  sceneToLoad: 
-  nextStep: {fileID: 0}
+  stepType: 1
+  tutorialText: "\u201CWelcome to Cosmic Shore\u201D\nThe void isn\u2019t empty \u2014
+    it\u2019s alive. Out here, every ship leaves a scar of memory, and every drift
+    echoes a choice.\nWe\u2019re not just explorers.\nWe are dreamers. Survivors.\nYou\u2019re
+    entering a myth"
+  showArrow: 0
+  sceneToLoadIfNeeded: 
+  payload:
+    payloadType: 1

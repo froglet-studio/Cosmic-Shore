@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07f6ab3bf4b8c7b44a4ae4b18bec276c, type: 3}
   m_Name: ProgressTracker
   m_EditorClassIdentifier: 
-  pendingStep: {fileID: 0}
+  pendingSet: {fileID: 11400000, guid: c54ed0e0486e599458ad6f3413d40047, type: 2}
+  nextIndex: 0
