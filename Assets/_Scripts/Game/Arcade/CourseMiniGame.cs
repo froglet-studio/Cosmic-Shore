@@ -1,4 +1,5 @@
 using CosmicShore.Environment.FlowField;
+using DG.Tweening;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -16,9 +17,9 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] bool ScaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] SpawnableHelix helix;
         [SerializeField] float helixIntensitycaling = 1.3f;
-        [SerializeField] private FTUEProgress _ftueProgress;
+        [SerializeField] private InGameTutorialFlowView inGameTutorialFlowView;
 
-        //public static virtual ShipTypes PlayerShipType = ShipTypes.Rhino;
+        //public
 
         protected override void Start()
         {
@@ -38,7 +39,7 @@ namespace CosmicShore.Game.Arcade
 
             if (gameMode == GameModes.Freestyle)
             {
-                CheckFTUE();
+                inGameTutorialFlowView.CheckFTUE();
             }
         }
 
@@ -62,15 +63,6 @@ namespace CosmicShore.Game.Arcade
             else Crystal.transform.position = CrystalStartPosition;
 
             SegmentSpawner.Initialize();
-        }
-
-        void CheckFTUE()
-        {
-            Debug.Log($"Checking FTUE");
-            if (_ftueProgress.pendingSet.steps.Count > _ftueProgress.nextIndex)
-            {
-                Debug.Log($"Enable the button here!");
-            }
         }
     }
 }

@@ -25,7 +25,7 @@ namespace CosmicShore.FTUE
 
             // 3) Show the welcome text & wait for Next
             bool uiDone = false;
-            _uiView.ShowStep(step.tutorialText, step.showArrow, () => uiDone = true);
+            _uiView.ShowStep(step.tutorialText, () => uiDone = true);
             while (!uiDone) yield return null;
 
             // 4) Now handle payload

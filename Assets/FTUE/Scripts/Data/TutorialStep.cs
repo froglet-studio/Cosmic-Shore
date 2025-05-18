@@ -7,8 +7,6 @@ namespace CosmicShore.FTUE
     {
         public TutorialStepType stepType = TutorialStepType.None;
         [TextArea(2, 5)] public string tutorialText;
-        public bool showArrow;
-        public string sceneToLoadIfNeeded; // used for StartFreestyle
 
         public TutorialStepPayload payload;
     }

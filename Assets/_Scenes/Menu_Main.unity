@@ -27526,7 +27526,7 @@ MonoBehaviour:
   missionsGameObject: {fileID: 818204649}
   gameCards: []
   screenSwitcher: {fileID: 921072167}
-  flowController: {fileID: 0}
+  flowController: {fileID: 815638260}
 --- !u!114 &815638259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39082,7 +39082,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 111572694531830371, guid: 31a8c732468d1a14f817673f642b0cce, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

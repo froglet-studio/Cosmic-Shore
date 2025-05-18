@@ -21,7 +21,7 @@ namespace CosmicShore.FTUE
             
             yield return _animator.PlayIntro();
 
-            _uiView.ShowStep(step.tutorialText, step.showArrow, controller.StepCompleted);
+            _uiView.ShowStep(step.tutorialText, controller.StepCompleted);
         }
     }
 }

@@ -30,13 +30,13 @@ namespace CosmicShore.FTUE
 
         private void Start()
         {
-            if (sequence == null || sequence.steps == null || sequence.steps.Count == 0)
+            var steps = sequence.GetSteps(ftueProgress.currentPhase);
+
+            if (sequence == null || steps == null || steps.Count == 0)
             {
                 Debug.LogWarning("[FTUE] No tutorial sequence assigned.");
                 return;
             }
-
-            //StartCoroutine(RunCurrentStep());
         }
 
         public void StartFTUE()
@@ -48,10 +48,13 @@ namespace CosmicShore.FTUE
 
         private IEnumerator RunCurrentStep()
         {
-            if (_currentIndex >= sequence.steps.Count)
+            var steps = sequence.GetSteps(ftueProgress.currentPhase);
+
+            if (_currentIndex >= steps.Count)
                 yield break;
 
-            var step = sequence.steps[_currentIndex];
+            var step = steps[_currentIndex];
+
             var handler = _handlers.FirstOrDefault(h => h.HandlesType == step.stepType);
 
             if (handler == null)
@@ -71,8 +74,11 @@ namespace CosmicShore.FTUE
         /// </summary>
         public void StepCompleted()
         {
-            // Remember which step we just finished
-            var finishedStep = sequence.steps[_currentIndex];
+           
+            var steps = sequence.GetSteps(ftueProgress.currentPhase);
+
+            
+            var finishedStep = steps[_currentIndex];
 
             // Move to the next index so _currentIndex always points to "up next"
             _currentIndex++;
@@ -81,32 +87,23 @@ namespace CosmicShore.FTUE
             if (finishedStep.stepType == TutorialStepType.LockModesExceptFreestyle)
             {
                 StartCoroutine(GetComponent<FTUEIntroAnimator>().PlayOutro(() => Debug.Log("Step Completed")));
-                // Look for an IOutroHandler (your adapter wrapping FTUEIntroAnimator)
-                //var outro = _handlers.OfType<IOutroHandler>().FirstOrDefault();
-                //if (outro != null)
-                //{
-                //    // Fire the outro coroutine and then stop—no further steps
-                //    //StartCoroutine(ou(outro));
-                //}
-                //else
-                //{
-                //    Debug.LogWarning("[FTUE] No outro handler found to close LockModes step.");
-                //}
                 return;
             }
 
-            // Otherwise we continue skipping blank steps as before
-            while (_currentIndex < sequence.steps.Count
-                && string.IsNullOrWhiteSpace(sequence.steps[_currentIndex].tutorialText))
+            
+            while (_currentIndex < steps.Count
+    && string.IsNullOrWhiteSpace(steps[_currentIndex].tutorialText))
             {
-                Debug.Log($"[FTUE] Skipping empty step {_currentIndex} ({sequence.steps[_currentIndex].stepType})");
+                Debug.Log($"[FTUE] Skipping empty step {_currentIndex} ({steps[_currentIndex].stepType})");
                 _currentIndex++;
             }
 
-            if (_currentIndex < sequence.steps.Count)
+            if (_currentIndex < steps.Count)
                 StartCoroutine(RunCurrentStep());
             else
                 StartCoroutine(FinishFlow());
+
+            ftueProgress.nextIndex = _currentIndex;
         }
 
         /// <summary>
@@ -116,7 +113,9 @@ namespace CosmicShore.FTUE
         public void JumpToStep(TutorialStepType stepType)
         {
             // Find the index of the step with the given type
-            int found = sequence.steps.FindIndex(s => s.stepType == stepType);
+            var steps = sequence.GetSteps(ftueProgress.currentPhase);
+            int found = steps.FindIndex(s => s.stepType == stepType);
+
             if (found < 0)
             {
                 Debug.LogWarning($"[FTUE] JumpToStep: no step of type {stepType} found.");
@@ -145,9 +144,9 @@ namespace CosmicShore.FTUE
             //}
 
             // Persist progress & load the next scene
-            ftueProgress.pendingSet = sequence;
-            ftueProgress.nextIndex = _currentIndex + 1;
- 
+            ftueProgress.currentPhase = TutorialPhase.Phase2_GameplayTimer;
+            ftueProgress.nextIndex = 0;
+
 
             Debug.Log("[FTUE] Completed.");
         }

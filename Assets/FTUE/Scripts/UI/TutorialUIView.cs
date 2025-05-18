@@ -41,14 +41,14 @@ namespace CosmicShore.FTUE
             }
         }
 
-        public void ShowStep(string text, bool showArrow, System.Action onComplete)
+        public void ShowStep(string text,  System.Action onComplete)
         {
             textDisplay.text = "";
 
             gameObject.SetActive(true);
             _fullText = text;
             _onStepComplete = onComplete;
-            arrowIndicator.SetActive(showArrow);
+            //arrowIndicator.SetActive(showArrow);
 
             if (_typingCoroutine != null)
                 StopCoroutine(_typingCoroutine);
