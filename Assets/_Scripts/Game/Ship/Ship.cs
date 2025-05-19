@@ -204,10 +204,10 @@ namespace CosmicShore.Core
                 {
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        aoeExplosion.Initialize(this);
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex 
                             ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
+                        aoeExplosion.Detonate(this);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
@@ -227,6 +227,7 @@ namespace CosmicShore.Core
                     case CrystalImpactEffects.GainFullAmmo:
                         ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
+                    // Play Haptics
                 }
             }
         }

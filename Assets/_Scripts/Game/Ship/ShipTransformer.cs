@@ -271,7 +271,11 @@ public class ShipTransformer : MonoBehaviour
             shipStatus.Slowed = false;
             Hangar.Instance.SlowedShipTransforms.Remove(transform);
         }
-        throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0) ;
+        throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0);
+        if (throttleMultiplier > 1)
+            Ship.ShipStatus.ShipAnimation.FlareEngine();
+        else
+            Ship.ShipStatus.ShipAnimation.StopFlareEngine();
     }
 
     void ApplyVelocityModifiers()
@@ -290,6 +294,13 @@ public class ShipTransformer : MonoBehaviour
         }
 
         velocityShift = Mathf.Min(accumulatedVelocityModification.magnitude, velocityModifierMax) * accumulatedVelocityModification.normalized;
+
+        var sqrMagnitude = velocityShift.sqrMagnitude;
+
+        if (sqrMagnitude > .01f)
+            Ship.ShipStatus.ShipAnimation.FlareBody(sqrMagnitude/4000);
+        else
+            Ship.ShipStatus.ShipAnimation.StopFlareBody();
     }
 
     private void OnDisable()

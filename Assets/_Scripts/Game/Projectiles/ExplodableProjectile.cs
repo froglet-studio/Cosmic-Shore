@@ -20,7 +20,7 @@ namespace CosmicShore.Game.Projectiles
                     return;
 
                 var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
-                AOEExplosion.Initialize(Ship);
+                AOEExplosion.Detonate(Ship);
                 AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                 AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
             }

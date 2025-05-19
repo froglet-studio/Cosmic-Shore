@@ -1,5 +1,4 @@
 using System.Collections;
-using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
@@ -11,9 +10,9 @@ namespace CosmicShore.Game.Projectiles
         Vector3 containerPosition;
         Quaternion containerRotation;
 
-        public override void Initialize(IShip ship)
+        public override void Detonate(IShip ship)
         {
-            base.Initialize(ship);
+            base.Detonate(ship);
             Material = new Material(Ship.ShipStatus.AOEConicExplosionMaterial);
             coneContainer = new GameObject("ExplosionCone");
             coneContainer.transform.SetParent(container.transform, false);
