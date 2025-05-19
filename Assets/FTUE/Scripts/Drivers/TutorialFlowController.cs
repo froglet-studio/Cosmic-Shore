@@ -1,8 +1,9 @@
+using CosmicShore.App.Systems.CTA;
+using CosmicShore.Events;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace CosmicShore.FTUE
 {
@@ -11,15 +12,24 @@ namespace CosmicShore.FTUE
     /// </summary>
     public class TutorialFlowController : MonoBehaviour, IFlowController
     {
-        [SerializeField] private TutorialSequenceSet sequence;
-        [SerializeField] private FTUEProgress ftueProgress;
+        [SerializeField] internal TutorialSequenceSet sequence;
+        [SerializeField] internal FTUEProgress ftueProgress;
 
         private List<ITutorialStepHandler> _handlers;
         private int _currentIndex = 0;
 
+        private void OnEnable()
+        {
+            SubscribeToEvents();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeToEvents();
+        }
+
         private void Awake()
         {
-            // Find all components on this GameObject that implement ITutorialStepHandler
             _handlers = GetComponents<MonoBehaviour>()
                         .OfType<ITutorialStepHandler>()
                         .ToList();
@@ -31,7 +41,6 @@ namespace CosmicShore.FTUE
         private void Start()
         {
             var steps = sequence.GetSteps(ftueProgress.currentPhase);
-
             if (sequence == null || steps == null || steps.Count == 0)
             {
                 Debug.LogWarning("[FTUE] No tutorial sequence assigned.");
@@ -39,11 +48,33 @@ namespace CosmicShore.FTUE
             }
         }
 
+        private void SubscribeToEvents()
+        {
+            FTUEEventManager.InitializeFTUE += StartFTUE;
+            FTUEEventManager.OnCTAClicked += OnCTAClicked;
+        }
+
+        private void UnsubscribeToEvents()
+        {
+            FTUEEventManager.InitializeFTUE -= StartFTUE;
+            FTUEEventManager.OnCTAClicked -= OnCTAClicked;
+        }
+
         public void StartFTUE()
         {
-            _currentIndex = 0;
-            StopAllCoroutines();
-            StartCoroutine(RunCurrentStep());
+            if (ftueProgress.ftueDebugKey)
+                return;
+
+            if (ftueProgress.currentPhase == TutorialPhase.Phase1_Intro)
+            {
+                _currentIndex = 0;
+                StopAllCoroutines();
+                StartCoroutine(RunCurrentStep());
+            }
+            else if (ftueProgress.currentPhase == TutorialPhase.Phase3_Other)
+            {
+                StartPhase3();
+            }
         }
 
         private IEnumerator RunCurrentStep()
@@ -57,14 +88,6 @@ namespace CosmicShore.FTUE
 
             var handler = _handlers.FirstOrDefault(h => h.HandlesType == step.stepType);
 
-            if (handler == null)
-            {
-                Debug.LogWarning($"[FTUE] No handler for {step.stepType}, skipping");
-                _currentIndex++;
-                yield return RunCurrentStep();
-                yield break;
-            }
-
             Debug.Log($"Current Step -- step{step.stepType}");
             yield return handler.ExecuteStep(step, this);
         }
@@ -74,13 +97,9 @@ namespace CosmicShore.FTUE
         /// </summary>
         public void StepCompleted()
         {
-           
             var steps = sequence.GetSteps(ftueProgress.currentPhase);
-
-            
             var finishedStep = steps[_currentIndex];
 
-            // Move to the next index so _currentIndex always points to "up next"
             _currentIndex++;
 
             // If we just finished LockModesExceptFreestyle, play the outro and bail out
@@ -90,7 +109,7 @@ namespace CosmicShore.FTUE
                 return;
             }
 
-            
+
             while (_currentIndex < steps.Count
     && string.IsNullOrWhiteSpace(steps[_currentIndex].tutorialText))
             {
@@ -149,6 +168,16 @@ namespace CosmicShore.FTUE
 
 
             Debug.Log("[FTUE] Completed.");
+        }
+
+        private void OnCTAClicked(CallToActionTargetType type)
+        {
+            JumpToStep(TutorialStepType.FreestylePrompt);
+        }
+
+        internal void StartPhase3()
+        {
+            // Lets start the phase 3 here! 
         }
     }
 }

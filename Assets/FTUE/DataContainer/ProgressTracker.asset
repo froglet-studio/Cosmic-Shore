@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pendingSet: {fileID: 11400000, guid: c54ed0e0486e599458ad6f3413d40047, type: 2}
   nextIndex: 0
+  currentPhase: 0
+  ftueDebugKey: 0

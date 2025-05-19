@@ -9,10 +9,10 @@ namespace CosmicShore.FTUE
         public TutorialStepType HandlesType => TutorialStepType.OpenArcadeMenu;
 
         [SerializeField]
-        private TutorialExecutorAdapter _executor;         // wraps PrepareArcadeScreen()
+        private TutorialExecutorAdapter _executor;         
 
         [SerializeField]
-        private FTUEIntroAnimatorAdapter _animator;        // wraps PlayIntro()/PlayOutro()
+        private FTUEIntroAnimatorAdapter _animator;        
 
         [Tooltip("How long to wait after opening the arcade UI before moving on")]
         [SerializeField]
@@ -20,16 +20,12 @@ namespace CosmicShore.FTUE
 
         public IEnumerator ExecuteStep(TutorialStep step, IFlowController controller)
         {
-            // 1) Fade out the welcome panel
             yield return _animator.PlayOutro();
 
-            // 2) Enable nav & missions
             _executor.PrepareArcadeScreen();
 
-            // 3) Wait a beat so the player sees the arcade UI pop in
             yield return new WaitForSeconds(_pauseDuration);
 
-            // 4) Now advance to the LockModesExceptFreestyleHandler
             controller.StepCompleted();
         }
     }

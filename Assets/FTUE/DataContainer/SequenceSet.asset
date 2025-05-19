@@ -21,6 +21,8 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 4ed052a6f334f7242a55bb3f70e49952, type: 2}
     - {fileID: 11400000, guid: f8ce3f71bf83e2841a857befcb21c21a, type: 2}
   - phase: 1
-    steps: []
+    steps:
+    - {fileID: 11400000, guid: 14f5c55392add7744b6d8f05926c1b26, type: 2}
   - phase: 2
-    steps: []
+    steps:
+    - {fileID: 0}

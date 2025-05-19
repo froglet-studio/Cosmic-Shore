@@ -1,4 +1,3 @@
-// FTUEIntroAnimatorAdapter.cs
 using CosmicShore.FTUE;
 using System.Collections;
 using UnityEngine;
@@ -11,9 +10,7 @@ public class FTUEIntroAnimatorAdapter : MonoBehaviour, IAnimator
     public IEnumerator PlayIntro()
     {
         bool done = false;
-        // inner.PlayIntro expects an Action callback, so we capture it:
         yield return _inner.PlayIntro(() => done = true);
-        // wait until that callback really fired
         while (!done) yield return null;
     }
 
