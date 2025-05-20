@@ -1,5 +1,6 @@
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.UI.Views;
+using CosmicShore.Events;
 using CosmicShore.FTUE;
 using System.Linq;
 using TMPro;
@@ -59,9 +60,11 @@ namespace CosmicShore.App.UI.Elements
             BackgroundImage.sprite = game.CardBackground;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
 
+            FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType);
+
             if (game.CallToActionTargetType == Systems.CTA.CallToActionTargetType.PlayGameFreestyle)
             {
-                GetComponent<Button>().onClick.AddListener(delegate { FindAnyObjectByType<TutorialFlowController>().JumpToStep(TutorialStepType.FreestylePrompt); });
+                GetComponent<Button>().onClick.AddListener(delegate { FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType); });
             }
 
         }

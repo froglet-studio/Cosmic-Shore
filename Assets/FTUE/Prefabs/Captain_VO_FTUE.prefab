@@ -285,7 +285,6 @@ GameObject:
   - component: {fileID: 8550759178199214922}
   - component: {fileID: 6230863840517622601}
   - component: {fileID: 2621022829180711514}
-  - component: {fileID: 111572694531830371}
   - component: {fileID: 5332679949390243055}
   - component: {fileID: 531264131939384381}
   m_Layer: 5
@@ -337,7 +336,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.007843138}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.49019608}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -354,20 +353,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &111572694531830371
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1152133498962609686}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 99b592602bbd82045bb6c6c137ce0c01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  textTarget: {fileID: 8314380454317074433}
-  charDelay: 0.04
 --- !u!114 &5332679949390243055
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -386,6 +371,7 @@ MonoBehaviour:
   skipButton: {fileID: 1623200460499186045}
   typingAudioSource: {fileID: 531264131939384381}
   typingLoopClip: {fileID: 8300000, guid: 2fd99a605904db541aa744531d76c673, type: 3}
+  _ftueCanvas: {fileID: 0}
 --- !u!82 &531264131939384381
 AudioSource:
   m_ObjectHideFlags: 0
@@ -519,7 +505,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 451.8037, y: -106.68268}
+  m_AnchoredPosition: {x: 559.1222, y: -106.68268}
   m_SizeDelta: {x: 195.3867, y: 56.5187}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8512515320928820438
@@ -775,7 +761,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 791, y: -158}
+  m_AnchoredPosition: {x: 1201, y: -158}
   m_SizeDelta: {x: 481.1925, y: 710.05}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5351298957329734066
@@ -855,7 +841,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 815.49976, y: 227}
+  m_AnchoredPosition: {x: 897, y: 254}
   m_SizeDelta: {x: 1373.294, y: 304.7447}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1038895480064965509
@@ -904,7 +890,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5521841425577370651}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
@@ -942,7 +928,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 22.820679, y: -1}
+  m_AnchoredPosition: {x: -80, y: 7}
   m_SizeDelta: {x: -285.94092, y: -58.23059}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1509786178534454263
@@ -973,10 +959,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u201CWelcome to Cosmic Shore\u201D\nThe void isn\u2019t empty \u2014
-    it\u2019s alive. Out here, every ship leaves a scar of memory, and every drift
-    echoes a choice.\nWe\u2019re not just explorers.\nWe are dreamers. Survivors.\nYou\u2019re
-    entering a myth"
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
@@ -1084,7 +1067,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 230.68152, y: -106.68268}
+  m_AnchoredPosition: {x: 338, y: -106.68268}
   m_SizeDelta: {x: 195.3867, y: 56.5187}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4888295979285642527

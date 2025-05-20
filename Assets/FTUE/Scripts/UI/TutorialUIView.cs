@@ -2,7 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
-using UnityEngine.Audio;
+using CosmicShore.Events;
 
 namespace CosmicShore.FTUE
 {
@@ -29,17 +29,7 @@ namespace CosmicShore.FTUE
             skipButton.onClick.AddListener(() => _onStepComplete?.Invoke());
         }
 
-        private void Start()
-        {
-            if (_ftueCanvas.GetComponent<CanvasGroup>() == null)
-            {
-                _ftueCanvasGroup = _ftueCanvas.AddComponent<CanvasGroup>();
-            }
-            else
-            {
-                _ftueCanvasGroup = _ftueCanvas.GetComponent<CanvasGroup>();
-            }
-        }
+        private void Start() => AddOrGetCanvasGroup();
 
         public void ShowStep(string text,  System.Action onComplete)
         {
@@ -48,7 +38,6 @@ namespace CosmicShore.FTUE
             gameObject.SetActive(true);
             _fullText = text;
             _onStepComplete = onComplete;
-            //arrowIndicator.SetActive(showArrow);
 
             if (_typingCoroutine != null)
                 StopCoroutine(_typingCoroutine);
@@ -57,7 +46,6 @@ namespace CosmicShore.FTUE
 
         private IEnumerator Typewriter()
         {
-            Debug.Log($"[Typewriter] START, length={_fullText?.Length}");
             _isTyping = true;
             textDisplay.text = "";
 
@@ -71,16 +59,12 @@ namespace CosmicShore.FTUE
             foreach (char c in _fullText)
             {
                 textDisplay.text += c;
-                //Debug.Log($"[Typewriter] +'{c}' => \"{textDisplay.text}\"");
                 yield return new WaitForSecondsRealtime(0.04f);
             }
 
             StopTypingAudio();
             _isTyping = false;
-            Debug.Log("[Typewriter] COMPLETE");
         }
-
-
 
         private void OnNextPressed()
         {
@@ -92,10 +76,9 @@ namespace CosmicShore.FTUE
                 _isTyping = false;
             }
 
-            // 2) Always fire the completion callback
             _onStepComplete?.Invoke();
+            FTUEEventManager.RaiseNextPressed();
         }
-
 
         private void StopTypingAudio()
         {
@@ -108,7 +91,11 @@ namespace CosmicShore.FTUE
 
         public void ToggleFTUECanvas(bool visible)
         {
-            // Show or hide visuals without deactivating GameObject
+            if (_ftueCanvasGroup == null)
+            {
+                AddOrGetCanvasGroup();
+            }
+
             _ftueCanvasGroup.alpha = visible ? 1f : 0f;
             _ftueCanvasGroup.interactable = visible;
             _ftueCanvasGroup.blocksRaycasts = visible;
@@ -118,6 +105,17 @@ namespace CosmicShore.FTUE
             canvas.sortingOrder = visible ? 100 : -1;
         }
 
+        private void AddOrGetCanvasGroup()
+        {
+            if (_ftueCanvas.GetComponent<CanvasGroup>() == null)
+            {
+                _ftueCanvasGroup = _ftueCanvas.AddComponent<CanvasGroup>();
+            }
+            else
+            {
+                _ftueCanvasGroup = _ftueCanvas.GetComponent<CanvasGroup>();
+            }
+        }
 
     }
 }

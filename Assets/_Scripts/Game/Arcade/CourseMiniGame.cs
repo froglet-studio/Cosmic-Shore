@@ -1,4 +1,5 @@
 using CosmicShore.Environment.FlowField;
+using CosmicShore.Events;
 using DG.Tweening;
 using UnityEngine;
 
@@ -17,7 +18,6 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] bool ScaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] SpawnableHelix helix;
         [SerializeField] float helixIntensitycaling = 1.3f;
-        [SerializeField] private InGameTutorialFlowView inGameTutorialFlowView;
 
         //public
 
@@ -39,7 +39,7 @@ namespace CosmicShore.Game.Arcade
 
             if (gameMode == GameModes.Freestyle)
             {
-                inGameTutorialFlowView.CheckFTUE();
+                FTUEEventManager.RaiseGameModeStarted(GameModes.Freestyle);
             }
         }
 

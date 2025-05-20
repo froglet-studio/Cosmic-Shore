@@ -1,4 +1,3 @@
-// TutorialExecutorAdapter.cs
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -36,9 +35,7 @@ public class TutorialExecutorAdapter : MonoBehaviour, ITutorialExecutor
         switch (payload.payloadType)
         {
             case PayloadType.OpenArcadeAction:
-                // play the outro
                 yield return animator.PlayOutro();
-                // now reveal the arcade UI
                 navigationBar.interactable = true;
                 navigationBar.alpha = 1f;
                 missionsGameObject.SetActive(true);
@@ -69,24 +66,11 @@ public class TutorialExecutorAdapter : MonoBehaviour, ITutorialExecutor
             }
             else
             {
-                Debug.Log("Button found and adding listener");
+                Debug.Log("Button found");
             }
 
             bool isFreestyle = card.TargetID == CallToActionTargetType.PlayGameFreestyle;
             btn.interactable = isFreestyle;
-
-            if (isFreestyle)
-            {
-                btn.onClick.RemoveAllListeners();
-                btn.onClick.AddListener(JumpStep);
-            }
         }
-    }
-
-
-    private void JumpStep()
-    {
-        Debug.Log("Jumping Step!");
-        flowController.JumpToStep(TutorialStepType.FreestylePrompt);
     }
 }

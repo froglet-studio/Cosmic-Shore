@@ -1,3 +1,4 @@
+using CosmicShore.Events;
 using CosmicShore.FTUE;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -17,9 +18,6 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] GameObject Menu;
         [SerializeField] Image ProgressIndicator;
         [SerializeField] Image ProgressIndicatorBackground;
-
-        // new
-        [SerializeField] private TutorialFlowController _tutorialFlowController;
 
         static bool NetworkInitialized = false;
 
@@ -94,23 +92,25 @@ namespace CosmicShore.App.UI.Modals
 
             Animator.StopPlayback();
             gameObject.SetActive(false);
-            _tutorialFlowController.StartFTUE();
+
+            FTUEEventManager.OnInitializeFTUECalled();
         }
 
         void OnAuthenticated()
         {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(100, 5);
         }
-        void OnProfileLoaded() 
-        { 
+        void OnProfileLoaded()
+        {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(200, 5);
         }
 
         void OnCatalogLoaded()
-        { 
+        {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(300, 5);
         }
-        void OnInventoryLoaded() {
+        void OnInventoryLoaded()
+        {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(400, 5);
             StartCoroutine(CloseCoroutine());
         }

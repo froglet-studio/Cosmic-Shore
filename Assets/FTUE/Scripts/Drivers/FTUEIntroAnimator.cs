@@ -18,19 +18,11 @@ namespace CosmicShore.FTUE
         [SerializeField] private float moveDuration = 0.5f;
         [SerializeField] private float delayBeforeStart = 0.5f;
 
-        private Vector2 _captainInitialPosition;
-
-        private void Awake()
-        {
-            _captainInitialPosition = captainImage.gameObject.transform.position;
-        }
-
         public IEnumerator PlayIntro(System.Action onComplete)
         {
             tutorialUIView.ToggleFTUECanvas(true);
             yield return new WaitForSecondsRealtime(delayBeforeStart);
 
-            // DOTween-based, bullet-proof version:
             yield return blackOverlay
                 .DOFade(0.7f, fadeDuration)
                 .SetUpdate(true)
@@ -53,21 +45,16 @@ namespace CosmicShore.FTUE
 
         public IEnumerator PlayOutro(System.Action onComplete)
         {
-
             yield return textBoxPanel.GetComponent<CanvasGroup>().DOFade(0f, 0.3f).SetUpdate(true)
                 .WaitForCompletion();
-            //yield return new WaitForSeconds(fadeDuration);
 
             yield return captainImage.DOLocalMoveX(1201f, moveDuration).SetEase(Ease.InBack).SetUpdate(true).WaitForCompletion(); ;
-            //yield return new WaitForSeconds(moveDuration);
 
-            yield return blackOverlay.DOFade(0.7f, 1f).SetUpdate(true)
+            yield return blackOverlay.DOFade(0.7f, 0.7f).SetUpdate(true)
                 .WaitForCompletion();
             tutorialUIView.textDisplay.text = "";
-            //yield return new WaitForSeconds(fadeDuration);
             tutorialUIView.ToggleFTUECanvas(false);
 
-            // no more hiding here!
             onComplete?.Invoke();
         }
 
