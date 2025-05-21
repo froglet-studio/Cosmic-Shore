@@ -22,7 +22,7 @@ MonoBehaviour:
   PreviewClip: {fileID: 241334157148977051, guid: 5c86136010666914fbccc6959d9e1157,
     type: 3}
   GolfScoring: 0
-  SceneName: MinigameMultiplayerLobby
+  SceneName: MinigameFreestyleMultiplayer_Gameplay
   Captains:
   - {fileID: 11400000, guid: 0d57b8e9eb4fb7a4b8db5456bb5f3530, type: 2}
   - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
@@ -31,7 +31,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}
   - {fileID: 11400000, guid: fce40017721d3834cb5ecb3ed0a0e1db, type: 2}
   MinPlayers: 1
-  MaxPlayers: 3
+  MaxPlayers: 1
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 428

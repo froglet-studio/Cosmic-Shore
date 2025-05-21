@@ -2,9 +2,11 @@
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Singleton;
+using Cysharp.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
@@ -20,6 +22,9 @@ namespace CosmicShore.Core
         [field: SerializeField] public SO_MissionList MissionGames { get; private set; }
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
+        [SerializeField] MultiplayerSetup _multiplayerSetup;
+
+
         Dictionary<GameModes, SO_ArcadeGame> ArcadeGameLookup = new();
         Dictionary<GameModes, SO_TrainingGame> TrainingGameLookup = new();
         Dictionary<GameModes, SO_Mission> MissionLookup = new();
@@ -78,6 +83,13 @@ namespace CosmicShore.Core
                 screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.DAILY_CHALLENGE);
             */
 
+            // TODO: Refactor later to support multiple multiplayer game modes.
+            if (gameMode == GameModes.MultiplayerFreestyle)
+            {
+                _multiplayerSetup.ExecuteMultiplayerSetup(ArcadeGameLookup[gameMode].SceneName);
+                return;
+            }
+
             StartCoroutine(LaunchGameCoroutine(ArcadeGameLookup[gameMode].SceneName));
         }
 
@@ -121,10 +133,9 @@ namespace CosmicShore.Core
             SceneTransitionAnimator = animator;
         }
 
-
         IEnumerator LaunchGameCoroutine(string sceneName)
         {
-            SceneTransitionAnimator?.SetTrigger("Start");
+            SceneTransitionAnimator.SetTrigger("Start");
 
             yield return new WaitForSecondsRealtime(.5f);
 
