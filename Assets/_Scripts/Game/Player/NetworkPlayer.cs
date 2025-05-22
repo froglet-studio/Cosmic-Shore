@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Core;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.UI;
 using System;
@@ -16,22 +17,17 @@ namespace CosmicShore.Game
     {
         public static List<NetworkPlayer> NppList { get; private set; } = new();
 
-        [SerializeField]
-        ShipTypes _defaultShipType;
-
-        [SerializeField]
-        Teams _defaultTeam;
-
-        public ShipTypes ShipType { get => _defaultShipType; set => _defaultShipType = value; }
-
         // Declare the NetworkVariable without initializing its value.
         public NetworkVariable<ShipTypes> NetDefaultShipType = new();
         public NetworkVariable<Teams> NetTeam = new();
 
+        public ShipTypes ShipType { get; set; }
         public Teams Team { get; private set; }
+
         public string PlayerName { get; private set; }
         public string PlayerUUID { get; private set; }
         public string Name { get; private set; }
+
 
         InputController _inputController;
         public InputController InputController =>
@@ -48,14 +44,16 @@ namespace CosmicShore.Game
         {
             NppList.Add(this);
 
-            gameObject.name = "PersistentPlayer_" + OwnerClientId;
+            gameObject.name = "NetworkPlayer_" + OwnerClientId;
 
+
+            /* It is not necessary anymore as MultiplayerSetup is defining the default ship type and team.
             if (IsServer)
             {
                 // Initialize the network variable with the default value from the inspector.
                 NetDefaultShipType.Value = _defaultShipType;
                 NetTeam.Value = _defaultTeam;
-            }
+            }*/
 
             InputController.enabled = IsOwner;
 
@@ -116,7 +114,7 @@ namespace CosmicShore.Game
             }
         }
 
-        /// <summary>
+        /// <summary> - NOT NEEDED IF WE OMIT CHARACTER SELECT SCENE
         /// Sets the default ship type via the network variable.
         /// This method should only be called on the server.
         /// </summary>

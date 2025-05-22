@@ -8,12 +8,14 @@ using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using CosmicShore.Utilities;
 using CosmicShore.Game;
+using CosmicShore.Game.Arcade;
 
 
 namespace CosmicShore.Core
 {
-    public class MultiplayerSetup : MonoBehaviour
+    public class MultiplayerSetup : SingletonNetworkPersistent<MultiplayerSetup>
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
         const string CONNECTION_TYPE = "dtls";
@@ -50,28 +52,28 @@ namespace CosmicShore.Core
             }
         }
 
-        async void Awake()
-        {
-            DontDestroyOnLoad(this.gameObject);
-
-            // 1) Initialize UGS and sign-in
-            await UnityServices.InitializeAsync();
-            if (!AuthenticationService.Instance.IsSignedIn)
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        }
-
         private void OnEnable()
         {
             NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         }
 
-        private void OnDisable()
+        async void Start()
         {
-            NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+            // 1) Initialize UGS and sign-in
+            await UnityServices.InitializeAsync();
+            if (!AuthenticationService.Instance.IsSignedIn)
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
 
+        private void OnDisable()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+            }
+        }
 
         public async void ExecuteMultiplayerSetup(string multiplayerSceneName)
         {
@@ -102,6 +104,7 @@ namespace CosmicShore.Core
                 Debug.LogError($"[MultiplayerSetup] Unexpected error: {ex}");
             }
         }
+        
         void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
         {
             Debug.Log($"[MultiplayerSetup] Connection approval request from client {request.ClientNetworkId}");
@@ -127,13 +130,6 @@ namespace CosmicShore.Core
 
             ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
             Debug.Log($"[MultiplayerSetup] Created session {ActiveSession.Id}, Join Code: {ActiveSession.Code}");
-
-            // var allocation = await RelayService.Instance.CreateAllocationAsync(_maxPlayers);
-            // NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, CONNECTION_TYPE));
-
-            // Host is responsible for starting the game
-            // Debug.Log($"[MultiplayerSetup] Starting host!");
-            // NetworkManager.Singleton.StartHost();
         }
 
         async UniTask JoinSessionAsClientById(string sessionId)
@@ -143,13 +139,6 @@ namespace CosmicShore.Core
                 sessionId,
                 new JoinSessionOptions()
             );
-
-            // var allocation = await RelayService.Instance.JoinAllocationAsync(ActiveSession.Code);
-            // NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, CONNECTION_TYPE));
-
-            // Client is responsible for starting the game
-            // Debug.Log($"[MultiplayerSetup] Starting client!");
-            // NetworkManager.Singleton.StartClient();
         }
 
 
@@ -160,13 +149,6 @@ namespace CosmicShore.Core
                 sessionCode,
                 new JoinSessionOptions()
             );
-
-            // var allocation = await RelayService.Instance.JoinAllocationAsync(ActiveSession.Code);
-            // NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, CONNECTION_TYPE));
-
-            // Client is responsible for starting the game
-            // Debug.Log($"[MultiplayerSetup] Starting client!");
-            // NetworkManager.Singleton.StartClient();
         }
 
         async UniTask<IList<ISessionInfo>> QuerrySessions()
@@ -227,10 +209,28 @@ namespace CosmicShore.Core
 
         void OnClientConnected(ulong clientId)
         {
-            if (clientId != NetworkManager.ServerClientId)
-                return;
+            NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+            if (playerNetObj != null)
+            {
+                NetworkPlayer player = playerNetObj.GetComponent<NetworkPlayer>();
+                if (player != null)
+                {
+                    if (player.IsOwner)
+                    { 
+                        player.NetDefaultShipType.Value = MiniGame.PlayerShipType;
+                    }
 
-            NetworkManager.Singleton.SceneManager.LoadScene(_multiplayerSceneName, LoadSceneMode.Single);
+                    if (IsServer)
+                    {
+                        player.NetTeam.Value = Teams.Jade;
+                    }
+                }
+            }
+
+            if (clientId == NetworkManager.ServerClientId)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene(_multiplayerSceneName, LoadSceneMode.Single);
+            }
         }
     }
 }

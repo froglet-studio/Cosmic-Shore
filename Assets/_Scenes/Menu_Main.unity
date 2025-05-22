@@ -31047,6 +31047,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 921810067}
+  - component: {fileID: 921810068}
   - component: {fileID: 921810066}
   m_Layer: 0
   m_Name: MultiplayerSetup
@@ -31067,6 +31068,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8c61f782db244c468ebf6a9644a063b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _maxPlayers: 4
 --- !u!4 &921810067
 Transform:
@@ -31083,6 +31085,31 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &921810068
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 921810065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 2196100196
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 0
+  SyncOwnerTransformWhenParented: 0
+  AllowOwnerToParent: 0
 --- !u!1 &922944159
 GameObject:
   m_ObjectHideFlags: 0
@@ -53425,12 +53452,12 @@ PrefabInstance:
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 300
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 656
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
