@@ -106,6 +106,8 @@ namespace CosmicShore.Game.GameState
 
         void OnClientDisconnect(ulong clientId)
         {
+            // if it is server, then tell MultiplayerSertup to free the team of this player
+
             Debug.Log($"OnClientDisconnect: client {clientId} disconnected.");
             // If the server itself disconnects (host leaving), load back to character select.
             if (clientId == NetworkManager.Singleton.LocalClientId)

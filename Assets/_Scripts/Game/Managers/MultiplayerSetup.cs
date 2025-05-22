@@ -18,7 +18,6 @@ namespace CosmicShore.Core
     public class MultiplayerSetup : SingletonNetworkPersistent<MultiplayerSetup>
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
-        const string CONNECTION_TYPE = "dtls";
 
         [SerializeField]
         int _maxPlayers = 4;
@@ -51,6 +50,9 @@ namespace CosmicShore.Core
                 }
             }
         }
+
+        HashSet<Teams> _assigned = new ();
+
 
         private void OnEnable()
         {
@@ -222,7 +224,7 @@ namespace CosmicShore.Core
 
                     if (IsServer)
                     {
-                        player.NetTeam.Value = Teams.Jade;
+                        player.NetTeam.Value = TeamAssigner.AssignRandomTeam(_assigned);
                     }
                 }
             }
@@ -231,6 +233,40 @@ namespace CosmicShore.Core
             {
                 NetworkManager.Singleton.SceneManager.LoadScene(_multiplayerSceneName, LoadSceneMode.Single);
             }
+        }
+    }
+
+    public static class TeamAssigner
+    {
+        /// <summary>
+        /// Picks a random team from all Teams (excluding None/Unassigned) that isn't already in assignedTeams,
+        /// adds it to assignedTeams, and returns it. If none are available, returns Teams.Unassigned.
+        /// </summary>
+        public static Teams AssignRandomTeam(HashSet<Teams> assignedTeams)
+        {
+            // Get all valid teams (exclude None and Unassigned)
+            var allTeams = Enum.GetValues(typeof(Teams))
+                               .Cast<Teams>()
+                               .Where(t => t != Teams.None && t != Teams.Unassigned)
+                               .ToArray();
+
+            // Filter out those already assigned
+            var available = allTeams.Where(t => !assignedTeams.Contains(t)).ToArray();
+
+            if (available.Length == 0)
+            {
+                // no teams left
+                return Teams.Unassigned;
+            }
+
+            // pick one at random
+            int idx = UnityEngine.Random.Range(0, available.Length);
+            var chosen = available[idx];
+
+            // mark as assigned
+            assignedTeams.Add(chosen);
+
+            return chosen;
         }
     }
 }
