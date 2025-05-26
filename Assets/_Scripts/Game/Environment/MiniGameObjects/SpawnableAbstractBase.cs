@@ -14,6 +14,12 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
     }
 
     public abstract GameObject Spawn();
+    public virtual GameObject Spawn(Vector3 position, Quaternion rotation)
+    {
+        transform.position = position;
+        transform.rotation = rotation;
+        return Spawn();
+    }
 
     public virtual void SetSeed(int seed)
     {

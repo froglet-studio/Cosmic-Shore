@@ -312,7 +312,7 @@ MonoBehaviour:
   shipGeometries:
   - {fileID: 4884617224712114563}
   shipHUD: {fileID: 4397700295991756814}
-  AOEPrefab: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
+  AOEPrefab: {fileID: 2728798890556433942, guid: b189bdcdd34040c4e9631f49d995b800,
     type: 3}
   farFieldSkimmer: {fileID: 0}
   resourceIndex: 0
