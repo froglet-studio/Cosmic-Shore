@@ -324,6 +324,9 @@ namespace CosmicShore.Core
 
         private void FixedUpdate()
         {
+            if (Ship == null)
+                return;
+
             if (minMatureBlock)
             {
                 distanceWeight = ComputeGaussian(minMatureBlockSqrDistance, sqrSweetSpot, sigma);

@@ -724,6 +724,7 @@ MonoBehaviour:
   AOEPeriod: 0
   lineMaterial: {fileID: 0}
   markerContainer: {fileID: 0}
+  markerDistance: 70
   resourceIndex: 0
 --- !u!1 &3062687464665182224
 GameObject:
@@ -1780,7 +1781,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1490363678
+  GlobalObjectIdHash: 354523593
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1859,7 +1860,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleManualThrottle: 0
+  toggleManualThrottle: 1
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
@@ -1899,7 +1900,6 @@ MonoBehaviour:
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.2
   waitTime: 0.2
-  startDelay: 0.1
   spawnerEnabled: 1
   MaxNearbyBlockCount: 70
   minBlockScale: 1
@@ -2108,6 +2108,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 1
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
@@ -4373,6 +4383,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6747390897382510016}
     m_Modifications:
+    - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
+        type: 3}
+      propertyPath: _shipObject
+      value: 
+      objectReference: {fileID: 712095104256205671}
     - target: {fileID: 6349275177958244260, guid: 8b6f43f781b1f9149be91e3e9e59326f,
         type: 3}
       propertyPath: m_LocalPosition.x

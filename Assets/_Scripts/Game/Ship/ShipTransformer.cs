@@ -7,7 +7,7 @@ using CosmicShore.Game;
 public class ShipTransformer : MonoBehaviour
 {
     [SerializeField]
-    bool toggleManualThrottle;
+    protected bool toggleManualThrottle;
 
     #region Ship
     protected IShip Ship;
@@ -42,7 +42,7 @@ public class ShipTransformer : MonoBehaviour
     public float SpeedMultiplier => throttleMultiplier;
     protected Vector3 velocityShift = Vector3.zero;
 
-    public void Initialize(IShip ship)
+    public virtual void Initialize(IShip ship)
     {
         this.Ship = ship;
         resourceSystem = ship.ShipStatus.ResourceSystem;

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Cysharp.Threading.Tasks;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Multiplayer.Samples.Utilities;
@@ -74,16 +75,21 @@ namespace CosmicShore.Game.GameState
             }
         }
 
-        void OnSynchronizeComplete(ulong clientId)
+        async void OnSynchronizeComplete(ulong clientId)
         {
             Debug.Log($"OnSynchronizeComplete for client {clientId}.");
+
+            await UniTask.Delay(3000);
+
             if (InitialSpawnDone && !NetworkShipClientCache.GetShip(clientId))
             {
                 Debug.Log($"Late join detected for client {clientId}. Spawning player and ship.");
                 SpawnShipForClient(clientId, true);
 
+                await UniTask.Delay(3000);
+
                 // For late joins, wait a bit and then initialize the client gameplay state.
-                StartCoroutine(InitializeRoutine());
+                _clientGameplayState.InitializeAndSetupPlayer_ClientRpc();
             }
         }
 
@@ -115,13 +121,6 @@ namespace CosmicShore.Game.GameState
                 Debug.Log("Server disconnect detected; loading character select scene.");
                 SceneManager.LoadSceneAsync(_mainMenuSceneName, LoadSceneMode.Single);
             }
-        }
-
-        IEnumerator InitializeRoutine()
-        {
-            yield return new WaitForSeconds(3f);
-            Debug.Log("InitializeRoutine: Calling InitializeAndSetupPlayer_ClientRpc.");
-            _clientGameplayState.InitializeAndSetupPlayer_ClientRpc();
         }
 
         void SpawnShipForClient(ulong clientId, bool lateJoin)

@@ -1,257 +1,303 @@
-﻿﻿using CosmicShore.Core;
-using CosmicShore.Game;
-using CosmicShore.Utility;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using System.Net.NetworkInformation;
+using System.Linq;
+using System.Threading;
+using CosmicShore.Core;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-[RequireComponent(typeof(ShipStatus))]
-public class TrailSpawner : MonoBehaviour
+namespace CosmicShore.Game
 {
-    public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);
-    public event BlockCreationHandler OnBlockCreated;
-
-    [SerializeField] TrailBlock trailBlock;
-    [SerializeField] Skimmer skimmer;
-    [SerializeField] bool waitTillOutsideSkimmer = true;
-    [SerializeField] bool shielded = false;
-    [SerializeField] float initialWavelength = 4f;
-    [SerializeField] float minWavelength = 1f;
-    public float MinWaveLength {get { return minWavelength; } }
-
-    float wavelength;
-    public float offset = 0f;
-    public float Gap;
-    public float MinimumGap = 1;
-    public Vector3 TargetScale;
-
-    public ushort TrailLength { get { return (ushort)Trail.TrailList.Count; } }
-    [SerializeField] float defaultWaitTime = .5f;
-    
-    [HideInInspector] public float waitTime = .5f;  // Time until the trail block appears - camera dependent
-    public float startDelay = 2.1f;
-
-    ushort spawnedTrailCount;
-
-    public Trail Trail = new();
-    Trail Trail2 = new();
-
-    IShip ship;
-    ShipStatus shipData;
-    Coroutine spawnTrailCoroutine;
-
-    public List<TrailBlock> GetLastTwoBlocks() 
+    [RequireComponent(typeof(ShipStatus))]
+    public class TrailSpawner : MonoBehaviour
     {
-        if (Trail2.TrailList.Count > 0)
+        public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);
+        public event BlockCreationHandler OnBlockCreated;
+
+        const string playerNamePropertyKey = "playerName";
+
+        [Header("References")]
+        [SerializeField] TrailBlock trailBlock;
+        [SerializeField] Skimmer skimmer;
+
+        [Header("Wave Settings")]
+        [SerializeField] float initialWavelength = 4f;
+        [SerializeField] float minWavelength = 1f;
+        [SerializeField] float defaultWaitTime = 0.5f;
+        float wavelength;
+
+        [Header("Block Scaling")]
+        [SerializeField] int MaxNearbyBlockCount = 10;
+        [SerializeField] float minBlockScale = 1f;
+        [SerializeField] float maxBlockScale = 1f;
+
+        [Header("Runtime Toggles")]
+        [SerializeField] bool waitTillOutsideSkimmer = true;
+        [SerializeField] bool shielded = false;
+
+        [Header("Gap Settings")]
+        public float offset;
+        public float Gap;
+        public float MinimumGap = 1f;
+        public Vector3 TargetScale;
+
+        [Header("Spawner Control")]
+        [SerializeField] bool spawnerEnabled = true;
+        float waitTime;
+        [SerializeField] float startDelay = 2.1f;
+        ushort spawnedTrailCount;
+
+        // Trails
+        public Trail Trail = new Trail();
+        readonly Trail Trail2 = new Trail();
+
+        // Ship data
+        IShip ship;
+        ShipStatus shipData;
+        string ownerId;
+
+        // Scaling helpers
+        float Xscale;
+        public float XScaler = 1f;
+        public float YScaler = 1f;
+        public float ZScaler = 1f;
+
+        // Charm
+        bool isCharmed;
+        IShip tempShip;
+
+        // Cancellation
+        CancellationTokenSource cts;
+
+        // Static container
+        public static GameObject TrailContainer;
+
+        // Properties
+        public float MinWaveLength => minWavelength;
+        public ushort TrailLength => (ushort)Trail.TrailList.Count;
+        public bool SpawnerEnabled => spawnerEnabled;
+        public float TrailZScale => trailBlock.transform.localScale.z;
+
+        private void Awake()
         {
-            return new List<TrailBlock>
+            shipData = GetComponent<ShipStatus>();
+            // Ensure ownerId is never null: default to this ship's player UUID
+            ownerId = shipData.Player?.PlayerUUID ?? string.Empty;
+        }
+
+        private void OnEnable()
+        {
+            cts = new CancellationTokenSource();
+            GameManager.OnGameOver += RestartAITrailSpawnerAfterDelay;
+        }
+
+        private void OnDisable()
+        {
+            cts.Cancel();
+            GameManager.OnGameOver -= RestartAITrailSpawnerAfterDelay;
+        }
+
+        /// <summary>
+        /// Initializes and starts spawning.
+        /// </summary>
+        public void Initialize(IShip ship)
+        {
+            this.ship = ship;
+            waitTime = defaultWaitTime;
+            wavelength = initialWavelength;
+            ownerId = ship.ShipStatus.Player.PlayerUUID;
+            XScaler = minBlockScale;
+
+            EnsureContainer();
+            spawnerEnabled = true;
+            spawnedTrailCount = 0;
+
+            // Start spawn loop
+            _ = SpawnLoopAsync(cts.Token);
+        }
+
+        /// <summary>Toggle between normal and extended wait time.</summary>
+        public void ToggleBlockWaitTime(bool extended)
+        {
+            waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
+        }
+
+        /// <summary>Pause spawning until restarted.</summary>
+        public void PauseTrailSpawner() => spawnerEnabled = false;
+
+        /// <summary>Force restart after default delay.</summary>
+        public void ForceStartSpawningTrail()
+        {
+            spawnerEnabled = true;
+            _ = SpawnLoopAsync(cts.Token);
+        }
+
+        /// <summary>Restart spawner after delay (player & AI).</summary>
+        public void RestartTrailSpawnerAfterDelay(float delay)
+        {
+            _ = RestartAsync(delay, cts.Token);
+        }
+
+        // Game over restart for AI only
+        void RestartAITrailSpawnerAfterDelay()
+        {
+            if (!CompareTag("Player_Ship"))
+                _ = RestartAsync(waitTime, cts.Token);
+        }
+
+        /// <summary>Temporarily charm this spawner.</summary>
+        public void Charm(IShip other, float duration)
+        {
+            tempShip = other;
+            isCharmed = true;
+            _ = CharmAsync(duration, cts.Token);
+        }
+
+        /// <summary>Assign normalized X-scale (0..1).</summary>
+        public void SetNormalizedXScale(float normalized)
+        {
+            if (Mathf.Approximately(Xscale, normalized)) return;
+            Xscale = Mathf.Min(normalized, 1f);
+            float newScale = Mathf.Max(minBlockScale, maxBlockScale * Xscale);
+            // start lerp via UniTask
+            _ = LerpXScalerAsync(XScaler, newScale, 1.5f, cts.Token);
+        }
+
+        /// <summary>Adjust Z-scale and wavelength based on dot product.</summary>
+        public void SetDotProduct(float amount)
+        {
+            ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1f - Mathf.Abs(amount)));
+            wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount));
+        }
+
+        /// <summary>Main spawn loop using UniTask.</summary>
+        async UniTaskVoid SpawnLoopAsync(CancellationToken ct)
+        {
+            await UniTask.Delay(TimeSpan.FromSeconds(startDelay), cancellationToken: ct);
+
+            while (!ct.IsCancellationRequested)
             {
-                // ^1 is the hat operator for index of last element
-                Trail.TrailList[^1],
-                Trail2.TrailList[^1]
-            };
-        }
-        
-        return null;
-    }
-
-    public float TrailZScale => trailBlock.transform.localScale.z;
-
-    public static GameObject TrailContainer;
-
-    [Tooltip("This is serialized for debug visibility")]
-    [SerializeField] bool spawnerEnabled = true;
-    public bool SpawnerEnabled => spawnerEnabled;
-    string ownerId;
-
-    private void OnEnable()
-    {
-        GameManager.OnGameOver += RestartAITrailSpawnerAfterDelay;
-    }
-
-    private void OnDisable()
-    {
-        GameManager.OnGameOver -= RestartAITrailSpawnerAfterDelay;
-    }
-
-    public void Initialize(IShip ship)
-    {
-        this.ship = ship;
-
-        waitTime = defaultWaitTime;
-        wavelength = initialWavelength;
-        if (TrailContainer == null)
-        {
-            TrailContainer = new GameObject();
-            TrailContainer.name = "TrailContainer";
-        }
-
-        shipData = GetComponent<ShipStatus>();
-
-        spawnTrailCoroutine = StartCoroutine(SpawnTrailCoroutine());
-
-        ownerId = ship.ShipStatus.Player.PlayerUUID;
-        XScaler = minBlockScale;
-    }
-
-    public void ToggleBlockWaitTime(bool state)
-    {
-        waitTime = state ? defaultWaitTime*3 : defaultWaitTime;
-    }
-
-    [Tooltip("Number of proximal blocks before trailBlock block size reaches minimum")]
-    [SerializeField] public int MaxNearbyBlockCount = 10;
-    [SerializeField] float minBlockScale = 1;
-    [SerializeField] float maxBlockScale = 1;
-    
-    public float XScaler = 1;
-    public float YScaler = 1;
-    public float ZScaler = 1;
-    float Xscale;
-    Coroutine lerper;
-
-    public void SetNormalizedXScale(float normalizedXScale)
-    {
-        if (Xscale == normalizedXScale)
-            return;
-
-        Xscale = Mathf.Min(normalizedXScale, 1);
-        float newXScaler = Mathf.Max(minBlockScale, maxBlockScale * Xscale);
-        XLerper(newXScaler);
-    }
-
-    void XLerper(float newXScaler)
-    {
-        if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(XScaler, newXScaler, 1.5f, (i) => { XScaler = i; }));
-    }
-
-    public void SetDotProduct(float amount)
-    {
-        ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - Mathf.Abs(amount)));
-        wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount)); 
-    }
-     
-    public void PauseTrailSpawner()
-    {
-        spawnerEnabled = false;
-    }
-
-    void RestartAITrailSpawnerAfterDelay()
-    {
-        // Called on EndGame to restart only the trail spawners for the AI
-        if (gameObject != GameObject.FindWithTag("Player_Ship"))
-        {
-            StartCoroutine(RestartSpawnerAfterDelayCoroutine(waitTime));
-        }
-    }
-
-    public void RestartTrailSpawnerAfterDelay()
-    {
-        // Called when extending game play to resume spawning trails for player and AI
-        RestartTrailSpawnerAfterDelay(waitTime);
-    }
-    public void RestartTrailSpawnerAfterDelay(float waitTime)
-    {
-        // Called when extending game play to resume spawning trails for player and AI
-        StartCoroutine(RestartSpawnerAfterDelayCoroutine(waitTime));
-    }
-    IEnumerator RestartSpawnerAfterDelayCoroutine(float waitTime)
-    {
-        yield return new WaitForSeconds(waitTime);
-        spawnerEnabled = true;
-    }
-
-    void CreateBlock(float halfGap, Trail trail)
-    {
-        var Block = Instantiate(trailBlock);
-        var targetScale = new Vector3(trailBlock.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
-        Block.TargetScale = TargetScale = targetScale;
-        float xShift = (targetScale.x / 2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap));
-        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.Transform.right * xShift, shipData.blockRotation);
-        Block.transform.parent = TrailContainer.transform;
-        Block.ownerID = isCharmed ? tempShip.ShipStatus.Player.PlayerUUID : ship.ShipStatus.Player.PlayerUUID;
-        Block.Player = isCharmed ? tempShip.ShipStatus.Player : ship.ShipStatus.Player;
-        Block.ChangeTeam(isCharmed ? tempShip.ShipStatus.Team : ship.ShipStatus.Team);
-        if (waitTillOutsideSkimmer) 
-            Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / shipData.Speed;            
-        if (shielded)
-        {
-            Block.TrailBlockProperties.IsShielded = true;
-        }
-        Block.Trail = trail;
-
-        OnBlockCreated?.Invoke(xShift, wavelength, Block.TargetScale.x, Block.TargetScale.y, Block.TargetScale.z);
-        trail.Add(Block);
-        Block.TrailBlockProperties.Index = (ushort) trail.TrailList.IndexOf(Block);
-        Block.ownerID = ownerId + ":" + spawnedTrailCount++;
-    }
-
-    public void ForceStartSpawningTrail()
-    {
-        if (spawnTrailCoroutine != null) StopCoroutine(spawnTrailCoroutine);
-        spawnTrailCoroutine = StartCoroutine(SpawnTrailCoroutine());
-    }
-
-    IEnumerator SpawnTrailCoroutine()
-    {
-        yield return new WaitForSeconds(startDelay);
-
-        while (true)
-        {
-            if (spawnerEnabled && !shipData.Attached && shipData.Speed > 3f)
-            {
-                if (Gap == 0)
+                if (spawnerEnabled && !shipData.Attached && shipData.Speed > 3f)
                 {
-                    var Block = Instantiate(trailBlock);
-                    var targetScale = new Vector3(trailBlock.transform.localScale.x * XScaler, trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
-                    Block.TargetScale = TargetScale = targetScale;
-                    Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
-                    Block.transform.parent = TrailContainer.transform;
-                    Block.waitTime = waitTillOutsideSkimmer ? (skimmer.transform.localScale.z + TrailZScale) / shipData.Speed : waitTime;
-                    Block.ownerID = isCharmed ? tempShip.ShipStatus.Player.PlayerUUID : ship.ShipStatus.Player.PlayerUUID;
-                    Block.Player = isCharmed ? tempShip.ShipStatus.Player : ship.ShipStatus.Player;
-                    Block.ChangeTeam(isCharmed ? tempShip.ShipStatus.Team : ship.ShipStatus.Team);
-                    Block.TrailBlockProperties.Index = spawnedTrailCount;
-                    Block.ownerID = ownerId + ":" + spawnedTrailCount++;
-                    Block.Trail = Trail;
-
-                    Trail.Add(Block);
+                    if (Mathf.Approximately(Gap, 0f))
+                    {
+                        CreateBlock(0f, Trail);
+                    }
+                    else
+                    {
+                        CreateBlock(Gap * 0.5f, Trail);
+                        CreateBlock(-Gap * 0.5f, Trail2);
+                    }
                 }
-                else
-                {
-                    CreateBlock(Gap / 2, Trail);
-                    CreateBlock(-Gap / 2, Trail2);
-                } 
+
+                // Ensure no NaN or Infinity for delay
+                float raw = shipData.Speed > 0f ? wavelength / shipData.Speed : defaultWaitTime;
+                float clamped = float.IsNaN(raw) || float.IsInfinity(raw)
+                    ? defaultWaitTime
+                    : Mathf.Clamp(raw, 0f, 3f);
+
+                await UniTask.Delay(TimeSpan.FromSeconds(clamped), cancellationToken: ct);
             }
-            yield return new WaitForSeconds(Mathf.Clamp(wavelength / shipData.Speed,0,3f));
         }
-    }
 
-    bool isCharmed = false;
-    IShip tempShip;
-    
-    public void Charm(IShip ship, float duration)
-    {
-        tempShip = ship;
-        Debug.Log($"charming ship: {ship}");
-        StartCoroutine(CharmCoroutine(duration));
-    }
+        /// <summary>Restart after delay.</summary>
+        async UniTaskVoid RestartAsync(float delay, CancellationToken ct)
+        {
+            await UniTask.Delay(TimeSpan.FromSeconds(delay), cancellationToken: ct);
+            spawnerEnabled = true;
+        }
 
-    IEnumerator CharmCoroutine(float duration) 
-    {
-        isCharmed = true;
-        yield return new WaitForSeconds(duration);
-        isCharmed = false;
-    }
+        /// <summary>Charm duration handling.</summary>
+        async UniTaskVoid CharmAsync(float duration, CancellationToken ct)
+        {
+            await UniTask.Delay(TimeSpan.FromSeconds(duration), cancellationToken: ct);
+            isCharmed = false;
+        }
 
+        /// <summary>Lerp XScaler over time using UniTask.</summary>
+        async UniTask LerpXScalerAsync(float from, float to, float duration, CancellationToken ct)
+        {
+            float elapsed = 0f;
+            while (elapsed < duration && !ct.IsCancellationRequested)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                XScaler = Mathf.Lerp(from, to, t);
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            XScaler = to;
+        }
 
-    public static void NukeTheTrails()
-    {
-        if (TrailContainer == null) return;
+        /// <summary>Creates a block at offset.</summary>
+        void CreateBlock(float halfGap, Trail trail)
+        {
+            var block = Instantiate(trailBlock);
+            EnsureContainer();
 
-        foreach (Transform child in TrailContainer.transform)
-            Destroy(child.gameObject);
+            // scale
+            Vector3 baseScale = trailBlock.transform.localScale;
+            var scale = new Vector3(
+                baseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
+                baseScale.y * YScaler,
+                baseScale.z * ZScaler
+            );
+            block.TargetScale = scale;
+
+            // position & rotation
+            float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
+            Vector3 pos = transform.position - shipData.Course * offset + ship.Transform.right * xShift;
+            block.transform.SetPositionAndRotation(pos, shipData.blockRotation);
+            block.transform.parent = TrailContainer.transform;
+
+            // owner & player
+            bool charm = isCharmed && tempShip != null;
+            string creatorId = charm ? tempShip.ShipStatus.Player.PlayerUUID : ownerId;
+            if (string.IsNullOrEmpty(creatorId))
+                creatorId = shipData.Player?.PlayerUUID ?? string.Empty;
+            block.ownerID = creatorId;
+            block.Player = charm ? tempShip.ShipStatus.Player : ship.ShipStatus.Player;
+            block.ChangeTeam(charm ? tempShip.ShipStatus.Team : ship.ShipStatus.Team);
+
+            // waitTime
+            block.waitTime = waitTillOutsideSkimmer
+                ? (skimmer.transform.localScale.z + TrailZScale) / shipData.Speed
+                : waitTime;
+
+            // shield
+            if (shielded)
+                block.TrailBlockProperties.IsShielded = true;
+
+            // add to trail
+            trail.Add(block);
+            block.TrailBlockProperties.Index = (ushort)trail.TrailList.IndexOf(block);
+
+            // event
+            OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
+            spawnedTrailCount++;
+        }
+
+        public List<TrailBlock> GetLastTwoBlocks()
+        {
+            if (Trail2.TrailList.Count > 0)
+                return new List<TrailBlock>
+                {
+                    Trail.TrailList[^1],
+                    Trail2.TrailList[^1]
+                };
+            return null;
+        }
+
+        void EnsureContainer()
+        {
+            if (TrailContainer == null)
+                TrailContainer = new GameObject("TrailContainer");
+        }
+
+        public static void NukeTheTrails()
+        {
+            if (TrailContainer == null) return;
+            foreach (Transform child in TrailContainer.transform)
+                Destroy(child.gameObject);
+        }
     }
 }

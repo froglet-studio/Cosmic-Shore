@@ -18,7 +18,7 @@ namespace CosmicShore.Game
         public static List<NetworkPlayer> NppList { get; private set; } = new();
 
         // Declare the NetworkVariable without initializing its value.
-        public NetworkVariable<ShipTypes> NetDefaultShipType = new();
+        public NetworkVariable<ShipTypes> NetDefaultShipType = new(ShipTypes.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Teams> NetTeam = new();
 
         public ShipTypes ShipType { get; set; }

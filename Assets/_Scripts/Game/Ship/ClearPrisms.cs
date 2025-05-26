@@ -9,7 +9,7 @@ namespace CosmicShore
         Transform mainCamera;
         [SerializeField, RequireInterface(typeof(IShip))]
         Object _shipObject;
-        IShip _ship => (IShip)_shipObject;
+        IShip _ship => _shipObject as IShip;
 
         [SerializeField] AnimationCurve scaleCurve = AnimationCurve.Linear(0, 0, 1, 1);
         [SerializeField] float capsuleRadius = 5f;
