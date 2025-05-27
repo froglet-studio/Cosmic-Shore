@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50ebbb9685b399841b74fcb9540947c8, type: 3}
+  m_Name: SequenceSet
+  m_EditorClassIdentifier: 
+  phases:
+  - phase: 0
+    steps:
+    - {fileID: 11400000, guid: 3150b75fe3cc9534db7a8df637fe712c, type: 2}
+    - {fileID: 11400000, guid: fcc859b64e410774286e44889ac1036f, type: 2}
+    - {fileID: 11400000, guid: dcadb854669add04583b524e83c9cbb4, type: 2}
+    - {fileID: 11400000, guid: 4ed052a6f334f7242a55bb3f70e49952, type: 2}
+    - {fileID: 11400000, guid: f8ce3f71bf83e2841a857befcb21c21a, type: 2}
+  - phase: 1
+    steps:
+    - {fileID: 11400000, guid: 14f5c55392add7744b6d8f05926c1b26, type: 2}
+  - phase: 2
+    steps:
+    - {fileID: 0}

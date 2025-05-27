@@ -1,3 +1,5 @@
+using CosmicShore.Events;
+using CosmicShore.FTUE;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Integrations.PlayFab.PlayerData;
@@ -90,22 +92,25 @@ namespace CosmicShore.App.UI.Modals
 
             Animator.StopPlayback();
             gameObject.SetActive(false);
+
+            FTUEEventManager.OnInitializeFTUECalled();
         }
 
         void OnAuthenticated()
         {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(100, 5);
         }
-        void OnProfileLoaded() 
-        { 
+        void OnProfileLoaded()
+        {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(200, 5);
         }
 
         void OnCatalogLoaded()
-        { 
+        {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(300, 5);
         }
-        void OnInventoryLoaded() {
+        void OnInventoryLoaded()
+        {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(400, 5);
             StartCoroutine(CloseCoroutine());
         }

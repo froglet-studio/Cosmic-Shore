@@ -255,6 +255,7 @@ GameObject:
   - component: {fileID: 6989089190155014109}
   - component: {fileID: 4436926722878501602}
   - component: {fileID: 8320379081934294731}
+  - component: {fileID: 6913590965691454134}
   m_Layer: 0
   m_Name: Network Squirrel
   m_TagString: Player_Ship
@@ -378,7 +379,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleManualThrottle: 0
+  toggleManualThrottle: 1
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
@@ -408,21 +409,20 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 7b267f607ed6bde46908cd599dd95472,
     type: 3}
   skimmer: {fileID: 708149374973573223}
-  waitTillOutsideSkimmer: 0
-  shielded: 0
   initialWavelength: 8
   minWavelength: 8
+  defaultWaitTime: 0.5
+  MaxNearbyBlockCount: 70
+  minBlockScale: 1
+  maxBlockScale: 3
+  waitTillOutsideSkimmer: 0
+  shielded: 0
   offset: 0
   Gap: 18
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
-  defaultWaitTime: 0.5
-  waitTime: 0.5
-  startDelay: 2
   spawnerEnabled: 1
-  MaxNearbyBlockCount: 70
-  minBlockScale: 1
-  maxBlockScale: 3
+  startDelay: 2
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -597,6 +597,52 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49db4ee037f8e7c4688c950da67cb972, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6913590965691454134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb01b7a2fa864b1468b5a2797ade4272, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 1
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 1
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 0
+  SyncScaleY: 0
+  SyncScaleZ: 0
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0

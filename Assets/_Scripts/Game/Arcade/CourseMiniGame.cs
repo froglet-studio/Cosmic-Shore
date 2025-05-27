@@ -1,4 +1,6 @@
 using CosmicShore.Environment.FlowField;
+using CosmicShore.Events;
+using DG.Tweening;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -17,8 +19,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SpawnableHelix helix;
         [SerializeField] float helixIntensitycaling = 1.3f;
 
-
-        //public static virtual ShipTypes PlayerShipType = ShipTypes.Rhino;
+        //public
 
         protected override void Start()
         {
@@ -34,6 +35,11 @@ namespace CosmicShore.Game.Arcade
             if (!ResetTrails)
             {
                 InitializeTrails();
+            }
+
+            if (gameMode == GameModes.Freestyle)
+            {
+                FTUEEventManager.RaiseGameModeStarted(GameModes.Freestyle);
             }
         }
 

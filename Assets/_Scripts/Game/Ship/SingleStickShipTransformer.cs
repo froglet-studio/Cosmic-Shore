@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using CosmicShore.Game.AI;
 using UnityEngine;
 
@@ -10,12 +11,16 @@ public class SingleStickShipTransformer : ShipTransformer
     protected override void Start()
     {
         base.Start();
-        Ship.ShipStatus.SingleStickControls = true;
-        GetComponent<AIPilot>().SingleStickControls = true;
-
-
+        
         courseObject = new GameObject("CourseObject");
         courseTransform = courseObject.transform;
+    }
+
+    public override void Initialize(IShip ship)
+    {
+        base.Initialize(ship);
+        Ship.ShipStatus.SingleStickControls = true;
+        GetComponent<AIPilot>().SingleStickControls = true;
     }
 
     protected override void Pitch() // These need to not use *= because quaternions are not commutative
@@ -67,6 +72,10 @@ public class SingleStickShipTransformer : ShipTransformer
             speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;
+
+        if (toggleManualThrottle)
+            speed = Mathf.Lerp(0, speed, InputStatus.Throttle);
+
         shipStatus.Speed = speed;
 
         transform.position += (speed * shipStatus.Course + velocityShift) * Time.deltaTime;

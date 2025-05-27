@@ -733,6 +733,7 @@ MonoBehaviour:
   AOEPeriod: 0
   lineMaterial: {fileID: 0}
   markerContainer: {fileID: 0}
+  markerDistance: 70
   resourceIndex: 0
 --- !u!1 &5978549935140177486
 GameObject:
@@ -1016,6 +1017,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 1
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
@@ -1062,7 +1073,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleManualThrottle: 0
+  toggleManualThrottle: 1
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
