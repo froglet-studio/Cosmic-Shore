@@ -947,7 +947,7 @@ PrefabInstance:
         type: 3}
       propertyPath: AOEPrefab
       value: 
-      objectReference: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
+      objectReference: {fileID: 2728798890556433942, guid: b189bdcdd34040c4e9631f49d995b800,
         type: 3}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
