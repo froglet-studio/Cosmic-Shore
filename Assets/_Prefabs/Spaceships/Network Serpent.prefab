@@ -1860,7 +1860,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleManualThrottle: 1
+  toggleManualThrottle: 0
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
@@ -1890,20 +1890,20 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 0a5b78684a1e89341a2483949089f33c,
     type: 3}
   skimmer: {fileID: 874579554510349383}
-  waitTillOutsideSkimmer: 0
-  shielded: 1
   initialWavelength: 2
   minWavelength: 2
+  defaultWaitTime: 0.2
+  MaxNearbyBlockCount: 70
+  minBlockScale: 1
+  maxBlockScale: 4
+  waitTillOutsideSkimmer: 0
+  shielded: 1
   offset: 0
   Gap: 0
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
-  defaultWaitTime: 0.2
-  waitTime: 0.2
   spawnerEnabled: 1
-  MaxNearbyBlockCount: 70
-  minBlockScale: 1
-  maxBlockScale: 4
+  startDelay: 2.1
   XScaler: 1
   YScaler: 1
   ZScaler: 1
