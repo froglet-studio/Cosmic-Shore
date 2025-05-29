@@ -10,6 +10,7 @@ namespace CosmicShore
     public class SO_ArcadeGame : SO_Game
     {
         public List<SO_Captain> Captains;
+        public bool IsMultiplayer = false;
         [Min(1)] public int MinPlayers = 1;
         [Range(1, 3)] public int MaxPlayers = 2;
         [Min(1)] public int MinIntensity = 1;

@@ -18,5 +18,12 @@ namespace CosmicShore
         public VideoPlayer PreviewClip;
         public bool GolfScoring;
         public string SceneName;
+
+        // TODO: Refactor later to support multiple multiplayer game modes. We can add a bool isMultiplayer paramter to SO_Game later if needed.
+        public static bool IsMultiplayerModes(GameModes gameMode)
+        {
+            return gameMode == GameModes.MultiplayerFreestyle || 
+                gameMode == GameModes.MultiplayerCellularDuel;
+        }
     }
 }

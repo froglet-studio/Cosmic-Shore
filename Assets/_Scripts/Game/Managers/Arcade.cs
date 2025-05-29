@@ -83,8 +83,8 @@ namespace CosmicShore.Core
                 screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.DAILY_CHALLENGE);
             */
 
-            // TODO: Refactor later to support multiple multiplayer game modes.
-            if (gameMode == GameModes.MultiplayerFreestyle)
+            // TODO: Refactor later to support multiple multiplayer game modes. We can add a bool isMultiplayer paramter to SO_Game later if needed.
+            if (SO_Game.IsMultiplayerModes(gameMode))
             {
                 _multiplayerSetup.ExecuteMultiplayerSetup(ArcadeGameLookup[gameMode].SceneName);
                 return;
