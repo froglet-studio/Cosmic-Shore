@@ -329,7 +329,7 @@ MonoBehaviour:
   _orientationHandle: {fileID: 1878660672777590133}
   _shipGeometries:
   - {fileID: 4884617224712114563}
-  AOEPrefab: {fileID: 2728798890556433942, guid: b189bdcdd34040c4e9631f49d995b800,
+  AOEPrefab: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
     type: 3}
   _farFieldSkimmer: {fileID: 0}
   resourceIndex: 0
@@ -379,7 +379,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleManualThrottle: 0
+  toggleManualThrottle: 1
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0

@@ -11,10 +11,11 @@ namespace CosmicShore.Game.Projectiles
         {
             var position = Ship.Transform.position;
             var rotation = Ship.Transform.rotation;
+            var team = Ship.ShipStatus.Team;
 
             yield return new WaitForSeconds(ExplosionDelay);
 
-            spawnable.Spawn(position, rotation);
+            spawnable.Spawn(position, rotation, team);
 
             yield return new WaitForEndOfFrame();
         }

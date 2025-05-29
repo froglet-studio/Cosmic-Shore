@@ -6,7 +6,6 @@ public class SpawnableFiveRings : SpawnableAbstractBase
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] int blocksPerRing = 12;
     [SerializeField] float ringRadius = 10f;
-    [SerializeField] Teams team = Teams.Blue;
     [SerializeField] Vector3 scale = new Vector3(4, 4, 9);
     static int ObjectsSpawned = 0;
 
@@ -81,7 +80,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
                             ringRadius * Mathf.Sin(angle) * perpVector;
 
             // For the look direction, use the next point
-            int nextBlock = (block + 1) % blocksPerRing;
+            int nextBlock = (block - 1) % blocksPerRing;
             float nextAngle = (float)nextBlock / blocksPerRing * Mathf.PI * 2;
 
             Vector3 nextPosition = ringCenter +
@@ -91,7 +90,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
             // Create the block
             CreateBlock(position, nextPosition,
                         container.name + "::RING" + ringIndex + "::BLOCK::" + block,
-                        trail, scale, trailBlock, container, team);
+                        trail, scale, trailBlock, container);
         }
     }
 
