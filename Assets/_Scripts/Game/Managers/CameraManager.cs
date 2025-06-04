@@ -1,10 +1,10 @@
 using Unity.Cinemachine;
 using CosmicShore.Core;
-using CosmicShore.Utility.Singleton;
 using CosmicShore.Utility;
 using System.Collections;
 using UnityEngine;
 using CosmicShore;
+using CosmicShore.Utilities;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {

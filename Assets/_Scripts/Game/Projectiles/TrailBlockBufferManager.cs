@@ -2,7 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using System.Collections;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
+
 
 namespace CosmicShore.Game.Projectiles
 {

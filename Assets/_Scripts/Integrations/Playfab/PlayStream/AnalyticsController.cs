@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.PlayerModels;
 using CosmicShore.Integrations.PlayFab.Utility;
+using CosmicShore.Utilities;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EventsModels;
-using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
 namespace CosmicShore.Integrations.PlayFab.PlayStream

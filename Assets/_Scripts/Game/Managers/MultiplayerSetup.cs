@@ -11,6 +11,7 @@ using UnityEngine.SceneManagement;
 using CosmicShore.Utilities;
 using CosmicShore.Game;
 using CosmicShore.Game.Arcade;
+using Mono.Cecil;
 
 
 namespace CosmicShore.Core
@@ -19,10 +20,8 @@ namespace CosmicShore.Core
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
 
-        [SerializeField]
-        int _maxPlayers = 4;
-
         string _multiplayerSceneName;
+        int _maxPlayerPerSession;
 
         ISession _activeSession;
         ISession ActiveSession
@@ -77,9 +76,10 @@ namespace CosmicShore.Core
             }
         }
 
-        public async void ExecuteMultiplayerSetup(string multiplayerSceneName)
+        public async void ExecuteMultiplayerSetup(string multiplayerSceneName, int maxPlayersPerSession)
         {
             _multiplayerSceneName = multiplayerSceneName;
+            _maxPlayerPerSession = maxPlayersPerSession;
 
             try
             {
@@ -124,7 +124,7 @@ namespace CosmicShore.Core
             var playerProperties = await GetPlayerProperties();
             var sessionOpts = new SessionOptions
             {
-                MaxPlayers = _maxPlayers,
+                MaxPlayers = _maxPlayerPerSession,
                 IsLocked = false,
                 IsPrivate = false,
                 PlayerProperties = playerProperties,

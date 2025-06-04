@@ -6,7 +6,7 @@ using CosmicShore.Integrations.Architectures.EventBus;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.PlayerModels;
 using CosmicShore.Integrations.PlayFabV2.Models;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using PlayFab;

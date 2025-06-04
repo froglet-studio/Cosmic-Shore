@@ -1,15 +1,14 @@
 ﻿using CosmicShore.Game.Arcade;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
-using CosmicShore.Utility.Singleton;
-using Cysharp.Threading.Tasks;
+using CosmicShore.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
+
 
 namespace CosmicShore.Core
 {
@@ -83,14 +82,21 @@ namespace CosmicShore.Core
                 screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.DAILY_CHALLENGE);
             */
 
+
+
             // TODO: Refactor later to support multiple multiplayer game modes. We can add a bool isMultiplayer paramter to SO_Game later if needed.
             if (SO_Game.IsMultiplayerModes(gameMode))
             {
-                _multiplayerSetup.ExecuteMultiplayerSetup(ArcadeGameLookup[gameMode].SceneName);
+                _multiplayerSetup.ExecuteMultiplayerSetup(ArcadeGameLookup[gameMode].SceneName, GetArcadeGameByMode(gameMode).MaxPlayersForMultiplayer);
                 return;
             }
 
             StartCoroutine(LaunchGameCoroutine(ArcadeGameLookup[gameMode].SceneName));
+        }
+
+        SO_Game GetArcadeGameByMode(GameModes gameMode)
+        {
+            return ArcadeGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
         }
 
         public void LaunchTrainingGame(GameModes gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)

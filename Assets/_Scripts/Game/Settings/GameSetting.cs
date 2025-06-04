@@ -1,5 +1,6 @@
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using UnityEngine;
+
 
 namespace CosmicShore.Core
 {

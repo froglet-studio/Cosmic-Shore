@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using CosmicShore.App.Systems.Xp;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Utility;
-using CosmicShore.Utility.Singleton;
 using UnityEngine;
+using CosmicShore.Utilities;
 
 namespace CosmicShore.Integrations.PlayFab.PlayerData
 {

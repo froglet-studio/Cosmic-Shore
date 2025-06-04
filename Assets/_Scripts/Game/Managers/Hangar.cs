@@ -3,7 +3,7 @@ using CosmicShore.Game;
 using CosmicShore.Game.AI;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;

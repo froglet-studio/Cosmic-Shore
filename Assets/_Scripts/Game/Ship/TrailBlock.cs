@@ -2,6 +2,7 @@
 using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game;
+using CosmicShore.Utilities;
 
 namespace CosmicShore.Core
 {
@@ -30,6 +31,12 @@ namespace CosmicShore.Core
 
         [Header("Team Ownership")]
         public string ownerID;
+
+        [Header("Event Channels")]
+        [SerializeField] TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
+        [SerializeField] TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
+        [SerializeField] TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+
         public Teams Team
         {
             get => teamManager?.Team ?? Teams.Unassigned;
@@ -103,7 +110,6 @@ namespace CosmicShore.Core
 
         protected virtual void Start()
         {
-                
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
@@ -145,8 +151,16 @@ namespace CosmicShore.Core
             
             scaleAnimator.BeginGrowthAnimation();
 
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);
+            // TODO - Raise events about block creation.
+            /*if (StatsManager.Instance != null)
+                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);*/
+
+            _onTrailBlockCreatedEventChannel.RaiseEvent(new TrailBlockEventData
+            {
+                Team = Team,
+                PlayerName = PlayerName,
+                TrailBlockProperties = TrailBlockProperties
+            });
 
             if (NodeControlManager.Instance != null)
             {
@@ -212,8 +226,15 @@ namespace CosmicShore.Core
             destroyed = true;
             devastated = devastate;
 
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
+            /*if (StatsManager.Instance != null)
+                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);*/
+
+            _onTrailBlockDestroyedEventChannel.RaiseEvent(new TrailBlockEventData
+            {
+                Team = team,
+                PlayerName = playerName,
+                TrailBlockProperties = TrailBlockProperties,
+            });
 
             if (NodeControlManager.Instance != null)
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
@@ -249,8 +270,15 @@ namespace CosmicShore.Core
         {
             if (!devastated)
             {
-                if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockRestored(Team, PlayerName, TrailBlockProperties);
+                /*if (StatsManager.Instance != null)
+                    StatsManager.Instance.BlockRestored(Team, PlayerName, TrailBlockProperties);*/
+
+                _onTrailBlockRestoredEventChannel.RaiseEvent(new TrailBlockEventData
+                {
+                    Team = Team,
+                    PlayerName = PlayerName,
+                    TrailBlockProperties = TrailBlockProperties
+                });
 
                 if (NodeControlManager.Instance != null)
                     NodeControlManager.Instance.RestoreBlock(Team, TrailBlockProperties);

@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems.UserActions;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using UnityEngine;

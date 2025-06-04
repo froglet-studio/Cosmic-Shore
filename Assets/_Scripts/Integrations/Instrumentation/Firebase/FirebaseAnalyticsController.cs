@@ -1,5 +1,6 @@
 using CosmicShore.App.Systems.UserActions;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
+
 #if !UNITY_WEBGL
 using Firebase;
 using Firebase.Analytics;

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using UnityEngine;
 
 namespace CosmicShore.App.Systems.Audio

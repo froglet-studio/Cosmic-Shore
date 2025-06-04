@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Utility.Singleton;
-using Firebase.Analytics;
+using CosmicShore.Utilities;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
+
 
 namespace CosmicShore.Integrations.PlayFab.CloudScripts
 {
