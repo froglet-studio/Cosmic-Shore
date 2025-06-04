@@ -8,22 +8,29 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
     protected int Seed;
     protected List<Trail> trails = new List<Trail>();
     public Teams Team = Teams.Blue;
+    public abstract GameObject Spawn();
 
     public virtual GameObject Spawn(int intensityLevel = 1)
     {
         return Spawn();
     }
 
-    public abstract GameObject Spawn();
     public virtual GameObject Spawn(Vector3 position, Quaternion rotation, Teams team)
     {
         transform.position = position;
         transform.rotation = rotation;
-
         Team = team;
- 
 
         return Spawn();
+    }
+
+    public virtual GameObject Spawn(Vector3 position, Quaternion rotation, Teams team, int intensityLevel = 1)
+    {
+        transform.position = position;
+        transform.rotation = rotation;
+        Team = team;
+
+        return Spawn(intensityLevel);
     }
 
     public virtual void SetSeed(int seed)

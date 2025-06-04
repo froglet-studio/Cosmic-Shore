@@ -11,6 +11,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
 
     public override GameObject Spawn()
     {
+        //ringRadius = 
         GameObject container = new GameObject();
         container.name = "FiveRings" + ObjectsSpawned++;
 
@@ -97,7 +98,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
     public override GameObject Spawn(int intensityLevel)
     {
         // Modify properties based on intensity level
-        blocksPerRing = Mathf.Max(12, 40 - intensityLevel * 5); // Fewer blocks at higher intensity
+        ringRadius = 50 + intensityLevel * 15; 
         return Spawn();
     }
 }
