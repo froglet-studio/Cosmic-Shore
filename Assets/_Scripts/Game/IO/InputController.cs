@@ -62,17 +62,33 @@ namespace CosmicShore.Game.IO
             {
                 Screen.fullScreen = !Screen.fullScreen;
             }
-            #endif
+#endif
 
-            if (PauseSystem.Paused || InputStatus.Paused) return;
+            if (InputStatus.Paused)
+            {
+                if (Ship != null && Ship.ShipStatus.AutoPilotEnabled)
+                {
+                    Debug.Log($"InputController.Update: {InputStatus.Paused} && {Ship.ShipStatus.AutoPilotEnabled} AutoPilot -> calling ProcessAutoPilot()");
+                    //Debug.Log("Input Status")
+                    ProcessAutoPilot();
+                }
+                return;
+            }
 
-            // if (Ship != null && AutoPilotEnabled)
             if (Ship != null && Ship.ShipStatus.AutoPilotEnabled)
             {
+                Debug.Log("InputController.Update: AutoPilotEnabled -> calling ProcessAutoPilot()");
                 ProcessAutoPilot();
                 return;
             }
 
+            if (PauseSystem.Paused)
+            {
+                Debug.Log("InputController.Update: PauseSystem.Paused -> blocking input");
+                return;
+            }
+
+            // 4) Otherwise, handle normal player input:
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
             orientationHandler.Update();
@@ -125,6 +141,15 @@ namespace CosmicShore.Game.IO
 
         private void ProcessAutoPilot()
         {
+            if (currentStrategy == null)
+            {
+                Debug.LogWarning("ProcessAutoPilot: currentStrategy is NULL. Creating GamepadInputStrategy now.");
+                gamepadStrategy = new GamepadInputStrategy();
+                gamepadStrategy.Initialize(Ship);
+                currentStrategy = gamepadStrategy;
+                currentStrategy.OnStrategyActivated();
+            }
+
             if (Ship.ShipStatus.SingleStickControls)
             {
                 currentStrategy?.SetAutoPilotValues(new Vector2(Ship.ShipStatus.AIPilot.X, Ship.ShipStatus.AIPilot.Y));
