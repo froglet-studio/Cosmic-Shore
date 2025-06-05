@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game.Arcade
 {
