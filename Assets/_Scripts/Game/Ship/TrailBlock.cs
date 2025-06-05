@@ -136,6 +136,7 @@ namespace CosmicShore.Core
         private IEnumerator CreateBlockCoroutine()
         {
             yield return new WaitForSeconds(waitTime);
+            yield return new WaitUntil(() => Player != null);
 
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
