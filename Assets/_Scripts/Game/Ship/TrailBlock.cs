@@ -47,7 +47,7 @@ namespace CosmicShore.Core
             }
         }
         public IPlayer Player;
-        public string PlayerName => Player != null ? Player.PlayerName : "";
+        public string PlayerName => Player != null ? Player.PlayerName : "PlayerOne";
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;
