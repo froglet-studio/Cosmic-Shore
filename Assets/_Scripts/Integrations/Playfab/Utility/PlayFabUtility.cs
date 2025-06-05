@@ -1,6 +1,6 @@
 using System;
 using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;

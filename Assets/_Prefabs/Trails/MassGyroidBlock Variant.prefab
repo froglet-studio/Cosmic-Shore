@@ -104,6 +104,24 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
         type: 3}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: _onTrailBlockCreatedEventChannel
+      value: 
+      objectReference: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+        type: 2}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: _onTrailBlockRestoredEventChannel
+      value: 
+      objectReference: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+        type: 2}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: _onTrailBlockDestroyedEventChannel
+      value: 
+      objectReference: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+        type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

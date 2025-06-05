@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems.Quests;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
 

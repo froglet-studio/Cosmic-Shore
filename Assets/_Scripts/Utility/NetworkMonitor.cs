@@ -1,6 +1,7 @@
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using System;
 using UnityEngine;
+
 
 public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
 {

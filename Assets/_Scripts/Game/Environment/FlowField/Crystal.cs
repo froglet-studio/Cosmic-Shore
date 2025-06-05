@@ -136,7 +136,8 @@ namespace CosmicShore.Environment.FlowField
                             aiPilot.throttle = aiPilot.defaultThrottle;
                         }
                     }
-                    
+
+                    // TODO - Add Event channels here rather than calling singletons directly.
                     if (StatsManager.Instance != null)
                         StatsManager.Instance.CrystalCollected(ship, crystalProperties);
                 }

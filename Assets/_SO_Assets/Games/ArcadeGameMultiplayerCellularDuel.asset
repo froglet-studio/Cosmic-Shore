@@ -23,6 +23,7 @@ MonoBehaviour:
     type: 3}
   GolfScoring: 0
   SceneName: MinigameDuelForCellMultiplayer_Gameplay
+  MaxPlayersForMultiplayer: 2
   Captains:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
   - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}

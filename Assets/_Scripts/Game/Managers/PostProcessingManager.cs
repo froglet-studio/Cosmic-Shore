@@ -1,8 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
+using CosmicShore.Utilities;
 using UnityEngine;
 using UnityEngine.Rendering;
-using CosmicShore.Utility.Singleton;
 
 namespace CosmicShore
 {

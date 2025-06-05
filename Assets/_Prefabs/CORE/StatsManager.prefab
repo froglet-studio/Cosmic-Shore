@@ -24,13 +24,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2173894828075591833}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2173894828075591832
 MonoBehaviour:
@@ -46,3 +46,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EndOfRoundStatContainers: []
   nodeGame: 0
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+    type: 2}
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+    type: 2}
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+    type: 2}

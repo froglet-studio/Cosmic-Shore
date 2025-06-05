@@ -13,6 +13,10 @@ GameObject:
   - component: {fileID: 7076137217386601628}
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 4563009547826722997}
+  - component: {fileID: 6524930787130387424}
+  - component: {fileID: 6474806432604849291}
+  - component: {fileID: 3650897936652181197}
+  - component: {fileID: 976040136872667664}
   m_Layer: 0
   m_Name: SerpentBlock
   m_TagString: Untagged
@@ -27,13 +31,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 2, y: 6, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1981306459138289011
 MeshFilter:
@@ -60,6 +64,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -93,9 +100,17 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 1
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Size: {x: 1.01, y: 1.1, z: 1.1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &4563009547826722997
@@ -118,20 +133,74 @@ MonoBehaviour:
     speedDebuffAmount: 0
     trailBlock: {fileID: 0}
     Index: 0
-    Shielded: 0
+    IsShielded: 0
+    IsSuperShielded: 0
+    IsDangerous: 0
+    IsTransparent: 0
     TimeCreated: 0
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
-  minScale: {x: 0.5, y: 0.5, z: 0.5}
-  maxScale: {x: 4.4, y: 8.4, z: 0.5}
-  TargetScale: {x: 0, y: 0, z: 0}
-  growthVector: {x: 2.5, y: 2.5, z: 0}
+  GrowthVector: {x: 0, y: 2, z: 0}
+  growthRate: 0.01
   waitTime: 0.5
   destroyed: 0
   devastated: 0
-  ID: 
-  Index: 0
-  Shielded: 0
-  warp: 0
-  ownerId: 
-  Player: {fileID: 0}
+  IsSmallest: 0
+  IsLargest: 0
+  ownerID: 
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+    type: 2}
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+    type: 2}
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+    type: 2}
+--- !u!114 &6524930787130387424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a3a471efe0048544a8f217c88db4843, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6474806432604849291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minScale: {x: 0.5, y: 0.5, z: 0.5}
+  maxScale: {x: 10, y: 10, z: 10}
+--- !u!114 &3650897936652181197
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 525c14f44c20af64dabc635a990a0f73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &976040136872667664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bc84df2cc31ac046a258d2e1ee38753, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

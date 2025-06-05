@@ -6,13 +6,14 @@ using CosmicShore.Integrations.PlayFab.CloudScripts;
 using CosmicShore.Integrations.Playfab.Utility;
 using CosmicShore.Integrations.PlayFab.Utility;
 using CosmicShore.Models;
-using CosmicShore.Utility.Singleton;
 using Newtonsoft.Json;
 using PlayFab;
 using PlayFab.CloudScriptModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
+using CosmicShore.Utilities;
+
 
 namespace CosmicShore.Integrations.PlayFab.Economy
 {

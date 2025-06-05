@@ -65,6 +65,7 @@ namespace CosmicShore.Core
 
                 var playerName = player != null ? player.PlayerName : "No name";
 
+                // TODO - Raise events about steal.
                 if (StatsManager.Instance != null)
                 {
                     StatsManager.Instance.BlockStolen(newTeam, playerName, trailBlock.TrailBlockProperties);

@@ -15,7 +15,7 @@ namespace CosmicShore.Game.Projectiles
 
             yield return new WaitForSeconds(ExplosionDelay);
 
-            spawnable.Spawn(position, rotation, team);
+            spawnable.Spawn(position, rotation, team, (int)(Ship.ShipStatus.ResourceSystem.Resources[0].CurrentAmount*10));
 
             yield return new WaitForEndOfFrame();
         }

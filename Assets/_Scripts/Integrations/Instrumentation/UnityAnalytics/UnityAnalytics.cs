@@ -1,4 +1,4 @@
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;

@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using UnityEngine;
 using UnityEngine.Audio;
 

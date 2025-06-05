@@ -1,12 +1,13 @@
 using Newtonsoft.Json;
 using CosmicShore.Core;
-using CosmicShore.Utility.Singleton;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using System;
 using CosmicShore.Game;
+using CosmicShore.Utilities;
+
 
 public class StatsManager : Singleton<StatsManager>
 {
@@ -18,6 +19,11 @@ public class StatsManager : Singleton<StatsManager>
     [SerializeField] List<GameObject> EndOfRoundStatContainers;
     [SerializeField] public bool nodeGame = false;
 
+    [Header("Event Channels")]
+    [SerializeField] TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
+    [SerializeField] TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
+    [SerializeField] TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+
     public Dictionary<Teams, RoundStats> TeamStats = new();
     public Dictionary<string, RoundStats> PlayerStats = new();
     
@@ -27,6 +33,24 @@ public class StatsManager : Singleton<StatsManager>
     public Dictionary<string, NodeStats> CellStats = new();
 
     bool RecordStats = true;
+
+    void OnEnable()
+    {
+        GameManager.OnPlayGame += ResetStats;
+        GameManager.OnGameOver += OutputRoundStats;
+        _onTrailBlockCreatedEventChannel.OnEventRaised += OnBlockCreated;
+        _onTrailBlockDestroyedEventChannel.OnEventRaised += OnBlockDestroyed;
+        _onTrailBlockRestoredEventChannel.OnEventRaised += OnBlockRestored;
+    }
+
+    void OnDisable()
+    {
+        GameManager.OnPlayGame -= ResetStats;
+        GameManager.OnGameOver -= OutputRoundStats;
+        _onTrailBlockCreatedEventChannel.OnEventRaised -= OnBlockCreated;
+        _onTrailBlockDestroyedEventChannel.OnEventRaised -= OnBlockDestroyed;
+        _onTrailBlockRestoredEventChannel.OnEventRaised -= OnBlockRestored;
+    }
 
     public void LifeformCreated(String nodeID)
     {
@@ -369,16 +393,20 @@ public class StatsManager : Singleton<StatsManager>
         }
     }
 
-    void OnEnable()
+    
+    void OnBlockCreated(TrailBlockEventData data)
     {
-        GameManager.OnPlayGame += ResetStats;
-        GameManager.OnGameOver += OutputRoundStats;
+        BlockCreated(data.Team, data.PlayerName, data.TrailBlockProperties);
     }
 
-    void OnDisable()
+    void OnBlockDestroyed(TrailBlockEventData data)
     {
-        GameManager.OnPlayGame -= ResetStats;
-        GameManager.OnGameOver -= OutputRoundStats;
+        BlockDestroyed(data.Team, data.PlayerName, data.TrailBlockProperties);
+    }
+
+    void OnBlockRestored(TrailBlockEventData data)
+    {
+        BlockRestored(data.Team, data.PlayerName, data.TrailBlockProperties);
     }
 
     /// <summary>
@@ -478,6 +506,8 @@ public class StatsManager : Singleton<StatsManager>
         {
             Debug.Log($"PlayerStats - Player:{player}");
 
+
+            // TODO - Create separate UI script to control UI elements. StatsManager should not directly manipulate UI elements.
             var container = EndOfRoundStatContainers[i];
             container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
             container.transform.GetChild(1).GetComponent<TMP_Text>().text = PlayerStats[player].VolumeCreated.ToString("F0");

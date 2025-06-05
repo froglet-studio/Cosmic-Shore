@@ -1,7 +1,8 @@
 using CosmicShore.Core;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
+
 
 // TODO: Rename to 'CellManager'
 public class NodeControlManager : Singleton<NodeControlManager>

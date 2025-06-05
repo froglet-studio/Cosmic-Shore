@@ -55,8 +55,6 @@ namespace CosmicShore.Game.Projectiles
             // SetParent with false to take container's world position
             transform.SetParent(container.transform, worldPositionStays: false);
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
-            
-            StartCoroutine(ExplodeCoroutine());
         }
 
         protected virtual void OnTriggerEnter(Collider other)
