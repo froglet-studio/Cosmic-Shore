@@ -1,10 +1,13 @@
-﻿using Unity.Multiplayer.Samples.Utilities;
+﻿using CosmicShore.Game;
+using CosmicShore.Utility.ClassExtensions;
+using Unity.Multiplayer.Samples.Utilities;
 using UnityEngine;
 
 
 namespace CosmicShore.Core
 {
     [RequireComponent(typeof(NetcodeHooks))]
+
     public class NetworkStatsManager : StatsManager
     {
         NetcodeHooks _netcodeHooks;
@@ -52,6 +55,22 @@ namespace CosmicShore.Core
                 _onTrailBlockDestroyedEventChannel.OnEventRaised -= OnBlockDestroyed;
                 _onTrailBlockRestoredEventChannel.OnEventRaised -= OnBlockRestored;
             }
+        }
+
+        protected override IRoundStats GetRoundStats(Teams team)
+        {
+            var player = NetworkPlayerClientCache.GetPlayerByTeam(team);
+            if (player == null)
+            {
+                Debug.LogError($"NetworkStatsManager: No player found for team {team}.");
+                return null;
+            }
+            if (!player.gameObject.TryGetComponent(out NetworkRoundStats roundStats))
+            {
+                Debug.LogError($"NetworkStatsManager: No NetworkRoundStats found for player on team {team}.");
+                return null;
+            }
+            return roundStats;
         }
     }
 }

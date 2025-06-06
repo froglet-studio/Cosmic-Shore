@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 8247738837517299387}
   - component: {fileID: 5947369674864067525}
   - component: {fileID: 3335835471151823723}
+  - component: {fileID: 183709116842290961}
+  - component: {fileID: 1611646322854848499}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Untagged
@@ -87,9 +89,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _defaultShipType: 1
   NetDefaultShipType:
     m_InternalValue: 1
+  NetTeam:
+    m_InternalValue: 0
 --- !u!114 &5947369674864067525
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -113,6 +116,31 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0a0ecb57105a1c0458f885df74a5cad2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &183709116842290961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3140527607295334043}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0d937efb82d5e04ca377a954e286199, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1611646322854848499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3140527607295334043}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6eac8b1f3b5455546905821d286333fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1

@@ -81,7 +81,7 @@ namespace CosmicShore.Game.GameState
 
             await UniTask.Delay(3000);
 
-            if (InitialSpawnDone && !NetworkShipClientCache.GetShip(clientId))
+            if (InitialSpawnDone && !NetworkShipClientCache.GetInstanceByClientId(clientId))
             {
                 Debug.Log($"Late join detected for client {clientId}. Spawning player and ship.");
                 SpawnShipForClient(clientId, true);

@@ -85,7 +85,7 @@ namespace CosmicShore.Game.GameState
         void OnSynchronizeComplete(ulong clientId)
         {
             Debug.Log($"OnSynchronizeComplete for client {clientId}.");
-            if (InitialSpawnDone && !NetworkShipClientCache.GetShip(clientId))
+            if (InitialSpawnDone && !NetworkShipClientCache.GetInstanceByClientId(clientId))
             {
                 Debug.Log($"Late join detected for client {clientId}. Spawning player and ship.");
                 SpawnShipForClient(clientId, true);
