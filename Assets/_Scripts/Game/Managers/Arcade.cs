@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.Arcade;
+﻿using CosmicShore.Game;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utilities;

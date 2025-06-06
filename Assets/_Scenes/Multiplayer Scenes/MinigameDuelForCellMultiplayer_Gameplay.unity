@@ -819,7 +819,7 @@ GameObject:
   - component: {fileID: 612957693}
   - component: {fileID: 612957692}
   m_Layer: 0
-  m_Name: GameplayState
+  m_Name: NetworkGame
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

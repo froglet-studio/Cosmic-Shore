@@ -3,7 +3,7 @@ using Unity.Netcode;
 using UnityEngine.Assertions;
 
 
-namespace CosmicShore.Game.GameState
+namespace CosmicShore.Game
 {
     public class ClientGameplayState : NetworkBehaviour
     {

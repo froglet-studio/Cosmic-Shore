@@ -14,7 +14,7 @@ using CosmicShore.Game.Arcade;
 using Mono.Cecil;
 
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     public class MultiplayerSetup : SingletonNetworkPersistent<MultiplayerSetup>
     {

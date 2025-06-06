@@ -19,7 +19,7 @@ using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MiniGame : MonoBehaviour
+    public abstract class MiniGame : MonoBehaviour
     {
         [SerializeField] protected GameModes gameMode;
         [SerializeField] protected int NumberOfRounds = int.MaxValue;
@@ -454,28 +454,6 @@ namespace CosmicShore.Game.Arcade
         {
             yield return new WaitForSecondsRealtime(2f);
             OnReadyClicked();
-        }
-
-        /// <summary>
-        /// TODO: WIP - Allow for timed events to happen during game play
-        /// </summary>
-        static List<TimedCallback> TimedCallbacks = new();
-
-        public static void ClearTimedCallbacks()
-        {
-            TimedCallbacks.Clear();
-        }
-
-        public static void AddTimedCallback(float invokeAfterSeconds, Action callback)
-        {
-            TimedCallbacks.Add(new(invokeAfterSeconds, callback));
-        }
-
-        IEnumerator TimedCallbackCoroutine(float invokeAfterSeconds, Action callback)
-        {
-            yield return new WaitForSeconds(invokeAfterSeconds);
-
-            callback?.Invoke();
         }
 
         struct TimedCallback

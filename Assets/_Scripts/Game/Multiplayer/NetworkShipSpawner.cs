@@ -1,6 +1,4 @@
-﻿using CosmicShore.NetworkManagement;
-using CosmicShore.Utilities;
-using CosmicShore.Utilities.Network;
+﻿using Cysharp.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,39 +7,36 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
-using VContainer;
 
-namespace CosmicShore.Game.GameState
+
+namespace CosmicShore.Game
 {
     [RequireComponent(typeof(NetcodeHooks))]
-    public class ServerGameplayState : GameStateBehaviour
+    public class NetworkShipSpawner : MonoBehaviour
     {
-        public override GameState ActiveState => GameState.Gameplay;
-
         [SerializeField]
-        private ClientGameplayState _clientGameplayState;
+        ClientGameplayState _clientGameplayState;
 
         [SerializeField]
         [Tooltip("A collection of locations for spawning players")]
-        private Transform[] _playerSpawnPoints;
+        Transform[] _playerSpawnPoints;
 
         [SerializeField]
-        private NetworkShip[] _shipPrefabs;
+        NetworkShip[] _shipPrefabs;
+
+        [SerializeField]
+        string _mainMenuSceneName = "Menu_Main";
 
         /// <summary>
         /// Has the ServerGameplayState already hit its initial spawn? (i.e. spawned players following load from character select).
         /// </summary>
         public bool InitialSpawnDone { get; private set; }
 
-        private NetcodeHooks _netcodeHooks;
-        private List<Transform> _playerSpawnPointsList = null;
+        NetcodeHooks _netcodeHooks;
+        List<Transform> _playerSpawnPointsList = null;
 
-        [Inject]
-        private SceneNameListSO _sceneNameList;
-
-        protected override void Awake()
+        private void Awake()
         {
-            base.Awake();
             _netcodeHooks = GetComponent<NetcodeHooks>();
             _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
             _netcodeHooks.OnNetworkDespawnHook += OnNetworkDespawn;
@@ -60,46 +55,42 @@ namespace CosmicShore.Game.GameState
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnLoadEventCompleted;
             NetworkManager.Singleton.SceneManager.OnSynchronizeComplete += OnSynchronizeComplete;
-
-            SessionManager<SessionPlayerData>.Instance.OnSessionStarted();
         }
 
         private void OnNetworkDespawn()
         {
             Debug.Log("ServerGameplayState: OnNetworkDespawn invoked.");
+
             NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnLoadEventCompleted;
             NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnSynchronizeComplete;
         }
 
-        protected override void OnDestroy()
+        private void OnDestroy()
         {
             if (_netcodeHooks != null)
             {
                 _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
                 _netcodeHooks.OnNetworkDespawnHook -= OnNetworkDespawn;
             }
-            base.OnDestroy();
         }
 
-        void OnSynchronizeComplete(ulong clientId)
+        async void OnSynchronizeComplete(ulong clientId)
         {
             Debug.Log($"OnSynchronizeComplete for client {clientId}.");
+
+            await UniTask.Delay(3000);
+
             if (InitialSpawnDone && !NetworkShipClientCache.GetInstanceByClientId(clientId))
             {
                 Debug.Log($"Late join detected for client {clientId}. Spawning player and ship.");
                 SpawnShipForClient(clientId, true);
 
-                // For late joins, wait a bit and then initialize the client gameplay state.
-                StartCoroutine(InitializeRoutine());
-            }
-        }
+                await UniTask.Delay(3000);
 
-        IEnumerator InitializeRoutine()
-        {
-            yield return new WaitForSeconds(3f);
-            Debug.Log("InitializeRoutine: Calling InitializeAndSetupPlayer_ClientRpc.");
-            _clientGameplayState.InitializeAndSetupPlayer_ClientRpc();
+                // For late joins, wait a bit and then initialize the client gameplay state.
+                _clientGameplayState.InitializeAndSetupPlayer_ClientRpc();
+            }
         }
 
         void OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
@@ -121,12 +112,14 @@ namespace CosmicShore.Game.GameState
 
         void OnClientDisconnect(ulong clientId)
         {
+            // if it is server, then tell MultiplayerSertup to free the team of this player
+
             Debug.Log($"OnClientDisconnect: client {clientId} disconnected.");
             // If the server itself disconnects (host leaving), load back to character select.
             if (clientId == NetworkManager.Singleton.LocalClientId)
             {
                 Debug.Log("Server disconnect detected; loading character select scene.");
-                SceneLoaderWrapper.Instance.LoadScene(_sceneNameList.CharSelectScene, useNetworkSceneManager: true);
+                SceneManager.LoadSceneAsync(_mainMenuSceneName, LoadSceneMode.Single);
             }
         }
 
@@ -163,27 +156,15 @@ namespace CosmicShore.Game.GameState
             networkShip.SpawnWithOwnership(clientId, true);
             Debug.Log($"Spawned ship for client {clientId} using ship type {shipTypeToSpawn}.");
 
-            if (lateJoin)
+            Transform spawnPoint = GetRandomSpawnPoint();
+            if (spawnPoint != null)
             {
-                SessionPlayerData? sessionPlayerData = SessionManager<SessionPlayerData>.Instance.GetPlayerData(clientId);
-                if (sessionPlayerData is { HasCharacterSpawned: true })
-                {
-                    networkShip.transform.SetPositionAndRotation(sessionPlayerData.Value.PlayerPosition, sessionPlayerData.Value.PlayerRotation);
-                    Debug.Log($"Late join: Set position for client {clientId} from session data.");
-                }
+                networkShip.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+                Debug.Log($"Spawned client {clientId} at random spawn point.");
             }
             else
             {
-                Transform spawnPoint = GetRandomSpawnPoint();
-                if (spawnPoint != null)
-                {
-                    networkShip.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-                    Debug.Log($"Spawned client {clientId} at random spawn point.");
-                }
-                else
-                {
-                    Debug.LogError("No available spawn point found!");
-                }
+                Debug.LogError("No available spawn point found!");
             }
         }
 

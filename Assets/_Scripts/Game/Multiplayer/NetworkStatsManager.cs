@@ -1,10 +1,9 @@
-﻿using CosmicShore.Game;
-using CosmicShore.Utility.ClassExtensions;
+﻿using CosmicShore.Core;
 using Unity.Multiplayer.Samples.Utilities;
 using UnityEngine;
 
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     [RequireComponent(typeof(NetcodeHooks))]
 
