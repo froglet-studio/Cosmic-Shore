@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         [SerializeField] GameObject shipContainer;
         // [SerializeField] ShipTypes defaultShip = ShipTypes.Dolphin;
         [SerializeField] bool UseHangarConfiguration = true;
-        [SerializeField] bool IsAI = false;
+        [SerializeField] internal bool IsAI = false;
         [SerializeField] IPlayer.InitializeData InitializeData;
 
         [SerializeField] Gun gun;
@@ -142,7 +142,6 @@ namespace CosmicShore.Game
 
             Ship = ship;
 
-            // TODO: P0 - Verify this works in arcade games
             Ship.Transform.SetParent(shipContainer.transform, false);
 
             Ship.ShipStatus.AIPilot.enabled = true;
@@ -154,5 +153,43 @@ namespace CosmicShore.Game
         }
 
         void InitializeShip() => Ship.Initialize(this);
+
+        public void StartAutoPilot()
+        {
+            Ship.ShipStatus.AutoPilotEnabled = true;
+            var ai = Ship?.ShipStatus?.AIPilot;
+            if (ai == null)
+            {
+                Debug.LogError("StartAutoPilot: no AIPilot found on ShipStatus.");
+                return;
+            }
+
+            ai.AssignShip(Ship);
+
+            ai.Initialize(true);
+
+            InputController.SetPaused(true);
+
+            Debug.Log("StartAutoPilot: AI initialized and player input paused.");
+        }
+
+        public void StopAutoPilot()
+        {
+            Ship.ShipStatus.AutoPilotEnabled = false;
+            var ai = Ship?.ShipStatus?.AIPilot;
+            if (ai == null)
+            {
+                Debug.LogError("StopAutoPilot: no AIPilot found on ShipStatus.");
+                return;
+            }
+
+            ai.Initialize(false);
+
+            InputController.SetPaused(false);
+
+            Debug.Log("StopAutoPilot: AI disabled and player input unpaused.");
+        }
+
+
     }
 }
