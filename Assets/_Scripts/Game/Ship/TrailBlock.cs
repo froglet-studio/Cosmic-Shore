@@ -47,7 +47,7 @@ namespace CosmicShore.Core
             }
         }
         public IPlayer Player;
-        public string PlayerName => Player != null ? Player.PlayerName : "";
+        public string PlayerName => Player != null ? Player.PlayerName : "PlayerOne";
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;
@@ -136,6 +136,7 @@ namespace CosmicShore.Core
         private IEnumerator CreateBlockCoroutine()
         {
             yield return new WaitForSeconds(waitTime);
+            yield return new WaitUntil(() => Player != null);
 
             meshRenderer.enabled = true;
             blockCollider.enabled = true;

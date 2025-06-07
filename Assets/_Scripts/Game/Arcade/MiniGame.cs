@@ -19,7 +19,7 @@ using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MiniGame : MonoBehaviour
+    public abstract class MiniGame : MonoBehaviour
     {
         [SerializeField] protected GameModes gameMode;
         [SerializeField] protected int NumberOfRounds = int.MaxValue;
@@ -500,7 +500,6 @@ namespace CosmicShore.Game.Arcade
             Player activePlayer = ((Player)ActivePlayer);
             activePlayer.StopAutoPilot();
         }
-
 
         struct TimedCallback
         {

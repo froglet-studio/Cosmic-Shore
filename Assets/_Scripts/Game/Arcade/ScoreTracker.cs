@@ -6,6 +6,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using System.Collections;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game.Arcade
 {

@@ -146,8 +146,12 @@ namespace CosmicShore.Game
 
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(this);
-            _nearFieldSkimmer.Initialize(this);
-            _farFieldSkimmer.Initialize(this);
+
+            if (_nearFieldSkimmer != null)
+                _nearFieldSkimmer.Initialize(this);
+
+            if (_farFieldSkimmer != null)
+                _farFieldSkimmer.Initialize(this);
             
 
             if (IsOwner)

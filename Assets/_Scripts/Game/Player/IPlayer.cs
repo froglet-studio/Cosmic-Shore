@@ -11,7 +11,6 @@ namespace CosmicShore.Game
         public Teams Team { get; }
         public string PlayerName { get; }
         public string PlayerUUID { get; }
-        public string Name { get; }
         public IShip Ship { get; }
         public InputController InputController { get; }
         public GameCanvas GameCanvas { get; }
