@@ -20,25 +20,51 @@ namespace CosmicShore.DialogueSystem.Editor
 
         // Panel widths
         private float leftPanelWidth = 200f;
-        private float centerPanelWidth = 450f;
-        private float rightPanelWidth = 280f;
+        private float centerPanelWidth = 650f;
+        private float rightPanelWidth = 320f;
 
-        // Minimum widths so nobody collapses too far
-        private const float LEFT_MIN = 150f;
         private const float CENTER_MIN = 320f;
         private const float RIGHT_MIN = 200f;
 
-        // Each set has a background color for the left panel listing
         private readonly Dictionary<DialogueSet, Color> _setBackgroundColors
             = new Dictionary<DialogueSet, Color>();
 
-        // If true, show “Save Changes” button
         private bool _hasUnsavedChanges = false;
 
         // Object Picker state for Portrait selection
         private int _activeSpritePickerControlID = -1;
         private DialogueSpeaker _slotPickingFor = DialogueSpeaker.Speaker1;
-        private const float BOTTOM_BAR_HEIGHT = 32f;  // height of that bottom action row
+ 
+        private readonly float bottomBarHeight = 38f; // Height of your button bar + padding
+
+        // persistence keys
+        const string kLeftBgKey = "DialogueEditor_LeftBg";
+        const string kCenterBgKey = "DialogueEditor_CenterBg";
+        const string kRightBgKey = "DialogueEditor_RightBg";
+
+        // current panel colors (defaults chosen subtle and dark)
+        private Color leftPanelBg = new Color(0.12f, 0.12f, 0.12f);
+        private Color centerPanelBg = new Color(0.10f, 0.10f, 0.10f);
+        private Color rightPanelBg = new Color(0.10f, 0.10f, 0.10f);
+
+        private void OnEnable()
+        {
+            // Load per?Set colors
+            var guids = AssetDatabase.FindAssets("t:DialogueSet");
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                string key = $"DialogueEditor_SetBg_{guid}";
+                if (EditorPrefs.HasKey(key))
+                {
+                    Color c = JsonUtility.FromJson<Color>(EditorPrefs.GetString(key));
+                    var set = AssetDatabase.LoadAssetAtPath<DialogueSet>(path);
+                    _setBackgroundColors[set] = c;
+                }
+            }
+        }
+
+
 
         [MenuItem("FrogletTools/Dialogue Editor")]
         public static void Open()
@@ -49,77 +75,65 @@ namespace CosmicShore.DialogueSystem.Editor
         // -------------------------------------------------------------------
         // OnGUI: Draw all panels and bottom buttons
         // -------------------------------------------------------------------
-
         private void OnGUI()
         {
-            // ???????????????????????????????????????????????????????
-            // 1) TOP: Left / Center / Right panels, resizable
-            // ???????????????????????????????????????????????????????
-            EditorGUILayout.BeginHorizontal();
 
-            // ----- LEFT PANEL -----
+            // 1) Define your “standard” widths and spacing
+            float leftPanelWidth = 200f;
+            float rightPanelWidth = 250f;
+            float panelSpacing = 10f;
+            float totalWidth = position.width;
+            float centerPanelWidth = totalWidth
+                                   - leftPanelWidth
+                                   - rightPanelWidth
+                                   - panelSpacing * 2;
+            centerPanelWidth = Mathf.Max(centerPanelWidth, 400f);
+
+            // 2) Top padding
+            GUILayout.Space(8);
+
+            // 3) Main Horizontal Layout
+            EditorGUILayout.BeginHorizontal(GUILayout.ExpandHeight(true));
+
+            // — Left Panel —
             EditorGUILayout.BeginVertical(GUILayout.Width(leftPanelWidth));
             DrawLeftPanel();
+
             EditorGUILayout.EndVertical();
 
-            // ----- LEFT/CENTER SPLITTER -----
-            leftPanelWidth = SplitterGUILayout.Splitter(
-                leftPanelWidth,
-                LEFT_MIN,
-                position.width - CENTER_MIN - RIGHT_MIN,
-                vertical: true
-            );
+            // spacer
+            GUILayout.Space(panelSpacing);
 
-            // Draw the left divider (full height)
-            EditorGUI.DrawRect(
-                new Rect(leftPanelWidth, 0, 1, position.height),
-                Color.gray
-            );
-
-            // ----- CENTER PANEL -----
+            // — Center Panel —
             EditorGUILayout.BeginVertical(GUILayout.Width(centerPanelWidth));
             DrawCenterPanel();
             EditorGUILayout.EndVertical();
 
-            // ----- CENTER/RIGHT SPLITTER -----
-            centerPanelWidth = SplitterGUILayout.Splitter(
-                centerPanelWidth,
-                CENTER_MIN,
-                position.width - leftPanelWidth - RIGHT_MIN,
-                vertical: true
-            );
+            // spacer
+            GUILayout.Space(panelSpacing);
 
-            // Draw the center divider (full height)
-            EditorGUI.DrawRect(
-                new Rect(leftPanelWidth + centerPanelWidth + 1, 0, 1, position.height),
-                Color.gray
-            );
-
-            // ----- RIGHT PANEL -----
+            // — Right Panel —
             EditorGUILayout.BeginVertical(GUILayout.Width(rightPanelWidth));
             DrawRightPanel();
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.EndHorizontal();
 
+            GUILayout.FlexibleSpace();
 
-
-            // ???????????????????????????????????????????????????????
-            // 2) BOTTOM ACTION BAR
-            // ???????????????????????????????????????????????????????
+            // — Bottom Bar (unchanged) —
             GUILayout.Space(4);
-            EditorGUILayout.BeginHorizontal(GUILayout.Height(BOTTOM_BAR_HEIGHT));
-
-            // + Add New Set on far left
+            EditorGUILayout.BeginHorizontal(GUILayout.Height(bottomBarHeight));
             GUILayout.Space(8);
+            GUI.backgroundColor = new Color(0.2f, 0.6f, 0.2f);   // Turquoise
             if (GUILayout.Button("+ Add New Set", GUILayout.Width(120)))
             {
                 string path = EditorUtility.SaveFilePanelInProject(
-                    "New Dialogue Set",
-                    "NewDialogueSet",
-                    "asset",
-                    "Create a new Dialogue Set asset"
-                );
+            "New Dialogue Set",
+            "NewDialogueSet",
+            "asset",
+            "Create a new Dialogue Set asset"
+        );
                 if (!string.IsNullOrEmpty(path))
                 {
                     var newSet = ScriptableObject.CreateInstance<DialogueSet>();
@@ -131,50 +145,20 @@ namespace CosmicShore.DialogueSystem.Editor
                     _hasUnsavedChanges = true;
                 }
             }
-
             GUILayout.FlexibleSpace();
 
-            // Add / Test / Link in the center
-            GUI.enabled = (selectedSet != null);
-            if (GUILayout.Button("Add New Line", GUILayout.Width(120)))
-            {
-                Undo.RecordObject(selectedSet, "Add Dialogue Line");
-                selectedSet.lines.Add(new DialogueLine
-                {
-                    speaker = DialogueSpeaker.Speaker1,
-                    speakerName = "Speaker",
-                    text = "New dialogue line...",
-                    displayTime = 3f
-                });
-                EditorUtility.SetDirty(selectedSet);
-                _hasUnsavedChanges = true;
-                Repaint();
-            }
-            if (GUILayout.Button("Test In Editor", GUILayout.Width(120)))
-                DialogueEditorRuntimeTester.Test(selectedSet);
-            if (GUILayout.Button("Link Audio", GUILayout.Width(120)))
-                DialogueAudioBatchLinker.LinkMissingAudio(selectedSet);
-            GUI.enabled = true;
-
-            GUILayout.FlexibleSpace();
-
-            // Save Changes on far right
             GUI.backgroundColor = new Color(0.2f, 0.6f, 0.2f);
             if (_hasUnsavedChanges && GUILayout.Button("Save Changes", GUILayout.Width(140)))
                 SaveAllDialogueSets();
             GUI.backgroundColor = Color.white;
-
             GUILayout.Space(8);
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(6);
 
 
-
-            // ???????????????????????????????????????????????????????
-            // 3) Sprite Picker Closed Handler
-            // ???????????????????????????????????????????????????????
-            if (Event.current.commandName == "ObjectSelectorClosed" &&
-                EditorGUIUtility.GetObjectPickerControlID() == _activeSpritePickerControlID)
+            // --- Object Picker handling (unchanged) ---
+            if (Event.current.commandName == "ObjectSelectorClosed"
+                && EditorGUIUtility.GetObjectPickerControlID() == _activeSpritePickerControlID)
             {
                 Sprite picked = EditorGUIUtility.GetObjectPickerObject() as Sprite;
                 if (picked != null && selectedSet != null)
@@ -193,17 +177,27 @@ namespace CosmicShore.DialogueSystem.Editor
             }
         }
 
-
-
-
         // -------------------------------------------------------------------
         // Left Panel: List of DialogueSets, each with its colored background
         // -------------------------------------------------------------------
         private void DrawLeftPanel()
         {
             EditorGUILayout.BeginVertical(GUILayout.Width(leftPanelWidth));
+            {
+                // reserve a 24px header strip
+                Rect headerRect = GUILayoutUtility.GetRect(
+                    GUIContent.none,
+                    EditorStyles.boldLabel,
+                    GUILayout.Height(24),
+                    GUILayout.ExpandWidth(true)
+                );
+                // draw dark-grey accent
+                EditorGUI.DrawRect(headerRect, new Color(0.15f, 0.15f, 0.20f));
+                // draw the title
+                EditorGUI.LabelField(headerRect, "  Dialogue Sets", EditorStyles.boldLabel);
+            }
+
             GUILayout.Space(8);
-            EditorGUILayout.LabelField("Dialogue Sets", EditorStyles.boldLabel);
 
             leftScroll = EditorGUILayout.BeginScrollView(leftScroll);
 
@@ -218,6 +212,7 @@ namespace CosmicShore.DialogueSystem.Editor
 
                 Color bg = _setBackgroundColors[set];
                 GUI.backgroundColor = bg;
+
                 GUILayout.BeginHorizontal("box");
                 GUI.backgroundColor = Color.white;
 
@@ -241,6 +236,9 @@ namespace CosmicShore.DialogueSystem.Editor
                 {
                     _setBackgroundColors[set] = newColor;
                     _hasUnsavedChanges = true;
+
+                    string key = $"DialogueEditor_SetBg_{guid}";
+                    EditorPrefs.SetString(key, JsonUtility.ToJson(newColor));
                 }
 
                 GUILayout.EndHorizontal();
@@ -252,6 +250,8 @@ namespace CosmicShore.DialogueSystem.Editor
             EditorGUILayout.EndVertical();
         }
 
+
+
         // -------------------------------------------------------------------
         // Center Panel: Edit set ID, mode, and lines (no bottom buttons here)
         // -------------------------------------------------------------------
@@ -259,6 +259,11 @@ namespace CosmicShore.DialogueSystem.Editor
         {
             float width = Mathf.Max(centerPanelWidth, CENTER_MIN);
             EditorGUILayout.BeginVertical(GUILayout.Width(width));
+
+            Rect headerRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.boldLabel, GUILayout.Height(24), GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(headerRect, new Color(0.86f, 0.08f, 0.24f));  
+            EditorGUI.LabelField(headerRect, " Dialogue Set Editor", EditorStyles.boldLabel);
+            
             GUILayout.Space(8);
 
             if (selectedSet == null)
@@ -268,7 +273,7 @@ namespace CosmicShore.DialogueSystem.Editor
                 return;
             }
 
-            EditorGUILayout.LabelField("Dialogue Set Editor", EditorStyles.boldLabel);
+            //EditorGUILayout.LabelField("Dialogue Set Editor", EditorStyles.boldLabel);
             GUILayout.Space(6);
 
             // --- ID field ---
@@ -307,14 +312,64 @@ namespace CosmicShore.DialogueSystem.Editor
             }
 
             // Draw each editable dialogue row:
-            centerScroll = EditorGUILayout.BeginScrollView(centerScroll, GUILayout.ExpandHeight(true));
+            // *** Only vertical scroll, no horizontal! ***
+            centerScroll = EditorGUILayout.BeginScrollView(centerScroll, false, false, GUILayout.ExpandHeight(true));
             for (int i = 0; i < selectedSet.lines.Count; i++)
             {
                 DrawEditableDialogueRow(selectedSet, i);
             }
             EditorGUILayout.EndScrollView();
 
-            GUILayout.Space(8);
+            // --- Button Block ---
+            GUILayout.Space(10); // Small gap above buttons
+
+            // Background "card"
+            Rect btnCardRect = GUILayoutUtility.GetRect(centerPanelWidth - 30, 54, GUILayout.ExpandWidth(true));
+            GUI.BeginGroup(btnCardRect);
+            GUI.backgroundColor = new Color(0.75f, 0.75f, 0.75f); 
+            GUI.Box(new Rect(0, 0, btnCardRect.width, btnCardRect.height), GUIContent.none);
+            GUI.backgroundColor = Color.white;
+
+            // Centered buttons
+            float btnWidth = 100;
+            float gap = 16;
+            float totalBtnWidth = btnWidth * 3 + gap * 2;
+            float xOffset = (btnCardRect.width - totalBtnWidth) / 2;
+            float yOffset = (btnCardRect.height - 32) / 2;
+
+            GUI.backgroundColor = new Color(0.2f, 0.6f, 0.2f);
+            if (GUI.Button(new Rect(xOffset, yOffset, btnWidth, 32), "Add New Line"))
+            {
+                string path = EditorUtility.SaveFilePanelInProject(
+    "New Dialogue Set",
+    "NewDialogueSet",
+    "asset",
+    "Create a new Dialogue Set asset"
+);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var newSet = CreateInstance<DialogueSet>();
+                    newSet.setId = System.IO.Path.GetFileNameWithoutExtension(path);
+                    AssetDatabase.CreateAsset(newSet, path);
+                    AssetDatabase.SaveAssets();
+                    selectedSet = newSet;
+                    selectedLineIndex = -1;
+                    _hasUnsavedChanges = true;
+                }
+            }
+            
+            GUI.backgroundColor = new Color(1f, 0f, 0f, 0.35f);
+            if (GUI.Button(new Rect(xOffset + btnWidth + gap, yOffset, btnWidth, 32), "Test In Editor"))
+            {
+                DialogueEditorRuntimeTester.Test(selectedSet);
+            }
+            
+            GUI.backgroundColor = new Color(0f, 0f, 1f, 0.35f);
+            if (GUI.Button(new Rect(xOffset + (btnWidth + gap) * 2, yOffset, btnWidth, 32), "Link Audio"))
+            {
+                DialogueAudioBatchLinker.LinkMissingAudio(selectedSet);
+            }
+            GUI.EndGroup();
             EditorGUILayout.EndVertical();
 
             // Draw the splitter handle to allow resizing center|right
@@ -326,91 +381,77 @@ namespace CosmicShore.DialogueSystem.Editor
             );
         }
 
+        // ?????????????????????????????????????????????????????????????????????????????
+        // 5) DrawEditableDialogueRow ? flexible text?field width
+        // ?????????????????????????????????????????????????????????????????????????????
         private void DrawEditableDialogueRow(DialogueSet set, int i)
         {
             DialogueLine line = set.lines[i];
-
             Color bgColor = (set.mode == DialogueModeType.Monologue)
                 ? DialogueVisuals.GetModeColor(DialogueModeType.Monologue)
                 : DialogueVisuals.GetColorForSpeaker(line.speaker);
+
 
             GUI.backgroundColor = bgColor;
             EditorGUILayout.BeginHorizontal("box");
             GUI.backgroundColor = Color.white;
 
-            // Speaker dropdown (only in Dialogue mode)
             if (set.mode == DialogueModeType.Dialogue)
             {
-                EditorGUI.BeginChangeCheck();
-                DialogueSpeaker newSpeaker =
-                    (DialogueSpeaker)EditorGUILayout.EnumPopup(line.speaker, GUILayout.Width(80));
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(set, "Change Speaker");
-                    line.speaker = newSpeaker;
+                    line.speaker = (DialogueSpeaker)EditorGUILayout.EnumPopup(line.speaker, GUILayout.Width(80));
                     EditorUtility.SetDirty(set);
                     _hasUnsavedChanges = true;
                 }
             }
 
-            // Speaker name
-            EditorGUI.BeginChangeCheck();
-            string newName = EditorGUILayout.TextField(line.speakerName, GUILayout.Width(100));
+            // Speaker name (fixed width OK)
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(set, "Edit Speaker Name");
-                line.speakerName = newName;
+                line.speakerName = EditorGUILayout.TextField(line.speakerName, GUILayout.Width(100));
                 EditorUtility.SetDirty(set);
                 _hasUnsavedChanges = true;
             }
 
-            // Dialogue text
-            EditorGUI.BeginChangeCheck();
-            string newText = EditorGUILayout.TextField(
-                line.text,
-                GUILayout.MinWidth(160),
-                GUILayout.MaxWidth(260)
-            );
+            // ? This now shrinks/grows to fit exactly, no cropping
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(set, "Edit Dialogue Text");
-                line.text = newText;
+                line.text = EditorGUILayout.TextField(line.text, GUILayout.ExpandWidth(true));
                 EditorUtility.SetDirty(set);
                 _hasUnsavedChanges = true;
             }
 
-            // Display time
-            EditorGUI.BeginChangeCheck();
-            float newTime = EditorGUILayout.FloatField(line.displayTime, GUILayout.Width(50));
+            // Display time (fixed width OK)
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(set, "Change Display Time");
-                line.displayTime = newTime;
+                line.displayTime = EditorGUILayout.FloatField(line.displayTime, GUILayout.Width(50));
                 EditorUtility.SetDirty(set);
                 _hasUnsavedChanges = true;
             }
 
-            // Remove row
             if (GUILayout.Button("X", GUILayout.Width(20)))
             {
                 Undo.RecordObject(set, "Remove Dialogue Line");
                 set.lines.RemoveAt(i);
                 EditorUtility.SetDirty(set);
                 _hasUnsavedChanges = true;
-                GUI.backgroundColor = Color.white;
                 EditorGUILayout.EndHorizontal();
+                GUI.backgroundColor = Color.white;
                 return;
             }
 
             if (GUILayout.Button(">", GUILayout.Width(20)))
-            {
                 selectedLineIndex = i;
-                //Repaint();
-            }
 
             EditorGUILayout.EndHorizontal();
             GUI.backgroundColor = Color.white;
         }
+
 
         // -------------------------------------------------------------------
         // Right Panel: Always-visible preview of the set’s portraits and line text
@@ -419,11 +460,12 @@ namespace CosmicShore.DialogueSystem.Editor
         {
             // Larger styles for preview text
             var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 18 };
-            var bodyStyle = new GUIStyle(EditorStyles.wordWrappedLabel) { fontSize = 14 };
+            var bodyStyle = new GUIStyle(EditorStyles.wordWrappedLabel) { fontSize = 12 };
 
             EditorGUILayout.BeginVertical(GUILayout.Width(rightPanelWidth));
+
             GUILayout.Space(8);
-            EditorGUILayout.LabelField("Preview", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Sprite Preview", EditorStyles.boldLabel);
 
             if (selectedSet == null)
             {
@@ -512,7 +554,7 @@ namespace CosmicShore.DialogueSystem.Editor
                 // 5) Body text in larger font, tinted if you like
                 Color orig = GUI.contentColor;
                 GUI.contentColor = DialogueVisuals.GetModeColor(DialogueModeType.Monologue);
-                EditorGUILayout.LabelField(line.text, bodyStyle, GUILayout.ExpandWidth(true));
+                EditorGUILayout.LabelField(line.text, bodyStyle, GUILayout.MaxWidth(rightPanelWidth - 48));
                 GUI.contentColor = orig;
             }
 

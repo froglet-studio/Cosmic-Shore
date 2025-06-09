@@ -27,3 +27,13 @@ MonoBehaviour:
     text: This is a sample test line for Dialogue 2 set
     voiceClip: {fileID: 0}
     displayTime: 3
+  - speaker: 1
+    speakerName: Speaker
+    text: New dialogue line...
+    voiceClip: {fileID: 0}
+    displayTime: 3
+  - speaker: 1
+    speakerName: Speaker
+    text: New dialogue line...
+    voiceClip: {fileID: 0}
+    displayTime: 3
