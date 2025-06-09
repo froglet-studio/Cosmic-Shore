@@ -1,38 +1,37 @@
 namespace CosmicShore.Core
 {
     [System.Serializable]
-    public class RoundStats
+    public class RoundStats : IRoundStats
     {
-        public int BlocksCreated;
-        public int BlocksDestroyed;
-        public int BlocksRestored;
-        public int BlocksStolen;
-        public int BlocksRemaining;
-        public int FriendlyBlocksDestroyed;
-        public int HostileBlocksDestroyed;
-        public float VolumeCreated;
-        public float VolumeDestroyed;
-        public float VolumeRestored;
-        public float VolumeStolen;
-        public float VolumeRemaining;
-        public float FriendlyVolumeDestroyed;
-        public float HostileVolumeDestroyed;
-        public int CrystalsCollected;
-        public int OmniCrystalsCollected;
-        public int ElementalCrystalsCollected;
-        public float ChargeCrystalValue;
-        public float MassCrystalValue;
-        public float SpaceCrystalValue;
-        public float TimeCrystalValue;
-        public int SkimmerShipCollisions;
-        public float FullSpeedStraightAbilityActiveTime;
-        public float RightStickAbilityActiveTime;
-        public float LeftStickAbilityActiveTime;
-        public float FlipAbilityActiveTime;
-        public float Button1AbilityActiveTime;
-        public float Button2AbilityActiveTime;
-        public float Button3AbilityActiveTime;
-        
+        public int BlocksCreated { get; set; }
+        public int BlocksDestroyed { get; set; }
+        public int BlocksRestored { get; set; }
+        public int BlocksStolen { get; set; }
+        public int BlocksRemaining { get; set; }
+        public int FriendlyBlocksDestroyed { get; set; }
+        public int HostileBlocksDestroyed { get; set; }
+        public float VolumeCreated { get; set; }
+        public float VolumeDestroyed { get; set; }
+        public float VolumeRestored { get; set; }
+        public float VolumeStolen { get; set; }
+        public float VolumeRemaining { get; set; }
+        public float FriendlyVolumeDestroyed { get; set; }
+        public float HostileVolumeDestroyed { get; set; }
+        public int CrystalsCollected { get; set; }
+        public int OmniCrystalsCollected { get; set; }
+        public int ElementalCrystalsCollected { get; set; }
+        public float ChargeCrystalValue { get; set; }
+        public float MassCrystalValue { get; set; }
+        public float SpaceCrystalValue { get; set; }
+        public float TimeCrystalValue { get; set; }
+        public int SkimmerShipCollisions { get; set; }
+        public float FullSpeedStraightAbilityActiveTime { get; set; }
+        public float RightStickAbilityActiveTime { get; set; }
+        public float LeftStickAbilityActiveTime { get; set; }
+        public float FlipAbilityActiveTime { get; set; }
+        public float Button1AbilityActiveTime { get; set; }
+        public float Button2AbilityActiveTime { get; set; }
+        public float Button3AbilityActiveTime { get; set; }
 
         public RoundStats()
         {
@@ -65,7 +64,6 @@ namespace CosmicShore.Core
             Button1AbilityActiveTime = 0;
             Button2AbilityActiveTime = 0;
             Button3AbilityActiveTime = 0;
-
         }
     }
 }

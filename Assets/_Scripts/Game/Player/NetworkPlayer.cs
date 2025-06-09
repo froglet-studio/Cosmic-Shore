@@ -4,7 +4,9 @@ using CosmicShore.Game.IO;
 using CosmicShore.Game.UI;
 using System;
 using System.Collections.Generic;
+using Unity.Android.Gradle.Manifest;
 using Unity.Netcode;
+using Unity.Services.Authentication;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -89,7 +91,8 @@ namespace CosmicShore.Game
             Team = data.Team;
             PlayerName = data.PlayerName;
             PlayerUUID = data.PlayerUUID;
-            Name = data.PlayerName;*/
+            Name = data.PlayerName;
+            */
         }
 
         public void ToggleActive(bool active) => IsActive = active;
@@ -101,6 +104,10 @@ namespace CosmicShore.Game
         /// <param name="isOwner">Is this player owned by this client?</param>
         public void Setup(IShip ship)
         {
+
+            PlayerName = AuthenticationService.Instance.PlayerName;
+            // PlayerUUID = data.PlayerUUID;
+
             _ship = ship;
             _ship = Hangar.Instance.LoadPlayerShip(_ship, _ship.ShipStatus.Team, IsOwner);
 

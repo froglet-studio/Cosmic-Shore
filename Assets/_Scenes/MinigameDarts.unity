@@ -380,7 +380,6 @@ GameObject:
   - component: {fileID: 1078953703}
   - component: {fileID: 1078953706}
   - component: {fileID: 1078953707}
-  - component: {fileID: 1078953708}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -467,20 +466,6 @@ MonoBehaviour:
   AdditionalScoringModes: []
   GameCanvas: {fileID: 0}
   ScoreMultiplier: 0.01
---- !u!114 &1078953708
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e50774bfa84874243a429c7097d42f36, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  EndOfRoundStatContainers: []
-  nodeGame: 0
 --- !u!4 &1180410982 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6454128237993233764, guid: 4a855af160021d241b8c1ac70cf2d792,
@@ -977,6 +962,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 591e5a01275ccbc4f954ac32954da18b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Team: 3
   greenTrailBlock: {fileID: 4563009547826722997, guid: 8503108e8786e1a4caa36ddb1a58f00e,
     type: 3}
   redTrailBlock: {fileID: 4563009547826722997, guid: 34146ee2267ac224da1df0d1326f4563,
@@ -985,6 +971,74 @@ MonoBehaviour:
   ringCount: 18
   ringThickness: 8
   gap: 15
+--- !u!1001 &1451183548
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2173894828075591833, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_Name
+      value: StatsManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2173894828075591839, guid: 52d52803d2bd0384093e4705bcf57ed1,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 52d52803d2bd0384093e4705bcf57ed1, type: 3}
 --- !u!1 &1471404062
 GameObject:
   m_ObjectHideFlags: 0
@@ -1473,3 +1527,4 @@ SceneRoots:
   - {fileID: 1313201258}
   - {fileID: 1649340653}
   - {fileID: 935331535}
+  - {fileID: 1451183548}

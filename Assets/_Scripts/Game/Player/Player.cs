@@ -25,7 +25,6 @@ namespace CosmicShore.Game
 
         public ShipTypes ShipType { get; set; }
         public Teams Team { get; set; }
-        public string Name { get; private set; }
         public string PlayerName { get; private set; }
         public string PlayerUUID { get; set; }
         public IShip Ship { get; private set; }
@@ -57,7 +56,6 @@ namespace CosmicShore.Game
             Team = data.Team;
             PlayerName = data.PlayerName;
             PlayerUUID = data.PlayerUUID;
-            Name = data.PlayerName;
 
             Setup();
         }
