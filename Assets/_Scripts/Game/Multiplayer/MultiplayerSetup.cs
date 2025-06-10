@@ -12,6 +12,7 @@ using CosmicShore.Utilities;
 using CosmicShore.Game;
 using CosmicShore.Game.Arcade;
 using Mono.Cecil;
+using CosmicShore.Utility.ClassExtensions;
 
 
 namespace CosmicShore.Game
@@ -24,7 +25,7 @@ namespace CosmicShore.Game
         int _maxPlayerPerSession;
 
         ISession _activeSession;
-        ISession ActiveSession
+        internal ISession ActiveSession
         {
             get
             {
@@ -55,6 +56,8 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
+            DebugExtensions.LogColored("Hi this is multiplayer setuP!", Color.green);
+
             NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         }

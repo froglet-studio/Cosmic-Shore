@@ -1,5 +1,5 @@
-﻿using Cysharp.Threading.Tasks;
-using System.Collections;
+﻿using CosmicShore.Utility.ClassExtensions;
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Multiplayer.Samples.Utilities;
@@ -90,6 +90,11 @@ namespace CosmicShore.Game
 
                 // For late joins, wait a bit and then initialize the client gameplay state.
                 _clientGameplayState.InitializeAndSetupPlayer_ClientRpc();
+
+                if (MultiplayerSetup.Instance.ActiveSession.AvailableSlots == 0)
+                {
+                    DebugExtensions.LogColored("All players have joined; starting the game.", Color.green);
+                }
             }
         }
 
