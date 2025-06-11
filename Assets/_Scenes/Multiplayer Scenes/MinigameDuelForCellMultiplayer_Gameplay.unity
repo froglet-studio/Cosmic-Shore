@@ -119,89 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1001 &268604288
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: -7658142061511129366, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: GlobalObjectIdHash
-      value: 1887103623
-      objectReference: {fileID: 0}
-    - target: {fileID: -7658142061511129366, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: SceneMigrationSynchronization
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -7658142061511129366, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 2675510992
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591833, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_Name
-      value: NetworkStatsManager
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2173894828075591839, guid: dbea62d3c69736a449cf4770f894a0c3,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: dbea62d3c69736a449cf4770f894a0c3, type: 3}
 --- !u!1001 &324974548
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -816,8 +733,9 @@ GameObject:
   - component: {fileID: 612957687}
   - component: {fileID: 612957688}
   - component: {fileID: 612957690}
-  - component: {fileID: 612957693}
   - component: {fileID: 612957692}
+  - component: {fileID: 612957693}
+  - component: {fileID: 612957695}
   m_Layer: 0
   m_Name: NetworkGame
   m_TagString: Untagged
@@ -917,6 +835,26 @@ MonoBehaviour:
   - {fileID: 712095104256205671, guid: e42d00619a1c77a46b82b0063f84c90c, type: 3}
   - {fileID: 4514087566467146925, guid: b176ea89025ed6144aa27144dc62c455, type: 3}
   _mainMenuSceneName: Menu_Main
+--- !u!114 &612957695
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 612957686}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acfe33e52a1d81c41abb4173af0785d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  EndOfRoundStatContainers: []
+  nodeGame: 0
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+    type: 2}
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+    type: 2}
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+    type: 2}
 --- !u!1 &1074736316
 GameObject:
   m_ObjectHideFlags: 0
@@ -1484,4 +1422,3 @@ SceneRoots:
   - {fileID: 547474316}
   - {fileID: 507066190}
   - {fileID: 420213768}
-  - {fileID: 268604288}

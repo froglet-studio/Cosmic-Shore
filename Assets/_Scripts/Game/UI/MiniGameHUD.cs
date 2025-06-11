@@ -1,8 +1,10 @@
-using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Utilities;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
 
 namespace CosmicShore.Game.UI
 {
@@ -23,7 +25,65 @@ namespace CosmicShore.Game.UI
         [SerializeField] GameObject button1;
         [SerializeField] GameObject button2;
         [SerializeField] GameObject button3;
-        public IShip Ship { get; set; }
+
+        [SerializeField]
+        PipEventChannelSO OnPipInitializedEventChannel;
+
+        [SerializeField]
+        IntEventChannelSO onMoundDroneSpawned;
+
+        [SerializeField]
+        IntEventChannelSO onQueenDroneSpawned;
+
+        [SerializeField]
+        BoolEventChannelSO onBottomEdgeButtonsEnabled;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton1Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton1Released;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton2Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton2Released;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton3Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton3Released;
+
+        [SerializeField]
+        SilhouetteEventChannelSO OnSilhouetteInitialized;
+
+        // public IShip Ship { get; set; }
+
+        private void OnEnable()
+        {
+            OnPipInitializedEventChannel.OnEventRaised += OnPipInitialized;
+            onMoundDroneSpawned.OnEventRaised += SetLeftNumberDisplay;
+            onQueenDroneSpawned.OnEventRaised += SetRightNumberDisplay;
+            onBottomEdgeButtonsEnabled.OnEventRaised += PositionButtonPanel;
+            OnSilhouetteInitialized.OnEventRaised += SetupForSilhouette;
+        }
+
+        private void OnDisable()
+        {
+            OnPipInitializedEventChannel.OnEventRaised -= OnPipInitialized;
+            onMoundDroneSpawned.OnEventRaised -= SetLeftNumberDisplay;
+            onQueenDroneSpawned.OnEventRaised -= SetRightNumberDisplay;
+            onBottomEdgeButtonsEnabled.OnEventRaised -= PositionButtonPanel;
+            OnSilhouetteInitialized.OnEventRaised -= SetupForSilhouette;
+        }
+
+        public void Show() => gameObject.SetActive(true);
+        public void Hide() => gameObject.SetActive(false);
+
+        void OnPipInitialized(PipEventData data) =>
+            SetPipActive(data.IsActive, data.IsMirrored);
 
         public void SetPipActive(bool active, bool mirrored)
         {
@@ -92,32 +152,50 @@ namespace CosmicShore.Game.UI
 
         public void PressButton1() // TODO: this should move to ButtonPanel
         {
-            Ship.PerformShipControllerActions(InputEvents.Button1Action);
+            // Ship.PerformShipControllerActions(InputEvents.Button1Action);
+            OnButton1Pressed.RaiseEvent(InputEvents.Button1Action);
         }
 
         public void releaseButton1()
         {
-            Ship.StopShipControllerActions(InputEvents.Button1Action);
+            // Ship.StopShipControllerActions(InputEvents.Button1Action);
+            OnButton1Released.RaiseEvent(InputEvents.Button1Action);
         }
 
         public void PressButton2()
         {
-            Ship.PerformShipControllerActions(InputEvents.Button2Action);
+            // Ship.PerformShipControllerActions(InputEvents.Button2Action);
+            OnButton2Pressed.RaiseEvent(InputEvents.Button2Action);
         }
 
         public void releaseButton2()
         {
-            Ship.StopShipControllerActions(InputEvents.Button2Action);
+            // Ship.StopShipControllerActions(InputEvents.Button2Action);
+            OnButton2Released.RaiseEvent(InputEvents.Button2Action);
         }
 
         public void PressButton3()
         {
-            Ship.PerformShipControllerActions(InputEvents.Button3Action);
+            // Ship.PerformShipControllerActions(InputEvents.Button3Action);
+            OnButton3Pressed.RaiseEvent(InputEvents.Button3Action);
         }
 
         public void releaseButton3()
         {
-            Ship.StopShipControllerActions(InputEvents.Button3Action);
+            // Ship.StopShipControllerActions(InputEvents.Button3Action);
+            OnButton3Released.RaiseEvent(InputEvents.Button3Action);
+        }
+
+        public void SetupForSilhouette(SilhouetteData data)
+        {
+            var silhouetteContainer = SetSilhouetteActive(data.IsSilhouetteActive).transform;
+            var trailDisplayContainer = SetTrailDisplayActive(data.IsTrailDisplayActive).transform;
+            foreach (var part in data.Silhouettes)
+            {
+                part.transform.SetParent(silhouetteContainer.transform, false);
+                part.SetActive(true);
+            }
+            data.Sender.SetSilhouetteReference(silhouetteContainer, trailDisplayContainer);
         }
     }
 }

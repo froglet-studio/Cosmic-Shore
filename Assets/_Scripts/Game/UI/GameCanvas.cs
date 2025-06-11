@@ -1,3 +1,5 @@
+using CosmicShore.Core;
+using CosmicShore.Utilities;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -23,5 +25,31 @@ namespace CosmicShore.Game.UI
         [SerializeField] public TMP_Text CrystalsEarnedText;
         [SerializeField] public List<Image> EncounteredCaptainImages;
         [SerializeField] public TMP_Text EncounteredCaptainText;
+
+        [SerializeField]
+        ShipHUDEventChannelSO onShipHUDInitialized;
+
+        private void OnEnable()
+        {
+            onShipHUDInitialized.OnEventRaised += OnShipHUDInitialized;
+        }
+
+
+        private void OnDisable()
+        {
+            onShipHUDInitialized.OnEventRaised -= OnShipHUDInitialized;
+        }
+        private void OnShipHUDInitialized(ShipHUDData data)
+        {
+            MiniGameHUD.Hide();
+            MiniGameHUD = data.ShipHUD;
+            MiniGameHUD.gameObject.SetActive(true);
+
+            foreach (var child in MiniGameHUD.GetComponentsInChildren<Transform>(false))
+            {
+                child.SetParent(transform, false);
+                child.SetSiblingIndex(0);   // Don't draw on top of modal screens
+            }
+        }
     }
 }

@@ -12,6 +12,7 @@ using CosmicShore.Utilities;
 using CosmicShore.Game;
 using CosmicShore.Game.Arcade;
 using Mono.Cecil;
+using CosmicShore.Utility.ClassExtensions;
 
 
 namespace CosmicShore.Game
@@ -20,11 +21,14 @@ namespace CosmicShore.Game
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
 
+        [SerializeField]
+        ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
+
         string _multiplayerSceneName;
         int _maxPlayerPerSession;
 
         ISession _activeSession;
-        ISession ActiveSession
+        internal ISession ActiveSession
         {
             get
             {
@@ -55,8 +59,18 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
+            DebugExtensions.LogColored("Hi this is multiplayer setuP!", Color.green);
+
+            if (NetworkManager.Singleton == null)
+            {
+                Debug.LogError("[MultiplayerSetup] NetworkManager is not initialized. Ensure it is set up in the scene.");
+                return;
+            }
+
             NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+
+            OnArcadeMultiplayerModeSelected.OnEventRaised += OnMultiplayModeSelected;
         }
 
         async void Start()
@@ -74,7 +88,12 @@ namespace CosmicShore.Game
                 NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                 NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
             }
+
+            OnArcadeMultiplayerModeSelected.OnEventRaised -= OnMultiplayModeSelected;
         }
+
+        private void OnMultiplayModeSelected(ArcadeData data) => 
+            ExecuteMultiplayerSetup(data.SceneName, data.MaxPlayers);
 
         public async void ExecuteMultiplayerSetup(string multiplayerSceneName, int maxPlayersPerSession)
         {

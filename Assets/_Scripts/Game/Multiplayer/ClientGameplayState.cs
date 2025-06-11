@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Core;
 using Unity.Netcode;
+using UnityEngine;
 using UnityEngine.Assertions;
 
 
@@ -8,7 +9,7 @@ namespace CosmicShore.Game
     public class ClientGameplayState : NetworkBehaviour
     {
         [ClientRpc]
-        public void InitializeAndSetupPlayer_ClientRpc(ClientRpcParams clientRpcParams = default)
+        internal void InitializeAndSetupPlayer_ClientRpc(ClientRpcParams clientRpcParams = default)
         {
             foreach (NetworkPlayer networkPlayer in NetworkPlayer.NppList)
             {

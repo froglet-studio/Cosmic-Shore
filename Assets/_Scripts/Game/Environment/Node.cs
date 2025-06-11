@@ -289,9 +289,9 @@ public class Node : MonoBehaviour
 
         get 
         {
-            var greenVolume = StatsManager.Instance.TeamStats.ContainsKey(Teams.Jade) ? StatsManager.Instance.TeamStats[Teams.Jade].VolumeRemaining : 0f;
-            var redVolume = StatsManager.Instance.TeamStats.ContainsKey(Teams.Ruby) ? StatsManager.Instance.TeamStats[Teams.Ruby].VolumeRemaining : 0f;
-            var goldVolume = StatsManager.Instance.TeamStats.ContainsKey(Teams.Gold) ? StatsManager.Instance.TeamStats[Teams.Gold].VolumeRemaining : 0f;
+            var greenVolume = StatsManager.Instance != null && StatsManager.Instance.TeamStats.ContainsKey(Teams.Jade) ? StatsManager.Instance.TeamStats[Teams.Jade].VolumeRemaining : 0f;
+            var redVolume = StatsManager.Instance != null && StatsManager.Instance.TeamStats.ContainsKey(Teams.Ruby) ? StatsManager.Instance.TeamStats[Teams.Ruby].VolumeRemaining : 0f;
+            var goldVolume = StatsManager.Instance != null && StatsManager.Instance.TeamStats.ContainsKey(Teams.Gold) ? StatsManager.Instance.TeamStats[Teams.Gold].VolumeRemaining : 0f;
 
             if (greenVolume > redVolume && greenVolume > goldVolume)
                 return Teams.Jade;

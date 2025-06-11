@@ -22,7 +22,9 @@ namespace CosmicShore.Core
         [field: SerializeField] public SO_MissionList MissionGames { get; private set; }
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
-        [SerializeField] MultiplayerSetup _multiplayerSetup;
+        
+        [SerializeField]
+        ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
 
 
         Dictionary<GameModes, SO_ArcadeGame> ArcadeGameLookup = new();
@@ -88,7 +90,14 @@ namespace CosmicShore.Core
             // TODO: Refactor later to support multiple multiplayer game modes. We can add a bool isMultiplayer paramter to SO_Game later if needed.
             if (SO_Game.IsMultiplayerModes(gameMode))
             {
-                _multiplayerSetup.ExecuteMultiplayerSetup(ArcadeGameLookup[gameMode].SceneName, GetArcadeGameByMode(gameMode).MaxPlayersForMultiplayer);
+                // TODO: Remove MultiplayerSetup dependency
+
+                // _multiplayerSetup.ExecuteMultiplayerSetup(ArcadeGameLookup[gameMode].SceneName, GetArcadeGameByMode(gameMode).MaxPlayersForMultiplayer);
+                OnArcadeMultiplayerModeSelected.RaiseEvent(new ArcadeData()
+                {
+                    SceneName = ArcadeGameLookup[gameMode].SceneName, 
+                    MaxPlayers = GetArcadeGameByMode(gameMode).MaxPlayersForMultiplayer
+                });
                 return;
             }
 

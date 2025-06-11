@@ -123,8 +123,6 @@ namespace CosmicShore.Game
             Ship.Transform.SetParent(shipContainer.transform, false);
             Ship.ShipStatus.AIPilot.enabled = false;
 
-            GameCanvas.MiniGameHUD.Ship = Ship;
-
             InitializeShip();
             InputController.Initialize(Ship);
             // TODO: P0 - this is a stop gap to get ships loading again, but is not a full fix

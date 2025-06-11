@@ -6,7 +6,7 @@ namespace CosmicShore.Core
     {
         private readonly NetworkVariable<int> n_BlocksCreated = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int BlocksCreated
         {
             get => n_BlocksCreated.Value;
@@ -15,7 +15,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_BlocksDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int BlocksDestroyed
         {
             get => n_BlocksDestroyed.Value;
@@ -24,7 +24,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_BlocksRestored = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int BlocksRestored
         {
             get => n_BlocksRestored.Value;
@@ -33,7 +33,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_BlocksStolen = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int BlocksStolen
         {
             get => n_BlocksStolen.Value;
@@ -42,7 +42,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_BlocksRemaining = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int BlocksRemaining
         {
             get => n_BlocksRemaining.Value;
@@ -51,7 +51,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_FriendlyBlocksDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int FriendlyBlocksDestroyed
         {
             get => n_FriendlyBlocksDestroyed.Value;
@@ -60,7 +60,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_HostileBlocksDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int HostileBlocksDestroyed
         {
             get => n_HostileBlocksDestroyed.Value;
@@ -69,7 +69,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_VolumeCreated = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float VolumeCreated
         {
             get => n_VolumeCreated.Value;
@@ -78,7 +78,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_VolumeDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float VolumeDestroyed
         {
             get => n_VolumeDestroyed.Value;
@@ -87,7 +87,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_VolumeRestored = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float VolumeRestored
         {
             get => n_VolumeRestored.Value;
@@ -96,7 +96,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_VolumeStolen = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float VolumeStolen
         {
             get => n_VolumeStolen.Value;
@@ -105,7 +105,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_VolumeRemaining = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float VolumeRemaining
         {
             get => n_VolumeRemaining.Value;
@@ -114,7 +114,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_FriendlyVolumeDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float FriendlyVolumeDestroyed
         {
             get => n_FriendlyVolumeDestroyed.Value;
@@ -123,7 +123,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_HostileVolumeDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float HostileVolumeDestroyed
         {
             get => n_HostileVolumeDestroyed.Value;
@@ -132,7 +132,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_CrystalsCollected = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int CrystalsCollected
         {
             get => n_CrystalsCollected.Value;
@@ -141,7 +141,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_OmniCrystalsCollected = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int OmniCrystalsCollected
         {
             get => n_OmniCrystalsCollected.Value;
@@ -150,7 +150,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_ElementalCrystalsCollected = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int ElementalCrystalsCollected
         {
             get => n_ElementalCrystalsCollected.Value;
@@ -159,7 +159,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_ChargeCrystalValue = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float ChargeCrystalValue
         {
             get => n_ChargeCrystalValue.Value;
@@ -168,7 +168,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_MassCrystalValue = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float MassCrystalValue
         {
             get => n_MassCrystalValue.Value;
@@ -177,7 +177,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_SpaceCrystalValue = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float SpaceCrystalValue
         {
             get => n_SpaceCrystalValue.Value;
@@ -186,7 +186,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_TimeCrystalValue = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float TimeCrystalValue
         {
             get => n_TimeCrystalValue.Value;
@@ -195,7 +195,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<int> n_SkimmerShipCollisions = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public int SkimmerShipCollisions
         {
             get => n_SkimmerShipCollisions.Value;
@@ -204,7 +204,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float FullSpeedStraightAbilityActiveTime
         {
             get => n_FullSpeedStraightAbilityActiveTime.Value;
@@ -213,7 +213,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_RightStickAbilityActiveTime = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float RightStickAbilityActiveTime
         {
             get => n_RightStickAbilityActiveTime.Value;
@@ -222,7 +222,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_LeftStickAbilityActiveTime = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float LeftStickAbilityActiveTime
         {
             get => n_LeftStickAbilityActiveTime.Value;
@@ -231,7 +231,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_FlipAbilityActiveTime = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float FlipAbilityActiveTime
         {
             get => n_FlipAbilityActiveTime.Value;
@@ -240,7 +240,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_Button1AbilityActiveTime = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float Button1AbilityActiveTime
         {
             get => n_Button1AbilityActiveTime.Value;
@@ -249,7 +249,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_Button2AbilityActiveTime = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float Button2AbilityActiveTime
         {
             get => n_Button2AbilityActiveTime.Value;
@@ -258,7 +258,7 @@ namespace CosmicShore.Core
 
         private readonly NetworkVariable<float> n_Button3AbilityActiveTime = new(
             readPerm: NetworkVariableReadPermission.Everyone,
-            writePerm: NetworkVariableWritePermission.Owner);
+            writePerm: NetworkVariableWritePermission.Server);
         public float Button3AbilityActiveTime
         {
             get => n_Button3AbilityActiveTime.Value;
