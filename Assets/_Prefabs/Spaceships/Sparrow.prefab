@@ -728,14 +728,12 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  ship: {fileID: 0}
-  Player: {fileID: 0}
-  team: 0
   activelySkimmingBlockCount: 0
   AOEPrefab: {fileID: 0}
   AOEPeriod: 0
   lineMaterial: {fileID: 0}
-  markerPrefab: {fileID: 0}
+  markerContainer: {fileID: 0}
+  markerDistance: 70
   resourceIndex: 0
 --- !u!1 &5978549935140177486
 GameObject:
@@ -940,25 +938,15 @@ MonoBehaviour:
     speedPenalty: 0
     hapticType: 0
     trailBlock: {fileID: 0}
-  cameraManager: {fileID: 0}
-  InputController: {fileID: 0}
-  ResourceSystem: {fileID: 0}
   Name: Sparrow
-  ShipType: 11
-  TrailSpawner: {fileID: 874579555101021522}
-  ShipTransformer: {fileID: 0}
-  AutoPilot: {fileID: 0}
-  ShipStatus: {fileID: 0}
+  _shipType: 11
   nearFieldSkimmer: {fileID: 0}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
   - {fileID: 1711486038307105652}
   shipHUD: {fileID: 8706425432549089397}
-  Silhouette: {fileID: 2731003324702047408}
   AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 0}
-  ShipCameraCustomizer: {fileID: 705402283976800655}
-  FollowTarget: {fileID: 3967031065131343057}
   resourceIndex: 0
   ammoResourceIndex: 0
   boostResourceIndex: 1
@@ -981,11 +969,15 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 8671196826403818986}
   resourceEventClassActions: []
-  AOEExplosionMaterial: {fileID: 0}
-  AOEConicExplosionMaterial: {fileID: 0}
-  SkimmerMaterial: {fileID: 0}
-  Captain: {fileID: 0}
   ElementStats: []
+  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
+    type: 2}
+  OnButton1Pressed: {fileID: 11400000, guid: ea281f4848964144d81ee0a8e540ad2f, type: 2}
+  OnButton1Released: {fileID: 11400000, guid: badbc8ef2643e3d47b793be40335bdbc, type: 2}
+  OnButton2Pressed: {fileID: 11400000, guid: 6c079a6516dcdf249a1bd370ddc2154a, type: 2}
+  OnButton2Released: {fileID: 11400000, guid: 732537c5fb94779499e2743f12f2d6ca, type: 2}
+  OnButton3Pressed: {fileID: 11400000, guid: 9118ec0882fa02648b052c4e04259fbd, type: 2}
+  OnButton3Released: {fileID: 11400000, guid: 8d28d7878c107ce449c50b14b57220ab, type: 2}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -998,27 +990,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  ChargedBoostDischarging: 0
-  Drifting: 0
-  Turret: 0
-  Portrait: 0
-  SingleStickControls: 0
-  CommandStickControls: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedResourceGain: 0
-  ChargedBoostCharge: 1
-  AutoPilotEnabled: 0
-  AlignmentEnabled: 0
-  Slowed: 0
-  Overheating: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 1}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &8900747579718772804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1031,6 +1002,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  toggleManualThrottle: 0
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
@@ -1060,22 +1032,20 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
     type: 3}
   skimmer: {fileID: 2413128156359967549}
-  waitTillOutsideSkimmer: 1
-  shielded: 0
   initialWavelength: 7
   minWavelength: 7
+  defaultWaitTime: 0
+  MaxNearbyBlockCount: 70
+  minBlockScale: 1
+  maxBlockScale: 4
+  waitTillOutsideSkimmer: 1
+  shielded: 0
   offset: 4
   Gap: 0
   MinimumGap: 0
   TargetScale: {x: 0, y: 0, z: 0}
-  defaultWaitTime: 0
-  waitTime: 1
-  startDelay: 0
-  warp: 0
   spawnerEnabled: 1
-  MaxNearbyBlockCount: 70
-  minBlockScale: 1
-  maxBlockScale: 4
+  startDelay: 0
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -1145,7 +1115,6 @@ MonoBehaviour:
   Y: 0
   raycastHeight: 2
   raycastWidth: 2
-  AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 0
   drift: 0
@@ -1160,6 +1129,7 @@ MonoBehaviour:
   - Ability: {fileID: 8671196826403818986}
     Duration: 0
     Cooldown: 10
+  CrystalPosition: {x: 0, y: 0, z: 0}
   TargetPosition: {x: 0, y: 0, z: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
@@ -1202,12 +1172,13 @@ MonoBehaviour:
   - {fileID: 5978549935140177486}
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
+  sihouetteScale: {x: 1, y: 1, z: 1}
+  OnSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+    type: 2}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
   swingBlocks: 0
-  ship: {fileID: 874579555101021527}
-  sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!114 &705402283976800655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1276,8 +1247,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   firePeriod: 0.2
-  Team: 0
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &7113592867435310030
 GameObject:
   m_ObjectHideFlags: 0
@@ -1322,11 +1291,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 874579555101021527}
   pools:
   - prefab: {fileID: 7877928849292311340, guid: 1bdcea9e9329dd141af7ab874a4d31a2,
       type: 3}
     size: 1000
+  ship: {fileID: 874579555101021527}
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1408,8 +1377,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   firePeriod: 0.2
-  Team: 0
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &8219347799270583732
 GameObject:
   m_ObjectHideFlags: 0
@@ -1454,11 +1421,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 874579555101021527}
   pools:
   - prefab: {fileID: 7877928849292311340, guid: d98b78f64251b2c42a322f4f46f197ac,
       type: 3}
     size: 8
+  ship: {fileID: 874579555101021527}
 --- !u!1 &8777980414596646480
 GameObject:
   m_ObjectHideFlags: 0
@@ -1638,61 +1605,61 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[0]
+      propertyPath: 'fuelLevelImages.Array.data[0]'
       value: 
       objectReference: {fileID: 21300000, guid: e133b1889d61ae44c9fdd35c1dabbf7f,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[1]
+      propertyPath: 'fuelLevelImages.Array.data[1]'
       value: 
       objectReference: {fileID: 21300000, guid: 7b77abc35f87f5a48ad997306a16ceb8,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[2]
+      propertyPath: 'fuelLevelImages.Array.data[2]'
       value: 
       objectReference: {fileID: 21300000, guid: 0077c840150f714489726c7cb048306d,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[3]
+      propertyPath: 'fuelLevelImages.Array.data[3]'
       value: 
       objectReference: {fileID: 21300000, guid: 5d79a7d9a9022984e9fd0342be1aa314,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[4]
+      propertyPath: 'fuelLevelImages.Array.data[4]'
       value: 
       objectReference: {fileID: 21300000, guid: c899c5f9b824619488c8117cc0a541fe,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[5]
+      propertyPath: 'fuelLevelImages.Array.data[5]'
       value: 
       objectReference: {fileID: 21300000, guid: 113056ec433d60f4bb79caf2298864cd,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[6]
+      propertyPath: 'fuelLevelImages.Array.data[6]'
       value: 
       objectReference: {fileID: 21300000, guid: e2ddb0f81f8ddd64da3df955163dbfe9,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[7]
+      propertyPath: 'fuelLevelImages.Array.data[7]'
       value: 
       objectReference: {fileID: 21300000, guid: 0564333bcec6903449c3c51a0389cb29,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[8]
+      propertyPath: 'fuelLevelImages.Array.data[8]'
       value: 
       objectReference: {fileID: 21300000, guid: b55aa183c7caef942a1f62206e5f61c9,
         type: 3}
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[9]
+      propertyPath: 'fuelLevelImages.Array.data[9]'
       value: 
       objectReference: {fileID: 21300000, guid: 66c6deb46b2e9ae4ca0ab54821ed12dc,
         type: 3}
@@ -2289,22 +2256,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[0]
+      propertyPath: 'm_BlendShapeWeights.Array.data[0]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[1]
+      propertyPath: 'm_BlendShapeWeights.Array.data[1]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[2]
+      propertyPath: 'm_BlendShapeWeights.Array.data[2]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[3]
+      propertyPath: 'm_BlendShapeWeights.Array.data[3]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2741790991827285993, guid: 151e3f0352963624abf4da579618e66d,
@@ -2404,22 +2371,22 @@ PrefabInstance:
       objectReference: {fileID: 7048846549082405668}
     - target: {fileID: 5953559334840733477, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[0]
+      propertyPath: 'm_BlendShapeWeights.Array.data[0]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5953559334840733477, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[1]
+      propertyPath: 'm_BlendShapeWeights.Array.data[1]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5953559334840733477, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[2]
+      propertyPath: 'm_BlendShapeWeights.Array.data[2]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5953559334840733477, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[3]
+      propertyPath: 'm_BlendShapeWeights.Array.data[3]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5964934436012025541, guid: 151e3f0352963624abf4da579618e66d,
@@ -2739,19 +2706,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[0]
+      propertyPath: 'fuelLevelImages.Array.data[0]'
       value: 
       objectReference: {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2,
         type: 3}
     - target: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[1]
+      propertyPath: 'fuelLevelImages.Array.data[1]'
       value: 
       objectReference: {fileID: 21300000, guid: 8306bc28766790c4e95529f8ed9ca0cb,
         type: 3}
     - target: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
-      propertyPath: fuelLevelImages.Array.data[2]
+      propertyPath: 'fuelLevelImages.Array.data[2]'
       value: 
       objectReference: {fileID: 21300000, guid: dcdff3c20c9ecde42aaf995f157e2007,
         type: 3}

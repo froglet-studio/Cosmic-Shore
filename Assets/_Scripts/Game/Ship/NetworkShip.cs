@@ -3,6 +3,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models;
 using CosmicShore.Models.Enums;
+using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,6 +55,27 @@ namespace CosmicShore.Game
 
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
+
+        [SerializeField]
+        BoolEventChannelSO onBottomEdgeButtonsEnabled;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton1Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton1Released;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton2Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton2Released;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton3Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton3Released;
 
         #region Public Properties
 
@@ -108,7 +130,15 @@ namespace CosmicShore.Game
                 n_Course.OnValueChanged += OnCourseChanged;
                 n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
             }
-                
+            else
+            {
+                OnButton1Pressed.OnEventRaised += PerformShipControllerActions;
+                OnButton1Released.OnEventRaised += StopShipControllerActions;
+                OnButton2Pressed.OnEventRaised += PerformShipControllerActions;
+                OnButton2Released.OnEventRaised += StopShipControllerActions;
+                OnButton3Pressed.OnEventRaised += PerformShipControllerActions;
+                OnButton3Released.OnEventRaised += StopShipControllerActions;
+            }
 
             ShipStatus.ShipTransformer.enabled = IsOwner;
             ShipStatus.TrailSpawner.ForceStartSpawningTrail();
@@ -132,6 +162,15 @@ namespace CosmicShore.Game
                 n_Speed.OnValueChanged -= OnSpeedChanged;
                 n_Course.OnValueChanged -= OnCourseChanged;
                 n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
+            }
+            else
+            {
+                OnButton1Pressed.OnEventRaised -= PerformShipControllerActions;
+                OnButton1Released.OnEventRaised -= StopShipControllerActions;
+                OnButton2Pressed.OnEventRaised -= PerformShipControllerActions;
+                OnButton2Released.OnEventRaised -= StopShipControllerActions;
+                OnButton3Pressed.OnEventRaised -= PerformShipControllerActions;
+                OnButton3Released.OnEventRaised -= StopShipControllerActions;
             }
         }
 
@@ -157,7 +196,10 @@ namespace CosmicShore.Game
             if (IsOwner)
             {
                 if (!_shipStatus.FollowTarget) ShipStatus.FollowTarget = transform;
-                if (_bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
+
+                // TODO - Remove GameCanvas dependency
+                onBottomEdgeButtonsEnabled.RaiseEvent(true);
+                // if (_bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
 
                 InitializeShipControlActions();
                 InitializeClassResourceActions();

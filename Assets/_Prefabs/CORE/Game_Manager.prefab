@@ -24,13 +24,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5036209225001289759}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5036209225001289746
 MonoBehaviour:
@@ -44,13 +44,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7fcb218adb3f54348a9de015bd773527, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  mainMenuScene: Menu_Main
-  gameTestModeZeroGameScene: Game_HighScore
-  gameTestModeOneGameScene: Game_TestControl
-  gameTestModeTwoGameScene: Game_TestNodeInterior
-  gameTestModeThreeGameScene: Game_TestNodeSurface
-  gameTestModeFourGameScene: Game_TestWarp
-  gameTestDesign: Game_TestDesign
-  hangarScene: Hangar
-  tutorialGameScene: Game_Tutorial
+  AllGames: {fileID: 11400000, guid: 23306534ee610414c99a9b7bf3d92995, type: 2}
+  AllShips: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}

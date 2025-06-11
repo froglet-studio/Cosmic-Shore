@@ -47,32 +47,18 @@ MonoBehaviour:
   AllShips: {fileID: 11400000, guid: 17dcd58a38dad2a498afe518e6a0bb58, type: 2}
   PlayerTeam: 1
   PlayerShipType: 0
-  FriendlyAIShipType: 3
-  HostileAI1ShipType: 1
-  HostileAI2ShipType: 2
+  FriendlyAIShipType: 7
+  HostileAI1ShipType: 11
+  HostileAI2ShipType: 6
   HostileAI3ShipType: 0
   GreenTeamShipTypes: 000000000000000000000000
   RedTeamShipTypes: 000000000000000000000000
   GoldTeamShipTypes: 000000000000000000000000
-  BaseMaterialSet: {fileID: 11400000, guid: 0652043127df97f4aabf86c605b1c049, type: 2}
-  ColorSet: {fileID: 11400000, guid: 869de103315f7e445ab9d6174addd5a6, type: 2}
-  GreenTeamMaterialSet: {fileID: 11400000, guid: 0652043127df97f4aabf86c605b1c049,
-    type: 2}
-  RedTeamMaterialSet: {fileID: 11400000, guid: 5564d4204171ee240abd67b30705be01, type: 2}
-  BlueTeamMaterialSet: {fileID: 11400000, guid: f261cb811da3702419e9e153b6e37e6b,
-    type: 2}
-  GoldTeamMaterialSet: {fileID: 11400000, guid: ac792f80115dd5942a639e5e5ea6073a,
-    type: 2}
   ShipPrefabs:
-  - {fileID: 874579555101021527, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
-  - {fileID: 874579555101021527, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
-  - {fileID: 874579555101021527, guid: 6b2bdbe32b1ed4944a62366baf0d8a80, type: 3}
-  - {fileID: 874579555101021527, guid: cc90998ce81596a49be5dba224e2d7a6, type: 3}
-  - {fileID: 874579555101021527, guid: 73c8fd79b947fef4f80df7c233451d3c, type: 3}
-  - {fileID: 874579555101021527, guid: 31cd97d0f057e9e4b8355c7f7e86bd42, type: 3}
-  - {fileID: 874579555101021527, guid: 779e5b08e6fd7bc48b335c3b67e26f3b, type: 3}
-  - {fileID: 874579555101021527, guid: 2d5833ab632135248959e37cc8aef2be, type: 3}
-  - {fileID: 874579555101021527, guid: 633ae27c43a2006459b22e655df7ab4f, type: 3}
-  - {fileID: 874579555101021527, guid: ae83e6dd3b718654db0175585a46edb2, type: 3}
-  - {fileID: 874579555101021527, guid: 7d34187cec80b624f82a3ed560c56324, type: 3}
-  AIDifficultyLevel: 4
+  - {fileID: 6417075533431866457, guid: 7d34187cec80b624f82a3ed560c56324, type: 3}
+  - {fileID: 6417075533431866457, guid: 779e5b08e6fd7bc48b335c3b67e26f3b, type: 3}
+  - {fileID: 6417075533431866457, guid: 31cd97d0f057e9e4b8355c7f7e86bd42, type: 3}
+  - {fileID: 6417075533431866457, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
+  - {fileID: 6417075533431866457, guid: 6b2bdbe32b1ed4944a62366baf0d8a80, type: 3}
+  - {fileID: 6417075533431866457, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  AISkillLevel: 1

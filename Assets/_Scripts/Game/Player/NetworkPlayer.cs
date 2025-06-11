@@ -35,7 +35,7 @@ namespace CosmicShore.Game
         public InputController InputController =>
             _inputController = _inputController != null ? _inputController : GetComponent<InputController>();
 
-        public GameCanvas GameCanvas { get; private set; }
+        // public GameCanvas GameCanvas { get; private set; }
         public Transform Transform => transform;
         public bool IsActive { get; private set; } = false;
 
