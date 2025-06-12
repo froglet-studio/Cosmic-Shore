@@ -14,15 +14,15 @@ namespace CosmicShore.App.Systems
         {
             if (Paused)
             {
-                //Time.timeScale = 1f;
+                Time.timeScale = 1f;
                 Paused = false;
-                OnGameResumed?.Invoke();
+                //OnGameResumed?.Invoke();
             }
             else
             {
                 //Time.timeScale = 0f;
                 Paused = true;
-                OnGamePaused?.Invoke();
+                //OnGamePaused?.Invoke();
             }
         }
     }
