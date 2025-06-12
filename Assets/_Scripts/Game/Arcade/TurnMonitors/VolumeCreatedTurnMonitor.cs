@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -8,7 +9,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float Amount;
         [SerializeField] MiniGame Game;
         [SerializeField] bool hostileVolume;
-        Core.RoundStats volumeStat;
+        Core.IRoundStats volumeStat;
         Teams team;
         float volumeUnitConverstion = 145.65f;
 

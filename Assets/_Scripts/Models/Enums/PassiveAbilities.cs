@@ -7,4 +7,5 @@ public enum ShipCameraOverrides
     ChangeFollowTarget = 5,
     SetFollowTarget = 6,
     Orthgraphic = 7,
+    SetFixedFollowOffset = 8,
 }

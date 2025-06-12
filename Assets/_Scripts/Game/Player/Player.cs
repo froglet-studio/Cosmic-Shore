@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         [SerializeField] GameObject shipContainer;
         // [SerializeField] ShipTypes defaultShip = ShipTypes.Dolphin;
         [SerializeField] bool UseHangarConfiguration = true;
-        [SerializeField] bool IsAI = false;
+        [SerializeField] internal bool IsAI = false;
         [SerializeField] IPlayer.InitializeData InitializeData;
 
         [SerializeField] Gun gun;
@@ -25,7 +25,6 @@ namespace CosmicShore.Game
 
         public ShipTypes ShipType { get; set; }
         public Teams Team { get; set; }
-        public string Name { get; private set; }
         public string PlayerName { get; private set; }
         public string PlayerUUID { get; set; }
         public IShip Ship { get; private set; }
@@ -57,7 +56,6 @@ namespace CosmicShore.Game
             Team = data.Team;
             PlayerName = data.PlayerName;
             PlayerUUID = data.PlayerUUID;
-            Name = data.PlayerName;
 
             Setup();
         }
@@ -125,8 +123,6 @@ namespace CosmicShore.Game
             Ship.Transform.SetParent(shipContainer.transform, false);
             Ship.ShipStatus.AIPilot.enabled = false;
 
-            GameCanvas.MiniGameHUD.Ship = Ship;
-
             InitializeShip();
             InputController.Initialize(Ship);
             // TODO: P0 - this is a stop gap to get ships loading again, but is not a full fix
@@ -142,7 +138,6 @@ namespace CosmicShore.Game
 
             Ship = ship;
 
-            // TODO: P0 - Verify this works in arcade games
             Ship.Transform.SetParent(shipContainer.transform, false);
 
             Ship.ShipStatus.AIPilot.enabled = true;
@@ -154,5 +149,43 @@ namespace CosmicShore.Game
         }
 
         void InitializeShip() => Ship.Initialize(this);
+
+        public void StartAutoPilot()
+        {
+            Ship.ShipStatus.AutoPilotEnabled = true;
+            var ai = Ship?.ShipStatus?.AIPilot;
+            if (ai == null)
+            {
+                Debug.LogError("StartAutoPilot: no AIPilot found on ShipStatus.");
+                return;
+            }
+
+            ai.AssignShip(Ship);
+
+            ai.Initialize(true);
+
+            InputController.SetPaused(true);
+
+            Debug.Log("StartAutoPilot: AI initialized and player input paused.");
+        }
+
+        public void StopAutoPilot()
+        {
+            Ship.ShipStatus.AutoPilotEnabled = false;
+            var ai = Ship?.ShipStatus?.AIPilot;
+            if (ai == null)
+            {
+                Debug.LogError("StopAutoPilot: no AIPilot found on ShipStatus.");
+                return;
+            }
+
+            ai.Initialize(false);
+
+            InputController.SetPaused(false);
+
+            Debug.Log("StopAutoPilot: AI disabled and player input unpaused.");
+        }
+
+
     }
 }

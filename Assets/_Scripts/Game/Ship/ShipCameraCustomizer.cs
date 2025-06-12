@@ -44,6 +44,9 @@ namespace CosmicShore
                     case ShipCameraOverrides.FarCam:
                         cameraManager.FarCamDistance = farCamDistance.Value;
                         break;
+                    case ShipCameraOverrides.SetFixedFollowOffset:
+                        cameraManager.SetFixedFollowOffset(FollowTargetPosition);
+                        break;
                     case ShipCameraOverrides.SetFollowTarget:
                         FollowTarget.parent = null;
                         FollowTarget.position = FollowTargetPosition;

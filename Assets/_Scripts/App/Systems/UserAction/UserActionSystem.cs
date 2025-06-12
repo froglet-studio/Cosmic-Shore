@@ -1,4 +1,4 @@
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 
 namespace CosmicShore.App.Systems.UserActions
 {

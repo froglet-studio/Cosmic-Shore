@@ -3,6 +3,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models;
 using CosmicShore.Models.Enums;
+using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -104,6 +105,7 @@ namespace CosmicShore.Core
         Dictionary<InputEvents, float> inputAbilityStartTimes = new();
         Dictionary<ResourceEvents, float> resourceAbilityStartTimes = new();
 
+
         Material ShipMaterial;
 
         float speedModifierDuration = 2f;
@@ -124,8 +126,39 @@ namespace CosmicShore.Core
 
         [SerializeField] List<ElementStat> ElementStats = new();
 
+        [SerializeField]
+        BoolEventChannelSO onBottomEdgeButtonsEnabled;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton1Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton1Released;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton2Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton2Released;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton3Pressed;
+
+        [SerializeField]
+        InputEventsEventChannelSO OnButton3Released;
+
         public Transform Transform => transform;
         public IInputStatus InputStatus => ShipStatus.InputController.InputStatus;
+
+        private void OnEnable()
+        {
+            OnButton1Pressed.OnEventRaised += PerformShipControllerActions;
+            OnButton1Released.OnEventRaised += StopShipControllerActions;
+            OnButton2Pressed.OnEventRaised += PerformShipControllerActions;
+            OnButton2Released.OnEventRaised += StopShipControllerActions;
+            OnButton3Pressed.OnEventRaised += PerformShipControllerActions;
+            OnButton3Released.OnEventRaised += StopShipControllerActions;
+        }
 
         private void Start()
         {
@@ -134,6 +167,15 @@ namespace CosmicShore.Core
             _shipStatus.ShipTransform = transform;
         }
 
+        private void OnDisable()
+        {
+            OnButton1Pressed.OnEventRaised -= PerformShipControllerActions;
+            OnButton1Released.OnEventRaised -= StopShipControllerActions;
+            OnButton2Pressed.OnEventRaised -= PerformShipControllerActions;
+            OnButton2Released.OnEventRaised -= StopShipControllerActions;
+            OnButton3Pressed.OnEventRaised -= PerformShipControllerActions;
+            OnButton3Released.OnEventRaised -= StopShipControllerActions;
+        }
 
         public void Initialize(IPlayer player)
         {
@@ -141,7 +183,10 @@ namespace CosmicShore.Core
             SetTeamToShipStatusAndSkimmers(player.Team);
 
             if (ShipStatus.FollowTarget == null) ShipStatus.FollowTarget = transform;
-            if (bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
+
+            // TODO - Remove GameCanvas dependency
+            onBottomEdgeButtonsEnabled.RaiseEvent(true);
+            // if (bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
 
             InitializeShipGeometries();
             InitializeShipControlActions();
@@ -158,13 +203,16 @@ namespace CosmicShore.Core
             ShipStatus.TrailSpawner.Initialize(this);
 
             if (ShipStatus.AIPilot.AutoPilotEnabled) return;
-            if (!shipHUD) return;
-            shipHUD.SetActive(true);
-            foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
+
+            /*if (shipHUD)
             {
-                child.SetParent(ShipStatus.Player.GameCanvas.transform, false);
-                child.SetSiblingIndex(0);   // Don't draw on top of modal screens
-            }
+                shipHUD.SetActive(true);
+                foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
+                {
+                    child.SetParent(ShipStatus.Player.GameCanvasTransform, false);
+                    child.SetSiblingIndex(0);   // Don't draw on top of modal screens
+                }
+            }*/
 
             OnShipInitialized?.Invoke();
         }

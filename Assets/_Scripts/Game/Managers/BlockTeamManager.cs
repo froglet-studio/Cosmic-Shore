@@ -53,7 +53,7 @@ namespace CosmicShore.Core
             }
         }
 
-        public void Steal(IPlayer player, Teams newTeam, bool superSteal)
+        public void Steal(string playerName, Teams newTeam, bool superSteal)
         {
             if (Team != newTeam)
             {
@@ -63,8 +63,9 @@ namespace CosmicShore.Core
                     return;
                 }
 
-                var playerName = player != null ? player.PlayerName : "No name";
+                playerName = playerName != null ? playerName : "No name";
 
+                // TODO - Raise events about steal.
                 if (StatsManager.Instance != null)
                 {
                     StatsManager.Instance.BlockStolen(newTeam, playerName, trailBlock.TrailBlockProperties);
@@ -76,7 +77,7 @@ namespace CosmicShore.Core
                 }
 
                 ChangeTeam(newTeam);
-                trailBlock.Player = player;
+                // trailBlock.Player = player;
             }
         }
 

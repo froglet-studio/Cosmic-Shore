@@ -1,8 +1,9 @@
 using UnityEngine;
 using Unity.Collections;
-using Unity.Jobs;
 using System.Collections.Generic;
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
+
+
 
 namespace CosmicShore.Core
 {

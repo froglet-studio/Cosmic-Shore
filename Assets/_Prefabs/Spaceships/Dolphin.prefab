@@ -2416,6 +2416,14 @@ MonoBehaviour:
     - {fileID: 3521154205896523080}
   resourceEventClassActions: []
   ElementStats: []
+  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
+    type: 2}
+  OnButton1Pressed: {fileID: 11400000, guid: ea281f4848964144d81ee0a8e540ad2f, type: 2}
+  OnButton1Released: {fileID: 11400000, guid: badbc8ef2643e3d47b793be40335bdbc, type: 2}
+  OnButton2Pressed: {fileID: 11400000, guid: 6c079a6516dcdf249a1bd370ddc2154a, type: 2}
+  OnButton2Released: {fileID: 11400000, guid: 732537c5fb94779499e2743f12f2d6ca, type: 2}
+  OnButton3Pressed: {fileID: 11400000, guid: 9118ec0882fa02648b052c4e04259fbd, type: 2}
+  OnButton3Released: {fileID: 11400000, guid: 8d28d7878c107ce449c50b14b57220ab, type: 2}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2470,21 +2478,20 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc,
     type: 3}
   skimmer: {fileID: 874579554510349383}
-  waitTillOutsideSkimmer: 1
-  shielded: 0
   initialWavelength: 12
   minWavelength: 6
+  defaultWaitTime: 0.5
+  MaxNearbyBlockCount: 10
+  minBlockScale: 1
+  maxBlockScale: 6
+  waitTillOutsideSkimmer: 1
+  shielded: 0
   offset: 0
   Gap: 1
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
-  defaultWaitTime: 0.5
-  waitTime: 0.5
-  startDelay: 2
   spawnerEnabled: 1
-  MaxNearbyBlockCount: 10
-  minBlockScale: 1
-  maxBlockScale: 6
+  startDelay: 2
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -2613,11 +2620,13 @@ MonoBehaviour:
   - {fileID: 2109664493357155099}
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 3521154205896523080}
+  sihouetteScale: {x: 1, y: 1, z: 1}
+  OnSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+    type: 2}
   topJaw: {fileID: 4573856470754406349}
   bottomJaw: {fileID: 2109664493357155099}
   JawResourceIndex: 0
   swingBlocks: 0
-  sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!114 &5302681132313811143
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,4 +1,5 @@
 using CosmicShore.Game;
+using CosmicShore.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,6 +20,11 @@ namespace CosmicShore
         // drifting //
         [SerializeField] DriftTrailAction driftTrailAction;
 
+        [SerializeField] Vector3 sihouetteScale = Vector3.one;
+
+        [SerializeField]
+        SilhouetteEventChannelSO OnSilhouetteInitialized;
+
         // jaws //
         [SerializeField] GameObject topJaw;
         [SerializeField] GameObject bottomJaw;
@@ -32,10 +38,10 @@ namespace CosmicShore
         private int poolSize;
 
         IShip _ship;
-        Game.UI.MiniGameHUD hud;
-        GameObject silhouetteContainer;
-        Transform trailDisplayContainer;
-        [SerializeField] Vector3 sihouetteScale = Vector3.one;
+
+        Transform _silhouetteContainer;
+        Transform _trailDisplayContainer;
+
 
         private void OnDisable()
         {
@@ -48,7 +54,9 @@ namespace CosmicShore
         public void Initialize(IShip ship)
         {
             this._ship = ship;
-            if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled && _ship.ShipStatus.Player.GameCanvas != null)
+
+            // TODO - Remove GameCanvas dependency
+            /*if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled && _ship.ShipStatus.Player.GameCanvas != null)
             {
                 hud = _ship.ShipStatus.Player.GameCanvas.MiniGameHUD;
                 silhouetteContainer = hud.SetSilhouetteActive(!ship.ShipStatus.AIPilot.AutoPilotEnabled && ship.ShipStatus.Player.IsActive);
@@ -58,11 +66,28 @@ namespace CosmicShore
                     part.transform.SetParent(silhouetteContainer.transform, false);
                     part.SetActive(true);
                 }
+            }*/
+
+            if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled)
+            {
+                OnSilhouetteInitialized.RaiseEvent(new SilhouetteData()
+                {
+                    Sender = this,
+                    IsSilhouetteActive = !ship.ShipStatus.AIPilot.AutoPilotEnabled && ship.ShipStatus.Player.IsActive,
+                    IsTrailDisplayActive = !ship.ShipStatus.AIPilot.AutoPilotEnabled,
+                    Silhouettes = silhouetteParts
+                });
             }
 
             if (topJaw) _ship.ShipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;
             if (trailSpawner) trailSpawner.OnBlockCreated += HandleBlockCreation;
+        }
+
+        public void SetSilhouetteReference(Transform silhouetteContainer, Transform trailDisplayContainer)
+        {
+            _silhouetteContainer = silhouetteContainer;
+            _trailDisplayContainer = trailDisplayContainer;
         }
 
         public void SetBlockPrefab(GameObject block)
@@ -75,8 +100,11 @@ namespace CosmicShore
         private void calculateDriftAngle(float dotProduct)
         {
             foreach (var part in silhouetteParts) { part.gameObject.SetActive(!_ship.ShipStatus.AIPilot.AutoPilotEnabled && _ship.ShipStatus.Player.IsActive); } // TODO: why?
-            silhouetteContainer.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Asin(dotProduct-.0001f) * Mathf.Rad2Deg);
 
+            // TODO - SilhouetteContainer should be set by the HUD that is listening to our initialize event.
+            if (_silhouetteContainer != null)
+                _silhouetteContainer.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Asin(dotProduct-.0001f) * Mathf.Rad2Deg);
+            
             this.dotProduct = dotProduct;// Acos hates 1
         }
 
@@ -98,8 +126,12 @@ namespace CosmicShore
             {
                 if (poolSize < 1)
                 {
-                    if (swingBlocks) poolSize = Mathf.CeilToInt(((RectTransform)trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale));
-                    else poolSize = Mathf.CeilToInt(((RectTransform)trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale * scaleY));
+                    if (swingBlocks && _trailDisplayContainer != null) 
+                        poolSize = Mathf.CeilToInt(((RectTransform)_trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale));
+
+                    else if (_trailDisplayContainer != null) 
+                        poolSize = Mathf.CeilToInt(((RectTransform)_trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale * scaleY));
+                    
                     InitializeBlockPool();
                 }
                 if (swingBlocks) UpdateBlockPool(xShift * (scaleY / 2) * worldToUIScale, wavelength * worldToUIScale, scaleX * scaleY * imageScale, scaleZ * imageScale);
@@ -109,18 +141,23 @@ namespace CosmicShore
 
         private void InitializeBlockPool()
         {
+            if (_trailDisplayContainer == null)
+                return;
+
             blockPool = new GameObject[poolSize, 2]; // Two blocks per column
             for (int i = 0; i < poolSize; i++)
             {
                 GameObject tempContainer = new GameObject();
                 tempContainer.AddComponent<RectTransform>();
-                tempContainer.transform.SetParent(trailDisplayContainer, false);
+                tempContainer.transform.SetParent(_trailDisplayContainer, false);
+                
+                
                 for (int j = 0; j < 2; j++)
                 {
-                    GameObject newBlock = Instantiate(blockPrefab, trailDisplayContainer.transform);
+                    GameObject newBlock = Instantiate(blockPrefab, _trailDisplayContainer.transform);
                     newBlock.transform.SetParent(tempContainer.transform, false);
                     newBlock.transform.parent.localPosition = new Vector3(-i * trailSpawner.MinWaveLength * worldToUIScale +
-                        (((RectTransform)trailDisplayContainer).rect.width/2), 0, 0);
+                        (((RectTransform)_trailDisplayContainer).rect.width/2), 0, 0);
                     newBlock.transform.localPosition = new Vector3(0, j * 2 * trailSpawner.Gap - trailSpawner.Gap, 0);
                     newBlock.transform.localScale = Vector3.zero;
                     newBlock.SetActive(true);
@@ -133,12 +170,15 @@ namespace CosmicShore
 
         private void UpdateBlockPool(float xShift, float wavelength, float scaleX, float scaleZ)
         {
+            if (_trailDisplayContainer == null)
+                return;
+
             if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled)
             {
                 for (int j = 0; j < 2; j++)
                 {
                     blockPool[0, j].transform.localScale = new Vector3(scaleZ, j * 2 * scaleX - scaleX, 1);
-                    blockPool[0, j].transform.parent.localPosition = new Vector3(((RectTransform)trailDisplayContainer).rect.width / 2, 0, 0);
+                    blockPool[0, j].transform.parent.localPosition = new Vector3(((RectTransform)_trailDisplayContainer).rect.width / 2, 0, 0);
                     blockPool[0, j].transform.localPosition = new Vector3(0, j * 2 * xShift - xShift, 0);
                 }
                 if (driftTrailAction)
@@ -151,11 +191,11 @@ namespace CosmicShore
                     {
                         blockPool[i, j].transform.localScale = blockPool[i - 1, j].transform.localScale;
                         blockPool[i, j].transform.parent.localPosition = new Vector3(-i * wavelength +
-                            (((RectTransform)trailDisplayContainer).rect.width / 2), 0, 0);
+                            (((RectTransform)_trailDisplayContainer).rect.width / 2), 0, 0);
                         blockPool[i, j].transform.localPosition = blockPool[i - 1, j].transform.localPosition;
                     }
 
-                    bool underCurrentPoolSize = i < Mathf.CeilToInt(((RectTransform)trailDisplayContainer).rect.width / wavelength);
+                    bool underCurrentPoolSize = i < Mathf.CeilToInt(((RectTransform)_trailDisplayContainer).rect.width / wavelength);
                     blockPool[i, 1].transform.parent.gameObject.SetActive(underCurrentPoolSize);
 
                     if (driftTrailAction)
@@ -168,8 +208,11 @@ namespace CosmicShore
 
         public void Clear()
         {
-            foreach (Transform t in trailDisplayContainer.transform) { t.gameObject.SetActive(false); }
-            foreach (Transform t in silhouetteContainer.transform) { t.gameObject.SetActive(false); }
+            if (_trailDisplayContainer != null)
+                foreach (Transform t in _trailDisplayContainer.transform) { t.gameObject.SetActive(false); }
+
+            if (_silhouetteContainer != null)
+                foreach (Transform t in _silhouetteContainer.transform) { t.gameObject.SetActive(false); }
         }
     }
 }

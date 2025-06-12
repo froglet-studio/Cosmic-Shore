@@ -65,7 +65,7 @@ namespace CosmicShore.Game.Projectiles
         {
             var block = TrailBlockBufferManager.Instance.GetBlock(Team);
             block.ownerID = Ship.ShipStatus.Player.PlayerUUID;
-            block.Player = Ship.ShipStatus.Player;
+            block.PlayerName = Ship.ShipStatus.PlayerName;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ownerID = block.ownerID + ownerId + position;  

@@ -2,6 +2,7 @@
 using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game;
+using CosmicShore.Utilities;
 
 namespace CosmicShore.Core
 {
@@ -30,6 +31,12 @@ namespace CosmicShore.Core
 
         [Header("Team Ownership")]
         public string ownerID;
+
+        [Header("Event Channels")]
+        [SerializeField] TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
+        [SerializeField] TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
+        [SerializeField] TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+
         public Teams Team
         {
             get => teamManager?.Team ?? Teams.Unassigned;
@@ -39,8 +46,21 @@ namespace CosmicShore.Core
                     teamManager.SetInitialTeam(value);
             }
         }
-        public IPlayer Player;
-        public string PlayerName => Player != null ? Player.PlayerName : "";
+        // public IPlayer Player;
+        string _playerName;
+        public string PlayerName 
+        { 
+            get
+            {
+                if (_playerName == null)
+                {
+                    Debug.LogWarning("PlayerName is not set. Giving it a default Player-One");
+                    _playerName = "Player-One"; // Default player name if not set
+                }
+                return _playerName;
+            }
+            set => _playerName = value;
+        }
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;
@@ -103,7 +123,6 @@ namespace CosmicShore.Core
 
         protected virtual void Start()
         {
-                
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
@@ -130,6 +149,7 @@ namespace CosmicShore.Core
         private IEnumerator CreateBlockCoroutine()
         {
             yield return new WaitForSeconds(waitTime);
+            // yield return new WaitUntil(() => Player != null);
 
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
@@ -145,8 +165,16 @@ namespace CosmicShore.Core
             
             scaleAnimator.BeginGrowthAnimation();
 
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);
+            // TODO - Raise events about block creation.
+            /*if (StatsManager.Instance != null)
+                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);*/
+
+            _onTrailBlockCreatedEventChannel.RaiseEvent(new TrailBlockEventData
+            {
+                Team = Team,
+                PlayerName = PlayerName,
+                TrailBlockProperties = TrailBlockProperties
+            });
 
             if (NodeControlManager.Instance != null)
             {
@@ -212,8 +240,15 @@ namespace CosmicShore.Core
             destroyed = true;
             devastated = devastate;
 
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
+            /*if (StatsManager.Instance != null)
+                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);*/
+
+            _onTrailBlockDestroyedEventChannel.RaiseEvent(new TrailBlockEventData
+            {
+                Team = team,
+                PlayerName = playerName,
+                TrailBlockProperties = TrailBlockProperties,
+            });
 
             if (NodeControlManager.Instance != null)
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
@@ -240,8 +275,8 @@ namespace CosmicShore.Core
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 
         // Team Management Methods
-        public void Steal(IPlayer player, Teams team, bool superSteal = false) => teamManager?.Steal(player, team, superSteal);
-        public void Steal(IPlayer player) => Steal(player, player.Team);
+        public void Steal(string playerName, Teams team, bool superSteal = false) => teamManager.Steal(playerName, team, superSteal);
+        // public void Steal(string playerName, Teams team) => Steal(playerName, team);
         public void ChangeTeam(Teams team) => teamManager?.ChangeTeam(team);
 
         // Restoration
@@ -249,8 +284,15 @@ namespace CosmicShore.Core
         {
             if (!devastated)
             {
-                if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockRestored(Team, PlayerName, TrailBlockProperties);
+                /*if (StatsManager.Instance != null)
+                    StatsManager.Instance.BlockRestored(Team, PlayerName, TrailBlockProperties);*/
+
+                _onTrailBlockRestoredEventChannel.RaiseEvent(new TrailBlockEventData
+                {
+                    Team = Team,
+                    PlayerName = PlayerName,
+                    TrailBlockProperties = TrailBlockProperties
+                });
 
                 if (NodeControlManager.Instance != null)
                     NodeControlManager.Instance.RestoreBlock(Team, TrailBlockProperties);

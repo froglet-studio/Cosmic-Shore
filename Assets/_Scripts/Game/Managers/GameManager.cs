@@ -1,7 +1,7 @@
 using CosmicShore.App.Systems;
 using CosmicShore.Environment.FlowField;
 using CosmicShore.Game.AI; // TODO: code smell that this namespace needs to be included here
-using CosmicShore.Utility.Singleton;
+using CosmicShore.Utilities;
 using System;
 using System.Collections;
 using UnityEngine;

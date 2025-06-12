@@ -19,7 +19,7 @@ using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MiniGame : MonoBehaviour
+    public abstract class MiniGame : MonoBehaviour
     {
         [SerializeField] protected GameModes gameMode;
         [SerializeField] protected int NumberOfRounds = int.MaxValue;
@@ -112,6 +112,8 @@ namespace CosmicShore.Game.Arcade
             GameManager.OnPlayGame += InitializeGame;
             OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
             OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
+            PauseSystem.OnGamePaused += HandleGamePaused;
+            PauseSystem.OnGameResumed += HandleGameResumed;
         }
 
         protected virtual void OnDisable()
@@ -119,6 +121,9 @@ namespace CosmicShore.Game.Arcade
             GameManager.OnPlayGame -= InitializeGame;
             OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
             OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
+            PauseSystem.OnGamePaused -= HandleGamePaused;
+            PauseSystem.OnGameResumed -= HandleGameResumed;
+
         }
 
         void InitializeGame()
@@ -478,6 +483,24 @@ namespace CosmicShore.Game.Arcade
             callback?.Invoke();
         }
 
+        private void HandleGamePaused()
+        {
+            if (!gameRunning || ActivePlayer == null) return;
+
+            // hand control to the AI
+            Player activePlayer = ((Player)ActivePlayer);
+            activePlayer.StartAutoPilot();
+        }
+
+        private void HandleGameResumed()
+        {
+            if (!gameRunning || ActivePlayer == null) return;
+
+            // give control back to the player
+            Player activePlayer = ((Player)ActivePlayer);
+            activePlayer.StopAutoPilot();
+        }
+
         struct TimedCallback
         {
             public float invokeAfterSeconds;
@@ -490,4 +513,6 @@ namespace CosmicShore.Game.Arcade
             }
         }
     }
+
+    // public 
 }

@@ -255,7 +255,7 @@ namespace CosmicShore.Game
             if (string.IsNullOrEmpty(creatorId))
                 creatorId = shipData.Player?.PlayerUUID ?? string.Empty;
             block.ownerID = creatorId;
-            block.Player = charm ? tempShip.ShipStatus.Player : ship.ShipStatus.Player;
+            block.PlayerName = charm ? tempShip.ShipStatus.PlayerName : ship.ShipStatus.Team.ToString();
             block.ChangeTeam(charm ? tempShip.ShipStatus.Team : ship.ShipStatus.Team);
 
             // waitTime
