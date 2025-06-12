@@ -257,9 +257,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4853709195325629896}
-  - component: {fileID: 861916960278723894}
-  - component: {fileID: 6657909410752795622}
-  - component: {fileID: 4957664660937120156}
+  - component: {fileID: 8316677134886896521}
+  - component: {fileID: 2332396574556849304}
+  - component: {fileID: 1201690886442683049}
   m_Layer: 0
   m_Name: CM PlayerCam
   m_TagString: Untagged
@@ -282,7 +282,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4853709196820857187}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &861916960278723894
+--- !u!114 &8316677134886896521
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -302,8 +302,8 @@ MonoBehaviour:
   m_StreamingVersion: 20241001
   m_LegacyPriority: 0
   Target:
-    TrackingTarget: {fileID: 4853709195735906031}
-    LookAtTarget: {fileID: 4853709195735906031}
+    TrackingTarget: {fileID: 0}
+    LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 1
   Lens:
     FieldOfView: 120
@@ -325,7 +325,20 @@ MonoBehaviour:
       BarrelClipping: 0.25
       Anamorphism: 0
   BlendHint: 0
---- !u!114 &6657909410752795622
+--- !u!114 &2332396574556849304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4853709195325629910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e8b78ac948f05a46a6d8339a503172b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  LookAtOffset: {x: 0, y: 0, z: 0}
+--- !u!114 &1201690886442683049
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -343,20 +356,7 @@ MonoBehaviour:
     AngularDampingMode: 1
     RotationDamping: {x: 0, y: 0, z: 0}
     QuaternionDamping: 0
-  FollowOffset: {x: 0, y: 0, z: -35}
---- !u!114 &4957664660937120156
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4853709195325629910}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e8b78ac948f05a46a6d8339a503172b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  LookAtOffset: {x: 0, y: 0, z: 0}
+  FollowOffset: {x: 0, y: 0, z: -8}
 --- !u!1 &4853709195735906028
 GameObject:
   m_ObjectHideFlags: 0
@@ -531,12 +531,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainMenuCamera: {fileID: 2966085564903086687}
-  closeCamera: {fileID: 861916960278723894}
+  playerCamera: {fileID: 8316677134886896521}
   deathCamera: {fileID: 8616612116677775270}
-  endCamera: {fileID: 1209939419297618945}
+  endCamera: {fileID: 8616612116677775270}
   endCameraFollowTarget: {fileID: 4853709195319085108}
   endCameraLookAtTarget: {fileID: 4853709196453371476}
   FollowOverride: 0
+  FixedFollow: 0
   isOrthographic: 0
   CloseCamDistance: 0
   FarCamDistance: 1

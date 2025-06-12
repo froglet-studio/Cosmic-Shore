@@ -9,7 +9,7 @@ using CosmicShore.Utilities;
 public class CameraManager : SingletonPersistent<CameraManager>
 {
     [SerializeField] CinemachineCamera mainMenuCamera;
-    [SerializeField] CinemachineVirtualCameraBase closeCamera;
+    [SerializeField] CinemachineVirtualCameraBase playerCamera;
     [SerializeField] CinemachineVirtualCameraBase deathCamera;
     [SerializeField] CinemachineVirtualCameraBase endCamera;
     
@@ -24,6 +24,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     bool zoomingOut;
 
     public bool FollowOverride = false;
+    public bool FixedFollow = false; // If true, the camera will not follow the player, but will stay at a fixed position.
     public bool isOrthographic = false;
 
     public float CloseCamDistance;
@@ -50,13 +51,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void Start()
     {
-        vCam = closeCamera.gameObject.GetComponent<CinemachineCamera>();
+        vCam = playerCamera.gameObject.GetComponent<CinemachineCamera>();
         OnMainMenu();
     }
 
     public Transform GetCloseCamera()
     {
-        return closeCamera.transform;
+        return playerCamera.transform;
     }
 
     public void OnMainMenu()
@@ -74,8 +75,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void SetupGamePlayCameras(Transform _transform)
     {
         playerFollowTarget = _transform;
-        closeCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
-        closeCamera.Follow = deathCamera.Follow = playerFollowTarget;
+        playerCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
+        playerCamera.Follow = deathCamera.Follow = playerFollowTarget;
         ThemeManager.Instance.SetBackgroundColor(Camera.main);
 
         SetCloseCameraActive();
@@ -94,7 +95,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetCloseCameraActive()
     {
-        SetActiveCamera(closeCamera);
+        SetActiveCamera(playerCamera);
     }
     public void SetDeathCameraActive()
     {
@@ -105,19 +106,32 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetActiveCamera(endCamera);
     }
 
+    public void SetFixedFollowOffset(Vector3 offset)
+    {
+        FixedFollow = true;
+        StartCoroutine(SetFollowOffsetCoroutine(offset));
+    }
+
+    IEnumerator SetFollowOffsetCoroutine(Vector3 offset)
+    {
+        yield return new WaitForSeconds(1); // Allow time for camera to stabilize
+        transposer = vCam.GetComponent<CinemachineFollow>();
+        transposer.FollowOffset = offset;
+    }
+
     void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
     {
         Orthographic(isOrthographic);
         Debug.Log($"SetActiveCamera {activeCamera.Name}");
 
         mainMenuCamera.Priority = inactivePriority;
-        closeCamera.Priority = inactivePriority;
+        playerCamera.Priority = inactivePriority;
         endCamera.Priority = inactivePriority;
         deathCamera.Priority = inactivePriority;
 
         activeCamera.Priority = activePriority;
-
-        if (activeCamera == closeCamera) SetNormalizedCloseCameraDistance(0);
+        transposer = vCam.GetComponent<CinemachineFollow>();
+        if (activeCamera == playerCamera) SetOffsetPosition(transposer.FollowOffset);
     }
 
     void ClipPlaneAndOffsetLerper(float normalizedDistance)
@@ -134,14 +148,40 @@ public class CameraManager : SingletonPersistent<CameraManager>
                 transposer.FollowOffset = new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance);
             }));
     }
+    
+    void ClipPlaneAndOffsetLerper(Vector3 offsetPosition)
+    {
+        float CloseCamClipPlane = .5f;
+        //float FarCamClipPlane = .7f;
+        if (lerper != null) 
+            StopCoroutine(lerper);
+        
+        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(transposer.FollowOffset,
+            offsetPosition, 1.5f, (i) =>
+            {
+                //vCam.Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
+                transposer.FollowOffset = i;
+            }));
+    }
 
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
+        if (FixedFollow) return;
         transposer = vCam.GetComponent<CinemachineFollow>();
 
         if (transposer.FollowOffset != new Vector3(0, 0, normalizedDistance))
         {
             ClipPlaneAndOffsetLerper(normalizedDistance);
+        }  
+    }
+    public void SetOffsetPosition(Vector3 position)
+    {
+        //offsetVector = position;
+        transposer = vCam.GetComponent<CinemachineFollow>();
+
+        if (transposer.FollowOffset != position)
+        {
+            ClipPlaneAndOffsetLerper(position);
         }  
     }
 
@@ -157,6 +197,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void ZoomCloseCameraOut(float growthRate)
     {
+        if (FixedFollow) return;
         if (returnToNeutralCoroutine != null)
         {
             StopCoroutine(returnToNeutralCoroutine);
@@ -168,7 +209,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
     {
-        var transposer = vCam.GetComponent<CinemachineFollow>();
+        transposer = vCam.GetComponent<CinemachineFollow>();
 
         while (zoomingOut && transposer.FollowOffset.z > FarCamDistance)
         {
@@ -179,6 +220,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void ResetCloseCameraToNeutral(float shrinkRate)
     {
+        if (FixedFollow) return;
         if (zoomOutCoroutine != null)
         {
             StopCoroutine(zoomOutCoroutine);
@@ -190,7 +232,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
     {
-        var transposer = vCam.GetComponent<CinemachineFollow>();
+        
+        transposer = vCam.GetComponent<CinemachineFollow>();
 
         while (transposer.FollowOffset.z <= CloseCamDistance)
         {

@@ -512,7 +512,7 @@ Transform:
   m_GameObject: {fileID: 3938548809082189982}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 6.18, z: 0}
+  m_LocalPosition: {x: 0, y: 10, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1179,6 +1179,8 @@ MonoBehaviour:
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
   swingBlocks: 0
+  ship: {fileID: 874579555101021527}
+  sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!114 &705402283976800655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1191,8 +1193,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ControlOverrides: 03000000
-  closeCamDistance: -20
+  ControlOverrides: 08000000
+  closeCamDistance: 3
   farCamDistance:
     Enabled: 0
     Value: 0
@@ -1200,7 +1202,8 @@ MonoBehaviour:
     Max: 0
     element: 0
   FollowTarget: {fileID: 3967031065131343057}
-  FollowTargetPosition: {x: 0, y: 20, z: 0}
+  FollowTargetPosition: {x: 0, y: 5, z: -25}
+  FollowOffset: {x: 0, y: 11, z: -21}
   isOrthographic: 0
 --- !u!1 &6746362012311477801
 GameObject:
