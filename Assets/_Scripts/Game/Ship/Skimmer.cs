@@ -123,7 +123,7 @@ namespace CosmicShore.Core
                         trailBlockProperties.trailBlock.Damage(Ship.ShipStatus.Course * Ship.ShipStatus.Speed * Ship.ShipStatus.GetInertia, Team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trailBlock.Steal(Player, Team);
+                        trailBlockProperties.trailBlock.Steal(Player.PlayerName, Team);
                         break;
                     case TrailBlockImpactEffects.GainResourceByVolume:
                         resourceSystem.ChangeResourceAmount(resourceIndex, (chargeAmount * trailBlockProperties.volume) + (activelySkimmingBlockCount * MultiSkimMultiplier));

@@ -46,8 +46,21 @@ namespace CosmicShore.Core
                     teamManager.SetInitialTeam(value);
             }
         }
-        public IPlayer Player;
-        public string PlayerName => Player != null ? Player.PlayerName : "PlayerOne";
+        // public IPlayer Player;
+        string _playerName;
+        public string PlayerName 
+        { 
+            get
+            {
+                if (_playerName == null)
+                {
+                    Debug.LogWarning("PlayerName is not set. Giving it a default Player-One");
+                    _playerName = "Player-One"; // Default player name if not set
+                }
+                return _playerName;
+            }
+            set => _playerName = value;
+        }
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;
@@ -136,7 +149,7 @@ namespace CosmicShore.Core
         private IEnumerator CreateBlockCoroutine()
         {
             yield return new WaitForSeconds(waitTime);
-            yield return new WaitUntil(() => Player != null);
+            // yield return new WaitUntil(() => Player != null);
 
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
@@ -262,8 +275,8 @@ namespace CosmicShore.Core
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 
         // Team Management Methods
-        public void Steal(IPlayer player, Teams team, bool superSteal = false) => teamManager?.Steal(player, team, superSteal);
-        public void Steal(IPlayer player) => Steal(player, player.Team);
+        public void Steal(string playerName, Teams team, bool superSteal = false) => teamManager.Steal(playerName, team, superSteal);
+        // public void Steal(string playerName, Teams team) => Steal(playerName, team);
         public void ChangeTeam(Teams team) => teamManager?.ChangeTeam(team);
 
         // Restoration

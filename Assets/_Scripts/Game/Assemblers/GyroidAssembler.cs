@@ -478,7 +478,7 @@ namespace CosmicShore
             trailBlock.TargetScale = scale;
             trailBlock.MaxScale = TrailBlock.MaxScale;
             trailBlock.GrowthVector = TrailBlock.GrowthVector;
-            trailBlock.Steal(TrailBlock.Player, TrailBlock.Team);
+            trailBlock.Steal(TrailBlock.PlayerName, TrailBlock.Team);
             trailBlock.ChangeSize();
             var mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
             mateComponent.TrailBlock = trailBlock;

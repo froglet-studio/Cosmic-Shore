@@ -36,6 +36,18 @@ namespace CosmicShore.Core
         string Name { get; set; }
         bool Overheating { get; set; }
         IPlayer Player { get; set; }
+        string PlayerName
+        {
+            get
+            {
+                if (Player != null)
+                    return Player.PlayerName;
+
+                Debug.LogWarning("Player is null, returning empty string for PlayerName.");
+                return "No-name";
+            }
+        }
+
         bool Portrait { get; set; }
         ResourceSystem ResourceSystem { get; }
         ShipAnimation ShipAnimation { get; }

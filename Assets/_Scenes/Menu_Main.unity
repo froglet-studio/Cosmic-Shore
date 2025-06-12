@@ -53177,6 +53177,11 @@ PrefabInstance:
       propertyPath: Lens.NearClipPlane
       value: 0.6031817
       objectReference: {fileID: 0}
+    - target: {fileID: 1201690886442683049, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: FollowOffset.z
+      value: -9.643315
+      objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -53246,6 +53251,11 @@ PrefabInstance:
         type: 3}
       propertyPath: FollowOffset.z
       value: -10.46476
+      objectReference: {fileID: 0}
+    - target: {fileID: 8316677134886896521, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: Lens.NearClipPlane
+      value: 0.5910121
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
