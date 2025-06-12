@@ -20,7 +20,7 @@ namespace CosmicShore.App.Systems
             }
             else
             {
-                //Time.timeScale = 0f;
+                Time.timeScale = 0f;
                 Paused = true;
                 //OnGamePaused?.Invoke();
             }
