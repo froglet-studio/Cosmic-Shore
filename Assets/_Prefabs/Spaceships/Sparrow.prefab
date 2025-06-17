@@ -1179,8 +1179,6 @@ MonoBehaviour:
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
   swingBlocks: 0
-  ship: {fileID: 874579555101021527}
-  sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!114 &705402283976800655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1203,7 +1201,6 @@ MonoBehaviour:
     element: 0
   FollowTarget: {fileID: 3967031065131343057}
   FollowTargetPosition: {x: 0, y: 5, z: -25}
-  FollowOffset: {x: 0, y: 11, z: -21}
   isOrthographic: 0
 --- !u!1 &6746362012311477801
 GameObject:
@@ -1297,8 +1294,8 @@ MonoBehaviour:
   pools:
   - prefab: {fileID: 7877928849292311340, guid: 1bdcea9e9329dd141af7ab874a4d31a2,
       type: 3}
-    size: 1000
-  ship: {fileID: 874579555101021527}
+    size: 50
+  shipInstance: {fileID: 874579555101021527}
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1428,7 +1425,7 @@ MonoBehaviour:
   - prefab: {fileID: 7877928849292311340, guid: d98b78f64251b2c42a322f4f46f197ac,
       type: 3}
     size: 8
-  ship: {fileID: 874579555101021527}
+  shipInstance: {fileID: 874579555101021527}
 --- !u!1 &8777980414596646480
 GameObject:
   m_ObjectHideFlags: 0

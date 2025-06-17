@@ -29,13 +29,29 @@ namespace CosmicShore.Game.Projectiles
 
         MeshRenderer meshRenderer;
 
+        PoolManager poolManager;
+        IShipStatus shipStatus;
+
         private void Awake()
-        {
+        {  
             InitialScale = transform.localScale;
         }
 
         void Start()
         {
+            poolManager = GetComponentInParent<PoolManager>();
+            Ship = poolManager.ship;
+            shipStatus = Ship.ShipStatus;
+            if (Ship == null)
+            {
+                Debug.LogWarning("Projectile script found no valid IShip reference.");
+                Ship = GetComponentInParent<IShip>();
+                if (Ship == null)
+                {
+                    Debug.LogError("Projectile script requires a valid IShip reference.");
+                    return;
+                }
+            }
             if (spike) 
             {
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
@@ -48,9 +64,6 @@ namespace CosmicShore.Game.Projectiles
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            if (Ship == null)
-                return;
-
             HandleCollision(other);
         }
 
@@ -58,7 +71,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if (!friendlyFire && trailBlock.Team == Team)
+                if (Ship == null || !friendlyFire && trailBlock.Team == Team)
                     return;
 
                 PerformTrailImpactEffects(trailBlock.TrailBlockProperties);
@@ -87,7 +100,8 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, Ship.ShipStatus.Team, Ship.ShipStatus.Player.PlayerName);
+                        Debug.Log("DeactivateTrailBlock from projectile");
+                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, shipStatus.Team, shipStatus.Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         trailBlockProperties.trailBlock.Steal(Ship.ShipStatus.PlayerName, Team);
@@ -231,7 +245,7 @@ namespace CosmicShore.Game.Projectiles
                 yield return null;
             }
             if (ImpactOnEnd) PerformEndEffects();
-            GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
+            poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
 
         public void Stop() 
