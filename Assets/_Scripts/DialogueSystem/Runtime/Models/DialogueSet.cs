@@ -14,5 +14,7 @@ namespace CosmicShore.DialogueSystem.Models
         public Sprite portraitSpeaker2;
 
         public List<DialogueLine> lines = new List<DialogueLine>();
+
+        public RewardData rewardData;
     }
 }

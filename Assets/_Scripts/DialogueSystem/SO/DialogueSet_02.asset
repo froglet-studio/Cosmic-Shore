@@ -10,25 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 12c38f1201703dc4e979069d1889ae3b, type: 3}
-  m_Name: DIalogue2
+  m_Name: DialogueSet_02
   m_EditorClassIdentifier: 
-  setId: Monologue
-  mode: 0
-  portraitSpeaker1: {fileID: 21300000, guid: 62a2471fd3a1b5b45890af3f26ed2505, type: 3}
+  setId: Reward
+  mode: 2
+  portraitSpeaker1: {fileID: 0}
   portraitSpeaker2: {fileID: 0}
-  lines:
-  - speaker: 1
-    speakerName: Flux
-    text: This is a sample test line for Dialogue 1 set
-    voiceClip: {fileID: 0}
-    displayTime: 3
-  - speaker: 1
-    speakerName: Flux
-    text: This is a sample test line for Dialogue 2 set
-    voiceClip: {fileID: 0}
-    displayTime: 3
+  lines: []
   rewardData:
-    rewardType: 0
+    rewardType: 1
     rewardValue: 
     rewardImage: {fileID: 0}
     description: 
