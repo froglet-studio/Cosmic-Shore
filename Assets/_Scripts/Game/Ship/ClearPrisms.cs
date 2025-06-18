@@ -33,7 +33,7 @@ namespace CosmicShore
             _ship.OnShipInitialized -= OnShipInitialized;
         }
 
-        private void OnShipInitialized()
+        private void OnShipInitialized(IShipStatus _)
         {
             if (_ship.ShipStatus.AutoPilotEnabled) return;
             cameraManager = CameraManager.Instance;

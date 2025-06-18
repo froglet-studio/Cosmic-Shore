@@ -1963,6 +1963,12 @@ MonoBehaviour:
   ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
+  OnButton1Pressed: {fileID: 0}
+  OnButton1Released: {fileID: 0}
+  OnButton2Pressed: {fileID: 0}
+  OnButton2Released: {fileID: 0}
+  OnButton3Pressed: {fileID: 0}
+  OnButton3Released: {fileID: 0}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1975,6 +1981,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  shipInstance: {fileID: 0}
 --- !u!114 &3055397634636183824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2044,6 +2051,7 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 0a5b78684a1e89341a2483949089f33c,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 2
   minWavelength: 2
   defaultWaitTime: 0.2
@@ -2207,11 +2215,12 @@ MonoBehaviour:
   - {fileID: 5978549935140177486}
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
+  sihouetteScale: {x: 1, y: 1, z: 1}
+  OnSilhouetteInitialized: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
   swingBlocks: 0
-  sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!114 &1302784739002126863
 MonoBehaviour:
   m_ObjectHideFlags: 0

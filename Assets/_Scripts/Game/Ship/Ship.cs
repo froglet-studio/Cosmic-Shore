@@ -30,7 +30,7 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(ShipStatus))]
     public class Ship : MonoBehaviour, IShip
     {
-        public event Action OnShipInitialized;
+        public event Action<IShipStatus> OnShipInitialized;
 
         [SerializeField] List<ImpactProperties> impactProperties;
         
@@ -197,12 +197,13 @@ namespace CosmicShore.Core
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             //ShipStatus.AIPilot.Initialize(false);
             ShipStatus.AIPilot.Initialize(player.Ship.ShipStatus.AIPilot.AutoPilotEnabled);
+            
             nearFieldSkimmer?.Initialize(this);
             farFieldSkimmer?.Initialize(this);
             ShipStatus.ShipCameraCustomizer.Initialize(this);
             ShipStatus.TrailSpawner.Initialize(this);
 
-            if (ShipStatus.AIPilot.AutoPilotEnabled) return;
+            // if (ShipStatus.AIPilot.AutoPilotEnabled) return;
 
             /*if (shipHUD)
             {
@@ -214,7 +215,7 @@ namespace CosmicShore.Core
                 }
             }*/
 
-            OnShipInitialized?.Invoke();
+            OnShipInitialized?.Invoke(ShipStatus);
         }
 
         void SetTeamToShipStatusAndSkimmers(Teams team)

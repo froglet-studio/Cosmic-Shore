@@ -2436,6 +2436,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  shipInstance: {fileID: 0}
 --- !u!114 &3472521546628908041
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2478,6 +2479,7 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 12
   minWavelength: 6
   defaultWaitTime: 0.5

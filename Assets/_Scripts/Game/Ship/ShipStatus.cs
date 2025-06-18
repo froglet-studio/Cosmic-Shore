@@ -21,6 +21,9 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(ShipAnimation))]
     public class ShipStatus : MonoBehaviour, IShipStatus
     {
+        [SerializeField, RequireInterface(typeof(IShip))]
+        MonoBehaviour shipInstance;
+
         public string Name { get; set; }
         public ShipTypes ShipType { get; set; }
         public Transform FollowTarget { get; set; }
@@ -37,6 +40,7 @@ namespace CosmicShore.Core
         public List<GameObject> ShipGeometries { get; set; }
         public TrailBlock AttachedTrailBlock { get; set; }
 
+        public IShip Ship => shipInstance as IShip;
 
         InputController _inputController;
         public InputController InputController

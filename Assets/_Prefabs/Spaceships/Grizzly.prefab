@@ -48,7 +48,7 @@ MonoBehaviour:
   - prefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
       type: 3}
     size: 1
-  ship: {fileID: 874579555101021527}
+  shipInstance: {fileID: 0}
 --- !u!1 &1034863810764821312
 GameObject:
   m_ObjectHideFlags: 0
@@ -1243,6 +1243,12 @@ MonoBehaviour:
   ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
+  OnButton1Pressed: {fileID: 0}
+  OnButton1Released: {fileID: 0}
+  OnButton2Pressed: {fileID: 0}
+  OnButton2Released: {fileID: 0}
+  OnButton3Pressed: {fileID: 0}
+  OnButton3Released: {fileID: 0}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1255,6 +1261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  shipInstance: {fileID: 0}
 --- !u!114 &-3607265076877978738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1297,6 +1304,7 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 0e7b9177c2c35b946b8d409509762af1,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 13
   minWavelength: 11
   defaultWaitTime: 1
@@ -1454,11 +1462,12 @@ MonoBehaviour:
   silhouetteParts: []
   trailSpawner: {fileID: 0}
   driftTrailAction: {fileID: 0}
+  sihouetteScale: {x: 1, y: 1, z: 1}
+  OnSilhouetteInitialized: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
   swingBlocks: 0
-  sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!1 &6878347770711062259
 GameObject:
   m_ObjectHideFlags: 0
