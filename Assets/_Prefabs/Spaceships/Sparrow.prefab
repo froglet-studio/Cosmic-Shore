@@ -959,7 +959,7 @@ MonoBehaviour:
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
-  - InputEvent: 6
+  - InputEvent: 1
     ShipActions:
     - {fileID: 1865457525660812358}
   - InputEvent: 7
@@ -1248,7 +1248,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  firePeriod: 0.2
+  _firePeriod: 0.2
 --- !u!1 &7113592867435310030
 GameObject:
   m_ObjectHideFlags: 0
@@ -1378,7 +1378,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  firePeriod: 0.2
+  _firePeriod: 0.2
 --- !u!1 &8219347799270583732
 GameObject:
   m_ObjectHideFlags: 0
