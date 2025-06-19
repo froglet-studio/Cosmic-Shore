@@ -2,7 +2,7 @@
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.UI;
-using CosmicShore.Game.Projectiles;
+
 
 namespace CosmicShore.Game
 {
@@ -18,8 +18,6 @@ namespace CosmicShore.Game
         [SerializeField] bool UseHangarConfiguration = true;
         [SerializeField] internal bool IsAI = false;
         [SerializeField] IPlayer.InitializeData InitializeData;
-
-        [SerializeField] Gun gun;
 
         public static Player ActivePlayer;
 
@@ -123,12 +121,9 @@ namespace CosmicShore.Game
             Ship.Transform.SetParent(shipContainer.transform, false);
             Ship.ShipStatus.AIPilot.enabled = false;
 
-            InitializeShip();
+            Ship.Initialize(this);
             InputController.Initialize(Ship);
-            // TODO: P0 - this is a stop gap to get ships loading again, but is not a full fix
-            if (gun != null)
-                gun.Initialize(Ship);
-
+            
             gameManager.WaitOnPlayerLoading();
         }
 
@@ -142,13 +137,12 @@ namespace CosmicShore.Game
 
             Ship.ShipStatus.AIPilot.enabled = true;
 
-            InitializeShip();
+            
+            Ship.Initialize(this);
             InputController.Initialize(Ship);
-
+            
             gameManager.WaitOnAILoading(Ship.ShipStatus.AIPilot);
         }
-
-        void InitializeShip() => Ship.Initialize(this);
 
         public void StartAutoPilot()
         {

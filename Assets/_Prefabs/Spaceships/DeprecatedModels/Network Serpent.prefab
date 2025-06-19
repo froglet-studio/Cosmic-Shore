@@ -1443,7 +1443,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 874579555101021527}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: CosmicShore.Core.Ship, Assembly-CSharp
         m_MethodName: PerformButtonActions
         m_Mode: 3
@@ -1727,7 +1727,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5928382658856804067}
-  - component: {fileID: 874579555101021527}
+  - component: {fileID: 1670126161369221843}
+  - component: {fileID: 712095104256205671}
   - component: {fileID: 6441696348568773771}
   - component: {fileID: 8900747579718772804}
   - component: {fileID: 874579555101021522}
@@ -1737,8 +1738,11 @@ GameObject:
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
+  - component: {fileID: 7771045080630814288}
+  - component: {fileID: 8870115919996373041}
+  - component: {fileID: 5396642229089407685}
   m_Layer: 0
-  m_Name: Serpent
+  m_Name: Network Serpent
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1765,7 +1769,7 @@ Transform:
   - {fileID: 6722969896632727780}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &874579555101021527
+--- !u!114 &1670126161369221843
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1774,30 +1778,44 @@ MonoBehaviour:
   m_GameObject: {fileID: 6417075533431866457}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  impactProperties:
-  - fuelBonus: 0
-    fuelPenalty: 0
-    scoreBonus: 0
-    scorePenalty: 0
-    tailLengthBonus: 0
-    tailLengthPenalty: 0
-    speedBonus: 0
-    speedPenalty: 0
-    hapticType: 0
-    trailBlock: {fileID: 0}
-  Name: Serpent
+  GlobalObjectIdHash: 354523593
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &712095104256205671
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 726f55ec8acf4464797fbe01adf2b14d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  _name: Serpent
   _shipType: 7
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  OrientationHandle: {fileID: 1878660672777590133}
-  shipGeometries:
+  _nearFieldSkimmer: {fileID: 874579554510349383}
+  _orientationHandle: {fileID: 1878660672777590133}
+  _shipGeometries:
   - {fileID: 3878638393738004476}
-  shipHUD: {fileID: 9084521984956080798}
   AOEPrefab: {fileID: 2728798890556433942, guid: c4e6163ef5e206846bb8d245b11d1a61,
     type: 3}
-  farFieldSkimmer: {fileID: 0}
+  _farFieldSkimmer: {fileID: 0}
   resourceIndex: 0
   ammoResourceIndex: 0
   boostResourceIndex: 0
@@ -1807,17 +1825,16 @@ MonoBehaviour:
   trailBlockImpactEffects: 0f0000000000000011000000
   blockChargeChange: 0
   boostMultiplier: 4
-  bottomEdgeButtons: 0
+  _bottomEdgeButtons: 0
   Inertia: 70
-  inputEventShipActions:
+  _inputEventShipActions:
   - InputEvent: 6
     ShipActions:
     - {fileID: 1711179162404155137}
   - InputEvent: 7
     ShipActions:
     - {fileID: 3362399389898013871}
-  resourceEventClassActions: []
-  ElementStats: []
+  _resourceEventClassActions: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   OnButton1Pressed: {fileID: 11400000, guid: ea281f4848964144d81ee0a8e540ad2f, type: 2}
@@ -1826,6 +1843,7 @@ MonoBehaviour:
   OnButton2Released: {fileID: 11400000, guid: 732537c5fb94779499e2743f12f2d6ca, type: 2}
   OnButton3Pressed: {fileID: 11400000, guid: 9118ec0882fa02648b052c4e04259fbd, type: 2}
   OnButton3Released: {fileID: 11400000, guid: 8d28d7878c107ce449c50b14b57220ab, type: 2}
+  ElementStats: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1895,7 +1913,7 @@ MonoBehaviour:
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
-  startDelay: 0.1
+  startDelay: 2.1
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -2065,6 +2083,77 @@ MonoBehaviour:
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
+--- !u!114 &7771045080630814288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 112c623451eca5647a6ad4742a4f18aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &8870115919996373041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49db4ee037f8e7c4688c950da67cb972, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5396642229089407685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb01b7a2fa864b1468b5a2797ade4272, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 1
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 1
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 0
+  SyncScaleY: 0
+  SyncScaleZ: 0
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
 --- !u!1 &6420853210210884085
 GameObject:
   m_ObjectHideFlags: 0
@@ -3041,11 +3130,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5600383031693416884, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
-      propertyPath: m_Delegates.Array.data[0].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 874579555101021527}
-    - target: {fileID: 5600383031693416884, guid: eae510c1f9f999a4985c85fff770ec97,
-        type: 3}
       propertyPath: m_Delegates.Array.data[0].callback.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: PerformButtonActions
       objectReference: {fileID: 0}
@@ -3105,11 +3189,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: 349244992f2b29146b59bb329a46c043,
         type: 3}
-    - target: {fileID: 7307032469615787033, guid: eae510c1f9f999a4985c85fff770ec97,
-        type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 874579555101021527}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4320,14 +4399,9 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
         type: 3}
-      propertyPath: Ship
-      value: 
-      objectReference: {fileID: 874579555101021527}
-    - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
-        type: 3}
       propertyPath: _shipObject
       value: 
-      objectReference: {fileID: 874579555101021527}
+      objectReference: {fileID: 712095104256205671}
     - target: {fileID: 6349275177958244260, guid: 8b6f43f781b1f9149be91e3e9e59326f,
         type: 3}
       propertyPath: m_LocalPosition.x

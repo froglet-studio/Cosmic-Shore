@@ -10,8 +10,6 @@ namespace CosmicShore.Game.Projectiles
     public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
-        public Teams Team;
-        public IShip Ship { get; private set; }
         public bool ImpactOnEnd;
         public float Inertia = 1;
         
@@ -29,13 +27,30 @@ namespace CosmicShore.Game.Projectiles
 
         MeshRenderer meshRenderer;
 
+        protected PoolManager poolManager;
+        public Teams Team { get; private set; }
+        public IShipStatus ShipStatus { get; private set; }
+
         private void Awake()
-        {
+        {  
             InitialScale = transform.localScale;
         }
 
         void Start()
         {
+            poolManager = GetComponentInParent<PoolManager>();
+            /*Ship = poolManager.Ship;
+            shipStatus = Ship.ShipStatus;
+            if (Ship == null)
+            {
+                Debug.LogWarning("Projectile script found no valid IShip reference.");
+                Ship = GetComponentInParent<IShip>();
+                if (Ship == null)
+                {
+                    Debug.LogError("Projectile script requires a valid IShip reference.");
+                    return;
+                }
+            }*/
             if (spike) 
             {
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
@@ -44,13 +59,19 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        public void Initialize(IShip ship) => Ship = ship;
+        public void Initialize(Teams team, IShipStatus shipStatus)
+        {
+            Team = team;
+            ShipStatus = shipStatus;
+
+            if (TryGetComponent(out Gun gun) && ShipStatus != null)
+            {
+                gun.Initialize(shipStatus);
+            }
+        }
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            if (Ship == null)
-                return;
-
             HandleCollision(other);
         }
 
@@ -58,6 +79,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
+                // if (Ship == null || !friendlyFire && trailBlock.Team == Team)
                 if (!friendlyFire && trailBlock.Team == Team)
                     return;
 
@@ -87,10 +109,12 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, Ship.ShipStatus.Team, Ship.ShipStatus.Player.PlayerName);
+                        Debug.Log("DeactivateTrailBlock from projectile");
+                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, ShipStatus.Team, ShipStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trailBlock.Steal(Ship.ShipStatus.PlayerName, Team);
+                        // trailBlockProperties.trailBlock.Steal(Ship.ShipStatus.PlayerName, Team);
+                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, Team);
                         break;
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
@@ -157,7 +181,7 @@ namespace CosmicShore.Game.Projectiles
                         shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 10);
                         break;
                     case ShipImpactEffects.Charm:
-                        shipGeometry.Ship.ShipStatus.TrailSpawner.Charm(Ship, 7);
+                        shipGeometry.Ship.ShipStatus.TrailSpawner.Charm(ShipStatus, 7);
                         break;
                 }
             }
@@ -170,7 +194,7 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case CrystalImpactEffects.PlayHaptics:
-                        if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
                         break;
                     //case CrystalImpactEffects.AreaOfEffectExplosion:
                     //    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
@@ -182,7 +206,7 @@ namespace CosmicShore.Game.Projectiles
                         crystalProperties.crystal.Steal(Team, 7f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
-                        Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(0, Ship.ShipStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
+                        ShipStatus.ResourceSystem.ChangeResourceAmount(0, ShipStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
                         break;
                 }
             }
@@ -231,7 +255,7 @@ namespace CosmicShore.Game.Projectiles
                 yield return null;
             }
             if (ImpactOnEnd) PerformEndEffects();
-            GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
+            poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
 
         public void Stop() 

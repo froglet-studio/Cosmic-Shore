@@ -17,7 +17,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(ShipStatus))]
     public class NetworkShip : NetworkBehaviour, IShip
     {
-        public event Action OnShipInitialized;
+        public event Action<IShipStatus> OnShipInitialized;
 
         [Header("Ship Meta")]
         [SerializeField] string _name;
@@ -209,7 +209,7 @@ namespace CosmicShore.Game
                 ShipStatus.ShipTransformer.Initialize(this);
             }
 
-            OnShipInitialized?.Invoke();
+            OnShipInitialized?.Invoke(ShipStatus);
         }
 
         void SetTeamToShipStatusAndSkimmers(Teams team)

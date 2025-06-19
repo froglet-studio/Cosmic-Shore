@@ -13,14 +13,17 @@ namespace CosmicShore.Game.Projectiles
 
         public void Detonate()
         {
-            GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
+            poolManager.ReturnToPool(gameObject, gameObject.tag);
             foreach (var AOE in AOEPrefabs)
             {
-                if (Ship == null)
+                if (ShipStatus.Ship == null)
+                {
+                    Debug.LogError("ShipStatus.Ship is null in ExplodableProjectile.Detonate()");
                     return;
+                }
 
                 var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
-                AOEExplosion.Detonate(Ship);
+                AOEExplosion.Detonate(ShipStatus.Ship);
                 AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                 AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
             }

@@ -53350,8 +53350,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1201690886442683049, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
+      propertyPath: FollowOffset.y
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201690886442683049, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
       propertyPath: FollowOffset.z
-      value: -9.643315
+      value: -25
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -93095,7 +93100,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: 186.99998}
+  m_AnchoredPosition: {x: -32, y: 186.4}
   m_SizeDelta: {x: 64, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &5840560526580898137

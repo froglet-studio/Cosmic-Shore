@@ -9,7 +9,7 @@ namespace CosmicShore.Game
 {
     public interface IShip : ITransform
     {
-        public event Action OnShipInitialized;
+        public event Action<IShipStatus> OnShipInitialized;
 
         public IShipStatus ShipStatus { get; }
 

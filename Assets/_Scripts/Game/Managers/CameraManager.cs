@@ -12,7 +12,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     [SerializeField] CinemachineVirtualCameraBase playerCamera;
     [SerializeField] CinemachineVirtualCameraBase deathCamera;
     [SerializeField] CinemachineVirtualCameraBase endCamera;
-    
+
     [SerializeField] Transform endCameraFollowTarget;
     [SerializeField] Transform endCameraLookAtTarget;
 
@@ -20,11 +20,16 @@ public class CameraManager : SingletonPersistent<CameraManager>
     readonly int activePriority = 10;
     readonly int inactivePriority = 1;
 
+    // Runtime-only properties (not serialized)
+    private Vector3 originalFollowOffset;
+    private Vector3 runtimeFollowOffset;
+    private bool hasOriginalOffset = false;
+
     // Drift stuff
     bool zoomingOut;
 
     public bool FollowOverride = false;
-    public bool FixedFollow = false; // If true, the camera will not follow the player, but will stay at a fixed position.
+    public bool FixedFollow = false;
     public bool isOrthographic = false;
 
     public float CloseCamDistance;
@@ -47,12 +52,65 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.OnPlayGame -= SetupGamePlayCameras;
         GameManager.OnGameOver -= SetEndCameraActive;
+
+        // Restore original offset when disabled
+        RestoreOriginalOffset();
     }
 
     void Start()
     {
         vCam = playerCamera.gameObject.GetComponent<CinemachineCamera>();
         OnMainMenu();
+    }
+
+    void LateUpdate()
+    {
+        // Apply runtime offset without modifying the serialized property
+        if (transposer != null && Application.isPlaying && hasOriginalOffset)
+        {
+            ApplyRuntimeOffset();
+        }
+    }
+
+    private void ApplyRuntimeOffset()
+    {
+        // Use reflection to set the offset without marking scene dirty
+        var field = typeof(CinemachineFollow).GetField("m_FollowOffset",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        if (field != null)
+        {
+            field.SetValue(transposer, runtimeFollowOffset);
+        }
+    }
+
+    private void RestoreOriginalOffset()
+    {
+        if (transposer != null && hasOriginalOffset)
+        {
+            var field = typeof(CinemachineFollow).GetField("m_FollowOffset",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (field != null)
+            {
+                field.SetValue(transposer, originalFollowOffset);
+            }
+        }
+    }
+
+    private void SetRuntimeFollowOffset(Vector3 offset)
+    {
+        runtimeFollowOffset = offset;
+    }
+
+    private void InitializeRuntimeOffset()
+    {
+        if (transposer != null && !hasOriginalOffset)
+        {
+            originalFollowOffset = transposer.FollowOffset;
+            runtimeFollowOffset = originalFollowOffset;
+            hasOriginalOffset = true;
+        }
     }
 
     public Transform GetCloseCamera()
@@ -97,10 +155,12 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         SetActiveCamera(playerCamera);
     }
+
     public void SetDeathCameraActive()
     {
         SetActiveCamera(deathCamera);
     }
+
     public void SetEndCameraActive()
     {
         SetActiveCamera(endCamera);
@@ -116,7 +176,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         yield return new WaitForSeconds(1); // Allow time for camera to stabilize
         transposer = vCam.GetComponent<CinemachineFollow>();
-        transposer.FollowOffset = offset;
+        InitializeRuntimeOffset();
+        SetRuntimeFollowOffset(offset);
     }
 
     void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
@@ -131,36 +192,43 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
         activeCamera.Priority = activePriority;
         transposer = vCam.GetComponent<CinemachineFollow>();
-        if (activeCamera == playerCamera) SetOffsetPosition(transposer.FollowOffset);
+        InitializeRuntimeOffset();
+
+        if (activeCamera == playerCamera)
+        {
+            SetOffsetPosition(runtimeFollowOffset);
+        }
     }
 
     void ClipPlaneAndOffsetLerper(float normalizedDistance)
     {
         float CloseCamClipPlane = .5f;
         float FarCamClipPlane = .7f;
-        if (lerper != null) 
+        if (lerper != null)
             StopCoroutine(lerper);
-        
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine((transposer.FollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance),
+
+        float startNormalized = (runtimeFollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance);
+
+        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(startNormalized,
             normalizedDistance, 1.5f, (i) =>
             {
                 vCam.Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
-                transposer.FollowOffset = new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance);
+                SetRuntimeFollowOffset(new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance));
             }));
     }
-    
+
     void ClipPlaneAndOffsetLerper(Vector3 offsetPosition)
     {
         float CloseCamClipPlane = .5f;
         //float FarCamClipPlane = .7f;
-        if (lerper != null) 
+        if (lerper != null)
             StopCoroutine(lerper);
-        
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(transposer.FollowOffset,
+
+        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(runtimeFollowOffset,
             offsetPosition, 1.5f, (i) =>
             {
                 //vCam.Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
-                transposer.FollowOffset = i;
+                SetRuntimeFollowOffset(i);
             }));
     }
 
@@ -168,21 +236,25 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         if (FixedFollow) return;
         transposer = vCam.GetComponent<CinemachineFollow>();
+        InitializeRuntimeOffset();
 
-        if (transposer.FollowOffset != new Vector3(0, 0, normalizedDistance))
+        Vector3 targetOffset = new Vector3(0, 0, normalizedDistance);
+        if (runtimeFollowOffset != targetOffset)
         {
             ClipPlaneAndOffsetLerper(normalizedDistance);
-        }  
+        }
     }
+
     public void SetOffsetPosition(Vector3 position)
     {
         //offsetVector = position;
         transposer = vCam.GetComponent<CinemachineFollow>();
+        InitializeRuntimeOffset();
 
-        if (transposer.FollowOffset != position)
+        if (runtimeFollowOffset != position)
         {
             ClipPlaneAndOffsetLerper(position);
-        }  
+        }
     }
 
     void Orthographic(bool isOrthographic)
@@ -210,10 +282,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
     IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
     {
         transposer = vCam.GetComponent<CinemachineFollow>();
+        InitializeRuntimeOffset();
 
-        while (zoomingOut && transposer.FollowOffset.z > FarCamDistance)
+        while (zoomingOut && runtimeFollowOffset.z > FarCamDistance)
         {
-            transposer.FollowOffset += Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward;         
+            SetRuntimeFollowOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward);
             yield return null;
         }
     }
@@ -232,15 +305,15 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
     {
-        
         transposer = vCam.GetComponent<CinemachineFollow>();
+        InitializeRuntimeOffset();
 
-        while (transposer.FollowOffset.z <= CloseCamDistance)
+        while (runtimeFollowOffset.z <= CloseCamDistance)
         {
-            transposer.FollowOffset += Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward;
+            SetRuntimeFollowOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward);
             yield return null;
         }
 
-        transposer.FollowOffset = new Vector3(0, 0, CloseCamDistance);
+        SetRuntimeFollowOffset(new Vector3(0, 0, CloseCamDistance));
     }
 }

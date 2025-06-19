@@ -21,6 +21,7 @@ public class FireGunAction : ShipAction
     public override void Initialize(IShip ship)
     {
         base.Initialize(ship);
+        gun.Initialize(ship.ShipStatus);
         projectileContainer.transform.parent = Ship.ShipStatus.Player.Transform;
     }
     public override void StartAction()

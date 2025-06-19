@@ -5,10 +5,13 @@ using CosmicShore.Game.IO;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Core          // Change it to CosmicShore.Game
 {
     public interface IShipStatus
     {
+        
+        IShip Ship { get; } // FOR TEMP USE, TRY REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
+
         AIPilot AIPilot { get; }
         bool AlignmentEnabled { get; set; }
         Material AOEConicExplosionMaterial { get; set; }

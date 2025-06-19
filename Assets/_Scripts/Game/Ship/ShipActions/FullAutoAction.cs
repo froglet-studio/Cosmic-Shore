@@ -43,14 +43,18 @@ namespace CosmicShore
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
-            var gunTemplate = gunContainer.GetComponent<Gun>();
+            gunContainer.Initialize(ship.ShipStatus);
+
             foreach (var child in gunContainer.GetComponentsInChildren<Transform>())
             {
                 if (child == gunContainer.transform)
                     continue;
                 var go = child.gameObject;
-                CopyValues<Gun>(gunTemplate, go.AddComponent<Gun>());
-                guns.Add(go.GetComponent<Gun>());
+                CopyValues<Gun>(gunContainer, go.AddComponent<Gun>());
+                var childGun = go.GetComponent<Gun>();
+                childGun.Initialize(ship.ShipStatus);
+
+                guns.Add(childGun);
                 //child.LookAt(gunContainer.transform);
                 //child.Rotate(0, 180, 0);
             }

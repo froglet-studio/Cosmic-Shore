@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
 
@@ -11,30 +12,31 @@ namespace CosmicShore.Game.Projectiles
 
     public class Gun : MonoBehaviour
     {
-        public float firePeriod = .2f;
+        [SerializeField]
+        float _firePeriod = .2f;
 
-        public Teams Team { get; private set; }
-        public IShip Ship { get; private set; }
+        Teams _team;
+        IShipStatus _shipStatus;
 
-        bool onCooldown = false;
-        float sideLength = 2;
-        float barrelLength = 0;
+        bool _onCooldown = false;
+        float _sideLength = 2;
+        float _barrelLength = 0;
 
-        Projectile projectile;
+        Projectile _projectile;
 
-        public void Initialize(IShip ship)
+        public void Initialize(IShipStatus shipStatus)
         {          
-            Ship = ship;
-            Team = Ship.ShipStatus.Team;
+            _shipStatus = shipStatus;
+            _team = _shipStatus.Team;
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,
             float projectileScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0, FiringPatterns firingPattern = FiringPatterns.Default, int energy = 0)
         {
-            if (onCooldown && !ignoreCooldown)
+            if (_onCooldown && !ignoreCooldown)
                 return;
 
-            onCooldown = true;
+            _onCooldown = true;
 
             switch (firingPattern)
             {
@@ -50,7 +52,7 @@ namespace CosmicShore.Game.Projectiles
 
                         foreach (Vector3 direction in tetrahedralVertices)
                         {
-                            Vector3 offset = direction.normalized * sideLength;
+                            Vector3 offset = direction.normalized * _sideLength;
                             FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction.normalized, projectileTime, charge);
                         }
                     }
@@ -71,7 +73,7 @@ namespace CosmicShore.Game.Projectiles
                             float z = Mathf.Sin(theta) * radius;
 
                             Vector3 direction = randomRotation * (new Vector3(x, y, z));
-                            Vector3 offset = direction * sideLength;
+                            Vector3 offset = direction * _sideLength;
                             FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction, projectileTime, charge, energy);
                         }
                     }
@@ -92,7 +94,7 @@ namespace CosmicShore.Game.Projectiles
 
                             for (int i = 0; i < projectilesInThisRing; i++)
                             {
-                                Vector3 offset = Quaternion.Euler(0, 0, ring%2 * 30 + angleIncrement * i) * transform.right * sideLength * ring;
+                                Vector3 offset = Quaternion.Euler(0, 0, ring%2 * 30 + angleIncrement * i) * transform.right * _sideLength * ring;
                                 FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge, energy);
                             }
                         }
@@ -113,24 +115,29 @@ namespace CosmicShore.Game.Projectiles
         void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity,
             float projectileScale, Vector3 offset, Vector3 normalizedVelocity, float projectileTime = 3, float charge = 0, int energy = 0)
         {
+            if (_shipStatus == null)
+            {
+                Debug.LogError("Gun.FireProjectile - ShipStatus is null. Cannot fire projectile.");
+                return;
+            }    
+
             Projectile projectileInstance = containerTransform.GetComponent<PoolManager>().SpawnFromPool(GetPoolTag(energy),
-            transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
+            transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * _barrelLength), // position
             Quaternion.LookRotation(normalizedVelocity) // rotation
             ).GetComponent<Projectile>();
-            projectileInstance.Initialize(Ship);
 
+            projectileInstance.Initialize(_team, _shipStatus);
             projectileInstance.transform.localScale = projectileScale * projectileInstance.InitialScale;
             projectileInstance.transform.parent = containerTransform;
             projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
-            projectileInstance.Team = Team;
-            if (projectileInstance.TryGetComponent(out Gun projectileGun))
+            /*if (projectileInstance.TryGetComponent(out Gun projectileGun))
             {
-                projectileGun.Team = Team;
-                projectileGun.Ship = Ship;
-            }
+                projectileGun._team = _team;
+                projectileGun._shipStatus = _shipStatus;
+            }*/
             if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
-            projectile = projectileInstance;
-            projectile.LaunchProjectile(projectileTime);
+            _projectile = projectileInstance;
+            _projectile.LaunchProjectile(projectileTime);
         }
 
         private string GetPoolTag(int energy)
@@ -142,19 +149,19 @@ namespace CosmicShore.Game.Projectiles
 
         IEnumerator CooldownCoroutine()
         {
-            yield return new WaitForSeconds(firePeriod);
-            onCooldown = false;
+            yield return new WaitForSeconds(_firePeriod);
+            _onCooldown = false;
         }
 
         public void StopProjectile()
         {
-            projectile.Stop();
+            _projectile.Stop();
         }
 
         public void DetonateProjectile()
         {
             Debug.Log("GunExplode");
-            if (projectile is ExplodableProjectile) ((ExplodableProjectile)projectile).Detonate();
+            if (_projectile is ExplodableProjectile) ((ExplodableProjectile)_projectile).Detonate();
         }
        
     }
