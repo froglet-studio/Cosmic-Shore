@@ -48,7 +48,7 @@ MonoBehaviour:
   - prefab: {fileID: 5258412105609794183, guid: d2af5f5040e134141a94c2b496074a65,
       type: 3}
     size: 3000
-  ship: {fileID: 0}
+  shipInstance: {fileID: 0}
 --- !u!1 &1878660672777590133
 GameObject:
   m_ObjectHideFlags: 0
@@ -375,6 +375,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  shipInstance: {fileID: 0}
 --- !u!114 &7686683633640807837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -417,6 +418,7 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 7b267f607ed6bde46908cd599dd95472,
     type: 3}
   skimmer: {fileID: 708149374973573223}
+  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 8
   minWavelength: 8
   defaultWaitTime: 0.5

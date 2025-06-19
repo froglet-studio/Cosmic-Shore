@@ -22,15 +22,21 @@ namespace CosmicShore.Game.Projectiles
             if (!other.gameObject.IsLayer("Ships") && !other.gameObject.IsLayer("Projectiles"))
                 return;
 
-            var ship = other.gameObject.IsLayer("Ships") ? other.GetComponent<ShipGeometry>().Ship : other.GetComponent<Projectile>().Ship;
+            var shipStatus = other.gameObject.IsLayer("Ships") ? other.GetComponent<ShipGeometry>().Ship.ShipStatus : other.GetComponent<Projectile>().ShipStatus;
         
+            if (shipStatus == null)
+            {
+                Debug.LogError("Ship Status cannot be null!");
+                return;
+            }
+
             // TODO: use a different material if the fake crystal is on your team
-            if (ship.ShipStatus.Team == Team)
+            if (shipStatus.Team == Team)
                 return;
 
-            PerformCrystalImpactEffects(crystalProperties, ship);
+            PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
 
-            Explode(ship);
+            Explode(shipStatus.Ship);
 
             PlayExplosionAudio();
 

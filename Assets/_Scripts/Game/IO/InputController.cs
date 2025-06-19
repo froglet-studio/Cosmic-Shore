@@ -77,14 +77,14 @@ namespace CosmicShore.Game.IO
 
             if (Ship != null && Ship.ShipStatus.AutoPilotEnabled)
             {
-                Debug.Log("InputController.Update: AutoPilotEnabled -> calling ProcessAutoPilot()");
+                // Debug.Log("InputController.Update: AutoPilotEnabled -> calling ProcessAutoPilot()");
                 ProcessAutoPilot();
                 return;
             }
 
             if (PauseSystem.Paused)
             {
-                Debug.Log("InputController.Update: PauseSystem.Paused -> blocking input");
+                // Debug.Log("InputController.Update: PauseSystem.Paused -> blocking input");
                 return;
             }
 

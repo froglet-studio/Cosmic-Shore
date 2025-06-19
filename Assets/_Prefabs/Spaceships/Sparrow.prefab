@@ -959,7 +959,7 @@ MonoBehaviour:
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
-  - InputEvent: 6
+  - InputEvent: 1
     ShipActions:
     - {fileID: 1865457525660812358}
   - InputEvent: 7
@@ -990,6 +990,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  shipInstance: {fileID: 0}
 --- !u!114 &8900747579718772804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1032,6 +1033,7 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
     type: 3}
   skimmer: {fileID: 2413128156359967549}
+  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 7
   minWavelength: 7
   defaultWaitTime: 0
@@ -1246,7 +1248,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  firePeriod: 0.2
+  _firePeriod: 0.2
 --- !u!1 &7113592867435310030
 GameObject:
   m_ObjectHideFlags: 0
@@ -1376,7 +1378,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  firePeriod: 0.2
+  _firePeriod: 0.2
 --- !u!1 &8219347799270583732
 GameObject:
   m_ObjectHideFlags: 0
