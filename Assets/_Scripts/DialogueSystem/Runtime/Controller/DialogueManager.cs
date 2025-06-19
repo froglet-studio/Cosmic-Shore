@@ -10,9 +10,10 @@ namespace CosmicShore.DialogueSystem.Controller
         public static DialogueManager Instance;
 
         [Header("References")]
-        [SerializeField] private DialogueUIController uiController;
-        [SerializeField] private Canvas dialogueCanvas;
-        [SerializeField] private DialogueSetLibrary dialogueLibrary;
+        [SerializeField] private DialogueUIController _uiController;
+        [SerializeField] private Canvas _dialogueCanvas;
+        [SerializeField] private DialogueSetLibrary _dialogueLibrary;
+        [SerializeField] private GameObject _mainGameCanvas;
 
         private Coroutine _currentSequence;
 
@@ -29,7 +30,7 @@ namespace CosmicShore.DialogueSystem.Controller
         /// </summary>
         public void PlayDialogueById(string setId)
         {
-            var set = dialogueLibrary.GetSetById(setId);
+            var set = _dialogueLibrary.GetSetById(setId);
             if (set == null)
             {
                 Debug.LogWarning($"DialogueManager: No DialogueSet found with ID '{setId}'.");
@@ -53,8 +54,11 @@ namespace CosmicShore.DialogueSystem.Controller
                 StopCoroutine(_currentSequence);
 
             // Activate the dialogue canvas
-            if (dialogueCanvas != null)
-                dialogueCanvas.gameObject.SetActive(true);
+            if (_dialogueCanvas != null)
+            {
+                _mainGameCanvas.SetActive(false);
+                _dialogueCanvas.gameObject.SetActive(true);
+            }
 
             _currentSequence = StartCoroutine(PlaySequence(set));
         }
@@ -66,34 +70,32 @@ namespace CosmicShore.DialogueSystem.Controller
                 var line = set.lines[i];
                 bool isLeft = (i % 2 == 0);
                 if (set.mode == DialogueModeType.Monologue)
-                    uiController.ShowMonologue(set, line, OnNextRequested);
+                    _uiController.ShowMonologue(set, line, OnNextRequested);
                 else if (set.mode == DialogueModeType.Dialogue)
-                    uiController.ShowDialogue(set, line, OnNextRequested, isLeft);
+                    _uiController.ShowDialogue(set, line, OnNextRequested, isLeft);
 
-                // Wait for Next button
-                yield return new WaitUntil(() => uiController.WaitingForNextPressed);
-                uiController.ResetWaitingForNext();
+                yield return new WaitUntil(() => _uiController.WaitingForNextPressed);
+                _uiController.ResetWaitingForNext();
 
-                // Small delay for animation out, if needed, can skip if instant
                 yield return new WaitForSeconds(0.1f);
             }
 
             // Dialogue complete, hide UI and canvas
-            uiController.Hide();
-            if (dialogueCanvas != null)
-                dialogueCanvas.gameObject.SetActive(false);
+            Debug.Log("<color=blue> DialogueComplete");
 
-            _currentSequence = null;
+            bool wasMono = set.mode == DialogueModeType.Monologue;
+            _uiController.HideWithAnimation(wasMono, () =>
+            {
+                if (_dialogueCanvas != null)
+                {
+                    _mainGameCanvas.SetActive(true);
+                    Debug.Log("<color=green> Hide With Animation");
+                    _dialogueCanvas.gameObject.SetActive(false);
+                }
+
+                _currentSequence = null;
+            });
         }
-
-
-        // This can be called by UIController when the user clicks next (if you wire it up)
-        private void OnNextRequested()
-        {
-            // Just a placeholder – real implementation can skip current WaitForSeconds, etc.
-        }
-
-
 
         [ContextMenu("PlayDefualtSet")]
         public void PlayDefaultSetLibrary()

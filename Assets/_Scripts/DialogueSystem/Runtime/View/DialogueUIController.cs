@@ -1,5 +1,4 @@
 using CosmicShore.DialogueSystem.Models;
-using DG.Tweening;
 using System;
 using System.Collections;
 using TMPro;
@@ -9,212 +8,188 @@ namespace CosmicShore.DialogueSystem.View
 {
     public class DialogueUIController : MonoBehaviour
     {
-        [Header("UI Prefab References")]
-        [SerializeField] private DialogueUIPrefabRefs dialogueUIPrefab; // Assign your prefab here
-        [SerializeField] private Transform contentParent; // Where to parent the instantiated prefab
+        [SerializeField] private DialogueUIPrefabRefs dialogueUIPrefab;
+        [SerializeField] private Transform contentParent;
 
-        private DialogueUIPrefabRefs _instanceRefs;
         private GameObject _currentInstance;
+        private DialogueUIPrefabRefs _instanceRefs;
+        private Animator _animator;
+        private Action _onNextLine;
 
-        // Animation config (can expose in inspector)
-        public float speakerOffset = 700f, speakerMoveDur = 0.45f, boxScaleDur = 0.35f, overshoot = 1.05f, overshootDur = 0.12f;
-        public Ease speakerEase = Ease.OutQuart, boxEase = Ease.OutBack;
+        private bool _monologuePanelEntered;
+        private bool _leftPanelEntered;
+        private bool _rightPanelEntered;
+        private bool _isLeftActive;
 
-        private bool _monologuePanelEntered = false;
-        private bool _leftPanelEntered = false;
-        private bool _rightPanelEntered = false;
-        private bool _isLeftActive = true;
-
+        // Called by DialogueManager for each monologue line
         public void ShowMonologue(DialogueSet set, DialogueLine line, Action onNextLine)
         {
-            CleanupPrefab();
+            // Instantiate once
+            if (_currentInstance == null)
+            {
+                _currentInstance = Instantiate(dialogueUIPrefab.gameObject, contentParent);
+                _instanceRefs = _currentInstance.GetComponent<DialogueUIPrefabRefs>();
+                _animator = _currentInstance.GetComponent<Animator>();
 
-            _currentInstance = Instantiate(dialogueUIPrefab.gameObject, contentParent);
-            _instanceRefs = _currentInstance.GetComponent<DialogueUIPrefabRefs>();
+                _instanceRefs.OnAnimInComplete += () =>
+                {
+                    StartTypewriter(_instanceRefs.MonologueDialogText, line.text,
+                        () => _instanceRefs.nextButton.gameObject.SetActive(true));
+                    _instanceRefs.OnAnimInComplete = null;
+                };
 
-            // Hide right side
-            _instanceRefs.rightSpeakerRoot.gameObject.SetActive(false);
-            _instanceRefs.rightBox.gameObject.SetActive(false);
+                // Wire Next button
+                _instanceRefs.nextButton.onClick.AddListener(OnMonologueNextClicked);
+            }
 
-            // Set left side text/sprite
-            _instanceRefs.leftSpeakerName.text = line.speakerName;
-            _instanceRefs.leftDialogueText.text = "";
-            _instanceRefs.leftPortrait.sprite = set.portraitSpeaker1;
-            _instanceRefs.nextButton.onClick.AddListener(OnNextClicked);
+            _onNextLine = onNextLine;
 
-            // First line: animate panel from 'from' to 'to', then animate box and typewriter
+            _instanceRefs.MonologueSpeakerText.text = line.speakerName;
+            _instanceRefs.MonologuePortrait.sprite = set.portraitSpeaker1;
+            _instanceRefs.MonologueDialogText.text = "";
+
+            WireNextButton(onNextLine);
+
             if (!_monologuePanelEntered)
             {
-                Debug.Log("Panel not already in place, just animate box + typewriter");
-                _instanceRefs.leftSpeakerRoot.anchoredPosition = _instanceRefs.moveFromLeft.anchoredPosition;
-                _instanceRefs.leftSpeakerRoot.gameObject.SetActive(true);
-
-                _instanceRefs.leftSpeakerRoot.DOAnchorPos(_instanceRefs.moveToLeft.anchoredPosition, speakerMoveDur)
-                    .SetEase(speakerEase)
-                    .OnComplete(() =>
-                    {
-                        AnimateBoxAndTypewriter(false);
-                        _monologuePanelEntered = true;
-                    });
+                _animator.Play("MonologuePopout");
+                _monologuePanelEntered = true;
             }
             else
             {
-                // 
-                Debug.Log("Panel already in place, just animate box + typewriter");
-                _instanceRefs.leftSpeakerRoot.anchoredPosition = _instanceRefs.moveToLeft.anchoredPosition;
-                _instanceRefs.leftSpeakerRoot.gameObject.SetActive(true);
-
-                AnimateBoxAndTypewriter(true);
+                StartTypewriter(_instanceRefs.MonologueDialogText, line.text,
+                    () => _instanceRefs.nextButton.gameObject.SetActive(true));
             }
+        }
 
-            void AnimateBoxAndTypewriter(bool useOnlyTypewriter)
-            {
-                if (!useOnlyTypewriter)
-                {
-                    // Animate width (not scale), hide text until done
-                    _instanceRefs.leftDialogueText.gameObject.SetActive(false);
+        private void OnMonologueNextClicked()
+        {
+            _instanceRefs.nextButton.onClick.RemoveListener(OnMonologueNextClicked);
 
-                    var box = _instanceRefs.leftBox;
-                    float targetWidth = 824f; // Set your desired width
+            WaitingForNextPressed = true;
 
-                    // Set box width to 0, then animate to target
-                    var size = box.sizeDelta;
-                    box.sizeDelta = new Vector2(0f, size.y);
-                    box.gameObject.SetActive(true);
-
-                    DOTween.To(
-                        () => box.sizeDelta.x,
-                        x => box.sizeDelta = new Vector2(x, size.y),
-                        targetWidth,
-                        boxScaleDur
-                    )
-                    .SetEase(boxEase)
-                    .OnComplete(() =>
-                    {
-                        _instanceRefs.leftDialogueText.gameObject.SetActive(true);
-                        StartTypewriter(_instanceRefs.leftDialogueText, line.text, () => _instanceRefs.nextButton.gameObject.SetActive(true));
-                    });
-                }
-                else
-                {
-                    // Box already at target width, just typewriter
-                    _instanceRefs.leftBox.gameObject.SetActive(true);
-                    _instanceRefs.leftDialogueText.gameObject.SetActive(true);
-                    StartTypewriter(_instanceRefs.leftDialogueText, line.text, () => _instanceRefs.nextButton.gameObject.SetActive(true));
-                }
-            }
-
-
-            _instanceRefs.nextButton.gameObject.SetActive(true);
+            _onNextLine?.Invoke();
         }
 
 
+        // Called by DialogueManager for each dialogue line
         public void ShowDialogue(DialogueSet set, DialogueLine line, Action onNextLine, bool isLeft)
         {
-            CleanupPrefab();
+            // Instantiate once
+            if (_currentInstance == null)
+            {
+                _currentInstance = Instantiate(dialogueUIPrefab.gameObject, contentParent);
+                _instanceRefs = _currentInstance.GetComponent<DialogueUIPrefabRefs>();
+                _animator = _currentInstance.GetComponent<Animator>();
 
-            _currentInstance = Instantiate(dialogueUIPrefab.gameObject, contentParent);
-            _instanceRefs = _currentInstance.GetComponent<DialogueUIPrefabRefs>();
+                // Hook Anim-Event ? typewriter
+                _instanceRefs.OnAnimInComplete += () =>
+                {
+                    if (_isLeftActive)
+                    {
+                        StartTypewriter(_instanceRefs.leftDialogueText, line.text,
+                            () => _instanceRefs.nextButton.gameObject.SetActive(true));
+                    }
+                    else
+                    {
+                        StartTypewriter(_instanceRefs.rightDialogueText, line.text,
+                            () => _instanceRefs.nextButton.gameObject.SetActive(true));
+                    }
+                    _instanceRefs.OnAnimInComplete = null;
+                };
 
-            // Decide side and ensure the other is hidden
+                // Wire Next button
+                _instanceRefs.nextButton.onClick.AddListener(OnDialogueNextClicked);
+            }
+
+
+            _onNextLine = onNextLine;
             _isLeftActive = isLeft;
+
+            // Hide opposite side
             if (isLeft)
             {
                 _instanceRefs.rightSpeakerRoot.gameObject.SetActive(false);
                 _instanceRefs.rightBox.gameObject.SetActive(false);
-
-                _instanceRefs.leftSpeakerName.text = line.speakerName;
-                _instanceRefs.leftDialogueText.text = "";
-                _instanceRefs.leftPortrait.sprite = set.portraitSpeaker1;
-
-                // Reset box scale X to 0
-                _instanceRefs.leftBox.localScale = new Vector3(0, 1, 1);
-
-                // If it's the first time, animate panel in
-                if (!_leftPanelEntered)
-                {
-                    _instanceRefs.leftSpeakerRoot.anchoredPosition = _instanceRefs.moveFromLeft.anchoredPosition;
-                    _instanceRefs.leftSpeakerRoot.gameObject.SetActive(true);
-
-                    _instanceRefs.leftSpeakerRoot.DOAnchorPos(_instanceRefs.moveToLeft.anchoredPosition, speakerMoveDur)
-                        .SetEase(speakerEase)
-                        .OnComplete(() =>
-                        {
-                            AnimateBoxAndTypewriter();
-                            _leftPanelEntered = true;
-                        });
-                }
-                else
-                {
-                    _instanceRefs.leftSpeakerRoot.anchoredPosition = _instanceRefs.moveToLeft.anchoredPosition;
-                    _instanceRefs.leftSpeakerRoot.gameObject.SetActive(true);
-                    AnimateBoxAndTypewriter();
-                }
-
-                void AnimateBoxAndTypewriter()
-                {
-                    _instanceRefs.leftBox.localScale = new Vector3(0, 1, 1);
-                    _instanceRefs.leftBox.gameObject.SetActive(true);
-
-                    _instanceRefs.leftBox.DOScaleX(1f, boxScaleDur)
-                        .SetEase(boxEase)
-                        .OnComplete(() =>
-                        {
-                            StartTypewriter(_instanceRefs.leftDialogueText, line.text, () => _instanceRefs.nextButton.gameObject.SetActive(true));
-                        });
-                }
             }
-            else // RIGHT
+            else
             {
                 _instanceRefs.leftSpeakerRoot.gameObject.SetActive(false);
                 _instanceRefs.leftBox.gameObject.SetActive(false);
+            }
 
+            // Fill data & hide text until anim-in
+            if (isLeft)
+            {
+                _instanceRefs.leftSpeakerName.text = line.speakerName;
+                _instanceRefs.leftPortrait.sprite = set.portraitSpeaker1;
+                _instanceRefs.leftDialogueText.text = "";
+                _instanceRefs.leftDialogueText.gameObject.SetActive(false);
+            }
+            else
+            {
                 _instanceRefs.rightSpeakerName.text = line.speakerName;
-                _instanceRefs.rightDialogueText.text = "";
                 _instanceRefs.rightPortrait.sprite = set.portraitSpeaker2;
+                _instanceRefs.rightDialogueText.text = "";
+                _instanceRefs.rightDialogueText.gameObject.SetActive(false);
+            }
 
-                // Reset box scale X to 0
-                _instanceRefs.rightBox.localScale = new Vector3(0, 1, 1);
+            _instanceRefs.nextButton.gameObject.SetActive(false);
+            _instanceRefs.skipButton.gameObject.SetActive(true);
 
-                // If it's the first time, animate panel in
-                if (!_rightPanelEntered)
+            WireNextButton(onNextLine);
+            _instanceRefs.nextButton.gameObject.SetActive(false);
+
+            // First time this side? play PopOut, else start typewriter
+            if (isLeft)
+            {
+                if (!_leftPanelEntered)
                 {
-                    _instanceRefs.rightSpeakerRoot.anchoredPosition = _instanceRefs.moveFromRight.anchoredPosition;
-                    _instanceRefs.rightSpeakerRoot.gameObject.SetActive(true);
-
-                    _instanceRefs.rightSpeakerRoot.DOAnchorPos(_instanceRefs.moveToRight.anchoredPosition, speakerMoveDur)
-                        .SetEase(speakerEase)
-                        .OnComplete(() =>
-                        {
-                            AnimateBoxAndTypewriter();
-                            _rightPanelEntered = true;
-                        });
+                    _animator.Play("DialoguePopOut");
+                    _leftPanelEntered = true;
                 }
                 else
                 {
-                    _instanceRefs.rightSpeakerRoot.anchoredPosition = _instanceRefs.moveToRight.anchoredPosition;
-                    _instanceRefs.rightSpeakerRoot.gameObject.SetActive(true);
-                    AnimateBoxAndTypewriter();
-                }
-
-
-                void AnimateBoxAndTypewriter()
-                {
-                    _instanceRefs.rightBox.localScale = new Vector3(0, 1, 1);
-                    _instanceRefs.rightBox.gameObject.SetActive(true);
-
-                    _instanceRefs.rightBox.DOScaleX(1f, boxScaleDur)
-                        .SetEase(boxEase)
-                        .OnComplete(() =>
-                        {
-                            StartTypewriter(_instanceRefs.rightDialogueText, line.text, () => _instanceRefs.nextButton.gameObject.SetActive(true));
-                        });
+                    StartTypewriter(_instanceRefs.leftDialogueText, line.text,
+                        () => _instanceRefs.nextButton.gameObject.SetActive(true));
                 }
             }
-            _instanceRefs.nextButton.gameObject.SetActive(false);
-            _instanceRefs.skipButton.gameObject.SetActive(true);
+            else
+            {
+                if (!_rightPanelEntered)
+                {
+                    _animator.Play("DialoguePopOut");
+                    _rightPanelEntered = true;
+                }
+                else
+                {
+                    StartTypewriter(_instanceRefs.rightDialogueText, line.text,
+                        () => _instanceRefs.nextButton.gameObject.SetActive(true));
+                }
+            }
         }
 
+        private void OnDialogueNextClicked()
+        {
+            _instanceRefs.nextButton.onClick.RemoveListener(OnDialogueNextClicked);
+
+            // ? NEW: let the manager know we clicked Next
+            WaitingForNextPressed = true;
+
+            _onNextLine?.Invoke();
+        }
+
+        private void WireNextButton(Action onNextLine)
+        {
+            WaitingForNextPressed = false;
+            _instanceRefs.nextButton.onClick.RemoveAllListeners();
+            _instanceRefs.nextButton.onClick.AddListener(() =>
+            {
+                WaitingForNextPressed = true;
+                onNextLine?.Invoke();
+                _instanceRefs.nextButton.gameObject.SetActive(false);
+            });
+        }
 
         public void Hide()
         {
@@ -234,34 +209,48 @@ namespace CosmicShore.DialogueSystem.View
             _rightPanelEntered = false;
         }
 
+        /// <summary>
+        /// Plays the appropriate “pop-in” (exit) animation, then cleans up.
+        /// </summary>
+        public void HideWithAnimation(bool wasMonologue, Action onHidden)
+        {
+            // Subscribe to the AnimationEvent callback
+            _instanceRefs.OnAnimOutComplete += () =>
+            {
+                Destroy(_currentInstance);
+                _currentInstance = null;
+                _instanceRefs = null;
+
+                _monologuePanelEntered = false;
+                _leftPanelEntered = false;
+                _rightPanelEntered = false;
+
+                onHidden?.Invoke();
+            };
+
+            _animator.Play(wasMonologue ? "MonologuePopIn" : "DialoguePopIn");
+        }
+
+
 
         // Plug in your typewriter, or use this stub
         private void StartTypewriter(TMP_Text target, string text, Action onComplete)
         {
-            target.text = text;
-            StartCoroutine(Typewriter(target, text));
-            onComplete?.Invoke();
+            target.text = "";
+            StartCoroutine(Typewriter(target, text, onComplete));
+            //onComplete?.Invoke();
         }
 
-        private IEnumerator Typewriter(TMP_Text textDisplay, string text)
+        private IEnumerator Typewriter(TMP_Text textDisplay, string text, Action onComplete)
         {
             textDisplay.text = "";
-
-            //if (typingAudioSource && typingLoopClip)
-            //{
-            //    typingAudioSource.clip = typingLoopClip;
-            //    typingAudioSource.loop = false;
-            //    typingAudioSource.Play();
-            //}
-
             foreach (char c in text)
             {
                 textDisplay.text += c;
                 yield return new WaitForSecondsRealtime(0.04f);
             }
-
-            //StopTypingAudio();
-            //_isTyping = false;
+            // Only now, after _all_ characters are drawn:
+            onComplete?.Invoke();
         }
 
         public bool WaitingForNextPressed { get; private set; }
