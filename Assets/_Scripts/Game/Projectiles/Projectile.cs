@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Projectiles
 
         MeshRenderer meshRenderer;
 
-        PoolManager poolManager;
+        protected PoolManager poolManager;
         public Teams Team { get; private set; }
         public IShipStatus ShipStatus { get; private set; }
 
