@@ -2,11 +2,13 @@ using UnityEngine;
 using CosmicShore.Core;
 using System.Collections;
 using CosmicShore.Game;
+using System.Collections.Generic;
+using CosmicShore.Game.Projectiles;
 
 public class PoolManager : PoolManagerBase
 {
     [SerializeField, RequireInterface(typeof(IShip))] MonoBehaviour shipInstance;
-    public IShip Ship { get; private set; }
+    IShip Ship;
 
     protected override void Awake()
     {

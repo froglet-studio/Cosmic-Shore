@@ -18,27 +18,31 @@ namespace CosmicShore.Core
         }
 
         [SerializeField] protected List<Pool> pools;
-        protected Dictionary<string, Queue<GameObject>> poolDictionary;
+        protected Dictionary<string, Queue<GameObject>> _poolDictionary;
 
         protected virtual void Awake()
         {
-            poolDictionary = new Dictionary<string, Queue<GameObject>>();
-            if (pools != null)
+            _poolDictionary = new Dictionary<string, Queue<GameObject>>();
+            if (pools == null)
             {
-                // Create a temporary list to avoid modifying during iteration
-                var poolsToInitialize = new List<Pool>(pools);
-                foreach (Pool pool in poolsToInitialize)
-                {
-                    CreateNewPool(pool.prefab, pool.size);
-                }
+                Debug.LogError("Pools is empty!");
+                enabled = false;
+                return;
+            }
+
+            // Create a temporary list to avoid modifying during iteration
+            var poolsToInitialize = new List<Pool>(pools);
+            foreach (Pool pool in poolsToInitialize)
+            {
+                CreateNewPool(pool.prefab, pool.size);
             }
         }
 
         public virtual void InitializePool(GameObject prefab, int size)
         {
-            if (poolDictionary == null)
+            if (_poolDictionary == null)
             {
-                poolDictionary = new Dictionary<string, Queue<GameObject>>();
+                _poolDictionary = new Dictionary<string, Queue<GameObject>>();
             }
             if (pools == null)
             {
@@ -53,8 +57,8 @@ namespace CosmicShore.Core
         private void CreateNewPool(GameObject prefab, int size)
         {
             // Initialize the queue and add to dictionary
-            Queue<GameObject> objectPool = new Queue<GameObject>();
-            poolDictionary.Add(prefab.tag, objectPool);
+            Queue<GameObject> objectPool = new();
+            _poolDictionary.Add(prefab.tag, objectPool);
 
             // Create the pool objects
             for (int i = 0; i < size; i++)
@@ -69,23 +73,23 @@ namespace CosmicShore.Core
             GameObject obj = Instantiate(prefab);
             obj.transform.parent = this.transform;
             obj.SetActive(false);
-            poolDictionary[prefab.tag].Enqueue(obj);
+            _poolDictionary[prefab.tag].Enqueue(obj);
             return obj;
         }
 
         public virtual GameObject SpawnFromPool(string tag, Vector3 position, Quaternion rotation)
         {
-            if (!poolDictionary.ContainsKey(tag))
+            if (!_poolDictionary.ContainsKey(tag))
             {
-                Debug.LogWarning("Pool with tag " + tag + " doesn't exist.");
+                Debug.LogError("Pool with tag " + tag + " doesn't exist.");
                 return null;
             }
-            if (poolDictionary[tag].Count == 0)
+            if (_poolDictionary[tag].Count == 0)
             {
-                Debug.LogWarning("Pool with tag " + tag + " is empty.");
+                Debug.LogError("Pool with tag " + tag + " is empty.");
                 return null;
             }
-            GameObject objectToSpawn = poolDictionary[tag].Dequeue();
+            GameObject objectToSpawn = _poolDictionary[tag].Dequeue();
             objectToSpawn.transform.position = position;
             objectToSpawn.transform.rotation = rotation;
             objectToSpawn.SetActive(true);
@@ -95,7 +99,7 @@ namespace CosmicShore.Core
         public virtual void ReturnToPool(GameObject obj, string tag)
         {
             obj.SetActive(false);
-            poolDictionary[tag].Enqueue(obj);
+            _poolDictionary[tag].Enqueue(obj);
         }
     }
 }

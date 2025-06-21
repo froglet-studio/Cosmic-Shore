@@ -794,7 +794,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  firePeriod: 0.2
+  _firePeriod: 0.2
 --- !u!1 &4251409320503842611
 GameObject:
   m_ObjectHideFlags: 0
@@ -1261,7 +1261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipInstance: {fileID: 0}
+  shipInstance: {fileID: 874579555101021527}
 --- !u!114 &-3607265076877978738
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -43,22 +43,28 @@ namespace CosmicShore
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
-            gunContainer.Initialize(ship.ShipStatus);
 
-            foreach (var child in gunContainer.GetComponentsInChildren<Transform>())
+            var children = gunContainer.GetComponentsInChildren<Transform>();
+
+
+            // TODO - If we need to positions to spawn projectiles, we can use the position datas of two projectiles, rather than making two gun game objects.
+            /*foreach (var child in children)
             {
                 if (child == gunContainer.transform)
                     continue;
-                var go = child.gameObject;
-                CopyValues<Gun>(gunContainer, go.AddComponent<Gun>());
-                var childGun = go.GetComponent<Gun>();
-                childGun.Initialize(ship.ShipStatus);
 
-                guns.Add(childGun);
+                var go = child.gameObject;
+                var newGun = go.AddComponent<Gun>();
+                CopyValues<Gun>(gunContainer, newGun);
+                newGun.Initialize(ship.ShipStatus);
+
+                guns.Add(newGun);
                 //child.LookAt(gunContainer.transform);
                 //child.Rotate(0, 180, 0);
-            }
+            }*/
 
+            gunContainer.Initialize(ship.ShipStatus);
+            guns.Add(gunContainer);
             //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
         }
 

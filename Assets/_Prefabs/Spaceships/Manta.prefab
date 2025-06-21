@@ -1937,7 +1937,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipInstance: {fileID: 0}
+  shipInstance: {fileID: 874579555101021527}
 --- !u!114 &7686683633640807837
 MonoBehaviour:
   m_ObjectHideFlags: 0

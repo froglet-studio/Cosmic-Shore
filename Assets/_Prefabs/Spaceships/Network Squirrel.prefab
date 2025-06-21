@@ -61,8 +61,13 @@ PrefabInstance:
     - target: {fileID: 6417075533431866457, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
         type: 3}
       propertyPath: m_Name
-      value: Network Squirrel Variant
+      value: Network Squirrel
       objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
+        type: 3}
+      propertyPath: shipInstance
+      value: 
+      objectReference: {fileID: 1193681058774765883}
     m_RemovedComponents:
     - {fileID: 874579555101021527, guid: 31cd97d0f057e9e4b8355c7f7e86bd42, type: 3}
     m_RemovedGameObjects: []
@@ -107,7 +112,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2244074059
+  GlobalObjectIdHash: 316577357
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
