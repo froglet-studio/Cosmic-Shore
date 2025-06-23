@@ -87619,6 +87619,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: TrailBlockMangers
       objectReference: {fileID: 0}
+    - target: {fileID: 7041824371073105239, guid: d2f1f48a5b5d5d14299a56a777d3971c,
+        type: 3}
+      propertyPath: poolSizePerTeam
+      value: 1500
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
