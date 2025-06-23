@@ -968,6 +968,9 @@ MonoBehaviour:
   - InputEvent: 8
     ShipActions:
     - {fileID: 8671196826403818986}
+  - InputEvent: 6
+    ShipActions:
+    - {fileID: 9020752958040124948}
   resourceEventClassActions: []
   ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
@@ -1298,6 +1301,50 @@ MonoBehaviour:
       type: 3}
     size: 25
   shipInstance: {fileID: 874579555101021527}
+--- !u!1 &7576075976379099439
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6619555420319509746}
+  - component: {fileID: 9020752958040124948}
+  m_Layer: 8
+  m_Name: ExhaustBarrage
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6619555420319509746
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7576075976379099439}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8075578658670966254}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9020752958040124948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7576075976379099439}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e07a4637d02c4644bb1faaa7ceb15e69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1330,6 +1377,7 @@ Transform:
   - {fileID: 5248301459994666056}
   - {fileID: 6846568673238505883}
   - {fileID: 3683550419538697080}
+  - {fileID: 6619555420319509746}
   m_Father: {fileID: 5928382658856804067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8123755407673725933
