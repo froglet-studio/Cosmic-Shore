@@ -40,7 +40,19 @@ namespace CosmicShore.Core
         public List<GameObject> ShipGeometries { get; set; }
         public TrailBlock AttachedTrailBlock { get; set; }
 
-        public IShip Ship => shipInstance as IShip;
+        public IShip Ship
+        {
+            get
+            {
+                if (shipInstance == null)
+                {
+                    Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
+                    return null;
+                }
+                return shipInstance as IShip;
+
+            }
+        }
 
         InputController _inputController;
         public InputController InputController

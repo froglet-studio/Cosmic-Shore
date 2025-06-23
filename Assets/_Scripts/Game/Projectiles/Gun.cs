@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -119,24 +120,37 @@ namespace CosmicShore.Game.Projectiles
             {
                 Debug.LogError("Gun.FireProjectile - ShipStatus is null. Cannot fire projectile.");
                 return;
-            }    
+            }
 
-            Projectile projectileInstance = containerTransform.GetComponent<PoolManager>().SpawnFromPool(GetPoolTag(energy),
-            transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * _barrelLength), // position
-            Quaternion.LookRotation(normalizedVelocity) // rotation
-            ).GetComponent<Projectile>();
-
-            projectileInstance.Initialize(_team, _shipStatus);
-            projectileInstance.transform.localScale = projectileScale * projectileInstance.InitialScale;
-            projectileInstance.transform.parent = containerTransform;
-            projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
-            /*if (projectileInstance.TryGetComponent(out Gun projectileGun))
+            string poolTag = GetPoolTag(energy);
+            if (poolTag == null)
             {
-                projectileGun._team = _team;
-                projectileGun._shipStatus = _shipStatus;
-            }*/
-            if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
-            _projectile = projectileInstance;
+                Debug.LogError("Gun.FireProjectile - PoolTag is null. Cannot spawn projectile.");
+                return;
+            }
+            if (!containerTransform.TryGetComponent(out PoolManager poolManager))
+            {
+                Debug.LogError("Gun.FireProjectile - PoolManager is null. Cannot spawn projectile.");
+                return;
+            }
+            Vector3 spawnPosition = transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * _barrelLength);
+            Quaternion rotation = Quaternion.LookRotation(normalizedVelocity);
+
+            var projectileGO = poolManager.SpawnFromPool(poolTag, spawnPosition, rotation);
+            if (projectileGO == null)
+            {
+                Debug.LogError("No projectile gameobject available in pool to spawn!");
+                return;
+            }
+            if (!projectileGO.TryGetComponent(out _projectile))
+            {
+                Debug.LogError("Gun.FireProjectile - Failed to spawn projectile from pool. Try increasing pool size!");
+                return;
+            }
+            _projectile.Initialize(_team, _shipStatus, charge);
+            _projectile.transform.localScale = projectileScale * _projectile.InitialScale;
+            _projectile.transform.parent = containerTransform;
+            _projectile.Velocity = normalizedVelocity * speed + inheritedVelocity;
             _projectile.LaunchProjectile(projectileTime);
         }
 
@@ -155,13 +169,14 @@ namespace CosmicShore.Game.Projectiles
 
         public void StopProjectile()
         {
-            _projectile.Stop();
+            if (_projectile != null)
+                _projectile.Stop();
         }
 
         public void DetonateProjectile()
         {
             Debug.Log("GunExplode");
-            if (_projectile is ExplodableProjectile) ((ExplodableProjectile)_projectile).Detonate();
+            if (_projectile is ExplodableProjectile ep) ep.Detonate();
         }
        
     }

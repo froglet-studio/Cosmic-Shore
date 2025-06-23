@@ -86,8 +86,13 @@ PrefabInstance:
     - target: {fileID: 6417075533431866457, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: m_Name
-      value: Network Sparrow Variant
+      value: Network Sparrow
       objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: shipInstance
+      value: 
+      objectReference: {fileID: 4726457411964270568}
     - target: {fileID: 7694957334030519073, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: m_Delegates.Array.data[0].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -184,7 +189,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 116816274
+  GlobalObjectIdHash: 1299232740
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1

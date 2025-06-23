@@ -60,11 +60,14 @@ namespace CosmicShore.Core
         {
             get
             {
-                _shipStatus = _shipStatus != null ? _shipStatus : GetComponent<ShipStatus>();
-                _shipStatus.Name = name;
-
-                _shipStatus.ShipType = _shipType;
-                _shipStatus.ShipTransform = transform;
+                if (_shipStatus == null)
+                {
+                    _shipStatus = GetComponent<ShipStatus>();
+                    _shipStatus.Name = name;
+                    _shipStatus.ShipType = _shipType;
+                    _shipStatus.ShipTransform = transform;
+                }
+                
                 return _shipStatus;
             }
         }
@@ -91,7 +94,6 @@ namespace CosmicShore.Core
 
         [Header("Configuration")]
         [SerializeField] float boostMultiplier = 4f; // TODO: Move to ShipController
-        public float BoostMultiplier { get => boostMultiplier; set => boostMultiplier = value; }
 
         [SerializeField] bool bottomEdgeButtons = false;
         [SerializeField] float Inertia = 70f;
@@ -165,6 +167,7 @@ namespace CosmicShore.Core
             _shipStatus.Name = name;
             _shipStatus.ShipType = _shipType;
             _shipStatus.ShipTransform = transform;
+            _shipStatus.BoostMultiplier = boostMultiplier;
         }
 
         private void OnDisable()

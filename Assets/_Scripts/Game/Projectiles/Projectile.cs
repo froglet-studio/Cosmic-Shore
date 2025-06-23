@@ -14,10 +14,10 @@ namespace CosmicShore.Game.Projectiles
         public float Inertia = 1;
         
         [HideInInspector] public Vector3 InitialScale;
-        [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
+        [SerializeField] protected List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
-        [SerializeField] List<TrailBlockImpactEffects> endEffects;
+        [SerializeField] protected List<TrailBlockImpactEffects> endEffects;
 
         public float ProjectileTime;
 
@@ -59,14 +59,14 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        public void Initialize(Teams team, IShipStatus shipStatus)
+        public virtual void Initialize(Teams team, IShipStatus shipStatus, float charge) // Later remove [float charge] from here.
         {
             Team = team;
             ShipStatus = shipStatus;
 
             if (TryGetComponent(out Gun gun) && ShipStatus != null)
             {
-                gun.Initialize(shipStatus);
+                gun.Initialize(ShipStatus);
             }
         }
 
@@ -79,7 +79,6 @@ namespace CosmicShore.Game.Projectiles
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                // if (Ship == null || !friendlyFire && trailBlock.Team == Team)
                 if (!friendlyFire && trailBlock.Team == Team)
                     return;
 
@@ -87,19 +86,11 @@ namespace CosmicShore.Game.Projectiles
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
-                //Debug.Log($"projectile hit ship {shipGeometry}");
                 if (shipGeometry.Ship.ShipStatus.Team == Team)
                     return;
 
                 PerformShipImpactEffects(shipGeometry);
             }
-            //if (other.TryGetComponent<Crystal>(out var crystal))
-            //{
-            //    //Debug.Log($"projectile hit crystal {crystal.Team}");
-            //    if (crystal.Team == Team)
-            //        return;
-            //    PerformCrystalImpactEffects(crystal.crystalProperties);
-            //}
         }
 
         protected virtual void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
@@ -109,11 +100,9 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        Debug.Log("DeactivateTrailBlock from projectile");
                         trailBlockProperties.trailBlock.Damage(Velocity * Inertia, ShipStatus.Team, ShipStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        // trailBlockProperties.trailBlock.Steal(Ship.ShipStatus.PlayerName, Team);
                         trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, Team);
                         break;
                     case TrailBlockImpactEffects.Shield:
@@ -122,14 +111,14 @@ namespace CosmicShore.Game.Projectiles
                     case TrailBlockImpactEffects.Stop:
 
                         if (!trailBlockProperties.trailBlock.GetComponent<Boid>()) Stop();
-                        else GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
+                        else poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        Debug.Log("TrailExplode");
-                        ((ExplodableProjectile)this).Detonate();
+                        Debug.LogWarning("Non - implemented TrailExplode");
+                        // ((ExplodableProjectile)this).Detonate();         -> better to override the method in child ExplodableProjectile class.
                         break;
 
                 }
@@ -144,14 +133,14 @@ namespace CosmicShore.Game.Projectiles
                 {
                     case TrailBlockImpactEffects.Stop:
                         Stop();
-                        GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
+                        poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
                         Debug.Log("EndExplode");
-                        ((ExplodableProjectile)this).Detonate();
+                        // ((ExplodableProjectile)this).Detonate();         -> better to override the method in child ExplodableProjectile class.
                         break;
                 }
             }
@@ -174,7 +163,6 @@ namespace CosmicShore.Game.Projectiles
                         shipGeometry.Ship.Transform.localRotation = Quaternion.LookRotation(Velocity);
                         break;
                     case ShipImpactEffects.Knockback:
-                        //shipGeometry.Ship.transform.localPosition += Velocity/2f;
                         shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyVelocity(Velocity * 100,2);
                         break;
                     case ShipImpactEffects.Stun:
@@ -219,6 +207,10 @@ namespace CosmicShore.Game.Projectiles
                 transform.localScale = new Vector3(.4f, .4f, 2);
                 GetComponent<MeshRenderer>().material.SetFloat("_Opacity", .5f);
             }
+
+            if (moveCoroutine != null)
+                StopCoroutine(moveCoroutine);
+
             moveCoroutine = StartCoroutine(MoveProjectileCoroutine(projectileTime));
         }
 

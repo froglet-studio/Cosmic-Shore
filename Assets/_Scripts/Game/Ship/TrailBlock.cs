@@ -12,6 +12,8 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(BlockStateManager))]
     public class TrailBlock : MonoBehaviour
     {
+        const string DEFAULT_PLAYER_NAME = "DefaultPlayer"; // -> This should be removed later,
+
         [Header("Trail Block Properties")]
         [SerializeField] private GameObject FossilBlock;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
@@ -54,8 +56,8 @@ namespace CosmicShore.Core
             {
                 if (_playerName == null)
                 {
-                    Debug.LogWarning("PlayerName is not set. Giving it a default Player-One");
-                    _playerName = "Player-One"; // Default player name if not set
+                    _playerName = DEFAULT_PLAYER_NAME; // Default player name if not set -> this is a temp fix. 
+                    // _playerName should never be null in here
                 }
                 return _playerName;
             }
@@ -232,6 +234,9 @@ namespace CosmicShore.Core
             TrailBlockProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
  
             var explodingBlock = fossilBlockPool.SpawnFromTeamPool(Team, transform.position, transform.rotation);
+            if (explodingBlock == null)
+                return;
+
             explodingBlock.transform.localScale = transform.lossyScale;
 
             var impact = explodingBlock.GetComponent<BlockImpact>();

@@ -990,7 +990,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipInstance: {fileID: 0}
+  shipInstance: {fileID: 874579555101021527}
 --- !u!114 &8900747579718772804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1296,7 +1296,7 @@ MonoBehaviour:
   pools:
   - prefab: {fileID: 7877928849292311340, guid: 1bdcea9e9329dd141af7ab874a4d31a2,
       type: 3}
-    size: 15
+    size: 25
   shipInstance: {fileID: 874579555101021527}
 --- !u!1 &7850473780452578400
 GameObject:
