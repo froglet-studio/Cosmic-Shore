@@ -378,6 +378,16 @@ namespace CosmicShore.DialogueSystem.Editor
 
                     line.displayTime = EditorGUI.FloatField(new Rect(rect.x + rect.width - 100, rect.y, 20, h), line.displayTime);
 
+                    if (set.mode == DialogueModeType.Monologue)
+                    {
+                        // reserve a 20px toggler just before the speaker icon
+                        Rect tgRect = new(rect.x + rect.width - 48, rect.y, 20, h);
+                        line.isInGameMonologue = EditorGUI.Toggle(
+                            tgRect,
+                            line.isInGameMonologue
+                        );
+                    }
+
                     const string speakerGlyph = "\uD83D\uDD0A";
                     if (GUI.Button(new Rect(rect.x + rect.width - 24, rect.y, 20, h), speakerGlyph, GUIStyle.none))
                         DialogueAudioBatchLinker.LinkMissingAudio(set);

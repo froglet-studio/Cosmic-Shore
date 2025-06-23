@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using CosmicShore.DialogueSystem.Models;
 using CosmicShore.DialogueSystem.View;
+using System;
 
 namespace CosmicShore.DialogueSystem.Controller
 {
@@ -95,6 +96,11 @@ namespace CosmicShore.DialogueSystem.Controller
 
                 _currentSequence = null;
             });
+        }
+
+        private void OnNextRequested()
+        {
+
         }
 
         [ContextMenu("PlayDefualtSet")]
