@@ -7,6 +7,8 @@ namespace CosmicShore.Utilities
     {
         public Teams Team;
         public string PlayerName;
+        public Vector3 Position;
+        public Quaternion Rotation;
         public TrailBlockProperties TrailBlockProperties;
     }
 
