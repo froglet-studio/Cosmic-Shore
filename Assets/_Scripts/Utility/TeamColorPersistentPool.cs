@@ -10,6 +10,8 @@ namespace CosmicShore.Game
     public class TeamColorPersistentPool : PoolManagerBase
     {
 
+        private const string FossilTag = "FossilPrism";
+
         [SerializeField] private GameObject fossilBlockPrefab;
         [SerializeField] private int poolSizePerTeam = 750; // 750 per team = 3000 total
 
@@ -46,14 +48,7 @@ namespace CosmicShore.Game
             var renderer = obj.GetComponent<Renderer>();
             if (renderer != null)
             {
-                Teams team = Teams.Jade; // Default
-
-                // Determine team from tag
-                if (prefab.tag.Contains("Ruby")) team = Teams.Ruby;
-                else if (prefab.tag.Contains("Gold")) team = Teams.Gold;
-                else if (prefab.tag.Contains("Blue")) team = Teams.Blue;
-
-                // Create and set the material
+                Teams team = GetTeamFromTag(prefab.tag);
                 Material teamMaterial = new Material(_themeManagerData.GetTeamExplodingBlockMaterial(team));
                 renderer.material = teamMaterial;
             }
@@ -61,21 +56,34 @@ namespace CosmicShore.Game
             return obj;
         }
 
+        private static Teams GetTeamFromTag(string tag)
+        {
+            if (tag.Contains("Ruby")) return Teams.Ruby;
+            if (tag.Contains("Gold")) return Teams.Gold;
+            if (tag.Contains("Blue")) return Teams.Blue;
+            if (tag.Contains("Jade")) return Teams.Jade;
+
+            return Teams.Jade;
+        }
+
         protected override void InitializePoolDictionary()
         {
             // Initialize default pool
             AddConfigData(fossilBlockPrefab, poolSizePerTeam);
 
-            // Temporarily modify the tag for each team
             string originalTag = fossilBlockPrefab.tag;
 
-            fossilBlockPrefab.tag = "FossilPrism_Ruby";
+            // Create team specific pools
+            fossilBlockPrefab.tag = GetTagForTeam(Teams.Jade);
             AddConfigData(fossilBlockPrefab, poolSizePerTeam);
 
-            fossilBlockPrefab.tag = "FossilPrism_Gold";
+            fossilBlockPrefab.tag = GetTagForTeam(Teams.Ruby);
             AddConfigData(fossilBlockPrefab, poolSizePerTeam);
 
-            fossilBlockPrefab.tag = "FossilPrism_Blue";
+            fossilBlockPrefab.tag = GetTagForTeam(Teams.Gold);
+            AddConfigData(fossilBlockPrefab, poolSizePerTeam);
+
+            fossilBlockPrefab.tag = GetTagForTeam(Teams.Blue);
             AddConfigData(fossilBlockPrefab, poolSizePerTeam);
 
             // Restore original tag
@@ -84,23 +92,20 @@ namespace CosmicShore.Game
 
         public GameObject SpawnFromTeamPool(Teams team, Vector3 position, Quaternion rotation)
         {
-            string tag = "FossilPrism";
-
-            // Get the appropriate pool based on team
-            switch (team)
-            {
-                case Teams.Ruby:
-                    tag = "FossilPrism_Ruby";
-                    break;
-                case Teams.Gold:
-                    tag = "FossilPrism_Gold";
-                    break;
-                case Teams.Blue:
-                    tag = "FossilPrism_Blue";
-                    break;
-            }
-
+            string tag = GetTagForTeam(team);
             return SpawnFromPool(tag, position, rotation);
+        }
+
+        private static string GetTagForTeam(Teams team)
+        {
+            return team switch
+            {
+                Teams.Ruby => $"{FossilTag}_Ruby",
+                Teams.Gold => $"{FossilTag}_Gold",
+                Teams.Blue => $"{FossilTag}_Blue",
+                Teams.Jade => $"{FossilTag}_Jade",
+                _ => FossilTag,
+            };
         }
     }
 }
