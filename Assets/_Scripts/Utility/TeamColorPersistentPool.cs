@@ -69,7 +69,7 @@ namespace CosmicShore.Game
         protected override void InitializePoolDictionary()
         {
             // Initialize default pool
-            AddConfigData(fossilBlockPrefab, poolSizePerTeam);
+            // AddConfigData(fossilBlockPrefab, poolSizePerTeam);
 
             string originalTag = fossilBlockPrefab.tag;
 
