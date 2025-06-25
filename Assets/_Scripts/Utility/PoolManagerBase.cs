@@ -115,6 +115,11 @@ namespace CosmicShore.Core
                 {
                     CreatePoolObject(prefab);
                 }
+                else
+                {
+                    Debug.LogError($"No prefab found with tag '{tag}' to instantiate new object.");
+                    return null;
+                }
             }
 
             GameObject objToSpawn = _poolDictionary[tag].Dequeue();
