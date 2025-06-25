@@ -8,6 +8,9 @@ using CosmicShore.Utilities;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
+    [SerializeField]
+    ThemeManagerDataContainerSO _themeManagerData;
+
     [SerializeField] CinemachineCamera mainMenuCamera;
     [SerializeField] CinemachineVirtualCameraBase playerCamera;
     [SerializeField] CinemachineVirtualCameraBase deathCamera;
@@ -121,7 +124,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void OnMainMenu()
     {
         SetMainMenuCameraActive();
-        ThemeManager.Instance.SetBackgroundColor(Camera.main);
+        _themeManagerData.SetBackgroundColor(Camera.main);
     }
 
     public void SetupGamePlayCameras()
@@ -135,7 +138,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         playerFollowTarget = _transform;
         playerCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         playerCamera.Follow = deathCamera.Follow = playerFollowTarget;
-        ThemeManager.Instance.SetBackgroundColor(Camera.main);
+        _themeManagerData.SetBackgroundColor(Camera.main);
 
         SetCloseCameraActive();
     }

@@ -128,6 +128,7 @@ MonoBehaviour:
   _onTrailBlockCreatedEventChannel: {fileID: 0}
   _onTrailBlockDestroyedEventChannel: {fileID: 0}
   _onTrailBlockRestoredEventChannel: {fileID: 0}
+  _onFlockSpawnedEventChannel: {fileID: 0}
 --- !u!65 &6010018596354240628
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -161,6 +162,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a3a471efe0048544a8f217c88db4843, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 0}
 --- !u!114 &5926493422124409112
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -187,6 +189,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 525c14f44c20af64dabc635a990a0f73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 0}
 --- !u!114 &5624032743049774653
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -199,6 +202,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bc84df2cc31ac046a258d2e1ee38753, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 0}
 --- !u!1 &5640491096809136745
 GameObject:
   m_ObjectHideFlags: 0
@@ -277,6 +281,8 @@ MonoBehaviour:
     type: 2}
   _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
     type: 2}
+  _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+    type: 2}
 --- !u!114 &4966205134028606813
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -289,6 +295,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a3a471efe0048544a8f217c88db4843, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!114 &4422386807880673208
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -315,6 +322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 525c14f44c20af64dabc635a990a0f73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!114 &7852499648959917799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -327,6 +335,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bc84df2cc31ac046a258d2e1ee38753, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!1 &8889370959820262485
 GameObject:
   m_ObjectHideFlags: 0
@@ -455,6 +464,7 @@ MonoBehaviour:
   _onTrailBlockCreatedEventChannel: {fileID: 0}
   _onTrailBlockDestroyedEventChannel: {fileID: 0}
   _onTrailBlockRestoredEventChannel: {fileID: 0}
+  _onFlockSpawnedEventChannel: {fileID: 0}
 --- !u!65 &8557056649638950145
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -488,6 +498,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a3a471efe0048544a8f217c88db4843, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 0}
 --- !u!114 &3634245110631095558
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -514,6 +525,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 525c14f44c20af64dabc635a990a0f73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 0}
 --- !u!114 &5657575055574624483
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -526,3 +538,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bc84df2cc31ac046a258d2e1ee38753, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 0}

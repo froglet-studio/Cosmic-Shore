@@ -13,6 +13,18 @@ PrefabInstance:
       propertyPath: separationDistance
       value: 5
       objectReference: {fileID: 0}
+    - target: {fileID: 1565772295433765400, guid: c1f494543c951b54f9d9e15318de9a4a,
+        type: 3}
+      propertyPath: _themeManagerData
+      value: 
+      objectReference: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628,
+        type: 2}
+    - target: {fileID: 3070243947926779589, guid: c1f494543c951b54f9d9e15318de9a4a,
+        type: 3}
+      propertyPath: _themeManagerData
+      value: 
+      objectReference: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628,
+        type: 2}
     - target: {fileID: 8028424163657488521, guid: c1f494543c951b54f9d9e15318de9a4a,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -121,6 +133,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: SpaceGyroidBlock Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 9051408646638729013, guid: c1f494543c951b54f9d9e15318de9a4a,
+        type: 3}
+      propertyPath: _themeManagerData
+      value: 
+      objectReference: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628,
+        type: 2}
     - target: {fileID: 9136404974445910110, guid: c1f494543c951b54f9d9e15318de9a4a,
         type: 3}
       propertyPath: maxScale.x

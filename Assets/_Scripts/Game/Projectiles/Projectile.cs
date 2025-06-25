@@ -25,6 +25,9 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] float growthRate = 1.0f;
         [SerializeField] bool friendlyFire = false;
 
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
         MeshRenderer meshRenderer;
 
         protected PoolManager poolManager;
@@ -39,22 +42,10 @@ namespace CosmicShore.Game.Projectiles
         void Start()
         {
             poolManager = GetComponentInParent<PoolManager>();
-            /*Ship = poolManager.Ship;
-            shipStatus = Ship.ShipStatus;
-            if (Ship == null)
-            {
-                Debug.LogWarning("Projectile script found no valid IShip reference.");
-                Ship = GetComponentInParent<IShip>();
-                if (Ship == null)
-                {
-                    Debug.LogError("Projectile script requires a valid IShip reference.");
-                    return;
-                }
-            }*/
             if (spike) 
             {
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
-                meshRenderer.material = ThemeManager.Instance.GetTeamSpikeMaterial(Team);
+                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(Team);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
             }
         }

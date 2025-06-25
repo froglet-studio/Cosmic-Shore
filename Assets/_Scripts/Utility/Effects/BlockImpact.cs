@@ -1,61 +1,65 @@
 using System.Collections;
 using UnityEngine;
 
-public class BlockImpact : MonoBehaviour
+
+namespace CosmicShore.Game
 {
-    [SerializeField] private float minSpeed = 30f;
-    [SerializeField] private float maxSpeed = 250f;
-    private Material material;
-
-    public void HandleImpact(Vector3 velocity)
+    public class BlockImpact : MonoBehaviour
     {
-        // Validate velocity before starting coroutine
-        if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
+        [SerializeField] private float minSpeed = 30f;
+        [SerializeField] private float maxSpeed = 250f;
+        private Material material;
+
+        public void HandleImpact(Vector3 velocity)
         {
-            velocity = Vector3.up * minSpeed; // Fallback velocity
-        }
-        StartCoroutine(ImpactCoroutine(velocity));
-    }
-
-    IEnumerator ImpactCoroutine(Vector3 velocity)
-    {
-        float speed;
-        velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out speed);
-
-        material = GetComponent<MeshRenderer>()?.material;
-        if (material != null)
-        {
-            material.SetVector("_velocity", velocity);
-        }
-
-        var initialPosition = transform.position;
-        var maxDuration = 7f;
-        var duration = 0f;
-
-        while (duration <= maxDuration && this != null && material != null)
-        {
-            duration += Time.deltaTime;
-            
-            // Calculate new position
-            Vector3 newPosition = initialPosition + duration * velocity;
-            
-            // Validate position before applying
-            if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
+            // Validate velocity before starting coroutine
+            if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
             {
-                transform.position = newPosition;
+                velocity = Vector3.up * minSpeed; // Fallback velocity
+            }
+            StartCoroutine(ImpactCoroutine(velocity));
+        }
+
+        IEnumerator ImpactCoroutine(Vector3 velocity)
+        {
+            float speed;
+            velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out speed);
+
+            material = GetComponent<MeshRenderer>()?.material;
+            if (material != null)
+            {
+                material.SetVector("_velocity", velocity);
             }
 
-            // Update material properties
-            material.SetFloat("_ExplosionAmount", speed * duration);
-            material.SetFloat("_opacity", 1 - (duration / maxDuration));
-            
-            yield return null;
-        }
+            var initialPosition = transform.position;
+            var maxDuration = 7f;
+            var duration = 0f;
 
-        if (this != null && gameObject != null)
-        {
-            // Get the tag from the object itself since it might be from any of the team pools
-            transform.parent.GetComponent<TeamColorPersistentPool>()?.ReturnToPool(gameObject, gameObject.tag);
+            while (duration <= maxDuration && this != null && material != null)
+            {
+                duration += Time.deltaTime;
+
+                // Calculate new position
+                Vector3 newPosition = initialPosition + duration * velocity;
+
+                // Validate position before applying
+                if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
+                {
+                    transform.position = newPosition;
+                }
+
+                // Update material properties
+                material.SetFloat("_ExplosionAmount", speed * duration);
+                material.SetFloat("_opacity", 1 - (duration / maxDuration));
+
+                yield return null;
+            }
+
+            if (this != null && gameObject != null)
+            {
+                // Get the tag from the object itself since it might be from any of the team pools
+                transform.parent.GetComponent<TeamColorPersistentPool>().ReturnToPool(gameObject, gameObject.tag);
+            }
         }
     }
 }

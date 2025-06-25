@@ -13,8 +13,6 @@ namespace CosmicShore.Core
 {
     public class Hangar : SingletonPersistent<Hangar>
     {
-        Teams AITeam;
-
         [Header("Ship Type Settings")]
         [SerializeField] SO_ShipList AllShips;
         [SerializeField] Teams PlayerTeam = Teams.Jade;
@@ -39,10 +37,13 @@ namespace CosmicShore.Core
 
         [SerializeField] public List<GameObject> ShipPrefabs;
 
-        readonly string SelectedShipPlayerPrefKey = "SelectedShip";
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
         public IShip SelectedShip { get; private set; }
 
+        readonly string SelectedShipPlayerPrefKey = "SelectedShip";
+        Teams AITeam;
 
         public override void Awake()
         {
@@ -152,7 +153,7 @@ namespace CosmicShore.Core
             if (PlayerCaptain != null)
                 ship.SetResourceLevels(PlayerCaptain.ResourceLevels);
 
-            var materialSet = ThemeManager.Instance.TeamMaterialSets[team];
+            var materialSet = _themeManagerData.TeamMaterialSets[team];
 
             ship.SetShipMaterial(materialSet.ShipMaterial);
             ship.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
@@ -226,7 +227,7 @@ namespace CosmicShore.Core
                 captain = captains[UnityEngine.Random.Range(0, 3)];
             }
 
-            var materialSet = ThemeManager.Instance.TeamMaterialSets[team];
+            var materialSet = _themeManagerData.TeamMaterialSets[team];
             
             Instantiate(shipTypeMap[shipType].Transform).TryGetComponent(out IShip ship);
 

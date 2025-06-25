@@ -1,34 +1,21 @@
-using CosmicShore.Utilities;
-using System.Collections.Generic;
 using UnityEngine;
 
 
 namespace CosmicShore.Core
 {
-    public class ThemeManager : SingletonPersistent<ThemeManager>
+
+    public class ThemeManager : MonoBehaviour
     {
+        [SerializeField] ThemeManagerDataContainerSO _dataContainer;
 
-        [SerializeField] SO_MaterialSet BaseMaterialSet;
-        [SerializeField] SO_ColorSet ColorSet;
-
-        SO_MaterialSet GreenTeamMaterialSet;
-        SO_MaterialSet RedTeamMaterialSet;
-        SO_MaterialSet BlueTeamMaterialSet;
-        SO_MaterialSet GoldTeamMaterialSet;
-
-        public Dictionary<Teams, SO_MaterialSet> TeamMaterialSets { get; private set; }
-
-
-        public override void Awake()
+        void Awake()
         {
-            base.Awake();
+            var GreenTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.JadeColors, "Green");
+            var RedTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.RubyColors, "Red");
+            var GoldTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.GoldColors, "Gold");
+            var BlueTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.BlueColors, "Blue");
 
-            GreenTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.JadeColors, "Green");
-            RedTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.RubyColors, "Red");
-            GoldTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.GoldColors, "Gold");
-            BlueTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.BlueColors, "Blue");
-
-            TeamMaterialSets = new() {
+            _dataContainer.TeamMaterialSets = new() {
                 { Teams.Jade, GreenTeamMaterialSet },
                 { Teams.Ruby,   RedTeamMaterialSet },
                 { Teams.Blue,  BlueTeamMaterialSet },
@@ -43,24 +30,24 @@ namespace CosmicShore.Core
             materialSet.name = $"{domainName}TeamMaterialSet";
 
             // Copy all materials from the base set
-            materialSet.ShipMaterial = new Material(BaseMaterialSet.ShipMaterial);
-            materialSet.BlockMaterial = new Material(BaseMaterialSet.BlockMaterial);
-            materialSet.TransparentBlockMaterial = new Material(BaseMaterialSet.TransparentBlockMaterial);
-            materialSet.CrystalMaterial = new Material(BaseMaterialSet.CrystalMaterial);
-            materialSet.ExplodingBlockMaterial = new Material(BaseMaterialSet.ExplodingBlockMaterial);
-            materialSet.ShieldedBlockMaterial = new Material(BaseMaterialSet.ShieldedBlockMaterial);
-            materialSet.TransparentShieldedBlockMaterial = new Material(BaseMaterialSet.TransparentShieldedBlockMaterial);
-            materialSet.SuperShieldedBlockMaterial = new Material(BaseMaterialSet.SuperShieldedBlockMaterial);
-            materialSet.TransparentSuperShieldedBlockMaterial = new Material(BaseMaterialSet.TransparentSuperShieldedBlockMaterial);
-            materialSet.DangerousBlockMaterial = new Material(BaseMaterialSet.DangerousBlockMaterial);
-            materialSet.TransparentDangerousBlockMaterial = new Material(BaseMaterialSet.TransparentDangerousBlockMaterial);
-            materialSet.AOEExplosionMaterial = new Material(BaseMaterialSet.AOEExplosionMaterial);
-            materialSet.AOEConicExplosionMaterial = new Material(BaseMaterialSet.AOEConicExplosionMaterial);
-            materialSet.SpikeMaterial = new Material(BaseMaterialSet.SpikeMaterial);
-            materialSet.SkimmerMaterial = new Material(BaseMaterialSet.SkimmerMaterial);
+            materialSet.ShipMaterial = new Material(_dataContainer.BaseMaterialSet.ShipMaterial);
+            materialSet.BlockMaterial = new Material(_dataContainer.BaseMaterialSet.BlockMaterial);
+            materialSet.TransparentBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentBlockMaterial);
+            materialSet.CrystalMaterial = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial);
+            materialSet.ExplodingBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ExplodingBlockMaterial);
+            materialSet.ShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ShieldedBlockMaterial);
+            materialSet.TransparentShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentShieldedBlockMaterial);
+            materialSet.SuperShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.SuperShieldedBlockMaterial);
+            materialSet.TransparentSuperShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentSuperShieldedBlockMaterial);
+            materialSet.DangerousBlockMaterial = new Material(_dataContainer.BaseMaterialSet.DangerousBlockMaterial);
+            materialSet.TransparentDangerousBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentDangerousBlockMaterial);
+            materialSet.AOEExplosionMaterial = new Material(_dataContainer.BaseMaterialSet.AOEExplosionMaterial);
+            materialSet.AOEConicExplosionMaterial = new Material(_dataContainer.BaseMaterialSet.AOEConicExplosionMaterial);
+            materialSet.SpikeMaterial = new Material(_dataContainer.BaseMaterialSet.SpikeMaterial);
+            materialSet.SkimmerMaterial = new Material(_dataContainer.BaseMaterialSet.SkimmerMaterial);
 
             // Copy prefab reference
-            materialSet.BlockSilhouettePrefab = BaseMaterialSet.BlockSilhouettePrefab;
+            materialSet.BlockSilhouettePrefab = _dataContainer.BaseMaterialSet.BlockSilhouettePrefab;
 
             // Set colors for materials that use domain-specific colors
             materialSet.BlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
@@ -106,77 +93,6 @@ namespace CosmicShore.Core
             materialSet.SkimmerMaterial.SetColor("_Color", colorSet.SkimmerColor);
 
             return materialSet;
-        }
-
-        public void SetBackgroundColor(Camera mainCamera)
-        {
-            if (mainCamera == null)
-            {
-                mainCamera = Camera.main;
-                if (mainCamera == null)
-                {
-                    Debug.LogError("No camera found in the scene!");
-                    return;
-                }
-            }
-
-            mainCamera.clearFlags = CameraClearFlags.SolidColor;
-            mainCamera.backgroundColor = ColorSet.EnvironmentColors.SkyColor;
-        }
-
-        public Material GetTeamBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].BlockMaterial;
-        }
-
-        public Material GetTeamTransparentBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentBlockMaterial;
-        }
-
-        public Material GetTeamCrystalMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].CrystalMaterial;
-        }
-
-        public Material GetTeamExplodingBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].ExplodingBlockMaterial;
-        }
-
-        public Material GetTeamSpikeMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].SpikeMaterial;
-        }
-
-        public Material GetTeamShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].ShieldedBlockMaterial;
-        }
-
-        public Material GetTeamTransparentShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentShieldedBlockMaterial;
-        }
-
-        public Material GetTeamDangerousBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].DangerousBlockMaterial;
-        }
-
-        public Material GetTeamTransparentDangerousBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentDangerousBlockMaterial;
-        }
-
-        public Material GetTeamSuperShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].SuperShieldedBlockMaterial;
-        }
-
-        public Material GetTeamTransparentSuperShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentSuperShieldedBlockMaterial;
         }
     }
 }

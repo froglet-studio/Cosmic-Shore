@@ -106,6 +106,12 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
         type: 3}
+      propertyPath: _onFlockSpawnedEventChannel
+      value: 
+      objectReference: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+        type: 2}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
       propertyPath: _onTrailBlockCreatedEventChannel
       value: 
       objectReference: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,

@@ -38,6 +38,7 @@ namespace CosmicShore.Core
         [SerializeField] TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
         [SerializeField] TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
         [SerializeField] TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+        [SerializeField] TrailBlockEventChannelWithReturnSO _onFlockSpawnedEventChannel;
 
         public Teams Team
         {
@@ -103,7 +104,7 @@ namespace CosmicShore.Core
         }
 
         // Static references
-        private static TeamColorPersistentPool fossilBlockPool => TeamColorPersistentPool.Instance;
+        // private TeamColorPersistentPool FossilBlockPool => TeamColorPersistentPool.Instance as TeamColorPersistentPool;
         private const string layerName = "TrailBlocks";
 
         private void Awake()
@@ -232,10 +233,22 @@ namespace CosmicShore.Core
 
             // Ensure volume is up to date before explosion
             TrailBlockProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
- 
-            var explodingBlock = fossilBlockPool.SpawnFromTeamPool(Team, transform.position, transform.rotation);
+
+            // var explodingBlock = FossilBlockPool.SpawnFromTeamPool(Team, transform.position, transform.rotation);
+            var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new TrailBlockEventData
+            {
+                Team = team,
+                PlayerName = playerName,
+                Position = transform.position,
+                Rotation = transform.rotation,
+            });
+            GameObject explodingBlock = returnData.SpawnedObject;
+
             if (explodingBlock == null)
+            {
+                Debug.LogError("Failed to spawn exploding block. Check if the pool is initialized and has available objects.");
                 return;
+            }
 
             explodingBlock.transform.localScale = transform.lossyScale;
 

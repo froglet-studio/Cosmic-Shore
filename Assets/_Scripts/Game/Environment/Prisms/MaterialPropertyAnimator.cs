@@ -6,6 +6,9 @@ namespace CosmicShore.Core
 {
     public class MaterialPropertyAnimator : MonoBehaviour
     {
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
         private static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
         private static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
         private static readonly int SpreadId = Shader.PropertyToID("_Spread");
@@ -104,14 +107,14 @@ namespace CosmicShore.Core
             if (!materialsDirty && activeTransparentMaterial != null && activeOpaqueMaterial != null)
                 return true;
 
-            if (cachedTrailBlock == null || ThemeManager.Instance == null)
+            if (cachedTrailBlock == null)
                 return false;
 
             try
             {
                 var team = cachedTrailBlock.Team;
-                activeOpaqueMaterial = ThemeManager.Instance.GetTeamBlockMaterial(team);
-                activeTransparentMaterial = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
+                activeOpaqueMaterial = _themeManagerData.GetTeamBlockMaterial(team);
+                activeTransparentMaterial = _themeManagerData.GetTeamTransparentBlockMaterial(team);
                 
                 if (activeOpaqueMaterial != null && MeshRenderer != null)
                 {

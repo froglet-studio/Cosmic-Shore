@@ -530,6 +530,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d3275ef5da29b646a52d80c5b57244e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   mainMenuCamera: {fileID: 2966085564903086687}
   playerCamera: {fileID: 8316677134886896521}
   deathCamera: {fileID: 8616612116677775270}
