@@ -104,7 +104,7 @@ namespace CosmicShore.Core
         }
 
         // Static references
-        // private TeamColorPersistentPool FossilBlockPool => TeamColorPersistentPool.Instance as TeamColorPersistentPool;
+        // private TeamColorPoolManager FossilBlockPool => TeamColorPoolManager.Instance as TeamColorPoolManager;
         private const string layerName = "TrailBlocks";
 
         private void Awake()
