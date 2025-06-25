@@ -4886,6 +4886,7 @@ MonoBehaviour:
   spike: 0
   growthRate: 1
   friendlyFire: 1
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   AOEPrefabs:
   - {fileID: 447888847298330991, guid: b6aa24b5cd6a7f24c9f24c32c20eba91, type: 3}
   - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
