@@ -1,19 +1,15 @@
 using UnityEngine;
 using CosmicShore.Core;
-using System.Collections;
 using CosmicShore.Utilities;
-using System;
 
 
 namespace CosmicShore.Game
 {
-    public class TeamColorPersistentPool : PoolManagerBase
+    public class TeamColorPoolManager : PoolManagerBase
     {
 
         private const string FossilTag = "FossilPrism";
 
-        [SerializeField] private GameObject fossilBlockPrefab;
-        [SerializeField] private int poolSizePerTeam = 750; // 750 per team = 3000 total
 
         [Header("Event Channels")]
         [SerializeField] TrailBlockEventChannelWithReturnSO _onFlockSpawnedEventChannel;
@@ -66,29 +62,6 @@ namespace CosmicShore.Game
             return Teams.Jade;
         }
 
-        protected override void InitializePoolDictionary()
-        {
-            // Initialize default pool
-            // AddConfigData(fossilBlockPrefab, poolSizePerTeam);
-
-            string originalTag = fossilBlockPrefab.tag;
-
-            // Create team specific pools
-            fossilBlockPrefab.tag = GetTagForTeam(Teams.Jade);
-            AddConfigData(fossilBlockPrefab, poolSizePerTeam);
-
-            fossilBlockPrefab.tag = GetTagForTeam(Teams.Ruby);
-            AddConfigData(fossilBlockPrefab, poolSizePerTeam);
-
-            fossilBlockPrefab.tag = GetTagForTeam(Teams.Gold);
-            AddConfigData(fossilBlockPrefab, poolSizePerTeam);
-
-            fossilBlockPrefab.tag = GetTagForTeam(Teams.Blue);
-            AddConfigData(fossilBlockPrefab, poolSizePerTeam);
-
-            // Restore original tag
-            fossilBlockPrefab.tag = originalTag;
-        }
 
         public GameObject SpawnFromTeamPool(Teams team, Vector3 position, Quaternion rotation)
         {

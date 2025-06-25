@@ -58,7 +58,7 @@ namespace CosmicShore.Game
             if (this != null && gameObject != null)
             {
                 // Get the tag from the object itself since it might be from any of the team pools
-                transform.parent.GetComponent<TeamColorPersistentPool>().ReturnToPool(gameObject, gameObject.tag);
+                transform.parent.GetComponent<TeamColorPoolManager>().ReturnToPool(gameObject, gameObject.tag);
             }
         }
     }
