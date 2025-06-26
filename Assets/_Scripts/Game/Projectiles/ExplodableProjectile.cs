@@ -74,7 +74,6 @@ namespace CosmicShore.Game.Projectiles
 
         public void Detonate()
         {
-            // poolManager.ReturnToPool(gameObject, gameObject.tag);
             foreach (var AOE in AOEPrefabs)
             {
                 if (ShipStatus.Ship == null)
@@ -84,10 +83,12 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
-                AOEExplosion.Detonate(ShipStatus.Ship);
                 AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                 AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
+                AOEExplosion.Detonate(ShipStatus.Ship);
             }
+            
+            poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
     }
 }
