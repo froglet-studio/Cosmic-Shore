@@ -53,7 +53,7 @@ namespace CosmicShore.Game.Projectiles
                 Material = new Material(Ship.ShipStatus.AOEExplosionMaterial);
 
             // SetParent with false to take container's world position
-            transform.SetParent(container.transform, worldPositionStays: false);
+            //transform.SetParent(container.transform, worldPositionStays: false);
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
         }
 
@@ -143,7 +143,6 @@ namespace CosmicShore.Game.Projectiles
                         break;
                     case ShipImpactEffects.Stun:
                         shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyThrottle(.6f, 5);
-                        
                         break;
                 }
             }

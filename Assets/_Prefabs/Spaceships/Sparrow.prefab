@@ -487,6 +487,51 @@ MonoBehaviour:
     Max: 0.08
     element: 1
   overheatDuration: 7
+--- !u!1 &3259026139032478122
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5003500220395273175}
+  - component: {fileID: 7502298418095803645}
+  m_Layer: 8
+  m_Name: ToggleProjectiles
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5003500220395273175
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3259026139032478122}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6619555420319509746}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7502298418095803645
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3259026139032478122}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e27c4c6fc5282b243b849f89b8073c16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wrappedAction: {fileID: 1865457525660812358}
 --- !u!1 &3938548809082189982
 GameObject:
   m_ObjectHideFlags: 0
@@ -971,6 +1016,7 @@ MonoBehaviour:
   - InputEvent: 6
     ShipActions:
     - {fileID: 9020752958040124948}
+    - {fileID: 7502298418095803645}
   resourceEventClassActions: []
   ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
@@ -1300,6 +1346,9 @@ MonoBehaviour:
   - prefab: {fileID: 7877928849292311340, guid: 1bdcea9e9329dd141af7ab874a4d31a2,
       type: 3}
     size: 25
+  - prefab: {fileID: 7877928849292311340, guid: d4ba20cadabe24e498199529c9df5c45,
+      type: 3}
+    size: 25
   shipInstance: {fileID: 874579555101021527}
 --- !u!1 &7576075976379099439
 GameObject:
@@ -1330,7 +1379,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 5003500220395273175}
   m_Father: {fileID: 8075578658670966254}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &9020752958040124948

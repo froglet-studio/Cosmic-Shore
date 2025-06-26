@@ -81,12 +81,14 @@ public class ShipTransformer : MonoBehaviour
         if (InputStatus.Paused)
             return;
 
-        if (shipStatus.Stationary)
-            return;
+        
 
         shipStatus.blockRotation = transform.rotation;
 
         RotateShip();
+
+        if (shipStatus.Stationary)
+            return;
 
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();

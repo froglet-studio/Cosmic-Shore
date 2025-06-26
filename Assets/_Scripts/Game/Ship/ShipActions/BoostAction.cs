@@ -9,7 +9,11 @@ public class BoostAction : ShipAction
     }
     public override void StartAction()
     {
-        if (ShipStatus != null) ShipStatus.Boosting = true;
+        if (ShipStatus != null)
+        {
+            ShipStatus.Boosting = true;
+            ShipStatus.Stationary = false;
+        }
     }
 
     public override void StopAction()
