@@ -25,6 +25,9 @@ namespace CosmicShore.Game.Projectiles
 
         Projectile _projectile;
 
+        [SerializeField]
+        PoolManager _poolManager;
+
         public void Initialize(IShipStatus shipStatus)
         {          
             _shipStatus = shipStatus;
@@ -128,15 +131,17 @@ namespace CosmicShore.Game.Projectiles
                 Debug.LogError("Gun.FireProjectile - PoolTag is null. Cannot spawn projectile.");
                 return;
             }
-            if (!containerTransform.TryGetComponent(out PoolManager poolManager))
+            
+            Vector3 spawnPosition = transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * _barrelLength);
+            Quaternion rotation = Quaternion.LookRotation(normalizedVelocity);
+
+            if (_poolManager == null)
             {
                 Debug.LogError("Gun.FireProjectile - PoolManager is null. Cannot spawn projectile.");
                 return;
             }
-            Vector3 spawnPosition = transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * _barrelLength);
-            Quaternion rotation = Quaternion.LookRotation(normalizedVelocity);
 
-            var projectileGO = poolManager.SpawnFromPool(poolTag, spawnPosition, rotation);
+            var projectileGO = _poolManager.SpawnFromPool(poolTag, spawnPosition, rotation);
             if (projectileGO == null)
             {
                 Debug.LogError("No projectile gameobject available in pool to spawn!");
@@ -147,7 +152,7 @@ namespace CosmicShore.Game.Projectiles
                 Debug.LogError("Gun.FireProjectile - Failed to spawn projectile from pool. Try increasing pool size!");
                 return;
             }
-            _projectile.Initialize(_team, _shipStatus, charge);
+            _projectile.Initialize(_poolManager, _team, _shipStatus, charge);
             _projectile.transform.localScale = projectileScale * _projectile.InitialScale;
             _projectile.transform.parent = containerTransform;
             _projectile.Velocity = normalizedVelocity * speed + inheritedVelocity;

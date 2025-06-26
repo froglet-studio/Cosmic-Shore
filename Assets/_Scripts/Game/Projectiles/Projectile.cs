@@ -30,8 +30,8 @@ namespace CosmicShore.Game.Projectiles
 
         MeshRenderer meshRenderer;
 
-        protected PoolManager poolManager;
-        public Teams Team { get; private set; }
+        protected PoolManager _poolManager;
+        public Teams OwnTeam { get; private set; }
         public IShipStatus ShipStatus { get; private set; }
 
         private void Awake()
@@ -41,19 +41,19 @@ namespace CosmicShore.Game.Projectiles
 
         void Start()
         {
-            poolManager = GetComponentInParent<PoolManager>();
             if (spike) 
             {
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
-                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(Team);
+                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(OwnTeam);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
             }
         }
 
-        public virtual void Initialize(Teams team, IShipStatus shipStatus, float charge) // Later remove [float charge] from here.
+        public virtual void Initialize(PoolManager poolManager, Teams ownTeam, IShipStatus shipStatus, float charge) // Later remove [float charge] from here.
         {
-            Team = team;
+            OwnTeam = ownTeam;
             ShipStatus = shipStatus;
+            _poolManager = poolManager;
 
             if (TryGetComponent(out Gun gun) && ShipStatus != null)
             {
@@ -70,14 +70,14 @@ namespace CosmicShore.Game.Projectiles
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if (!friendlyFire && trailBlock.Team == Team)
+                if (!friendlyFire && trailBlock.Team == OwnTeam)
                     return;
 
                 PerformTrailImpactEffects(trailBlock.TrailBlockProperties);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
-                if (shipGeometry.Ship.ShipStatus.Team == Team)
+                if (shipGeometry.Ship.ShipStatus.Team == OwnTeam)
                     return;
 
                 PerformShipImpactEffects(shipGeometry);
@@ -94,7 +94,7 @@ namespace CosmicShore.Game.Projectiles
                         trailBlockProperties.trailBlock.Damage(Velocity * Inertia, ShipStatus.Team, ShipStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, Team);
+                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, OwnTeam);
                         break;
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
@@ -102,7 +102,7 @@ namespace CosmicShore.Game.Projectiles
                     case TrailBlockImpactEffects.Stop:
 
                         if (!trailBlockProperties.trailBlock.GetComponent<Boid>()) Stop();
-                        else poolManager.ReturnToPool(gameObject, gameObject.tag);
+                        else _poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -124,7 +124,7 @@ namespace CosmicShore.Game.Projectiles
                 {
                     case TrailBlockImpactEffects.Stop:
                         Stop();
-                        poolManager.ReturnToPool(gameObject, gameObject.tag);
+                        _poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -182,7 +182,7 @@ namespace CosmicShore.Game.Projectiles
                     //    AOEExplosion.MaxScale = Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
                     //    break;
                     case CrystalImpactEffects.StealCrystal:
-                        crystalProperties.crystal.Steal(Team, 7f);
+                        crystalProperties.crystal.Steal(OwnTeam, 7f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
                         ShipStatus.ResourceSystem.ChangeResourceAmount(0, ShipStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
@@ -238,7 +238,7 @@ namespace CosmicShore.Game.Projectiles
                 yield return null;
             }
             if (ImpactOnEnd) PerformEndEffects();
-            poolManager.ReturnToPool(gameObject, gameObject.tag);
+            _poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
 
         public void Stop() 
