@@ -20,7 +20,7 @@ namespace CosmicShore.Utility.ClassExtensions
         {
             for (var i = 0; i < gameObject.transform.childCount; i++)
             {
-                Object.Destroy(gameObject.transform.GetChild(i));
+                Object.Destroy(gameObject.transform.GetChild(i).gameObject);
             }
         }
 
