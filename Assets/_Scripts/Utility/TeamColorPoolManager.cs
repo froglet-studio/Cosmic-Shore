@@ -29,7 +29,7 @@ namespace CosmicShore.Game
 
         private TrailBlockReturnEventData OnFlockSpawnedEventRaised(TrailBlockEventData data)
         {
-            var spawnedObject = SpawnFromTeamPool(data.Team, data.Position, data.Rotation);
+            var spawnedObject = SpawnFromTeamPool(data.OwnTeam, data.Position, data.Rotation);
             return new TrailBlockReturnEventData
             {
                 SpawnedObject = spawnedObject

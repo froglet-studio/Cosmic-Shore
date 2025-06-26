@@ -5,7 +5,8 @@ namespace CosmicShore.Utilities
 {
     public struct  TrailBlockEventData
     {
-        public Teams Team;
+        public Teams OwnTeam;
+        public Teams PlayerTeam;
         public string PlayerName;
         public Vector3 Position;
         public Quaternion Rotation;

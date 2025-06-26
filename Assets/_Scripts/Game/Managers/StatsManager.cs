@@ -345,17 +345,17 @@ namespace CosmicShore.Core
 
         protected void OnBlockCreated(TrailBlockEventData data)
         {
-            BlockCreated(data.Team, data.PlayerName, data.TrailBlockProperties);
+            BlockCreated(data.OwnTeam, data.PlayerName, data.TrailBlockProperties);
         }
 
         protected void OnBlockDestroyed(TrailBlockEventData data)
         {
-            BlockDestroyed(data.Team, data.PlayerName, data.TrailBlockProperties);
+            BlockDestroyed(data.OwnTeam, data.PlayerName, data.TrailBlockProperties);
         }
 
         protected void OnBlockRestored(TrailBlockEventData data)
         {
-            BlockRestored(data.Team, data.PlayerName, data.TrailBlockProperties);
+            BlockRestored(data.OwnTeam, data.PlayerName, data.TrailBlockProperties);
         }
 
         /// <summary>
