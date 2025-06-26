@@ -85,19 +85,19 @@ namespace CosmicShore.Game.Arcade
         {
             EndGameScreen = GameCanvas.EndGameScreen;
             HUD = GameCanvas.MiniGameHUD;
-            ReadyButton = HUD.ReadyButton;
-            countdownTimer = HUD.CountdownTimer;
+            ReadyButton = HUD.View.ReadyButton;
+            countdownTimer = HUD.View.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
 
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
-                    tbtMonitor.Display = HUD.RoundTimeDisplay;
+                    tbtMonitor.Display = HUD.View.RoundTimeDisplay;
                 else if (turnMonitor is VolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
-                    hvtMonitor.Display = HUD.RoundTimeDisplay;
+                    hvtMonitor.Display = HUD.View.RoundTimeDisplay;
                 else if (turnMonitor is ShipCollisionTurnMonitor scMonitor) // TODO: consolidate with above
-                    scMonitor.Display = HUD.RoundTimeDisplay;
+                    scMonitor.Display = HUD.View.RoundTimeDisplay;
                 else if (turnMonitor is DistanceTurnMonitor dtMonitor) // TODO: consolidate with above
-                    dtMonitor.Display = HUD.RoundTimeDisplay;
+                    dtMonitor.Display = HUD.View.RoundTimeDisplay;
 
             GameManager.UnPauseGame();
         }

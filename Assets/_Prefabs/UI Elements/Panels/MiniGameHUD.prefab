@@ -237,6 +237,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1720411786157758737}
   - component: {fileID: 1720411786157758736}
+  - component: {fileID: 7363510702798268052}
   m_Layer: 5
   m_Name: MiniGameHUD
   m_TagString: Untagged
@@ -285,21 +286,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa08588b33df93c4fb866d88d19a5a42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ScoreDisplay: {fileID: 1720411786844436948}
-  LeftNumberDisplay: {fileID: 1356472169748578620}
-  RightNumberDisplay: {fileID: 7162321741096836160}
-  RoundTimeDisplay: {fileID: 1720411787164405322}
-  CountdownDisplay: {fileID: 1720411787223648735}
-  ReadyButton: {fileID: 330862409471186351}
-  CountdownTimer: {fileID: 6828733908891021053}
-  pip: {fileID: 5023401565743585470}
-  silhouette: {fileID: 1247642187047997787}
-  trailDisplay: {fileID: 2224701857737343022}
-  buttonPanel: {fileID: 981011049214763772}
-  button1: {fileID: 2138804115987801885}
-  button2: {fileID: 287724296561927322}
-  button3: {fileID: 263015102588795879}
-  OnPipInitializedEventChannel: {fileID: 11400000, guid: f6bc516bf0c99be4285e51e90caab8f1,
+  view: {fileID: 7363510702798268052}
+  onPipInitializedEventChannel: {fileID: 11400000, guid: f6bc516bf0c99be4285e51e90caab8f1,
     type: 2}
   onMoundDroneSpawned: {fileID: 11400000, guid: 7792e064d1fa59c4897fa2797e312a06,
     type: 2}
@@ -307,14 +295,131 @@ MonoBehaviour:
     type: 2}
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
-  OnButton1Pressed: {fileID: 11400000, guid: ea281f4848964144d81ee0a8e540ad2f, type: 2}
-  OnButton1Released: {fileID: 11400000, guid: badbc8ef2643e3d47b793be40335bdbc, type: 2}
-  OnButton2Pressed: {fileID: 11400000, guid: 6c079a6516dcdf249a1bd370ddc2154a, type: 2}
-  OnButton2Released: {fileID: 11400000, guid: 732537c5fb94779499e2743f12f2d6ca, type: 2}
-  OnButton3Pressed: {fileID: 11400000, guid: 9118ec0882fa02648b052c4e04259fbd, type: 2}
-  OnButton3Released: {fileID: 11400000, guid: 8d28d7878c107ce449c50b14b57220ab, type: 2}
-  OnSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+  onButton1Pressed: {fileID: 11400000, guid: ea281f4848964144d81ee0a8e540ad2f, type: 2}
+  onButton1Released: {fileID: 11400000, guid: badbc8ef2643e3d47b793be40335bdbc, type: 2}
+  onButton2Pressed: {fileID: 11400000, guid: 6c079a6516dcdf249a1bd370ddc2154a, type: 2}
+  onButton2Released: {fileID: 11400000, guid: 732537c5fb94779499e2743f12f2d6ca, type: 2}
+  onButton3Pressed: {fileID: 11400000, guid: 9118ec0882fa02648b052c4e04259fbd, type: 2}
+  onButton3Released: {fileID: 11400000, guid: 8d28d7878c107ce449c50b14b57220ab, type: 2}
+  onSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
     type: 2}
+--- !u!114 &7363510702798268052
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1720411786157758742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 726155bbf4139474dbf25b978b006c3a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  miniGameType: 0
+  scoreDisplay: {fileID: 1720411786844436948}
+  leftNumberDisplay: {fileID: 1356472169748578620}
+  rightNumberDisplay: {fileID: 7162321741096836160}
+  roundTimeDisplay: {fileID: 1720411787164405322}
+  countdownDisplay: {fileID: 1720411787747195397}
+  readyButton: {fileID: 330862409471186351}
+  countdownTimer: {fileID: 6828733908891021053}
+  pip: {fileID: 5023401565743585470}
+  silhouette: {fileID: 1247642187047997787}
+  trailDisplay: {fileID: 2224701857737343022}
+  buttonPanel: {fileID: 981011049214763772}
+  button1: {fileID: 2138804115987801885}
+  button2: {fileID: 287724296561927322}
+  button3: {fileID: 263015102588795879}
+  OnButton1Pressed:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1720411786157758736}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+        m_MethodName: OnButtonPressed
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 1
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnButton2Pressed:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1720411786157758736}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+        m_MethodName: OnButtonPressed
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 2
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnButton3Pressed:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1720411786157758736}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+        m_MethodName: OnButtonPressed
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 3
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnButton1Released:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1720411786157758736}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+        m_MethodName: OnButtonReleased
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 1
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnButton2Released:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1720411786157758736}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+        m_MethodName: OnButtonReleased
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 2
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnButton3Released:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1720411786157758736}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+        m_MethodName: OnButtonReleased
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 3
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1720411786252055488
 GameObject:
   m_ObjectHideFlags: 0
@@ -2047,7 +2152,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
-  m_ActiveFontFeatures: 00000000
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1

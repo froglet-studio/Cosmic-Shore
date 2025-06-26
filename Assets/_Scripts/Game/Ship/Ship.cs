@@ -207,13 +207,16 @@ namespace CosmicShore.Core
             ShipStatus.TrailSpawner.Initialize(this);
 
             // if (ShipStatus.AIPilot.AutoPilotEnabled) return;
-
-            if (!ShipStatus.AutoPilotEnabled)
+            Debug.Log($"<color=blue> Ai Pilot value {ShipStatus.AutoPilotEnabled}");
+            if (!ShipStatus.AutoPilotEnabled /*&& !ShipStatus.AIPilot*/)
             {
                 Debug.Log("Showing UI for player");
-                var container = shipHUD.GetComponent<ShipHUDContainer>();
-                var hudView = container.Show(_shipType);   
-                hudView?.Initialize(this);
+                if (shipHUD != null)
+                {
+                    shipHUD.TryGetComponent(out ShipHUDContainer container);
+                    var hudView = container.Show(_shipType);
+                    hudView?.Initialize(this);
+                }
             }
             /*if (shipHUD)
             {
