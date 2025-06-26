@@ -70,6 +70,7 @@ namespace CosmicShore.App.Systems
             PrefKeys.Add(RewardTierOneClaimedPrefKey);
             PrefKeys.Add(RewardTierTwoClaimedPrefKey);
             PrefKeys.Add(RewardTierThreeClaimedPrefKey);
+            PrefKeys.Add(RewardTierOneSatisfiedPrefKey);
             PrefKeys.Add(RewardTierTwoSatisfiedPrefKey);
             PrefKeys.Add(RewardTierThreeSatisfiedPrefKey);
         }
