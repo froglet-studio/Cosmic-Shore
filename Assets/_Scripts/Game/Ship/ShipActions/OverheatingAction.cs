@@ -3,7 +3,7 @@ using System.Collections;
 using CosmicShore.Core;
 using CosmicShore.Game;
 
-public class OverheatingAction : ShipAction
+public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the name
 {
     [SerializeField] ShipAction wrappedAction;
     [SerializeField] int heatResourceIndex = 0;
