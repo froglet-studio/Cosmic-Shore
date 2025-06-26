@@ -150,7 +150,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Velocity: {x: 0, y: 0, z: 0}
-  ImpactOnEnd: 0
   Inertia: 1
   InitialScale: {x: 0, y: 0, z: 0}
   trailBlockImpactEffects: 03000000
@@ -163,6 +162,6 @@ MonoBehaviour:
   friendlyFire: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   AOEPrefabs:
-  - {fileID: 8507666106090082286, guid: 0894b87fdb9d2b14ab84a9cac1d9dfc7, type: 3}
+  - {fileID: 8507666106090082286, guid: b189bdcdd34040c4e9631f49d995b800, type: 3}
   minExplosionScale: 100
   maxExplosionScale: 100

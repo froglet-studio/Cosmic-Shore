@@ -10,7 +10,6 @@ namespace CosmicShore.Game.Projectiles
     public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
-        public bool ImpactOnEnd;
         public float Inertia = 1;
         
         [HideInInspector] public Vector3 InitialScale;
@@ -237,7 +236,7 @@ namespace CosmicShore.Game.Projectiles
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
-            if (ImpactOnEnd) PerformEndEffects();
+            if (endEffects.Count > 0) PerformEndEffects();
             _poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
 
