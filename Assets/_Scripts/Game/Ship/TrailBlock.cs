@@ -174,7 +174,7 @@ namespace CosmicShore.Core
 
             _onTrailBlockCreatedEventChannel.RaiseEvent(new TrailBlockEventData
             {
-                Team = Team,
+                OwnTeam = Team,
                 PlayerName = PlayerName,
                 TrailBlockProperties = TrailBlockProperties
             });
@@ -237,7 +237,8 @@ namespace CosmicShore.Core
             // var explodingBlock = FossilBlockPool.SpawnFromTeamPool(Team, transform.position, transform.rotation);
             var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new TrailBlockEventData
             {
-                Team = team,
+                OwnTeam = Team,
+                PlayerTeam = team,
                 PlayerName = playerName,
                 Position = transform.position,
                 Rotation = transform.rotation,
@@ -263,7 +264,7 @@ namespace CosmicShore.Core
 
             _onTrailBlockDestroyedEventChannel.RaiseEvent(new TrailBlockEventData
             {
-                Team = team,
+                OwnTeam = team,
                 PlayerName = playerName,
                 TrailBlockProperties = TrailBlockProperties,
             });
@@ -307,7 +308,7 @@ namespace CosmicShore.Core
 
                 _onTrailBlockRestoredEventChannel.RaiseEvent(new TrailBlockEventData
                 {
-                    Team = Team,
+                    OwnTeam = Team,
                     PlayerName = PlayerName,
                     TrailBlockProperties = TrailBlockProperties
                 });
