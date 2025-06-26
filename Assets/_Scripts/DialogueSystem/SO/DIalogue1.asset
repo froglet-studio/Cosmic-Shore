@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12c38f1201703dc4e979069d1889ae3b, type: 3}
   m_Name: DIalogue1
   m_EditorClassIdentifier: 
-  setId: Test Dialogue 1
+  setId: Dialogue
   mode: 1
   portraitSpeaker1: {fileID: 21300000, guid: 53fbd2d5784a14b4983f83d6f20382e3, type: 3}
   portraitSpeaker2: {fileID: 21300000, guid: 42132c1ff5cdb0a45a2bdd1ef8db7f32, type: 3}

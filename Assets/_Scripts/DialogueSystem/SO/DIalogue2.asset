@@ -12,33 +12,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12c38f1201703dc4e979069d1889ae3b, type: 3}
   m_Name: DIalogue2
   m_EditorClassIdentifier: 
-  setId: DIalogue 2
+  setId: Monologue
   mode: 0
-  portraitSpeaker1: {fileID: 21300000, guid: 90ae92eb7bbd61540bc25060355519e9, type: 3}
+  portraitSpeaker1: {fileID: 21300000, guid: 62a2471fd3a1b5b45890af3f26ed2505, type: 3}
   portraitSpeaker2: {fileID: 0}
   lines:
   - speaker: 1
-    speakerName: Test LIne 1
-    text: sdasdasdasd
+    speakerName: Flux
+    text: This is a sample test line for Dialogue 1 set
     voiceClip: {fileID: 0}
     displayTime: 3
   - speaker: 1
-    speakerName: Speaker
-    text: we
+    speakerName: Flux
+    text: This is a sample test line for Dialogue 2 set
     voiceClip: {fileID: 0}
     displayTime: 3
-  - speaker: 1
-    speakerName: Speaker
-    text: New dialogue line...
-    voiceClip: {fileID: 0}
-    displayTime: 3
-  - speaker: 1
-    speakerName: Speaker
-    text: New dialogue line...
-    voiceClip: {fileID: 0}
-    displayTime: 3
-  - speaker: 1
-    speakerName: Speaker
-    text: New dialogue line...
-    voiceClip: {fileID: 0}
-    displayTime: 3
+  rewardData:
+    rewardType: 0
+    rewardValue: 
+    rewardImage: {fileID: 0}
+    description: 
+    rarity: 0
+    condition: 
+    unlockTrigger: 
+    customScript: 

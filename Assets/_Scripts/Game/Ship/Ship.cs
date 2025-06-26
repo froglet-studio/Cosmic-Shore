@@ -28,7 +28,7 @@ namespace CosmicShore.Core
     }
 
     [RequireComponent(typeof(ShipStatus))]
-    public class Ship : MonoBehaviour, IShip
+    public class Ship : MonoBehaviour, IShip, IShipHUDController
     {
         public event Action<IShipStatus> OnShipInitialized;
 
@@ -207,7 +207,17 @@ namespace CosmicShore.Core
             ShipStatus.TrailSpawner.Initialize(this);
 
             // if (ShipStatus.AIPilot.AutoPilotEnabled) return;
-
+            Debug.Log($"<color=blue> Ai Pilot value {ShipStatus.AutoPilotEnabled}");
+            if (!ShipStatus.AutoPilotEnabled /*&& !ShipStatus.AIPilot*/)
+            {
+                Debug.Log("Showing UI for player");
+                if (shipHUD != null)
+                {
+                    shipHUD.TryGetComponent(out ShipHUDContainer container);
+                    var hudView = container.Show(_shipType);
+                    hudView?.Initialize(this);
+                }
+            }
             /*if (shipHUD)
             {
                 shipHUD.SetActive(true);
@@ -559,6 +569,11 @@ namespace CosmicShore.Core
                 ShipStatus.Attached = true;
                 ShipStatus.AttachedTrailBlock = trailBlock;
             }
+        }
+
+        public void OnButtonPressed(int buttonNumber)
+        {
+            PerformButtonActions(buttonNumber);
         }
     }
 }

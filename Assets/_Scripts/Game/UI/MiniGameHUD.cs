@@ -1,201 +1,135 @@
 using CosmicShore.Game.Arcade;
 using CosmicShore.Utilities;
 using System;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-
 
 namespace CosmicShore.Game.UI
 {
-    public class MiniGameHUD : MonoBehaviour
+    [RequireComponent(typeof(MiniGameHUDView))]
+    public class MiniGameHUD : MonoBehaviour, IMiniGameHUDController
     {
-        public TMP_Text ScoreDisplay;
-        public TMP_Text LeftNumberDisplay;
-        public TMP_Text RightNumberDisplay;
+        public MiniGameHUDView View => view;
 
-        public TMP_Text RoundTimeDisplay;
-        public Image CountdownDisplay;
-        public Button ReadyButton;
-        public CountdownTimer CountdownTimer;
-        [SerializeField] GameObject pip;
-        [SerializeField] GameObject silhouette;
-        [SerializeField] GameObject trailDisplay;
-        [SerializeField] ButtonPanel buttonPanel;
-        [SerializeField] GameObject button1;
-        [SerializeField] GameObject button2;
-        [SerializeField] GameObject button3;
+        [Header("View")]
+        [SerializeField] private MiniGameHUDView view;
 
-        [SerializeField]
-        PipEventChannelSO OnPipInitializedEventChannel;
+        [Header("Event Channels")]
+        [SerializeField] private PipEventChannelSO onPipInitializedEventChannel;
+        [SerializeField] private IntEventChannelSO onMoundDroneSpawned;
+        [SerializeField] private IntEventChannelSO onQueenDroneSpawned;
+        [SerializeField] private BoolEventChannelSO onBottomEdgeButtonsEnabled;
+        [SerializeField] private InputEventsEventChannelSO onButton1Pressed;
+        [SerializeField] private InputEventsEventChannelSO onButton1Released;
+        [SerializeField] private InputEventsEventChannelSO onButton2Pressed;
+        [SerializeField] private InputEventsEventChannelSO onButton2Released;
+        [SerializeField] private InputEventsEventChannelSO onButton3Pressed;
+        [SerializeField] private InputEventsEventChannelSO onButton3Released;
+        [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
 
-        [SerializeField]
-        IntEventChannelSO onMoundDroneSpawned;
-
-        [SerializeField]
-        IntEventChannelSO onQueenDroneSpawned;
-
-        [SerializeField]
-        BoolEventChannelSO onBottomEdgeButtonsEnabled;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton1Pressed;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton1Released;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton2Pressed;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton2Released;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton3Pressed;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton3Released;
-
-        [SerializeField]
-        SilhouetteEventChannelSO OnSilhouetteInitialized;
-
-        // public IShip Ship { get; set; }
+        private void Reset()
+        {
+            // auto-assign the view if omitted
+            view = GetComponent<MiniGameHUDView>();
+        }
 
         private void OnEnable()
         {
-            OnPipInitializedEventChannel.OnEventRaised += OnPipInitialized;
-            onMoundDroneSpawned.OnEventRaised += SetLeftNumberDisplay;
-            onQueenDroneSpawned.OnEventRaised += SetRightNumberDisplay;
-            onBottomEdgeButtonsEnabled.OnEventRaised += PositionButtonPanel;
-            OnSilhouetteInitialized.OnEventRaised += SetupForSilhouette;
+            // SO ? Controller
+            onPipInitializedEventChannel.OnEventRaised += OnPipInitialized;
+            onMoundDroneSpawned.OnEventRaised += OnMoundDroneSpawned;
+            onQueenDroneSpawned.OnEventRaised += OnQueenDroneSpawned;
+            onBottomEdgeButtonsEnabled.OnEventRaised += OnBottomEdgeButtonsEnabled;
+            onSilhouetteInitialized.OnEventRaised += OnSilhouetteInitialized;
+
+            // View ? Controller
+            view.Initialize(this);
         }
 
         private void OnDisable()
         {
-            OnPipInitializedEventChannel.OnEventRaised -= OnPipInitialized;
-            onMoundDroneSpawned.OnEventRaised -= SetLeftNumberDisplay;
-            onQueenDroneSpawned.OnEventRaised -= SetRightNumberDisplay;
-            onBottomEdgeButtonsEnabled.OnEventRaised -= PositionButtonPanel;
-            OnSilhouetteInitialized.OnEventRaised -= SetupForSilhouette;
+            onPipInitializedEventChannel.OnEventRaised -= OnPipInitialized;
+            onMoundDroneSpawned.OnEventRaised -= OnMoundDroneSpawned;
+            onQueenDroneSpawned.OnEventRaised -= OnQueenDroneSpawned;
+            onBottomEdgeButtonsEnabled.OnEventRaised -= OnBottomEdgeButtonsEnabled;
+            onSilhouetteInitialized.OnEventRaised -= OnSilhouetteInitialized;
         }
 
-        public void Show() => gameObject.SetActive(true);
-        public void Hide() => gameObject.SetActive(false);
-
-        void OnPipInitialized(PipEventData data) =>
-            SetPipActive(data.IsActive, data.IsMirrored);
-
-        public void SetPipActive(bool active, bool mirrored)
+        // IMiniGameHUDController
+        public void OnButtonPressed(int buttonNumber)
         {
-            pip.SetActive(active);
-            pip.GetComponent<PipUI>().SetMirrored(mirrored);
-        }
-
-        public GameObject SetSilhouetteActive(bool active)
-        {
-            silhouette.SetActive(active);
-            return silhouette;
-        }
-
-        public GameObject SetTrailDisplayActive(bool active)
-        {
-            trailDisplay.SetActive(active);
-            return trailDisplay;
-        }
-
-        public void SetLeftNumberDisplay(int number)
-        {
-            if (number == 0)
-            {
-                LeftNumberDisplay.transform.parent.parent.gameObject.SetActive(false);
-            }
-            else
-            {
-                LeftNumberDisplay.transform.parent.parent.gameObject.SetActive(true);
-                LeftNumberDisplay.text = number.ToString();
-            }
-        }
-
-        public void SetRightNumberDisplay(int number)
-        {
-            if (number == 0)
-            {
-                RightNumberDisplay.transform.parent.parent.gameObject.SetActive(false);
-            }
-            else
-            {
-                RightNumberDisplay.transform.parent.parent.gameObject.SetActive(true);
-                RightNumberDisplay.text = number.ToString();
-            }
-        }
-
-        public void PositionButtonPanel(bool bottomEdge) // TODO: this should be combined with SetButtonActive to make a configuration method
-        {
-            buttonPanel.PositionButtons(bottomEdge);
-        }
-
-        public void SetButtonActive(bool active, int number) // TODO: this should move to ButtonPanel
-        {
-            switch (number)
+            switch (buttonNumber)
             {
                 case 1:
-                    button1.SetActive(active);
+                    onButton1Pressed.RaiseEvent(InputEvents.Button1Action);
                     break;
                 case 2:
-                    button2.SetActive(active);
+                    onButton2Pressed.RaiseEvent(InputEvents.Button2Action);
                     break;
                 case 3:
-                    button3.SetActive(active);
+                    onButton3Pressed.RaiseEvent(InputEvents.Button3Action);
                     break;
             }
         }
 
-        public void PressButton1() // TODO: this should move to ButtonPanel
+        public void OnButtonReleased(int buttonNumber)
         {
-            // Ship.PerformShipControllerActions(InputEvents.Button1Action);
-            OnButton1Pressed.RaiseEvent(InputEvents.Button1Action);
+            switch (buttonNumber)
+            {
+                case 1:
+                    onButton1Released.RaiseEvent(InputEvents.Button1Action);
+                    break;
+                case 2:
+                    onButton2Released.RaiseEvent(InputEvents.Button2Action);
+                    break;
+                case 3:
+                    onButton3Released.RaiseEvent(InputEvents.Button3Action);
+                    break;
+            }
         }
 
-        public void releaseButton1()
+        // — SO event handlers call into the view —
+
+        private void OnPipInitialized(PipEventData data)
         {
-            // Ship.StopShipControllerActions(InputEvents.Button1Action);
-            OnButton1Released.RaiseEvent(InputEvents.Button1Action);
+            view.Pip.SetActive(data.IsActive);
+            view.Pip.GetComponent<PipUI>().SetMirrored(data.IsMirrored);
         }
 
-        public void PressButton2()
+        private void OnMoundDroneSpawned(int count)
         {
-            // Ship.PerformShipControllerActions(InputEvents.Button2Action);
-            OnButton2Pressed.RaiseEvent(InputEvents.Button2Action);
+            // this will show/hide and set the text
+            view.LeftNumberDisplay.transform.parent.parent.gameObject.SetActive(count > 0);
+            view.LeftNumberDisplay.text = count.ToString();
         }
 
-        public void releaseButton2()
+        private void OnQueenDroneSpawned(int count)
         {
-            // Ship.StopShipControllerActions(InputEvents.Button2Action);
-            OnButton2Released.RaiseEvent(InputEvents.Button2Action);
+            view.RightNumberDisplay.transform.parent.parent.gameObject.SetActive(count > 0);
+            view.RightNumberDisplay.text = count.ToString();
         }
 
-        public void PressButton3()
+        private void OnBottomEdgeButtonsEnabled(bool enabled)
         {
-            // Ship.PerformShipControllerActions(InputEvents.Button3Action);
-            OnButton3Pressed.RaiseEvent(InputEvents.Button3Action);
+            view.ButtonPanel.PositionButtons(enabled);
         }
 
-        public void releaseButton3()
+        private void OnSilhouetteInitialized(SilhouetteData data)
         {
-            // Ship.StopShipControllerActions(InputEvents.Button3Action);
-            OnButton3Released.RaiseEvent(InputEvents.Button3Action);
-        }
+            var sil = view.Silhouette;
+            sil.SetActive(data.IsSilhouetteActive);
+            var trail = view.TrailDisplay;
+            trail.SetActive(data.IsTrailDisplayActive);
 
-        public void SetupForSilhouette(SilhouetteData data)
-        {
-            var silhouetteContainer = SetSilhouetteActive(data.IsSilhouetteActive).transform;
-            var trailDisplayContainer = SetTrailDisplayActive(data.IsTrailDisplayActive).transform;
             foreach (var part in data.Silhouettes)
             {
-                part.transform.SetParent(silhouetteContainer.transform, false);
+                part.transform.SetParent(sil.transform, false);
                 part.SetActive(true);
             }
-            data.Sender.SetSilhouetteReference(silhouetteContainer, trailDisplayContainer);
+            data.Sender.SetSilhouetteReference(sil.transform, trail.transform);
         }
+
+        // Public methods you may call externally:
+        public void Show() => view.gameObject.SetActive(true);
+        public void Hide() => view.gameObject.SetActive(false);
     }
 }

@@ -39,7 +39,7 @@ namespace CosmicShore.Game.Arcade
         void Start()
         {
             if (GameCanvas != null && GameCanvas.MiniGameHUD != null)
-                ActivePlayerScoreDisplay = GameCanvas.MiniGameHUD.ScoreDisplay;
+                ActivePlayerScoreDisplay = GameCanvas.MiniGameHUD.View.ScoreDisplay;
             else
                 Debug.LogWarning("GameCanvas or MiniGameHUD is not assigned!");
 
