@@ -2,7 +2,7 @@
 
 ![Cosmic Shore Log](./README-images/image-5.png)
 
-This is a Live Service Mobile Game source code repository for [Cosmic Shore](https://www.froglet.games/)\
+This is the source code repository for [Cosmic Shore](https://www.froglet.games/), a live service game currently focused on PC with mobile support and plans for full cross-platform play.\
 It’s your game and you can play it your way, with genre-crossing Classes and every level of engagement: from casual, hotseat minigames and rewarded dailies to team missions and a structured esport.
 
 *Please don't forget to play and give feedback!*

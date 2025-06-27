@@ -61,4 +61,5 @@ MonoBehaviour:
   - {fileID: 6417075533431866457, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
   - {fileID: 6417075533431866457, guid: 6b2bdbe32b1ed4944a62366baf0d8a80, type: 3}
   - {fileID: 6417075533431866457, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   AISkillLevel: 1

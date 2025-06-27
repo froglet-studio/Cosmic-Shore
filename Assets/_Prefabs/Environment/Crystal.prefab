@@ -100,6 +100,7 @@ MonoBehaviour:
   shipImpactEffects: 1
   RespawnOnImpact: 1
   ImpactHapticType: 4
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0

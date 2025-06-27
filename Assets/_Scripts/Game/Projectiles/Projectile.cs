@@ -10,7 +10,6 @@ namespace CosmicShore.Game.Projectiles
     public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
-        public bool ImpactOnEnd;
         public float Inertia = 1;
         
         [HideInInspector] public Vector3 InitialScale;
@@ -25,10 +24,13 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] float growthRate = 1.0f;
         [SerializeField] bool friendlyFire = false;
 
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
         MeshRenderer meshRenderer;
 
-        protected PoolManager poolManager;
-        public Teams Team { get; private set; }
+        protected PoolManager _poolManager;
+        public Teams OwnTeam { get; private set; }
         public IShipStatus ShipStatus { get; private set; }
 
         private void Awake()
@@ -38,31 +40,19 @@ namespace CosmicShore.Game.Projectiles
 
         void Start()
         {
-            poolManager = GetComponentInParent<PoolManager>();
-            /*Ship = poolManager.Ship;
-            shipStatus = Ship.ShipStatus;
-            if (Ship == null)
-            {
-                Debug.LogWarning("Projectile script found no valid IShip reference.");
-                Ship = GetComponentInParent<IShip>();
-                if (Ship == null)
-                {
-                    Debug.LogError("Projectile script requires a valid IShip reference.");
-                    return;
-                }
-            }*/
             if (spike) 
             {
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
-                meshRenderer.material = ThemeManager.Instance.GetTeamSpikeMaterial(Team);
+                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(OwnTeam);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
             }
         }
 
-        public virtual void Initialize(Teams team, IShipStatus shipStatus, float charge) // Later remove [float charge] from here.
+        public virtual void Initialize(PoolManager poolManager, Teams ownTeam, IShipStatus shipStatus, float charge) // Later remove [float charge] from here.
         {
-            Team = team;
+            OwnTeam = ownTeam;
             ShipStatus = shipStatus;
+            _poolManager = poolManager;
 
             if (TryGetComponent(out Gun gun) && ShipStatus != null)
             {
@@ -79,14 +69,14 @@ namespace CosmicShore.Game.Projectiles
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if (!friendlyFire && trailBlock.Team == Team)
+                if (!friendlyFire && trailBlock.Team == OwnTeam)
                     return;
 
                 PerformTrailImpactEffects(trailBlock.TrailBlockProperties);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
-                if (shipGeometry.Ship.ShipStatus.Team == Team)
+                if (shipGeometry.Ship.ShipStatus.Team == OwnTeam)
                     return;
 
                 PerformShipImpactEffects(shipGeometry);
@@ -103,7 +93,7 @@ namespace CosmicShore.Game.Projectiles
                         trailBlockProperties.trailBlock.Damage(Velocity * Inertia, ShipStatus.Team, ShipStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, Team);
+                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, OwnTeam);
                         break;
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
@@ -111,7 +101,7 @@ namespace CosmicShore.Game.Projectiles
                     case TrailBlockImpactEffects.Stop:
 
                         if (!trailBlockProperties.trailBlock.GetComponent<Boid>()) Stop();
-                        else poolManager.ReturnToPool(gameObject, gameObject.tag);
+                        else _poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -133,7 +123,7 @@ namespace CosmicShore.Game.Projectiles
                 {
                     case TrailBlockImpactEffects.Stop:
                         Stop();
-                        poolManager.ReturnToPool(gameObject, gameObject.tag);
+                        _poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -191,7 +181,7 @@ namespace CosmicShore.Game.Projectiles
                     //    AOEExplosion.MaxScale = Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
                     //    break;
                     case CrystalImpactEffects.StealCrystal:
-                        crystalProperties.crystal.Steal(Team, 7f);
+                        crystalProperties.crystal.Steal(OwnTeam, 7f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
                         ShipStatus.ResourceSystem.ChangeResourceAmount(0, ShipStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
@@ -246,8 +236,8 @@ namespace CosmicShore.Game.Projectiles
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
-            if (ImpactOnEnd) PerformEndEffects();
-            poolManager.ReturnToPool(gameObject, gameObject.tag);
+            if (endEffects.Count > 0) PerformEndEffects();
+            _poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
 
         public void Stop() 

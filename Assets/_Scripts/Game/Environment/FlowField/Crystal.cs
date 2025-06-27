@@ -39,6 +39,9 @@ namespace CosmicShore.Environment.FlowField
         [SerializeField] protected bool shipImpactEffects = true;
         [SerializeField] bool RespawnOnImpact;
         [SerializeField] HapticType ImpactHapticType;
+
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
         #endregion
 
         [Header("Optional Crystal Effects")]
@@ -277,7 +280,7 @@ namespace CosmicShore.Environment.FlowField
             Team = team;
             foreach (var modelData in crystalModels)
             {
-                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, ThemeManager.Instance.GetTeamCrystalMaterial(team), 1));
+                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(team), 1));
             }
             StartCoroutine(DecayingTheftCoroutine(duration));
         }

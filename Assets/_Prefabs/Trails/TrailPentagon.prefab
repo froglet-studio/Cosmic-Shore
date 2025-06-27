@@ -23,6 +23,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 112998861360160568}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -31,7 +32,6 @@ Transform:
   - {fileID: 2657642809075846010}
   - {fileID: 608398595957152229}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!1 &1941517226223409266
 GameObject:
@@ -45,6 +45,10 @@ GameObject:
   - component: {fileID: 2739363745685056234}
   - component: {fileID: 2264454324202997580}
   - component: {fileID: 1630802140287221144}
+  - component: {fileID: 4505134049726234543}
+  - component: {fileID: 2316491055141568554}
+  - component: {fileID: 316012558892867980}
+  - component: {fileID: 29313452674133653}
   m_Layer: 0
   m_Name: InnerPentagon
   m_TagString: Untagged
@@ -59,13 +63,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1941517226223409266}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3259637780901953961}
-  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2739363745685056234
 MeshFilter:
@@ -92,6 +96,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -130,21 +137,87 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   FossilBlock: {fileID: 0}
-  ParticleEffect: {fileID: 0}
-  material: {fileID: 0}
-  trailBlockProperties:
+  TrailBlockProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
-    trail: {fileID: 0}
-  ownerId: 
+    trailBlock: {fileID: 0}
+    Index: 0
+    IsShielded: 0
+    IsSuperShielded: 0
+    IsDangerous: 0
+    IsTransparent: 0
+    TimeCreated: 0
+  ParticleEffect: {fileID: 0}
+  GrowthVector: {x: 0, y: 2, z: 0}
+  growthRate: 0.01
   waitTime: 0.6
-  embiggen: 0
   destroyed: 0
-  MaxScale: 1
-  ID: 
-  Dimensions: {x: 0, y: 0, z: 0}
-  warp: 0
+  devastated: 0
+  IsSmallest: 0
+  IsLargest: 0
+  ownerID: 
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+    type: 2}
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+    type: 2}
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+    type: 2}
+  _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+    type: 2}
+--- !u!114 &4505134049726234543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1941517226223409266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a3a471efe0048544a8f217c88db4843, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &2316491055141568554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1941517226223409266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minScale: {x: 0.5, y: 0.5, z: 0.5}
+  maxScale: {x: 10, y: 10, z: 10}
+--- !u!114 &316012558892867980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1941517226223409266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 525c14f44c20af64dabc635a990a0f73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &29313452674133653
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1941517226223409266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bc84df2cc31ac046a258d2e1ee38753, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!1 &3691969032340718939
 GameObject:
   m_ObjectHideFlags: 0
@@ -158,6 +231,10 @@ GameObject:
   - component: {fileID: 6552817025317228147}
   - component: {fileID: 6880654075926222342}
   - component: {fileID: 1234021917273288780}
+  - component: {fileID: 4453796253363067367}
+  - component: {fileID: 3798677708088113973}
+  - component: {fileID: 4195320706748158823}
+  - component: {fileID: 7675962828136718865}
   m_Layer: 0
   m_Name: OuterPentagon
   m_TagString: Untagged
@@ -172,13 +249,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3691969032340718939}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3259637780901953961}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &4660852090222299747
 MeshFilter:
@@ -205,6 +282,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -243,21 +323,34 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   FossilBlock: {fileID: 0}
-  ParticleEffect: {fileID: 0}
-  material: {fileID: 0}
-  trailBlockProperties:
+  TrailBlockProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
-    trail: {fileID: 0}
-  ownerId: 
+    trailBlock: {fileID: 0}
+    Index: 0
+    IsShielded: 0
+    IsSuperShielded: 0
+    IsDangerous: 0
+    IsTransparent: 0
+    TimeCreated: 0
+  ParticleEffect: {fileID: 0}
+  GrowthVector: {x: 0, y: 2, z: 0}
+  growthRate: 0.01
   waitTime: 0.6
-  embiggen: 0
   destroyed: 0
-  MaxScale: 1
-  ID: 
-  Dimensions: {x: 0, y: 0, z: 0}
-  warp: 0
+  devastated: 0
+  IsSmallest: 0
+  IsLargest: 0
+  ownerID: 
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+    type: 2}
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+    type: 2}
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+    type: 2}
+  _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+    type: 2}
 --- !u!65 &1234021917273288780
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -266,8 +359,69 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3691969032340718939}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 0
-  serializedVersion: 2
+  serializedVersion: 3
   m_Size: {x: 0.21, y: 2, z: 2.09}
   m_Center: {x: 0.053831466, y: 0.1, z: -0.06}
+--- !u!114 &4453796253363067367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3691969032340718939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a3a471efe0048544a8f217c88db4843, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &3798677708088113973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3691969032340718939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minScale: {x: 0.5, y: 0.5, z: 0.5}
+  maxScale: {x: 10, y: 10, z: 10}
+--- !u!114 &4195320706748158823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3691969032340718939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 525c14f44c20af64dabc635a990a0f73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &7675962828136718865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3691969032340718939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bc84df2cc31ac046a258d2e1ee38753, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}

@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using System.Collections;
 using CosmicShore.Utilities;
+using UnityEngine.Rendering;
 
 
 namespace CosmicShore.Game.Projectiles
 {
-    public class TrailBlockBufferManager : SingletonPersistent<TrailBlockBufferManager>
+    public class TrailBlockBufferManager : Singleton<TrailBlockBufferManager>
     {
         [System.Serializable]
         private class BufferSettings
@@ -20,22 +21,14 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] private BufferSettings settings;
         [SerializeField] private TrailBlock trailBlockPrefab;
 
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
         private Dictionary<Teams, Queue<TrailBlock>> teamBuffers = new Dictionary<Teams, Queue<TrailBlock>>();
         private Dictionary<Teams, float> instantiateTimers = new Dictionary<Teams, float>();
 
-        public override void Awake()
+        private void Start()
         {
-            base.Awake();
-            StartCoroutine(WaitForThemeManagerInitialization());
-        }
-
-        private IEnumerator WaitForThemeManagerInitialization()
-        {
-            while (ThemeManager.Instance == null)
-            {
-                yield return new WaitForEndOfFrame();
-            }
-            
             InitializeTeamBuffers();
             StartCoroutine(BufferMaintenanceRoutine());
         }
@@ -65,11 +58,12 @@ namespace CosmicShore.Game.Projectiles
         {
             var block = Instantiate(trailBlockPrefab);
             block.transform.parent = transform;
+
             block.ChangeTeam(team);
             var renderer = block.GetComponent<MeshRenderer>();
             if (renderer != null)
             {
-                renderer.material = ThemeManager.Instance.GetTeamBlockMaterial(team);
+                renderer.material = _themeManagerData.GetTeamBlockMaterial(team);
             }
             return block;
         }

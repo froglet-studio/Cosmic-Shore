@@ -7,7 +7,7 @@ using CosmicShore.Utilities;
 
 namespace CosmicShore.Core
 {
-    public abstract class AdaptiveAnimationManager<TManager, TAnimator, TAnimationData> : SingletonPersistent<TManager>
+    public abstract class AdaptiveAnimationManager<TManager, TAnimator, TAnimationData> : Singleton<TManager>
         where TManager : AdaptiveAnimationManager<TManager, TAnimator, TAnimationData>
         where TAnimator : MonoBehaviour
         where TAnimationData : struct

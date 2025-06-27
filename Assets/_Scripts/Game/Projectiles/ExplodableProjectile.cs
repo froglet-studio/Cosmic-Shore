@@ -11,9 +11,9 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] float maxExplosionScale;
         public float Charge { get; private set; } = 0;
 
-        public override void Initialize(Teams team, IShipStatus shipStatus, float charge)
+        public override void Initialize(PoolManager poolManager, Teams team, IShipStatus shipStatus, float charge)
         {
-            base.Initialize(team, shipStatus, charge);
+            base.Initialize(poolManager, team, shipStatus, charge);
             Charge = charge;
         }
 
@@ -25,7 +25,7 @@ namespace CosmicShore.Game.Projectiles
                 {
                     case TrailBlockImpactEffects.Stop:
                         Stop();
-                        poolManager.ReturnToPool(gameObject, gameObject.tag);
+                        _poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -50,7 +50,7 @@ namespace CosmicShore.Game.Projectiles
                         break;
                     case TrailBlockImpactEffects.Steal:
                         // trailBlockProperties.trailBlock.Steal(Ship.ShipStatus.PlayerName, Team);
-                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, Team);
+                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, OwnTeam);
                         break;
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
@@ -58,7 +58,7 @@ namespace CosmicShore.Game.Projectiles
                     case TrailBlockImpactEffects.Stop:
 
                         if (!trailBlockProperties.trailBlock.GetComponent<Boid>()) Stop();
-                        else poolManager.ReturnToPool(gameObject, gameObject.tag);
+                        else _poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -74,7 +74,6 @@ namespace CosmicShore.Game.Projectiles
 
         public void Detonate()
         {
-            // poolManager.ReturnToPool(gameObject, gameObject.tag);
             foreach (var AOE in AOEPrefabs)
             {
                 if (ShipStatus.Ship == null)
@@ -84,10 +83,12 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
-                AOEExplosion.Detonate(ShipStatus.Ship);
                 AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                 AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
+                AOEExplosion.Detonate(ShipStatus.Ship);
             }
+
+            _poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
     }
 }

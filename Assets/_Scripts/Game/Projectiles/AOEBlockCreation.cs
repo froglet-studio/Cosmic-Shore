@@ -12,6 +12,10 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] protected TrailBlock trailBlock;
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
         [SerializeField] bool shielded = true;
+
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
         private Material blockMaterial;
         #endregion
 
@@ -27,8 +31,8 @@ namespace CosmicShore.Game.Projectiles
         public override void Detonate(IShip ship)
         {
             base.Detonate(ship);
-            blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team) 
-                : ThemeManager.Instance.GetTeamBlockMaterial(Ship.ShipStatus.Team);
+            blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team) 
+                : _themeManagerData.GetTeamBlockMaterial(Ship.ShipStatus.Team);
         }
 
         protected override IEnumerator ExplodeCoroutine()

@@ -12,7 +12,9 @@ namespace CosmicShore
     {
         // TODO: WIP gun firing needs to be reworked
         [SerializeField] Gun gunContainer;
-        List<Gun> guns = new();
+
+        [SerializeField]
+        Transform[] gunTransforms;
 
         [SerializeField] PoolManager projectileContainer;
 
@@ -29,7 +31,7 @@ namespace CosmicShore
         public float projectileTime = 3;
 
         bool firing = false;
-        [SerializeField] float firingRate = 1f;
+        public float firingRate = 1f;
 
         Coroutine fireGunsCoroutine = null;
 
@@ -43,29 +45,12 @@ namespace CosmicShore
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
-
-            var children = gunContainer.GetComponentsInChildren<Transform>();
-
-
-            // TODO - If we need to positions to spawn projectiles, we can use the position datas of two projectiles, rather than making two gun game objects.
-            /*foreach (var child in children)
+            if (gunTransforms == null || gunTransforms.Length == 0)
             {
-                if (child == gunContainer.transform)
-                    continue;
-
-                var go = child.gameObject;
-                var newGun = go.AddComponent<Gun>();
-                CopyValues<Gun>(gunContainer, newGun);
-                newGun.Initialize(ship.ShipStatus);
-
-                guns.Add(newGun);
-                //child.LookAt(gunContainer.transform);
-                //child.Rotate(0, 180, 0);
-            }*/
-
+                gunTransforms = new Transform[1];
+                gunTransforms[0] = gunContainer.transform;
+            }
             gunContainer.Initialize(ship.ShipStatus);
-            guns.Add(gunContainer);
-            //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
         }
 
         public override void StartAction()
@@ -87,16 +72,15 @@ namespace CosmicShore
                 if (ResourceSystem.Resources[ammoIndex].CurrentAmount >= ammoCost)
                 {
                     Vector3 inheritedVelocity;
-                    // TODO: WIP magic numbers
-                    foreach (var gun in guns)
+                    foreach (var transform in gunTransforms)
                     {
                         if (inherit)
                         {
-                            if (ShipStatus.Attached) inheritedVelocity = gun.transform.forward;
+                            if (ShipStatus.Attached) inheritedVelocity = transform.transform.forward;
                             else inheritedVelocity = ShipStatus.Course;
                         }
                         else inheritedVelocity = Vector3.zero;
-                        gun.FireGun(projectileContainer.transform, speed.Value, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
+                        gunContainer.FireGun(transform, speed.Value, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                     }
                     ResourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
                 }

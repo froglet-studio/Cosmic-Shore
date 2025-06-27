@@ -10,6 +10,9 @@ namespace CosmicShore.Game.Projectiles
         ElementalFloat depthScale = new(1f);  // Scale both ray radius and block size, in the z direction.
         [SerializeField] float growthRate = .05f;
 
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
         #region Attributes for Block Creation
         [Header("Block Creation")]
         [SerializeField] protected TrailBlock trailBlock;
@@ -35,8 +38,8 @@ namespace CosmicShore.Game.Projectiles
         public override void Detonate(IShip ship)
         {
             base.Detonate(ship);
-            blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team)
-                : ThemeManager.Instance.GetTeamBlockMaterial(Ship.ShipStatus.Team);
+            blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team)
+                : _themeManagerData.GetTeamBlockMaterial(Ship.ShipStatus.Team);
 
             baseBlockScale.z *= depthScale.Value;
             maxRadius *= depthScale.Value;

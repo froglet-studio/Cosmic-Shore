@@ -44,5 +44,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e31df9cb6c21bb24095af6f1262f40f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _dataContainer: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   BaseMaterialSet: {fileID: 11400000, guid: 0652043127df97f4aabf86c605b1c049, type: 2}
   ColorSet: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}

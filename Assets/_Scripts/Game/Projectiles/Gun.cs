@@ -25,6 +25,9 @@ namespace CosmicShore.Game.Projectiles
 
         Projectile _projectile;
 
+        [SerializeField]
+        PoolManager _poolManager;
+
         public void Initialize(IShipStatus shipStatus)
         {          
             _shipStatus = shipStatus;
@@ -79,27 +82,27 @@ namespace CosmicShore.Game.Projectiles
                         }
                     }
                     break;
-                default: // Using default to cover single, HexRing, and DoubleHexRing as a single unified pattern
+                default: // Using default to cover single, HexRing, and DoubleHexRing as a single unified pattern . . . all this ring functionality is ready to be restored upon refactor
       
-                    for (int ring = 0; ring <= energy; ring++)
-                    {
-                        // Center point only for the first ring
-                        if (ring == 0)
-                        {
+                    //for (int ring = 0; ring <= energy; ring++)
+                    //{
+                    //    // Center point only for the first ring
+                    //    if (ring == 0)
+                    //    {
                             FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, Vector3.zero, projectileTime, charge, energy);
-                        }
-                        else
-                        {
-                            int projectilesInThisRing = 6 * (ring); // This scales the number of projectiles with the ring number
-                            float angleIncrement = 360f / projectilesInThisRing;
+                    //    }
+                    //    else
+                    //    {
+                    //        int projectilesInThisRing = 6 * (ring); // This scales the number of projectiles with the ring number
+                    //        float angleIncrement = 360f / projectilesInThisRing;
 
-                            for (int i = 0; i < projectilesInThisRing; i++)
-                            {
-                                Vector3 offset = Quaternion.Euler(0, 0, ring%2 * 30 + angleIncrement * i) * transform.right * _sideLength * ring;
-                                FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge, energy);
-                            }
-                        }
-                    }
+                    //        for (int i = 0; i < projectilesInThisRing; i++)
+                    //        {
+                    //            Vector3 offset = Quaternion.Euler(0, 0, ring%2 * 30 + angleIncrement * i) * transform.right * _sideLength * ring;
+                    //            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge, energy);
+                    //        }
+                    //    }
+                    //}
                     break;
             }
 
@@ -128,15 +131,17 @@ namespace CosmicShore.Game.Projectiles
                 Debug.LogError("Gun.FireProjectile - PoolTag is null. Cannot spawn projectile.");
                 return;
             }
-            if (!containerTransform.TryGetComponent(out PoolManager poolManager))
+            
+            Vector3 spawnPosition = transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * _barrelLength);
+            Quaternion rotation = Quaternion.LookRotation(normalizedVelocity);
+
+            if (_poolManager == null)
             {
                 Debug.LogError("Gun.FireProjectile - PoolManager is null. Cannot spawn projectile.");
                 return;
             }
-            Vector3 spawnPosition = transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * _barrelLength);
-            Quaternion rotation = Quaternion.LookRotation(normalizedVelocity);
 
-            var projectileGO = poolManager.SpawnFromPool(poolTag, spawnPosition, rotation);
+            var projectileGO = _poolManager.SpawnFromPool(poolTag, spawnPosition, rotation);
             if (projectileGO == null)
             {
                 Debug.LogError("No projectile gameobject available in pool to spawn!");
@@ -147,7 +152,7 @@ namespace CosmicShore.Game.Projectiles
                 Debug.LogError("Gun.FireProjectile - Failed to spawn projectile from pool. Try increasing pool size!");
                 return;
             }
-            _projectile.Initialize(_team, _shipStatus, charge);
+            _projectile.Initialize(_poolManager, _team, _shipStatus, charge);
             _projectile.transform.localScale = projectileScale * _projectile.InitialScale;
             _projectile.transform.parent = containerTransform;
             _projectile.Velocity = normalizedVelocity * speed + inheritedVelocity;

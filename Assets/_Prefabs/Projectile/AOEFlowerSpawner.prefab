@@ -25,13 +25,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2728798890556433942}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8507666106090082286
 MonoBehaviour:
@@ -50,12 +50,20 @@ MonoBehaviour:
   ExplosionDuration: 2
   ExplosionDelay: 0.2
   shipImpactEffects: 
+  affectSelf: 0
+  destructive: 1
+  devastating: 0
+  shielding: 0
+  Team: 0
+  AnonymousExplosion: 0
   trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
     type: 3}
+  blockScale: {x: 20, y: 10, z: 5}
+  shielded: 1
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   blockCount: 8
   ringCount: 3
   radius: 30
-  blockScale: {x: 20, y: 10, z: 5}
   spawnable: {fileID: 6292995804365306619}
 --- !u!114 &6292995804365306619
 MonoBehaviour:
@@ -69,9 +77,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cffb159dd53eb994cbdbc75e99d20388, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Team: 3
   lastTwoBlocks:
   - {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   - {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
     type: 3}
   blockScale: {x: 1, y: 2, z: 3}
+  depth: 6

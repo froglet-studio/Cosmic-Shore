@@ -6,6 +6,9 @@ namespace CosmicShore.Core
 {
     public class BlockTeamManager : MonoBehaviour
     {
+        [Header("Data Containers")]
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
         private TrailBlock trailBlock;
         private MaterialPropertyAnimator materialAnimator;
         private Teams currentTeam = Teams.Unassigned;
@@ -30,7 +33,16 @@ namespace CosmicShore.Core
         {
             trailBlock = GetComponent<TrailBlock>();
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
+        }
+
+        private void OnEnable()
+        {
             OnTeamChanged += HandleTeamChange;
+        }
+
+        private void OnDisable()
+        {
+            OnTeamChanged -= HandleTeamChange;
         }
 
         public void SetInitialTeam(Teams team)
@@ -39,8 +51,8 @@ namespace CosmicShore.Core
             {
                 Team = team;
                 materialAnimator.UpdateMaterial(
-                    ThemeManager.Instance.GetTeamTransparentBlockMaterial(team),
-                    ThemeManager.Instance.GetTeamBlockMaterial(team)
+                    _themeManagerData.GetTeamTransparentBlockMaterial(team),
+                    _themeManagerData.GetTeamBlockMaterial(team)
                 );
             }
         }
@@ -86,29 +98,29 @@ namespace CosmicShore.Core
             if (trailBlock.TrailBlockProperties.IsDangerous)
             {
                 materialAnimator.UpdateMaterial(
-                    ThemeManager.Instance.GetTeamTransparentDangerousBlockMaterial(newTeam),
-                    ThemeManager.Instance.GetTeamDangerousBlockMaterial(newTeam)
+                    _themeManagerData.GetTeamTransparentDangerousBlockMaterial(newTeam),
+                    _themeManagerData.GetTeamDangerousBlockMaterial(newTeam)
                 );
             }
             else if (trailBlock.TrailBlockProperties.IsShielded)
             {
                 materialAnimator.UpdateMaterial(
-                    ThemeManager.Instance.GetTeamTransparentShieldedBlockMaterial(newTeam),
-                    ThemeManager.Instance.GetTeamShieldedBlockMaterial(newTeam)
+                    _themeManagerData.GetTeamTransparentShieldedBlockMaterial(newTeam),
+                    _themeManagerData.GetTeamShieldedBlockMaterial(newTeam)
                 );
             }
             else if (trailBlock.TrailBlockProperties.IsSuperShielded)
             {
                 materialAnimator.UpdateMaterial(
-                    ThemeManager.Instance.GetTeamTransparentSuperShieldedBlockMaterial(newTeam),
-                    ThemeManager.Instance.GetTeamSuperShieldedBlockMaterial(newTeam)
-                );
+                    _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(newTeam),
+                    _themeManagerData.GetTeamSuperShieldedBlockMaterial(newTeam)
+                );  
             }
             else
             {
                 materialAnimator.UpdateMaterial(
-                    ThemeManager.Instance.GetTeamTransparentBlockMaterial(newTeam),
-                    ThemeManager.Instance.GetTeamBlockMaterial(newTeam)
+                    _themeManagerData.GetTeamTransparentBlockMaterial(newTeam),
+                    _themeManagerData.GetTeamBlockMaterial(newTeam)
                 );
             }
         }

@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] private bool devastating = false;
         [SerializeField] bool shielding = false;
 
-        protected static GameObject container;
+        protected GameObject container;
 
         // Material and Team
         [HideInInspector] public Material Material { get; set; }
