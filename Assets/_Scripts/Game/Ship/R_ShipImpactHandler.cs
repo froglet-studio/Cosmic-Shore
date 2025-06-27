@@ -1,4 +1,5 @@
 using CosmicShore.Game;
+using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models;
 using CosmicShore.Models.Enums;
