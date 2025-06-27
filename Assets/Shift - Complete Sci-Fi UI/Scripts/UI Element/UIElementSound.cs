@@ -24,6 +24,8 @@ namespace Michsky.UI.Shift
 
         void OnEnable()
         {
+            if (!Application.isPlaying)
+                return;
             if (UIManagerAsset == null)
             {
                 try { UIManagerAsset = Resources.Load<UIManager>("Shift UI Manager"); }
@@ -41,6 +43,8 @@ namespace Michsky.UI.Shift
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if (!Application.isPlaying)
+                return;
             if (checkForInteraction == true && sourceButton != null && sourceButton.interactable == false)
                 return;
 
@@ -53,6 +57,8 @@ namespace Michsky.UI.Shift
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (!Application.isPlaying)
+                return;
             if (checkForInteraction == true && sourceButton != null && sourceButton.interactable == false)
                 return;
 

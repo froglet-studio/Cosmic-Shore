@@ -10,10 +10,13 @@ namespace PrimitivePlus
 		private MeshRenderer m_Renderer = null;
 		private Material m_Material = null;
 
-		private void Awake ()
-		{
-			m_Renderer = GetComponent<MeshRenderer>();
-		}
+                private void Awake ()
+                {
+                        if (!Application.isPlaying)
+                                return;
+
+                        m_Renderer = GetComponent<MeshRenderer>();
+                }
 
 		private void OnDestroy()
 		{
@@ -21,17 +24,23 @@ namespace PrimitivePlus
 			m_Renderer = null;
 		}
 
-		public void SetNewMaterial()
-		{
-			m_Material = new Material(m_Renderer.sharedMaterial);
-			m_Renderer.sharedMaterial = m_Material;
-			m_Material.name = "New Material";
-		}
+                public void SetNewMaterial()
+                {
+                        if (!Application.isPlaying)
+                                return;
 
-		public void SetSharedMaterial(Material material)
-		{
-			m_Material = material;
-			m_Renderer.sharedMaterial = m_Material;
-		}
+                        m_Material = new Material(m_Renderer.sharedMaterial);
+                        m_Renderer.sharedMaterial = m_Material;
+                        m_Material.name = "New Material";
+                }
+
+                public void SetSharedMaterial(Material material)
+                {
+                        if (!Application.isPlaying)
+                                return;
+
+                        m_Material = material;
+                        m_Renderer.sharedMaterial = m_Material;
+                }
 	}
 }

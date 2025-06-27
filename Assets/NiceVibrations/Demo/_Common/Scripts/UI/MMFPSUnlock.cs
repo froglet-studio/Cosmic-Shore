@@ -28,6 +28,10 @@ namespace Lofelt.NiceVibrations
         /// </summary>
         protected virtual void OnValidate()
         {
+            if (Application.isPlaying)
+            {
+                return;
+            }
             UpdateSettings();
         }
 

@@ -28,6 +28,8 @@ namespace Michsky.UI.Shift
 
         void OnEnable()
         {
+            if (!Application.isPlaying)
+                return;
             if (UIManagerAsset == null)
             {
                 try { UIManagerAsset = Resources.Load<UIManager>("Shift UI Manager"); }
@@ -37,6 +39,9 @@ namespace Michsky.UI.Shift
 
         void Awake()
         {
+            if (!Application.isPlaying)
+                return;
+
             if (dynamicUpdateEnabled == false)
             {
                 this.enabled = true;
@@ -49,6 +54,9 @@ namespace Michsky.UI.Shift
 
         void LateUpdate()
         {
+            if (!Application.isPlaying)
+                return;
+
             if (UIManagerAsset != null)
             {
                 if (UIManagerAsset.enableDynamicUpdate == true) { dynamicUpdateEnabled = true; }
@@ -61,6 +69,9 @@ namespace Michsky.UI.Shift
 
         void UpdateButton()
         {
+            if (!Application.isPlaying)
+                return;
+
             try
             {
                 if (useCustomColor == false)
