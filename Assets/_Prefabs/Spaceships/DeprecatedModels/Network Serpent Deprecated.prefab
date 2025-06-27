@@ -1742,7 +1742,7 @@ GameObject:
   - component: {fileID: 8870115919996373041}
   - component: {fileID: 5396642229089407685}
   m_Layer: 0
-  m_Name: Network Serpent
+  m_Name: Network Serpent Deprecated
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

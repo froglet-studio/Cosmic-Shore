@@ -891,7 +891,7 @@ GameObject:
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
   m_Layer: 8
-  m_Name: Network Sparrow
+  m_Name: Network Sparrow Deprecated
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

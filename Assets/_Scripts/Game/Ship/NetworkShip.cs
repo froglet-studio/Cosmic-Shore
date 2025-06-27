@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
-using static CosmicShore.Core.Ship;
 
 
 namespace CosmicShore.Game
@@ -55,6 +54,21 @@ namespace CosmicShore.Game
 
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
+        
+        [Serializable]
+        public struct ElementStat
+        {
+            public string StatName;
+            public Element Element;
+
+            public ElementStat(string statName, Element element)
+            {
+                StatName = statName;
+                Element = element;
+            }
+        }
+
+        [SerializeField] List<ElementStat> ElementStats = new();
 
         [SerializeField]
         BoolEventChannelSO onBottomEdgeButtonsEnabled;
@@ -79,14 +93,14 @@ namespace CosmicShore.Game
 
         #region Public Properties
 
-
-        IShipStatus _shipStatus;
+        private IShipStatus _shipStatus;
         public IShipStatus ShipStatus
         {
             get
             {
-                _shipStatus = _shipStatus ?? GetComponent<ShipStatus>();
+                _shipStatus ??= GetComponent<ShipStatus>();
                 _shipStatus.Name = _name;
+                _shipStatus.BoostMultiplier = boostMultiplier;
                 _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
@@ -107,21 +121,6 @@ namespace CosmicShore.Game
 
         float speedModifierDuration = 2f;
 
-        [Serializable]
-        public struct ElementStat
-        {
-            public string StatName;
-            public Element Element;
-
-            public ElementStat(string statName, Element element)
-            {
-                StatName = statName;
-                Element = element;
-            }
-        }
-
-        [SerializeField] List<ElementStat> ElementStats = new();
-
         public override void OnNetworkSpawn()
         {
             if (!IsOwner)
@@ -139,10 +138,6 @@ namespace CosmicShore.Game
                 OnButton3Pressed.OnEventRaised += PerformShipControllerActions;
                 OnButton3Released.OnEventRaised += StopShipControllerActions;
             }
-
-            ShipStatus.ShipTransformer.enabled = IsOwner;
-            ShipStatus.TrailSpawner.ForceStartSpawningTrail();
-            ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
         }
 
         private void Update()
@@ -184,7 +179,7 @@ namespace CosmicShore.Game
             InitializeShipGeometries();
 
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
-            ShipStatus.TrailSpawner.Initialize(this);
+            ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
             if (_nearFieldSkimmer != null)
                 _nearFieldSkimmer.Initialize(this);
@@ -195,7 +190,7 @@ namespace CosmicShore.Game
 
             if (IsOwner)
             {
-                if (!_shipStatus.FollowTarget) ShipStatus.FollowTarget = transform;
+                if (!ShipStatus.FollowTarget) ShipStatus.FollowTarget = transform;
 
                 // TODO - Remove GameCanvas dependency
                 onBottomEdgeButtonsEnabled.RaiseEvent(true);
@@ -208,6 +203,10 @@ namespace CosmicShore.Game
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
             }
+
+            ShipStatus.ShipTransformer.enabled = IsOwner;
+            ShipStatus.TrailSpawner.ForceStartSpawningTrail();
+            ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
 
             OnShipInitialized?.Invoke(ShipStatus);
         }

@@ -257,7 +257,7 @@ GameObject:
   - component: {fileID: 8320379081934294731}
   - component: {fileID: 6913590965691454134}
   m_Layer: 0
-  m_Name: Network Squirrel
+  m_Name: Network Squirrel Deprecated
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

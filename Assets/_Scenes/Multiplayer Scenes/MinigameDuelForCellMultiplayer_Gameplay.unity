@@ -855,6 +855,114 @@ MonoBehaviour:
     type: 2}
   _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
     type: 2}
+--- !u!1001 &961744967
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 216234809729414343, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3324478900
+      objectReference: {fileID: 0}
+    - target: {fileID: 216234809729414343, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 1066882345
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6378184340925308199, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8467004247642496130, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: m_Name
+      value: NetworkShipSpawner
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8467004247642496130, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 961744969}
+  m_SourcePrefab: {fileID: 100100000, guid: abd9b5fbe3d67f8419a6ce6e2791e571, type: 3}
+--- !u!1 &961744968 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8467004247642496130, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+    type: 3}
+  m_PrefabInstance: {fileID: 961744967}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &961744969
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961744968}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acfe33e52a1d81c41abb4173af0785d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  EndOfRoundStatContainers: []
+  nodeGame: 0
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+    type: 2}
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+    type: 2}
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+    type: 2}
 --- !u!1 &1074736316
 GameObject:
   m_ObjectHideFlags: 0
@@ -1422,3 +1530,4 @@ SceneRoots:
   - {fileID: 547474316}
   - {fileID: 507066190}
   - {fileID: 420213768}
+  - {fileID: 961744967}

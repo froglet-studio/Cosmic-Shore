@@ -56,7 +56,7 @@ namespace CosmicShore.Core          // Change it to CosmicShore.Game
         ShipAnimation ShipAnimation { get; }
         ShipCameraCustomizer ShipCameraCustomizer { get; }
         List<GameObject> ShipGeometries { get; set; }
-        Transform ShipTransform { get; set; }
+        Transform ShipTransform { get;}
         ShipTransformer ShipTransformer { get; }
         ShipTypes ShipType { get; set; }
         Silhouette Silhouette { get; }

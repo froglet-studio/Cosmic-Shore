@@ -19,7 +19,6 @@ namespace CosmicShore.Game
         [Header("References")]
         [SerializeField] TrailBlock trailBlock;
         [SerializeField] Skimmer skimmer;
-        [SerializeField, RequireInterface(typeof(IShipStatus))] MonoBehaviour shipStatusInstance;
 
         [Header("Wave Settings")]
         [SerializeField] float initialWavelength = 4f;
@@ -52,9 +51,7 @@ namespace CosmicShore.Game
         public Trail Trail = new Trail();
         readonly Trail Trail2 = new Trail();
 
-        // Ship data
-        // IShip ship;
-        IShipStatus ShipStatus;
+        IShipStatus _shipStatus;
         string ownerId;
 
         // Scaling helpers
@@ -81,9 +78,8 @@ namespace CosmicShore.Game
 
         private void Awake()
         {
-            ShipStatus = shipStatusInstance as IShipStatus;
-            // Ensure ownerId is never null: default to this ship's player UUID
-            ownerId = ShipStatus.Player?.PlayerUUID ?? string.Empty;
+            // Ensure ownerId is never null: default to empty
+            ownerId = string.Empty;
         }
 
         private void OnEnable()
@@ -101,12 +97,14 @@ namespace CosmicShore.Game
         /// <summary>
         /// Initializes and starts spawning.
         /// </summary>
-        public void Initialize(IShip ship)
+        public void Initialize(IShipStatus shipStatus)
         {
+            _shipStatus = shipStatus;
+
             // this.ship = ship;
             waitTime = defaultWaitTime;
             wavelength = initialWavelength;
-            ownerId = ship.ShipStatus.Player.PlayerUUID;
+            ownerId = _shipStatus.Player.PlayerUUID;
             XScaler = minBlockScale;
 
             EnsureContainer();
@@ -178,7 +176,7 @@ namespace CosmicShore.Game
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !ShipStatus.Attached && ShipStatus.Speed > 3f)
+                if (spawnerEnabled && !_shipStatus.Attached && _shipStatus.Speed > 3f)
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {
@@ -192,7 +190,7 @@ namespace CosmicShore.Game
                 }
 
                 // Ensure no NaN or Infinity for delay
-                float raw = ShipStatus.Speed > 0f ? wavelength / ShipStatus.Speed : defaultWaitTime;
+                float raw = _shipStatus.Speed > 0f ? wavelength / _shipStatus.Speed : defaultWaitTime;
                 float clamped = float.IsNaN(raw) || float.IsInfinity(raw)
                     ? defaultWaitTime
                     : Mathf.Clamp(raw, 0f, 3f);
@@ -246,22 +244,22 @@ namespace CosmicShore.Game
 
             // position & rotation
             float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - ShipStatus.Course * offset + ShipStatus.ShipTransform.right * xShift;
-            block.transform.SetPositionAndRotation(pos, ShipStatus.blockRotation);
+            Vector3 pos = transform.position - _shipStatus.Course * offset + _shipStatus.ShipTransform.right * xShift;
+            block.transform.SetPositionAndRotation(pos, _shipStatus.blockRotation);
             block.transform.parent = TrailContainer.transform;
 
             // owner & player
             bool charm = isCharmed && tempShip != null;
-            string creatorId = charm ? ShipStatus.Player.PlayerUUID : ownerId;
+            string creatorId = charm ? _shipStatus.Player.PlayerUUID : ownerId;
             if (string.IsNullOrEmpty(creatorId))
-                creatorId = ShipStatus.Player?.PlayerUUID ?? string.Empty;
+                creatorId = _shipStatus.Player?.PlayerUUID ?? string.Empty;
             block.ownerID = creatorId;
-            block.PlayerName = charm ? ShipStatus.PlayerName : ShipStatus.Team.ToString();
-            block.ChangeTeam(charm ? ShipStatus.Team : ShipStatus.Team);
+            block.PlayerName = charm ? _shipStatus.PlayerName : _shipStatus.Team.ToString();
+            block.ChangeTeam(charm ? _shipStatus.Team : _shipStatus.Team);
 
             // waitTime
             block.waitTime = waitTillOutsideSkimmer
-                ? (skimmer.transform.localScale.z + TrailZScale) / ShipStatus.Speed
+                ? (skimmer.transform.localScale.z + TrailZScale) / _shipStatus.Speed
                 : waitTime;
 
             // shield

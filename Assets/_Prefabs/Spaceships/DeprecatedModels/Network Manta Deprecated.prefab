@@ -1736,7 +1736,7 @@ GameObject:
   - component: {fileID: 3882236086036410899}
   - component: {fileID: 1480538618687078914}
   m_Layer: 0
-  m_Name: Network Manta
+  m_Name: Network Manta Deprecated
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -27,7 +27,7 @@ namespace CosmicShore.Core
         public string Name { get; set; }
         public ShipTypes ShipType { get; set; }
         public Transform FollowTarget { get; set; }
-        public Transform ShipTransform { get; set; }
+        public Transform ShipTransform => Ship.Transform;
         public Teams Team { get; set; }
         public IPlayer Player { get; set; }
         public InputController IputController => Player.InputController;

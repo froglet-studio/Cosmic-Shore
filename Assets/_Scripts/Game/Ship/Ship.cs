@@ -14,20 +14,6 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
-    [Serializable]
-    public struct InputEventShipActionMapping
-    {
-        public InputEvents InputEvent;
-        public List<ShipAction> ShipActions;
-    }
-
-    [Serializable]
-    public struct ResourceEventShipActionMapping
-    {
-        public ResourceEvents ResourceEvent;
-        public List<ShipAction> ClassActions;
-    }
-
     [RequireComponent(typeof(ShipStatus))]
     public class Ship : MonoBehaviour, IShip, IShipHUDController
     {
@@ -38,7 +24,8 @@ namespace CosmicShore.Core
 
         [Header("Ship Meta")]
 
-        [SerializeField] string Name;
+        [FormerlySerializedAs("Name")]
+        [SerializeField] string _name;
 
         [FormerlySerializedAs("ShipType")]
         [SerializeField] ShipTypes _shipType;
@@ -57,20 +44,15 @@ namespace CosmicShore.Core
 
         public IShipHUDView ShipHUDView { get; private set; }
 
-        IShipStatus _shipStatus;
-
+        private IShipStatus _shipStatus;
         public IShipStatus ShipStatus
         {
             get
             {
-                if (_shipStatus == null)
-                {
-                    _shipStatus = GetComponent<ShipStatus>();
-                    _shipStatus.Name = name;
-                    _shipStatus.ShipType = _shipType;
-                    _shipStatus.ShipTransform = transform;
-                }
-                
+                _shipStatus ??= GetComponent<ShipStatus>();
+                _shipStatus.Name = _name;
+                _shipStatus.BoostMultiplier = boostMultiplier;
+                _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
         }
@@ -165,14 +147,6 @@ namespace CosmicShore.Core
             OnButton3Released.OnEventRaised += StopShipControllerActions;
         }
 
-        private void Start()
-        {
-            _shipStatus.Name = name;
-            _shipStatus.ShipType = _shipType;
-            _shipStatus.ShipTransform = transform;
-            _shipStatus.BoostMultiplier = boostMultiplier;
-        }
-
         private void OnDisable()
         {
             OnButton1Pressed.OnEventRaised -= PerformShipControllerActions;
@@ -202,12 +176,12 @@ namespace CosmicShore.Core
             ShipStatus.ShipTransformer.Initialize(this);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             //ShipStatus.AIPilot.Initialize(false);
-            ShipStatus.AIPilot.Initialize(player.Ship.ShipStatus.AIPilot.AutoPilotEnabled);
+            ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.AutoPilotEnabled);
             
             nearFieldSkimmer?.Initialize(this);
             farFieldSkimmer?.Initialize(this);
             ShipStatus.ShipCameraCustomizer.Initialize(this);
-            ShipStatus.TrailSpawner.Initialize(this);
+            ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
             // if (ShipStatus.AIPilot.AutoPilotEnabled) return;
             Debug.Log($"<color=blue> Ai Pilot value {ShipStatus.AutoPilotEnabled}");
@@ -584,5 +558,19 @@ namespace CosmicShore.Core
         {
             PerformButtonActions(buttonNumber);
         }
+    }
+
+    [Serializable]
+    public struct InputEventShipActionMapping
+    {
+        public InputEvents InputEvent;
+        public List<ShipAction> ShipActions;
+    }
+
+    [Serializable]
+    public struct ResourceEventShipActionMapping
+    {
+        public ResourceEvents ResourceEvent;
+        public List<ShipAction> ClassActions;
     }
 }

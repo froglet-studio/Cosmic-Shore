@@ -1331,7 +1331,7 @@ GameObject:
   - component: {fileID: 3953285837003103147}
   - component: {fileID: 5343762772415447132}
   m_Layer: 0
-  m_Name: Network Rhino
+  m_Name: Network Rhino Deprecated
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

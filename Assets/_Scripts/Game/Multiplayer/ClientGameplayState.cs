@@ -16,7 +16,10 @@ namespace CosmicShore.Game
                 NetworkShip networkShip = NetworkShipClientCache.GetInstanceByClientId(networkPlayer.OwnerClientId);
                 Assert.IsTrue(networkShip, $"Network ship not found for client {networkPlayer.OwnerClientId}!");
 
-                networkPlayer.Setup(networkShip);
+                networkPlayer.Initialize(new IPlayer.InitializeData
+                {
+                    Ship = networkShip
+                });
             }
 
             GameManager.UnPauseGame();

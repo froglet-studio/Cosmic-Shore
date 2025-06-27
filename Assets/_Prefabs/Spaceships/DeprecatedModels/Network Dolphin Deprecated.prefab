@@ -2334,7 +2334,7 @@ GameObject:
   - component: {fileID: 5302681132313811143}
   - component: {fileID: 3731951867288511719}
   m_Layer: 0
-  m_Name: Network Dolphin
+  m_Name: Network Dolphin Deprecated
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
