@@ -10,6 +10,10 @@ namespace CosmicShore.Utilities
 
         protected override void OnValidate()
         {
+            if (Application.isPlaying)
+            {
+                return;
+            }
             if (string.IsNullOrEmpty(m_TagName))
             {
                 m_TagName = name;

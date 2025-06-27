@@ -25,6 +25,10 @@ namespace CosmicShore.Utilities
 
         protected virtual void OnValidate()
         {
+            if (Application.isPlaying)
+            {
+                return;
+            }
             m_InstanceName = name;
 
             if (m_Guid == null || m_Guid.Length == 0)
