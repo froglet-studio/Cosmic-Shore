@@ -1,4 +1,3 @@
-using CosmicShore;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,6 +18,9 @@ public class ShipHUDContainer : MonoBehaviour
     private RectTransform contentTransform;
     public RectTransform ContentTransform => contentTransform;
 
+    private IShipHUDView activeHUDView;
+    public IShipHUDView ActiveHUDView => activeHUDView;
+
     /// <summary>
     /// Finds & instantiates the prefab for this type directly under contentTransform,
     /// then returns its IShipHUDView component.
@@ -36,9 +38,10 @@ public class ShipHUDContainer : MonoBehaviour
         var go = Instantiate(entry.prefab, contentTransform);
         go.name = $"{type}HUD";
 
-        var view = go.GetComponent<IShipHUDView>();
-        if (view == null)
+        if (!go.TryGetComponent<IShipHUDView>(out var view))
             Debug.LogError($"[ShipHUDContainer] Prefab {go.name} has no IShipHUDView!");
+
+        activeHUDView = view;
         return view;
     }
 }

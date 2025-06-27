@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 
@@ -52,7 +53,9 @@ namespace CosmicShore.Core
         [SerializeField] List<GameObject> shipGeometries;
         public List<GameObject> ShipGeometries => shipGeometries;
 
-        [SerializeField] GameObject shipHUD;
+        [SerializeField] internal GameObject shipHUD;
+
+        public IShipHUDView ShipHUDView { get; private set; }
 
         IShipStatus _shipStatus;
 
@@ -210,12 +213,18 @@ namespace CosmicShore.Core
             Debug.Log($"<color=blue> Ai Pilot value {ShipStatus.AutoPilotEnabled}");
             if (!ShipStatus.AutoPilotEnabled /*&& !ShipStatus.AIPilot*/)
             {
+                if (SceneManager.GetActiveScene().name == "Menu_Main")  // this is a temp feature we will be changing this later
+                {
+                    return;
+                }
+
                 Debug.Log("Showing UI for player");
                 if (shipHUD != null)
                 {
                     shipHUD.TryGetComponent(out ShipHUDContainer container);
                     var hudView = container.Show(_shipType);
                     hudView?.Initialize(this);
+                    ShipHUDView = hudView;
                 }
             }
             /*if (shipHUD)

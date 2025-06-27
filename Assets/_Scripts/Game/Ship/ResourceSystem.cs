@@ -14,7 +14,7 @@ namespace CosmicShore.Core
         public event ResourceUpdateDelegate OnResourceChange;
 
         [SerializeField] public string Name;
-        [SerializeField] public ResourceDisplay Display;
+        [HideInInspector] public ResourceDisplay Display;
 
         [HideInInspector] public float initialResourceGainRate;
 
@@ -53,10 +53,38 @@ namespace CosmicShore.Core
             {
                 resource.initialResourceGainRate = resource.resourceGainRate;
             }
+
+       
         }
 
         IEnumerator Start()
         {
+            var ship = GetComponent<Ship>();
+            if (ship != null && ship.shipHUD != null)
+            {
+                IShipHUDView hudView = ship.ShipHUDView;
+                if (hudView != null)
+                {
+                    for (int i = 0; i < Resources.Count; i++)
+                    {
+                        var resource = Resources[i];
+                        var display = hudView.GetResourceDisplay(resource.Name);
+                        if (display != null)
+                        {
+                            RegisterDisplay(i, display);
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"No ResourceDisplay found for resource: {resource.Name}");
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.Log($"<color=red>No Ship Hud View Found</color>");
+                }
+            }
+
             yield return new WaitForSeconds(.5f);
 
             foreach (var resource in Resources)
@@ -172,6 +200,30 @@ namespace CosmicShore.Core
         public void IncrementLevel(Element element)
         {
             AdjustLevel(element, .1f);
+        }
+
+        /// <summary>
+        /// Call this right after you instantiate a ResourceDisplay prefab
+        /// so that Resource.CurrentAmount updates drive the UI.
+        /// </summary>
+        public void RegisterDisplay(int resourceIndex, ResourceDisplay display)
+        {
+            if (resourceIndex < 0 || resourceIndex >= Resources.Count)
+            {
+                Debug.LogWarning($"Invalid resource index: {resourceIndex}");
+                return;
+            }
+
+            var resource = Resources[resourceIndex];
+            resource.Display = display;
+
+            // If you want to push the current value immediately:
+            display.UpdateDisplay(resource.CurrentAmount);
+
+            // And (optionally) subscribe so you don’t rely on resource.Display inside the setter:
+            resource.OnResourceChange += display.UpdateDisplay;
+
+            Debug.Log($"Registerd Display{resource.Name}");
         }
 
         /// <summary>

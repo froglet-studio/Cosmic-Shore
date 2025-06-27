@@ -2517,7 +2517,7 @@ MonoBehaviour:
     maxAmount: 1
     initialAmount: 0.3
   - Name: Boost
-    Display: {fileID: 2553271111498879201}
+    Display: {fileID: 0}
     initialResourceGainRate: 0
     resourceGainRate: 0.1
     maxAmount: 1
@@ -3123,6 +3123,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5928382658856804067}
     m_Modifications:
+    - target: {fileID: 5781356768469314803, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7883774110713613109, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
       propertyPath: m_Pivot.x
@@ -3228,23 +3233,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: ShipHUDContainer
       objectReference: {fileID: 0}
+    - target: {fileID: 9167689459384443984, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 5781356768469314803, guid: 522a0b0de3eb7b64d8c6e0e35377de5f, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 522a0b0de3eb7b64d8c6e0e35377de5f, type: 3}
---- !u!114 &2553271111498879201 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
-    type: 3}
-  m_PrefabInstance: {fileID: 1057105632154500541}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!224 &7188691891492468360 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7883774110713613109, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,

@@ -1,6 +1,13 @@
-using CosmicShore;
+using CosmicShore.Game.UI;
 using UnityEngine;
 using UnityEngine.UI;
+
+[System.Serializable]
+public struct ResourceDisplayRef
+{
+    public string ResourceName;             
+    public ResourceDisplay Display;         
+}
 
 public class ShipHUDView : MonoBehaviour, IShipHUDView
 {
@@ -8,13 +15,14 @@ public class ShipHUDView : MonoBehaviour, IShipHUDView
 
     [SerializeField] private GameObject _trailBlock;
     [SerializeField] private ShipTypes hudType;
+    [SerializeField] private ResourceDisplayRef[] resourceDisplays;
 
     // --- Serpent Variant ---
     [SerializeField] private Button serpentBoostButton;
     [SerializeField] private Button serpentWallDisplayButton;
 
     // --- Dolphin Variant ---
-    [SerializeField] private Button dolphinBoostButton;
+    [SerializeField] private Image dolphinBoostFeedback;
 
     // --- Manta Variant ---
     [SerializeField] private Button mantaBoostButton;
@@ -22,14 +30,20 @@ public class ShipHUDView : MonoBehaviour, IShipHUDView
 
 
     // --- Rhino Variant ---
-    [SerializeField] private Button rhinoBoostButton;
+    [SerializeField] private Image rhinoBoostFeedback;
 
     // --- Squirrel Variant ---
-    [SerializeField] private Button squirrelBoostButton;
+    [SerializeField] private Image squirrelBoostDisplay;
 
     // --- Sparrow Variant ---
     [SerializeField] private Button sparrowBoostButton;
 
+    public ResourceDisplay GetResourceDisplay(string name)
+    {
+        foreach (var rd in resourceDisplays)
+            if (rd.ResourceName == name) return rd.Display;
+        return null;
+    }
 
     public void Initialize(IShipHUDController controller)
     {
@@ -45,20 +59,19 @@ public class ShipHUDView : MonoBehaviour, IShipHUDView
                     serpentWallDisplayButton.onClick.AddListener(() => controller.OnButtonPressed(2));
                 break;
             case ShipTypes.Dolphin:
-                if (dolphinBoostButton != null)
-                    dolphinBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
+                //if (dolphinBoostButton != null)
+                //    dolphinBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
                 break;
             case ShipTypes.Manta:
                 if (mantaBoostButton != null)
                     mantaBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
                 break;
             case ShipTypes.Rhino:
-                if (rhinoBoostButton != null)
-                    rhinoBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
+                //if (rhinoBoostButton != null)
+                //    rhinoBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
                 break;
             case ShipTypes.Squirrel:
-                if (squirrelBoostButton != null)
-                    squirrelBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
+          
                 break;
             case ShipTypes.Sparrow:
                 if (sparrowBoostButton != null)
@@ -72,7 +85,7 @@ public class ShipHUDView : MonoBehaviour, IShipHUDView
         // Clean up ALL listeners for ALL buttons (optional but safest)
         if (serpentBoostButton != null) serpentBoostButton.onClick.RemoveAllListeners();
         if (serpentWallDisplayButton != null) serpentWallDisplayButton.onClick.RemoveAllListeners();
-        if (dolphinBoostButton != null) dolphinBoostButton.onClick.RemoveAllListeners();
+        //if (dolphinBoostButton != null) dolphinBoostButton.onClick.RemoveAllListeners();
         // ...repeat for all variant buttons
     }
 }

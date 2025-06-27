@@ -69,6 +69,14 @@ public class ShipHUDViewInspector : Editor
             );
         });
 
+        DrawSection("Resource Displays", sectionGreen, () =>
+        {
+            EditorGUILayout.PropertyField(
+                serializedObject.FindProperty("resourceDisplays"),
+                new GUIContent("Resource Displays")
+            );
+        });
+
         // Variant section with dynamic color and label
         DrawSection(variantName + " Buttons", variantColor, () =>
         {
@@ -86,8 +94,8 @@ public class ShipHUDViewInspector : Editor
                     break;
                 case ShipTypes.Dolphin:
                     EditorGUILayout.PropertyField(
-                        serializedObject.FindProperty("dolphinBoostButton"),
-                        new GUIContent("Boost Button")
+                        serializedObject.FindProperty("dolphinBoostFeedback"),
+                        new GUIContent("Boost Feedback")
                     );
                     break;
                 case ShipTypes.Manta:
@@ -99,14 +107,14 @@ public class ShipHUDViewInspector : Editor
                     break;
                 case ShipTypes.Rhino:
                     EditorGUILayout.PropertyField(
-                        serializedObject.FindProperty("rhinoBoostButton"),
-                        new GUIContent("Boost Button")
+                        serializedObject.FindProperty("rhinoBoostFeedback"),
+                        new GUIContent("Boost Feedback")
                     );
                     break;
                 case ShipTypes.Squirrel:
                     EditorGUILayout.PropertyField(
-                        serializedObject.FindProperty("squirrelBoostButton"),
-                        new GUIContent("Boost Button")
+                        serializedObject.FindProperty("squirrelBoostDisplay"),
+                        new GUIContent("Boost Display")
                     );
                     break;
                 case ShipTypes.Sparrow:
