@@ -13,12 +13,12 @@ namespace CosmicShore.Game
         {
             foreach (NetworkPlayer networkPlayer in NetworkPlayer.NppList)
             {
-                NetworkShip networkShip = NetworkShipClientCache.GetInstanceByClientId(networkPlayer.OwnerClientId);
+                R_ShipController networkShip = NetworkShipClientCache.GetInstanceByClientId(networkPlayer.OwnerClientId);
                 Assert.IsTrue(networkShip, $"Network ship not found for client {networkPlayer.OwnerClientId}!");
 
                 networkPlayer.Initialize(new IPlayer.InitializeData
                 {
-                    Ship = networkShip
+                    Ship = networkShip,
                 });
             }
 

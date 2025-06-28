@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using UnityEngine;
 
 namespace CosmicShore
@@ -7,10 +8,12 @@ namespace CosmicShore
     {
         [SerializeField] float radius = 20f;
         float constant;
-        [SerializeField] Ship ship;
+
+        [RequireInterface(typeof(IShipStatus))]
+        [SerializeField] MonoBehaviour shipInstance;
         [SerializeField] Transform gunFocus;
 
-        IInputStatus InputStatus => ship.InputStatus;
+        IInputStatus InputStatus => (shipInstance as IShipStatus).InputStatus;
 
         void Start()
         {

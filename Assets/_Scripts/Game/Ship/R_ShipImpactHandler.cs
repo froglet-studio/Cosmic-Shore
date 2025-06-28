@@ -1,12 +1,11 @@
-using CosmicShore.Game;
+using CosmicShore.Core;
+using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
-using CosmicShore.Models;
-using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     /// <summary>
     /// Handles crystal and trail block effects for a ship.
@@ -15,6 +14,7 @@ namespace CosmicShore.Core
     {
         [Header("Impact Settings")]
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
         [SerializeField] float minExplosionScale = 50f;
         [SerializeField] float maxExplosionScale = 400f;
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
@@ -29,9 +29,9 @@ namespace CosmicShore.Core
 
         const float speedModifierDuration = 2f;
 
-        IShip _ship;
+        IShipStatus _shipStatus;
 
-        public void Initialize(IShip ship) => _ship = ship;
+        public void Initialize(IShipStatus ship) => _shipStatus = ship;
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
@@ -40,37 +40,37 @@ namespace CosmicShore.Core
                 switch (effect)
                 {
                     case CrystalImpactEffects.PlayHaptics:
-                        if (!_ship.ShipStatus.AutoPilotEnabled)
+                        if (!_shipStatus.AutoPilotEnabled)
                             HapticController.PlayHaptic(HapticType.CrystalCollision);
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        aoeExplosion.MaxScale = _ship.ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
-                            ? Mathf.Lerp(minExplosionScale, maxExplosionScale, _ship.ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount)
+                        aoeExplosion.MaxScale = _shipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
+                            ? Mathf.Lerp(minExplosionScale, maxExplosionScale, _shipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount)
                             : maxExplosionScale;
-                        aoeExplosion.Detonate(_ship);
+                        aoeExplosion.Detonate(_shipStatus.Ship);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
-                        _ship.ShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element);
+                        _shipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element);
                         break;
                     case CrystalImpactEffects.FillCharge:
-                        _ship.ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, crystalProperties.fuelAmount);
+                        _shipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, crystalProperties.fuelAmount);
                         break;
                     case CrystalImpactEffects.Boost:
-                        _ship.ShipStatus.ShipTransformer.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
+                        _shipStatus.ShipTransformer.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
                         break;
                     case CrystalImpactEffects.DrainAmmo:
-                        _ship.ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
-                            -_ship.ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
+                        _shipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
+                            -_shipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
                         break;
                     case CrystalImpactEffects.GainOneThirdMaxAmmo:
-                        _ship.ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
-                            _ship.ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 3f);
+                        _shipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
+                            _shipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 3f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
-                        _ship.ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
-                            _ship.ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
+                        _shipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
+                            _shipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
                 }
             }
@@ -83,14 +83,14 @@ namespace CosmicShore.Core
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.PlayHaptics:
-                        if (!_ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);
+                        if (!_shipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);
                         break;
                     case TrailBlockImpactEffects.DrainHalfAmmo:
-                        _ship.ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
-                            -_ship.ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 2f);
+                        _shipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
+                            -_shipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
-                        _ship.ShipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                        _shipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         break;
@@ -98,40 +98,40 @@ namespace CosmicShore.Core
                         break;
                     case TrailBlockImpactEffects.OnlyBuffSpeed:
                         if (trailBlockProperties.speedDebuffAmount > 1)
-                            _ship.ShipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                            _shipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.GainResourceByVolume:
-                        _ship.ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, blockChargeChange);
+                        _shipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, blockChargeChange);
                         break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
-                        _ship.ShipStatus.GunsActive = true;
+                        _shipStatus.GunsActive = true;
                         break;
                     case TrailBlockImpactEffects.GainResource:
-                        _ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, blockChargeChange);
+                        _shipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, blockChargeChange);
                         break;
                     case TrailBlockImpactEffects.Bounce:
                         var cross = Vector3.Cross(transform.forward, trailBlockProperties.trailBlock.transform.forward);
                         var normal = Quaternion.AngleAxis(90, cross) * trailBlockProperties.trailBlock.transform.forward;
                         var reflectForward = Vector3.Reflect(transform.forward, normal);
                         var reflectUp = Vector3.Reflect(transform.up, normal);
-                        _ship.ShipStatus.ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
-                        _ship.ShipStatus.ShipTransformer.ModifyVelocity((transform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5,
+                        _shipStatus.ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
+                        _shipStatus.ShipTransformer.ModifyVelocity((transform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5,
                             Time.deltaTime * 15);
                         break;
                     case TrailBlockImpactEffects.Redirect:
-                        _ship.ShipStatus.ShipTransformer.GentleSpinShip(.5f * transform.forward + .5f * (UnityEngine.Random.value < 0.5f ? -1f : 1f) * transform.right,
+                            _shipStatus.ShipTransformer.GentleSpinShip(.5f * transform.forward + .5f * (UnityEngine.Random.value < 0.5f ? -1f : 1f) * transform.right,
                             transform.up, 1);
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        trailBlockProperties.trailBlock.Damage(_ship.ShipStatus.Course * _ship.ShipStatus.Speed * Inertia,
-                            _ship.ShipStatus.Team, _ship.ShipStatus.Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(_shipStatus.Course * _shipStatus.Speed * Inertia,
+                            _shipStatus.Team, _shipStatus.Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.FeelDanger:
-                        if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != _ship.ShipStatus.Team)
+                        if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != _shipStatus.Team)
                         {
                             HapticController.PlayHaptic(HapticType.FakeCrystalCollision);
-                            _ship.ShipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, 1.5f);
+                            _shipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, 1.5f);
                         }
                         break;
                     case TrailBlockImpactEffects.Steal:
@@ -156,8 +156,8 @@ namespace CosmicShore.Core
         {
             if (trailBlock.Trail != null)
             {
-                _ship.ShipStatus.Attached = true;
-                _ship.ShipStatus.AttachedTrailBlock = trailBlock;
+                _shipStatus.Attached = true;
+                _shipStatus.AttachedTrailBlock = trailBlock;
             }
         }
     }

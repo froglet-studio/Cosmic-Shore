@@ -1,10 +1,9 @@
-using CosmicShore.Game;
-using CosmicShore.Game.IO;
-using CosmicShore.Models.Enums;
+using CosmicShore.Core;
+using CosmicShore.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     /// <summary>
     /// Component responsible for mapping input and resource events to
@@ -15,26 +14,61 @@ namespace CosmicShore.Core
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
 
+        [SerializeField] InputEventsEventChannelSO OnButton1Pressed;
+        [SerializeField] InputEventsEventChannelSO OnButton1Released;
+        [SerializeField] InputEventsEventChannelSO OnButton2Pressed;
+        [SerializeField] InputEventsEventChannelSO OnButton2Released;
+        [SerializeField] InputEventsEventChannelSO OnButton3Pressed;
+        [SerializeField] InputEventsEventChannelSO OnButton3Released;
+        
         readonly Dictionary<InputEvents, List<ShipAction>> _shipControlActions = new();
         readonly Dictionary<ResourceEvents, List<ShipAction>> _classResourceActions = new();
+        readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
+        readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
 
-        IShip _ship;
+        IShipStatus _shipStatus;
 
-        public void Initialize(IShip ship)
+        public void SubscribeEvents()
         {
-            _ship = ship;
-            ShipHelper.InitializeShipControlActions(ship, _inputEventShipActions, _shipControlActions);
-            ShipHelper.InitializeClassResourceActions(ship, _resourceEventClassActions, _classResourceActions);
+            OnButton1Pressed.OnEventRaised += PerformShipControllerActions;
+            OnButton1Released.OnEventRaised += StopShipControllerActions;
+            OnButton2Pressed.OnEventRaised += PerformShipControllerActions;
+            OnButton2Released.OnEventRaised += StopShipControllerActions;
+            OnButton3Pressed.OnEventRaised += PerformShipControllerActions;
+            OnButton3Released.OnEventRaised += StopShipControllerActions;
         }
 
-        public void Perform(InputEvents ev)
+        public void UnsubscribeEvents()
         {
-            ShipHelper.PerformShipControllerActions(ev, out _, _shipControlActions);
+            OnButton1Pressed.OnEventRaised -= PerformShipControllerActions;
+            OnButton1Released.OnEventRaised -= StopShipControllerActions;
+            OnButton2Pressed.OnEventRaised -= PerformShipControllerActions;
+            OnButton2Released.OnEventRaised -= StopShipControllerActions;
+            OnButton3Pressed.OnEventRaised -= PerformShipControllerActions;
+            OnButton3Released.OnEventRaised -= StopShipControllerActions;
         }
 
-        public void Stop(InputEvents ev)
+        public void Initialize(IShipStatus shipStatus)
         {
-            ShipHelper.StopShipControllerActions(ev, _shipControlActions);
+            _shipStatus = shipStatus;
+            ShipHelper.InitializeShipControlActions(shipStatus, _inputEventShipActions, _shipControlActions);
+            ShipHelper.InitializeClassResourceActions(shipStatus, _resourceEventClassActions, _classResourceActions);
         }
+
+        public void PerformShipControllerActions(InputEvents controlType)
+        {
+            ShipHelper.PerformShipControllerActions(controlType, _inputAbilityStartTimes, _shipControlActions);
+        }
+
+        public void StopShipControllerActions(InputEvents controlType)
+        {
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.AbilityActivated(_shipStatus.Team, _shipStatus.Player.PlayerName, controlType,
+                    Time.time - _inputAbilityStartTimes[controlType]);
+
+            ShipHelper.StopShipControllerActions(controlType, _shipControlActions);
+        }
+
+        public bool HasAction(InputEvents inputEvent) => _shipControlActions.ContainsKey(inputEvent);
     }
 }

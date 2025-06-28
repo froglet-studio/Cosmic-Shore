@@ -1,12 +1,13 @@
-﻿using CosmicShore.Game;
+﻿using CosmicShore.Core;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     /// <remarks>
     /// Keep this class as monobehaviour, 
@@ -21,8 +22,13 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(ShipAnimation))]
     public class ShipStatus : MonoBehaviour, IShipStatus
     {
+        public event Action<IShipStatus> OnShipInitialized;
+
         [SerializeField, RequireInterface(typeof(IShip))]
         MonoBehaviour shipInstance;
+
+        [SerializeField] 
+        ShipHUDContainer shipHUDContainer;
 
         public string Name { get; set; }
         public ShipTypes ShipType { get; set; }
@@ -34,11 +40,14 @@ namespace CosmicShore.Core
         public IInputStatus InputStatus => Player.InputController.InputStatus;
         public Material AOEExplosionMaterial { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
+        public Material ShipMaterial { get; set; }
         public Material SkimmerMaterial { get; set; }
         public SO_Captain Captain { get; set; }
         public CameraManager CameraManager { get; set; }
         public List<GameObject> ShipGeometries { get; set; }
         public TrailBlock AttachedTrailBlock { get; set; }
+        public ShipHUDContainer ShipHUDContainer => shipHUDContainer;
+        public IShipHUDView ShipHUDView { get; set; }
 
         public IShip Ship
         {
@@ -166,7 +175,6 @@ namespace CosmicShore.Core
 
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
-
 
         public void Reset()
         {

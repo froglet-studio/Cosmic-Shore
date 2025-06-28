@@ -1,7 +1,7 @@
-using CosmicShore.Game;
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     /// <summary>
     /// Utility component for applying ship specific customisation such as
@@ -9,33 +9,42 @@ namespace CosmicShore.Core
     /// </summary>
     public class R_ShipCustomization : MonoBehaviour
     {
-        IShip _ship;
+        [SerializeField]
+        List<GameObject> _shipGeometries;
 
-        public void Initialize(IShip ship) => _ship = ship;
+        IShipStatus _shipStatus;
 
-        public void SetShipMaterial(Material material)
+        public void Initialize(IShipStatus shipStatus)
         {
-            ShipHelper.ApplyShipMaterial(material, _ship.ShipStatus.ShipGeometries);
+            if (!TryPassNullChecks(shipStatus))
+                return;
+
+            _shipStatus = shipStatus;
+
+            if (_shipStatus.ShipGeometries == null || _shipStatus.ShipGeometries.Count == 0)
+                _shipStatus.ShipGeometries = _shipGeometries;
+            else
+                _shipStatus.ShipGeometries.AddRange(_shipGeometries);
+
+            ApplyShipMaterial(_shipStatus.ShipMaterial);
         }
 
-        public void SetBlockSilhouettePrefab(GameObject prefab)
-        {
-            _ship.ShipStatus.Silhouette?.SetBlockPrefab(prefab);
-        }
+        void ApplyShipMaterial(Material material) =>
+            ShipHelper.ApplyShipMaterial(material, _shipGeometries);
 
-        public void SetAOEExplosionMaterial(Material material)
+        bool TryPassNullChecks(IShipStatus shipStatus)
         {
-            _ship.ShipStatus.AOEExplosionMaterial = material;
-        }
-
-        public void SetAOEConicExplosionMaterial(Material material)
-        {
-            _ship.ShipStatus.AOEConicExplosionMaterial = material;
-        }
-
-        public void SetSkimmerMaterial(Material material)
-        {
-            _ship.ShipStatus.SkimmerMaterial = material;
+            if (shipStatus == null)
+            {
+                Debug.LogError("ShipStatus is null. Cannot initialize R_ShipCustomization.");
+                return false;
+            }
+            if (_shipGeometries == null || _shipGeometries.Count == 0)
+            {
+                Debug.LogError("Ship geometries are not set. Cannot apply ship material.");
+                return false;
+            }
+            return true;
         }
     }
 }

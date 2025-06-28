@@ -33,7 +33,7 @@ namespace CosmicShore
         [SerializeField] bool swingBlocks;
         #endregion
 
-        GameObject blockPrefab; // Prefab for the blockImages
+        public GameObject BlockPrefab { get; private set; }
         private GameObject[,] blockPool;
         private int poolSize;
 
@@ -92,7 +92,7 @@ namespace CosmicShore
 
         public void SetBlockPrefab(GameObject block)
         {
-            blockPrefab = block;
+            BlockPrefab = block;
         }
 
         float dotProduct = .9999f;
@@ -154,7 +154,7 @@ namespace CosmicShore
                 
                 for (int j = 0; j < 2; j++)
                 {
-                    GameObject newBlock = Instantiate(blockPrefab, _trailDisplayContainer.transform);
+                    GameObject newBlock = Instantiate(BlockPrefab, _trailDisplayContainer.transform);
                     newBlock.transform.SetParent(tempContainer.transform, false);
                     newBlock.transform.parent.localPosition = new Vector3(-i * trailSpawner.MinWaveLength * worldToUIScale +
                         (((RectTransform)_trailDisplayContainer).rect.width/2), 0, 0);

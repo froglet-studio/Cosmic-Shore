@@ -1,4 +1,5 @@
 
+using CosmicShore.Game;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -10,6 +11,7 @@ namespace CosmicShore.Core
         Backward = -1,
     }
 
+    [RequireComponent(typeof(IShipStatus))]
     public class TrailFollower : MonoBehaviour
     {
         int attachedBlockIndex;
@@ -30,12 +32,12 @@ namespace CosmicShore.Core
         public bool IsAttached { get { return attachedTrail != null; } }
         public TrailBlock AttachedTrailBlock { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
 
-        ShipStatus shipData;
+        IShipStatus shipData;
 
         void Start()
         {
             // TODO: find a better way of setting team that doesn't assume a ship
-            shipData = GetComponent<ShipStatus>();
+            shipData = GetComponent<IShipStatus>();
             team = shipData.Team;
         }
 

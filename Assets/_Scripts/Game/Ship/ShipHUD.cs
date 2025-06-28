@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using CosmicShore.Utilities;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ namespace CosmicShore
 {
     public class ShipHUD : MonoBehaviour // TODO: remove this class (unneeded) 
     {
-        [SerializeField] Ship ship;
+        [SerializeField] R_ShipBase ship;
 
         [SerializeField]
         ShipHUDEventChannelSO onShipHUDInitialized;

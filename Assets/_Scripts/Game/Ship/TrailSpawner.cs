@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
@@ -8,7 +7,6 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [RequireComponent(typeof(ShipStatus))]
     public class TrailSpawner : MonoBehaviour
     {
         public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);

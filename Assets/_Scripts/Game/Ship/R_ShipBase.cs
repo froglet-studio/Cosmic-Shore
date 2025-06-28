@@ -1,19 +1,15 @@
-using CosmicShore.Game;
-using CosmicShore.Game.IO;
-using CosmicShore.Models;
+using CosmicShore.Core;
 using CosmicShore.Models.Enums;
+using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace CosmicShore.Core
+
+namespace CosmicShore.Game
 {
-    /// <summary>
-    /// Base behaviour for ship implementations.  Logic shared between
-    /// <see cref="Ship"/> and <see cref="NetworkShip"/> should live here.
-    /// </summary>
-    [RequireComponent(typeof(ShipStatus))]
+    [RequireComponent(typeof(IShipStatus))]
     public abstract class R_ShipBase : NetworkBehaviour, IShip
     {
         public event Action<IShipStatus> OnShipInitialized;
@@ -25,15 +21,10 @@ namespace CosmicShore.Core
         [Header("Ship Components")]
         [SerializeField] protected Skimmer nearFieldSkimmer;
         [SerializeField] protected GameObject orientationHandle;
-        [SerializeField] protected List<GameObject> shipGeometries;
 
         [Header("Optional Ship Components")]
         [SerializeField] protected GameObject AOEPrefab;
         [SerializeField] protected Skimmer farFieldSkimmer;
-
-        [Header("Environment Interactions")]
-        [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
-        [SerializeField] protected List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
         [Header("Configuration")]
         [SerializeField] protected int resourceIndex = 0;
@@ -43,9 +34,7 @@ namespace CosmicShore.Core
         [SerializeField] protected bool bottomEdgeButtons = false;
         [SerializeField] protected float Inertia = 70f;
 
-        [SerializeField] protected R_ShipInput shipInput;
 
-        [Header("Elemental Stats")]
         [Serializable]
         public struct ElementStat
         {
@@ -59,6 +48,7 @@ namespace CosmicShore.Core
             }
         }
 
+        [Header("Elemental Stats")]
         [SerializeField] protected List<ElementStat> ElementStats = new();
 
         [Header("Event Channels")]
@@ -69,7 +59,6 @@ namespace CosmicShore.Core
         [SerializeField] protected R_ShipImpactHandler impactHandler;
         [SerializeField] protected R_ShipCustomization customization;
 
-        protected Material shipMaterial;
         protected const float speedModifierDuration = 2f;
 
         protected IShipStatus _shipStatus;
@@ -77,7 +66,7 @@ namespace CosmicShore.Core
         {
             get
             {
-                _shipStatus ??= GetComponent<ShipStatus>();
+                _shipStatus ??= GetComponent<IShipStatus>();
                 _shipStatus.Name = _name;
                 _shipStatus.ShipType = _shipType;
                 _shipStatus.BoostMultiplier = boostMultiplier;
@@ -101,8 +90,6 @@ namespace CosmicShore.Core
             if (farFieldSkimmer != null) farFieldSkimmer.Player = player;
         }
 
-        protected void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, shipGeometries);
-
         public abstract void Initialize(IPlayer player);
 
         public virtual void Teleport(Transform targetTransform) =>
@@ -120,100 +107,24 @@ namespace CosmicShore.Core
             farFieldSkimmer?.gameObject.SetActive(false);
         }
 
-        public virtual void PerformCrystalImpactEffects(CrystalProperties properties)
-        {
-            if (impactHandler != null)
-            {
-                impactHandler.PerformCrystalImpactEffects(properties);
-                return;
-            }
+        public void SetBoostMultiplier(float multiplier) => boostMultiplier = multiplier;
 
-            foreach (var effect in crystalImpactEffects)
-            {
-                switch (effect)
-                {
-                    case CrystalImpactEffects.PlayHaptics:
-                        if (!ShipStatus.AutoPilotEnabled)
-                            HapticController.PlayHaptic(HapticType.CrystalCollision);
-                        break;
-                    case CrystalImpactEffects.AreaOfEffectExplosion:
-                        var aoe = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        aoe.SetPositionAndRotation(transform.position, transform.rotation);
-                        aoe.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
-                            ? Mathf.Lerp(minExplosionScale, maxExplosionScale,
-                                ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount)
-                            : maxExplosionScale;
-                        aoe.Detonate(this);
-                        break;
-                    case CrystalImpactEffects.IncrementLevel:
-                        ShipStatus.ResourceSystem.IncrementLevel(properties.Element);
-                        break;
-                    case CrystalImpactEffects.FillCharge:
-                        ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, properties.fuelAmount);
-                        break;
-                    case CrystalImpactEffects.Boost:
-                        ShipStatus.ShipTransformer.ModifyThrottle(properties.speedBuffAmount, 4 * speedModifierDuration);
-                        break;
-                    case CrystalImpactEffects.DrainAmmo:
-                        ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
-                            -ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
-                        break;
-                    case CrystalImpactEffects.GainOneThirdMaxAmmo:
-                        ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
-                            ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 3f);
-                        break;
-                    case CrystalImpactEffects.GainFullAmmo:
-                        ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
-                            ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
-                        break;
-                }
-            }
-        }
+        public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
 
-        public virtual void SetBoostMultiplier(float multiplier) => boostMultiplier = multiplier;
+        public void SetShipMaterial(Material material) =>
+            ShipStatus.ShipMaterial = material;
 
-        public virtual void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
+        public void SetBlockSilhouettePrefab(GameObject prefab) =>
+            ShipStatus.Silhouette.SetBlockPrefab(prefab);
 
-        public virtual void SetShipMaterial(Material material)
-        {
-            shipMaterial = material;
-            if (customization != null)
-                customization.SetShipMaterial(material);
-            else
-                ShipHelper.ApplyShipMaterial(shipMaterial, shipGeometries);
-        }
+        public void SetAOEExplosionMaterial(Material material) =>
+            ShipStatus.AOEExplosionMaterial = material;
 
-        public virtual void SetBlockSilhouettePrefab(GameObject prefab)
-        {
-            if (customization != null)
-                customization.SetBlockSilhouettePrefab(prefab);
-            else
-                ShipStatus.Silhouette?.SetBlockPrefab(prefab);
-        }
-
-        public virtual void SetAOEExplosionMaterial(Material material)
-        {
-            if (customization != null)
-                customization.SetAOEExplosionMaterial(material);
-            else
-                ShipStatus.AOEExplosionMaterial = material;
-        }
-
-        public virtual void SetAOEConicExplosionMaterial(Material material)
-        {
-            if (customization != null)
-                customization.SetAOEConicExplosionMaterial(material);
-            else
+        public virtual void SetAOEConicExplosionMaterial(Material material) =>
                 ShipStatus.AOEConicExplosionMaterial = material;
-        }
 
-        public virtual void SetSkimmerMaterial(Material material)
-        {
-            if (customization != null)
-                customization.SetSkimmerMaterial(material);
-            else
+        public virtual void SetSkimmerMaterial(Material material) =>
                 ShipStatus.SkimmerMaterial = material;
-        }
 
         public virtual void AssignCaptain(SO_Captain captain)
         {
@@ -227,83 +138,23 @@ namespace CosmicShore.Core
                 ElementStats.Add(new ElementStat(name, element));
         }
 
-        public virtual void PerformTrailBlockImpactEffects(TrailBlockProperties properties)
-        {
-            if (impactHandler != null)
-            {
-                impactHandler.PerformTrailBlockImpactEffects(properties);
-                return;
-            }
+        protected void InvokeShipInitializedEvent() => OnShipInitialized?.Invoke(ShipStatus);
 
-            foreach (var effect in trailBlockImpactEffects)
-            {
-                switch (effect)
-                {
-                    case TrailBlockImpactEffects.PlayHaptics:
-                        if (!ShipStatus.AutoPilotEnabled)
-                            HapticController.PlayHaptic(HapticType.BlockCollision);
-                        break;
-                    case TrailBlockImpactEffects.DrainHalfAmmo:
-                        ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
-                            -ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 2f);
-                        break;
-                    case TrailBlockImpactEffects.DebuffSpeed:
-                        ShipStatus.ShipTransformer.ModifyThrottle(properties.speedDebuffAmount, speedModifierDuration);
-                        break;
-                    case TrailBlockImpactEffects.OnlyBuffSpeed:
-                        if (properties.speedDebuffAmount > 1)
-                            ShipStatus.ShipTransformer.ModifyThrottle(properties.speedDebuffAmount, speedModifierDuration);
-                        break;
-                    case TrailBlockImpactEffects.GainResourceByVolume:
-                        ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, blockChargeChange);
-                        break;
-                    case TrailBlockImpactEffects.Attach:
-                        Attach(properties.trailBlock);
-                        ShipStatus.GunsActive = true;
-                        break;
-                    case TrailBlockImpactEffects.GainResource:
-                        ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, blockChargeChange);
-                        break;
-                    case TrailBlockImpactEffects.Bounce:
-                        var cross = Vector3.Cross(transform.forward, properties.trailBlock.transform.forward);
-                        var normal = Quaternion.AngleAxis(90, cross) * properties.trailBlock.transform.forward;
-                        var reflectForward = Vector3.Reflect(transform.forward, normal);
-                        var reflectUp = Vector3.Reflect(transform.up, normal);
-                        ShipStatus.ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
-                        ShipStatus.ShipTransformer.ModifyVelocity(
-                            (transform.position - properties.trailBlock.transform.position).normalized * 5,
-                            Time.deltaTime * 15);
-                        break;
-                    case TrailBlockImpactEffects.Redirect:
-                        ShipStatus.ShipTransformer.GentleSpinShip(
-                            .5f * transform.forward + .5f * (UnityEngine.Random.value < 0.5f ? -1f : 1f) * transform.right,
-                            transform.up, 1);
-                        break;
-                    case TrailBlockImpactEffects.Explode:
-                        properties.trailBlock.Damage(ShipStatus.Course * ShipStatus.Speed * Inertia,
-                            ShipStatus.Team, ShipStatus.Player.PlayerName);
-                        break;
-                    case TrailBlockImpactEffects.FeelDanger:
-                        if (properties.IsDangerous && properties.trailBlock.Team != ShipStatus.Team)
-                        {
-                            HapticController.PlayHaptic(HapticType.FakeCrystalCollision);
-                            ShipStatus.ShipTransformer.ModifyThrottle(properties.speedDebuffAmount, 1.5f);
-                        }
-                        break;
-                }
-            }
+        public void PerformShipControllerActions(InputEvents controlType)
+        {
+            actionHandler.PerformShipControllerActions(controlType);
         }
 
-        protected void Attach(TrailBlock trailBlock)
+        public void StopShipControllerActions(InputEvents controlType)
         {
-            if (trailBlock && trailBlock.Trail != null)
-            {
-                ShipStatus.Attached = true;
-                ShipStatus.AttachedTrailBlock = trailBlock;
-            }
+            actionHandler.StopShipControllerActions(controlType);
         }
 
-    protected void RaiseInitialized() => OnShipInitialized?.Invoke(ShipStatus);
+        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) =>
+            impactHandler.PerformCrystalImpactEffects(crystalProperties);
+
+        public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties) =>
+            impactHandler.PerformTrailBlockImpactEffects(trailBlockProperties);
     }
 
     [Serializable]

@@ -125,7 +125,9 @@ namespace CosmicShore.Environment.FlowField
 
             if (other.gameObject.IsLayer("Ships"))
             {
-                ship = other.GetComponent<ShipGeometry>().Ship;
+                if (!other.TryGetComponent(out ship))
+                    return;
+
                 if (Team == Teams.None || Team == ship.ShipStatus.Team)
                 {
                     if (shipImpactEffects)

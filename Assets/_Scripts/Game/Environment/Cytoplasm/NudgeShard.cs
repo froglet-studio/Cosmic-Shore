@@ -27,14 +27,10 @@ namespace CosmicShore
         {
             if (other.gameObject.IsLayer("Ships"))
             {
-                if (!other.TryGetComponent(out ShipGeometry shipGeometry))
-                {
+                if (!other.TryGetComponent(out IShipStatus shipStatus))
                     return;
-                }
-                
-                var shipStatus = shipGeometry.Ship.ShipStatus;
-                shipStatus.ShipTransformer.ModifyVelocity(transform.parent.forward * Displacement, Duration);
 
+                shipStatus.ShipTransformer.ModifyVelocity(transform.parent.forward * Displacement, Duration);
 
                 if (shipStatus.ShipType == ShipTypes.Squirrel)
                 {

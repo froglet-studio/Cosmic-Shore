@@ -4,6 +4,7 @@ using System.Collections;
 using CosmicShore.Game.UI;
 using System.Collections.Generic;
 using CosmicShore.Models.Enums;
+using CosmicShore.Game;
 
 namespace CosmicShore.Core
 {
@@ -41,6 +42,8 @@ namespace CosmicShore.Core
         }
     }
 
+
+    [RequireComponent(typeof(IShipStatus))]
     public class ResourceSystem : ElementalShipComponent
     {
         [SerializeField] public List<Resource> Resources;
@@ -59,8 +62,8 @@ namespace CosmicShore.Core
 
         IEnumerator Start()
         {
-            var ship = GetComponent<Ship>();
-            if (ship != null && ship.shipHUD != null)
+            var ship = GetComponent<IShipStatus>();
+            if (ship != null && ship.ShipHUDContainer != null)
             {
                 IShipHUDView hudView = ship.ShipHUDView;
                 if (hudView != null)

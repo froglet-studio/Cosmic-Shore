@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Utility.ClassExtensions
@@ -13,7 +14,7 @@ namespace CosmicShore.Utility.ClassExtensions
 
             return component;
         }
-        
+
         public static T OrNull<T>(this T obj) where T : Object => obj ? obj : null;
 
         public static void DestroyChildren(this GameObject gameObject)
@@ -43,13 +44,27 @@ namespace CosmicShore.Utility.ClassExtensions
         public static bool IsLayer(this GameObject gameObject, string layerName)
         {
             var layer = LayerMask.NameToLayer(layerName);
-            
+
             if (layer == -1)
             {
                 Debug.LogError($"Layer - {layerName} not found.");
             }
 
             return gameObject.layer == layer;
+        }
+
+        /// <summary>
+        /// Tries to fetch a component on this GameObject which implements TInterface.
+        /// </summary>
+        public static bool TryGetInterface<TInterface>(this GameObject go, out TInterface iface)
+            where TInterface : class
+        {
+            iface = go
+                .GetComponents<Component>()    // grab all Components
+                .OfType<TInterface>()          // filter by your interface
+                .FirstOrDefault();             // take the first, or null
+
+            return iface != null;
         }
     }
 }

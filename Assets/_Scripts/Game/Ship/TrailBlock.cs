@@ -201,8 +201,10 @@ namespace CosmicShore.Core
         {
             if (other.gameObject.IsLayer("Ships"))
             {
-                var ship = other.GetComponent<ShipGeometry>()?.Ship;
-                if (ship != null && !ship.ShipStatus.Attached)
+                if (!other.TryGetComponent(out IShip ship))
+                    return;
+
+                if (!ship.ShipStatus.Attached)
                 {
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
                 }

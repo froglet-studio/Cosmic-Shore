@@ -13,7 +13,6 @@ namespace CosmicShore.Game
 
         public IShipStatus ShipStatus { get; }
 
-
         public void Initialize(IPlayer player);
         public void PerformShipControllerActions(InputEvents @event);
         public void StopShipControllerActions(InputEvents @event);

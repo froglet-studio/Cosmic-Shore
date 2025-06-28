@@ -14,7 +14,7 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
-    [RequireComponent(typeof(ShipStatus))]
+    [RequireComponent(typeof(IShipStatus))]
     public class Ship : MonoBehaviour, IShip, IShipHUDController
     {
         public event Action<IShipStatus> OnShipInitialized;
@@ -49,7 +49,7 @@ namespace CosmicShore.Core
         {
             get
             {
-                _shipStatus ??= GetComponent<ShipStatus>();
+                _shipStatus ??= GetComponent<IShipStatus>();
                 _shipStatus.Name = _name;
                 _shipStatus.BoostMultiplier = boostMultiplier;
                 _shipStatus.ShipType = _shipType;
@@ -135,7 +135,6 @@ namespace CosmicShore.Core
         InputEventsEventChannelSO OnButton3Released;
 
         public Transform Transform => transform;
-        public IInputStatus InputStatus => ShipStatus.InputController.InputStatus;
 
         private void OnEnable()
         {
@@ -168,7 +167,6 @@ namespace CosmicShore.Core
             onBottomEdgeButtonsEnabled.RaiseEvent(true);
             // if (bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
 
-            InitializeShipGeometries();
             InitializeShipControlActions();
             InitializeClassResourceActions();
 
@@ -228,9 +226,9 @@ namespace CosmicShore.Core
             if (farFieldSkimmer != null) farFieldSkimmer.Player = player;
         }
 
-        void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, shipGeometries);
-        void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(this, inputEventShipActions, ShipControlActions);
-        void InitializeClassResourceActions() => ShipHelper.InitializeClassResourceActions(this, resourceEventClassActions, ClassResourceActions);
+        void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, inputEventShipActions, ShipControlActions);
+        
+        void InitializeClassResourceActions() => ShipHelper.InitializeClassResourceActions(ShipStatus, resourceEventClassActions, ClassResourceActions);
 
         public void BindElementalFloat(string statName, Element element)
         {

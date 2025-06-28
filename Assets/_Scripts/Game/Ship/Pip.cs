@@ -1,9 +1,10 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using CosmicShore.Utilities;
 using UnityEngine;
 
 
-[RequireComponent(typeof(ShipStatus))]
+[RequireComponent(typeof(IShipStatus))]
 public class Pip : MonoBehaviour
 {
     [SerializeField] Camera pipCamera;
@@ -14,7 +15,7 @@ public class Pip : MonoBehaviour
 
     void Start()
     {
-        ShipStatus shipStatus = GetComponent<ShipStatus>();
+        IShipStatus shipStatus = GetComponent<IShipStatus>();
 
 
         // TODO - remove GameCanvas dependency

@@ -176,8 +176,6 @@ namespace CosmicShore.Game
             SetPlayerToShipStatusAndSkimmers(player);
             SetTeamToShipStatusAndSkimmers(player.Team);
 
-            InitializeShipGeometries();
-
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
@@ -225,16 +223,13 @@ namespace CosmicShore.Game
             if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;
         }
 
-        void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, _shipGeometries);
+        void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, _inputEventShipActions, _shipControlActions);
 
-        void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(this, _inputEventShipActions, _shipControlActions);
-
-        void InitializeClassResourceActions() => ShipHelper.InitializeClassResourceActions(this, _resourceEventClassActions, _classResourceActions);
+        void InitializeClassResourceActions() => ShipHelper.InitializeClassResourceActions(ShipStatus, _resourceEventClassActions, _classResourceActions);
 
         public void PerformShipControllerActions(InputEvents @event)
         {
-            ShipHelper.PerformShipControllerActions(@event, out float time, _shipControlActions);
-            _inputAbilityStartTimes[@event] = time;
+            ShipHelper.PerformShipControllerActions(@event, _inputAbilityStartTimes, _shipControlActions);
         }
 
         public void StopShipControllerActions(InputEvents @event)
@@ -444,9 +439,6 @@ namespace CosmicShore.Game
             ShipStatus.blockRotation = newValue;
         }
 
-        //
-        // Attach and Detach
-        //
         void Attach(TrailBlock trailBlock)
         {
             if (trailBlock.Trail != null)

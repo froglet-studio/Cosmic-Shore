@@ -2,6 +2,7 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Entities;
 using Unity.Multiplayer.Samples.Utilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -22,7 +23,7 @@ namespace CosmicShore.Game
         Transform[] _playerSpawnPoints;
 
         [SerializeField]
-        NetworkShip[] _shipPrefabs;
+        NetworkObject[] _shipPrefabs;
 
         [SerializeField]
         string _mainMenuSceneName = "Menu_Main";
@@ -148,7 +149,7 @@ namespace CosmicShore.Game
             Teams team = networkPlayer.NetTeam.Value;
             ShipTypes shipTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
 
-            NetworkShip prefab = GetPrefab(shipTypeToSpawn);
+            NetworkObject prefab = GetPrefab(shipTypeToSpawn);
             if (prefab == null)
             {
                 Debug.LogError($"SpawnPlayerAndShipForClient: No matching ship prefab found for ship type {shipTypeToSpawn} for client {clientId}.");
@@ -156,7 +157,7 @@ namespace CosmicShore.Game
             }
 
             // Instantiate and spawn the ship.
-            NetworkObject networkShip = Instantiate(prefab).NetworkObject;
+            NetworkObject networkShip = Instantiate(prefab);
             Assert.IsTrue(networkShip != null, $"Matching ship network object for client {clientId} not found!");
             networkShip.SpawnWithOwnership(clientId, true);
             Debug.Log($"Spawned ship for client {clientId} using ship type {shipTypeToSpawn}.");
@@ -204,7 +205,7 @@ namespace CosmicShore.Game
         /// </summary>
         /// <param name="shipTypeToSpawn">The ShipTypes to look for.</param>
         /// <returns>The matching NetworkObject prefab or null if not found.</returns>
-        NetworkShip GetPrefab(ShipTypes shipTypeToSpawn)
+        NetworkObject GetPrefab(ShipTypes shipTypeToSpawn)
         {
             if (_shipPrefabs == null || _shipPrefabs.Length == 0)
             {
@@ -212,7 +213,9 @@ namespace CosmicShore.Game
                 return null;
             }
 
-            return _shipPrefabs.FirstOrDefault(prefab => prefab.ShipStatus.ShipType == shipTypeToSpawn).GetComponent<NetworkShip>();
+            return _shipPrefabs.FirstOrDefault(
+                prefab => prefab.TryGetComponent(out IShip networkShip) && 
+                networkShip.ShipStatus.ShipType == shipTypeToSpawn);
         }
     }
 }

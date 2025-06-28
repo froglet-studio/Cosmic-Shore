@@ -1,23 +1,15 @@
-﻿using CosmicShore.Game;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     /// <summary>
-    /// This class helps in method execution for IShip instances
+    /// This class helps in method execution for IShipStatus instances
     /// </summary>
     public static class ShipHelper
     {
-
-        public static void InitializeShipGeometries(IShip ship, List<GameObject> shipGeometryObjects)
-        {
-            foreach (var shipGeometry in shipGeometryObjects)
-                shipGeometry.AddComponent<ShipGeometry>().Ship = ship;
-        }
-
-        public static void InitializeShipControlActions(IShip ship,
+        public static void InitializeShipControlActions(IShipStatus shipStatus,
             List<InputEventShipActionMapping> inputEventShipActions,
             Dictionary<InputEvents, List<ShipAction>> shipControlActions)
         {
@@ -28,10 +20,10 @@ namespace CosmicShore.Core
                     shipControlActions[inputEventShipAction.InputEvent].AddRange(inputEventShipAction.ShipActions);
 
             foreach (var shipAction in shipControlActions.Keys.SelectMany(key => shipControlActions[key]))
-                shipAction.Initialize(ship);
+                shipAction.Initialize(shipStatus.Ship);
         }
 
-        public static void InitializeClassResourceActions(IShip ship,
+        public static void InitializeClassResourceActions(IShipStatus shipStatus,
             List<ResourceEventShipActionMapping> resourceEventShipActionMappings,
             Dictionary<ResourceEvents, List<ShipAction>> classResourceActions)
         {
@@ -42,28 +34,52 @@ namespace CosmicShore.Core
                     classResourceActions[resourceEventClassAction.ResourceEvent].AddRange(resourceEventClassAction.ClassActions);
 
             foreach (var classAction in classResourceActions.Keys.SelectMany(key => classResourceActions[key]))
-                classAction.Initialize(ship);
+                classAction.Initialize(shipStatus.Ship);
         }
 
         public static void Teleport(Transform shipTransform, Transform targetTransform) => shipTransform.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);
 
-        public static void PerformShipControllerActions(InputEvents @event, out float time, Dictionary<InputEvents, List<ShipAction>> events)
+        public static void PerformShipControllerActions(
+            InputEvents controlType,
+            Dictionary<InputEvents, float> inputAbilityStartTimes,
+            Dictionary<InputEvents, List<ShipAction>> shipControlActions)
         {
-            time = Time.time;
+            inputAbilityStartTimes[controlType] = Time.time;
 
-            if (!events.TryGetValue(@event, out var shipActions)) return;
+            if (!shipControlActions.TryGetValue(controlType, out var shipActions)) return;
 
             foreach (var action in shipActions)
                 action.StartAction();
         }
 
-        public static void StopShipControllerActions(InputEvents @event, Dictionary<InputEvents, List<ShipAction>> events)
+        public static void StopShipControllerActions(InputEvents controlType, Dictionary<InputEvents, List<ShipAction>> shipControlActions)
         {
-            if (events.TryGetValue(@event, out var shipActions))
+            if (shipControlActions.TryGetValue(controlType, out var shipActions))
             {
                 foreach (var action in shipActions)
                     action.StopAction();
             }
+        }
+
+        public static void PerformClassResourceActions(
+            ResourceEvents resourceEvent, 
+            Dictionary<ResourceEvents, float> resourceAbilityStartTimes,
+            Dictionary<ResourceEvents, List<ShipAction>> classResourceActions)
+        {
+            resourceAbilityStartTimes[resourceEvent] = Time.time;
+            if (!classResourceActions.TryGetValue(resourceEvent, out var actions)) return;
+            foreach (var action in actions)
+                action.StartAction();
+        }
+
+        public static void StopClassResourceActions(
+            ResourceEvents resourceEvent,
+            Dictionary<ResourceEvents, float> resourceAbilityStartTimes,
+            Dictionary<ResourceEvents, List<ShipAction>> classResourceActions)
+        {
+            if (!classResourceActions.TryGetValue(resourceEvent, out var actions)) return;
+            foreach (var action in actions)
+                action.StopAction();
         }
 
         public static void ApplyShipMaterial(Material shipMaterial, List<GameObject> shipGeometries)

@@ -74,12 +74,12 @@ namespace CosmicShore.Game.Projectiles
 
                 PerformTrailImpactEffects(trailBlock.TrailBlockProperties);
             }
-            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
+            if (other.TryGetComponent<IShipStatus>(out var shipStatus))
             {
-                if (shipGeometry.Ship.ShipStatus.Team == OwnTeam)
+                if (shipStatus.Team == OwnTeam)
                     return;
 
-                PerformShipImpactEffects(shipGeometry);
+                PerformShipImpactEffects(shipStatus);
             }
         }
 
@@ -136,30 +136,30 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        protected virtual void PerformShipImpactEffects(ShipGeometry shipGeometry)
+        protected virtual void PerformShipImpactEffects(IShipStatus shipStatus)
         {
             foreach (ShipImpactEffects effect in shipImpactEffects)
             {
                 switch (effect)
                 {
                     case ShipImpactEffects.TrailSpawnerCooldown:
-                        shipGeometry.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
-                        shipGeometry.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
+                        shipStatus.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+                        shipStatus.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
                     case ShipImpactEffects.PlayHaptics:
-                        if (!shipGeometry.Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
+                        if (!shipStatus.Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.SpinAround:
-                        shipGeometry.Ship.Transform.localRotation = Quaternion.LookRotation(Velocity);
+                        shipStatus.Ship.Transform.localRotation = Quaternion.LookRotation(Velocity);
                         break;
                     case ShipImpactEffects.Knockback:
-                        shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyVelocity(Velocity * 100,2);
+                        shipStatus.Ship.ShipStatus.ShipTransformer.ModifyVelocity(Velocity * 100,2);
                         break;
                     case ShipImpactEffects.Stun:
-                        shipGeometry.Ship.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 10);
+                        shipStatus.Ship.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 10);
                         break;
                     case ShipImpactEffects.Charm:
-                        shipGeometry.Ship.ShipStatus.TrailSpawner.Charm(ShipStatus, 7);
+                        shipStatus.Ship.ShipStatus.TrailSpawner.Charm(ShipStatus, 7);
                         break;
                 }
             }
