@@ -560,17 +560,4 @@ namespace CosmicShore.Core
         }
     }
 
-    [Serializable]
-    public struct InputEventShipActionMapping
-    {
-        public InputEvents InputEvent;
-        public List<ShipAction> ShipActions;
-    }
-
-    [Serializable]
-    public struct ResourceEventShipActionMapping
-    {
-        public ResourceEvents ResourceEvent;
-        public List<ShipAction> ClassActions;
-    }
 }
