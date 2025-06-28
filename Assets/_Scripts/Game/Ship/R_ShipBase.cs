@@ -103,8 +103,6 @@ namespace CosmicShore.Core
 
         protected void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, shipGeometries);
 
-        protected void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, shipGeometries);
-
         public abstract void Initialize(IPlayer player);
 
         public virtual void Teleport(Transform targetTransform) =>
