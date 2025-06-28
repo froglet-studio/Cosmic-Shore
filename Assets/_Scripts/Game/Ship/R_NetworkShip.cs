@@ -14,115 +14,17 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [RequireComponent(typeof(ShipStatus))]
-    public class R_NetworkShip : NetworkBehaviour, IShip
+    public class R_NetworkShip : R_ShipBase
     {
-        public event Action<IShipStatus> OnShipInitialized;
-
-        [Header("Ship Meta")]
-        [SerializeField] string _name;
-        [SerializeField] ShipTypes _shipType;
-
-        [Header("Ship Components")]
-        [SerializeField] Skimmer _nearFieldSkimmer;
-        [SerializeField] GameObject _orientationHandle;
-        [SerializeField] List<GameObject> _shipGeometries;
-
-        [Header("Optional Ship Components")]
-        [SerializeField] GameObject AOEPrefab;
-        [SerializeField] Skimmer _farFieldSkimmer;
-
-        [SerializeField] int resourceIndex = 0;
-        [SerializeField] int ammoResourceIndex = 0; // TODO: move to an ability system with separate classes
-        [SerializeField] int boostResourceIndex = 0; // TODO: move to an ability system with separate classes
-
-        [Header("Environment Interactions")]
-        [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
-        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
-        [SerializeField] float minExplosionScale = 50; // TODO: depricate "ShowIf" once we adopt modularity
-        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
-        [SerializeField] float maxExplosionScale = 400;
-
-        [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
-        [SerializeField] float blockChargeChange;
-
-        [Header("Configuration")]
-        [SerializeField] float boostMultiplier = 4f; // TODO: Move to ShipController
         public float BoostMultiplier { get => boostMultiplier; set => boostMultiplier = value; }
-
-        [SerializeField] bool _bottomEdgeButtons = false;
-        [SerializeField] float Inertia = 70f;
-
-        [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
-        [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
-        
-        [Serializable]
-        public struct ElementStat
-        {
-            public string StatName;
-            public Element Element;
-
-            public ElementStat(string statName, Element element)
-            {
-                StatName = statName;
-                Element = element;
-            }
-        }
-
-        [SerializeField] List<ElementStat> ElementStats = new();
-
-        [SerializeField]
-        BoolEventChannelSO onBottomEdgeButtonsEnabled;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton1Pressed;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton1Released;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton2Pressed;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton2Released;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton3Pressed;
-
-        [SerializeField]
-        InputEventsEventChannelSO OnButton3Released;
-
-        [Header("Refactored Components")]
-        [SerializeField] R_ShipActionHandler actionHandler;
-        [SerializeField] R_ShipImpactHandler impactHandler;
-        [SerializeField] R_ShipCustomization customization;
 
         #region Public Properties
 
-        private IShipStatus _shipStatus;
-        public IShipStatus ShipStatus
-        {
-            get
-            {
-                _shipStatus ??= GetComponent<ShipStatus>();
-                _shipStatus.Name = _name;
-                _shipStatus.BoostMultiplier = boostMultiplier;
-                _shipStatus.ShipType = _shipType;
-                return _shipStatus;
-            }
-        }
-
-        public Transform Transform => transform;
-
         #endregion
 
-        Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
-        Dictionary<InputEvents, List<ShipAction>> _shipControlActions = new();
-        Dictionary<ResourceEvents, List<ShipAction>> _classResourceActions = new();
         NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
-
-        Material _shipMaterial;
 
         float speedModifierDuration = 2f;
 
@@ -136,12 +38,7 @@ namespace CosmicShore.Game
             }
             else
             {
-                OnButton1Pressed.OnEventRaised += PerformShipControllerActions;
-                OnButton1Released.OnEventRaised += StopShipControllerActions;
-                OnButton2Pressed.OnEventRaised += PerformShipControllerActions;
-                OnButton2Released.OnEventRaised += StopShipControllerActions;
-                OnButton3Pressed.OnEventRaised += PerformShipControllerActions;
-                OnButton3Released.OnEventRaised += StopShipControllerActions;
+                shipInput?.SubscribeEvents();
             }
         }
 
@@ -165,12 +62,7 @@ namespace CosmicShore.Game
             }
             else
             {
-                OnButton1Pressed.OnEventRaised -= PerformShipControllerActions;
-                OnButton1Released.OnEventRaised -= StopShipControllerActions;
-                OnButton2Pressed.OnEventRaised -= PerformShipControllerActions;
-                OnButton2Released.OnEventRaised -= StopShipControllerActions;
-                OnButton3Pressed.OnEventRaised -= PerformShipControllerActions;
-                OnButton3Released.OnEventRaised -= StopShipControllerActions;
+                shipInput?.UnsubscribeEvents();
             }
         }
 
@@ -190,11 +82,11 @@ namespace CosmicShore.Game
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
-            if (_nearFieldSkimmer != null)
-                _nearFieldSkimmer.Initialize(this);
+            if (nearFieldSkimmer != null)
+                nearFieldSkimmer.Initialize(this);
 
-            if (_farFieldSkimmer != null)
-                _farFieldSkimmer.Initialize(this);
+            if (farFieldSkimmer != null)
+                farFieldSkimmer.Initialize(this);
             
 
             if (IsOwner)
@@ -205,8 +97,7 @@ namespace CosmicShore.Game
                 onBottomEdgeButtonsEnabled.RaiseEvent(true);
                 // if (_bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
 
-                InitializeShipControlActions();
-                InitializeClassResourceActions();
+                shipInput?.Initialize(this);
 
                 ShipStatus.AIPilot.Initialize(false);
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
@@ -223,49 +114,22 @@ namespace CosmicShore.Game
         void SetTeamToShipStatusAndSkimmers(Teams team)
         {
             ShipStatus.Team = team;
-            if (_nearFieldSkimmer != null) _nearFieldSkimmer.Team = team;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Team = team;
+            if (nearFieldSkimmer != null) nearFieldSkimmer.Team = team;
+            if (farFieldSkimmer != null) farFieldSkimmer.Team = team;
         }
 
         void SetPlayerToShipStatusAndSkimmers(IPlayer player)
         {
             ShipStatus.Player = player;
-            if (_nearFieldSkimmer != null) _nearFieldSkimmer.Player = player;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;
+            if (nearFieldSkimmer != null) nearFieldSkimmer.Player = player;
+            if (farFieldSkimmer != null) farFieldSkimmer.Player = player;
         }
 
-        void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, _shipGeometries);
+        void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, shipGeometries);
 
-        void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(this, _inputEventShipActions, _shipControlActions);
+        public void PerformShipControllerActions(InputEvents @event) => shipInput?.PerformShipControllerActions(@event);
 
-        void InitializeClassResourceActions() => ShipHelper.InitializeClassResourceActions(this, _resourceEventClassActions, _classResourceActions);
-
-        public void PerformShipControllerActions(InputEvents @event)
-        {
-            if (actionHandler != null)
-            {
-                actionHandler.Perform(@event);
-                _inputAbilityStartTimes[@event] = Time.time;
-                return;
-            }
-
-            ShipHelper.PerformShipControllerActions(@event, out float time, _shipControlActions);
-            _inputAbilityStartTimes[@event] = time;
-        }
-
-        public void StopShipControllerActions(InputEvents @event)
-        {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.AbilityActivated(ShipStatus.Team, ShipStatus.Player.PlayerName, @event, Time.time - _inputAbilityStartTimes[@event]);
-
-            if (actionHandler != null)
-            {
-                actionHandler.Stop(@event);
-                return;
-            }
-
-            ShipHelper.StopShipControllerActions(@event, _shipControlActions);
-        }
+        public void StopShipControllerActions(InputEvents @event) => shipInput?.StopShipControllerActions(@event);
 
         public void Teleport(Transform targetTransform) => ShipHelper.Teleport(transform, targetTransform);
 
@@ -276,13 +140,13 @@ namespace CosmicShore.Game
 
         public void SetShipUp(float angle)
         {
-            _orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+            orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
         }
 
         public void DisableSkimmer()
         {
-            _nearFieldSkimmer?.gameObject.SetActive(false);
-            _farFieldSkimmer?.gameObject.SetActive(false);
+            nearFieldSkimmer?.gameObject.SetActive(false);
+            farFieldSkimmer?.gameObject.SetActive(false);
         }
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
@@ -340,11 +204,11 @@ namespace CosmicShore.Game
 
         public void SetShipMaterial(Material material)
         {
-            _shipMaterial = material;
+            shipMaterial = material;
             if (customization != null)
                 customization.SetShipMaterial(material);
             else
-                ShipHelper.ApplyShipMaterial(_shipMaterial, _shipGeometries);
+                ShipHelper.ApplyShipMaterial(shipMaterial, shipGeometries);
         }
 
         public void SetBlockSilhouettePrefab(GameObject prefab)
