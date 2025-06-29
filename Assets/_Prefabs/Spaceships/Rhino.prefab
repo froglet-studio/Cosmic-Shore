@@ -1326,6 +1326,7 @@ GameObject:
   - component: {fileID: 4344415799986800916}
   - component: {fileID: 4796952059166273496}
   - component: {fileID: 3953285837003103147}
+  - component: {fileID: 8125833072914905471}
   m_Layer: 0
   m_Name: Rhino
   m_TagString: Player_Ship
@@ -1379,7 +1380,7 @@ MonoBehaviour:
   - {fileID: 3947427428015649370}
   - {fileID: 284393576699141201}
   - {fileID: 2131910783175408860}
-  shipHUD: {fileID: 4204721886924189457}
+  _shipHUDController: {fileID: 8125833072914905471}
   AOEPrefab: {fileID: 2728798890556433942, guid: d568a14301490e54280955b50673f884,
     type: 3}
   farFieldSkimmer: {fileID: 0}
@@ -1638,6 +1639,22 @@ MonoBehaviour:
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
+--- !u!114 &8125833072914905471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipHUD: {fileID: 4204721886924189457}
+  onSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+    type: 2}
+  Ship: {fileID: 874579555101021527}
 --- !u!1 &6936285373394276089
 GameObject:
   m_ObjectHideFlags: 0

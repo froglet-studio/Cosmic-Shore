@@ -1,3 +1,4 @@
+using CosmicShore.Game.AI;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -18,6 +19,9 @@ namespace CosmicShore.Game
         readonly NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
+
+        [SerializeField] private ShipHUDController _shipHUDController;
+        [SerializeField] private AIPilot _aiPilot;
 
         void OnEnable()
         {
@@ -86,6 +90,7 @@ namespace CosmicShore.Game
             actionHandler.Initialize(ShipStatus);
             impactHandler.Initialize(ShipStatus);
             customization.Initialize(ShipStatus);
+            _aiPilot.Initialize(true);
 
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
@@ -98,6 +103,8 @@ namespace CosmicShore.Game
                 if (IsOwner)
                 {
                     if (!ShipStatus.FollowTarget) ShipStatus.FollowTarget = transform;
+
+                    _shipHUDController.InitializeShipHUD(_shipType);
                     onBottomEdgeButtonsEnabled.RaiseEvent(true);
                     ShipStatus.AIPilot.Initialize(false);
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
@@ -112,7 +119,7 @@ namespace CosmicShore.Game
             {
                 if (ShipStatus.FollowTarget == null) ShipStatus.FollowTarget = transform;
                 onBottomEdgeButtonsEnabled.RaiseEvent(true);
-
+                _shipHUDController.InitializeShipHUD(_shipType);
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
                 ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.AutoPilotEnabled);
@@ -133,7 +140,7 @@ namespace CosmicShore.Game
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => ShipStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => ShipStatus.blockRotation = newValue;
 
-        public void PerformButtonActions(int buttonNumber)
+        public override void PerformButtonActions(int buttonNumber)
         {
             switch (buttonNumber)
             {

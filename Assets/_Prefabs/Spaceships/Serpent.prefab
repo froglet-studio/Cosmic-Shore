@@ -1581,6 +1581,7 @@ GameObject:
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
+  - component: {fileID: 2122134531836714748}
   m_Layer: 0
   m_Name: Serpent
   m_TagString: Player_Ship
@@ -1638,7 +1639,7 @@ MonoBehaviour:
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
   - {fileID: 3878638393738004476}
-  shipHUD: {fileID: 9084521984956080798}
+  _shipHUDController: {fileID: 2122134531836714748}
   AOEPrefab: {fileID: 2728798890556433942, guid: c4e6163ef5e206846bb8d245b11d1a61,
     type: 3}
   farFieldSkimmer: {fileID: 0}
@@ -1909,6 +1910,22 @@ MonoBehaviour:
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
+--- !u!114 &2122134531836714748
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipHUD: {fileID: 9084521984956080798}
+  onSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+    type: 2}
+  Ship: {fileID: 874579555101021527}
 --- !u!1 &6420853210210884085
 GameObject:
   m_ObjectHideFlags: 0

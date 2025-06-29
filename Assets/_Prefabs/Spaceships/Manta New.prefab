@@ -99,6 +99,18 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 4859668305910349487}
   m_SourcePrefab: {fileID: 100100000, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
+--- !u!114 &652838412522066507 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3440187540988767646, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+    type: 3}
+  m_PrefabInstance: {fileID: 2788107796120846293}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9205165732433312652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &954762401694888925 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3138628630497430536, guid: 920c06d41c62d1f4482a2f80e793bbf8,
@@ -231,6 +243,18 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 2788107796120846293}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8892396416789156027 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6762570635876708206, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+    type: 3}
+  m_PrefabInstance: {fileID: 2788107796120846293}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9205165732433312652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &9205165732433312652 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6417075533431866457, guid: 920c06d41c62d1f4482a2f80e793bbf8,
@@ -296,6 +320,8 @@ MonoBehaviour:
   customization: {fileID: 4859668305910349487}
   isMultiplayerMode: 0
   impactProperties: []
+  _shipHUDController: {fileID: 8892396416789156027}
+  _aiPilot: {fileID: 652838412522066507}
 --- !u!114 &6930906900203456586
 MonoBehaviour:
   m_ObjectHideFlags: 0

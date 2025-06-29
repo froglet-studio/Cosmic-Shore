@@ -1825,6 +1825,7 @@ GameObject:
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 3882236086036410899}
+  - component: {fileID: 6762570635876708206}
   m_Layer: 0
   m_Name: Manta
   m_TagString: Player_Ship
@@ -1874,7 +1875,7 @@ MonoBehaviour:
     speedPenalty: 0
     hapticType: 0
     trailBlock: {fileID: 0}
-  Name: Manta
+  _name: Manta
   _shipType: 1
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
@@ -1939,6 +1940,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shipInstance: {fileID: 874579555101021527}
+  shipHUDContainer: {fileID: 0}
 --- !u!114 &7686683633640807837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1981,7 +1983,6 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
     type: 3}
   skimmer: {fileID: 874579554510349383}
-  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 10
   minWavelength: 10
   defaultWaitTime: 0.5
@@ -2164,6 +2165,21 @@ MonoBehaviour:
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
+--- !u!114 &6762570635876708206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipHUD: {fileID: 2118590521345096898}
+  onSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+    type: 2}
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0

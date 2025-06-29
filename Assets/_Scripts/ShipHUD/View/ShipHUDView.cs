@@ -1,4 +1,5 @@
 using CosmicShore.Game.UI;
+using CosmicShore.Utilities;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,6 +17,8 @@ public class ShipHUDView : MonoBehaviour, IShipHUDView
     [SerializeField] private GameObject _trailBlock;
     [SerializeField] private ShipTypes hudType;
     [SerializeField] private ResourceDisplayRef[] resourceDisplays;
+    [SerializeField] private Transform silhouetteContainer;
+    [SerializeField] private Transform trailContainer;
 
     // --- Serpent Variant ---
     [SerializeField] private Button serpentBoostButton;
@@ -28,7 +31,6 @@ public class ShipHUDView : MonoBehaviour, IShipHUDView
     [SerializeField] private Button mantaBoostButton;
     [SerializeField] private Button mantaBoost2Button;
 
-
     // --- Rhino Variant ---
     [SerializeField] private Image rhinoBoostFeedback;
 
@@ -37,6 +39,9 @@ public class ShipHUDView : MonoBehaviour, IShipHUDView
 
     // --- Sparrow Variant ---
     [SerializeField] private Button sparrowBoostButton;
+
+    public Transform GetSilhouetteContainer() => silhouetteContainer;
+    public Transform GetTrailContainer() => trailContainer;
 
     public ResourceDisplay GetResourceDisplay(string name)
     {
@@ -82,11 +87,9 @@ public class ShipHUDView : MonoBehaviour, IShipHUDView
 
     private void RemoveAllButtonListeners()
     {
-        // Clean up ALL listeners for ALL buttons (optional but safest)
         if (serpentBoostButton != null) serpentBoostButton.onClick.RemoveAllListeners();
         if (serpentWallDisplayButton != null) serpentWallDisplayButton.onClick.RemoveAllListeners();
-        //if (dolphinBoostButton != null) dolphinBoostButton.onClick.RemoveAllListeners();
-        // ...repeat for all variant buttons
+
     }
 }
 

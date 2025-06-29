@@ -447,6 +447,11 @@ namespace CosmicShore.Game
                 ShipStatus.AttachedTrailBlock = trailBlock;
             }
         }
+
+        public void PerformButtonActions(int buttonNumber)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 }

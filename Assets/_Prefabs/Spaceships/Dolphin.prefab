@@ -2329,6 +2329,7 @@ GameObject:
   - component: {fileID: 5510672214890313987}
   - component: {fileID: 6959572785868932314}
   - component: {fileID: 5302681132313811143}
+  - component: {fileID: 7104697071719053143}
   m_Layer: 0
   m_Name: Dolphin
   m_TagString: Player_Ship
@@ -2386,7 +2387,7 @@ MonoBehaviour:
   - {fileID: 5739256229450364055}
   - {fileID: 4111049083201334103}
   - {fileID: 4175282931251547525}
-  shipHUD: {fileID: 8183527628512287213}
+  _shipHUDController: {fileID: 7104697071719053143}
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
   farFieldSkimmer: {fileID: 0}
@@ -2652,6 +2653,22 @@ MonoBehaviour:
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
+--- !u!114 &7104697071719053143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipHUD: {fileID: 8183527628512287213}
+  onSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+    type: 2}
+  Ship: {fileID: 874579555101021527}
 --- !u!1 &6999220331312364478
 GameObject:
   m_ObjectHideFlags: 0

@@ -155,6 +155,8 @@ namespace CosmicShore.Game
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties) =>
             impactHandler.PerformTrailBlockImpactEffects(trailBlockProperties);
+
+        public abstract void PerformButtonActions(int buttonNumber);
     }
 
     [Serializable]

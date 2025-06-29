@@ -536,6 +536,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   wrappedAction: {fileID: 1865457525660812358}
+  projectileTime1: 0.3
+  projectileTime2: 0.1
 --- !u!1 &3938548809082189982
 GameObject:
   m_ObjectHideFlags: 0
@@ -936,6 +938,7 @@ GameObject:
   - component: {fileID: 6776027772320837218}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
+  - component: {fileID: 6296814927952441826}
   m_Layer: 8
   m_Name: Sparrow
   m_TagString: Player_Ship
@@ -994,7 +997,7 @@ MonoBehaviour:
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
   - {fileID: 1711486038307105652}
-  shipHUD: {fileID: 8706425432549089397}
+  _shipHUDController: {fileID: 6296814927952441826}
   AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 0}
   resourceIndex: 0
@@ -1258,6 +1261,22 @@ MonoBehaviour:
   FollowTarget: {fileID: 3967031065131343057}
   FollowTargetPosition: {x: 0, y: 5, z: -25}
   isOrthographic: 0
+--- !u!114 &6296814927952441826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipHUD: {fileID: 8706425432549089397}
+  onSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+    type: 2}
+  Ship: {fileID: 874579555101021527}
 --- !u!1 &6746362012311477801
 GameObject:
   m_ObjectHideFlags: 0

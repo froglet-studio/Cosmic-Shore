@@ -77,6 +77,22 @@ public class ShipHUDViewInspector : Editor
             );
         });
 
+        DrawSection("Silhouette Container", sectionGreen, () =>
+        {
+            EditorGUILayout.PropertyField(
+                serializedObject.FindProperty("silhouetteContainer"),
+                new GUIContent("Silhouette Container")
+            );
+        });
+
+        DrawSection("Trail Container", sectionGreen, () =>
+        {
+            EditorGUILayout.PropertyField(
+                serializedObject.FindProperty("trailContainer"),
+                new GUIContent("Trail Container")
+            );
+        });
+
         // Variant section with dynamic color and label
         DrawSection(variantName + " Buttons", variantColor, () =>
         {

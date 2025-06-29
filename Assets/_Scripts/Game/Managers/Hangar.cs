@@ -243,7 +243,8 @@ namespace CosmicShore.Core
             AIPilot pilot = ship.ShipStatus.AIPilot;
             pilot.SkillLevel = ((float)AISkillLevel - 1) / 3; // this assumes that levels remain from 1-4
             pilot.AssignShip(ship);
-            pilot.Initialize(true);
+            //pilot.Initialize(true);
+
 
             return ship;
         }
