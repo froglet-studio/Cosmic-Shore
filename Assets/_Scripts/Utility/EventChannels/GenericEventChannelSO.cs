@@ -7,16 +7,7 @@ namespace CosmicShore.Utilities
     {
         public event Action<T> OnEventRaised;
 
-        public void RaiseEvent(T item)
-        {
-            if (OnEventRaised != null)
-            {
-                OnEventRaised.Invoke(item);
-            }
-            else
-            {
-                Debug.LogWarning($"No listeners for event {name} with item {item}");
-            }
-        }
+        public void RaiseEvent(T item) => 
+            OnEventRaised?.Invoke(item);
     }
 }
