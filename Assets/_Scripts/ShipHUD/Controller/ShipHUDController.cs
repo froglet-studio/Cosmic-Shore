@@ -8,56 +8,62 @@ namespace CosmicShore
     [RequireComponent(typeof(IShipStatus))]
     public class ShipHUDController : MonoBehaviour, IShipHUDController
     {
-        [SerializeField] internal GameObject shipHUD;
+        /*[SerializeField, RequireInterface(typeof(IShipHUDView))] 
+        MonoBehaviour shipHUD;
+        
+        [SerializeField, RequireInterface(typeof(IShip))] 
+        MonoBehaviour _shipController;
+        
+        [SerializeField, RequireInterface(typeof(IShipStatus))] 
+        MonoBehaviour _shipInstance;*/
+
+        [SerializeField]
+        ShipHUDContainer _shipHUDContainer;
 
         [Header("Event Channels")]
-        [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
+        [SerializeField] 
+        SilhouetteEventChannelSO onSilhouetteInitialized;
 
-        public IShipHUDView ShipHUDView { get; private set; }
-
-        public IShipStatus ShipStatusInstance { get; private set; }
-        [SerializeField] private IShip _shipController;
+        IShipHUDView _shipHUDView;
+        IShipStatus _shipStatus;
+        IShip _ship;
+        
+        private void Awake()
+        {
+            _ship = GetComponent<IShip>();
+            _shipStatus = GetComponent<IShipStatus>();
+        }
 
         private void OnEnable()
         {
-            onSilhouetteInitialized.OnEventRaised += HandleSilhouetteInitialized;
+            // onSilhouetteInitialized.OnEventRaised += HandleSilhouetteInitialized;
         }
 
         private void OnDisable()
         {
-            onSilhouetteInitialized.OnEventRaised -= HandleSilhouetteInitialized;
+            // onSilhouetteInitialized.OnEventRaised -= HandleSilhouetteInitialized;
         }
 
-        private void Awake()
-        {
-            ShipStatusInstance = GetComponent<ShipStatus>();
-        }
 
         public void InitializeShipHUD(ShipTypes _shipType)
         {
-            if (ShipStatusInstance.AutoPilotEnabled)
+            if (_shipStatus.AutoPilotEnabled)
             {
                 return;
             }
 
-            if (shipHUD != null)
-            {
-                shipHUD.TryGetComponent(out ShipHUDContainer container);
-                var hudView = container.Show(_shipType);
-                hudView?.Initialize(this);
-                ShipHUDView = hudView;
-            }
+            _shipHUDView = _shipHUDContainer.Show(_shipType);
         }
 
         public void OnButtonPressed(int buttonNumber)
         {
-            _shipController.PerformButtonActions(buttonNumber);
+            _ship.PerformButtonActions(buttonNumber);
         }
 
         private void HandleSilhouetteInitialized(SilhouetteData data)
         {
-            var sil = ShipHUDView.GetSilhouetteContainer();
-            var trail = ShipHUDView.GetTrailContainer();
+            var sil = _shipHUDView.GetSilhouetteContainer();
+            var trail = _shipHUDView.GetTrailContainer();
 
             sil.gameObject.SetActive(data.IsSilhouetteActive);
             trail.gameObject.SetActive(data.IsTrailDisplayActive);
