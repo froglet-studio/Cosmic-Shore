@@ -42,6 +42,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fccc4992595b4bc1ba2a4d28fcd4b06a, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  _items: []
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _items:
+  - {fileID: 3198637200510386836, guid: d2f1f48a5b5d5d14299a56a777d3971c, type: 3}
+  - {fileID: 5172949237805376952, guid: aa34cc8006c47114a826ff61f52889d6, type: 3}
+  - {fileID: 2173894828075591833, guid: 52d52803d2bd0384093e4705bcf57ed1, type: 3}
