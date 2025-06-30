@@ -48,6 +48,7 @@ GameObject:
   - component: {fileID: 1808271107567822185}
   - component: {fileID: 2671096847325640786}
   - component: {fileID: 7090403262909044987}
+  - component: {fileID: 4418354567053508256}
   m_Layer: 5
   m_Name: Boost Button
   m_TagString: Untagged
@@ -135,6 +136,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 23b2228fe5720774095a51b56473e6ec, type: 3}
   - {fileID: 21300000, guid: 9e9fe37f377d75544bbe3483c12d55d7, type: 3}
   fuelLevelImage: {fileID: 1808271107567822185}
+  resourceFillAnimator: {fileID: 4418354567053508256}
 --- !u!114 &7090403262909044987
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -179,6 +181,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4418354567053508256
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2162419680752100906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8735e9a1df12d664cba6c469f9001a2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  boostFillImage: {fileID: 1808271107567822185}
 --- !u!1 &2684549187044434082
 GameObject:
   m_ObjectHideFlags: 0
@@ -391,9 +406,9 @@ MonoBehaviour:
   hudType: 7
   resourceDisplays:
   - ResourceName: Wall Seeds
-    Display: {fileID: 2671096847325640786}
-  - ResourceName: Fuel Pellets
     Display: {fileID: 2695167840701937088}
+  - ResourceName: Fuel Pellets
+    Display: {fileID: 2671096847325640786}
   silhouetteContainer: {fileID: 7277748476972212419}
   trailContainer: {fileID: 7950429970536442718}
   serpentBoostButton: {fileID: 7090403262909044987}

@@ -1,5 +1,6 @@
 using CosmicShore.Utilities;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Game
 {
@@ -12,7 +13,9 @@ namespace CosmicShore.Game
 
         IShipStatus _shipStatus;
         IShip _ship;
-        
+
+        [SerializeField] private ConsumeBoostAction _boostAction;
+
         private void Awake()
         {
             _ship = GetComponent<IShip>();
@@ -32,13 +35,44 @@ namespace CosmicShore.Game
 
         public void InitializeShipHUD(ShipTypes shipType)
         {
-            if (_shipStatus.AutoPilotEnabled)
-            {
-                return;
-            }
+            Debug.Log(_shipStatus.AutoPilotEnabled);
 
-            _shipStatus.ShipHUDView = _shipStatus.ShipHUDContainer.InitializeView(this, shipType);
+            if (!_shipStatus.AutoPilotEnabled)
+            {
+                if (SceneManager.GetActiveScene().name == "Main_Menu") return;
+                _shipStatus.ShipHUDView = _shipStatus.ShipHUDContainer.InitializeView(this, shipType);
+
+                InitializeBoostAction();
+            }
         }
+
+
+        public void InitializeBoostAction()
+        {
+            if (_boostAction != null && _shipStatus.ShipHUDView != null)
+            {
+                // Animate drain
+                _boostAction.OnBoostStarted += (duration, startAmount) =>
+                    _shipStatus.ShipHUDView.AnimateBoostFillDown(
+                        _boostAction.ResourceIndex,   
+                        duration,                     
+                        startAmount                   
+                    );
+
+                _boostAction.OnBoostEnded += () =>
+                    _shipStatus.ShipHUDView.AnimateBoostFillUp(
+                        _boostAction.ResourceIndex,   
+                        _boostAction.BoostDuration,   
+                        1f                            
+                    );
+            }
+            else
+            {
+                Debug.LogWarning("BoostAction or HUDView missing on ship!");
+            }
+        }
+
+
 
         public void OnButtonPressed(int buttonNumber)
         {

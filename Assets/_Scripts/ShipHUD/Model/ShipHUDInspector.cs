@@ -108,6 +108,7 @@ namespace CosmicShore.Game
                             serializedObject.FindProperty("serpentWallDisplayButton"),
                             new GUIContent("Wall Display Button")
                         );
+            
                         break;
                     case ShipTypes.Dolphin:
                         EditorGUILayout.PropertyField(
