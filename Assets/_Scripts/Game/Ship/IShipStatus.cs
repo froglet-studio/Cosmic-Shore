@@ -71,7 +71,11 @@ namespace CosmicShore.Game
         TrailSpawner TrailSpawner { get; }
         ShipHUDContainer ShipHUDContainer { get; }
         IShipHUDView ShipHUDView { get; set; }
+        IShipHUDController ShipHUDController { get; }
+        R_ShipCustomization Customization { get; }
+        R_ShipActionHandler ActionHandler { get; }
+        R_ShipImpactHandler ImpactHandler { get; }
 
-        void Reset();
+        void ResetValues();
     }
 }

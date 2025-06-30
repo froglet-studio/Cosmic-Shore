@@ -1,30 +1,15 @@
-using CosmicShore.Core;
-using CosmicShore.Game;
 using CosmicShore.Utilities;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Game
 {
     [RequireComponent(typeof(IShipStatus))]
     public class ShipHUDController : MonoBehaviour, IShipHUDController
     {
-        /*[SerializeField, RequireInterface(typeof(IShipHUDView))] 
-        MonoBehaviour shipHUD;
-        
-        [SerializeField, RequireInterface(typeof(IShip))] 
-        MonoBehaviour _shipController;
-        
-        [SerializeField, RequireInterface(typeof(IShipStatus))] 
-        MonoBehaviour _shipInstance;*/
-
-        [SerializeField]
-        ShipHUDContainer _shipHUDContainer;
-
         [Header("Event Channels")]
         [SerializeField] 
         SilhouetteEventChannelSO onSilhouetteInitialized;
 
-        IShipHUDView _shipHUDView;
         IShipStatus _shipStatus;
         IShip _ship;
         
@@ -45,14 +30,14 @@ namespace CosmicShore
         }
 
 
-        public void InitializeShipHUD(ShipTypes _shipType)
+        public void InitializeShipHUD(ShipTypes shipType)
         {
             if (_shipStatus.AutoPilotEnabled)
             {
                 return;
             }
 
-            _shipHUDView = _shipHUDContainer.Show(_shipType);
+            _shipStatus.ShipHUDView = _shipStatus.ShipHUDContainer.InitializeView(this, shipType);
         }
 
         public void OnButtonPressed(int buttonNumber)
@@ -62,8 +47,8 @@ namespace CosmicShore
 
         private void HandleSilhouetteInitialized(SilhouetteData data)
         {
-            var sil = _shipHUDView.GetSilhouetteContainer();
-            var trail = _shipHUDView.GetTrailContainer();
+            var sil = _shipStatus.ShipHUDView.GetSilhouetteContainer();
+            var trail = _shipStatus.ShipHUDView.GetTrailContainer();
 
             sil.gameObject.SetActive(data.IsSilhouetteActive);
             trail.gameObject.SetActive(data.IsTrailDisplayActive);

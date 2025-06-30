@@ -54,11 +54,6 @@ namespace CosmicShore.Game
         [Header("Event Channels")]
         [SerializeField] protected BoolEventChannelSO onBottomEdgeButtonsEnabled;
 
-        [Header("Refactored Components")]
-        [SerializeField] protected R_ShipActionHandler actionHandler;
-        [SerializeField] protected R_ShipImpactHandler impactHandler;
-        [SerializeField] protected R_ShipCustomization customization;
-
         protected const float speedModifierDuration = 2f;
 
         protected IShipStatus _shipStatus;
@@ -142,21 +137,34 @@ namespace CosmicShore.Game
 
         public void PerformShipControllerActions(InputEvents controlType)
         {
-            actionHandler.PerformShipControllerActions(controlType);
+            ShipStatus.ActionHandler.PerformShipControllerActions(controlType);
         }
 
         public void StopShipControllerActions(InputEvents controlType)
         {
-            actionHandler.StopShipControllerActions(controlType);
+            ShipStatus.ActionHandler.StopShipControllerActions(controlType);
         }
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) =>
-            impactHandler.PerformCrystalImpactEffects(crystalProperties);
+            ShipStatus.ImpactHandler.PerformCrystalImpactEffects(crystalProperties);
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties) =>
-            impactHandler.PerformTrailBlockImpactEffects(trailBlockProperties);
+            ShipStatus.ImpactHandler.PerformTrailBlockImpactEffects(trailBlockProperties);
 
         public abstract void PerformButtonActions(int buttonNumber);
+
+        public void SetAISkillLevel(int value)
+        {
+            if (ShipStatus.AIPilot != null)
+                ShipStatus.AIPilot.SkillLevel = value;
+            else
+                Debug.LogWarning("Cannot set AI skill level, Captain is not assigned.");
+        }
+
+        public void OnButtonPressed(int buttonNumber)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [Serializable]

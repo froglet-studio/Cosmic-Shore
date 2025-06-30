@@ -31,7 +31,8 @@ namespace CosmicShore.Game
         public void AssignCaptain(SO_Captain captain);
         public void BindElementalFloat(string name, Element element);
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties);
-
         public void PerformButtonActions(int buttonNumber);
+        public void SetAISkillLevel(int value);
+        void OnButtonPressed(int buttonNumber);
     }
 }

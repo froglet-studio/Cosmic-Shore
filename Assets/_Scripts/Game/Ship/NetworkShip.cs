@@ -452,6 +452,16 @@ namespace CosmicShore.Game
         {
             throw new NotImplementedException();
         }
+
+        public void SetAISkillLevel(int value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnButtonPressed(int buttonNumber)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 }

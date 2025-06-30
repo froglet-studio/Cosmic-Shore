@@ -62,7 +62,7 @@ public class ShipTransformer : MonoBehaviour
         ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
         resourceSystem.Reset();
-        shipStatus.Reset();
+        shipStatus.ResetValues();
     }
 
     protected virtual void Update()

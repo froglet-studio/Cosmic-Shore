@@ -2,6 +2,7 @@
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
+using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,15 +21,37 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(Silhouette))]
     [RequireComponent(typeof(ShipCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
+    [RequireComponent(typeof(R_ShipActionHandler))]
+    [RequireComponent(typeof(R_ShipImpactHandler))]
+    [RequireComponent(typeof(R_ShipCustomization))]
+
     public class ShipStatus : MonoBehaviour, IShipStatus
     {
         public event Action<IShipStatus> OnShipInitialized;
 
         [SerializeField, RequireInterface(typeof(IShip))]
         MonoBehaviour shipInstance;
+        public IShip Ship
+        {
+            get
+            {
+                if (shipInstance == null)
+                {
+                    Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
+                    return null;
+                }
+                return shipInstance as IShip;
+            }
+        }
+        
+        [SerializeField]
+        MonoBehaviour _shipHUDController;
+        public IShipHUDController ShipHUDController => _shipHUDController as IShipHUDController;
+        public IShipHUDView ShipHUDView { get; set; }
 
         [SerializeField] 
         ShipHUDContainer shipHUDContainer;
+        public ShipHUDContainer ShipHUDContainer => shipHUDContainer;
 
         public string Name { get; set; }
         public ShipTypes ShipType { get; set; }
@@ -46,20 +69,34 @@ namespace CosmicShore.Game
         public CameraManager CameraManager { get; set; }
         public List<GameObject> ShipGeometries { get; set; }
         public TrailBlock AttachedTrailBlock { get; set; }
-        public ShipHUDContainer ShipHUDContainer => shipHUDContainer;
-        public IShipHUDView ShipHUDView { get; set; }
 
-        public IShip Ship
+        R_ShipActionHandler actionHandler;
+        public R_ShipActionHandler ActionHandler
         {
             get
             {
-                if (shipInstance == null)
-                {
-                    Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
-                    return null;
-                }
-                return shipInstance as IShip;
+                actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_ShipActionHandler>();
+                return actionHandler;
+            }
+        }
 
+        R_ShipImpactHandler impactHandler;
+        public R_ShipImpactHandler ImpactHandler
+        {
+            get
+            {
+                impactHandler = impactHandler != null ? impactHandler : gameObject.GetOrAdd<R_ShipImpactHandler>();
+                return impactHandler;
+            }
+        }
+
+        R_ShipCustomization customization;
+        public R_ShipCustomization Customization
+        {
+            get
+            {
+                customization = customization != null ? customization : gameObject.GetOrAdd<R_ShipCustomization>();
+                return customization;
             }
         }
 
@@ -86,7 +123,7 @@ namespace CosmicShore.Game
         {
             get
             {
-                _shipAnimation = _shipAnimation != null ? _shipAnimation : GetComponent<ShipAnimation>();
+                _shipAnimation = _shipAnimation != null ? _shipAnimation : gameObject.GetOrAdd<ShipAnimation>();
                 return _shipAnimation;
             }
         }
@@ -96,7 +133,7 @@ namespace CosmicShore.Game
         {
             get
             {
-                _trailSpawner = _trailSpawner != null ? _trailSpawner : GetComponent<TrailSpawner>();
+                _trailSpawner = _trailSpawner != null ? _trailSpawner : gameObject.GetOrAdd<TrailSpawner>();
                 return _trailSpawner;
             }
         }
@@ -106,7 +143,7 @@ namespace CosmicShore.Game
         {
             get
             {
-                _resourceSystem = _resourceSystem != null ? _resourceSystem : GetComponent<ResourceSystem>();
+                _resourceSystem = _resourceSystem != null ? _resourceSystem : gameObject.GetOrAdd<ResourceSystem>();
                 return _resourceSystem;
             }
         }
@@ -116,7 +153,7 @@ namespace CosmicShore.Game
         {
             get
             {
-                _shipTransformer = _shipTransformer != null ? _shipTransformer : GetComponent<ShipTransformer>();
+                _shipTransformer = _shipTransformer != null ? _shipTransformer : gameObject.GetOrAdd<ShipTransformer>();
                 return _shipTransformer;
             }
         }
@@ -126,7 +163,7 @@ namespace CosmicShore.Game
         {
             get
             {
-                aiPilot = aiPilot != null ? aiPilot : gameObject.GetComponent<AIPilot>();
+                aiPilot = aiPilot != null ? aiPilot : gameObject.gameObject.GetOrAdd<AIPilot>();
                 return aiPilot;
             }
         }
@@ -136,7 +173,7 @@ namespace CosmicShore.Game
         {
             get
             {
-                _silhouette = _silhouette != null ? _silhouette : GetComponent<Silhouette>();
+                _silhouette = _silhouette != null ? _silhouette : gameObject.GetOrAdd<Silhouette>();
                 return _silhouette;
             }
         }
@@ -146,7 +183,7 @@ namespace CosmicShore.Game
         {
             get
             {
-                _shipCameraCustomizer = _shipCameraCustomizer != null ? _shipCameraCustomizer : GetComponent<ShipCameraCustomizer>();
+                _shipCameraCustomizer = _shipCameraCustomizer != null ? _shipCameraCustomizer : gameObject.GetOrAdd<ShipCameraCustomizer>();
                 return _shipCameraCustomizer;
             }
         }
@@ -172,11 +209,11 @@ namespace CosmicShore.Game
         public bool Overheating { get; set; }
         public bool Attached { get; set; }
         public bool GunsActive { get; set; }
-
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
 
-        public void Reset()
+
+        public void ResetValues()
         {
             Boosting = false;
             ChargedBoostDischarging = false;

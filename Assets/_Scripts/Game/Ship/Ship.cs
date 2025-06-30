@@ -15,7 +15,7 @@ using UnityEngine.Serialization;
 namespace CosmicShore.Core
 {
     [RequireComponent(typeof(IShipStatus))]
-    public class Ship : MonoBehaviour, IShip, IShipHUDController
+    public class Ship : MonoBehaviour, IShip
     {
         public event Action<IShipStatus> OnShipInitialized;
 
@@ -194,9 +194,7 @@ namespace CosmicShore.Core
                 if (shipHUD != null)
                 {
                     shipHUD.TryGetComponent(out ShipHUDContainer container);
-                    var hudView = container.Show(_shipType);
-                    hudView?.Initialize(this);
-                    ShipHUDView = hudView;
+                    // ShipHUDView = container.InitializeView(_shipType);
                 }
             }
             /*if (shipHUD)
@@ -555,6 +553,11 @@ namespace CosmicShore.Core
         public void OnButtonPressed(int buttonNumber)
         {
             PerformButtonActions(buttonNumber);
+        }
+
+        public void SetAISkillLevel(int value)
+        {
+            throw new NotImplementedException();
         }
     }
 
