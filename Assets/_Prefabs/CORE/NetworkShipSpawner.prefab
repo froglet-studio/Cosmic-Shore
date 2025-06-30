@@ -47,8 +47,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1066882345
-  InScenePlacedSourceGlobalObjectIdHash: 0
+  GlobalObjectIdHash: 2520350284
+  InScenePlacedSourceGlobalObjectIdHash: 1066882345
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
@@ -93,11 +93,11 @@ MonoBehaviour:
   - {fileID: 0}
   _shipPrefabs:
   - {fileID: 8560827906241619684, guid: 0cf574eea9a5c404d93969f2befd9c73, type: 3}
-  - {fileID: 3915649417592198160, guid: 6d3c13028146b4840847a0cc4a437704, type: 3}
-  - {fileID: 3585541848064027579, guid: 7a296bb99bda42c4ab12de168125a12f, type: 3}
-  - {fileID: 2387066218979871139, guid: 82f67e44ab2c29d41a6268da54e29d68, type: 3}
-  - {fileID: 6136040905309054391, guid: 809726923297f3844b601e0d3b2837bd, type: 3}
-  - {fileID: 4801344834269116414, guid: 466bcb2744168464dad7fb5b8dd3395f, type: 3}
+  - {fileID: 3915649417592198160, guid: a5acf9655f4348818b1b4a11554367d7, type: 3}
+  - {fileID: 3585541848064027579, guid: b8c185f31f5b4add8202df2e3efeacce, type: 3}
+  - {fileID: 7910694347987763605, guid: c4488e14125bf4a4ebc9f4ee60939f9b, type: 3}
+  - {fileID: 6136040905309054391, guid: ce4d2e03456b4b508af88b54f396d76e, type: 3}
+  - {fileID: 4801344834269116414, guid: 84755e5175a641e0bff6b47d35746cff, type: 3}
   _mainMenuSceneName: Menu_Main
 --- !u!114 &8874896592346530446
 MonoBehaviour:
