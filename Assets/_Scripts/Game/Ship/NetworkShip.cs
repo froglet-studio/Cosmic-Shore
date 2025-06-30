@@ -197,6 +197,7 @@ namespace CosmicShore.Game
                 InitializeShipControlActions();
                 InitializeClassResourceActions();
 
+                ShipStatus.AIPilot.AssignShip(this);
                 ShipStatus.AIPilot.Initialize(false);
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);

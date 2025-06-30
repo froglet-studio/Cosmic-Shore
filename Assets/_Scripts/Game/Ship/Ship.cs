@@ -173,7 +173,8 @@ namespace CosmicShore.Core
             ShipStatus.Silhouette.Initialize(this);
             ShipStatus.ShipTransformer.Initialize(this);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
-            //ShipStatus.AIPilot.Initialize(false);
+
+            ShipStatus.AIPilot.AssignShip(this);
             ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.AutoPilotEnabled);
             
             nearFieldSkimmer?.Initialize(this);

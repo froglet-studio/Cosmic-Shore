@@ -88,7 +88,6 @@ namespace CosmicShore.Game
             ShipStatus.ActionHandler.Initialize(ShipStatus);
             ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
-            ShipStatus.AIPilot.Initialize(true);
 
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
@@ -105,7 +104,7 @@ namespace CosmicShore.Game
                     ShipStatus.ShipHUDController.InitializeShipHUD(_shipType);
 
                     onBottomEdgeButtonsEnabled.RaiseEvent(true);
-                    ShipStatus.AIPilot.Initialize(false);
+
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
                 }
@@ -123,7 +122,10 @@ namespace CosmicShore.Game
 
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
+
+                ShipStatus.AIPilot.AssignShip(this);
                 ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.AutoPilotEnabled);
+
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);                
             }
