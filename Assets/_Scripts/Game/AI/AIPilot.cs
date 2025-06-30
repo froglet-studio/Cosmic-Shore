@@ -185,8 +185,6 @@ namespace CosmicShore.Game.AI
         {
             if (AutoPilotEnabled)
             {
-                _ship.ShipStatus.AutoPilotEnabled = true;
-
                 distance = TargetPosition - transform.position;
                 Vector3 desiredDirection = distance.normalized;
 

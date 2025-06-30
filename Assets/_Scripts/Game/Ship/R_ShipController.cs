@@ -122,8 +122,6 @@ namespace CosmicShore.Game
 
                 ShipStatus.AIPilot.AssignShip(this);
 
-                ShipStatus.AutoPilotEnabled = ShipStatus.AIPilot.enabled;
-
                 ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.enabled);
                 ShipStatus.ShipHUDController.InitializeShipHUD(_shipType);
 

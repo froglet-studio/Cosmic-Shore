@@ -203,7 +203,7 @@ namespace CosmicShore.Game
         public bool LiveProjectiles { get; set; }
         public bool Stationary { get; set; }
         public bool ElevatedResourceGain { get; set; }
-        public bool AutoPilotEnabled { get; set; }
+        public bool AutoPilotEnabled => AIPilot.AutoPilotEnabled;
         public bool AlignmentEnabled { get; set; }
         public bool Slowed { get; set; }
         public bool Overheating { get; set; }
