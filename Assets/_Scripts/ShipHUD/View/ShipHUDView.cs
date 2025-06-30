@@ -93,6 +93,26 @@ namespace CosmicShore.Game
             if (serpentWallDisplayButton != null) serpentWallDisplayButton.onClick.RemoveAllListeners();
 
         }
+
+        public ResourceDisplay GetResourceDisplayByIndex(int index)
+        {
+            if (index >= 0 && index < resourceDisplays.Length)
+                return resourceDisplays[index].Display;
+            return null;
+        }
+
+        public void AnimateBoostFillDown(int idx, float duration, float startAmt)
+        {
+            var rd = GetResourceDisplayByIndex(idx);
+            rd.AnimateFillDown(duration, startAmt);
+        }
+
+        public void AnimateBoostFillUp(int idx, float duration, float endAmt)
+        {
+            var rd = GetResourceDisplayByIndex(idx);
+            rd.AnimateFillUp(duration, endAmt);
+        }
+
     }
 }
 

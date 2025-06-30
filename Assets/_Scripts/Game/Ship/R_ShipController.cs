@@ -116,13 +116,16 @@ namespace CosmicShore.Game
                 if (ShipStatus.FollowTarget == null) ShipStatus.FollowTarget = transform;
                 onBottomEdgeButtonsEnabled.RaiseEvent(true);
 
-                ShipStatus.ShipHUDController.InitializeShipHUD(_shipType);
 
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
 
                 ShipStatus.AIPilot.AssignShip(this);
-                ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.AutoPilotEnabled);
+
+                ShipStatus.AutoPilotEnabled = ShipStatus.AIPilot.enabled;
+
+                ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.enabled);
+                ShipStatus.ShipHUDController.InitializeShipHUD(_shipType);
 
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);                

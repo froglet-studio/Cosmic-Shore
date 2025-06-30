@@ -14,6 +14,8 @@ namespace CosmicShore.Game.UI
         [SerializeField] protected List<Sprite> fuelLevelImages;
         [SerializeField] protected Image fuelLevelImage;
 
+        [SerializeField] private BoostFillAnimator resourceFillAnimator;
+
         readonly float maxLevel = 1f;
         float currentLevel;
 
@@ -28,16 +30,36 @@ namespace CosmicShore.Game.UI
         {
             currentLevel = Mathf.Clamp(newResourceLevel, 0, maxLevel);
 
-            // bucket the percent of full and use it as an index into the sprite list
             int maxIndex = fuelLevelImages.Count - 1;
             float percentOfFull = currentLevel / maxLevel;
-            int index = (int)Mathf.Floor(percentOfFull * maxIndex);
+            int index = Mathf.FloorToInt(percentOfFull * maxIndex);
 
             if (verboseLogging)
-                Debug.Log($"FuelBar.UpdateFuelBarDisplay - percentOfFull:{percentOfFull}, maxIndex:{maxIndex}, index:{index}");
+                Debug.Log($"ResourceDisplay.UpdateDisplay – percent:{percentOfFull:F2}, index:{index}");
 
-            fuelLevelImage.sprite = fuelLevelImages[index];
+            fuelLevelImage.sprite = fuelLevelImages[Mathf.Clamp(index, 0, maxIndex)];
             if (fuelLevelText) fuelLevelText.text = (currentLevel * 100f).ToString("F0");
+        }
+
+        public void AnimateFillDown(float duration, float from)
+        {
+            if (resourceFillAnimator == null)
+            {
+                Debug.LogWarning("ResourceDisplay: missing BoostFillAnimator!");
+                return;
+            }
+            resourceFillAnimator.SetFill(from);
+            resourceFillAnimator.AnimateFillDown(duration, from);
+        }
+
+        public void AnimateFillUp(float duration, float to)
+        {
+            if (resourceFillAnimator == null)
+            {
+                Debug.LogWarning("ResourceDisplay: missing BoostFillAnimator!");
+                return;
+            }
+            resourceFillAnimator.AnimateFillUp(duration, to);
         }
     }
 }
