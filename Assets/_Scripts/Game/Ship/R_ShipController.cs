@@ -1,5 +1,3 @@
-using CosmicShore.Core;
-using CosmicShore.Game.AI;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -183,6 +181,5 @@ namespace CosmicShore.Game
 
         public void FlipShipUpsideDown() => orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
         public void FlipShipRightsideUp() => orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
-        public void OnButtonPressed(int buttonNumber) => PerformButtonActions(buttonNumber);
     }
 }
