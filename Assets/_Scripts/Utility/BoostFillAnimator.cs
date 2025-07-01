@@ -7,40 +7,35 @@ public class BoostFillAnimator : MonoBehaviour
     [SerializeField] private Image boostFillImage;
     private Tween currentTween;
 
-    /// <summary>
-    /// Instantly set the fill amount (0 to 1).
-    /// </summary>
+    /// Instantly set the fill amount (0–1).
     public void SetFill(float amount)
     {
         KillTween();
         boostFillImage.fillAmount = Mathf.Clamp01(amount);
     }
 
-    /// <summary>
-    /// Animate the fill to a specific target over duration.
-    /// </summary>
-    public void AnimateFillTo(float targetFill, float duration)
+    /// Animate to a target fill over duration, with a custom ease and optional callback.
+    public void AnimateFillTo(float targetFill, float duration, Ease ease = Ease.Linear, System.Action onComplete = null)
     {
         KillTween();
         targetFill = Mathf.Clamp01(targetFill);
-        currentTween = boostFillImage.DOFillAmount(targetFill, duration).SetEase(Ease.Linear);
+        currentTween = boostFillImage
+            .DOFillAmount(targetFill, duration)
+            .SetEase(ease)
+            .OnComplete(() => onComplete?.Invoke());
     }
 
-    /// <summary>
-    /// Animate draining from <paramref name="from"/> down to zero over <paramref name="duration"/>.
-    /// </summary>
-    public void AnimateFillDown(float duration, float from)
+    /// Drains from `from` down to zero.
+    public void AnimateFillDown(float duration, float from, Ease ease = Ease.OutQuad, System.Action onComplete = null)
     {
         SetFill(from);
-        AnimateFillTo(0f, duration);
+        AnimateFillTo(0f, duration, ease, onComplete);
     }
 
-    /// <summary>
-    /// Animate filling up from current (or a given start) up to <paramref name="to"/> over <paramref name="duration"/>.
-    /// </summary>
-    public void AnimateFillUp(float duration, float to = 1f)
+    /// Fills from current (or 0) up to `to`.
+    public void AnimateFillUp(float duration, float to = 1f, Ease ease = Ease.InOutSine, System.Action onComplete = null)
     {
-        AnimateFillTo(to, duration);
+        AnimateFillTo(to, duration, ease, onComplete);
     }
 
     private void KillTween()
