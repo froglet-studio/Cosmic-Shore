@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Utilities;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -70,5 +71,19 @@ namespace CosmicShore.Game
         }
 
         public bool HasAction(InputEvents inputEvent) => _shipControlActions.ContainsKey(inputEvent);
+    }
+
+    [Serializable]
+    public struct InputEventShipActionMapping
+    {
+        public InputEvents InputEvent;
+        public List<ShipAction> ShipActions;
+    }
+
+    [Serializable]
+    public struct ResourceEventShipActionMapping
+    {
+        public ResourceEvents ResourceEvent;
+        public List<ShipAction> ClassActions;
     }
 }

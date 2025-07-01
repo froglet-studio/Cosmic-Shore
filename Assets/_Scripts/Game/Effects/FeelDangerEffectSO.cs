@@ -1,3 +1,5 @@
+using CosmicShore.Core;
+using CosmicShore.Game.IO;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -7,7 +9,10 @@ namespace CosmicShore.Game
     {
         public override void Execute(ImpactContext context)
         {
-            
+            if (context.TrailBlockProperties.IsDangerous && context.TrailBlockProperties.trailBlock.Team != context.ShipStatus.Team)
+            {
+                context.ShipStatus.ShipTransformer.ModifyThrottle(context.TrailBlockProperties.speedDebuffAmount, 1.5f);
+            }
         }
     }
 }

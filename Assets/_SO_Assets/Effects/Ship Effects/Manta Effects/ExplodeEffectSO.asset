@@ -11,4 +11,5 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e759460591e45a47aa8234829107c7e, type: 3}
   m_Name: ExplodeEffectSO
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
+  _inertia: 70

@@ -40,6 +40,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: _crystalImpactEffects.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: 'crystalImpactEffects.Array.data[0]'
       value: 13
       objectReference: {fileID: 0}
@@ -55,6 +60,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 63cf794e5083466d82404bc3571435d4,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: _trailBlockImpactEffects.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: 'trailBlockImpactEffects.Array.data[0]'
       value: 18
       objectReference: {fileID: 0}
@@ -63,6 +85,24 @@ PrefabInstance:
       propertyPath: 'trailBlockImpactEffects.Array.data[1]'
       value: 17
       objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 080ca62cf6620bc40ae443657abcf792,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 31c28d0f15ed15642862dae04cddbee5,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20,
+        type: 2}
     - target: {fileID: 4109178549276823488, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: shipInstance

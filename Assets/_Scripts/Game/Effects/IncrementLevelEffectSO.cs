@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     {
         public override void Execute(ImpactContext context)
         {
-
+            context.ShipStatus.ResourceSystem.IncrementLevel(context.CrystalProperties.Element);
         }
     }
 }

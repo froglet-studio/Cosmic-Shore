@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     {
         public override void Execute(ImpactContext context)
         {
-            
+            throw new System.Exception("ActivateTrailBlockEffectSO should not be executed directly. Use ActivateTrailBlockAction instead.");
         }
     }
 }

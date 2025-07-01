@@ -20,19 +20,11 @@ namespace CosmicShore.Game
 
         [Header("Ship Components")]
         [SerializeField] protected Skimmer nearFieldSkimmer;
+        [SerializeField] protected Skimmer farFieldSkimmer;
         [SerializeField] protected GameObject orientationHandle;
 
-        [Header("Optional Ship Components")]
-        [SerializeField] protected GameObject AOEPrefab;
-        [SerializeField] protected Skimmer farFieldSkimmer;
-
         [Header("Configuration")]
-        [SerializeField] protected int resourceIndex = 0;
-        [SerializeField] protected int ammoResourceIndex = 0;
-        [SerializeField] protected int boostResourceIndex = 0;
         [SerializeField] protected float boostMultiplier = 4f;
-        [SerializeField] protected bool bottomEdgeButtons = false;
-        [SerializeField] protected float Inertia = 70f;
 
 
         [Serializable]
@@ -53,8 +45,6 @@ namespace CosmicShore.Game
 
         [Header("Event Channels")]
         [SerializeField] protected BoolEventChannelSO onBottomEdgeButtonsEnabled;
-
-        protected const float speedModifierDuration = 2f;
 
         protected IShipStatus _shipStatus;
         public IShipStatus ShipStatus
@@ -165,19 +155,5 @@ namespace CosmicShore.Game
         {
             throw new NotImplementedException();
         }
-    }
-
-    [Serializable]
-    public struct InputEventShipActionMapping
-    {
-        public InputEvents InputEvent;
-        public List<ShipAction> ShipActions;
-    }
-
-    [Serializable]
-    public struct ResourceEventShipActionMapping
-    {
-        public ResourceEvents ResourceEvent;
-        public List<ShipAction> ClassActions;
     }
 }

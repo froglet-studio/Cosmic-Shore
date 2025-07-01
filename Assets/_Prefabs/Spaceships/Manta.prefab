@@ -31,6 +31,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
+      propertyPath: _crystalImpactEffects.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
       propertyPath: 'crystalImpactEffects.Array.data[0]'
       value: 6
       objectReference: {fileID: 0}
@@ -51,6 +56,29 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: f28579a6382af6c48866e3d5ee3db883,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 63cf794e5083466d82404bc3571435d4,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: _trailBlockImpactEffects.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
       propertyPath: 'trailBlockImpactEffects.Array.data[0]'
       value: 2
       objectReference: {fileID: 0}
@@ -64,6 +92,30 @@ PrefabInstance:
       propertyPath: 'trailBlockImpactEffects.Array.data[2]'
       value: 17
       objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 080ca62cf6620bc40ae443657abcf792,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: ac862d73e3ada036cb8a50fe6bb55e81,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: da9a61387d3051441a02b9233553614a,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[3]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20,
+        type: 2}
     - target: {fileID: 5928382658856804067, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
       propertyPath: m_LocalPosition.x
