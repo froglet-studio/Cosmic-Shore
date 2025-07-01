@@ -27,7 +27,7 @@ public class DropDecoyAction : ShipAction
 
             var fake = Instantiate(decoy).GetComponent<FakeCrystal>();
             if (Player.ActivePlayer && Player.ActivePlayer.Ship == Ship) fake.isplayer = true;
-            fake.Team = Ship.ShipStatus.Team;
+            fake.OwnTeam = Ship.ShipStatus.Team;
             fake.ItemType = ItemType.Debuff;
             fake.transform.position = Ship.Transform.position;
             fake.transform.position += Quaternion.Euler(0, 0, Random.Range(0, 360)) * Ship.Transform.up * Random.Range(dropRadiusMinRange, dropRadiusMaxRange);

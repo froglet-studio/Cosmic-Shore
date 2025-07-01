@@ -9,6 +9,7 @@ namespace CosmicShore.Game
         public TrailBlockProperties TrailBlockProperties { get; set; }
         public CrystalProperties CrystalProperties { get; set; }
         public Vector3 ImpactPoint { get; set; }
-        public Vector3 ImpactDirection { get; set; }
+        public Vector3 ImpactVector { get; set; }
+        public Teams OwnTeam { get; set; }
     }
 }

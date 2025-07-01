@@ -28,9 +28,9 @@ namespace CosmicShore.Game.Projectiles
 
         protected List<Trail> trails = new List<Trail>();
 
-        public override void Detonate(IShip ship)
+        public override void InitializeAndDetonate(IShip ship)
         {
-            base.Detonate(ship);
+            base.InitializeAndDetonate(ship);
             blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team) 
                 : _themeManagerData.GetTeamBlockMaterial(Ship.ShipStatus.Team);
         }

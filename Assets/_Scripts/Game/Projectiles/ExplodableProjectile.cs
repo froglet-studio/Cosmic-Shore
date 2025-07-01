@@ -83,9 +83,16 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
+                AOEExplosion.Initialize(new AOEExplosion.InitializeStruct
+                {
+                    OwnTeam = OwnTeam,
+                    Ship = ShipStatus.Ship,
+                    MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge),
+                    OverrideMaterial = ShipStatus.Ship.ShipStatus.AOEExplosionMaterial,
+                    AnnonymousExplosion = false
+                });
                 AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
-                AOEExplosion.Detonate(ShipStatus.Ship);
+                AOEExplosion.Detonate();
             }
 
             _poolManager.ReturnToPool(gameObject, gameObject.tag);

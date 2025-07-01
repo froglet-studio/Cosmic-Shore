@@ -12,5 +12,6 @@ public enum CrystalImpactEffects
     ReduceSpeed = 10,
     PlayHaptics = 11,
     StealCrystal = 12,
-    GainFullAmmo = 13
+    GainFullAmmo = 13,
+    AdjustLevel = 14,
 }

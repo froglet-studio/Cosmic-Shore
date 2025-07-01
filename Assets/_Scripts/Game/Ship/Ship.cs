@@ -237,16 +237,16 @@ namespace CosmicShore.Core
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) // TODO: move to an ability system with separate classes
         {
-            foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            /*foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
                 {
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex 
+                        aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
                             ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
-                        aoeExplosion.Detonate(this);
+                        aoeExplosion.InitializeAndDetonate(this);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
@@ -266,9 +266,9 @@ namespace CosmicShore.Core
                     case CrystalImpactEffects.GainFullAmmo:
                         ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
-                    // Play Haptics
+                        // Play Haptics
                 }
-            }
+            }*/
         }
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)

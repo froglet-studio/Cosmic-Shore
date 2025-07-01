@@ -160,9 +160,9 @@ namespace CosmicShore.Core
                         if (onCoolDown || shipGeometry.Ship.ShipStatus.Team == Team) break;
 
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Detonate(Ship);
+                        AOEExplosion.InitializeAndDetonate(Ship);
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale = Ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
+                        // AOEExplosion.MaxScale = Ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
                         StartCoroutine(CooldownCoroutine(AOEPeriod));
                         break;
                 }

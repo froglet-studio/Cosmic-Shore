@@ -10,7 +10,7 @@ public enum ItemType
 public class NodeItem : MonoBehaviour
 {
     protected int id;
-    public Teams Team = Teams.None;
+    public Teams OwnTeam = Teams.None;
     public ItemType ItemType = ItemType.Buff;
 
     public int GetID()

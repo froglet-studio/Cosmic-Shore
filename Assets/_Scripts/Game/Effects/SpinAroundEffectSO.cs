@@ -1,3 +1,4 @@
+using System.Net.NetworkInformation;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -7,6 +8,7 @@ namespace CosmicShore.Game
     {
         public override void Execute(ImpactContext context)
         {
+            context.ShipStatus.Ship.ShipStatus.ShipTransformer.SpinShip(context.ImpactVector);
         }
     }
 }

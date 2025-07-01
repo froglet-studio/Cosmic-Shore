@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -7,7 +8,7 @@ namespace CosmicShore.Game
     {
         public override void Execute(ImpactContext context)
         {
-
+            context.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
         }
     }
 }

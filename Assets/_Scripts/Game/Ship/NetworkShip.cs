@@ -258,7 +258,7 @@ namespace CosmicShore.Game
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            /*foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
                 {
@@ -270,7 +270,7 @@ namespace CosmicShore.Game
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
                             ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
-                        aoeExplosion.Detonate(this);
+                        aoeExplosion.InitializeAndDetonate(this);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
@@ -291,7 +291,7 @@ namespace CosmicShore.Game
                         ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
                 }
-            }
+            }*/
         }
 
         public void SetBoostMultiplier(float multiplier)
