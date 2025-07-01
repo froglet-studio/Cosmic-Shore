@@ -36,7 +36,6 @@ namespace CosmicShore.Game
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
         bool LiveProjectiles { get; set; }
-        string Name { get; set; }
         bool Overheating { get; set; }
         IPlayer Player { get; set; }
         string PlayerName
@@ -58,7 +57,11 @@ namespace CosmicShore.Game
         List<GameObject> ShipGeometries { get; set; }
         Transform ShipTransform { get;}
         ShipTransformer ShipTransformer { get; }
-        ShipTypes ShipType { get; set; }
+        string Name { get; }
+        ShipTypes ShipType { get; }
+        Skimmer NearFieldSkimmer { get; }
+        Skimmer FarFieldSkimmer { get; }
+        GameObject OrientationHandle { get; }
         Silhouette Silhouette { get; }
         Material ShipMaterial { get; set; }
         Material SkimmerMaterial { get; set; }
@@ -75,6 +78,7 @@ namespace CosmicShore.Game
         R_ShipCustomization Customization { get; }
         R_ShipActionHandler ActionHandler { get; }
         R_ShipImpactHandler ImpactHandler { get; }
+        R_ShipElementStatsHandler ElementalStatsHandler { get; }
 
         void ResetValues();
     }

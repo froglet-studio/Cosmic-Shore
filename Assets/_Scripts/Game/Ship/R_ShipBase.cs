@@ -14,7 +14,7 @@ namespace CosmicShore.Game
     {
         public event Action<IShipStatus> OnShipInitialized;
 
-        [Header("Ship Meta")]
+        /*[Header("Ship Meta")]
         [SerializeField] protected string _name;
         [SerializeField] protected ShipTypes _shipType;
 
@@ -24,24 +24,7 @@ namespace CosmicShore.Game
         [SerializeField] protected GameObject orientationHandle;
 
         [Header("Configuration")]
-        [SerializeField] protected float boostMultiplier = 4f;
-
-
-        [Serializable]
-        public struct ElementStat
-        {
-            public string StatName;
-            public Element Element;
-
-            public ElementStat(string statName, Element element)
-            {
-                StatName = statName;
-                Element = element;
-            }
-        }
-
-        [Header("Elemental Stats")]
-        [SerializeField] protected List<ElementStat> ElementStats = new();
+        [SerializeField] protected float boostMultiplier = 4f;*/
 
         [Header("Event Channels")]
         [SerializeField] protected BoolEventChannelSO onBottomEdgeButtonsEnabled;
@@ -52,9 +35,9 @@ namespace CosmicShore.Game
             get
             {
                 _shipStatus ??= GetComponent<IShipStatus>();
-                _shipStatus.Name = _name;
+                /*_shipStatus.Name = _name;
                 _shipStatus.ShipType = _shipType;
-                _shipStatus.BoostMultiplier = boostMultiplier;
+                _shipStatus.BoostMultiplier = boostMultiplier;*/
                 return _shipStatus;
             }
         }
@@ -64,15 +47,15 @@ namespace CosmicShore.Game
         protected void SetTeamToShipStatusAndSkimmers(Teams team)
         {
             ShipStatus.Team = team;
-            if (nearFieldSkimmer != null) nearFieldSkimmer.Team = team;
-            if (farFieldSkimmer != null) farFieldSkimmer.Team = team;
+            if (ShipStatus.NearFieldSkimmer != null) ShipStatus.NearFieldSkimmer.Team = team;
+            if (ShipStatus.FarFieldSkimmer != null) ShipStatus.FarFieldSkimmer.Team = team;
         }
 
         protected void SetPlayerToShipStatusAndSkimmers(IPlayer player)
         {
             ShipStatus.Player = player;
-            if (nearFieldSkimmer != null) nearFieldSkimmer.Player = player;
-            if (farFieldSkimmer != null) farFieldSkimmer.Player = player;
+            if (ShipStatus.NearFieldSkimmer != null) ShipStatus.NearFieldSkimmer.Player = player;
+            if (ShipStatus.FarFieldSkimmer != null) ShipStatus.FarFieldSkimmer.Player = player;
         }
 
         public abstract void Initialize(IPlayer player);
@@ -84,15 +67,15 @@ namespace CosmicShore.Game
             ShipStatus.ResourceSystem.InitializeElementLevels(resources);
 
         public virtual void SetShipUp(float angle) =>
-            orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+            ShipStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
 
         public virtual void DisableSkimmer()
         {
-            nearFieldSkimmer?.gameObject.SetActive(false);
-            farFieldSkimmer?.gameObject.SetActive(false);
+            ShipStatus.NearFieldSkimmer?.gameObject.SetActive(false);
+            ShipStatus.FarFieldSkimmer?.gameObject.SetActive(false);
         }
 
-        public void SetBoostMultiplier(float multiplier) => boostMultiplier = multiplier;
+        public void SetBoostMultiplier(float multiplier) => ShipStatus.BoostMultiplier = multiplier;
 
         public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
 
@@ -117,11 +100,8 @@ namespace CosmicShore.Game
             SetResourceLevels(captain.InitialResourceLevels);
         }
 
-        public virtual void BindElementalFloat(string name, Element element)
-        {
-            if (ElementStats.TrueForAll(es => es.StatName != name))
-                ElementStats.Add(new ElementStat(name, element));
-        }
+        public virtual void BindElementalFloat(string name, Element element) =>
+            ShipStatus.ElementalStatsHandler.BindElementalFloat(name, element);
 
         protected void InvokeShipInitializedEvent() => OnShipInitialized?.Invoke(ShipStatus);
 

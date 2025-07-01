@@ -151,6 +151,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
         type: 3}
+      propertyPath: _name
+      value: Squirrel
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
+        type: 3}
+      propertyPath: _shipType
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
+        type: 3}
       propertyPath: shipInstance
       value: 
       objectReference: {fileID: 1193681058774765883}
@@ -159,6 +169,16 @@ PrefabInstance:
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 4699205272245208311}
+    - target: {fileID: 6441696348568773771, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
+        type: 3}
+      propertyPath: _nearFieldSkimmer
+      value: 
+      objectReference: {fileID: 8139270180633872241}
+    - target: {fileID: 6441696348568773771, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
+        type: 3}
+      propertyPath: orientationHandle
+      value: 
+      objectReference: {fileID: 7148887080671504995}
     - target: {fileID: 6441696348568773771, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
         type: 3}
       propertyPath: _shipHUDController
@@ -334,20 +354,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Squirrel
-  _shipType: 6
-  nearFieldSkimmer: {fileID: 8139270180633872241}
-  orientationHandle: {fileID: 7148887080671504995}
-  AOEPrefab: {fileID: 2728798890556433942, guid: b189bdcdd34040c4e9631f49d995b800,
-    type: 3}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  boostMultiplier: 0
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   isMultiplayerMode: 0

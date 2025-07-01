@@ -99,9 +99,6 @@ namespace CosmicShore.Game
             get
             {
                 _shipStatus ??= GetComponent<ShipStatus>();
-                _shipStatus.Name = _name;
-                _shipStatus.BoostMultiplier = boostMultiplier;
-                _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
         }

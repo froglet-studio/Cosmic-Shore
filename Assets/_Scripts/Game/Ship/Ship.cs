@@ -50,9 +50,6 @@ namespace CosmicShore.Core
             get
             {
                 _shipStatus ??= GetComponent<IShipStatus>();
-                _shipStatus.Name = _name;
-                _shipStatus.BoostMultiplier = boostMultiplier;
-                _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
         }

@@ -24,10 +24,12 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(R_ShipActionHandler))]
     [RequireComponent(typeof(R_ShipImpactHandler))]
     [RequireComponent(typeof(R_ShipCustomization))]
+    [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class ShipStatus : MonoBehaviour, IShipStatus
     {
         public event Action<IShipStatus> OnShipInitialized;
+
 
         [SerializeField, RequireInterface(typeof(IShip))]
         MonoBehaviour shipInstance;
@@ -53,8 +55,31 @@ namespace CosmicShore.Game
         ShipHUDContainer shipHUDContainer;
         public ShipHUDContainer ShipHUDContainer => shipHUDContainer;
 
-        public string Name { get; set; }
-        public ShipTypes ShipType { get; set; }
+        [SerializeField] protected float boostMultiplier = 4f;
+        public float BoostMultiplier
+        {
+            get => boostMultiplier;
+            set => boostMultiplier = value;
+        }
+
+        [Header("Ship Meta")]
+        [SerializeField] protected string _name;
+        public string Name => _name;
+
+        [SerializeField] protected ShipTypes _shipType;
+        public ShipTypes ShipType => _shipType;
+
+
+        [Header("Ship Components")]
+        [SerializeField] protected Skimmer _nearFieldSkimmer;
+        public Skimmer NearFieldSkimmer => _nearFieldSkimmer;
+
+        [SerializeField] protected Skimmer _farFieldSkimmer;
+        public Skimmer FarFieldSkimmer => _farFieldSkimmer;
+
+        [SerializeField] protected GameObject orientationHandle;
+        public GameObject OrientationHandle => orientationHandle;
+
         public Transform FollowTarget { get; set; }
         public Transform ShipTransform => Ship.Transform;
         public Teams Team { get; set; }
@@ -188,9 +213,18 @@ namespace CosmicShore.Game
             }
         }
 
+        R_ShipElementStatsHandler _elementalStatsHandler;
+        public R_ShipElementStatsHandler ElementalStatsHandler
+        {
+            get
+            {
+                _elementalStatsHandler = _elementalStatsHandler != null ? _elementalStatsHandler : gameObject.GetOrAdd<R_ShipElementStatsHandler>();
+                return _elementalStatsHandler;
+            }
+        }
+
 
         public float GetInertia { get; set; }
-        public float BoostMultiplier { get; set; }
         public float Speed { get; set; }
         public float ChargedBoostCharge { get; set; }
         public bool Boosting { get; set; }

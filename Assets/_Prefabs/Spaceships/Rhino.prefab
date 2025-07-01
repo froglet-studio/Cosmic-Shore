@@ -141,6 +141,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
+      propertyPath: _name
+      value: Rhino
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _shipType
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
       propertyPath: shipInstance
       value: 
       objectReference: {fileID: 1390416577048209617}
@@ -149,6 +159,16 @@ PrefabInstance:
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 2741286203240111783}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _nearFieldSkimmer
+      value: 
+      objectReference: {fileID: 1541500096238593566}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: orientationHandle
+      value: 
+      objectReference: {fileID: 8092055187194444793}
     - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: _shipHUDController
@@ -385,20 +405,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Rhino
-  _shipType: 3
-  nearFieldSkimmer: {fileID: 1541500096238593566}
-  orientationHandle: {fileID: 8092055187194444793}
-  AOEPrefab: {fileID: 2728798890556433942, guid: d568a14301490e54280955b50673f884,
-    type: 3}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  boostMultiplier: 6
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   isMultiplayerMode: 0

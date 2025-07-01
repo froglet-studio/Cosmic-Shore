@@ -171,6 +171,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
+      propertyPath: _name
+      value: Serpent
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _shipType
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
       propertyPath: shipInstance
       value: 
       objectReference: {fileID: 585568732921870438}
@@ -179,6 +189,16 @@ PrefabInstance:
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 8222987891369319599}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _nearFieldSkimmer
+      value: 
+      objectReference: {fileID: 3818635087675583957}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: orientationHandle
+      value: 
+      objectReference: {fileID: 2508490649061416167}
     - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: _shipHUDController
@@ -400,20 +420,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Serpent
-  _shipType: 7
-  nearFieldSkimmer: {fileID: 3818635087675583957}
-  orientationHandle: {fileID: 2508490649061416167}
-  AOEPrefab: {fileID: 2728798890556433942, guid: c4e6163ef5e206846bb8d245b11d1a61,
-    type: 3}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  boostMultiplier: 4
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   isMultiplayerMode: 0

@@ -90,8 +90,8 @@ namespace CosmicShore.Game
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
-            if (nearFieldSkimmer != null) nearFieldSkimmer.Initialize(this);
-            if (farFieldSkimmer != null) farFieldSkimmer.Initialize(this);
+            if (ShipStatus.NearFieldSkimmer != null) ShipStatus.NearFieldSkimmer.Initialize(this);
+            if (ShipStatus.FarFieldSkimmer != null) ShipStatus.FarFieldSkimmer.Initialize(this);
 
             if (isMultiplayerMode)
             {
@@ -99,7 +99,7 @@ namespace CosmicShore.Game
                 {
                     if (!ShipStatus.FollowTarget) ShipStatus.FollowTarget = transform;
 
-                    ShipStatus.ShipHUDController.InitializeShipHUD(_shipType);
+                    ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
 
                     onBottomEdgeButtonsEnabled.RaiseEvent(true);
 
@@ -123,7 +123,7 @@ namespace CosmicShore.Game
                 ShipStatus.AIPilot.AssignShip(this);
 
                 ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.enabled);
-                ShipStatus.ShipHUDController.InitializeShipHUD(_shipType);
+                ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
 
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);                
@@ -180,7 +180,7 @@ namespace CosmicShore.Game
                 collider.enabled = enabled;
         }
 
-        public void FlipShipUpsideDown() => orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
-        public void FlipShipRightsideUp() => orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
+        public void FlipShipUpsideDown() => ShipStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
+        public void FlipShipRightsideUp() => ShipStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
     }
 }

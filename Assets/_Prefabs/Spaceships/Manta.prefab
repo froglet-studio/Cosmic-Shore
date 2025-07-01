@@ -173,14 +173,39 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
+      propertyPath: _name
+      value: Manta
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: _shipType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
       propertyPath: shipInstance
       value: 
       objectReference: {fileID: 8122013569914019445}
     - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
+      propertyPath: _farFieldSkimmer
+      value: 
+      objectReference: {fileID: 954762401694888925}
+    - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 4522011832047431928}
+    - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: _nearFieldSkimmer
+      value: 
+      objectReference: {fileID: 3067646495909944210}
+    - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: orientationHandle
+      value: 
+      objectReference: {fileID: 4369352182913313440}
     - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
       propertyPath: _shipHUDController
@@ -551,20 +576,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Manta
-  _shipType: 1
-  nearFieldSkimmer: {fileID: 3067646495909944210}
-  orientationHandle: {fileID: 4369352182913313440}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
-    type: 3}
-  farFieldSkimmer: {fileID: 954762401694888925}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  boostMultiplier: 2
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   isMultiplayerMode: 0
