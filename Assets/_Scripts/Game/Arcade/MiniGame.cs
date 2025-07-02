@@ -375,7 +375,7 @@ namespace CosmicShore.Game.Arcade
                     ScoreTracker.GetHighScore(),
                     UserAction.GetGameplayUserActionLabel(gameMode, PlayerShipType, IntensityLevel)));
 
-            CameraManager.Instance.SetEndCameraActive();
+            CustomCameraController.Instance.SetEndCameraActive();
             PauseSystem.TogglePauseGame();
             gameRunning = false;
             EndGameScreen.SetActive(true);
@@ -433,7 +433,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Ship.ShipStatus.ResourceSystem.Reset();
             ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
 
-            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
+            CustomCameraController.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
 
             // For single player games, don't require the extra button press
             if (Players.Count > 1)

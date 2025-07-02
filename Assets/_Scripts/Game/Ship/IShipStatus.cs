@@ -2,6 +2,7 @@
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
+using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace CosmicShore.Core          // Change it to CosmicShore.Game
         Quaternion blockRotation { get; set; }
         bool Boosting { get; set; }
         float BoostMultiplier { get; set; }
-        CameraManager CameraManager { get; set; }
+        CustomCameraController CameraController { get; set; }
         SO_Captain Captain { get; set; }
         float ChargedBoostCharge { get; set; }
         bool ChargedBoostDischarging { get; set; }

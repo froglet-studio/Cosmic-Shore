@@ -22,7 +22,7 @@ public class StartFromAnyScene : MonoBehaviour
     IEnumerator SetupCameraCoroutine()
     {
         yield return new WaitForEndOfFrame();
-        CameraManager.Instance.SetupGamePlayCameras();
+        CustomCameraController.Instance.SetupGamePlayCameras(null);
     }
 
 

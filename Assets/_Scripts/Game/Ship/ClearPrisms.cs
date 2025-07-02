@@ -20,7 +20,7 @@ namespace CosmicShore
 
         Vector3 capsuleDirection;
 
-        CameraManager cameraManager;
+        CustomCameraController cameraManager;
         GeometryUtils.LineData lineData;
 
         private void OnEnable()
@@ -36,8 +36,8 @@ namespace CosmicShore
         private void OnShipInitialized(IShipStatus _)
         {
             if (_ship.ShipStatus.AutoPilotEnabled) return;
-            cameraManager = CameraManager.Instance;
-            mainCamera = cameraManager.GetCloseCamera();
+            cameraManager = CustomCameraController.Instance;
+            mainCamera = cameraManager.CameraTransform;
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
             transform.SetParent(visibilityCapsuleTransform);
             visibilityCapsule = gameObject.AddComponent<CapsuleCollider>();

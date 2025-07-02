@@ -2,6 +2,7 @@
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
+using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -36,7 +37,7 @@ namespace CosmicShore.Core
         public Material AOEConicExplosionMaterial { get; set; }
         public Material SkimmerMaterial { get; set; }
         public SO_Captain Captain { get; set; }
-        public CameraManager CameraManager { get; set; }
+        public CustomCameraController CameraController { get; set; }
         public List<GameObject> ShipGeometries { get; set; }
         public TrailBlock AttachedTrailBlock { get; set; }
 
