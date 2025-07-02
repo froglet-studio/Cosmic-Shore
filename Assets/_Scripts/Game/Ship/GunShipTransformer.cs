@@ -13,7 +13,7 @@ public class GunShipTransformer : ShipTransformer
 
     bool moveForward = true;
     bool attached = false;
-    CameraManager cameraManager;
+    CustomCameraController cameraManager;
 
     [SerializeField] int ammoIndex = 0;
 
@@ -21,7 +21,7 @@ public class GunShipTransformer : ShipTransformer
     protected override void Start()
     {
         base.Start();
-        cameraManager = CameraManager.Instance;
+        cameraManager = CustomCameraController.Instance;
         trailFollower = GetComponent<BlockscapeFollower>();
     }
 

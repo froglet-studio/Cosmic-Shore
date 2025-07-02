@@ -5,6 +5,7 @@ using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Core;
 
 namespace CosmicShore.Core
 {
@@ -32,7 +33,7 @@ namespace CosmicShore.Core
         ResourceSystem resourceSystem;
 
         Dictionary<string, float> skimStartTimes = new();
-        CameraManager cameraManager;
+        CustomCameraController cameraManager;
 
         public int activelySkimmingBlockCount = 0;
         public int ActivelySkimmingBlockCount { get { return activelySkimmingBlockCount; } }
@@ -64,7 +65,7 @@ namespace CosmicShore.Core
 
         void Start()
         {
-            cameraManager = CameraManager.Instance;
+            cameraManager = CustomCameraController.Instance;
 
             sweetSpot = transform.localScale.x / 4;
             sqrSweetSpot = transform.localScale.x * transform.localScale.x / 16;
@@ -408,19 +409,19 @@ namespace CosmicShore.Core
         }
 
         /*
-Change: Instead of computing the misalignment between the ship’s up and the radial from the tube center (which produced a repulsive feel), 
-we now compute the desired radial by projecting the ship’s up vector onto the plane perpendicular to the tube’s forward. 
+Change: Instead of computing the misalignment between the shipÂ’s up and the radial from the tube center (which produced a repulsive feel), 
+we now compute the desired radial by projecting the shipÂ’s up vector onto the plane perpendicular to the tubeÂ’s forward. 
 This lets the player's roll input (the ship's up vector) determine the lateral target. 
-Then we compute the tangent direction along the tube’s cross–section and slerp the rotation toward that, 
+Then we compute the tangent direction along the tubeÂ’s crossÂ–section and slerp the rotation toward that, 
 while keeping the existing subtle velocity nudging.
 */
         /*
-Change: Instead of using a misalignment-based repulsive approach, this version computes a desired tube position based on the ship’s current up vector. 
+Change: Instead of using a misalignment-based repulsive approach, this version computes a desired tube position based on the shipÂ’s current up vector. 
 That is, the desired tube position is defined as the tube center plus (ship.Transform.up * sweetSpot). 
-Then, the target forward is the direction from the ship’s current position to that desired position.
-This approach, combined with the existing subtle velocity nudging, attracts the ship toward the tube’s surface without imposing lateral displacement.
+Then, the target forward is the direction from the shipÂ’s current position to that desired position.
+This approach, combined with the existing subtle velocity nudging, attracts the ship toward the tubeÂ’s surface without imposing lateral displacement.
 */
-        // Change: Instead of using the ship’s up versus radial misalignment (which repelled the ship), this version computes an error vector (U - radial) and nudges the forward direction accordingly—so the ship’s forward is adjusted toward a path that will bring it to the tube’s surface while preserving the player's roll.
+        // Change: Instead of using the shipÂ’s up versus radial misalignment (which repelled the ship), this version computes an error vector (U - radial) and nudges the forward direction accordinglyÂ—so the shipÂ’s forward is adjusted toward a path that will bring it to the tubeÂ’s surface while preserving the player's roll.
         void AlignAndNudge(float combinedWeight)
         {
             if (!minMatureBlock || nextBlocks.Count < 5)

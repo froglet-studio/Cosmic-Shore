@@ -2,6 +2,7 @@ using CosmicShore.App.Systems;
 using CosmicShore.Environment.FlowField;
 using CosmicShore.Game.AI; // TODO: code smell that this namespace needs to be included here
 using CosmicShore.Utilities;
+using CosmicShore.Core;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -86,7 +87,7 @@ namespace CosmicShore.Core
 
             SceneManager.LoadScene(mainMenuScene);
             UnPauseGame();
-            CameraManager.Instance.OnMainMenu();
+            CustomCameraController.Instance.OnMainMenu();
         }
     }
 }
