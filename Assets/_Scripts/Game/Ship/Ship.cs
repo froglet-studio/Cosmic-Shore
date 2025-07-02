@@ -8,27 +8,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Core
 {
-    [Serializable]
-    public struct InputEventShipActionMapping
-    {
-        public InputEvents InputEvent;
-        public List<ShipAction> ShipActions;
-    }
-
-    [Serializable]
-    public struct ResourceEventShipActionMapping
-    {
-        public ResourceEvents ResourceEvent;
-        public List<ShipAction> ClassActions;
-    }
-
-    [RequireComponent(typeof(ShipStatus))]
-    public class Ship : MonoBehaviour, IShip, IShipHUDController
+    [RequireComponent(typeof(IShipStatus))]
+    public class Ship : MonoBehaviour, IShip
     {
         public event Action<IShipStatus> OnShipInitialized;
 
@@ -37,7 +24,8 @@ namespace CosmicShore.Core
 
         [Header("Ship Meta")]
 
-        [SerializeField] string Name;
+        [FormerlySerializedAs("Name")]
+        [SerializeField] string _name;
 
         [FormerlySerializedAs("ShipType")]
         [SerializeField] ShipTypes _shipType;
@@ -52,22 +40,19 @@ namespace CosmicShore.Core
         [SerializeField] List<GameObject> shipGeometries;
         public List<GameObject> ShipGeometries => shipGeometries;
 
-        [SerializeField] GameObject shipHUD;
+        [SerializeField] internal GameObject shipHUD;
 
-        IShipStatus _shipStatus;
+        public IShipHUDView ShipHUDView { get; private set; }
 
+        private IShipStatus _shipStatus;
         public IShipStatus ShipStatus
         {
             get
             {
-                if (_shipStatus == null)
-                {
-                    _shipStatus = GetComponent<ShipStatus>();
-                    _shipStatus.Name = name;
-                    _shipStatus.ShipType = _shipType;
-                    _shipStatus.ShipTransform = transform;
-                }
-                
+                _shipStatus ??= GetComponent<IShipStatus>();
+                _shipStatus.Name = _name;
+                _shipStatus.BoostMultiplier = boostMultiplier;
+                _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
         }
@@ -150,7 +135,6 @@ namespace CosmicShore.Core
         InputEventsEventChannelSO OnButton3Released;
 
         public Transform Transform => transform;
-        public IInputStatus InputStatus => ShipStatus.InputController.InputStatus;
 
         private void OnEnable()
         {
@@ -160,14 +144,6 @@ namespace CosmicShore.Core
             OnButton2Released.OnEventRaised += StopShipControllerActions;
             OnButton3Pressed.OnEventRaised += PerformShipControllerActions;
             OnButton3Released.OnEventRaised += StopShipControllerActions;
-        }
-
-        private void Start()
-        {
-            _shipStatus.Name = name;
-            _shipStatus.ShipType = _shipType;
-            _shipStatus.ShipTransform = transform;
-            _shipStatus.BoostMultiplier = boostMultiplier;
         }
 
         private void OnDisable()
@@ -191,31 +167,35 @@ namespace CosmicShore.Core
             onBottomEdgeButtonsEnabled.RaiseEvent(true);
             // if (bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
 
-            InitializeShipGeometries();
             InitializeShipControlActions();
             InitializeClassResourceActions();
 
             ShipStatus.Silhouette.Initialize(this);
             ShipStatus.ShipTransformer.Initialize(this);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
-            //ShipStatus.AIPilot.Initialize(false);
-            ShipStatus.AIPilot.Initialize(player.Ship.ShipStatus.AIPilot.AutoPilotEnabled);
+
+            ShipStatus.AIPilot.AssignShip(this);
+            ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.AutoPilotEnabled);
             
             nearFieldSkimmer?.Initialize(this);
             farFieldSkimmer?.Initialize(this);
             ShipStatus.ShipCameraCustomizer.Initialize(this);
-            ShipStatus.TrailSpawner.Initialize(this);
+            ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
             // if (ShipStatus.AIPilot.AutoPilotEnabled) return;
             Debug.Log($"<color=blue> Ai Pilot value {ShipStatus.AutoPilotEnabled}");
             if (!ShipStatus.AutoPilotEnabled /*&& !ShipStatus.AIPilot*/)
             {
+                if (SceneManager.GetActiveScene().name == "Menu_Main")  // this is a temp feature we will be changing this later
+                {
+                    return;
+                }
+
                 Debug.Log("Showing UI for player");
                 if (shipHUD != null)
                 {
                     shipHUD.TryGetComponent(out ShipHUDContainer container);
-                    var hudView = container.Show(_shipType);
-                    hudView?.Initialize(this);
+                    // ShipHUDView = container.InitializeView(_shipType);
                 }
             }
             /*if (shipHUD)
@@ -245,9 +225,9 @@ namespace CosmicShore.Core
             if (farFieldSkimmer != null) farFieldSkimmer.Player = player;
         }
 
-        void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, shipGeometries);
-        void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(this, inputEventShipActions, ShipControlActions);
-        void InitializeClassResourceActions() => ShipHelper.InitializeClassResourceActions(this, resourceEventClassActions, ClassResourceActions);
+        void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, inputEventShipActions, ShipControlActions);
+        
+        void InitializeClassResourceActions() => ShipHelper.InitializeClassResourceActions(ShipStatus, resourceEventClassActions, ClassResourceActions);
 
         public void BindElementalFloat(string statName, Element element)
         {
@@ -575,5 +555,11 @@ namespace CosmicShore.Core
         {
             PerformButtonActions(buttonNumber);
         }
+
+        public void SetAISkillLevel(int value)
+        {
+            throw new NotImplementedException();
+        }
     }
+
 }

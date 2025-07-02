@@ -27,6 +27,7 @@ namespace CosmicShore.Game
         {
             public ShipTypes DefaultShipType;
             public Teams Team;
+            public IShip Ship;
             public string PlayerName;
             public string PlayerUUID;
             public string Name;

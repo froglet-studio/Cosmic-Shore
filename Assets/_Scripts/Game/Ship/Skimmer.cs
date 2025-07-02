@@ -139,7 +139,7 @@ namespace CosmicShore.Core
             }
         }
 
-        void PerformShipImpactEffects(ShipGeometry shipGeometry)
+        void PerformShipImpactEffects(IShipStatus shipGeometry)
         {
             if (Ship == null)
                 return;
@@ -224,9 +224,9 @@ namespace CosmicShore.Core
 
         void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
+            if (other.TryGetComponent<IShipStatus>(out var shipStatus))
             {
-                PerformShipImpactEffects(shipGeometry);
+                PerformShipImpactEffects(shipStatus);
             }
 
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != Team))

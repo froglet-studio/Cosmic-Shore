@@ -4,18 +4,18 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    [RequireComponent(typeof(ShipStatus))]
+    [RequireComponent(typeof(IShipStatus))]
     public class SlowShipViewer : MonoBehaviour
     {
         [SerializeField] Material trailViewerMaterial;
 
         LineRenderer lineRenderer;
-        ShipStatus shipStatus;
+        IShipStatus shipStatus;
         Transform target;
         
         void Start()
         {
-            shipStatus = GetComponent<ShipStatus>();  
+            shipStatus = GetComponent<IShipStatus>();  
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.material = trailViewerMaterial;
             lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;

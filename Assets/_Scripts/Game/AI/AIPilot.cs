@@ -155,9 +155,9 @@ namespace CosmicShore.Game.AI
         public void Initialize(bool enableAutoPilot)
         {
             AutoPilotEnabled = enableAutoPilot;
+            Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
             if (!AutoPilotEnabled)
                 return;
-
             maxDistanceSquared = maxDistance * maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;

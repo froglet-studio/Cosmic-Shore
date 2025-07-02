@@ -83,32 +83,10 @@ namespace CosmicShore.Game
 
         public void Initialize(IPlayer.InitializeData data)
         {
-            /*_defaultShipType = data.DefaultShipType;
-            if (IsServer)
-            {
-                NetDefaultShipType.Value = data.DefaultShipType;
-            }
-            Team = data.Team;
-            PlayerName = data.PlayerName;
-            PlayerUUID = data.PlayerUUID;
-            Name = data.PlayerName;
-            */
-        }
-
-        public void ToggleActive(bool active) => IsActive = active;
-
-        /// <summary>
-        /// Setup the player.
-        /// </summary>
-        /// <param name="ship">The ship instance.</param>
-        /// <param name="isOwner">Is this player owned by this client?</param>
-        public void Setup(IShip ship)
-        {
-
             PlayerName = AuthenticationService.Instance.PlayerName;
-            // PlayerUUID = data.PlayerUUID;
+            PlayerUUID = PlayerName;
 
-            _ship = ship;
+            _ship = data.Ship;
             _ship = Hangar.Instance.LoadPlayerShip(_ship, _ship.ShipStatus.Team, IsOwner);
 
             _ship.Initialize(this);
@@ -120,6 +98,8 @@ namespace CosmicShore.Game
                 InputController.Initialize(_ship);
             }
         }
+
+        public void ToggleActive(bool active) => IsActive = active;
 
         /// <summary> - NOT NEEDED IF WE OMIT CHARACTER SELECT SCENE
         /// Sets the default ship type via the network variable.

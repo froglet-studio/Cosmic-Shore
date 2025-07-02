@@ -2,6 +2,7 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Entities;
 using Unity.Multiplayer.Samples.Utilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -22,7 +23,7 @@ namespace CosmicShore.Game
         Transform[] _playerSpawnPoints;
 
         [SerializeField]
-        NetworkShip[] _shipPrefabs;
+        NetworkObject[] _shipPrefabs;
 
         [SerializeField]
         string _mainMenuSceneName = "Menu_Main";
@@ -212,7 +213,9 @@ namespace CosmicShore.Game
                 return null;
             }
 
-            return _shipPrefabs.FirstOrDefault(prefab => prefab.ShipStatus.ShipType == shipTypeToSpawn).GetComponent<NetworkObject>();
+            return _shipPrefabs.FirstOrDefault(
+                prefab => prefab.TryGetComponent(out IShip networkShip) && 
+                networkShip.ShipStatus.ShipType == shipTypeToSpawn);
         }
     }
 }

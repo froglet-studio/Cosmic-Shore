@@ -31,7 +31,7 @@ namespace CosmicShore
         public float projectileTime = 3;
 
         bool firing = false;
-        [SerializeField] float firingRate = 1f;
+        public float firingRate = 1f;
 
         Coroutine fireGunsCoroutine = null;
 

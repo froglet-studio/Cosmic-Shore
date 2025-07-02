@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
 using CosmicShore;
+using CosmicShore.Game;
 
 public class LightFauna : Fauna
 {
@@ -63,8 +64,7 @@ public class LightFauna : Fauna
             if (distance == 0) continue;
 
             // Hande Ships
-            var shipPart = collider.GetComponent<ShipGeometry>();
-            if (shipPart)
+            if (collider.TryGetComponent(out IShipStatus _))
             {
                 neighborCount++;
                 separation -= diff.normalized / distance;

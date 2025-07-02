@@ -1,4 +1,4 @@
-﻿using CosmicShore.Game;
+﻿using CosmicShore.Core;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
@@ -6,7 +6,7 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Core          // Change it to CosmicShore.Game
+namespace CosmicShore.Game
 {
     public interface IShipStatus
     {
@@ -57,19 +57,26 @@ namespace CosmicShore.Core          // Change it to CosmicShore.Game
         ShipAnimation ShipAnimation { get; }
         ShipCameraCustomizer ShipCameraCustomizer { get; }
         List<GameObject> ShipGeometries { get; set; }
-        Transform ShipTransform { get; set; }
+        Transform ShipTransform { get;}
         ShipTransformer ShipTransformer { get; }
         ShipTypes ShipType { get; set; }
         Silhouette Silhouette { get; }
-        bool SingleStickControls { get; set; }
+        Material ShipMaterial { get; set; }
         Material SkimmerMaterial { get; set; }
-        bool Slowed { get; set; }
         float Speed { get; set; }
+        bool SingleStickControls { get; set; }
+        bool Slowed { get; set; }
         bool Stationary { get; set; }
+        bool Turret { get; set; }
         Teams Team { get; set; }
         TrailSpawner TrailSpawner { get; }
-        bool Turret { get; set; }
+        ShipHUDContainer ShipHUDContainer { get; }
+        IShipHUDView ShipHUDView { get; set; }
+        IShipHUDController ShipHUDController { get; }
+        R_ShipCustomization Customization { get; }
+        R_ShipActionHandler ActionHandler { get; }
+        R_ShipImpactHandler ImpactHandler { get; }
 
-        void Reset();
+        void ResetValues();
     }
 }

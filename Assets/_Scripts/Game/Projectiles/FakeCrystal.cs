@@ -22,7 +22,7 @@ namespace CosmicShore.Game.Projectiles
             if (!other.gameObject.IsLayer("Ships") && !other.gameObject.IsLayer("Projectiles"))
                 return;
 
-            var shipStatus = other.gameObject.IsLayer("Ships") ? other.GetComponent<ShipGeometry>().Ship.ShipStatus : other.GetComponent<Projectile>().ShipStatus;
+            var shipStatus = other.gameObject.IsLayer("Ships") ? other.GetComponent<IShipStatus>() : other.GetComponent<Projectile>().ShipStatus;
         
             if (shipStatus == null)
             {

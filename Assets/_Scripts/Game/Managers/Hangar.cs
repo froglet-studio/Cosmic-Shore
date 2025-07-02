@@ -240,10 +240,7 @@ namespace CosmicShore.Core
             ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
-            AIPilot pilot = ship.ShipStatus.AIPilot;
-            pilot.SkillLevel = ((float)AISkillLevel - 1) / 3; // this assumes that levels remain from 1-4
-            pilot.AssignShip(ship);
-            pilot.Initialize(true);
+
 
             return ship;
         }
