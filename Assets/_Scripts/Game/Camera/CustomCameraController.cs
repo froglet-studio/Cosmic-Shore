@@ -10,6 +10,7 @@ namespace CosmicShore.Game.CameraSystem
         [SerializeField] float followSmoothTime = 0.2f;
         [SerializeField] float rotationSmoothTime = 5f;
         [SerializeField] bool useFixedUpdate = false;
+        [SerializeField] bool ignoreRoll = true;
 
         Camera cachedCamera;
         Vector3 velocity;
@@ -34,6 +35,12 @@ namespace CosmicShore.Game.CameraSystem
             set => rotationSmoothTime = Mathf.Max(0f, value);
         }
 
+        public bool IgnoreRoll
+        {
+            get => ignoreRoll;
+            set => ignoreRoll = value;
+        }
+
         void Awake()
         {
             cachedCamera = GetComponent<Camera>();
@@ -56,7 +63,13 @@ namespace CosmicShore.Game.CameraSystem
             if (followTarget == null)
                 return;
 
-            Vector3 desired = followTarget.position + followTarget.rotation * followOffset;
+            Quaternion offsetRotation = followTarget.rotation;
+            if (ignoreRoll)
+            {
+                offsetRotation = Quaternion.LookRotation(followTarget.forward, Vector3.up);
+            }
+
+            Vector3 desired = followTarget.position + offsetRotation * followOffset;
             transform.position = Vector3.SmoothDamp(transform.position, desired, ref velocity, followSmoothTime);
             Quaternion lookRot = Quaternion.LookRotation(followTarget.position - transform.position, Vector3.up);
             float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
