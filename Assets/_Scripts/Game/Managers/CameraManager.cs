@@ -5,6 +5,7 @@ using System.Collections;
 using UnityEngine;
 using CosmicShore;
 using CosmicShore.Utilities;
+using CosmicShore.Game.CameraSystem;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -12,9 +13,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
     ThemeManagerDataContainerSO _themeManagerData;
 
     [SerializeField] CinemachineCamera mainMenuCamera;
-    [SerializeField] CinemachineVirtualCameraBase playerCamera;
-    [SerializeField] CinemachineVirtualCameraBase deathCamera;
-    [SerializeField] CinemachineVirtualCameraBase endCamera;
+    [SerializeField] CustomCameraController playerCamera;
+    [SerializeField] CustomCameraController deathCamera;
+    [SerializeField] CustomCameraController endCamera;
 
     [SerializeField] Transform endCameraFollowTarget;
     [SerializeField] Transform endCameraLookAtTarget;
@@ -38,12 +39,32 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public float CloseCamDistance;
     public float FarCamDistance;
 
-    CinemachineCamera vCam;
-    CinemachineFollow transposer;
+    Camera vCam;
 
     Coroutine zoomOutCoroutine;
     Coroutine returnToNeutralCoroutine;
     Coroutine lerper;
+
+    void Awake()
+    {
+        EnsureController(ref playerCamera, "CM PlayerCam");
+        EnsureController(ref deathCamera, "CM DeathCam");
+        EnsureController(ref endCamera, "CM EndCam");
+    }
+
+    void EnsureController(ref CustomCameraController controller, string name)
+    {
+        if (controller == null)
+        {
+            Transform t = transform.Find(name);
+            if (t)
+                controller = t.gameObject.GetComponent<CustomCameraController>() ?? t.gameObject.AddComponent<CustomCameraController>();
+        }
+        else if (controller.GetComponent<CustomCameraController>() == null)
+        {
+            controller = controller.gameObject.AddComponent<CustomCameraController>();
+        }
+    }
 
     private void OnEnable()
     {
@@ -62,14 +83,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void Start()
     {
-        vCam = playerCamera.gameObject.GetComponent<CinemachineCamera>();
+        vCam = playerCamera.Camera;
+        InitializeRuntimeOffset();
         OnMainMenu();
     }
 
     void LateUpdate()
     {
-        // Apply runtime offset without modifying the serialized property
-        if (transposer != null && Application.isPlaying && hasOriginalOffset)
+        if (Application.isPlaying && hasOriginalOffset)
         {
             ApplyRuntimeOffset();
         }
@@ -77,40 +98,28 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void ApplyRuntimeOffset()
     {
-        // Use reflection to set the offset without marking scene dirty
-        var field = typeof(CinemachineFollow).GetField("m_FollowOffset",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (field != null)
-        {
-            field.SetValue(transposer, runtimeFollowOffset);
-        }
+        playerCamera.SetFollowOffset(runtimeFollowOffset);
     }
 
     private void RestoreOriginalOffset()
     {
-        if (transposer != null && hasOriginalOffset)
+        if (hasOriginalOffset)
         {
-            var field = typeof(CinemachineFollow).GetField("m_FollowOffset",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (field != null)
-            {
-                field.SetValue(transposer, originalFollowOffset);
-            }
+            playerCamera.SetFollowOffset(originalFollowOffset);
         }
     }
 
     private void SetRuntimeFollowOffset(Vector3 offset)
     {
         runtimeFollowOffset = offset;
+        playerCamera.SetFollowOffset(runtimeFollowOffset);
     }
 
     private void InitializeRuntimeOffset()
     {
-        if (transposer != null && !hasOriginalOffset)
+        if (!hasOriginalOffset)
         {
-            originalFollowOffset = transposer.FollowOffset;
+            originalFollowOffset = playerCamera.GetFollowOffset();
             runtimeFollowOffset = originalFollowOffset;
             hasOriginalOffset = true;
         }
@@ -136,8 +145,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void SetupGamePlayCameras(Transform _transform)
     {
         playerFollowTarget = _transform;
-        playerCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
-        playerCamera.Follow = deathCamera.Follow = playerFollowTarget;
+        playerCamera.SetFollowTarget(playerFollowTarget);
+        deathCamera.SetFollowTarget(playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
 
         SetCloseCameraActive();
@@ -178,28 +187,37 @@ public class CameraManager : SingletonPersistent<CameraManager>
     IEnumerator SetFollowOffsetCoroutine(Vector3 offset)
     {
         yield return new WaitForSeconds(1); // Allow time for camera to stabilize
-        transposer = vCam.GetComponent<CinemachineFollow>();
         InitializeRuntimeOffset();
         SetRuntimeFollowOffset(offset);
     }
 
-    void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
+    void SetActiveCamera(Component activeCamera)
     {
         Orthographic(isOrthographic);
-        Debug.Log($"SetActiveCamera {activeCamera.Name}");
+        Debug.Log($"SetActiveCamera {activeCamera.name}");
 
         mainMenuCamera.Priority = inactivePriority;
-        playerCamera.Priority = inactivePriority;
-        endCamera.Priority = inactivePriority;
-        deathCamera.Priority = inactivePriority;
+        playerCamera.gameObject.SetActive(false);
+        deathCamera.gameObject.SetActive(false);
+        endCamera.gameObject.SetActive(false);
 
-        activeCamera.Priority = activePriority;
-        transposer = vCam.GetComponent<CinemachineFollow>();
-        InitializeRuntimeOffset();
-
-        if (activeCamera == playerCamera)
+        if (activeCamera == mainMenuCamera)
         {
+            mainMenuCamera.Priority = activePriority;
+        }
+        else if (activeCamera == playerCamera)
+        {
+            playerCamera.gameObject.SetActive(true);
+            InitializeRuntimeOffset();
             SetOffsetPosition(runtimeFollowOffset);
+        }
+        else if (activeCamera == deathCamera)
+        {
+            deathCamera.gameObject.SetActive(true);
+        }
+        else if (activeCamera == endCamera)
+        {
+            endCamera.gameObject.SetActive(true);
         }
     }
 
@@ -215,7 +233,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(startNormalized,
             normalizedDistance, 1.5f, (i) =>
             {
-                vCam.Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
+                vCam.nearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
                 SetRuntimeFollowOffset(new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance));
             }));
     }
@@ -230,7 +248,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
         lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(runtimeFollowOffset,
             offsetPosition, 1.5f, (i) =>
             {
-                //vCam.Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
                 SetRuntimeFollowOffset(i);
             }));
     }
@@ -238,7 +255,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
         if (FixedFollow) return;
-        transposer = vCam.GetComponent<CinemachineFollow>();
         InitializeRuntimeOffset();
 
         Vector3 targetOffset = new Vector3(0, 0, normalizedDistance);
@@ -250,8 +266,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetOffsetPosition(Vector3 position)
     {
-        //offsetVector = position;
-        transposer = vCam.GetComponent<CinemachineFollow>();
         InitializeRuntimeOffset();
 
         if (runtimeFollowOffset != position)
@@ -263,11 +277,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     void Orthographic(bool isOrthographic)
     {
         PostProcessingManager.Instance.Orthographic(isOrthographic);
-        vCam.Lens.ModeOverride = LensSettings.OverrideModes.Orthographic;
-        vCam.Lens.OrthographicSize = 1300;
-
-        Transform LookAtTarget = isOrthographic ? new GameObject().transform : playerFollowTarget;
-        vCam.LookAt = LookAtTarget;
+        playerCamera.SetOrthographic(isOrthographic, 1300);
     }
 
     public void ZoomCloseCameraOut(float growthRate)
@@ -284,7 +294,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
     {
-        transposer = vCam.GetComponent<CinemachineFollow>();
         InitializeRuntimeOffset();
 
         while (zoomingOut && runtimeFollowOffset.z > FarCamDistance)
@@ -308,7 +317,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
     {
-        transposer = vCam.GetComponent<CinemachineFollow>();
         InitializeRuntimeOffset();
 
         while (runtimeFollowOffset.z <= CloseCamDistance)
@@ -318,5 +326,4 @@ public class CameraManager : SingletonPersistent<CameraManager>
         }
 
         SetRuntimeFollowOffset(new Vector3(0, 0, CloseCamDistance));
-    }
-}
+    }}
