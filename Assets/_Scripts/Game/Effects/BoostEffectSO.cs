@@ -3,14 +3,14 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "BoostImpactEffect", menuName = "ScriptableObjects/Impact Effects/BoostImpactEffectSO")]
-    public class BoostEffectSO : BaseImpactEffectSO
+    public class BoostEffectSO : ImpactEffectSO, ICrystalImpactEffect
     {
         [SerializeField]
         float _speedModifierDuration;
 
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, CrystalProperties crystalProperties)
         {
-            context.ShipStatus.ShipTransformer.ModifyThrottle(context.CrystalProperties.speedBuffAmount, _speedModifierDuration);
+            data.ThisShipStatus.ShipTransformer.ModifyThrottle(crystalProperties.speedBuffAmount, _speedModifierDuration);
         }
     }
 }

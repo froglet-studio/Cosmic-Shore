@@ -1,17 +1,16 @@
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "FeelDangerImpactEffect", menuName = "ScriptableObjects/Impact Effects/FeelDangerImpactEffectSO")]
-    public class FeelDangerEffectSO : BaseImpactEffectSO
+    public class FeelDangerEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
     {
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
-            if (context.TrailBlockProperties.IsDangerous && context.TrailBlockProperties.trailBlock.Team != context.ShipStatus.Team)
+            if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != data.ThisShipStatus.Team)
             {
-                context.ShipStatus.ShipTransformer.ModifyThrottle(context.TrailBlockProperties.speedDebuffAmount, 1.5f);
+                data.ThisShipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, 1.5f);
             }
         }
     }

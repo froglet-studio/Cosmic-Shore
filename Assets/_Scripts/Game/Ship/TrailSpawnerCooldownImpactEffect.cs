@@ -3,11 +3,7 @@
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "TrailSpawnerCooldownImpactEffect", menuName = "CosmicShore/ImpactEffects/TrailSpawnerCooldownImpactEffect")]
-    public class TrailSpawnerCooldownImpactEffect : BaseImpactEffect
+    public class TrailSpawnerCooldownImpactEffect : ImpactEffectSO
     {
-        public override void Execute(ImpactContext context)
-        {
-            
-        }
     }
 }

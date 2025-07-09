@@ -4,18 +4,18 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "BounceImpactEffect", menuName = "ScriptableObjects/Impact Effects/BounceImpactEffectSO")]
-    public class BounceEffectSO : BaseImpactEffectSO
+    public class BounceEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
     {
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
-            Transform shipTransform = context.ShipStatus.ShipTransform;
+            Transform shipTransform = data.ThisShipStatus.ShipTransform;
 
-            var cross = Vector3.Cross(shipTransform.forward, context.TrailBlockProperties.trailBlock.transform.forward);
-            var normal = Quaternion.AngleAxis(90, cross) * context.TrailBlockProperties.trailBlock.transform.forward;
+            var cross = Vector3.Cross(shipTransform.forward, trailBlockProperties.trailBlock.transform.forward);
+            var normal = Quaternion.AngleAxis(90, cross) * trailBlockProperties.trailBlock.transform.forward;
             var reflectForward = Vector3.Reflect(shipTransform.forward, normal);
             var reflectUp = Vector3.Reflect(shipTransform.up, normal);
-            context.ShipStatus.ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
-            context.ShipStatus.ShipTransformer.ModifyVelocity((shipTransform.position - context.TrailBlockProperties.trailBlock.transform.position).normalized * 5,
+            data.ThisShipStatus.ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
+            data.ThisShipStatus.ShipTransformer.ModifyVelocity((shipTransform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5,
                 Time.deltaTime * 15);
         }
     }

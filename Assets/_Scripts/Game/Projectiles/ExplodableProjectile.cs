@@ -32,7 +32,7 @@ namespace CosmicShore.Game.Projectiles
                         break;
                     case TrailBlockImpactEffects.Explode:
                         Debug.Log("EndExplode");
-                        Detonate();
+                        // Detonate();
                         break;
                 }
             }
@@ -65,14 +65,14 @@ namespace CosmicShore.Game.Projectiles
                         break;
                     case TrailBlockImpactEffects.Explode:
                         Debug.Log("TrailExplode");
-                        Detonate();
+                        // Detonate();
                         break;
 
                 }
             }
         }
 
-        public void Detonate()
+        /*public void Detonate()
         {
             foreach (var AOE in AOEPrefabs)
             {
@@ -95,6 +95,11 @@ namespace CosmicShore.Game.Projectiles
                 AOEExplosion.Detonate();
             }
 
+            _poolManager.ReturnToPool(gameObject, gameObject.tag);
+        }*/
+
+        public void ExecuteExplodeEffect()
+        {
             _poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
     }

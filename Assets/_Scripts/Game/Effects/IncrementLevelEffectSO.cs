@@ -3,11 +3,11 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "IncrementLevelImpactEffect", menuName = "ScriptableObjects/Impact Effects/IncrementLevelImpactEffectSO")]
-    public class IncrementLevelEffectSO : BaseImpactEffectSO
+    public class IncrementLevelEffectSO : ImpactEffectSO, ICrystalImpactEffect
     {
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, CrystalProperties crystalProperties)
         {
-            context.ShipStatus.ResourceSystem.IncrementLevel(context.CrystalProperties.Element);
+            data.ThisShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element);
         }
     }
 }

@@ -3,13 +3,13 @@
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "AdjustLevelEffect", menuName = "ScriptableObjects/Impact Effects/AdjustLevelEffectSO")]
-    public class AdjustLevelEffectSO : BaseImpactEffectSO
+    public class AdjustLevelEffectSO : ImpactEffectSO, ICrystalImpactEffect
     {
-        public int LevelAdjustment;
+        [SerializeField] int LevelAdjustment;
 
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, CrystalProperties crystalProperties)
         {
-            context.ShipStatus.ResourceSystem.AdjustLevel(context.CrystalProperties.Element, LevelAdjustment);
+            data.ThisShipStatus.ResourceSystem.AdjustLevel(crystalProperties.Element, LevelAdjustment);
         }
     }
 }

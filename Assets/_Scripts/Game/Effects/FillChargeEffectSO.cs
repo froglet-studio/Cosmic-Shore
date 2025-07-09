@@ -3,14 +3,14 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "FillChargeImpactEffect", menuName = "ScriptableObjects/Impact Effects/FillChargeImpactEffectSO")]
-    public class FillChargeEffectSO : BaseImpactEffectSO
+    public class FillChargeEffectSO : ImpactEffectSO, ICrystalImpactEffect
     {
         [SerializeField]
         int _boostResourceIndex;
 
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, CrystalProperties crystalProperties)
         {
-            context.ShipStatus.ResourceSystem.ChangeResourceAmount(_boostResourceIndex, context.CrystalProperties.fuelAmount);
+            data.ThisShipStatus.ResourceSystem.ChangeResourceAmount(_boostResourceIndex, crystalProperties.fuelAmount);
         }
     }
 }

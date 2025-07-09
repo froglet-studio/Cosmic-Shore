@@ -91,11 +91,10 @@ namespace CosmicShore.Environment.FlowField
         {
             foreach (IImpactEffect effect in _crystalImpactEffects)
             {
-                effect.Execute(new ImpactContext
+                if (effect is ICrystalImpactEffect crystalImpactEffect)
                 {
-                    CrystalProperties = crystalProperties,
-                    ShipStatus = ship.ShipStatus
-                });
+                    crystalImpactEffect.Execute(new ImpactEffectData(ship.ShipStatus, ship.ShipStatus, ship.ShipStatus.Course * ship.ShipStatus.Speed), crystalProperties);
+                }
             }
         }
 

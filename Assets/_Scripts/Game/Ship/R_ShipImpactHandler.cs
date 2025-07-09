@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -9,10 +10,10 @@ namespace CosmicShore.Game
     /// </summary>
     public class R_ShipImpactHandler : MonoBehaviour
     {
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(ICrystalImpactEffect))]
         List<ScriptableObject> _crystalImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))] 
+        [SerializeField, RequireInterface(typeof(ITrailBlockImpactEffect))] 
         List<ScriptableObject> _trailBlockImpactEffects;
 
         IShipStatus _shipStatus;
@@ -22,39 +23,23 @@ namespace CosmicShore.Game
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            foreach (var effect in _crystalImpactEffects)
+            foreach (ICrystalImpactEffect effect in _crystalImpactEffects.Cast<ICrystalImpactEffect>())
             {
-                if (effect is IImpactEffect impactEffect)
-                {
-                    impactEffect.Execute(new ImpactContext
-                    {
-                        CrystalProperties = crystalProperties,
-                        ShipStatus = _shipStatus
-                    });
-                }
-                else
-                {
-                    Debug.LogWarning($"Impact effect {effect.name} does not implement IImpactEffect interface.");
-                }
+                if (effect is null)
+                    continue;
+
+                effect.Execute(new ImpactEffectData(_shipStatus, null, Vector3.zero), crystalProperties);
             }
         }
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            foreach (var effect in _trailBlockImpactEffects)
+            foreach (ITrailBlockImpactEffect effect in _trailBlockImpactEffects.Cast<ITrailBlockImpactEffect>())
             {
-                if (effect is IImpactEffect impactEffect)
-                {
-                    impactEffect.Execute(new ImpactContext
-                    {
-                        TrailBlockProperties = trailBlockProperties,
-                        ShipStatus = _shipStatus
-                    });
-                }
-                else
-                {
-                    Debug.LogWarning($"Impact effect {effect.name} does not implement IImpactEffect interface.");
-                }
+                if (effect is null)
+                    continue;
+
+                effect.Execute(new ImpactEffectData(_shipStatus, null, Vector3.zero), trailBlockProperties);
             }
         }
     }

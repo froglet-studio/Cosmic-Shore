@@ -3,15 +3,15 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "DrainAmmoImpactEffect", menuName = "ScriptableObjects/Impact Effects/DrainAmmoImpactEffectSO")]
-    public class DrainAmmoEffectSO : BaseImpactEffectSO
+    public class DrainAmmoEffectSO : ImpactEffectSO, IBaseImpactEffect
     {
         [SerializeField]
         int _ammoResourceIndex;
 
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data)
         {
-            context.ShipStatus.ResourceSystem.ChangeResourceAmount(_ammoResourceIndex,
-                            - context.ShipStatus.ResourceSystem.Resources[_ammoResourceIndex].CurrentAmount);
+            data.ThisShipStatus.ResourceSystem.ChangeResourceAmount(_ammoResourceIndex,
+                            - data.ThisShipStatus.ResourceSystem.Resources[_ammoResourceIndex].CurrentAmount);
         }
     }
 }

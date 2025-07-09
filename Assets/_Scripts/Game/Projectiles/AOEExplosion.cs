@@ -139,19 +139,17 @@ namespace CosmicShore.Game.Projectiles
         {
             foreach (var effect in _shipImpactEffects)
             {
-                if (effect is IImpactEffect impactEffect)
+                if (effect is not IImpactEffect impactEffect)
                 {
-                    impactEffect.Execute(new ImpactContext
-                    {
-                        ShipStatus = shipStatus,
-                        ImpactVector = impactVector,
-                        OwnTeam = Team
-                    });
+                    Debug.LogError($"Effect {effect.name} does not implement IImpactEffect interface.! It must implement IImpactEffect interface!");
+                    continue;
                 }
-                else
+                if (effect is not IBaseImpactEffect baseEffect)
                 {
-                    Debug.LogWarning($"Impact effect {effect.name} does not implement IImpactEffect interface.");
+                    Debug.LogError($"Effect {effect.name} does not implement IBaseImpactEffect interface.! It must implement IBaseImpactEffect interface!");
+                    continue;
                 }
+                baseEffect.Execute(new ImpactEffectData(Ship.ShipStatus, null, impactVector)); // TODO: Send the impacted ShipStatus
             }
         }
 

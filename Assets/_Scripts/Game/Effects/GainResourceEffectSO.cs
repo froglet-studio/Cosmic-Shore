@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "GainResourceImpactEffect", menuName = "ScriptableObjects/Impact Effects/GainResourceImpactEffectSO")]
-    public class GainResourceEffectSO : BaseImpactEffectSO
+    public class GainResourceEffectSO : ImpactEffectSO, IBaseImpactEffect
     {
         [SerializeField]
         int _resourceIndex;
@@ -11,9 +11,9 @@ namespace CosmicShore.Game
         [SerializeField]
         int _blockChargeChange;
 
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data)
         {
-            context.ShipStatus.ResourceSystem.ChangeResourceAmount(_resourceIndex, _blockChargeChange);
+            data.ThisShipStatus.ResourceSystem.ChangeResourceAmount(_resourceIndex, _blockChargeChange);
         }
     }
 }

@@ -4,11 +4,11 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "SpinAroundImpactEffect", menuName = "ScriptableObjects/Impact Effects/SpinAroundImpactEffectSO")]
-    public class SpinAroundEffectSO : BaseImpactEffectSO
+    public class SpinAroundEffectSO : ImpactEffectSO, IBaseImpactEffect
     {
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData context)
         {
-            context.ShipStatus.Ship.ShipStatus.ShipTransformer.SpinShip(context.ImpactVector);
+            context.ThisShipStatus.ShipTransformer.SpinShip(context.ImpactVector);
         }
     }
 }

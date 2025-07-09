@@ -2,8 +2,10 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public abstract class BaseImpactEffectSO : ScriptableObject, IImpactEffect
+    /// <summary>
+    /// Any impact effect that is defined in the game should inherit from this class.
+    /// </summary>
+    public abstract class ImpactEffectSO : ScriptableObject, IImpactEffect
     {
-        public abstract void Execute(ImpactContext context);
     }
 }

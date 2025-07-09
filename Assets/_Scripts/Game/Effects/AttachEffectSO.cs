@@ -4,20 +4,23 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "AttachImpactEffect", menuName = "ScriptableObjects/Impact Effects/AttachImpactEffectSO")]
-    public class AttachEffectSO : BaseImpactEffectSO
+    public class AttachEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
     {
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
-            if (context == null || context.ShipStatus == null || context.TrailBlockProperties == null)
+            if (data == null || trailBlockProperties == null)
+            {
+                Debug.LogError("AttachEffectSO.Execute called with null data or trailBlockProperties.");
                 return;
+            }
 
-            var trailBlock = context.TrailBlockProperties.trailBlock;
+            var trailBlock = trailBlockProperties.trailBlock;
 
             if (trailBlock.Trail == null)
                 return;
 
-            context.ShipStatus.Attached = true;
-            context.ShipStatus.AttachedTrailBlock = trailBlock;
+            data.ThisShipStatus.Attached = true;
+            data.ThisShipStatus.AttachedTrailBlock = trailBlock;
         }
     }
 }

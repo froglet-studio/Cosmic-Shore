@@ -80,9 +80,6 @@ namespace CosmicShore.Game
 
         public override void Initialize(IPlayer player)
         {
-            SetPlayerToShipStatusAndSkimmers(player);
-            SetTeamToShipStatusAndSkimmers(player.Team);
-
             ShipStatus.ActionHandler.Initialize(ShipStatus);
             ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);

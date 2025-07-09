@@ -210,16 +210,16 @@ namespace CosmicShore.Core
 
         void SetTeamToShipStatusAndSkimmers(Teams team)
         {
-            ShipStatus.Team = team;
+            /*ShipStatus.Team = team;
             if (nearFieldSkimmer != null) nearFieldSkimmer.Team = team;
-            if (farFieldSkimmer != null) farFieldSkimmer.Team = team;
+            if (farFieldSkimmer != null) farFieldSkimmer.Team = team;*/
         }
 
         void SetPlayerToShipStatusAndSkimmers(IPlayer player)
         {
-            ShipStatus.Player = player;
+            /*ShipStatus.Player = player;
             if (nearFieldSkimmer != null) nearFieldSkimmer.Player = player;
-            if (farFieldSkimmer != null) farFieldSkimmer.Player = player;
+            if (farFieldSkimmer != null) farFieldSkimmer.Player = player;*/
         }
 
         void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, inputEventShipActions, ShipControlActions);

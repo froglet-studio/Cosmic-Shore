@@ -1,13 +1,17 @@
+using CosmicShore.Core;
+using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "DeactivateTrailBlockImpactEffect", menuName = "ScriptableObjects/Impact Effects/DeactivateTrailBlockImpactEffectSO")]
-    public class DeactivateTrailBlockEffectSO : BaseImpactEffectSO
+    public class DeactivateTrailBlockEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
     {
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
-            throw new System.NotImplementedException("DeactivateTrailBlockEffectSO.Execute method is not implemented yet. Please implement the logic to deactivate the trail block effect.");
+            trailBlockProperties.trailBlock.Damage(
+                data.ThisShipStatus.Course * data.ThisShipStatus.Speed * data.ThisShipStatus.GetInertia, 
+                data.ThisShipStatus.Team, data.ThisShipStatus.PlayerName);
         }
     }
 }

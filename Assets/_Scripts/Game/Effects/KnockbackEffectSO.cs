@@ -3,18 +3,18 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "KnockbackImpactEffect", menuName = "ScriptableObjects/Impact Effects/KnockbackImpactEffectSO")]
-    public class KnockbackEffectSO : BaseImpactEffectSO
+    public class KnockbackEffectSO : ImpactEffectSO, IBaseImpactEffect
     {
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData context)
         {
-            var shipStatus = context.ShipStatus;
+            var shipStatus = context.ThisShipStatus;
 
-            if (shipStatus.Team == context.OwnTeam)
+            if (shipStatus.Team == context.ImpactedShipStatus.Team)
             {
-                
+
                 shipStatus.ShipTransformer.ModifyThrottle(10, 6); // TODO: the magic number here needs tuning after switch to additive
             }
-            else 
+            else
                 shipStatus.ShipTransformer.ModifyVelocity(context.ImpactVector * 100, 3);
         }
     }

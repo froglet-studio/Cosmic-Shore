@@ -3,11 +3,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "StealCrystalImpactEffect", menuName = "ScriptableObjects/Impact Effects/StealCrystalImpactEffectSO")]
-    public class StealCrystalEffectSO : BaseImpactEffectSO
+    public class StealCrystalEffectSO : ImpactEffectSO
     {
-        public override void Execute(ImpactContext context)
-        {
-
-        }
     }
 }

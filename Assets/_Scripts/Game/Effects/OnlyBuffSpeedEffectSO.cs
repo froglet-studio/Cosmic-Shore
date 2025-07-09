@@ -4,15 +4,15 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "OnlyBuffSpeedImpactEffect", menuName = "ScriptableObjects/Impact Effects/OnlyBuffSpeedImpactEffectSO")]
-    public class OnlyBuffSpeedEffectSO : BaseImpactEffectSO
+    public class OnlyBuffSpeedEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
     {
         [SerializeField]
         float _speedModifierDuration;
 
-        public override void Execute(ImpactContext context)
+        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
-            if (context.TrailBlockProperties.speedDebuffAmount > 1)
-                context.ShipStatus.ShipTransformer.ModifyThrottle(context.TrailBlockProperties.speedDebuffAmount, _speedModifierDuration);
+            if (trailBlockProperties.speedDebuffAmount > 1)
+                data.ThisShipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, _speedModifierDuration);
         }
     }
 }

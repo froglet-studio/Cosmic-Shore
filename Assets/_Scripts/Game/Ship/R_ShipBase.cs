@@ -14,18 +14,6 @@ namespace CosmicShore.Game
     {
         public event Action<IShipStatus> OnShipInitialized;
 
-        /*[Header("Ship Meta")]
-        [SerializeField] protected string _name;
-        [SerializeField] protected ShipTypes _shipType;
-
-        [Header("Ship Components")]
-        [SerializeField] protected Skimmer nearFieldSkimmer;
-        [SerializeField] protected Skimmer farFieldSkimmer;
-        [SerializeField] protected GameObject orientationHandle;
-
-        [Header("Configuration")]
-        [SerializeField] protected float boostMultiplier = 4f;*/
-
         [Header("Event Channels")]
         [SerializeField] protected BoolEventChannelSO onBottomEdgeButtonsEnabled;
 
@@ -35,28 +23,11 @@ namespace CosmicShore.Game
             get
             {
                 _shipStatus ??= GetComponent<IShipStatus>();
-                /*_shipStatus.Name = _name;
-                _shipStatus.ShipType = _shipType;
-                _shipStatus.BoostMultiplier = boostMultiplier;*/
                 return _shipStatus;
             }
         }
 
         public Transform Transform => transform;
-
-        protected void SetTeamToShipStatusAndSkimmers(Teams team)
-        {
-            ShipStatus.Team = team;
-            if (ShipStatus.NearFieldSkimmer != null) ShipStatus.NearFieldSkimmer.Team = team;
-            if (ShipStatus.FarFieldSkimmer != null) ShipStatus.FarFieldSkimmer.Team = team;
-        }
-
-        protected void SetPlayerToShipStatusAndSkimmers(IPlayer player)
-        {
-            ShipStatus.Player = player;
-            if (ShipStatus.NearFieldSkimmer != null) ShipStatus.NearFieldSkimmer.Player = player;
-            if (ShipStatus.FarFieldSkimmer != null) ShipStatus.FarFieldSkimmer.Player = player;
-        }
 
         public abstract void Initialize(IPlayer player);
 

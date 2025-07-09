@@ -209,16 +209,16 @@ namespace CosmicShore.Game
 
         void SetTeamToShipStatusAndSkimmers(Teams team)
         {
-            ShipStatus.Team = team;
+            /*ShipStatus.Team = team;
             if (_nearFieldSkimmer != null) _nearFieldSkimmer.Team = team;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Team = team;
+            if (_farFieldSkimmer != null) _farFieldSkimmer.Team = team;*/
         }
 
         void SetPlayerToShipStatusAndSkimmers(IPlayer player)
         {
-            ShipStatus.Player = player;
+            /*ShipStatus.Player = player;
             if (_nearFieldSkimmer != null) _nearFieldSkimmer.Player = player;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;
+            if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;*/
         }
 
         void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, _inputEventShipActions, _shipControlActions);
