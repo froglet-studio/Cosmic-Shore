@@ -45,6 +45,27 @@ public class CameraManager : SingletonPersistent<CameraManager>
     Coroutine returnToNeutralCoroutine;
     Coroutine lerper;
 
+    void Awake()
+    {
+        EnsureController(ref playerCamera, "CM PlayerCam");
+        EnsureController(ref deathCamera, "CM DeathCam");
+        EnsureController(ref endCamera, "CM EndCam");
+    }
+
+    void EnsureController(ref CustomCameraController controller, string name)
+    {
+        if (controller == null)
+        {
+            Transform t = transform.Find(name);
+            if (t)
+                controller = t.gameObject.GetComponent<CustomCameraController>() ?? t.gameObject.AddComponent<CustomCameraController>();
+        }
+        else if (controller.GetComponent<CustomCameraController>() == null)
+        {
+            controller = controller.gameObject.AddComponent<CustomCameraController>();
+        }
+    }
+
     private void OnEnable()
     {
         GameManager.OnPlayGame += SetupGamePlayCameras;

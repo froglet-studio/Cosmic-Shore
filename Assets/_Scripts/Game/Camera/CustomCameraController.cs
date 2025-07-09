@@ -8,14 +8,31 @@ namespace CosmicShore.Game.CameraSystem
         [SerializeField] Transform followTarget;
         [SerializeField] Vector3 followOffset = new Vector3(0f, 0f, -8f);
         [SerializeField] float followSmoothTime = 0.2f;
-        [SerializeField] float rotationSmoothTime = 0.2f;
+        [SerializeField] float rotationSmoothTime = 5f;
         [SerializeField] bool useFixedUpdate = false;
 
         Camera cachedCamera;
         Vector3 velocity;
-        Quaternion rotationVelocity;
 
         public Camera Camera => cachedCamera;
+
+        public Transform FollowTarget
+        {
+            get => followTarget;
+            set => followTarget = value;
+        }
+
+        public float FollowSmoothTime
+        {
+            get => followSmoothTime;
+            set => followSmoothTime = Mathf.Max(0f, value);
+        }
+
+        public float RotationSmoothTime
+        {
+            get => rotationSmoothTime;
+            set => rotationSmoothTime = Mathf.Max(0f, value);
+        }
 
         void Awake()
         {
@@ -42,7 +59,8 @@ namespace CosmicShore.Game.CameraSystem
             Vector3 desired = followTarget.position + followTarget.rotation * followOffset;
             transform.position = Vector3.SmoothDamp(transform.position, desired, ref velocity, followSmoothTime);
             Quaternion lookRot = Quaternion.LookRotation(followTarget.position - transform.position, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, rotationSmoothTime);
+            float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, t);
         }
 
         public void SetFollowTarget(Transform target) => followTarget = target;
