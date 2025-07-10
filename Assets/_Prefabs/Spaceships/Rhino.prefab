@@ -8,6 +8,46 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 874579554510349383, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _shipImpactEffects.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 874579554510349383, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _blockImpactEffects.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 874579554510349383, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_shipImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: f5953fa836edea4a271739c5d600df33,
+        type: 2}
+    - target: {fileID: 874579554510349383, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_shipImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 250b0db57fac04545b909dcf65601cac,
+        type: 2}
+    - target: {fileID: 874579554510349383, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_blockImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 080ca62cf6620bc40ae443657abcf792,
+        type: 2}
+    - target: {fileID: 874579554510349383, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_blockImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0e7b0dde7d9bc7290483d7daab79e38b,
+        type: 2}
+    - target: {fileID: 874579554510349383, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_blockImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 77d2f40630f37ed6b2e8c73c4cd59430,
+        type: 2}
     - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: AOEPrefab
@@ -178,7 +218,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _shipObject
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1390416577048209617}
     - target: {fileID: 7779107667008759293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: _shipGeometries.Array.size

@@ -153,7 +153,7 @@ namespace CosmicShore.Core
             OnButton3Released.OnEventRaised -= StopShipControllerActions;
         }
 
-        public void Initialize(IPlayer player)
+        public void Initialize(IPlayer player, bool isAI)
         {
             SetPlayerToShipStatusAndSkimmers(player);
             SetTeamToShipStatusAndSkimmers(player.Team);

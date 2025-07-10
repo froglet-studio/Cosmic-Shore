@@ -166,7 +166,7 @@ namespace CosmicShore.Game
             }
         }
 
-        public void Initialize(IPlayer player)
+        public void Initialize(IPlayer player, bool isAI)
         {
             ShipStatus.Player = player;
 

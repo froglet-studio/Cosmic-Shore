@@ -23,6 +23,16 @@ namespace CosmicShore
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
 
+        private void Awake()
+        {
+            if (_ship == null)
+            {
+                Debug.LogError("Ship instance is not set or does not implement IShip interface.");
+                enabled = false;
+                return;
+            }
+        }
+
         private void OnEnable()
         {
             _ship.OnShipInitialized += OnShipInitialized;

@@ -119,9 +119,8 @@ namespace CosmicShore.Game
         {
             Ship = ship;
             // Ship.Transform.SetParent(shipContainer.transform, false);
-            Ship.ShipStatus.AIPilot.enabled = false;
+            Ship.Initialize(this, false);
 
-            Ship.Initialize(this);
             InputController.Initialize(Ship);
             
             gameManager.WaitOnPlayerLoading();
@@ -135,9 +134,8 @@ namespace CosmicShore.Game
 
             // Ship.Transform.SetParent(shipContainer.transform, false);
 
-            Ship.ShipStatus.AIPilot.enabled = true;
+            Ship.Initialize(this, true);
             
-            Ship.Initialize(this);
             InputController.Initialize(Ship);
             
             gameManager.WaitOnAILoading(Ship.ShipStatus.AIPilot);

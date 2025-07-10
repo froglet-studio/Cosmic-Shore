@@ -10,17 +10,11 @@ namespace CosmicShore.Core
 {
     public class Skimmer : ElementalShipComponent
     {
-        [SerializeField] List<TrailBlockImpactEffects> blockImpactEffects;
-
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _blockImpactEffects;
 
-        [SerializeField] List<SkimmerStayEffects> blockStayEffects;
-
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _blockStayEffects;
-
-        [SerializeField] List<ShipImpactEffects> shipImpactEffects;
 
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _shipImpactEffects;
@@ -163,9 +157,10 @@ namespace CosmicShore.Core
 
             if (StatsManager.Instance != null)
                 StatsManager.Instance.SkimmerShipCollision(Ship, shipGeometry.Ship);
-            foreach (ShipImpactEffects effect in shipImpactEffects)
+
+            /*foreach (ShipImpactEffects effect in shipImpactEffects)
             {
-                /*switch (effect)
+                switch (effect)
                 {
                     case ShipImpactEffects.TrailSpawnerCooldown:
                         shipGeometry.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
@@ -183,8 +178,8 @@ namespace CosmicShore.Core
                         // AOEExplosion.MaxScale = Ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
                         StartCoroutine(CooldownCoroutine(AOEPeriod));
                         break;
-                }*/
-            }
+                }
+            }*/
 
             foreach (IImpactEffect effect in _shipImpactEffects)
             {
