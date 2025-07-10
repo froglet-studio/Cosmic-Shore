@@ -1,11 +1,12 @@
-using Unity.Cinemachine;
+using CosmicShore;
 using CosmicShore.Core;
+using CosmicShore.Game.CameraSystem;
+using CosmicShore.Utilities;
 using CosmicShore.Utility;
 using System.Collections;
+using Unity.Cinemachine;
 using UnityEngine;
-using CosmicShore;
-using CosmicShore.Utilities;
-using CosmicShore.Game.CameraSystem;
+using UnityEngine.Rendering.Universal;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -45,8 +46,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
     Coroutine returnToNeutralCoroutine;
     Coroutine lerper;
 
-    void Awake()
+    public override void Awake()
     {
+        base.Awake();
+
         EnsureController(ref playerCamera, "CM PlayerCam");
         EnsureController(ref deathCamera, "CM DeathCam");
         EnsureController(ref endCamera, "CM EndCam");
@@ -195,7 +198,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         Orthographic(isOrthographic);
         Debug.Log($"SetActiveCamera {activeCamera.name}");
-
+ 
         mainMenuCamera.Priority = inactivePriority;
         playerCamera.gameObject.SetActive(false);
         deathCamera.gameObject.SetActive(false);
@@ -208,6 +211,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
         else if (activeCamera == playerCamera)
         {
             playerCamera.gameObject.SetActive(true);
+            if (playerCamera.TryGetComponent(out UniversalAdditionalCameraData cameraData))
+            {
+                cameraData.renderPostProcessing = true;
+            }
             InitializeRuntimeOffset();
             SetOffsetPosition(runtimeFollowOffset);
         }
@@ -278,6 +285,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         PostProcessingManager.Instance.Orthographic(isOrthographic);
         playerCamera.SetOrthographic(isOrthographic, 1300);
+
     }
 
     public void ZoomCloseCameraOut(float growthRate)
@@ -326,4 +334,5 @@ public class CameraManager : SingletonPersistent<CameraManager>
         }
 
         SetRuntimeFollowOffset(new Vector3(0, 0, CloseCamDistance));
-    }}
+    }
+}

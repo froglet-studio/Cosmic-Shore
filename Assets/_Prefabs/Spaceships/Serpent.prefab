@@ -8,6 +8,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 705402283976800655, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: FollowTarget
+      value: 
+      objectReference: {fileID: 7318750276014731638}
+    - target: {fileID: 705402283976800655, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: closeCamDistance
+      value: -100
+      objectReference: {fileID: 0}
+    - target: {fileID: 705402283976800655, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: farCamDistance.Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 705402283976800655, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: 'ControlOverrides.Array.data[0]'
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: Ship
@@ -459,6 +479,12 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!4 &7318750276014731638 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6722969896632727780, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+    type: 3}
+  m_PrefabInstance: {fileID: 4097612766223157650}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &8222987891369319599 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5386391956911707453, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
