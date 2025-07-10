@@ -44,13 +44,9 @@ namespace CosmicShore.Environment.FlowField
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
         #endregion
 
-        [Header("Optional Crystal Effects")]
-        #region Optional Fields
-        [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
-        [SerializeField] GameObject AOEPrefab;
-        [SerializeField] float maxExplosionScale;
-        [SerializeField] Material AOEExplosionMaterial;
-        #endregion
+        [Header("Crystal Effects")]
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        List<ScriptableObject> _crystalImpactEffects;
 
         Vector3 origin = Vector3.zero;
 
@@ -93,6 +89,17 @@ namespace CosmicShore.Environment.FlowField
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
         {
+            foreach (IImpactEffect effect in _crystalImpactEffects)
+            {
+                if (effect is ICrystalImpactEffect crystalImpactEffect)
+                {
+                    crystalImpactEffect.Execute(new ImpactEffectData(ship.ShipStatus, ship.ShipStatus, ship.ShipStatus.Course * ship.ShipStatus.Speed), crystalProperties);
+                }
+            }
+        }
+
+        /*public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
+        {
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
@@ -105,19 +112,23 @@ namespace CosmicShore.Environment.FlowField
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Material = AOEExplosionMaterial;
-                        AOEExplosion.Team = Team;
+                        AOEExplosion.Initialize(new AOEExplosion.InitializeStruct
+                        {
+                            OwnTeam = OwnTeam,
+                            Ship = ship,
+                            OverrideMaterial = AOEExplosionMaterial,
+                            MaxScale = maxExplosionScale,
+                            AnnonymousExplosion = true
+                        });
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale = maxExplosionScale;
-                        AOEExplosion.AnonymousExplosion = true;
-                        AOEExplosion.Detonate(ship);
+                        AOEExplosion.Detonate();
                         break;
-                    case CrystalImpactEffects.IncrementLevel:
+                    case CrystalImpactEffects.AdjustLevel:
                         ship.ShipStatus.ResourceSystem.AdjustLevel(crystalProperties.Element, crystalProperties.crystalValue);
                         break;
                 }
             }
-        }
+        }*/
 
         protected virtual void Collide(Collider other)
         {
@@ -128,7 +139,7 @@ namespace CosmicShore.Environment.FlowField
                 if (!other.TryGetComponent(out ship))
                     return;
 
-                if (Team == Teams.None || Team == ship.ShipStatus.Team)
+                if (OwnTeam == Teams.None || OwnTeam == ship.ShipStatus.Team)
                 {
                     if (shipImpactEffects)
                     {
@@ -279,7 +290,7 @@ namespace CosmicShore.Environment.FlowField
 
         public void Steal(Teams team, float duration)
         {
-            Team = team;
+            OwnTeam = team;
             foreach (var modelData in crystalModels)
             {
                 StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(team), 1));
@@ -290,7 +301,7 @@ namespace CosmicShore.Environment.FlowField
         IEnumerator DecayingTheftCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            Team = Teams.None;
+            OwnTeam = Teams.None;
             foreach (var modelData in crystalModels)
             {
                 StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, modelData.defaultMaterial, 1));

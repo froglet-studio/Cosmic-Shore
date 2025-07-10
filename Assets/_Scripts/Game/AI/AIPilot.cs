@@ -134,7 +134,7 @@ namespace CosmicShore.Game.AI
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
-                    (item.ItemType != ItemType.Debuff || item.Team == _ship.ShipStatus.Team)) continue;
+                    (item.ItemType != ItemType.Debuff || item.OwnTeam == _ship.ShipStatus.Team)) continue;
                 var distance = Vector3.Distance(item.transform.position, transform.position);
                 if (distance < MinDistance)
                 {
@@ -185,8 +185,6 @@ namespace CosmicShore.Game.AI
         {
             if (AutoPilotEnabled)
             {
-                _ship.ShipStatus.AutoPilotEnabled = true;
-
                 distance = TargetPosition - transform.position;
                 Vector3 desiredDirection = distance.normalized;
 

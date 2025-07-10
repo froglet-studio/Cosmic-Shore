@@ -13,15 +13,16 @@ namespace CosmicShore.Game.Projectiles
         protected const float PI_OVER_TWO = Mathf.PI / 2;
         protected Vector3 MaxScaleVector;
         protected float Inertia = 70;
-
-        [HideInInspector] public float MaxScale = 200f;
+        
 
         [Header("Explosion Settings")]
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
 
-        [Header("Impact Effects")]
-        [SerializeField] private List<ShipImpactEffects> shipImpactEffects;
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        List<ScriptableObject> _shipImpactEffects;
+
+
         [SerializeField] private bool affectSelf = false;
         [SerializeField] private bool destructive = true;
         [SerializeField] private bool devastating = false;
@@ -30,17 +31,36 @@ namespace CosmicShore.Game.Projectiles
         protected GameObject container;
 
         // Material and Team
-        [HideInInspector] public Material Material { get; set; }
-        [HideInInspector] public Teams Team;
+        public Material Material { get; private set; }
+        public Teams Team { get; private set; }
         public IShip Ship { get; private set; }
-        [HideInInspector] public bool AnonymousExplosion;
+        public bool AnonymousExplosion { get; private set; }
+        public float MaxScale { get; private set; } = 200f;
 
-        public virtual void Detonate(IShip ship)
+        public void Initialize(InitializeStruct initStruct)
+        {
+            Team = initStruct.OwnTeam;
+            AnonymousExplosion = initStruct.AnnonymousExplosion;
+            Ship = initStruct.Ship;
+            MaxScale = initStruct.MaxScale;
+
+            if (Ship == null)
+            {
+                Debug.LogError("Ship is not initialized in AOEExplosion!");
+                return;
+            }
+
+            Material = initStruct.OverrideMaterial != null ? initStruct.OverrideMaterial : Ship.ShipStatus.AOEExplosionMaterial;
+        }
+
+        public virtual void InitializeAndDetonate(IShip ship)
         {
             Ship = ship;
             InitializeProperties();
             StartCoroutine(ExplodeCoroutine());
         }
+
+        public void Detonate() => StartCoroutine(ExplodeCoroutine());
 
         private void InitializeProperties()
         {
@@ -117,40 +137,36 @@ namespace CosmicShore.Game.Projectiles
 
         protected virtual void PerformShipImpactEffects(IShipStatus shipStatus, Vector3 impactVector)
         {
-            foreach (ShipImpactEffects effect in shipImpactEffects)
+            foreach (var effect in _shipImpactEffects)
             {
-                switch (effect)
+                if (effect is not IImpactEffect impactEffect)
                 {
-                    case ShipImpactEffects.TrailSpawnerCooldown:
-                        shipStatus.TrailSpawner.PauseTrailSpawner();
-                        shipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
-                        break;
-                    case ShipImpactEffects.PlayHaptics:
-                        if (!shipStatus.Ship.ShipStatus.AutoPilotEnabled)
-                            HapticController.PlayHaptic(HapticType.ShipCollision);
-                        break;
-                    case ShipImpactEffects.SpinAround:
-                        shipStatus.Ship.ShipStatus.ShipTransformer.SpinShip(impactVector);
-                        break;
-                    case ShipImpactEffects.Knockback:
-                        if (shipStatus.Ship.ShipStatus.Team == Team)
-                        {
-                            shipStatus.Ship.ShipStatus.ShipTransformer.ModifyVelocity(impactVector * 100, 2);
-                            shipStatus.Ship.ShipStatus.ShipTransformer.ModifyThrottle(10, 6); // TODO: the magic number here needs tuning after switch to additive
-                        }
-                        else shipStatus.Ship.ShipStatus.ShipTransformer.ModifyVelocity(impactVector * 100, 3);
-                        //shipGeometry.Ship.transform.localPosition += impactVector / 2f;
-                        break;
-                    case ShipImpactEffects.Stun:
-                        shipStatus.Ship.ShipStatus.ShipTransformer.ModifyThrottle(.6f, 5);
-                        break;
+                    Debug.LogError($"Effect {effect.name} does not implement IImpactEffect interface.! It must implement IImpactEffect interface!");
+                    continue;
                 }
+                if (effect is not IBaseImpactEffect baseEffect)
+                {
+                    Debug.LogError($"Effect {effect.name} does not implement IBaseImpactEffect interface.! It must implement IBaseImpactEffect interface!");
+                    continue;
+                }
+                baseEffect.Execute(new ImpactEffectData(Ship.ShipStatus, null, impactVector)); // TODO: Send the impacted ShipStatus
             }
         }
 
         public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
             transform.SetPositionAndRotation(position, rotation);
+        }
+
+
+
+        public struct InitializeStruct
+        {
+            public Teams OwnTeam;
+            public bool AnnonymousExplosion;
+            public IShip Ship;
+            public Material OverrideMaterial;
+            public float MaxScale;
         }
     }
 }

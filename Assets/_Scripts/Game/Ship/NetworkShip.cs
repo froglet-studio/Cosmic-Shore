@@ -99,9 +99,6 @@ namespace CosmicShore.Game
             get
             {
                 _shipStatus ??= GetComponent<ShipStatus>();
-                _shipStatus.Name = _name;
-                _shipStatus.BoostMultiplier = boostMultiplier;
-                _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
         }
@@ -212,16 +209,16 @@ namespace CosmicShore.Game
 
         void SetTeamToShipStatusAndSkimmers(Teams team)
         {
-            ShipStatus.Team = team;
+            /*ShipStatus.Team = team;
             if (_nearFieldSkimmer != null) _nearFieldSkimmer.Team = team;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Team = team;
+            if (_farFieldSkimmer != null) _farFieldSkimmer.Team = team;*/
         }
 
         void SetPlayerToShipStatusAndSkimmers(IPlayer player)
         {
-            ShipStatus.Player = player;
+            /*ShipStatus.Player = player;
             if (_nearFieldSkimmer != null) _nearFieldSkimmer.Player = player;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;
+            if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;*/
         }
 
         void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, _inputEventShipActions, _shipControlActions);
@@ -261,7 +258,7 @@ namespace CosmicShore.Game
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            /*foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
                 {
@@ -273,7 +270,7 @@ namespace CosmicShore.Game
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
                             ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
-                        aoeExplosion.Detonate(this);
+                        aoeExplosion.InitializeAndDetonate(this);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
@@ -294,7 +291,7 @@ namespace CosmicShore.Game
                         ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
                 }
-            }
+            }*/
         }
 
         public void SetBoostMultiplier(float multiplier)

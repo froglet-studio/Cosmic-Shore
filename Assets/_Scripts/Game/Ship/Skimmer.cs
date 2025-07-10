@@ -11,8 +11,19 @@ namespace CosmicShore.Core
     public class Skimmer : ElementalShipComponent
     {
         [SerializeField] List<TrailBlockImpactEffects> blockImpactEffects;
+
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        List<ScriptableObject> _blockImpactEffects;
+
         [SerializeField] List<SkimmerStayEffects> blockStayEffects;
+
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        List<ScriptableObject> _blockStayEffects;
+
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
+
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        List<ScriptableObject> _shipImpactEffects;
 
         [SerializeField] float vaccumAmount = 80f;
         [SerializeField] bool vacuumCrystal = true;
@@ -24,9 +35,9 @@ namespace CosmicShore.Core
         [SerializeField] bool visible;
         [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
 
-        public IShip Ship { get; set; }
-        public IPlayer Player { get; set; }
-        public Teams Team { get; set; }
+        public IShip Ship { get; private set; }
+        public IPlayer Player => Ship.ShipStatus.Player;
+        public Teams Team => Ship.ShipStatus.Team;
 
         float appliedScale;
         ResourceSystem resourceSystem;
@@ -98,8 +109,6 @@ namespace CosmicShore.Core
                 return;
             }
 
-            Player = Ship.ShipStatus.Player;
-            Team = Ship.ShipStatus.Team;
             BindElementalFloats(Ship);
             resourceSystem = Ship.ShipStatus.ResourceSystem;
             if (visible)
@@ -112,7 +121,7 @@ namespace CosmicShore.Core
 
         void PerformBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            foreach (TrailBlockImpactEffects effect in blockImpactEffects)
+            /*foreach (TrailBlockImpactEffects effect in blockImpactEffects)
             {
                 switch (effect)
                 {
@@ -135,6 +144,15 @@ namespace CosmicShore.Core
                         StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlockProperties.trailBlock));
                         break;
                 }
+            }*/
+
+            foreach (IImpactEffect effect in _blockImpactEffects)
+            {
+                if (effect is not ITrailBlockImpactEffect trailBlockEffect)
+                    continue;
+
+                trailBlockEffect.Execute(new ImpactEffectData(
+                    Ship.ShipStatus, null, Vector3.zero), trailBlockProperties);
             }
         }
 
@@ -147,7 +165,7 @@ namespace CosmicShore.Core
                 StatsManager.Instance.SkimmerShipCollision(Ship, shipGeometry.Ship);
             foreach (ShipImpactEffects effect in shipImpactEffects)
             {
-                switch (effect)
+                /*switch (effect)
                 {
                     case ShipImpactEffects.TrailSpawnerCooldown:
                         shipGeometry.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
@@ -160,11 +178,19 @@ namespace CosmicShore.Core
                         if (onCoolDown || shipGeometry.Ship.ShipStatus.Team == Team) break;
 
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Detonate(Ship);
+                        AOEExplosion.InitializeAndDetonate(Ship);
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale = Ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
+                        // AOEExplosion.MaxScale = Ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
                         StartCoroutine(CooldownCoroutine(AOEPeriod));
                         break;
+                }*/
+            }
+
+            foreach (IImpactEffect effect in _shipImpactEffects)
+            {
+                if (effect is IBaseImpactEffect baseEffect)
+                {
+                    baseEffect.Execute(new ImpactEffectData(Ship.ShipStatus, null, Vector3.zero));
                 }
             }
         }
@@ -180,7 +206,7 @@ namespace CosmicShore.Core
 
         void PerformBlockStayEffects(float combinedWeight)
         {
-            foreach (SkimmerStayEffects effect in blockStayEffects)
+            /*foreach (SkimmerStayEffects effect in blockStayEffects)
             {
                 switch (effect)
                 {
@@ -209,6 +235,12 @@ namespace CosmicShore.Core
                         ScaleGap(combinedWeight);
                         break;
                 }
+            }*/
+
+            foreach (IImpactEffect effect in _blockStayEffects)
+            {
+                if (effect is IBaseImpactEffect baseEffect)
+                    baseEffect.Execute(new ImpactEffectData(Ship.ShipStatus, null, Vector3.zero));
             }
         }
 
@@ -276,7 +308,7 @@ namespace CosmicShore.Core
 
                 if (sqrDistance == minMatureBlockSqrDistance)
                 {
-                    bool shouldUpdateMinMatureBlock = true;
+                    // bool shouldUpdateMinMatureBlock = true;
 
                     // Check reference equality directly
                     //if (trailBlock != null && nextBlocks.Count > 0)

@@ -41,6 +41,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
+      propertyPath: _crystalImpactEffects.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
       propertyPath: 'crystalImpactEffects.Array.data[0]'
       value: 11
       objectReference: {fileID: 0}
@@ -57,6 +62,29 @@ PrefabInstance:
     - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
       propertyPath: trailBlockImpactEffects.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: f6b2725ba1ff2bada6953c0932d90638,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: acd7873897970a2eb8c02e5e298c8c16,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: _trailBlockImpactEffects.Array.size
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
@@ -79,6 +107,36 @@ PrefabInstance:
       propertyPath: 'trailBlockImpactEffects.Array.data[4]'
       value: 17
       objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 5f7652d9fd26f4f4fb4c560d6562d86c,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: acd7873897970a2eb8c02e5e298c8c16,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: ac862d73e3ada036cb8a50fe6bb55e81,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[3]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 89f84fbba3cfe336d229d942c07fd521,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[4]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20,
+        type: 2}
     - target: {fileID: 5928382658856804067, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -136,6 +194,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
+      propertyPath: _name
+      value: Dolphin
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: _shipType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
       propertyPath: shipInstance
       value: 
       objectReference: {fileID: 4863223154206343612}
@@ -144,6 +212,16 @@ PrefabInstance:
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 6127715526996493518}
+    - target: {fileID: 6441696348568773771, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: _nearFieldSkimmer
+      value: 
+      objectReference: {fileID: 3291586934991686283}
+    - target: {fileID: 6441696348568773771, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: orientationHandle
+      value: 
+      objectReference: {fileID: 3358218596463407434}
     - target: {fileID: 6441696348568773771, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
       propertyPath: _shipHUDController
@@ -407,6 +485,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e7868c3b92497748825cce03f8ce9d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &3291586934991686283 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 874579554510349383, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
+  m_PrefabInstance: {fileID: 2417643104629141196}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &3358218596463407434 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1087614488730427270, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
+  m_PrefabInstance: {fileID: 2417643104629141196}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &3736329132291681436 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
@@ -523,20 +619,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Dolphin
-  _shipType: 2
-  nearFieldSkimmer: {fileID: 0}
-  orientationHandle: {fileID: 0}
-  AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
-    type: 3}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 1
-  boostMultiplier: 4
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   isMultiplayerMode: 0

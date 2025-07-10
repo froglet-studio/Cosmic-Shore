@@ -10,10 +10,10 @@ namespace CosmicShore.Game.Projectiles
         Vector3 containerPosition;
         Quaternion containerRotation;
 
-        public override void Detonate(IShip ship)
+        public override void InitializeAndDetonate(IShip ship)
         {
-            base.Detonate(ship);
-            Material = new Material(Ship.ShipStatus.AOEConicExplosionMaterial);
+            base.InitializeAndDetonate(ship);
+            // Material = new Material(Ship.ShipStatus.AOEConicExplosionMaterial);
             coneContainer = new GameObject("ExplosionCone");
             coneContainer.transform.SetParent(container.transform, false);
             coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);

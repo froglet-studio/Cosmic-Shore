@@ -26,6 +26,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
+      propertyPath: _crystalImpactEffects.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
       propertyPath: 'crystalImpactEffects.Array.data[0]'
       value: 1
       objectReference: {fileID: 0}
@@ -41,9 +46,44 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 6f45ce20a66144d39d6e8eb476276e4b,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 2f53b469101764b42b58a54f88a092e7,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _trailBlockImpactEffects.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
       propertyPath: 'trailBlockImpactEffects.Array.data[0]'
       value: 15
       objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 4c7ad73243860764b9a6cb505c840cc0,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 080ca62cf6620bc40ae443657abcf792,
+        type: 2}
     - target: {fileID: 5928382658856804067, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -101,6 +141,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
+      propertyPath: _name
+      value: Rhino
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _shipType
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
       propertyPath: shipInstance
       value: 
       objectReference: {fileID: 1390416577048209617}
@@ -109,6 +159,16 @@ PrefabInstance:
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 2741286203240111783}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _nearFieldSkimmer
+      value: 
+      objectReference: {fileID: 1541500096238593566}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: orientationHandle
+      value: 
+      objectReference: {fileID: 8092055187194444793}
     - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: _shipHUDController
@@ -265,6 +325,18 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1821604151237313113}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1541500096238593566 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 874579554510349383, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+    type: 3}
+  m_PrefabInstance: {fileID: 1821604151237313113}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1924722731806268936 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 284393576699141201, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
@@ -333,20 +405,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Rhino
-  _shipType: 3
-  nearFieldSkimmer: {fileID: 0}
-  orientationHandle: {fileID: 0}
-  AOEPrefab: {fileID: 2728798890556433942, guid: d568a14301490e54280955b50673f884,
-    type: 3}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  boostMultiplier: 6
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   isMultiplayerMode: 0
@@ -464,6 +522,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &8092055187194444793 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7569251362483239328, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+    type: 3}
+  m_PrefabInstance: {fileID: 1821604151237313113}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &8369837259055760167 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7881301509579309438, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,

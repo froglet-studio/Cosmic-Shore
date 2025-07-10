@@ -145,7 +145,6 @@ namespace CosmicShore.Game
 
         public void StartAutoPilot()
         {
-            Ship.ShipStatus.AutoPilotEnabled = true;
             var ai = Ship?.ShipStatus?.AIPilot;
             if (ai == null)
             {
@@ -164,7 +163,6 @@ namespace CosmicShore.Game
 
         public void StopAutoPilot()
         {
-            Ship.ShipStatus.AutoPilotEnabled = false;
             var ai = Ship?.ShipStatus?.AIPilot;
             if (ai == null)
             {

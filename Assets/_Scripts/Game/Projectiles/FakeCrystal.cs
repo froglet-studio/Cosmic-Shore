@@ -31,7 +31,7 @@ namespace CosmicShore.Game.Projectiles
             }
 
             // TODO: use a different material if the fake crystal is on your team
-            if (shipStatus.Team == Team)
+            if (shipStatus.Team == OwnTeam)
                 return;
 
             PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);

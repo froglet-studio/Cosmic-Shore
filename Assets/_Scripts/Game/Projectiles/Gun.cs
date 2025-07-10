@@ -181,7 +181,7 @@ namespace CosmicShore.Game.Projectiles
         public void DetonateProjectile()
         {
             Debug.Log("GunExplode");
-            if (_projectile is ExplodableProjectile ep) ep.Detonate();
+            // if (_projectile is ExplodableProjectile ep) ep.Detonate();
         }
        
     }

@@ -85,6 +85,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: _crystalImpactEffects.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: 'crystalImpactEffects.Array.data[0]'
       value: 13
       objectReference: {fileID: 0}
@@ -100,6 +105,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 63cf794e5083466d82404bc3571435d4,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: _trailBlockImpactEffects.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: 'trailBlockImpactEffects.Array.data[0]'
       value: 18
       objectReference: {fileID: 0}
@@ -108,6 +130,24 @@ PrefabInstance:
       propertyPath: 'trailBlockImpactEffects.Array.data[1]'
       value: 17
       objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 080ca62cf6620bc40ae443657abcf792,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 31c28d0f15ed15642862dae04cddbee5,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20,
+        type: 2}
     - target: {fileID: 4109178549276823488, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: shipInstance
@@ -185,6 +225,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: _name
+      value: Sparrow
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: _shipType
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: shipInstance
       value: 
       objectReference: {fileID: 4726457411964270568}
@@ -193,6 +243,11 @@ PrefabInstance:
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 6838873068856233639}
+    - target: {fileID: 6441696348568773771, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: orientationHandle
+      value: 
+      objectReference: {fileID: 4125078051200354376}
     - target: {fileID: 6441696348568773771, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: _shipHUDController
@@ -491,19 +546,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Sparrow
-  _shipType: 11
-  nearFieldSkimmer: {fileID: 0}
-  orientationHandle: {fileID: 4125078051200354376}
-  AOEPrefab: {fileID: 0}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 1
-  boostMultiplier: 4
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   isMultiplayerMode: 0
