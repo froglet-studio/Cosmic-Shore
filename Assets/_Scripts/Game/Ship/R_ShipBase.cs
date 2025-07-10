@@ -29,7 +29,7 @@ namespace CosmicShore.Game
 
         public Transform Transform => transform;
 
-        public abstract void Initialize(IPlayer player);
+        public abstract void Initialize(IPlayer player, bool isAI);
 
         public virtual void Teleport(Transform targetTransform) =>
             ShipHelper.Teleport(transform, targetTransform);

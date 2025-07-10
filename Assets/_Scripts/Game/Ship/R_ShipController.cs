@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -78,12 +79,17 @@ namespace CosmicShore.Game
             }
         }
 
-        public override void Initialize(IPlayer player)
+        public override void Initialize(IPlayer player, bool isAI)
         {
+            ShipStatus.Player = player;
+
             ShipStatus.ActionHandler.Initialize(ShipStatus);
             ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
 
+            // TODO - Temp AI for single player. Check for any requirement for multiplayer's AI Ship Spawning
+            ShipStatus.AIPilot.enabled = isAI;
+            
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
