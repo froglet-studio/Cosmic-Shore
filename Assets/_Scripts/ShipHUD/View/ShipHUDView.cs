@@ -16,7 +16,6 @@ namespace CosmicShore.Game
     {
         public ShipTypes ShipHUDType => hudType;
 
-        [SerializeField] private GameObject _trailBlock;
         [SerializeField] private ShipTypes hudType;
         [SerializeField] private ResourceDisplayRef[] resourceDisplays;
         [SerializeField] private Transform silhouetteContainer;
@@ -40,7 +39,11 @@ namespace CosmicShore.Game
         [SerializeField] private Image squirrelBoostDisplay;
 
         // --- Sparrow Variant ---
-        [SerializeField] private Button sparrowBoostButton;
+        [SerializeField] private Button sparrowFullAutoAction;
+        [SerializeField] private Button sparrowOverheatingBoostAction;
+        [SerializeField] private Button sparrowSkyBurstMissileAction;
+        [SerializeField] private Button sparrowExhaustBarrage;
+
 
         public Transform GetSilhouetteContainer() => silhouetteContainer;
         public Transform GetTrailContainer() => trailContainer;
@@ -81,8 +84,10 @@ namespace CosmicShore.Game
 
                     break;
                 case ShipTypes.Sparrow:
-                    if (sparrowBoostButton != null)
-                        sparrowBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
+                    sparrowFullAutoAction.onClick.AddListener(() => controller.OnButtonPressed(1));
+                    sparrowOverheatingBoostAction.onClick.AddListener(() => controller.OnButtonPressed(1));
+                    sparrowSkyBurstMissileAction.onClick.AddListener(() => controller.OnButtonPressed(1));
+                    sparrowExhaustBarrage.onClick.AddListener(() => controller.OnButtonPressed(1));
                     break;
             }
         }

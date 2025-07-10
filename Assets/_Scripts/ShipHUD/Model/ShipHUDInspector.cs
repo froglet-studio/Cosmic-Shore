@@ -56,8 +56,12 @@ namespace CosmicShore.Game
             DrawSection("Common Variables", sectionBlue, () =>
             {
                 EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("_trailBlock"),
-                    new GUIContent("Trail Block")
+                     serializedObject.FindProperty("silhouetteContainer"),
+                     new GUIContent("Silhouette Container")
+                );
+                EditorGUILayout.PropertyField(
+                    serializedObject.FindProperty("trailContainer"),
+                    new GUIContent("Trail Container")
                 );
             });
 
@@ -70,27 +74,11 @@ namespace CosmicShore.Game
                 );
             });
 
-            DrawSection("Resource Displays", sectionGreen, () =>
+            DrawSection("Resource Display Information", sectionGreen, () =>
             {
                 EditorGUILayout.PropertyField(
                     serializedObject.FindProperty("resourceDisplays"),
                     new GUIContent("Resource Displays")
-                );
-            });
-
-            DrawSection("Silhouette Container", sectionGreen, () =>
-            {
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("silhouetteContainer"),
-                    new GUIContent("Silhouette Container")
-                );
-            });
-
-            DrawSection("Trail Container", sectionGreen, () =>
-            {
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("trailContainer"),
-                    new GUIContent("Trail Container")
                 );
             });
 
@@ -137,8 +125,20 @@ namespace CosmicShore.Game
                         break;
                     case ShipTypes.Sparrow:
                         EditorGUILayout.PropertyField(
-                            serializedObject.FindProperty("sparrowBoostButton"),
-                            new GUIContent("Boost Button")
+                            serializedObject.FindProperty("sparrowFullAutoAction"),
+                            new GUIContent("Full Auto Action Button")
+                        );
+                        EditorGUILayout.PropertyField(
+                        serializedObject.FindProperty("sparrowOverheatingBoostAction"),
+                        new GUIContent("Overheating Boost Button")
+                        );
+                        EditorGUILayout.PropertyField(
+                        serializedObject.FindProperty("sparrowSkyBurstMissileAction"),
+                        new GUIContent("Sky Burst Missile Button")
+                        );
+                        EditorGUILayout.PropertyField(
+                        serializedObject.FindProperty("sparrowExhaustBarrage"),
+                        new GUIContent("Exhause Barrage Button")
                         );
                         break;
                     default:
