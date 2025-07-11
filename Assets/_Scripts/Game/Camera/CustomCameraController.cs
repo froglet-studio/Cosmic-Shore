@@ -6,11 +6,11 @@ namespace CosmicShore.Game.CameraSystem
     public class CustomCameraController : MonoBehaviour
     {
         [SerializeField] Transform followTarget;
-        [SerializeField] Vector3 followOffset = new Vector3(0f, 0f, -8f);
+        [SerializeField] Vector3 followOffset = new(0f, 10f, -50f);
         [SerializeField] float followSmoothTime = 0.2f;
         [SerializeField] float rotationSmoothTime = 5f;
         [SerializeField] bool useFixedUpdate = false;
-        [SerializeField] bool ignoreRoll = true;
+        [SerializeField] bool ignoreRoll = false;
 
         Camera cachedCamera;
         Vector3 velocity;
@@ -63,17 +63,22 @@ namespace CosmicShore.Game.CameraSystem
             if (followTarget == null)
                 return;
 
-            Quaternion offsetRotation = followTarget.rotation;
-            if (ignoreRoll)
-            {
-                offsetRotation = Quaternion.LookRotation(followTarget.forward, Vector3.up);
-            }
+            // 1) Build an offset?rotation that follows the ship’s forward+pitch but ignores its roll
+            Quaternion offsetRot = ignoreRoll
+                ? Quaternion.LookRotation(followTarget.forward, Vector3.up)
+                : followTarget.rotation;
 
-            Vector3 desired = followTarget.position + offsetRotation * followOffset;
-            transform.position = Vector3.SmoothDamp(transform.position, desired, ref velocity, followSmoothTime);
-            Quaternion lookRot = Quaternion.LookRotation(followTarget.position - transform.position, Vector3.up);
+            // 2) Move the camera to ship.position + that rotated offset
+            Vector3 desiredPos = followTarget.position + offsetRot * followOffset;
+            transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref velocity, followSmoothTime);
+
+            // 3) Look at the ship (world-up so no roll)
+            Vector3 toTarget = followTarget.position - transform.position;
+            Quaternion targetRot = Quaternion.LookRotation(toTarget, Vector3.up);
+
+            // 4) Smooth?damp into that rotation
             float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, t);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
         }
 
         public void SetFollowTarget(Transform target) => followTarget = target;

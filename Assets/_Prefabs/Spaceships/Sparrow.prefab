@@ -13,6 +13,11 @@ PrefabInstance:
       propertyPath: m_Delegates.Array.data[0].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: 'ControlOverrides.Array.data[0]'
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 1435252848482629424, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: Resources.Array.size
