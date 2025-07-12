@@ -38,7 +38,7 @@ namespace CosmicShore
         public float ThreatWaveMinimumPeriodInSeconds = 20;
         int currentSpawnLocationIndex = 0;
         Threat[] faunaThreats = new Threat[0];
-        Node node;
+        Cell node;
 
         protected override void Start()
         {
@@ -52,7 +52,7 @@ namespace CosmicShore
             HostileAITwo.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
-            node = NodeControlManager.Instance.GetNearestNode(Vector3.zero);
+            node = CellControlManager.Instance.GetNearestCell(Vector3.zero);
         }
 
         protected override void StartNewGame()

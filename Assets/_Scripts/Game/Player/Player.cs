@@ -2,6 +2,8 @@
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.UI;
+using CosmicShore.Environment.FlowField;
+using CosmicShore.Game.AI;
 
 
 namespace CosmicShore.Game
@@ -137,8 +139,6 @@ namespace CosmicShore.Game
             Ship.Initialize(this, true);
             
             InputController.Initialize(Ship);
-            
-            gameManager.WaitOnAILoading(Ship.ShipStatus.AIPilot);
         }
 
         public void StartAutoPilot()

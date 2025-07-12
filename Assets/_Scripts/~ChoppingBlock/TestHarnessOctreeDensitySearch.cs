@@ -19,7 +19,7 @@ public class TestHarnessOctreeDensitySearch : MonoBehaviour
     {
         yield return new WaitForSeconds(3);
         
-        Node targetNode = NodeControlManager.Instance.GetNearestNode(transform.position);
+        Cell targetNode = CellControlManager.Instance.GetNearestCell(transform.position);
 
         Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
         foreach (Teams t in teams)

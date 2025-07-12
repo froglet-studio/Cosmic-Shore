@@ -83,9 +83,9 @@ namespace CosmicShore.Core
                     StatsManager.Instance.BlockStolen(newTeam, playerName, trailBlock.TrailBlockProperties);
                 }
 
-                if (NodeControlManager.Instance != null)
+                if (CellControlManager.Instance != null)
                 {
-                    NodeControlManager.Instance.StealBlock(newTeam, trailBlock.TrailBlockProperties);
+                    CellControlManager.Instance.StealBlock(newTeam, trailBlock.TrailBlockProperties);
                 }
 
                 ChangeTeam(newTeam);

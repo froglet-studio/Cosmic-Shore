@@ -193,7 +193,7 @@ public class BoidSImulationController : MonoBehaviour
     private TrailBlock FindBlockByPosition(Vector3 position)
     {
         // Get the node that contains the position
-        Node containingNode = NodeControlManager.Instance.GetNodeByPosition(position);
+        Cell containingNode = CellControlManager.Instance.GetCellByPosition(position);
 
         // If there's no node that contains the position, return null
         if (containingNode == null)
@@ -202,13 +202,13 @@ public class BoidSImulationController : MonoBehaviour
         }
 
         // Iterate through all NodeItems in the node to find the closest TrailBlock
-        Dictionary<int, NodeItem> nodeItems = containingNode.GetItems();
+        Dictionary<int, CellItem> nodeItems = containingNode.GetItems();
         TrailBlock closestBlock = null;
         float closestDistance = float.MaxValue;
 
         foreach (var itemPair in nodeItems)
         {
-            NodeItem item = itemPair.Value;
+            CellItem item = itemPair.Value;
             if (item.GetComponent<TrailBlock>() && !item.CompareTag("Fauna"))
             {
                 float distance = Vector3.Distance(position, item.transform.position);

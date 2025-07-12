@@ -67,12 +67,6 @@ namespace CosmicShore.Core
             OnPlayGame?.Invoke();
         }
 
-        public void WaitOnAILoading(AIPilot aiPilot)
-        {
-            aiPilot.TargetPosition = FindAnyObjectByType<Crystal>().transform.position;
-            aiPilot.flowFieldData = FindAnyObjectByType<FlowFieldData>();
-        }
-
         public void RegisterSceneTransitionAnimator(Animator animator)
         {
             SceneTransitionAnimator = animator;

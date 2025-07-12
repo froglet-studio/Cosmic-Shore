@@ -7,7 +7,7 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] Crystal Crystal;
         [SerializeField] Vector3 CrystalStartPosition;
-        [SerializeField] Node node;
+        [SerializeField] Cell node;
 
         [SerializeField] SO_CellType Intensity1Cell;
         [SerializeField] SO_CellType Intensity2Cell;

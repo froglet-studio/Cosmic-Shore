@@ -8,7 +8,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] Camera Camera;
         [SerializeField] Player Player;
         [SerializeField] float CameraRadius;
-        [SerializeField] Node activeNode;
+        [SerializeField] Cell activeNode;
 
         IShip ship;
 
@@ -23,7 +23,7 @@ namespace CosmicShore.Game.UI
             Camera.transform.LookAt(activeNode.transform.position, ship.Transform.up);
         }
 
-        public void SetActiveNode(Node node)
+        public void SetActiveNode(Cell node)
         {
             activeNode = node;
         }

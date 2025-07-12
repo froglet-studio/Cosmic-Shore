@@ -23,7 +23,7 @@ namespace CosmicShore.Environment.FlowField
         public SpaceCrystalAnimator spaceCrystalAnimator;
     }
 
-    public class Crystal : NodeItem
+    public class Crystal : CellItem
     {
         #region Events
         public static Action OnCrystalMove;
@@ -273,7 +273,7 @@ namespace CosmicShore.Environment.FlowField
 
         public void ActivateCrystal()
         {
-            transform.parent = NodeControlManager.Instance.GetNearestNode(transform.position).transform;
+            transform.parent = CellControlManager.Instance.GetNearestCell(transform.position).transform;
             gameObject.GetComponent<SphereCollider>().enabled = true;
             enabled = true;
 
