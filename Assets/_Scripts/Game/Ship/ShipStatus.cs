@@ -32,17 +32,17 @@ namespace CosmicShore.Game
 
 
         [SerializeField, RequireInterface(typeof(IShip))]
-        MonoBehaviour shipInstance;
+        UnityEngine.Object _shipInstance;
         public IShip Ship
         {
             get
             {
-                if (shipInstance == null)
+                if (_shipInstance == null)
                 {
                     Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
                     return null;
                 }
-                return shipInstance as IShip;
+                return _shipInstance as IShip;
             }
         }
         

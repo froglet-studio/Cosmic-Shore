@@ -186,6 +186,11 @@ PrefabInstance:
       objectReference: {fileID: 585568732921870438}
     - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
+      propertyPath: _shipInstance
+      value: 
+      objectReference: {fileID: 585568732921870438}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 8222987891369319599}
@@ -204,6 +209,11 @@ PrefabInstance:
       propertyPath: _shipHUDController
       value: 
       objectReference: {fileID: 2715374829130864494}
+    - target: {fileID: 7553035612089645196, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _shipMono
+      value: 
+      objectReference: {fileID: 585568732921870438}
     - target: {fileID: 7553035612089645196, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: _shipObject

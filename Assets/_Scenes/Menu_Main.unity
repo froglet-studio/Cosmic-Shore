@@ -8218,13 +8218,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
+      propertyPath: IsAI
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
       propertyPath: Team
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
+      propertyPath: _selfSpawn
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
       propertyPath: playerName
-      value: HostileOne
+      value: HostileTwo
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -8234,7 +8244,7 @@ PrefabInstance:
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: InitializeData.Name
-      value: Hostile Two
+      value: HostileTwo
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -8244,7 +8254,7 @@ PrefabInstance:
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: InitializeData.PlayerName
-      value: Hostile Two
+      value: HostileTwo
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -36678,7 +36688,17 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
+      propertyPath: IsAI
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
       propertyPath: Team
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: _selfSpawn
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
@@ -36694,7 +36714,7 @@ PrefabInstance:
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: InitializeData.Name
-      value: Friendly One
+      value: FriendlyOne
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -36704,7 +36724,7 @@ PrefabInstance:
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: InitializeData.PlayerName
-      value: Friendly One
+      value: FriendlyOne
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -41926,7 +41946,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1243749157}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ba50b409e3442f34eaa0e58742345dbe, type: 3}
   m_Name: 
@@ -50900,13 +50920,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
+      propertyPath: IsAI
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: _selfSpawn
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
       propertyPath: playerName
-      value: HostileTwo
+      value: HostileOne
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: InitializeData.Name
-      value: Hostile One
+      value: HostileOne
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -50916,7 +50946,7 @@ PrefabInstance:
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: InitializeData.PlayerName
-      value: Hostile One
+      value: HostileOne
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}

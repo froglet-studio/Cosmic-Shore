@@ -188,6 +188,11 @@ PrefabInstance:
       objectReference: {fileID: 8122013569914019445}
     - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
+      propertyPath: _shipInstance
+      value: 
+      objectReference: {fileID: 8122013569914019445}
+    - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
       propertyPath: _farFieldSkimmer
       value: 
       objectReference: {fileID: 954762401694888925}
