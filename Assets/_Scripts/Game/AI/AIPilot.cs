@@ -87,8 +87,10 @@ namespace CosmicShore.Game.AI
         float maxDistance = 50f;
         float maxDistanceSquared;
 
-        [HideInInspector] public Vector3 CrystalPosition;
-        [HideInInspector] public Vector3 TargetPosition;
+        // [HideInInspector] 
+        public Vector3 CrystalPosition;
+        // [HideInInspector] 
+        public Vector3 TargetPosition;
         Vector3 distance;
 
         [HideInInspector] public FlowFieldData flowFieldData;
@@ -170,7 +172,7 @@ namespace CosmicShore.Game.AI
             };
 
             var activeNode = NodeControlManager.Instance?.GetNodeByPosition(transform.position);
-            activeNode?.RegisterForUpdates(this);
+            activeNode.RegisterForUpdates(this);
 
             foreach
                 (var ability in abilities)
@@ -270,7 +272,11 @@ namespace CosmicShore.Game.AI
 
         IEnumerator SetTargetCoroutine()
         {
-            List<ShipTypes> aggressiveShips = new List<ShipTypes> { ShipTypes.Rhino, ShipTypes.Sparrow };
+            List<ShipTypes> aggressiveShips = new List<ShipTypes> 
+            { 
+                ShipTypes.Rhino, 
+                ShipTypes.Sparrow,
+            };
 
             var rand = new System.Random();
 

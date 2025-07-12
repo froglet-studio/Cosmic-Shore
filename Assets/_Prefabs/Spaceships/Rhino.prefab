@@ -193,6 +193,11 @@ PrefabInstance:
         type: 3}
       propertyPath: shipInstance
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _shipInstance
+      value: 
       objectReference: {fileID: 1390416577048209617}
     - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
@@ -216,9 +221,14 @@ PrefabInstance:
       objectReference: {fileID: 7603027744977730342}
     - target: {fileID: 7519734021766930356, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
-      propertyPath: _shipObject
+      propertyPath: _shipMono
       value: 
       objectReference: {fileID: 1390416577048209617}
+    - target: {fileID: 7519734021766930356, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: _shipObject
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 7779107667008759293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: _shipGeometries.Array.size

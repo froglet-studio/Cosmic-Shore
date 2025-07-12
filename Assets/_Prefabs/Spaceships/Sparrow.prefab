@@ -240,6 +240,11 @@ PrefabInstance:
       objectReference: {fileID: 4726457411964270568}
     - target: {fileID: 6441696348568773771, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: _shipInstance
+      value: 
+      objectReference: {fileID: 4726457411964270568}
+    - target: {fileID: 6441696348568773771, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: shipHUDContainer
       value: 
       objectReference: {fileID: 6838873068856233639}

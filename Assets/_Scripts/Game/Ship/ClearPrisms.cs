@@ -7,9 +7,10 @@ namespace CosmicShore
     public class ClearPrisms : MonoBehaviour
     {
         Transform mainCamera;
+
         [SerializeField, RequireInterface(typeof(IShip))]
-        Object _shipObject;
-        IShip _ship => _shipObject as IShip;
+        Object _shipMono;
+        IShip _ship => _shipMono as IShip;
 
         [SerializeField] AnimationCurve scaleCurve = AnimationCurve.Linear(0, 0, 1, 1);
         [SerializeField] float capsuleRadius = 5f;
@@ -23,7 +24,8 @@ namespace CosmicShore
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
 
-        private void Awake()
+
+        private void OnEnable()
         {
             if (_ship == null)
             {
@@ -31,10 +33,7 @@ namespace CosmicShore
                 enabled = false;
                 return;
             }
-        }
 
-        private void OnEnable()
-        {
             _ship.OnShipInitialized += OnShipInitialized;
         }
 
