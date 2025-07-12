@@ -179,12 +179,12 @@ namespace CosmicShore.Core
                 TrailBlockProperties = TrailBlockProperties
             });
 
-            if (NodeControlManager.Instance != null)
+            if (CellControlManager.Instance != null)
             {
-                NodeControlManager.Instance.AddBlock(Team, TrailBlockProperties);
+                CellControlManager.Instance.AddBlock(Team, TrailBlockProperties);
                 
                 // Setup team node tracking after block is fully initialized
-                Node targetNode = NodeControlManager.Instance.GetNearestNode(TrailBlockProperties.position);
+                Cell targetNode = CellControlManager.Instance.GetNearestCell(TrailBlockProperties.position);
                 System.Array.ForEach(new[] { Teams.Jade, Teams.Ruby, Teams.Gold }, t =>
                 {
                     if (t != Team) targetNode.countGrids[t].AddBlock(this);
@@ -271,8 +271,8 @@ namespace CosmicShore.Core
                 TrailBlockProperties = TrailBlockProperties,
             });
 
-            if (NodeControlManager.Instance != null)
-                NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
+            if (CellControlManager.Instance != null)
+                CellControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
         }
 
         public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
@@ -315,8 +315,8 @@ namespace CosmicShore.Core
                     TrailBlockProperties = TrailBlockProperties
                 });
 
-                if (NodeControlManager.Instance != null)
-                    NodeControlManager.Instance.RestoreBlock(Team, TrailBlockProperties);
+                if (CellControlManager.Instance != null)
+                    CellControlManager.Instance.RestoreBlock(Team, TrailBlockProperties);
 
                 blockCollider.enabled = true;
                 meshRenderer.enabled = true;

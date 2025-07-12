@@ -6,10 +6,9 @@ using CosmicShore;
 using UnityEngine;
 using CosmicShore.Core;
 
-public class Node : MonoBehaviour
+public class Cell : MonoBehaviour
 {
     [SerializeField] public string ID;
-    //[SerializeField] float volumeControlThreshold = 100f;
 
     [SerializeField] Crystal Crystal;
 
@@ -46,7 +45,7 @@ public class Node : MonoBehaviour
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
-    Dictionary<int, NodeItem> NodeItems = new Dictionary<int, NodeItem>();
+    Dictionary<int, CellItem> NodeItems = new Dictionary<int, CellItem>();
     List<AIPilot> AIPilots = new List<AIPilot>();
     int itemsAdded;
 
@@ -202,7 +201,7 @@ public class Node : MonoBehaviour
         return countGrids[team].FindDensestRegion();
     }
 
-    public void AddItem(NodeItem item)
+    public void AddItem(CellItem item)
     {
         if (item.GetID() == 0)
         {
@@ -212,37 +211,33 @@ public class Node : MonoBehaviour
         }
     }
 
-    public void RemoveItem(NodeItem item)
+    public void RemoveItem(CellItem item)
     {
         NodeItems.Remove(item.GetID());
-        NotifyPilotsOfUpdates();
-    }
-
-    public void UpdateItem(NodeItem item)
-    {
         NotifyPilotsOfUpdates();
     }
 
     public void RegisterForUpdates(AIPilot pilot)
     {
         AIPilots.Add(pilot);
+        pilot.UpdateCellContent();
     }
 
-    void NotifyPilotsOfUpdates()
+    public void NotifyPilotsOfUpdates()
     {
         foreach (var pilot in AIPilots)
-            pilot.NodeContentUpdated();
+            pilot.UpdateCellContent();
     }
 
-    public Dictionary<int, NodeItem> GetItems()
+    public Dictionary<int, CellItem> GetItems()
     {
         return NodeItems;
     }
 
-    public NodeItem GetClosestItem(Vector3 position)
+    public CellItem GetClosestItem(Vector3 position)
     {
         float MinDistance = Mathf.Infinity;
-        NodeItem closestItem = null;
+        CellItem closestItem = null;
 
         foreach (var item in NodeItems.Values)
         {
@@ -257,7 +252,7 @@ public class Node : MonoBehaviour
         return closestItem;
     }
 
-    public NodeItem GetCrystal()
+    public CellItem GetCrystal()
     {
         return Crystal;
     }

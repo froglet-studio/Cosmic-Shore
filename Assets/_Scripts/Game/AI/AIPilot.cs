@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections;
 using CosmicShore.Core;
 using System;
+using CosmicShore.Environment.FlowField;
 
 namespace CosmicShore.Game.AI
 {
@@ -119,33 +120,33 @@ namespace CosmicShore.Game.AI
 
         
 
-        public void NodeContentUpdated()
+        public void UpdateCellContent()
         {
             //Debug.Log($"NodeContentUpdated - transform.position: {transform.position}");
-            var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
+            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
 
-            if (activeNode == null)
-                activeNode = NodeControlManager.Instance.GetNearestNode(transform.position);
+            if (activeCell == null)
+                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
 
-            var nodeItems = activeNode.GetItems();
+            var cellItems = activeCell.GetItems();
             float MinDistance = Mathf.Infinity;
-            NodeItem closestItem = null;
+            CellItem closestItem = null;
 
-            foreach (var item in nodeItems.Values)
+            foreach (var item in cellItems.Values)
             {
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
                     (item.ItemType != ItemType.Debuff || item.OwnTeam == _ship.ShipStatus.Team)) continue;
-                var distance = Vector3.Distance(item.transform.position, transform.position);
-                if (distance < MinDistance)
+                var distance = Vector3.SqrMagnitude(item.transform.position - transform.position);
+                if (distance < (MinDistance * MinDistance))
                 {
                     closestItem = item;
                     MinDistance = distance;
                 }
             }
 
-            CrystalPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
+            CrystalPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
         }
 
 
@@ -171,7 +172,7 @@ namespace CosmicShore.Game.AI
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
 
-            var activeNode = NodeControlManager.Instance?.GetNodeByPosition(transform.position);
+            var activeNode = CellControlManager.Instance?.GetCellByPosition(transform.position);
             activeNode.RegisterForUpdates(this);
 
             foreach
@@ -280,9 +281,9 @@ namespace CosmicShore.Game.AI
 
             var rand = new System.Random();
 
-            var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);  // Assume activeNode can't change.
+            var activeNode = CellControlManager.Instance.GetCellByPosition(transform.position);  // Assume activeNode can't change.
             if (activeNode == null)
-                activeNode = NodeControlManager.Instance.GetNearestNode(transform.position);
+                activeNode = CellControlManager.Instance.GetNearestCell(transform.position);
 
 
             while (true)

@@ -5,7 +5,7 @@ namespace CosmicShore
 {
     public class NodeControlTurnMonitor : TurnMonitor
     {
-        [SerializeField] private Node monitoredNode;
+        [SerializeField] private Cell monitoredNode;
         private MiniGame game;
 
         private Teams playerTeam;

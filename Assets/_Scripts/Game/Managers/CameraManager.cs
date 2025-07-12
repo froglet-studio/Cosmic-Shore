@@ -151,7 +151,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void LookAtCrystal()
     {
-        mainMenuCamera.LookAt = NodeControlManager.Instance.GetNearestNode(Vector3.zero).GetCrystal().transform;
+        mainMenuCamera.LookAt = CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
     }
 
     public void SetCloseCameraActive()

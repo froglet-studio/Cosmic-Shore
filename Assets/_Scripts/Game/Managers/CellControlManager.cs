@@ -5,9 +5,9 @@ using UnityEngine;
 
 
 // TODO: Rename to 'CellManager'
-public class NodeControlManager : Singleton<NodeControlManager>
+public class CellControlManager : Singleton<CellControlManager>
 {
-    [SerializeField] List<Node> Nodes;
+    [SerializeField] List<Cell> Nodes;
 
     public void AddBlock(Teams team, TrailBlockProperties blockProperties)
     {
@@ -16,7 +16,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
             if (node.ContainsPosition(blockProperties.position))
             {
                 node.ChangeVolume(team, blockProperties.volume);
-                //node.AddBlock(blockProperties.trailBlock);
+                node.AddBlock(blockProperties.trailBlock);
                 break;
             }
         }
@@ -35,7 +35,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         }
     }
 
-    public Node GetNodeByPosition(Vector3 position)
+    public Cell GetCellByPosition(Vector3 position)
     {
         foreach (var node in Nodes)
             if (node.ContainsPosition(position))
@@ -44,7 +44,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         return null;
     }
 
-    public Node GetNearestNode(Vector3 position)
+    public Cell GetNearestCell(Vector3 position)
     {
         var minPosition = Mathf.Infinity;
         var result = Nodes[0];
@@ -66,7 +66,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         GameManager.OnGameOver -= OutputNodeControl;
     }
 
-    public void AddItem(NodeItem item)
+    public void AddItem(CellItem item)
     {
         foreach (var node in Nodes)
         {
@@ -78,7 +78,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         }
     }
 
-    public void RemoveItem(NodeItem item)
+    public void RemoveItem(CellItem item)
     {
         foreach (var node in Nodes)
         {
@@ -90,13 +90,13 @@ public class NodeControlManager : Singleton<NodeControlManager>
         }
     }
 
-    public void UpdateItem(NodeItem item)
+    public void UpdateItem(CellItem item)
     {
         foreach (var node in Nodes)
         {
             if (node.ContainsPosition(item.transform.position))
             {
-                node.UpdateItem(item);
+                node.NotifyPilotsOfUpdates();
                 break;
             }
         }

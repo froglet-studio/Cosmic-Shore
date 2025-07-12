@@ -18,7 +18,7 @@ namespace CosmicShore
         public Teams Team;
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
         protected Crystal crystal;
-        protected Node node;
+        protected Cell node;
         bool mature = false;
         bool dying = false;
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
@@ -27,7 +27,7 @@ namespace CosmicShore
         {
             if (shieldPeriod > 0) StartCoroutine(ShieldRegen());
             crystal = GetComponentInChildren<Crystal>();
-            node = NodeControlManager.Instance.GetNodeByPosition(transform.position);
+            node = CellControlManager.Instance.GetCellByPosition(transform.position);
             StatsManager.Instance.LifeformCreated(node.ID);
         }
 

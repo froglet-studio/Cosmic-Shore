@@ -4,5 +4,5 @@ using System;
 [Serializable]
 public abstract class CellModifier : MonoBehaviour
 {
-    public abstract void Apply(Node cell);
+    public abstract void Apply(Cell cell);
 }
