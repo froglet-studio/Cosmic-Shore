@@ -714,6 +714,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _firePeriod: 0.2
+  _poolManager: {fileID: 0}
 --- !u!65 &2241505355907145431
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2182,6 +2183,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _firePeriod: 0.2
+  _poolManager: {fileID: 0}
 --- !u!65 &2838220657143574797
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2508,6 +2510,10 @@ GameObject:
   - component: {fileID: 4235613159111207255}
   - component: {fileID: 8233249704035529933}
   - component: {fileID: 3734859533843191741}
+  - component: {fileID: 9172589084772723142}
+  - component: {fileID: 3885827911418556293}
+  - component: {fileID: 7779107667008759293}
+  - component: {fileID: 4248184753307651523}
   m_Layer: 0
   m_Name: Urchin
   m_TagString: Player_Ship
@@ -2545,7 +2551,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   impactProperties: []
-  Name: Urchin
+  _name: Urchin
   _shipType: 4
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
@@ -2615,7 +2621,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipInstance: {fileID: 874579555101021527}
+  _shipInstance: {fileID: 0}
+  _shipHUDController: {fileID: 0}
+  shipHUDContainer: {fileID: 0}
+  boostMultiplier: 4
+  _name: 
+  _shipType: 0
+  _nearFieldSkimmer: {fileID: 0}
+  _farFieldSkimmer: {fileID: 0}
+  orientationHandle: {fileID: 0}
 --- !u!114 &975128113266807093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2668,7 +2682,6 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
     type: 3}
   skimmer: {fileID: 874579554510349383}
-  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 10
   minWavelength: 7
   defaultWaitTime: 0.5
@@ -2841,7 +2854,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pipCamera: {fileID: 7901702142089743579}
   mirrored: 0
-  OnPipInitializedEventChannel: {fileID: 0}
+  _EventPipEventData: {fileID: 11400000, guid: b45e336470396ed4fb50f1b0a287804d, type: 2}
 --- !u!114 &8233249704035529933
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2886,6 +2899,66 @@ MonoBehaviour:
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
   swingBlocks: 0
+--- !u!114 &9172589084772723142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _inputEventShipActions: []
+  _resourceEventClassActions: []
+  OnButton1Pressed: {fileID: 0}
+  OnButton1Released: {fileID: 0}
+  OnButton2Pressed: {fileID: 0}
+  OnButton2Released: {fileID: 0}
+  OnButton3Pressed: {fileID: 0}
+  OnButton3Released: {fileID: 0}
+--- !u!114 &3885827911418556293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7c950cbe6934cc49b4940a883bc0c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _crystalImpactEffects: []
+  _trailBlockImpactEffects: []
+--- !u!114 &7779107667008759293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54b4f9e9438fc6c49adc4ff81dc84db8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _shipGeometries: []
+--- !u!114 &4248184753307651523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13cf865c37b39d048a7f43eec35a11e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ElementStats: []
 --- !u!1 &6529595402500225743
 GameObject:
   m_ObjectHideFlags: 0
@@ -3054,7 +3127,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pools:
+  _configDatas:
   - prefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
       type: 3}
     size: 500
@@ -3064,7 +3137,6 @@ MonoBehaviour:
   - prefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
       type: 3}
     size: 500
-  shipInstance: {fileID: 0}
 --- !u!1 &6878347770711062259
 GameObject:
   m_ObjectHideFlags: 0
@@ -3178,6 +3250,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _firePeriod: 0.2
+  _poolManager: {fileID: 0}
 --- !u!1 &7835283986601519113
 GameObject:
   m_ObjectHideFlags: 0
