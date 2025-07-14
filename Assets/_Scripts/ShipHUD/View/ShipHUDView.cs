@@ -12,6 +12,13 @@ namespace CosmicShore.Game
         public ResourceDisplay Display;
     }
 
+    public enum ControllerType
+    {
+        PlayStation,
+        Xbox,
+        Unknown
+    }
+
     public class ShipHUDView : MonoBehaviour, IShipHUDView
     {
         public ShipTypes ShipHUDType => hudType;
@@ -20,6 +27,8 @@ namespace CosmicShore.Game
         [SerializeField] private ResourceDisplayRef[] resourceDisplays;
         [SerializeField] private Transform silhouetteContainer;
         [SerializeField] private Transform trailContainer;
+        [SerializeField] private GameObject psIconRoot;
+        [SerializeField] private GameObject xboxIconRoot;
 
         // --- Serpent Variant ---
         [SerializeField] private Button serpentBoostButton;
@@ -118,8 +127,48 @@ namespace CosmicShore.Game
             rd.AnimateFillUp(duration, endAmt);
         }
 
+        /// <summary>
+        /// Call this method to auto-update which icons are visible. Call it at Start, on scene load, and when input devices change.
+        /// </summary>
+        public void UpdateControllerIcons()
+        {
+            ControllerType type = DetectControllerType();
+
+            switch (type)
+            {
+                case ControllerType.Xbox:
+                    if (xboxIconRoot) xboxIconRoot.SetActive(true);
+                    if (psIconRoot) psIconRoot.SetActive(false);
+                    break;
+                case ControllerType.PlayStation:
+                    if (psIconRoot) psIconRoot.SetActive(true);
+                    if (xboxIconRoot) xboxIconRoot.SetActive(false);
+                    break;
+                default:
+                    // Default to PS, or hide both if you want
+                    if (psIconRoot) psIconRoot.SetActive(true);
+                    if (xboxIconRoot) xboxIconRoot.SetActive(false);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Returns detected controller type based on connected device names.
+        /// </summary>
+        public ControllerType DetectControllerType()
+        {
+            foreach (string joystickName in Input.GetJoystickNames())
+            {
+                if (string.IsNullOrEmpty(joystickName)) continue;
+
+                string lower = joystickName.ToLower();
+                if (lower.Contains("xbox") || lower.Contains("xinput"))
+                    return ControllerType.Xbox;
+                if (lower.Contains("playstation") || lower.Contains("dualshock") || lower.Contains("sony") || lower.Contains("wireless controller"))
+                    return ControllerType.PlayStation;
+            }
+            return ControllerType.Unknown;
+        }
+
     }
 }
-
-
-
