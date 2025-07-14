@@ -35,7 +35,7 @@ namespace CosmicShore.Game
         [SerializeField] private Button serpentWallDisplayButton;
 
         // --- Dolphin Variant ---
-        [SerializeField] private Image dolphinBoostFeedback;
+        [SerializeField] private Button dolphinBoostFeedback;
 
         // --- Manta Variant ---
         [SerializeField] private Button mantaBoostButton;
@@ -78,8 +78,8 @@ namespace CosmicShore.Game
                         serpentWallDisplayButton.onClick.AddListener(() => controller.OnButtonPressed(2));
                     break;
                 case ShipTypes.Dolphin:
-                    //if (dolphinBoostButton != null)
-                    //    dolphinBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
+                    if (dolphinBoostFeedback != null)
+                        dolphinBoostFeedback.onClick.AddListener(() => controller.OnButtonPressed(1));
                     break;
                 case ShipTypes.Manta:
                     if (mantaBoostButton != null)
