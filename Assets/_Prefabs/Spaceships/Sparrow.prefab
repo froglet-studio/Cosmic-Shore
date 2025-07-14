@@ -58,6 +58,12 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3440187540988767646, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: OnCellItemsUpdated
+      value: 
+      objectReference: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd,
+        type: 2}
     - target: {fileID: 3715286626961622809, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: m_Delegates.Array.data[0].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Target

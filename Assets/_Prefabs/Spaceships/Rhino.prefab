@@ -48,6 +48,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 77d2f40630f37ed6b2e8c73c4cd59430,
         type: 2}
+    - target: {fileID: 3440187540988767646, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: OnCellItemsUpdated
+      value: 
+      objectReference: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd,
+        type: 2}
     - target: {fileID: 3885827911418556293, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: AOEPrefab

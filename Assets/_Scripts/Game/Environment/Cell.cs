@@ -5,6 +5,7 @@ using CosmicShore.Game.AI;
 using CosmicShore;
 using UnityEngine;
 using CosmicShore.Core;
+using Obvious.Soap;
 
 public class Cell : MonoBehaviour
 {
@@ -40,6 +41,9 @@ public class Cell : MonoBehaviour
 
     [SerializeField] bool hasRandomFloraAndFauna;
 
+    [SerializeField]
+    ScriptableEventNoParam OnCellItemsUpdated;
+
     public Dictionary<Teams, BlockCountDensityGrid> countGrids = new Dictionary<Teams, BlockCountDensityGrid>();
     public Dictionary<Teams, BlockVolumeDensityGrid> volumeGrids = new Dictionary<Teams, BlockVolumeDensityGrid>();
 
@@ -71,27 +75,24 @@ public class Cell : MonoBehaviour
         {
             cellType = CellTypes[Random.Range(0, CellTypes.Count)];
         }
-        if (cellType != null) 
+
+        if (cellType == null)
         {
-            normalizeWeights();
-
-            membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
-            nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
-            SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
-            SnowChanger.Crystal = Crystal.gameObject;
-            SnowChanger.SetOrigin(transform.position);
-
-            foreach (var modifier in cellType.CellModifiers)
-            {
-                modifier.Apply(this);
-            }
-            SpawnLife();
-            Crystal.gameObject.SetActive(true);
-        }   
+            Debug.LogError("Cell type is not assigned. Please assign a valid cell type.");
+            return;
+        }
     }
 
     void Start()
     {
+        normalizeWeights();
+
+        membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
+        nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
+        SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
+        SnowChanger.Crystal = Crystal.gameObject;
+        SnowChanger.SetOrigin(transform.position);
+
         teamVolumes.Add(Teams.Jade, 0);
         teamVolumes.Add(Teams.Ruby, 0);
         teamVolumes.Add(Teams.Gold, 0);
@@ -106,6 +107,8 @@ public class Cell : MonoBehaviour
             }
             SpawnLife();
         }
+
+        Crystal.gameObject.SetActive(true);
     }
 
     void SpawnLife()
@@ -207,26 +210,14 @@ public class Cell : MonoBehaviour
         {
             item.SetID(++itemsAdded);
             NodeItems.Add(item.GetID(), item);
-            NotifyPilotsOfUpdates();
+            OnCellItemsUpdated.Raise();
         }
     }
 
     public void RemoveItem(CellItem item)
     {
         NodeItems.Remove(item.GetID());
-        NotifyPilotsOfUpdates();
-    }
-
-    public void RegisterForUpdates(AIPilot pilot)
-    {
-        AIPilots.Add(pilot);
-        pilot.UpdateCellContent();
-    }
-
-    public void NotifyPilotsOfUpdates()
-    {
-        foreach (var pilot in AIPilots)
-            pilot.UpdateCellContent();
+        OnCellItemsUpdated.Raise();
     }
 
     public Dictionary<int, CellItem> GetItems()
@@ -259,6 +250,9 @@ public class Cell : MonoBehaviour
 
     public bool ContainsPosition(Vector3 position)
     {
+        if (membrane == null)
+            return false;
+
         return Vector3.Distance(position, transform.position) < membrane.transform.localScale.x; // only works if nodes remain spherical
     }
 

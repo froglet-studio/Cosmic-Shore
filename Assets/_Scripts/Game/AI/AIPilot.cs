@@ -4,6 +4,7 @@ using System.Collections;
 using CosmicShore.Core;
 using System;
 using CosmicShore.Environment.FlowField;
+using Obvious.Soap;
 
 namespace CosmicShore.Game.AI
 {
@@ -68,6 +69,9 @@ namespace CosmicShore.Game.AI
 
         [SerializeField] List<AIAbility> abilities;
 
+        [SerializeField]
+        ScriptableEventNoParam OnCellItemsUpdated;
+
         enum Corner 
         {
             TopRight,
@@ -118,9 +122,19 @@ namespace CosmicShore.Game.AI
         }
         #endregion
 
-        
 
-        public void UpdateCellContent()
+        private void OnEnable()
+        {
+            OnCellItemsUpdated.OnRaised += UpdateCellContent;
+        }
+
+        private void OnDisable()
+        {
+            OnCellItemsUpdated.OnRaised -= UpdateCellContent;
+        }
+
+
+        void UpdateCellContent()
         {
             //Debug.Log($"NodeContentUpdated - transform.position: {transform.position}");
             var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
@@ -171,9 +185,6 @@ namespace CosmicShore.Game.AI
                 { Corner.BottomLeft, new AvoidanceBehavior (-raycastWidth, -raycastHeight, Clockwise, Vector3.zero ) },
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
-
-            var activeNode = CellControlManager.Instance?.GetCellByPosition(transform.position);
-            activeNode.RegisterForUpdates(this);
 
             foreach
                 (var ability in abilities)
@@ -281,21 +292,24 @@ namespace CosmicShore.Game.AI
 
             var rand = new System.Random();
 
-            var activeNode = CellControlManager.Instance.GetCellByPosition(transform.position);  // Assume activeNode can't change.
-            if (activeNode == null)
-                activeNode = CellControlManager.Instance.GetNearestCell(transform.position);
-
+            // Assume activeNode can't change.
+            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);  
+            if (activeCell == null)
+                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
 
             while (true)
             {
-                if (aggressiveShips.Contains(_ship.ShipStatus.ShipType) && (activeNode.ControllingTeam != Teams.None)) {
-                    if ((_ship.ShipStatus.Team == activeNode.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
+                if (activeCell != null && 
+                    aggressiveShips.Contains(_ship.ShipStatus.ShipType) && 
+                    activeCell.ControllingTeam != Teams.None)
+                {
+                    if ((_ship.ShipStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
                     {
                         TargetPosition = CrystalPosition;
                     }
                     else
                     {
-                        TargetPosition = activeNode.GetExplosionTarget(activeNode.ControllingTeam);  // Block centroid belonging to the winning team
+                        TargetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
                     }
                 }
                 else
@@ -305,7 +319,6 @@ namespace CosmicShore.Game.AI
                 yield return new WaitForSeconds(targetUpdateFrequencySeconds);
             }
         }
-
 
         float SigmoidResponse(float input)
         {

@@ -53,18 +53,13 @@ namespace CosmicShore.Environment.FlowField
         protected Material tempMaterial;
         List<Collider> collisions;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        private static int _layerName;
 
         protected virtual void Awake()
         {
             collisions = new List<Collider>();
             
             // Initialized Crystal game object layer, assign it to "Crystals"
-            _layerName = LayerMask.NameToLayer("Crystals");
-            gameObject.layer = _layerName;
+            gameObject.layer = LayerMask.NameToLayer("Crystals");
         }
 
 

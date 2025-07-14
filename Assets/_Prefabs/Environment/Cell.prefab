@@ -56,3 +56,4 @@ MonoBehaviour:
   faunaSpawnVolumeThreshold: 10000
   baseFaunaSpawnTime: 300
   hasRandomFloraAndFauna: 0
+  OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}

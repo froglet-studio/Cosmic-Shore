@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Utilities;
+using Obvious.Soap;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,16 +8,16 @@ using UnityEngine;
 // TODO: Rename to 'CellManager'
 public class CellControlManager : Singleton<CellControlManager>
 {
-    [SerializeField] List<Cell> Nodes;
+    [SerializeField] List<Cell> Cells;
 
     public void AddBlock(Teams team, TrailBlockProperties blockProperties)
     {
-        foreach (var node in Nodes)
+        foreach (var cell in Cells)
         {
-            if (node.ContainsPosition(blockProperties.position))
+            if (cell.ContainsPosition(blockProperties.position))
             {
-                node.ChangeVolume(team, blockProperties.volume);
-                node.AddBlock(blockProperties.trailBlock);
+                cell.ChangeVolume(team, blockProperties.volume);
+                cell.AddBlock(blockProperties.trailBlock);
                 break;
             }
         }
@@ -24,12 +25,12 @@ public class CellControlManager : Singleton<CellControlManager>
 
     public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
     {
-        foreach (var node in Nodes)
+        foreach (var cell in Cells)
         {
-            if (node.ContainsPosition(blockProperties.position))
+            if (cell.ContainsPosition(blockProperties.position))
             {
-                node.ChangeVolume(team, -blockProperties.volume);
-                node.RemoveBlock(blockProperties.trailBlock);
+                cell.ChangeVolume(team, -blockProperties.volume);
+                cell.RemoveBlock(blockProperties.trailBlock);
                 break;
             }
         }
@@ -37,21 +38,23 @@ public class CellControlManager : Singleton<CellControlManager>
 
     public Cell GetCellByPosition(Vector3 position)
     {
-        foreach (var node in Nodes)
-            if (node.ContainsPosition(position))
-                return node;
+        foreach (var cell in Cells)
+            if (cell.ContainsPosition(position))
+                return cell;
 
         return null;
     }
 
     public Cell GetNearestCell(Vector3 position)
     {
-        var minPosition = Mathf.Infinity;
-        var result = Nodes[0];
+        if (Cells.Count == 0) return null;
 
-        foreach (var node in Nodes)
-            if (Vector3.SqrMagnitude(position - node.transform.position) < minPosition)
-                result = node;
+        var minPosition = Mathf.Infinity;
+        var result = Cells[0];
+
+        foreach (var cell in Cells)
+            if (Vector3.SqrMagnitude(position - cell.transform.position) < minPosition)
+                result = cell;
 
         return result;
     }
@@ -68,11 +71,11 @@ public class CellControlManager : Singleton<CellControlManager>
 
     public void AddItem(CellItem item)
     {
-        foreach (var node in Nodes)
+        foreach (var cell in Cells)
         {
-            if (node.ContainsPosition(item.transform.position))
+            if (cell.ContainsPosition(item.transform.position))
             {
-                node.AddItem(item);
+                cell.AddItem(item);
                 break;
             }
         }
@@ -80,11 +83,11 @@ public class CellControlManager : Singleton<CellControlManager>
 
     public void RemoveItem(CellItem item)
     {
-        foreach (var node in Nodes)
+        foreach (var cell in Cells)
         {
-            if (node.ContainsPosition(item.transform.position))
+            if (cell.ContainsPosition(item.transform.position))
             {
-                node.RemoveItem(item);
+                cell.RemoveItem(item);
                 break;
             }
         }
@@ -92,11 +95,11 @@ public class CellControlManager : Singleton<CellControlManager>
 
     public void UpdateItem(CellItem item)
     {
-        foreach (var node in Nodes)
+        foreach (var cell in Cells)
         {
-            if (node.ContainsPosition(item.transform.position))
+            if (cell.ContainsPosition(item.transform.position))
             {
-                node.NotifyPilotsOfUpdates();
+                // cell.NotifyPilotsOfUpdates();
                 break;
             }
         }
@@ -104,12 +107,12 @@ public class CellControlManager : Singleton<CellControlManager>
 
     public void StealBlock(Teams team, TrailBlockProperties blockProperties)
     {
-        foreach (var node in Nodes)
+        foreach (var cell in Cells)
         {
-            if (node.ContainsPosition(blockProperties.position))
+            if (cell.ContainsPosition(blockProperties.position))
             {
-                node.ChangeVolume(team, blockProperties.volume);
-                node.ChangeVolume(blockProperties.trailBlock.Team, -blockProperties.volume);
+                cell.ChangeVolume(team, blockProperties.volume);
+                cell.ChangeVolume(blockProperties.trailBlock.Team, -blockProperties.volume);
                 break;
             }
         }
@@ -117,11 +120,11 @@ public class CellControlManager : Singleton<CellControlManager>
 
     public void RestoreBlock(Teams team, TrailBlockProperties blockProperties)
     {
-        foreach (var node in Nodes)
+        foreach (var cell in Cells)
         {
-            if (node.ContainsPosition(blockProperties.position))
+            if (cell.ContainsPosition(blockProperties.position))
             {
-                node.ChangeVolume(team, blockProperties.volume);
+                cell.ChangeVolume(team, blockProperties.volume);
                 break;
             }
         }
@@ -129,10 +132,10 @@ public class CellControlManager : Singleton<CellControlManager>
 
     public void OutputNodeControl()
     {
-        foreach (var node in Nodes)
+        foreach (var cell in Cells)
         {
-            if (node.enabled)
-                Debug.LogWarning($"Node Control - Node ID: {node.ID}, Controlling Team: {node.ControllingTeam}, Green Volume: {node.GetTeamVolume(Teams.Jade)}, Red Volume: {node.GetTeamVolume(Teams.Ruby)}");
+            if (cell.enabled)
+                Debug.LogWarning($"Node Control - Node ID: {cell.ID}, Controlling Team: {cell.ControllingTeam}, Green Volume: {cell.GetTeamVolume(Teams.Jade)}, Red Volume: {cell.GetTeamVolume(Teams.Ruby)}");
         }
     }
 }
