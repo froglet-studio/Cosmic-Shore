@@ -39,6 +39,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public float CloseCamDistance;
     public float FarCamDistance;
+    [SerializeField] float startTransitionDistance = 40f;
 
     Camera vCam;
 
@@ -216,7 +217,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
                 cameraData.renderPostProcessing = true;
             }
             InitializeRuntimeOffset();
-            SetOffsetPosition(runtimeFollowOffset);
+            Vector3 finalOffset = runtimeFollowOffset;
+            SetRuntimeFollowOffset(runtimeFollowOffset + Vector3.back * startTransitionDistance);
+            SetOffsetPosition(finalOffset);
         }
         else if (activeCamera == deathCamera)
         {

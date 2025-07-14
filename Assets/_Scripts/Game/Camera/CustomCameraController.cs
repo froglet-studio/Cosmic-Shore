@@ -10,7 +10,8 @@ namespace CosmicShore.Game.CameraSystem
         [SerializeField] float followSmoothTime = 0.2f;
         [SerializeField] float rotationSmoothTime = 5f;
         [SerializeField] bool useFixedUpdate = false;
-        [SerializeField] bool ignoreRoll = false;
+        [SerializeField] bool ignoreRoll = true;
+        [SerializeField] float fieldOfView = 60f;
 
         Camera cachedCamera;
         Vector3 velocity;
@@ -44,6 +45,8 @@ namespace CosmicShore.Game.CameraSystem
         void Awake()
         {
             cachedCamera = GetComponent<Camera>();
+            cachedCamera.fieldOfView = fieldOfView;
+            cachedCamera.useOcclusionCulling = false;
         }
 
         void LateUpdate()
@@ -63,7 +66,7 @@ namespace CosmicShore.Game.CameraSystem
             if (followTarget == null)
                 return;
 
-            // 1) Build an offset?rotation that follows the ship’s forward+pitch but ignores its roll
+            // 1) Build an offset?rotation that follows the shipâ€™s forward+pitch but ignores its roll
             Quaternion offsetRot = ignoreRoll
                 ? Quaternion.LookRotation(followTarget.forward, Vector3.up)
                 : followTarget.rotation;
