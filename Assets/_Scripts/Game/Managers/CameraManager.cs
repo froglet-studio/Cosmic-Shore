@@ -137,6 +137,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void OnMainMenu()
     {
         SetMainMenuCameraActive();
+        playerCamera.EnableSmoothFollow(true);
         _themeManagerData.SetBackgroundColor(Camera.main);
     }
 
@@ -150,6 +151,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         playerFollowTarget = _transform;
         playerCamera.SetFollowTarget(playerFollowTarget);
+        playerCamera.EnableSmoothFollow(!FollowOverride);
         deathCamera.SetFollowTarget(playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
 

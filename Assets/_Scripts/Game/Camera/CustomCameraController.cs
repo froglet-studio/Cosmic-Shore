@@ -9,6 +9,8 @@ namespace CosmicShore.Game.CameraSystem
         [SerializeField] Vector3 followOffset = new(0f, 10f, -50f);
         [SerializeField] float followSmoothTime = 0.2f;
         [SerializeField] float rotationSmoothTime = 5f;
+        [SerializeField] bool smoothPosition = true;
+        [SerializeField] bool smoothRotation = true;
         [SerializeField] bool useFixedUpdate = false;
         [SerializeField] float farClipPlane = 10000f;
         [SerializeField] float fieldOfView = 60f;
@@ -67,15 +69,25 @@ namespace CosmicShore.Game.CameraSystem
 
             // 2) Move the camera to ship.position + that rotated offset
             Vector3 desiredPos = followTarget.position + offsetRot * followOffset;
-            transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref velocity, followSmoothTime);
+            if (smoothPosition && followSmoothTime > 0f)
+                transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref velocity, followSmoothTime);
+            else
+                transform.position = desiredPos;
 
             // 3) Look at the ship using its up vector so roll is preserved
             Vector3 toTarget = followTarget.position - transform.position;
             Quaternion targetRot = Quaternion.LookRotation(toTarget, followTarget.up);
 
             // 4) Smooth?damp into that rotation
-            float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+            if (smoothRotation)
+            {
+                float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+            }
+            else
+            {
+                transform.rotation = targetRot;
+            }
         }
 
         public void SetFollowTarget(Transform target) => followTarget = target;
@@ -84,6 +96,9 @@ namespace CosmicShore.Game.CameraSystem
             followOffset = offset;
         }
         public Vector3 GetFollowOffset() => followOffset;
+
+        public void EnableSmoothFollow(bool enable) => smoothPosition = enable;
+        public void EnableSmoothRotation(bool enable) => smoothRotation = enable;
 
         public void SetFieldOfView(float fov) => cachedCamera.fieldOfView = fov;
         public void SetClipPlanes(float near, float far)
