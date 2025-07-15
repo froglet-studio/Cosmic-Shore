@@ -10,7 +10,7 @@ namespace CosmicShore.Game.CameraSystem
         [SerializeField] float followSmoothTime = 0.2f;
         [SerializeField] float rotationSmoothTime = 5f;
         [SerializeField] bool useFixedUpdate = false;
-        [SerializeField] bool ignoreRoll = true;
+        [SerializeField] float farClipPlane = 10000f;
         [SerializeField] float fieldOfView = 60f;
 
         Camera cachedCamera;
@@ -36,17 +36,13 @@ namespace CosmicShore.Game.CameraSystem
             set => rotationSmoothTime = Mathf.Max(0f, value);
         }
 
-        public bool IgnoreRoll
-        {
-            get => ignoreRoll;
-            set => ignoreRoll = value;
-        }
 
         void Awake()
         {
             cachedCamera = GetComponent<Camera>();
             cachedCamera.fieldOfView = fieldOfView;
             cachedCamera.useOcclusionCulling = false;
+            cachedCamera.farClipPlane = farClipPlane;
         }
 
         void LateUpdate()
@@ -66,18 +62,16 @@ namespace CosmicShore.Game.CameraSystem
             if (followTarget == null)
                 return;
 
-            // 1) Build an offset?rotation that follows the ship’s forward+pitch but ignores its roll
-            Quaternion offsetRot = ignoreRoll
-                ? Quaternion.LookRotation(followTarget.forward, Vector3.up)
-                : followTarget.rotation;
+            // 1) Build an offset rotation based on the ship's orientation
+            Quaternion offsetRot = followTarget.rotation;
 
             // 2) Move the camera to ship.position + that rotated offset
             Vector3 desiredPos = followTarget.position + offsetRot * followOffset;
             transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref velocity, followSmoothTime);
 
-            // 3) Look at the ship (world-up so no roll)
+            // 3) Look at the ship using its up vector so roll is preserved
             Vector3 toTarget = followTarget.position - transform.position;
-            Quaternion targetRot = Quaternion.LookRotation(toTarget, Vector3.up);
+            Quaternion targetRot = Quaternion.LookRotation(toTarget, followTarget.up);
 
             // 4) Smooth?damp into that rotation
             float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
