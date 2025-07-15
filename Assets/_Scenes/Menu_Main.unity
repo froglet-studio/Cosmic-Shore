@@ -52859,7 +52859,10 @@ PrefabInstance:
       propertyPath: Lens.NearClipPlane
       value: 0.5910121
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8316677134886896521, guid: ba70c0f3eb077d44b8a538982d02dadc, type: 3}
+    - {fileID: 2332396574556849304, guid: ba70c0f3eb077d44b8a538982d02dadc, type: 3}
+    - {fileID: 1201690886442683049, guid: ba70c0f3eb077d44b8a538982d02dadc, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -53220,7 +53223,8 @@ MonoBehaviour:
   followSmoothTime: 0.2
   rotationSmoothTime: 5
   useFixedUpdate: 0
-  ignoreRoll: 0
+  farClipPlane: 10000
+  fieldOfView: 60
 --- !u!114 &1564738391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53238,7 +53242,8 @@ MonoBehaviour:
   followSmoothTime: 0.2
   rotationSmoothTime: 5
   useFixedUpdate: 0
-  ignoreRoll: 0
+  farClipPlane: 10000
+  fieldOfView: 60
 --- !u!114 &1564738392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53256,7 +53261,8 @@ MonoBehaviour:
   followSmoothTime: 0.2
   rotationSmoothTime: 5
   useFixedUpdate: 1
-  ignoreRoll: 1
+  farClipPlane: 10000
+  fieldOfView: 60
 --- !u!1 &1565783685
 GameObject:
   m_ObjectHideFlags: 0
