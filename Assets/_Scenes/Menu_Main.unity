@@ -13580,7 +13580,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &411263462
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21261,7 +21261,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1457525123}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &665302836
 GameObject:
@@ -48195,21 +48195,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayFabUtility
       objectReference: {fileID: 0}
+    - target: {fileID: 4275454225269276221, guid: 585e70b8bf7bd68409f4c7970fea1690,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 4275454225269276218, guid: 585e70b8bf7bd68409f4c7970fea1690,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 662826461}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 585e70b8bf7bd68409f4c7970fea1690, type: 3}
---- !u!4 &1457525123 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4275454225269276218, guid: 585e70b8bf7bd68409f4c7970fea1690,
-    type: 3}
-  m_PrefabInstance: {fileID: 1457525122}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &1457878422 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6960199311510088753, guid: d03b222767521fb46b35a956ee450a8b,
@@ -49619,74 +49614,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1496307411}
   m_CullTransparentMesh: 1
---- !u!1001 &1497080238
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 5377474336189881263, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_Name
-      value: DailyChallengeSystem
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 987fb44715d58f443bb86d97e9ed91a7, type: 3}
 --- !u!1 &1498986277
 GameObject:
   m_ObjectHideFlags: 0
@@ -64518,6 +64445,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: CSAnalyticsManager
       objectReference: {fileID: 0}
+    - target: {fileID: 1458278359188228940, guid: 82df1cddf1f4f455cbbc8834a8f7b5b5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -78660,6 +78592,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: AuthenticationManager
       objectReference: {fileID: 0}
+    - target: {fileID: 1891226926731810441, guid: a293d6f34d4843245b1e7d5d11f5fdfc,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1891226926731810442, guid: a293d6f34d4843245b1e7d5d11f5fdfc,
         type: 3}
       propertyPath: m_RootOrder
@@ -82193,7 +82130,7 @@ PrefabInstance:
     - target: {fileID: 5377474336189881263, guid: 987fb44715d58f443bb86d97e9ed91a7,
         type: 3}
       propertyPath: m_Name
-      value: UserActionSystem
+      value: DailyChallengeSystem
       objectReference: {fileID: 0}
     - target: {fileID: 8612500835039077531, guid: 987fb44715d58f443bb86d97e9ed91a7,
         type: 3}
@@ -91423,6 +91360,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayerDataController
       objectReference: {fileID: 0}
+    - target: {fileID: 5783225383338713315, guid: 06896e74eccda414ab172720bb1a2e7e,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5783225383338713316, guid: 06896e74eccda414ab172720bb1a2e7e,
         type: 3}
       propertyPath: m_RootOrder
@@ -93404,6 +93346,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: LeaderboardManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 6023862200704662124, guid: 40fd892c572989246812927287a5106f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6023862200704662125, guid: 40fd892c572989246812927287a5106f,
         type: 3}
@@ -99889,6 +99836,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: CatalogManager
       objectReference: {fileID: 0}
+    - target: {fileID: 8893803372231152932, guid: 545b037093226284297cffb9f45c4ffc,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8893803372231152933, guid: 545b037093226284297cffb9f45c4ffc,
         type: 3}
       propertyPath: m_RootOrder
@@ -100529,7 +100481,6 @@ SceneRoots:
   - {fileID: 6019225091298532568}
   - {fileID: 2060726314631567713}
   - {fileID: 3451900300520415410}
-  - {fileID: 1497080238}
   - {fileID: 2259673634671319691}
   - {fileID: 411263463}
   - {fileID: 815638251}
@@ -100540,6 +100491,7 @@ SceneRoots:
   - {fileID: 6023862199913651122}
   - {fileID: 8893803373288139530}
   - {fileID: 1446676237}
+  - {fileID: 662826461}
   - {fileID: 1457525122}
   - {fileID: 1910026082}
   - {fileID: 520946453}

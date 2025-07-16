@@ -24,8 +24,7 @@ namespace CosmicShore.Game.UI
         bool imageEnabled = true;
 
         Vector2 leftStartPosition, rightStartPosition;
-        InputController _inputController;
-        IInputStatus _inputStatus => _inputController.InputStatus;
+        IInputStatus _inputStatus;
 
         private void OnEnable()
         {
@@ -36,6 +35,8 @@ namespace CosmicShore.Game.UI
         {
             GameSetting.OnChangeJoystickVisualsStatus -= OnToggleJoystickVisuals;
         }
+
+        public void Initialize(IInputStatus inputStatus) => _inputStatus = inputStatus;
 
         private void OnToggleJoystickVisuals(bool status)
         {

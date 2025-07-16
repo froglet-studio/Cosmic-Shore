@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 using Obvious.Soap;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game.AI
 {
@@ -35,11 +36,6 @@ namespace CosmicShore.Game.AI
 
         float throttle;
         float aggressiveness;
-
-        public float XSum;
-        public float YSum;
-        public float XDiff;
-        public float YDiff;
 
         public float X;
         public float Y;
@@ -76,6 +72,7 @@ namespace CosmicShore.Game.AI
 
         IShip _ship;
         IShipStatus _shipStatus => _ship.ShipStatus;
+        IInputStatus _inputStatus => _shipStatus.InputStatus;
 
         float _lastPitchTarget;
         float _lastYawTarget;
@@ -142,7 +139,7 @@ namespace CosmicShore.Game.AI
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
-                    (item.ItemType != ItemType.Debuff || item.OwnTeam == _ship.ShipStatus.Team)) continue;
+                    (item.ItemType != ItemType.Debuff || item.OwnTeam == _shipStatus.Team)) continue;
                 var distance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (distance < (MinDistance * MinDistance))
                 {
@@ -155,17 +152,22 @@ namespace CosmicShore.Game.AI
         }
 
 
-        public void AssignShip(IShip ship)
+        /*public void AssignShip(IShip ship)
         {
             _ship = ship;
-        }
+        }*/
 
-        public void Initialize(bool enableAutoPilot)
+        public void Initialize(bool enableAutoPilot, IShip ship)
         {
             AutoPilotEnabled = enableAutoPilot;
-            Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
-            if (!AutoPilotEnabled)
-                return;
+            _ship = ship;
+
+            // Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
+
+            // TODO - Even a player can have autopilot mode enabled. So we initialize anyway.
+            /*if (!AutoPilotEnabled)
+                return;*/
+
             _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -188,51 +190,50 @@ namespace CosmicShore.Game.AI
 
         void Update()
         {
-            if (AutoPilotEnabled)
+            if (!AutoPilotEnabled)
+                return;
+
+            _distance = _targetPosition - transform.position;
+            Vector3 desiredDirection = _distance.normalized;
+
+            LookingAtCrystal = Vector3.Dot(desiredDirection, _shipStatus.Course) >= .9f;
+            if (LookingAtCrystal && drift && !_shipStatus.Drifting)
             {
-                _distance = _targetPosition - transform.position;
-                Vector3 desiredDirection = _distance.normalized;
-
-                LookingAtCrystal = Vector3.Dot(desiredDirection, _shipStatus.Course) >= .9f;
-                if (LookingAtCrystal && drift && !_shipStatus.Drifting)
-                {
-                    _shipStatus.Course = desiredDirection;
-                    _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
-                    desiredDirection *= -1;
-                }
-                else if (LookingAtCrystal && _shipStatus.Drifting) desiredDirection *= -1;
-                else if (_shipStatus.Drifting) _ship.StopShipControllerActions(InputEvents.LeftStickAction);
-
-
-                if (_distance.magnitude < float.Epsilon) // Avoid division by zero
-                    return;
-
-                Vector3 combinedLocalCrossProduct = Vector3.zero;
-                float sqrMagnitude = _distance.sqrMagnitude;
-                Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
-                Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
-                combinedLocalCrossProduct += localCrossProduct;
-
-                aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
-                float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
-
-                if (SingleStickControls)
-                {
-                    X = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                    Y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                }
-                else
-                {
-                    YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                    XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                    YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-
-                    XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
-                }
-   
-                //aggressiveness += aggressivenessIncrease * Time.deltaTime;
-                throttle += throttleIncrease * Time.deltaTime;
+                _shipStatus.Course = desiredDirection;
+                _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                desiredDirection *= -1;
             }
+            else if (LookingAtCrystal && _shipStatus.Drifting) desiredDirection *= -1;
+            else if (_shipStatus.Drifting) _ship.StopShipControllerActions(InputEvents.LeftStickAction);
+
+
+            if (_distance.magnitude < float.Epsilon) // Avoid division by zero
+                return;
+
+            Vector3 combinedLocalCrossProduct = Vector3.zero;
+            float sqrMagnitude = _distance.sqrMagnitude;
+            Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
+            Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
+            combinedLocalCrossProduct += localCrossProduct;
+
+            aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
+            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
+
+            if (SingleStickControls)
+            {
+                X = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                Y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+            }
+            else
+            {
+                _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
+            }
+
+            //aggressiveness += aggressivenessIncrease * Time.deltaTime;
+            throttle += throttleIncrease * Time.deltaTime;
         }
         Vector3 ShootLaser(Vector3 position)
         {
@@ -296,7 +297,7 @@ namespace CosmicShore.Game.AI
                     // aggressiveShips.Contains(_ship.ShipStatus.ShipType) && 
                     activeCell.ControllingTeam != Teams.None)
                 {
-                    if ((_ship.ShipStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
+                    if ((_shipStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
                     {
                         _targetPosition = _crystalPosition;
                     }

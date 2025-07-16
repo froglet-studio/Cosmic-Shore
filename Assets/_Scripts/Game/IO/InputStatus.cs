@@ -1,9 +1,14 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game.IO;
+using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     public class InputStatus : MonoBehaviour, IInputStatus
     {
+        public static ScreenOrientation CurrentOrientation;
+
+        public InputController InputController { get; set; }
+
         public float XSum { get; set; }
         public float YSum {get; set;}
         public float XDiff {get; set;}
@@ -27,5 +32,7 @@ namespace CosmicShore.Core
         public Vector2 LeftNormalizedJoystickPosition {get; set;}
         public Vector2 EasedRightJoystickPosition {get; set;}
         public Vector2 EasedLeftJoystickPosition {get; set;}
+
+        public Quaternion GetGyroRotation() => InputController.GetGyroRotation();
     }
 }

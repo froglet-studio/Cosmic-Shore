@@ -85,7 +85,7 @@ namespace CosmicShore.Game
         public Teams Team { get; set; }
         public IPlayer Player { get; set; }
         public InputController IputController => Player.InputController;
-        public IInputStatus InputStatus => Player.InputController.InputStatus;
+        public IInputStatus InputStatus => IputController.InputStatus;
         public Material AOEExplosionMaterial { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material ShipMaterial { get; set; }

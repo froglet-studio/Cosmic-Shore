@@ -1,7 +1,5 @@
 ﻿using CosmicShore.Game.IO;
-using CosmicShore.Game.UI;
 using CosmicShore.Utility;
-using UnityEngine;
 
 
 namespace CosmicShore.Game
@@ -14,6 +12,7 @@ namespace CosmicShore.Game
         public string PlayerUUID { get; }
         public IShip Ship { get; }
         public InputController InputController { get; }
+        public IInputStatus InputStatus { get; }
 
         public bool IsActive { get; }
 

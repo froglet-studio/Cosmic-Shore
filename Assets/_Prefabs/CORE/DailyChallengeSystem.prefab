@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1684828194818177599}
   - component: {fileID: 5106213886222869774}
   m_Layer: 0
-  m_Name: UserActionSystem
+  m_Name: DailyChallengeSystem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

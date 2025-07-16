@@ -1,10 +1,14 @@
-﻿namespace CosmicShore.Core
-{
-    using Unity.Netcode;
-    using UnityEngine;
+﻿using CosmicShore.Game.IO;
+using Unity.Netcode;
+using UnityEngine;
 
+
+namespace CosmicShore.Game
+{
     public class NetworkInputStatus : NetworkBehaviour, IInputStatus
     {
+        public InputController InputController { get; set; }
+
         // Floats
         private readonly NetworkVariable<float> n_xSum = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<float> n_ySum = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
@@ -171,5 +175,7 @@
             get => n_ThreeDPosition.Value;
             set => n_ThreeDPosition.Value = value;
         }
+
+        public Quaternion GetGyroRotation() => InputController.GetGyroRotation();
     }
 }

@@ -1,6 +1,5 @@
 using CosmicShore.Game;
 using CosmicShore.Game.IO;
-using CosmicShore.Game.Projectiles;
 using CosmicShore.Models;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utilities;
@@ -14,6 +13,9 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
+    /// <summary>
+    /// DEPRECATED - Don't use this script anymore. Use IShip, R_ShipController instead.
+    /// </summary>
     [RequireComponent(typeof(IShipStatus))]
     public class Ship : MonoBehaviour, IShip
     {
@@ -171,8 +173,8 @@ namespace CosmicShore.Core
             ShipStatus.ShipTransformer.Initialize(this);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
 
-            ShipStatus.AIPilot.AssignShip(this);
-            ShipStatus.AIPilot.Initialize(isAI);
+            /*ShipStatus.AIPilot.AssignShip(this);
+            ShipStatus.AIPilot.Initialize(isAI);*/
             
             nearFieldSkimmer?.Initialize(this);
             farFieldSkimmer?.Initialize(this);

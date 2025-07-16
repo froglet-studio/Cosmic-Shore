@@ -19,19 +19,19 @@ namespace CosmicShore.Game.IO
             public Vector2 clampedPosition;
         }
 
-        private IInputStatus _inputStatus;
-        public IInputStatus InputStatus => _inputStatus ??= TryAddInputStatus();
+        public IInputStatus InputStatus { get; private set; }
 
         [SerializeField] public bool Portrait;
         IShip _ship;
 
-        [HideInInspector] public static ScreenOrientation currentOrientation;
         private IInputStrategy currentStrategy;
         private GamepadInputStrategy gamepadStrategy;
         private DeviceOrientationHandler orientationHandler;
 
         private void Awake()
         {
+            InputStatus ??= TryAddInputStatus();
+            InputStatus.InputController = this;
             enabled = false;
         }
 
@@ -52,14 +52,17 @@ namespace CosmicShore.Game.IO
         private void Update()
         {
             // Toggle the fullscreen state if the Escape key was pressed this frame on windows
-            #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 Screen.fullScreen = !Screen.fullScreen;
             }
 #endif
-
             if (InputStatus.Paused)
+                return;
+
+            // TODO - Move to AIPilot
+            /*if (InputStatus.Paused)
             {
                 if (_ship != null && _ship.ShipStatus.AutoPilotEnabled)
                 {
@@ -68,14 +71,15 @@ namespace CosmicShore.Game.IO
                     ProcessAutoPilot();
                 }
                 return;
-            }
+            }*/
 
-            if (_ship != null && _ship.ShipStatus.AutoPilotEnabled)
+            // TODO - Move to AIPilot
+            /*if (_ship != null && _ship.ShipStatus.AutoPilotEnabled)
             {
                 // Debug.Log("InputController.Update: AutoPilotEnabled -> calling ProcessAutoPilot()");
                 ProcessAutoPilot();
                 return;
-            }
+            }*/
 
             if (PauseSystem.Paused)
             {
@@ -130,11 +134,11 @@ namespace CosmicShore.Game.IO
             {
                 _ship.SetShipUp(90);
             }
-            currentOrientation = Screen.orientation;
+            IInputStatus.CurrentOrientation = Screen.orientation;
         }
 
-
-        private void ProcessAutoPilot()
+        // TODO - Move these logics to AIPilot
+        /*private void ProcessAutoPilot()
         {
             if (currentStrategy == null)
             {
@@ -158,7 +162,7 @@ namespace CosmicShore.Game.IO
                     _ship.ShipStatus.AIPilot.YDiff
                 );
             }
-        }
+        }*/
 
         private void UpdateInputStrategy()
         {

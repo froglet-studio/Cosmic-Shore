@@ -46,15 +46,10 @@ public class SingleStickShipTransformer : ShipTransformer
 
     protected override void RotateShip()
     {
-        if (inputController != null)
-        {
+        Roll();
+        Yaw();
+        Pitch();
 
-            Roll();
-            Yaw();
-            Pitch();
-        }
-
-        
         transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation, lerpAmount * Time.deltaTime);
         courseTransform = transform;
         shipStatus.Course = courseTransform.forward;
@@ -64,12 +59,12 @@ public class SingleStickShipTransformer : ShipTransformer
     {
         float boostAmount = 1f;
         if (shipStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
-        {
             boostAmount = Ship.ShipStatus.BoostMultiplier;
-        }
-        if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
-        if (inputController != null)
-            speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
+        
+        if (shipStatus.ChargedBoostDischarging) 
+            boostAmount *= shipStatus.ChargedBoostCharge;
+        
+        speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;
 

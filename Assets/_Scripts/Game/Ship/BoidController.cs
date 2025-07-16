@@ -8,7 +8,6 @@ namespace CosmicShore
 {
     public class BoidController : BoidManager
     {
-        protected InputController inputController;
         [SerializeField] IShip ship;
         GameObject container;
 
@@ -23,7 +22,6 @@ namespace CosmicShore
 
         protected override void  Start()
         {
-            inputController = ship.ShipStatus.InputController;
             container = new GameObject("BoidContainer");
             container.transform.SetParent(ship.ShipStatus.Player.Transform);
         }

@@ -50,7 +50,6 @@ public class Cell : MonoBehaviour
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
     Dictionary<int, CellItem> NodeItems = new Dictionary<int, CellItem>();
-    List<AIPilot> AIPilots = new List<AIPilot>();
     int itemsAdded;
 
     void Awake()

@@ -15,8 +15,7 @@ public class ShipTransformer : MonoBehaviour
     protected ResourceSystem resourceSystem;
     #endregion
 
-    protected InputController inputController;
-    protected IInputStatus InputStatus => inputController.InputStatus;
+    protected IInputStatus InputStatus => shipStatus.InputStatus;
 
     protected float speed;
     protected readonly float lerpAmount = 1.5f;
@@ -46,7 +45,6 @@ public class ShipTransformer : MonoBehaviour
     {
         this.Ship = ship;
         resourceSystem = ship.ShipStatus.ResourceSystem;
-        inputController = ship.ShipStatus.InputController;
     }
 
     protected virtual void Start()
@@ -70,18 +68,11 @@ public class ShipTransformer : MonoBehaviour
         if (Ship == null)
             return;
 
-        if (inputController == null)
-        {
-            inputController = Ship.ShipStatus.InputController;
-        }
-
-        if (inputController == null)
+        if (InputStatus == null)
             return;
 
         if (InputStatus.Paused)
             return;
-
-        
 
         shipStatus.blockRotation = transform.rotation;
 
@@ -108,7 +99,7 @@ public class ShipTransformer : MonoBehaviour
             // Updates GameObjects blockRotation from input device's gyroscope
             transform.rotation = Quaternion.Lerp(
                                         transform.rotation,
-                                        accumulatedRotation * inputController.GetGyroRotation(),
+                                        accumulatedRotation * InputStatus.GetGyroRotation(),
                                         lerpAmount * Time.deltaTime);
         }
         else
@@ -120,40 +111,6 @@ public class ShipTransformer : MonoBehaviour
         }
     }
 
-    /*protected virtual void RotateShip()
-    {
-
-        if (inputController != null)
-        {
-
-            Roll();
-            Yaw();
-            Pitch();
-
-            if (inputStatus.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
-            {
-                // Updates GameObjects blockRotation from input device's gyroscope
-                transform.rotation = Quaternion.Lerp(
-                                            transform.rotation,
-                                            accumulatedRotation * inputController.GetGyroRotation(),
-                                            lerpAmount * Time.deltaTime);
-            }
-            else
-            {
-                transform.rotation = Quaternion.Lerp(
-                                            transform.rotation,
-                                            accumulatedRotation,
-                                            lerpAmount * Time.deltaTime);
-            }
-        }
-        else
-        {
-            transform.rotation = Quaternion.Lerp(
-                                        transform.rotation,
-                                        accumulatedRotation,
-                                        lerpAmount * Time.deltaTime);
-        }
-    }*/
     #region Public Rotation Methods
     public void FlatSpinShip(float YAngle)
     {
@@ -219,9 +176,7 @@ public class ShipTransformer : MonoBehaviour
             boostAmount = Ship.ShipStatus.BoostMultiplier;
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
-        if (inputController != null)
         speed = Mathf.Lerp(speed, InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
-
         speed *= throttleMultiplier;
 
         if (toggleManualThrottle)

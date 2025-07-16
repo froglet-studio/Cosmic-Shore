@@ -1,4 +1,3 @@
-using CosmicShore.Core;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -79,35 +78,33 @@ namespace CosmicShore.Game
             }
         }
 
-        public override void Initialize(IPlayer player, bool isAI)
+        public override void Initialize(IPlayer player, bool enableAutoPilot)
         {
             ShipStatus.Player = player;
-
             ShipStatus.ActionHandler.Initialize(ShipStatus);
             ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
-
-            // TODO - Temp AI for single player. Check for any requirement for multiplayer's AI Ship Spawning
-            ShipStatus.AIPilot.enabled = isAI;
-            
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
+            ShipStatus.AIPilot.Initialize(enableAutoPilot, this);
 
-            if (ShipStatus.NearFieldSkimmer != null) ShipStatus.NearFieldSkimmer.Initialize(this);
-            if (ShipStatus.FarFieldSkimmer != null) ShipStatus.FarFieldSkimmer.Initialize(this);
+            if (ShipStatus.NearFieldSkimmer != null) 
+                ShipStatus.NearFieldSkimmer.Initialize(this);
+
+            if (ShipStatus.FarFieldSkimmer != null) 
+                ShipStatus.FarFieldSkimmer.Initialize(this);
 
             if (isMultiplayerMode)
             {
                 if (IsOwner)
                 {
-                    if (!ShipStatus.FollowTarget) ShipStatus.FollowTarget = transform;
+                    if (!ShipStatus.FollowTarget) 
+                        ShipStatus.FollowTarget = transform;
 
                     ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
-
-                    onBottomEdgeButtonsEnabled.RaiseEvent(true);
-
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
+                    onBottomEdgeButtonsEnabled.RaiseEvent(true);
                 }
 
                 ShipStatus.ShipTransformer.enabled = IsOwner;
@@ -116,18 +113,13 @@ namespace CosmicShore.Game
             }
             else
             {
-                if (ShipStatus.FollowTarget == null) ShipStatus.FollowTarget = transform;
-                onBottomEdgeButtonsEnabled.RaiseEvent(true);
-
+                if (ShipStatus.FollowTarget == null) 
+                    ShipStatus.FollowTarget = transform;
 
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
-
-                ShipStatus.AIPilot.AssignShip(this);
-
-                ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.enabled);
                 ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
-
+                onBottomEdgeButtonsEnabled.RaiseEvent(true);
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);                
             }

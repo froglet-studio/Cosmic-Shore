@@ -492,6 +492,8 @@ namespace CosmicShore.Game.Arcade
 
             // hand control to the AI
             Player activePlayer = ((Player)ActivePlayer);
+
+            // TODO -  Should not directly call StartAutoPilot, use event
             activePlayer.StartAutoPilot();
         }
 
@@ -501,6 +503,8 @@ namespace CosmicShore.Game.Arcade
 
             // give control back to the player
             Player activePlayer = ((Player)ActivePlayer);
+
+            // TODO -  Should not directly call StartAutoPilot, use event
             activePlayer.StopAutoPilot();
         }
 

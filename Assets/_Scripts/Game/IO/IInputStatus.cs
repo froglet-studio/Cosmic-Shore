@@ -1,9 +1,15 @@
-﻿namespace CosmicShore.Core
-{
-    using UnityEngine;
+﻿using CosmicShore.Game.IO;
+using UnityEngine;
 
+
+namespace CosmicShore.Game
+{
     public interface IInputStatus
     {
+        static ScreenOrientation CurrentOrientation;
+
+        InputController InputController { get; set; }
+
         // Floats
         float XSum { get; set; }
         float YSum { get; set; }
@@ -32,6 +38,8 @@
         Vector2 EasedLeftJoystickPosition { get; set; }
         Vector2 SingleTouchValue { get; set; }
         Vector3 ThreeDPosition { get; set; }
+
+        Quaternion GetGyroRotation();
     }
 
 }

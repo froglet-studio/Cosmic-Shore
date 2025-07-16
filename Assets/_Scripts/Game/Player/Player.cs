@@ -31,6 +31,7 @@ namespace CosmicShore.Game
         readonly InputController _inputController;
         public InputController InputController =>
             _inputController != null ? _inputController : gameObject.GetOrAdd<InputController>();
+        public IInputStatus InputStatus => InputController.InputStatus;
 
         public Transform Transform => transform;
 
@@ -60,6 +61,7 @@ namespace CosmicShore.Game
                 Debug.LogError($"Hangar.LoadPlayerShip: Could not find ship prefab for {ShipType}");
                 return;
             }
+
             Instantiate(shipPrefab).TryGetComponent(out IShip ship);
             Ship = Hangar.Instance.InitializeShip(ship, Team, !_isAI);
             Ship.Initialize(this, _isAI);
@@ -80,8 +82,10 @@ namespace CosmicShore.Game
                 return;
             }
 
-            ai.AssignShip(Ship);
-            ai.Initialize(true);
+            // TODO - It should not initialize,
+            /*ai.AssignShip(Ship);
+            ai.Initialize(true);*/
+
             InputController.SetPaused(true);
             // Debug.Log("StartAutoPilot: AI initialized and player input paused.");
         }
@@ -95,7 +99,9 @@ namespace CosmicShore.Game
                 return;
             }
 
-            ai.Initialize(false);
+            // TODO - It should not initialize,
+            // ai.Initialize(false);
+
             InputController.SetPaused(false);
             // Debug.Log("StopAutoPilot: AI disabled and player input unpaused.");
         }

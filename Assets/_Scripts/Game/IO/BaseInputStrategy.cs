@@ -39,7 +39,7 @@ namespace CosmicShore.Game.IO
         {
             InputStatus.EasedLeftJoystickPosition = position;
         }
-
+        
         public virtual void SetAutoPilotValues(float xSum, float ySum, float xDiff, float yDiff)
         {
             InputStatus.XSum = xSum;

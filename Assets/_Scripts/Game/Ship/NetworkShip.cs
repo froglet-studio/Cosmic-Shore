@@ -13,6 +13,9 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    /// <summary>
+    /// /// DEPRECATED - Don't use this script anymore. Use IShip, R_ShipController instead.
+    /// </summary>
     [RequireComponent(typeof(ShipStatus))]
     public class NetworkShip : NetworkBehaviour, IShip
     {
@@ -170,9 +173,6 @@ namespace CosmicShore.Game
         {
             ShipStatus.Player = player;
 
-            SetPlayerToShipStatusAndSkimmers(player);
-            SetTeamToShipStatusAndSkimmers(player.Team);
-
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
@@ -194,8 +194,8 @@ namespace CosmicShore.Game
                 InitializeShipControlActions();
                 InitializeClassResourceActions();
 
-                ShipStatus.AIPilot.AssignShip(this);
-                ShipStatus.AIPilot.Initialize(false);
+                /*ShipStatus.AIPilot.AssignShip(this);
+                ShipStatus.AIPilot.Initialize(false);*/
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
             }
@@ -205,20 +205,6 @@ namespace CosmicShore.Game
             ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
 
             OnShipInitialized?.Invoke(ShipStatus);
-        }
-
-        void SetTeamToShipStatusAndSkimmers(Teams team)
-        {
-            /*ShipStatus.Team = team;
-            if (_nearFieldSkimmer != null) _nearFieldSkimmer.Team = team;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Team = team;*/
-        }
-
-        void SetPlayerToShipStatusAndSkimmers(IPlayer player)
-        {
-            /*ShipStatus.Player = player;
-            if (_nearFieldSkimmer != null) _nearFieldSkimmer.Player = player;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;*/
         }
 
         void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, _inputEventShipActions, _shipControlActions);

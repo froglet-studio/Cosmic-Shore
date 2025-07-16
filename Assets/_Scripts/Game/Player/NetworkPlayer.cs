@@ -28,12 +28,12 @@ namespace CosmicShore.Game
 
         public string PlayerName { get; private set; }
         public string PlayerUUID { get; private set; }
-        public string Name { get; private set; }
-
 
         InputController _inputController;
         public InputController InputController =>
             _inputController = _inputController != null ? _inputController : GetComponent<InputController>();
+
+        public IInputStatus InputStatus => InputController.InputStatus;
 
         // public GameCanvas GameCanvas { get; private set; }
         public Transform Transform => transform;
@@ -58,6 +58,7 @@ namespace CosmicShore.Game
             }*/
 
             InputController.enabled = IsOwner;
+            
 
             NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
             NetTeam.OnValueChanged += OnNetTeamValueChanged;

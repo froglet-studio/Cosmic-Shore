@@ -38,7 +38,7 @@ namespace CosmicShore.Game.Animation
         {
             base.Update();
 
-            if (ShipStatus.Attached)
+            if (_shipStatus.Attached)
             {
                 ResetParts(scaledParts, 6);
             }
@@ -67,7 +67,7 @@ namespace CosmicShore.Game.Animation
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
 
-            if (ShipStatus.Attached)
+            if (_shipStatus.Attached)
             {
                 RotatePart(Body,
                    Time.deltaTime * 100f,
