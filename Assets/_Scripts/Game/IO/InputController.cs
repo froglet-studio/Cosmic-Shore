@@ -23,15 +23,10 @@ namespace CosmicShore.Game.IO
         public IInputStatus InputStatus => _inputStatus ??= TryAddInputStatus();
 
         [SerializeField] public bool Portrait;
-        public IShip Ship { get; private set; }
-
-        // public bool AutoPilotEnabled => Ship.ShipStatus.AutoPilotEnabled;
+        IShip _ship;
 
         [HideInInspector] public static ScreenOrientation currentOrientation;
-
         private IInputStrategy currentStrategy;
-        //private TouchInputStrategy touchStrategy;
-        //private KeyboardMouseInputStrategy keyboardMouseStrategy;
         private GamepadInputStrategy gamepadStrategy;
         private DeviceOrientationHandler orientationHandler;
 
@@ -66,16 +61,16 @@ namespace CosmicShore.Game.IO
 
             if (InputStatus.Paused)
             {
-                if (Ship != null && Ship.ShipStatus.AutoPilotEnabled)
+                if (_ship != null && _ship.ShipStatus.AutoPilotEnabled)
                 {
-                    Debug.Log($"InputController.Update: {InputStatus.Paused} && {Ship.ShipStatus.AutoPilotEnabled} AutoPilot -> calling ProcessAutoPilot()");
+                    Debug.Log($"InputController.Update: {InputStatus.Paused} && {_ship.ShipStatus.AutoPilotEnabled} AutoPilot -> calling ProcessAutoPilot()");
                     //Debug.Log("Input Status")
                     ProcessAutoPilot();
                 }
                 return;
             }
 
-            if (Ship != null && Ship.ShipStatus.AutoPilotEnabled)
+            if (_ship != null && _ship.ShipStatus.AutoPilotEnabled)
             {
                 // Debug.Log("InputController.Update: AutoPilotEnabled -> calling ProcessAutoPilot()");
                 ProcessAutoPilot();
@@ -96,7 +91,7 @@ namespace CosmicShore.Game.IO
 
         public void Initialize(IShip ship)
         {
-            Ship = ship;
+            _ship = ship;
             InitializeStrategies();
             SetInitialStrategy();
             InitializeOrientation();
@@ -125,15 +120,15 @@ namespace CosmicShore.Game.IO
 
             //touchStrategy.Initialize(ship);
             //keyboardMouseStrategy.Initialize(ship);
-            gamepadStrategy.Initialize(Ship);
-            orientationHandler.Initialize(Ship, this);
+            gamepadStrategy.Initialize(_ship);
+            orientationHandler.Initialize(_ship, this);
         }
 
         private void InitializeOrientation()
         {
             if (Portrait)
             {
-                Ship.SetShipUp(90);
+                _ship.SetShipUp(90);
             }
             currentOrientation = Screen.orientation;
         }
@@ -145,22 +140,22 @@ namespace CosmicShore.Game.IO
             {
                 Debug.LogWarning("ProcessAutoPilot: currentStrategy is NULL. Creating GamepadInputStrategy now.");
                 gamepadStrategy = new GamepadInputStrategy();
-                gamepadStrategy.Initialize(Ship);
+                gamepadStrategy.Initialize(_ship);
                 currentStrategy = gamepadStrategy;
                 currentStrategy.OnStrategyActivated();
             }
 
-            if (Ship.ShipStatus.SingleStickControls)
+            if (_ship.ShipStatus.SingleStickControls)
             {
-                currentStrategy?.SetAutoPilotValues(new Vector2(Ship.ShipStatus.AIPilot.X, Ship.ShipStatus.AIPilot.Y));
+                currentStrategy?.SetAutoPilotValues(new Vector2(_ship.ShipStatus.AIPilot.X, _ship.ShipStatus.AIPilot.Y));
             }
             else
             {
                 currentStrategy?.SetAutoPilotValues(
-                    Ship.ShipStatus.AIPilot.XSum,
-                    Ship.ShipStatus.AIPilot.YSum,
-                    Ship.ShipStatus.AIPilot.XDiff,
-                    Ship.ShipStatus.AIPilot.YDiff
+                    _ship.ShipStatus.AIPilot.XSum,
+                    _ship.ShipStatus.AIPilot.YSum,
+                    _ship.ShipStatus.AIPilot.XDiff,
+                    _ship.ShipStatus.AIPilot.YDiff
                 );
             }
         }

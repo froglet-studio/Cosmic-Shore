@@ -30,7 +30,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] GameObject PlayerOrigin;
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
-        [SerializeField] ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
+        [SerializeField] ShipClassType DefaultPlayerShipType = ShipClassType.Dolphin;
         [SerializeField] SO_Captain DefaultPlayerCaptain;
 
         protected Button ReadyButton;
@@ -48,10 +48,10 @@ namespace CosmicShore.Game.Arcade
         public static bool IsDailyChallenge = false;
         public static bool IsMission = false;
         public static bool IsTraining = false;
-        static ShipTypes playerShipType = ShipTypes.Dolphin;
+        static ShipClassType playerShipType = ShipClassType.Dolphin;
         static bool playerShipTypeInitialized;
 
-        public static ShipTypes PlayerShipType
+        public static ShipClassType PlayerShipType
         {
             get => playerShipType;
             set
@@ -76,9 +76,9 @@ namespace CosmicShore.Game.Arcade
         public IPlayer ActivePlayer { get; protected set; }
 
         // Firebase analytics events
-        public delegate void MiniGameStart(GameModes mode, ShipTypes ship, int playerCount, int intensity);
+        public delegate void MiniGameStart(GameModes mode, ShipClassType ship, int playerCount, int intensity);
         public static event MiniGameStart OnMiniGameStart;
-        public delegate void MiniGameEnd(GameModes mode, ShipTypes ship, int playerCount, int intensity, int highScore);
+        public delegate void MiniGameEnd(GameModes mode, ShipClassType ship, int playerCount, int intensity, int highScore);
         public static event MiniGameEnd OnMiniGameEnd;
 
         protected virtual void Awake()
@@ -214,11 +214,10 @@ namespace CosmicShore.Game.Arcade
                 Players.Add(player);
                 IPlayer.InitializeData data = new()
                 {
-                    DefaultShipType = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType,
+                    ShipType = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType,
                     Team = PlayerTeams[i],
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
-                    PlayerUUID = PlayerNames[i],
-                    Name = "Player" + (i + 1)
+                    PlayerUUID = PlayerNames[i]
                 };
                 Players[i].Initialize(data);
                 Players[i].ToggleGameObject(true);
@@ -348,19 +347,23 @@ namespace CosmicShore.Game.Arcade
 
                 // Report any encountered captains
                 Debug.Log($"Mission EndGame - Unlock Mission Captains");
-                if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
-                {
+                
+                // TODO - Get Captains from Data Containers, not Hanger
+                // if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
+                /*{
                     Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
                     
                     
                     //GameCanvas.EncounteredCaptainImage.sprite = Hangar.Instance.HostileAI1Captain.Image;
-                }
-                if (Hangar.Instance.HostileAI2Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI2Captain.Name))
-                {
+                }*/
+                
+                // TODO - Get Captains from Data Containers, not Hanger
+
+                /*{
                     Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI2Captain.Name);
-                }
+                }*/
             }
             else if (IsTraining)
             {

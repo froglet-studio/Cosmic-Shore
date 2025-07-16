@@ -147,7 +147,7 @@ namespace CosmicShore.Game
             }
 
             Teams team = networkPlayer.NetTeam.Value;
-            ShipTypes shipTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
+            ShipClassType shipTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
 
             NetworkObject prefab = GetPrefab(shipTypeToSpawn);
             if (prefab == null)
@@ -205,7 +205,7 @@ namespace CosmicShore.Game
         /// </summary>
         /// <param name="shipTypeToSpawn">The ShipTypes to look for.</param>
         /// <returns>The matching NetworkObject prefab or null if not found.</returns>
-        NetworkObject GetPrefab(ShipTypes shipTypeToSpawn)
+        NetworkObject GetPrefab(ShipClassType shipTypeToSpawn)
         {
             if (_shipPrefabs == null || _shipPrefabs.Length == 0)
             {

@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SO_CellType Intensity3Cell;
         [SerializeField] SO_CellType Intensity4Cell;
 
-        public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
+        public static new ShipClassType PlayerShipType = ShipClassType.Rhino;
 
         protected override void Awake()
         {

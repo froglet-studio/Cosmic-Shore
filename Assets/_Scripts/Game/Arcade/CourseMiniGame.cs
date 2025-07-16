@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Arcade
             SegmentSpawner.Seed = new System.Random().Next();
             if (ScaleNumberOfSegmentsWithIntensity) numberOfSegments *= IntensityLevel;
 
-            if (PlayerShipType == ShipTypes.Rhino)
+            if (PlayerShipType == ShipClassType.Rhino)
                 ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
 
             if (helix) helix.firstOrderRadius = helix.secondOrderRadius = IntensityLevel / helixIntensitycaling;

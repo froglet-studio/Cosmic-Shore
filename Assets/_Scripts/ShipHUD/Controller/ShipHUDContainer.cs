@@ -9,7 +9,7 @@ namespace CosmicShore.Game
         [System.Serializable]
         public struct HUDPrefabVariant
         {
-            public ShipTypes shipType;
+            public ShipClassType shipType;
             public GameObject prefab;
         }
 
@@ -28,7 +28,7 @@ namespace CosmicShore.Game
         /// Finds & instantiates the prefab for this type directly under contentTransform,
         /// then returns its IShipHUDView component.
         /// </summary>
-        public IShipHUDView InitializeView(IShipHUDController controller, ShipTypes type)
+        public IShipHUDView InitializeView(IShipHUDController controller, ShipClassType type)
         {
             var entry = hudVariants.Find(v => v.shipType == type);
             if (entry.prefab == null)

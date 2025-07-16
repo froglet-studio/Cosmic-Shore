@@ -186,7 +186,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <param name="ship"></param>
         /// <param name="playerCount"></param>
         /// <param name="intensity"></param>
-        public static void LogEventMiniGameStart(GameModes mode, ShipTypes ship, int playerCount, int intensity)
+        public static void LogEventMiniGameStart(GameModes mode, ShipClassType ship, int playerCount, int intensity)
         {
             if (!_analyticsEnabled) return;
             
@@ -227,7 +227,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <param name="playerCount">Player Count</param>
         /// <param name="intensity">Intensity</param>
         /// <param name="highScore">HighScore</param>
-        public static void LogEventMiniGameEnd(GameModes mode, ShipTypes ship, int playerCount, int intensity, int highScore)
+        public static void LogEventMiniGameEnd(GameModes mode, ShipClassType ship, int playerCount, int intensity, int highScore)
         {
             if (!_analyticsEnabled) return;
             

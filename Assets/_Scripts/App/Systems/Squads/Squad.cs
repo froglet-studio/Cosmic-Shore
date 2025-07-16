@@ -5,11 +5,11 @@ namespace CosmicShore.App.Systems.Squads
     [Serializable]
     public struct Squad
     {
-        public ShipTypes SquadLeaderClass;
+        public ShipClassType SquadLeaderClass;
         public Element SquadLeaderElement;
-        public ShipTypes RogueOneClass;
+        public ShipClassType RogueOneClass;
         public Element RogueOneElement;
-        public ShipTypes RogueTwoClass;
+        public ShipClassType RogueTwoClass;
         public Element RogueTwoElement;
 
         public Squad(SO_Captain leader, SO_Captain rogueOne, SO_Captain rogueTwo)

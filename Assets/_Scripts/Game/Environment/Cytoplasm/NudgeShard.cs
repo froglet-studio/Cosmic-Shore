@@ -32,7 +32,7 @@ namespace CosmicShore
 
                 shipStatus.ShipTransformer.ModifyVelocity(transform.parent.forward * Displacement, Duration);
 
-                if (shipStatus.ShipType == ShipTypes.Squirrel)
+                if (shipStatus.ShipType == ShipClassType.Squirrel)
                 {
                     shipStatus.ResourceSystem.ChangeResourceAmount(energyResourceIndex, energyAmount);
                     foreach (var prism in Prisms)

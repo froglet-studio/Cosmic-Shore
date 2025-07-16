@@ -23,7 +23,7 @@ namespace CosmicShore.App.UI.Screens
         List<SO_ArcadeGame> LeaderboardEligibleGames = new();
         SO_ArcadeGame SelectedGame;
         GameModes SelectedGameMode = GameModes.BlockBandit;
-        ShipTypes SelectedShipType = ShipTypes.Any;
+        ShipClassType SelectedShipType = ShipClassType.Any;
 
         int _displayCount;
         void Start()
@@ -78,7 +78,7 @@ namespace CosmicShore.App.UI.Screens
         public void SelectShipType(int optionValue)
         {
             var shiptypeName = ShipClassSelection.options[optionValue].text;
-            SelectedShipType = Enum.Parse<ShipTypes>(shiptypeName);
+            SelectedShipType = Enum.Parse<ShipClassType>(shiptypeName);
 
             FetchLeaderboard();
         }

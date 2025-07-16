@@ -51,13 +51,13 @@ namespace CosmicShore.App.Systems.Xp
         /// Class Xp Data
         /// Used for storing Captain Xp Data for each Ship type.
         /// </summary>
-        public static Dictionary<ShipTypes, XpData> ClassXpData;
+        public static Dictionary<ShipClassType, XpData> ClassXpData;
 
         /// <summary>
         /// Encountered Captain Data
         /// Used for storing Encountered Captains for each Ship type.
         /// </summary>
-        public static Dictionary<ShipTypes, List<Element>> EncounteredCaptainsData;
+        public static Dictionary<ShipClassType, List<Element>> EncounteredCaptainsData;
 
         /// <summary>
         /// A wrapper to get player data for now.
@@ -159,10 +159,10 @@ namespace CosmicShore.App.Systems.Xp
         /// </summary>
         /// <param name="result">Player data query result</param>
         /// <returns></returns>
-        static Dictionary<ShipTypes, XpData> ConvertResultToCaptainXpData(GetUserDataResult result)
+        static Dictionary<ShipClassType, XpData> ConvertResultToCaptainXpData(GetUserDataResult result)
         {
                 return result.Data.ContainsKey(ClassXpKey) ?
-                    (Dictionary<ShipTypes, XpData>)JsonConvert.DeserializeObject(result.Data[ClassXpKey].Value, typeof(Dictionary<ShipTypes, XpData>)) :
+                    (Dictionary<ShipClassType, XpData>)JsonConvert.DeserializeObject(result.Data[ClassXpKey].Value, typeof(Dictionary<ShipClassType, XpData>)) :
                     new();
         }
 
@@ -172,10 +172,10 @@ namespace CosmicShore.App.Systems.Xp
         /// </summary>
         /// <param name="result">Player data query result</param>
         /// <returns></returns>
-        static Dictionary<ShipTypes, List<Element>> ConvertResultToEncounteredCaptainData(GetUserDataResult result)
+        static Dictionary<ShipClassType, List<Element>> ConvertResultToEncounteredCaptainData(GetUserDataResult result)
         {
             return result.Data.ContainsKey(EncounteredCaptainsKey) ?
-                (Dictionary<ShipTypes, List<Element>>)JsonConvert.DeserializeObject(result.Data[EncounteredCaptainsKey].Value, typeof(Dictionary<ShipTypes, List<Element>>)) :
+                (Dictionary<ShipClassType, List<Element>>)JsonConvert.DeserializeObject(result.Data[EncounteredCaptainsKey].Value, typeof(Dictionary<ShipClassType, List<Element>>)) :
                 new();
         }
     }

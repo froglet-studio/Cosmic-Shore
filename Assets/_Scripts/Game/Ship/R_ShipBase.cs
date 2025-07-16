@@ -94,14 +94,6 @@ namespace CosmicShore.Game
 
         public abstract void PerformButtonActions(int buttonNumber);
 
-        public void SetAISkillLevel(int value)
-        {
-            if (ShipStatus.AIPilot != null)
-                ShipStatus.AIPilot.SkillLevel = value;
-            else
-                Debug.LogWarning("Cannot set AI skill level, Captain is not assigned.");
-        }
-
         public void OnButtonPressed(int buttonNumber)
         {
             throw new NotImplementedException();

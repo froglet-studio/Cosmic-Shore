@@ -28,7 +28,7 @@ namespace CosmicShore.Core
         [SerializeField] string _name;
 
         [FormerlySerializedAs("ShipType")]
-        [SerializeField] ShipTypes _shipType;
+        [SerializeField] ShipClassType _shipType;
 
 
         [Header("Ship Components")]
@@ -172,7 +172,7 @@ namespace CosmicShore.Core
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
 
             ShipStatus.AIPilot.AssignShip(this);
-            ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.AutoPilotEnabled);
+            ShipStatus.AIPilot.Initialize(isAI);
             
             nearFieldSkimmer?.Initialize(this);
             farFieldSkimmer?.Initialize(this);

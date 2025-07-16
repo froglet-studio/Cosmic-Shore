@@ -139,13 +139,15 @@ namespace CosmicShore.Environment.FlowField
                     if (shipImpactEffects)
                     {
                         ship.PerformCrystalImpactEffects(crystalProperties);
-                        if (ship.ShipStatus.AIPilot != null)
+
+                        // TODO - This class should not modify AIPilot's properties directly.
+                        /*if (ship.ShipStatus.AIPilot != null)
                         {
                             AIPilot aiPilot = ship.ShipStatus.AIPilot;
 
                             aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
                             aiPilot.throttle = aiPilot.defaultThrottle;
-                        }
+                        }*/
                     }
 
                     // TODO - Add Event channels here rather than calling singletons directly.

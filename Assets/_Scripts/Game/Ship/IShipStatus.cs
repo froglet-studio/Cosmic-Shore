@@ -58,7 +58,7 @@ namespace CosmicShore.Game
         Transform ShipTransform { get;}
         ShipTransformer ShipTransformer { get; }
         string Name { get; }
-        ShipTypes ShipType { get; }
+        ShipClassType ShipType { get; }
         Skimmer NearFieldSkimmer { get; }
         Skimmer FarFieldSkimmer { get; }
         GameObject OrientationHandle { get; }

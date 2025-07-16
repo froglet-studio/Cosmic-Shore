@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] SegmentSpawner SegmentSpawner;
 
-        public static new ShipTypes PlayerShipType = ShipTypes.Urchin;
+        public static new ShipClassType PlayerShipType = ShipClassType.Urchin;
 
         protected override void Start()
         {

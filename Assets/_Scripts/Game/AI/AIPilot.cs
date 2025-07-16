@@ -1,9 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
-using CosmicShore.Core;
 using System;
-using CosmicShore.Environment.FlowField;
 using Obvious.Soap;
 
 namespace CosmicShore.Game.AI
@@ -18,30 +16,25 @@ namespace CosmicShore.Game.AI
 
     public class AIPilot : MonoBehaviour
     {
-        public float SkillLevel;
+        public float SkillLevel { get; private set; }
 
-        //public float defaultThrottle = .6f;
         [SerializeField] float defaultThrottleHigh = .6f;
         [SerializeField] float defaultThrottleLow  = .6f;
 
-        //public float defaultAggressiveness = .035f;
         [SerializeField] float defaultAggressivenessHigh = .035f;
         [SerializeField] float defaultAggressivenessLow  = .035f;
 
-        //public float throttleIncrease = .001f;
         [SerializeField] float throttleIncreaseHigh = .001f;
         [SerializeField] float throttleIncreaseLow  = .001f;
 
-        //public float avoidance = 2.5f;
         [SerializeField] float avoidanceHigh = 2.5f;
         [SerializeField] float avoidanceLow = 2.5f;
 
-        //public float aggressivenessIncrease = .001f;
         [SerializeField] float aggressivenessIncreaseHigh = .001f;
         [SerializeField] float aggressivenessIncreaseLow  = .001f;
 
-        [HideInInspector] public float throttle;
-        [HideInInspector] public float aggressiveness;
+        float throttle;
+        float aggressiveness;
 
         public float XSum;
         public float YSum;
@@ -84,19 +77,17 @@ namespace CosmicShore.Game.AI
         IShip _ship;
         IShipStatus _shipStatus => _ship.ShipStatus;
 
-        float lastPitchTarget;
-        float lastYawTarget;
-        float lastRollTarget;
+        float _lastPitchTarget;
+        float _lastYawTarget;
+        float _lastRollTarget;
 
-        RaycastHit hit;
-        float maxDistance = 50f;
-        float maxDistanceSquared;
+        RaycastHit _hit;
+        float _maxDistance = 50f;
+        float _maxDistanceSquared;
 
-        // [HideInInspector] 
-        public Vector3 CrystalPosition;
-        // [HideInInspector] 
-        public Vector3 TargetPosition;
-        Vector3 distance;
+        Vector3 _crystalPosition;
+        Vector3 _targetPosition;
+        Vector3 _distance;
 
         [HideInInspector] public FlowFieldData flowFieldData;
 
@@ -160,7 +151,7 @@ namespace CosmicShore.Game.AI
                 }
             }
 
-            CrystalPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
+            _crystalPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
         }
 
 
@@ -175,7 +166,7 @@ namespace CosmicShore.Game.AI
             Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
             if (!AutoPilotEnabled)
                 return;
-            maxDistanceSquared = maxDistance * maxDistance;
+            _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
 
@@ -199,8 +190,8 @@ namespace CosmicShore.Game.AI
         {
             if (AutoPilotEnabled)
             {
-                distance = TargetPosition - transform.position;
-                Vector3 desiredDirection = distance.normalized;
+                _distance = _targetPosition - transform.position;
+                Vector3 desiredDirection = _distance.normalized;
 
                 LookingAtCrystal = Vector3.Dot(desiredDirection, _shipStatus.Course) >= .9f;
                 if (LookingAtCrystal && drift && !_shipStatus.Drifting)
@@ -213,17 +204,17 @@ namespace CosmicShore.Game.AI
                 else if (_shipStatus.Drifting) _ship.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
-                if (distance.magnitude < float.Epsilon) // Avoid division by zero
+                if (_distance.magnitude < float.Epsilon) // Avoid division by zero
                     return;
 
                 Vector3 combinedLocalCrossProduct = Vector3.zero;
-                float sqrMagnitude = distance.sqrMagnitude;
+                float sqrMagnitude = _distance.sqrMagnitude;
                 Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
                 Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
                 combinedLocalCrossProduct += localCrossProduct;
 
                 aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
-                float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
+                float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
                 if (SingleStickControls)
                 {
@@ -245,14 +236,14 @@ namespace CosmicShore.Game.AI
         }
         Vector3 ShootLaser(Vector3 position)
         {
-            if (Physics.Raycast(transform.position + position, transform.forward, out hit, maxDistance))
+            if (Physics.Raycast(transform.position + position, transform.forward, out _hit, _maxDistance))
             {
-                Debug.DrawLine(transform.position + position, hit.point, Color.red);
-                return hit.point - (transform.position + position);
+                Debug.DrawLine(transform.position + position, _hit.point, Color.red);
+                return _hit.point - (transform.position + position);
             }
 
-            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * maxDistance, Color.green);
-            return transform.forward * maxDistance - (transform.position + position);
+            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * _maxDistance, Color.green);
+            return transform.forward * _maxDistance - (transform.position + position);
         }
 
         float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
@@ -284,11 +275,12 @@ namespace CosmicShore.Game.AI
 
         IEnumerator SetTargetCoroutine()
         {
-            List<ShipTypes> aggressiveShips = new List<ShipTypes> 
+            // TODO - these lists if needed, should be specified separate.
+            /*List<ShipClassType> aggressiveShips = new List<ShipClassType> 
             { 
-                ShipTypes.Rhino, 
-                ShipTypes.Sparrow,
-            };
+                ShipClassType.Rhino, 
+                ShipClassType.Sparrow,
+            };*/
 
             var rand = new System.Random();
 
@@ -300,21 +292,22 @@ namespace CosmicShore.Game.AI
             while (true)
             {
                 if (activeCell != null && 
-                    aggressiveShips.Contains(_ship.ShipStatus.ShipType) && 
+                    // TODO - Commented out as aggressive 
+                    // aggressiveShips.Contains(_ship.ShipStatus.ShipType) && 
                     activeCell.ControllingTeam != Teams.None)
                 {
                     if ((_ship.ShipStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
                     {
-                        TargetPosition = CrystalPosition;
+                        _targetPosition = _crystalPosition;
                     }
                     else
                     {
-                        TargetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
+                        _targetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
                     }
                 }
                 else
                 {
-                    TargetPosition = CrystalPosition;
+                    _targetPosition = _crystalPosition;
                 }
                 yield return new WaitForSeconds(targetUpdateFrequencySeconds);
             }

@@ -9,7 +9,7 @@ using UnityEngine.Video;
 [System.Serializable]
 public class SO_Ship : ScriptableObject
 {
-    [SerializeField] public ShipTypes Class;
+    [SerializeField] public ShipClassType Class;
     [SerializeField] public string Name;
     [SerializeField] public string Description;
     [FormerlySerializedAs("SelectedIcon")]

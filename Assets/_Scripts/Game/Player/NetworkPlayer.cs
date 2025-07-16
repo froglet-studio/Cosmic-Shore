@@ -20,10 +20,10 @@ namespace CosmicShore.Game
         public static List<NetworkPlayer> NppList { get; private set; } = new();
 
         // Declare the NetworkVariable without initializing its value.
-        public NetworkVariable<ShipTypes> NetDefaultShipType = new(ShipTypes.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<ShipClassType> NetDefaultShipType = new(ShipClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Teams> NetTeam = new();
 
-        public ShipTypes ShipType { get; set; }
+        public ShipClassType ShipType { get; set; }
         public Teams Team { get; private set; }
 
         public string PlayerName { get; private set; }
@@ -71,7 +71,7 @@ namespace CosmicShore.Game
             NetTeam.OnValueChanged -= OnNetTeamValueChanged;
         }
 
-        private void OnNetDefaultShipTypeValueChanged(ShipTypes previousValue, ShipTypes newValue)
+        private void OnNetDefaultShipTypeValueChanged(ShipClassType previousValue, ShipClassType newValue)
         {
             ShipType = newValue;
         }
@@ -87,7 +87,7 @@ namespace CosmicShore.Game
             PlayerUUID = PlayerName;
 
             _ship = data.Ship;
-            _ship = Hangar.Instance.LoadPlayerShip(_ship, _ship.ShipStatus.Team, IsOwner);
+            _ship = Hangar.Instance.InitializeShip(_ship, _ship.ShipStatus.Team, IsOwner);
 
             _ship.Initialize(this);
 
@@ -105,7 +105,7 @@ namespace CosmicShore.Game
         /// Sets the default ship type via the network variable.
         /// This method should only be called on the server.
         /// </summary>
-        public void InitializeShip(ShipTypes shipType, Teams team)
+        public void InitializeShip(ShipClassType shipType, Teams team)
         {
             if (IsServer)
             {

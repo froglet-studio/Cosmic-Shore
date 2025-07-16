@@ -67,7 +67,7 @@ namespace CosmicShore.Core
             StartCoroutine(LaunchGameCoroutine(MissionLookup[gameMode].SceneName));
         }
 
-        public void LaunchArcadeGame(GameModes gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
+        public void LaunchArcadeGame(GameModes gameMode, ShipClassType ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
             MiniGame.PlayerShipType = ship;
             MiniGame.ResourceCollection = shipResources;
@@ -109,7 +109,7 @@ namespace CosmicShore.Core
             return ArcadeGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
         }
 
-        public void LaunchTrainingGame(GameModes gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
+        public void LaunchTrainingGame(GameModes gameMode, ShipClassType ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
             MiniGame.PlayerShipType = ship;
             MiniGame.ResourceCollection = shipResources;

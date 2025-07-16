@@ -66,8 +66,8 @@ namespace CosmicShore.Game
         [SerializeField] protected string _name;
         public string Name => _name;
 
-        [SerializeField] protected ShipTypes _shipType;
-        public ShipTypes ShipType => _shipType;
+        [SerializeField] protected ShipClassType _shipType;
+        public ShipClassType ShipType => _shipType;
 
 
         [Header("Ship Components")]

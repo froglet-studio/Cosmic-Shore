@@ -3,9 +3,9 @@ public struct LeaderboardEntry
 {
     public string PlayerName;
     public int Score;
-    public ShipTypes ShipType;
+    public ShipClassType ShipType;
 
-    public LeaderboardEntry(string playerName, int score, ShipTypes shipType)
+    public LeaderboardEntry(string playerName, int score, ShipClassType shipType)
     {
         PlayerName = playerName;
         Score = score;

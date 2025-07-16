@@ -14,9 +14,9 @@ namespace CosmicShore.Game
 
     public class ShipHUDView : MonoBehaviour, IShipHUDView
     {
-        public ShipTypes ShipHUDType => hudType;
+        public ShipClassType ShipHUDType => hudType;
 
-        [SerializeField] private ShipTypes hudType;
+        [SerializeField] private ShipClassType hudType;
         [SerializeField] private ResourceDisplayRef[] resourceDisplays;
         [SerializeField] private Transform silhouetteContainer;
         [SerializeField] private Transform trailContainer;
@@ -62,28 +62,28 @@ namespace CosmicShore.Game
 
             switch (hudType)
             {
-                case ShipTypes.Serpent:
+                case ShipClassType.Serpent:
                     if (serpentBoostButton != null)
                         serpentBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
                     if (serpentWallDisplayButton != null)
                         serpentWallDisplayButton.onClick.AddListener(() => controller.OnButtonPressed(2));
                     break;
-                case ShipTypes.Dolphin:
+                case ShipClassType.Dolphin:
                     //if (dolphinBoostButton != null)
                     //    dolphinBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
                     break;
-                case ShipTypes.Manta:
+                case ShipClassType.Manta:
                     if (mantaBoostButton != null)
                         mantaBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
                     break;
-                case ShipTypes.Rhino:
+                case ShipClassType.Rhino:
                     //if (rhinoBoostButton != null)
                     //    rhinoBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
                     break;
-                case ShipTypes.Squirrel:
+                case ShipClassType.Squirrel:
 
                     break;
-                case ShipTypes.Sparrow:
+                case ShipClassType.Sparrow:
                     sparrowFullAutoAction.onClick.AddListener(() => controller.OnButtonPressed(1));
                     sparrowOverheatingBoostAction.onClick.AddListener(() => controller.OnButtonPressed(1));
                     sparrowSkyBurstMissileAction.onClick.AddListener(() => controller.OnButtonPressed(1));

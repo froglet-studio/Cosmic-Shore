@@ -1,6 +1,4 @@
 using CosmicShore.App.Systems;
-using CosmicShore.Environment.FlowField;
-using CosmicShore.Game.AI; // TODO: code smell that this namespace needs to be included here
 using CosmicShore.Utilities;
 using System;
 using System.Collections;

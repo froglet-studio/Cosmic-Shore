@@ -24,22 +24,22 @@ namespace CosmicShore.Game
             Color variantColor;
             switch (view.ShipHUDType)
             {
-                case ShipTypes.Serpent:
+                case ShipClassType.Serpent:
                     variantColor = new Color(0.6f, 0.1f, 0.1f); // e.g. red
                     break;
-                case ShipTypes.Dolphin:
+                case ShipClassType.Dolphin:
                     variantColor = new Color(0.1f, 0.5f, 0.8f); // e.g. cyan
                     break;
-                case ShipTypes.Manta:
+                case ShipClassType.Manta:
                     variantColor = new Color(0.2f, 0.2f, 0.5f); // e.g. indigo
                     break;
-                case ShipTypes.Rhino:
+                case ShipClassType.Rhino:
                     variantColor = new Color(0.5f, 0.5f, 0.1f); // e.g. yellow
                     break;
-                case ShipTypes.Squirrel:
+                case ShipClassType.Squirrel:
                     variantColor = new Color(0.6f, 0.4f, 0.2f); // e.g. brown
                     break;
-                case ShipTypes.Sparrow:
+                case ShipClassType.Sparrow:
                     variantColor = new Color(0.8f, 0.8f, 0.8f); // e.g. light gray
                     break;
                 default:
@@ -87,7 +87,7 @@ namespace CosmicShore.Game
             {
                 switch (view.ShipHUDType)
                 {
-                    case ShipTypes.Serpent:
+                    case ShipClassType.Serpent:
                         EditorGUILayout.PropertyField(
                             serializedObject.FindProperty("serpentBoostButton"),
                             new GUIContent("Boost Button")
@@ -98,32 +98,32 @@ namespace CosmicShore.Game
                         );
             
                         break;
-                    case ShipTypes.Dolphin:
+                    case ShipClassType.Dolphin:
                         EditorGUILayout.PropertyField(
                             serializedObject.FindProperty("dolphinBoostFeedback"),
                             new GUIContent("Boost Feedback")
                         );
                         break;
-                    case ShipTypes.Manta:
+                    case ShipClassType.Manta:
                         EditorGUILayout.PropertyField(
                             serializedObject.FindProperty("mantaBoostButton"),
                             new GUIContent("Boost Button")
                         );
 
                         break;
-                    case ShipTypes.Rhino:
+                    case ShipClassType.Rhino:
                         EditorGUILayout.PropertyField(
                             serializedObject.FindProperty("rhinoBoostFeedback"),
                             new GUIContent("Boost Feedback")
                         );
                         break;
-                    case ShipTypes.Squirrel:
+                    case ShipClassType.Squirrel:
                         EditorGUILayout.PropertyField(
                             serializedObject.FindProperty("squirrelBoostDisplay"),
                             new GUIContent("Boost Display")
                         );
                         break;
-                    case ShipTypes.Sparrow:
+                    case ShipClassType.Sparrow:
                         EditorGUILayout.PropertyField(
                             serializedObject.FindProperty("sparrowFullAutoAction"),
                             new GUIContent("Full Auto Action Button")

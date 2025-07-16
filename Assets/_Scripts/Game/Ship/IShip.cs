@@ -9,30 +9,29 @@ namespace CosmicShore.Game
 {
     public interface IShip : ITransform
     {
-        public event Action<IShipStatus> OnShipInitialized;
+        event Action<IShipStatus> OnShipInitialized;
 
-        public IShipStatus ShipStatus { get; }
+        IShipStatus ShipStatus { get; }
 
-        public void Initialize(IPlayer player, bool isAI = false);
-        public void PerformShipControllerActions(InputEvents @event);
-        public void StopShipControllerActions(InputEvents @event);
-        public void Teleport(Transform transform);
-        public void SetResourceLevels(ResourceCollection resources);
-        public void SetShipUp(float angle);
-        public void DisableSkimmer();
-        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties);
-        public void SetBoostMultiplier (float boostMultiplier);
-        public void ToggleGameObject(bool toggle);
-        public void SetShipMaterial(Material material);
-        public void SetBlockSilhouettePrefab(GameObject prefab);
-        public void SetAOEExplosionMaterial(Material material);
-        public void SetAOEConicExplosionMaterial(Material material);
-        public void SetSkimmerMaterial(Material material);
-        public void AssignCaptain(SO_Captain captain);
-        public void BindElementalFloat(string name, Element element);
-        public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties);
-        public void PerformButtonActions(int buttonNumber);
-        public void SetAISkillLevel(int value);
+        void Initialize(IPlayer player, bool isAI = false);
+        void PerformShipControllerActions(InputEvents @event);
+        void StopShipControllerActions(InputEvents @event);
+        void Teleport(Transform transform);
+        void SetResourceLevels(ResourceCollection resources);
+        void SetShipUp(float angle);
+        void DisableSkimmer();
+        void PerformCrystalImpactEffects(CrystalProperties crystalProperties);
+        void SetBoostMultiplier (float boostMultiplier);
+        void ToggleGameObject(bool toggle);
+        void SetShipMaterial(Material material);
+        void SetBlockSilhouettePrefab(GameObject prefab);
+        void SetAOEExplosionMaterial(Material material);
+        void SetAOEConicExplosionMaterial(Material material);
+        void SetSkimmerMaterial(Material material);
+        void AssignCaptain(SO_Captain captain);
+        void BindElementalFloat(string name, Element element);
+        void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties);
+        void PerformButtonActions(int buttonNumber);
         void OnButtonPressed(int buttonNumber);
     }
 }

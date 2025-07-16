@@ -21,14 +21,14 @@ namespace CosmicShore
         [SerializeField] Player HostileAIOne;
         [SerializeField] Player HostileAITwo;
         [SerializeField] Player HostileAIThree;
-        [SerializeField] List<ShipTypes> EnemyShipClasses = new()
+        [SerializeField] List<ShipClassType> EnemyShipClasses = new()
         {
-            ShipTypes.Rhino,
-            ShipTypes.Manta,
-            ShipTypes.Dolphin,
-            ShipTypes.Serpent,
-            ShipTypes.Sparrow,
-            ShipTypes.Squirrel,
+            ShipClassType.Rhino,
+            ShipClassType.Manta,
+            ShipClassType.Dolphin,
+            ShipClassType.Serpent,
+            ShipClassType.Sparrow,
+            ShipClassType.Squirrel,
         };
 
         [Range(1, 9)] public int CurrentDifficulty = 5;
@@ -45,12 +45,15 @@ namespace CosmicShore
             base.Start();
             CurrentDifficulty = IntensityLevel;
             Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
-            Players[0].ShipType = SquadSystem.SquadLeader.Ship.Class;
+
+            // TODO - Cannot modify player datas directly... need other way of initialization.
+            /*Players[0].ShipType = SquadSystem.SquadLeader.Ship.Class;
             SquadMateOne.ShipType = SquadSystem.RogueOne.Ship.Class;
             SquadMateTwo.ShipType = SquadSystem.RogueTwo.Ship.Class;
             HostileAIOne.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAITwo.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
-            HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];*/
+
             faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
             node = CellControlManager.Instance.GetNearestCell(Vector3.zero);
         }

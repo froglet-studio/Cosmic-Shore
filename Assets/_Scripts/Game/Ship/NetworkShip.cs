@@ -20,7 +20,7 @@ namespace CosmicShore.Game
 
         [Header("Ship Meta")]
         [SerializeField] string _name;
-        [SerializeField] ShipTypes _shipType;
+        [SerializeField] ShipClassType _shipType;
 
         [Header("Ship Components")]
         [SerializeField] Skimmer _nearFieldSkimmer;

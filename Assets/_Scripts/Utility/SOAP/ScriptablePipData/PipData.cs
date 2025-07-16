@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace CosmicShore.SOAP
 {
     [System.Serializable]

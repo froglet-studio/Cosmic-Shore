@@ -9,7 +9,7 @@ namespace CosmicShore
         [SerializeField] GameObject playerPrefab;
         [SerializeField] List<string> PlayerNames = new() { "FriendlyOne", "HostileOne", "HostileTwo" };
         [SerializeField] List<Teams> PlayerTeams = new() { Teams.Jade, Teams.Ruby, Teams.Ruby };
-        [SerializeField] List<ShipTypes> PlayerShipTypes = new() { ShipTypes.Rhino, ShipTypes.Rhino, ShipTypes.Rhino };
+        [SerializeField] List<ShipClassType> PlayerShipTypes = new() { ShipClassType.Rhino, ShipClassType.Rhino, ShipClassType.Rhino };
 
         void Start()
         {
@@ -29,11 +29,10 @@ namespace CosmicShore
 
                 IPlayer.InitializeData data = new()
                 {
-                    DefaultShipType = PlayerShipTypes[i],
+                    ShipType = PlayerShipTypes[i],
                     Team = PlayerTeams[i],
                     PlayerName = PlayerNames[i],
                     PlayerUUID = "Player" + (i + 1),
-                    Name = "Player" + (i + 1)
                 };
                 player.Initialize(data);
                 player.ToggleGameObject(true);

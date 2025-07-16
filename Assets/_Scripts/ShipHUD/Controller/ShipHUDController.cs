@@ -33,7 +33,7 @@ namespace CosmicShore.Game
         }
 
 
-        public void InitializeShipHUD(ShipTypes shipType)
+        public void InitializeShipHUD(ShipClassType shipType)
         {
             Debug.Log(_shipStatus.AutoPilotEnabled);
 
