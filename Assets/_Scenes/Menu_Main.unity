@@ -52799,6 +52799,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: Cinemachine Vcams
       objectReference: {fileID: 0}
+    - target: {fileID: 4853709196820857186, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: CloseCamDistance
+      value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4853709196820857186, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: startTransitionDistance
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4853709196820857187, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -53260,7 +53270,7 @@ MonoBehaviour:
   followOffset: {x: 0, y: 5, z: -20}
   followSmoothTime: 0.2
   rotationSmoothTime: 5
-  useFixedUpdate: 1
+  useFixedUpdate: 0
   farClipPlane: 10000
   fieldOfView: 60
 --- !u!1 &1565783685
