@@ -76,6 +76,7 @@ namespace CosmicShore.Game
 
         public void OnButtonPressed(int buttonNumber)
         {
+            Debug.Log($"[ShipHUDController] OnButtonPressed({buttonNumber}) called!");
             _ship.PerformButtonActions(buttonNumber);
         }
 

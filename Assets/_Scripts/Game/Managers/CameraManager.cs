@@ -193,6 +193,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
         yield return new WaitForSeconds(1); // Allow time for camera to stabilize
         InitializeRuntimeOffset();
         SetRuntimeFollowOffset(offset);
+
+        Debug.Log($"[CameraManager]  FollowOffset set to {offset} ->  Camera world-pos: {playerCamera.transform.position}");
     }
 
     void SetActiveCamera(Component activeCamera)
@@ -250,7 +252,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void ClipPlaneAndOffsetLerper(Vector3 offsetPosition)
     {
-        float CloseCamClipPlane = .5f;
+        //float CloseCamClipPlane = .5f;
         //float FarCamClipPlane = .7f;
         if (lerper != null)
             StopCoroutine(lerper);

@@ -23,6 +23,8 @@ namespace CosmicShore
             cameraManager = CameraManager.Instance;
             cameraManager.isOrthographic = isOrthographic;
 
+            Debug.Log($"Camera is being initialized {ship.ShipStatus.Name}");
+            
             BindElementalFloats(Ship);
             ApplyShipControlOverrides(ControlOverrides);
         }
@@ -36,6 +38,7 @@ namespace CosmicShore
 
             foreach (ShipCameraOverrides effect in controlOverrides)
             {
+                Debug.Log($"<color=blue>The current effect {effect}");
                 switch (effect)
                 {
                     case ShipCameraOverrides.CloseCam:
@@ -45,6 +48,7 @@ namespace CosmicShore
                         cameraManager.FarCamDistance = farCamDistance.Value;
                         break;
                     case ShipCameraOverrides.SetFixedFollowOffset:
+                        cameraManager.SetCloseCameraActive();
                         cameraManager.SetFixedFollowOffset(FollowTargetPosition);
                         break;
                     case ShipCameraOverrides.SetFollowTarget:

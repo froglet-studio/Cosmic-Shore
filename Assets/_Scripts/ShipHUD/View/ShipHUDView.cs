@@ -68,7 +68,7 @@ namespace CosmicShore.Game
         {
             // Remove previous listeners if re-initializing
             RemoveAllButtonListeners();
-
+            Debug.Log($"[ShipHUDView] Initialize called for {hudType}");
             switch (hudType)
             {
                 case ShipTypes.Serpent:
@@ -93,10 +93,27 @@ namespace CosmicShore.Game
 
                     break;
                 case ShipTypes.Sparrow:
-                    sparrowFullAutoAction.onClick.AddListener(() => controller.OnButtonPressed(1));
-                    sparrowOverheatingBoostAction.onClick.AddListener(() => controller.OnButtonPressed(1));
-                    sparrowSkyBurstMissileAction.onClick.AddListener(() => controller.OnButtonPressed(1));
-                    sparrowExhaustBarrage.onClick.AddListener(() => controller.OnButtonPressed(1));
+                    if (sparrowFullAutoAction != null)
+                        Debug.Log($"[ShipHUDView] Adding listener to: {sparrowFullAutoAction.gameObject.name}");
+                    sparrowFullAutoAction.onClick.AddListener(() => {
+                            Debug.Log($"[Sparrow HUD] UI Button: {sparrowFullAutoAction.gameObject.name} triggers Right Stick Action (OnButtonPressed(4))");
+                            controller.OnButtonPressed(4); // Right Stick Action
+                        });
+                    if (sparrowOverheatingBoostAction != null)
+                        sparrowOverheatingBoostAction.onClick.AddListener(() => {
+                            Debug.Log($"[Sparrow HUD] UI Button: {sparrowOverheatingBoostAction.gameObject.name} triggers Overheating Boost (OnButtonPressed(2))");
+                            controller.OnButtonPressed(2); // Button 2 Action
+                        });
+                    if (sparrowSkyBurstMissileAction != null)
+                        sparrowSkyBurstMissileAction.onClick.AddListener(() => {
+                            Debug.Log($"[Sparrow HUD] UI Button: {sparrowSkyBurstMissileAction.gameObject.name} triggers Sky Burst Missile (OnButtonPressed(3))");
+                            controller.OnButtonPressed(3); // Button 3 Action
+                        });
+                    if (sparrowExhaustBarrage != null)
+                        sparrowExhaustBarrage.onClick.AddListener(() => {
+                            Debug.Log($"[Sparrow HUD] UI Button: {sparrowExhaustBarrage.gameObject.name} triggers Exhaust Barrage (OnButtonPressed(1))");
+                            controller.OnButtonPressed(1); // Button 1 Action
+                        });
                     break;
             }
         }

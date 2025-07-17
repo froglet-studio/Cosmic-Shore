@@ -142,6 +142,7 @@ namespace CosmicShore.Game
 
         public override void PerformButtonActions(int buttonNumber)
         {
+            Debug.Log($"[R_ShipController] PerformButtonActions({buttonNumber}) called!");
             switch (buttonNumber)
             {
                 case 1:

@@ -15,8 +15,28 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: FollowTarget
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: closeCamDistance
+      value: -20
+      objectReference: {fileID: 0}
+    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: FollowTargetPosition.y
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: FollowTargetPosition.z
+      value: -35
+      objectReference: {fileID: 0}
+    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: 'ControlOverrides.Array.data[0]'
-      value: 6
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 1435252848482629424, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
