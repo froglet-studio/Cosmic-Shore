@@ -1,12 +1,8 @@
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
-using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Game.AI;
-using CosmicShore.Utility.ClassExtensions;
 using System;
 using CosmicShore.Game;
 
@@ -36,9 +32,8 @@ namespace CosmicShore.Environment.FlowField
         [SerializeField] protected GameObject SpentCrystalPrefab;
 
         [SerializeField] protected List<CrystalModelData> crystalModels;
-        [SerializeField] protected bool shipImpactEffects = true;
-        [SerializeField] bool RespawnOnImpact;
-        [SerializeField] HapticType ImpactHapticType;
+        [SerializeField] protected bool allowVesselImpactEffect = true;
+        [SerializeField] bool allowRespawnOnImpact;
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
@@ -48,20 +43,8 @@ namespace CosmicShore.Environment.FlowField
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _crystalImpactEffects;
 
-        Vector3 origin = Vector3.zero;
-
         protected Material tempMaterial;
-        List<Collider> collisions;
-
-
-        protected virtual void Awake()
-        {
-            collisions = new List<Collider>();
-            
-            // Initialized Crystal game object layer, assign it to "Crystals"
-            gameObject.layer = LayerMask.NameToLayer("Crystals");
-        }
-
+        Vector3 _origin = Vector3.zero;
 
         protected virtual void Start()
         {
@@ -71,15 +54,7 @@ namespace CosmicShore.Environment.FlowField
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            collisions.Add(other);
-        }
-
-        protected virtual void Update()
-        {
-            if (collisions.Count > 0 && collisions[0] != null)
-                Collide(collisions[0]);
-
-            collisions.Clear();
+            Collide(other);
         }
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
@@ -127,61 +102,30 @@ namespace CosmicShore.Environment.FlowField
 
         protected virtual void Collide(Collider other)
         {
-            IShip ship;
+            if (!other.TryGetComponent(out IShip ship))
+                return;
 
-            if (other.gameObject.IsLayer("Ships"))
+            if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
+                return;
+
+            if (allowVesselImpactEffect)
             {
-                if (!other.TryGetComponent(out ship))
-                    return;
+                ship.PerformCrystalImpactEffects(crystalProperties);
 
-                if (OwnTeam == Teams.None || OwnTeam == ship.ShipStatus.Team)
+                // TODO - This class should not modify AIPilot's properties directly.
+                /*if (ship.ShipStatus.AIPilot != null)
                 {
-                    if (shipImpactEffects)
-                    {
-                        ship.PerformCrystalImpactEffects(crystalProperties);
+                    AIPilot aiPilot = ship.ShipStatus.AIPilot;
 
-                        // TODO - This class should not modify AIPilot's properties directly.
-                        /*if (ship.ShipStatus.AIPilot != null)
-                        {
-                            AIPilot aiPilot = ship.ShipStatus.AIPilot;
-
-                            aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                            aiPilot.throttle = aiPilot.defaultThrottle;
-                        }*/
-                    }
-
-                    // TODO - Add Event channels here rather than calling singletons directly.
-                    if (StatsManager.Instance != null)
-                        StatsManager.Instance.CrystalCollected(ship, crystalProperties);
-                }
-                else return;
+                    aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+                    aiPilot.throttle = aiPilot.defaultThrottle;
+                }*/
             }
-            //else if (other.gameObject.IsLayer("Projectiles"))
-            //{
-            //    ship = other.GetComponent<Projectile>().Ship;
-            //    projectile = other.GetComponent<Projectile>();
-            //    if (Team == Teams.None || Team == ship.Team)
-            //    {
-            //        if (shipImpactEffects)
-            //        {
-            //            projectile.PerformCrystalImpactEffects(crystalProperties);
-            //            if (ship.TryGetComponent<AIPilot>(out var aiPilot))
-            //            {
-            //                aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-            //                aiPilot.throttle = aiPilot.defaultThrottle;
-            //            }
-            //        }
-                    
-            //        if (StatsManager.Instance != null)
-            //            StatsManager.Instance.CrystalCollected(ship, crystalProperties);
-            //    }
-            //    else return;
-            //}
-            else return;
 
-            //
-            // Do the crystal stuff that always happens (ship/projectile independent)
-            //
+            // TODO - Add Event channels here rather than calling singletons directly.
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.CrystalCollected(ship, crystalProperties);
+
             PerformCrystalImpactEffects(crystalProperties, ship);
 
             Explode(ship);
@@ -189,12 +133,12 @@ namespace CosmicShore.Environment.FlowField
             PlayExplosionAudio();
 
             // Move the Crystal
-            if (RespawnOnImpact)
+            if (allowRespawnOnImpact)
             {
                 foreach (var model in crystalModels)
                     model.model.GetComponent<FadeIn>().StartFadeIn();
 
-                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + _origin, UnityEngine.Random.rotation);
                 OnCrystalMove?.Invoke();
 
                 UpdateSelfWithNode();  //TODO: check if we need to remove elmental crystals from the node
@@ -265,7 +209,7 @@ namespace CosmicShore.Environment.FlowField
 
         public void SetOrigin(Vector3 origin)
         {
-            this.origin = origin;
+            this._origin = origin;
         }
 
         public void ActivateCrystal()
@@ -283,7 +227,6 @@ namespace CosmicShore.Environment.FlowField
                 StartCoroutine(LerpCrystalMaterialCoroutine(model, modelData.defaultMaterial));
             }
         }
-
 
         public void Steal(Teams team, float duration)
         {

@@ -54,7 +54,6 @@ namespace CosmicShore.Game.AI
         [SerializeField] bool LookingAtCrystal;
         [SerializeField] bool ram;
         [SerializeField] bool drift;
-        [HideInInspector] public bool SingleStickControls;
 
         [SerializeField] List<AIAbility> abilities;
 
@@ -82,7 +81,6 @@ namespace CosmicShore.Game.AI
         float _maxDistance = 50f;
         float _maxDistanceSquared;
 
-        Vector3 _crystalPosition;
         Vector3 _targetPosition;
         Vector3 _distance;
 
@@ -148,7 +146,7 @@ namespace CosmicShore.Game.AI
                 }
             }
 
-            _crystalPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
+            _targetPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
         }
 
 
@@ -184,7 +182,6 @@ namespace CosmicShore.Game.AI
             {
                 StartCoroutine(UseAbilityCoroutine(ability));
             }
-            StartCoroutine(SetTargetCoroutine());
         }
 
 
@@ -219,10 +216,10 @@ namespace CosmicShore.Game.AI
             aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
             float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
-            if (SingleStickControls)
+            if (_shipStatus.SingleStickControls)
             {
-                X = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                Y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.YSum = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
             }
             else
             {
@@ -247,18 +244,7 @@ namespace CosmicShore.Game.AI
             return transform.forward * _maxDistance - (transform.position + position);
         }
 
-        float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
-        {
-            float rollAdjustment = 0f;
-
-            // Example logic: If top right and bottom left corners detect obstacles, induce a roll.
-            if (obstacleDirections[Corner.TopRight].magnitude > 0 && obstacleDirections[Corner.BottomLeft].magnitude > 0)
-                rollAdjustment -= 1; // Roll left
-            if (obstacleDirections[Corner.TopLeft].magnitude > 0 && obstacleDirections[Corner.BottomRight].magnitude > 0)
-                rollAdjustment += 1; // Roll right
-
-            return rollAdjustment;
-        }
+        
 
 
         IEnumerator UseAbilityCoroutine(AIAbility action) 
@@ -274,14 +260,14 @@ namespace CosmicShore.Game.AI
         }
 
 
-        IEnumerator SetTargetCoroutine()
+        /*IEnumerator SetTargetCoroutine()
         {
             // TODO - these lists if needed, should be specified separate.
-            /*List<ShipClassType> aggressiveShips = new List<ShipClassType> 
+            List<ShipClassType> aggressiveShips = new List<ShipClassType> 
             { 
                 ShipClassType.Rhino, 
                 ShipClassType.Sparrow,
-            };*/
+            };
 
             var rand = new System.Random();
 
@@ -312,6 +298,21 @@ namespace CosmicShore.Game.AI
                 }
                 yield return new WaitForSeconds(targetUpdateFrequencySeconds);
             }
+        }*/
+
+        #region Unused Methods
+
+        float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
+        {
+            float rollAdjustment = 0f;
+
+            // Example logic: If top right and bottom left corners detect obstacles, induce a roll.
+            if (obstacleDirections[Corner.TopRight].magnitude > 0 && obstacleDirections[Corner.BottomLeft].magnitude > 0)
+                rollAdjustment -= 1; // Roll left
+            if (obstacleDirections[Corner.TopLeft].magnitude > 0 && obstacleDirections[Corner.BottomRight].magnitude > 0)
+                rollAdjustment += 1; // Roll right
+
+            return rollAdjustment;
         }
 
         float SigmoidResponse(float input)
@@ -320,5 +321,6 @@ namespace CosmicShore.Game.AI
             return output;
         }
 
+        #endregion
     }
 }

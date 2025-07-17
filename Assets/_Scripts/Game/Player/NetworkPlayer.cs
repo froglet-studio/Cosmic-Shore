@@ -88,7 +88,7 @@ namespace CosmicShore.Game
             PlayerUUID = PlayerName;
 
             _ship = data.Ship;
-            _ship = Hangar.Instance.InitializeShip(_ship, _ship.ShipStatus.Team, IsOwner);
+            _ship = Hangar.Instance.SetShipProperties(_ship, _ship.ShipStatus.Team, IsOwner);
 
             _ship.Initialize(this);
 

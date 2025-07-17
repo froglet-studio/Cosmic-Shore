@@ -63,10 +63,12 @@ namespace CosmicShore.Game
             }
 
             Instantiate(shipPrefab).TryGetComponent(out IShip ship);
-            Ship = Hangar.Instance.InitializeShip(ship, Team, !_isAI);
+            Ship = Hangar.Instance.SetShipProperties(ship, Team, !_isAI);
             Ship.Initialize(this, _isAI);
             if (!_isAI)
+            {
                 InputController.Initialize(Ship);
+            }
         }
 
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.

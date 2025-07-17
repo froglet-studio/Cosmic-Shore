@@ -24,7 +24,7 @@ namespace CosmicShore
         protected override void RotateShip()
         {
             Quaternion newRotation = Quaternion.LookRotation(shipStatus.Course, Vector3.back);
-            transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, lerpAmount * Time.deltaTime);
+            transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, LERP_AMOUNT * Time.deltaTime);
         }
 
     }

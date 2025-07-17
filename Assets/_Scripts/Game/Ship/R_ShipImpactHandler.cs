@@ -10,37 +10,28 @@ namespace CosmicShore.Game
     /// </summary>
     public class R_ShipImpactHandler : MonoBehaviour
     {
-        [SerializeField, RequireInterface(typeof(ICrystalImpactEffect))]
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _crystalImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(ITrailBlockImpactEffect))] 
+        [SerializeField, RequireInterface(typeof(IImpactEffect))] 
         List<ScriptableObject> _trailBlockImpactEffects;
 
         IShipStatus _shipStatus;
 
         public void Initialize(IShipStatus shipStatus) => _shipStatus = shipStatus;
 
-
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            foreach (ICrystalImpactEffect effect in _crystalImpactEffects.Cast<ICrystalImpactEffect>())
-            {
-                if (effect is null)
-                    continue;
-
-                effect.Execute(new ImpactEffectData(_shipStatus, null, Vector3.zero), crystalProperties);
-            }
+            var castedEffects = _crystalImpactEffects.Cast<IImpactEffect>();
+            var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, crystalProperties);
         }
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            foreach (ITrailBlockImpactEffect effect in _trailBlockImpactEffects.Cast<ITrailBlockImpactEffect>())
-            {
-                if (effect is null)
-                    continue;
-
-                effect.Execute(new ImpactEffectData(_shipStatus, null, Vector3.zero), trailBlockProperties);
-            }
+            var castedEffects = _crystalImpactEffects.Cast<IImpactEffect>();
+            var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, default, trailBlockProperties);
         }
     }
 }

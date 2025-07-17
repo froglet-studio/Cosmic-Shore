@@ -1,19 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
 {
     public class AOEExplosion : ElementalShipComponent
     {
-        [HideInInspector] public float speed;
-
         protected const float PI_OVER_TWO = Mathf.PI / 2;
-        protected Vector3 MaxScaleVector;
-        protected float Inertia = 70;
-        
 
         [Header("Explosion Settings")]
         [SerializeField] protected float ExplosionDuration = 2f;
@@ -22,60 +17,50 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _shipImpactEffects;
 
-
         [SerializeField] private bool affectSelf = false;
         [SerializeField] private bool destructive = true;
         [SerializeField] private bool devastating = false;
         [SerializeField] bool shielding = false;
 
+        protected Vector3 MaxScaleVector;
+        protected float Inertia = 70;
+        protected float speed;
         protected GameObject container;
 
         // Material and Team
-        public Material Material { get; private set; }
-        public Teams Team { get; private set; }
-        public IShip Ship { get; private set; }
-        public bool AnonymousExplosion { get; private set; }
-        public float MaxScale { get; private set; } = 200f;
+        public Material Material { get; protected set; }
+        public Teams Team { get; protected set; }
+        public IShip Ship { get; protected set; }
+        public bool AnonymousExplosion { get; protected set; }
+        public float MaxScale { get; protected set; } = 200f;
 
-        public void Initialize(InitializeStruct initStruct)
+        public virtual void Initialize(InitializeStruct initStruct)
         {
-            Team = initStruct.OwnTeam;
             AnonymousExplosion = initStruct.AnnonymousExplosion;
             Ship = initStruct.Ship;
-            MaxScale = initStruct.MaxScale;
-
             if (Ship == null)
             {
                 Debug.LogError("Ship is not initialized in AOEExplosion!");
                 return;
             }
 
-            Material = initStruct.OverrideMaterial != null ? initStruct.OverrideMaterial : Ship.ShipStatus.AOEExplosionMaterial;
-        }
-
-        public virtual void InitializeAndDetonate(IShip ship)
-        {
-            Ship = ship;
-            InitializeProperties();
-            StartCoroutine(ExplodeCoroutine());
-        }
-
-        public void Detonate() => StartCoroutine(ExplodeCoroutine());
-
-        private void InitializeProperties()
-        {
-            speed = MaxScale / ExplosionDuration;
-            if (container == null) container = new GameObject("AOEContainer");
-
+            Team = initStruct.OwnTeam;
             if (Team == Teams.Unassigned)
                 Team = Ship.ShipStatus.Team;
+
+            MaxScale = initStruct.MaxScale;
+            MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
+            speed = MaxScale / ExplosionDuration;
+
+            Material = initStruct.OverrideMaterial != null ? initStruct.OverrideMaterial : Ship.ShipStatus.AOEExplosionMaterial;
             if (Material == null)
                 Material = new Material(Ship.ShipStatus.AOEExplosionMaterial);
 
-            // SetParent with false to take container's world position
-            //transform.SetParent(container.transform, worldPositionStays: false);
-            MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
+            if (container == null) container = new GameObject("AOEContainer");
+            transform.SetParent(container.transform, worldPositionStays: false);
         }
+
+        public void Detonate() => StartCoroutine(ExplodeCoroutine());
 
         protected virtual void OnTriggerEnter(Collider other)
         {
@@ -137,20 +122,11 @@ namespace CosmicShore.Game.Projectiles
 
         protected virtual void PerformShipImpactEffects(IShipStatus shipStatus, Vector3 impactVector)
         {
-            foreach (var effect in _shipImpactEffects)
-            {
-                if (effect is not IImpactEffect impactEffect)
-                {
-                    Debug.LogError($"Effect {effect.name} does not implement IImpactEffect interface.! It must implement IImpactEffect interface!");
-                    continue;
-                }
-                if (effect is not IBaseImpactEffect baseEffect)
-                {
-                    Debug.LogError($"Effect {effect.name} does not implement IBaseImpactEffect interface.! It must implement IBaseImpactEffect interface!");
-                    continue;
-                }
-                baseEffect.Execute(new ImpactEffectData(Ship.ShipStatus, null, impactVector)); // TODO: Send the impacted ShipStatus
-            }
+            var castedEffects = _shipImpactEffects.Cast<IImpactEffect>();
+            ShipHelper.ExecuteImpactEffect(
+                castedEffects,
+                new ImpactEffectData(shipStatus, null, impactVector)
+            );
         }
 
         public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)

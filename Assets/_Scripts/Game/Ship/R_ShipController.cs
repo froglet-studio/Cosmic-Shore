@@ -86,7 +86,6 @@ namespace CosmicShore.Game
             ShipStatus.Customization.Initialize(ShipStatus);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
-            ShipStatus.AIPilot.Initialize(enableAutoPilot, this);
 
             if (ShipStatus.NearFieldSkimmer != null) 
                 ShipStatus.NearFieldSkimmer.Initialize(this);
@@ -123,6 +122,12 @@ namespace CosmicShore.Game
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);                
             }
+
+            // TODO - Currently AIPilot's update should run only after SingleStickShipTransformer
+            // sets SingleStickControls to true/false. Try finding a solution to remove this
+            // sequential dependency.
+
+            ShipStatus.AIPilot.Initialize(enableAutoPilot, this);
 
             InvokeShipInitializedEvent();
         }

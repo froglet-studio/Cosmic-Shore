@@ -62,7 +62,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// This method is used when ship is loaded for multiplayer gameplay
         /// </summary>
-        public IShip InitializeShip(IShip ship, Teams team, bool isOwner, SO_Captain so_captain = null)
+        public IShip SetShipProperties(IShip ship, Teams team, bool isOwner, SO_Captain so_captain = null)
         {
             // TODO - Get Captains from data containers
             /*if (so_captain == null && CaptainManager.Instance != null)

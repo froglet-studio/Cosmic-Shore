@@ -6,6 +6,9 @@ using CosmicShore.Game;
 
 public class ShipTransformer : MonoBehaviour
 {
+    protected const float LERP_AMOUNT = 1.5f;
+
+
     [SerializeField]
     protected bool toggleManualThrottle;
 
@@ -18,7 +21,6 @@ public class ShipTransformer : MonoBehaviour
     protected IInputStatus InputStatus => shipStatus.InputStatus;
 
     protected float speed;
-    protected readonly float lerpAmount = 1.5f;
     protected Quaternion accumulatedRotation;
 
     [HideInInspector] public float MinimumSpeed;
@@ -97,17 +99,17 @@ public class ShipTransformer : MonoBehaviour
         if (InputStatus.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
         {
             // Updates GameObjects blockRotation from input device's gyroscope
-            transform.rotation = Quaternion.Lerp(
+            transform.rotation = Quaternion.Slerp(
                                         transform.rotation,
                                         accumulatedRotation * InputStatus.GetGyroRotation(),
-                                        lerpAmount * Time.deltaTime);
+                                        LERP_AMOUNT * Time.deltaTime);
         }
         else
         {
-            transform.rotation = Quaternion.Lerp(
+            transform.rotation = Quaternion.Slerp(
                                         transform.rotation,
                                         accumulatedRotation,
-                                        lerpAmount * Time.deltaTime);
+                                        LERP_AMOUNT * Time.deltaTime);
         }
     }
 
@@ -176,7 +178,7 @@ public class ShipTransformer : MonoBehaviour
             boostAmount = Ship.ShipStatus.BoostMultiplier;
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
-        speed = Mathf.Lerp(speed, InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
+        speed = Mathf.Lerp(speed, InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
         speed *= throttleMultiplier;
 
         if (toggleManualThrottle)

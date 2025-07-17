@@ -20,7 +20,6 @@ public class SingleStickShipTransformer : ShipTransformer
     {
         base.Initialize(ship);
         Ship.ShipStatus.SingleStickControls = true;
-        GetComponent<AIPilot>().SingleStickControls = true;
     }
 
     protected override void Pitch() // These need to not use *= because quaternions are not commutative
@@ -50,7 +49,7 @@ public class SingleStickShipTransformer : ShipTransformer
         Yaw();
         Pitch();
 
-        transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation, lerpAmount * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation, LERP_AMOUNT * Time.deltaTime);
         courseTransform = transform;
         shipStatus.Course = courseTransform.forward;
     }
@@ -64,7 +63,7 @@ public class SingleStickShipTransformer : ShipTransformer
         if (shipStatus.ChargedBoostDischarging) 
             boostAmount *= shipStatus.ChargedBoostCharge;
         
-        speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
+        speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
 
         speed *= throttleMultiplier;
 
