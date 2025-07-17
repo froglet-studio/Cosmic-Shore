@@ -67,7 +67,14 @@ namespace CosmicShore.Game.CameraSystem
             Quaternion offsetRot = followTarget.rotation;
             Vector3 desiredPos = followTarget.position + offsetRot * followOffset;
 
-            transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref velocity, followSmoothTime);
+            Vector3 currentLocal = followTarget.InverseTransformPoint(transform.position);
+            Vector3 desiredLocal = followTarget.InverseTransformPoint(desiredPos);
+
+            currentLocal.z = Mathf.SmoothDamp(currentLocal.z, desiredLocal.z, ref velocity.z, followSmoothTime);
+            currentLocal.x = desiredLocal.x;
+            currentLocal.y = desiredLocal.y;
+
+            transform.position = followTarget.TransformPoint(currentLocal);
             
             Vector3 toTarget = followTarget.position - transform.position;
             Quaternion targetRot = Quaternion.LookRotation(toTarget, followTarget.up);

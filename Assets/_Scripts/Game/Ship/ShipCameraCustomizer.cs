@@ -43,6 +43,10 @@ namespace CosmicShore
                 {
                     case ShipCameraOverrides.CloseCam:
                         cameraManager.CloseCamDistance = closeCamDistance;
+                        cameraManager.SetOffsetPosition(new Vector3(
+                            cameraManager.CurrentOffset.x,
+                            cameraManager.CurrentOffset.y,
+                            closeCamDistance));
                         break;
                     case ShipCameraOverrides.FarCam:
                         cameraManager.FarCamDistance = farCamDistance.Value;

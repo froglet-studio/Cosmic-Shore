@@ -134,6 +134,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
         return playerCamera.transform;
     }
 
+    public Vector3 CurrentOffset => runtimeFollowOffset;
+
     public void OnMainMenu()
     {
         SetMainMenuCameraActive();
