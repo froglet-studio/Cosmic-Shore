@@ -1,5 +1,6 @@
 using CosmicShore;
 using System.Collections;
+using CosmicShore.Game;
 using UnityEngine;
 
 public abstract class Flora : LifeForm
@@ -20,9 +21,9 @@ public abstract class Flora : LifeForm
         healthBlock.TargetScale = leafSize;
     }
 
-    protected override void Start()
+    public override void Initialize(Cell cell)
     {
-        base.Start();
+        base.Initialize(cell);
         Plant();
         StartCoroutine(GrowCoroutine());
     }

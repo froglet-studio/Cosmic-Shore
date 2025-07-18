@@ -164,7 +164,7 @@ namespace CosmicShore
         public override void Plant()
         {
             assembler = CreateNewAssembler();
-            transform.position = node.GetCrystal().transform.position + 200 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius 
+            transform.position = cell.GetCrystal().transform.position + 200 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius 
         }
 
         public Assembler CreateNewAssembler()
