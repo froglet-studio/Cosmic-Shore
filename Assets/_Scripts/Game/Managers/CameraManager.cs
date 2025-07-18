@@ -4,6 +4,7 @@ using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utilities;
 using CosmicShore.Utility;
 using System.Collections;
+using CosmicShore.Game;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -46,6 +47,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     Coroutine zoomOutCoroutine;
     Coroutine returnToNeutralCoroutine;
     Coroutine lerper;
+    private IShip selectedShip;
 
     public override void Awake()
     {
@@ -100,6 +102,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
         }
     }
 
+    public void Initialize(IShip ship) => selectedShip = ship;
+
     private void ApplyRuntimeOffset()
     {
         playerCamera.SetFollowOffset(runtimeFollowOffset);
@@ -144,7 +148,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetupGamePlayCameras()
     {
-        playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipStatus.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.Transform;
+        playerFollowTarget = FollowOverride ? selectedShip.ShipStatus.ShipCameraCustomizer.FollowTarget : selectedShip.Transform;
         SetupGamePlayCameras(playerFollowTarget);
     }
 
@@ -166,7 +170,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void LookAtCrystal()
     {
-        mainMenuCamera.LookAt = NodeControlManager.Instance.GetNearestNode(Vector3.zero).GetCrystal().transform;
+        mainMenuCamera.LookAt = CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
     }
 
     public void SetCloseCameraActive()
