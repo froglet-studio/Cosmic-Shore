@@ -31,9 +31,9 @@ namespace CosmicShore.Game
 
     public class ShipHUDView : MonoBehaviour,IShipHUDView
     {
-        public ShipClassType ShipHUDType => hudType;
+        public ShipTypes ShipHUDType => hudType;
 
-        [SerializeField] private ShipClassType hudType;
+        [SerializeField] private ShipTypes hudType;
         [SerializeField] private ResourceDisplayRef[] resourceDisplays;
         [SerializeField] private Transform silhouetteContainer;
         [SerializeField] private Transform trailContainer;

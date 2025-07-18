@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IShipStatus))]
     public class ShipHUDController : MonoBehaviour, IShipHUDController
     {
-        [SerializeField] private ShipClassType shipType;
+        [SerializeField] private ShipTypes shipType;
         
         [Header("Event Channels")]
         [SerializeField] 

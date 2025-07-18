@@ -68,7 +68,6 @@ namespace CosmicShore.Game
             if (!_isAI)
             {
                 InputController.Initialize(Ship);
-                CameraManager.Instance.Initialize(Ship);
             }
         }
 
