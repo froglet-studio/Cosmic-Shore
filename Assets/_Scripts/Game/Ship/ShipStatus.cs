@@ -82,8 +82,8 @@ namespace CosmicShore.Game
 
         public Transform FollowTarget { get; set; }
         public Transform ShipTransform => Ship.Transform;
-        public Teams Team { get; set; }
         public IPlayer Player { get; set; }
+        // public Teams Team => Player.Team;
         public InputController IputController => Player.InputController;
         public IInputStatus InputStatus => IputController.InputStatus;
         public Material AOEExplosionMaterial { get; set; }

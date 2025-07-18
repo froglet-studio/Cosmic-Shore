@@ -1,9 +1,7 @@
-using CosmicShore.Environment.FlowField;
-using CosmicShore.Core;
-using CosmicShore.Utility.ClassExtensions;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
-namespace CosmicShore.Game.Projectiles
+namespace CosmicShore.Game
 {
     public class FakeCrystal : Crystal
     {
@@ -19,15 +17,14 @@ namespace CosmicShore.Game.Projectiles
 
         protected override void Collide(Collider other)
         {
-            if (!other.gameObject.IsLayer("Ships") && !other.gameObject.IsLayer("Projectiles"))
-                return;
-
-            var shipStatus = other.gameObject.IsLayer("Ships") ? other.GetComponent<IShipStatus>() : other.GetComponent<Projectile>().ShipStatus;
-        
-            if (shipStatus == null)
+            IShipStatus shipStatus;
+            
+            if (!other.TryGetComponent(out shipStatus))
             {
-                Debug.LogError("Ship Status cannot be null!");
-                return;
+                if (!other.TryGetComponent(out Projectile projectile))
+                    return;
+                else
+                    shipStatus = projectile.ShipStatus;
             }
 
             // TODO: use a different material if the fake crystal is on your team

@@ -49,6 +49,7 @@ namespace CosmicShore.Game
                 return "No-name";
             }
         }
+        Teams Team => Player.Team;
 
         bool Portrait { get; set; }
         ResourceSystem ResourceSystem { get; }
@@ -70,7 +71,6 @@ namespace CosmicShore.Game
         bool Slowed { get; set; }
         bool Stationary { get; set; }
         bool Turret { get; set; }
-        Teams Team { get; set; }
         TrailSpawner TrailSpawner { get; }
         ShipHUDContainer ShipHUDContainer { get; }
         IShipHUDView ShipHUDView { get; set; }

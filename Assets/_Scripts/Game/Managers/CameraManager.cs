@@ -4,6 +4,7 @@ using CosmicShore.Utility;
 using System.Collections;
 using UnityEngine;
 using CosmicShore;
+using CosmicShore.Game;
 using CosmicShore.Utilities;
 
 public class CameraManager : SingletonPersistent<CameraManager>

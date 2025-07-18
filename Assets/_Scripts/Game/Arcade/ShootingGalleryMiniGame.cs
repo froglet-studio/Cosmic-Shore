@@ -1,6 +1,5 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
-using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade

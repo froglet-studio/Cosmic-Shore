@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using System.Collections;
+using CosmicShore.Game;
 using UnityEngine;
 
 namespace CosmicShore

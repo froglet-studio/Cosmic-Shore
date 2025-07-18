@@ -1,141 +1,146 @@
 using CosmicShore.Core;
 using CosmicShore.Utilities;
-using Obvious.Soap;
 using System.Collections.Generic;
 using UnityEngine;
 
 
-// TODO: Rename to 'CellManager'
-public class CellControlManager : Singleton<CellControlManager>
+namespace CosmicShore.Game
 {
-    [SerializeField] List<Cell> Cells;
-
-    public void AddBlock(Teams team, TrailBlockProperties blockProperties)
+    // TODO: Rename to 'CellManager'
+    public class CellControlManager : Singleton<CellControlManager>
     {
-        foreach (var cell in Cells)
+        [SerializeField] List<Cell> cells;
+
+        void OnEnable()
         {
-            if (cell.ContainsPosition(blockProperties.position))
+            GameManager.OnGameOver += OutputNodeControl;
+        }
+
+        void OnDisable()
+        {
+            GameManager.OnGameOver -= OutputNodeControl;
+        }
+        
+        public void AddBlock(Teams team, TrailBlockProperties blockProperties)
+        {
+            foreach (var cell in cells)
             {
-                cell.ChangeVolume(team, blockProperties.volume);
-                cell.AddBlock(blockProperties.trailBlock);
-                break;
+                if (cell.ContainsPosition(blockProperties.position))
+                {
+                    cell.ChangeVolume(team, blockProperties.volume);
+                    cell.AddBlock(blockProperties.trailBlock);
+                    break;
+                }
             }
         }
-    }
 
-    public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
-    {
-        foreach (var cell in Cells)
+        public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
         {
-            if (cell.ContainsPosition(blockProperties.position))
+            foreach (var cell in cells)
             {
-                cell.ChangeVolume(team, -blockProperties.volume);
-                cell.RemoveBlock(blockProperties.trailBlock);
-                break;
+                if (cell.ContainsPosition(blockProperties.position))
+                {
+                    cell.ChangeVolume(team, -blockProperties.volume);
+                    cell.RemoveBlock(blockProperties.trailBlock);
+                    break;
+                }
             }
         }
-    }
 
-    public Cell GetCellByPosition(Vector3 position)
-    {
-        foreach (var cell in Cells)
-            if (cell.ContainsPosition(position))
-                return cell;
-
-        return null;
-    }
-
-    public Cell GetNearestCell(Vector3 position)
-    {
-        if (Cells.Count == 0) return null;
-
-        var minPosition = Mathf.Infinity;
-        var result = Cells[0];
-
-        foreach (var cell in Cells)
-            if (Vector3.SqrMagnitude(position - cell.transform.position) < minPosition)
-                result = cell;
-
-        return result;
-    }
-
-    void OnEnable()
-    {
-        GameManager.OnGameOver += OutputNodeControl;
-    }
-
-    void OnDisable()
-    {
-        GameManager.OnGameOver -= OutputNodeControl;
-    }
-
-    public void AddItem(CellItem item)
-    {
-        foreach (var cell in Cells)
+        public Cell GetCellByPosition(Vector3 position)
         {
-            if (cell.ContainsPosition(item.transform.position))
+            foreach (var cell in cells)
+                if (cell.ContainsPosition(position))
+                    return cell;
+
+            return null;
+        }
+
+        public Cell GetNearestCell(Vector3 position)
+        {
+            if (cells.Count == 0) return null;
+
+            var minPosition = Mathf.Infinity;
+            var result = cells[0];
+
+            foreach (var cell in cells)
+                if (Vector3.SqrMagnitude(position - cell.transform.position) < minPosition)
+                    result = cell;
+
+            return result;
+        }
+
+
+        public void AddItem(CellItem item)
+        {
+            foreach (var cell in cells)
             {
-                cell.AddItem(item);
-                break;
+                if (cell.ContainsPosition(item.transform.position))
+                {
+                    cell.TryAddItem(item);
+                    break;
+                }
             }
         }
-    }
 
-    public void RemoveItem(CellItem item)
-    {
-        foreach (var cell in Cells)
+        public void RemoveItem(CellItem item)
         {
-            if (cell.ContainsPosition(item.transform.position))
+            foreach (var cell in cells)
             {
-                cell.RemoveItem(item);
-                break;
+                if (cell.ContainsPosition(item.transform.position))
+                {
+                    cell.TryRemoveItem(item);
+                    break;
+                }
             }
         }
-    }
 
-    public void UpdateItem(CellItem item)
-    {
-        foreach (var cell in Cells)
+        public void UpdateItem(CellItem item)
         {
-            if (cell.ContainsPosition(item.transform.position))
+            foreach (var cell in cells)
             {
-                // cell.NotifyPilotsOfUpdates();
-                break;
+                if (cell.ContainsPosition(item.transform.position))
+                {
+                    cell.UpdateItem();
+                    break;
+                }
             }
         }
-    }
 
-    public void StealBlock(Teams team, TrailBlockProperties blockProperties)
-    {
-        foreach (var cell in Cells)
+        public void StealBlock(Teams team, TrailBlockProperties blockProperties)
         {
-            if (cell.ContainsPosition(blockProperties.position))
+            foreach (var cell in cells)
             {
-                cell.ChangeVolume(team, blockProperties.volume);
-                cell.ChangeVolume(blockProperties.trailBlock.Team, -blockProperties.volume);
-                break;
+                if (cell.ContainsPosition(blockProperties.position))
+                {
+                    cell.ChangeVolume(team, blockProperties.volume);
+                    cell.ChangeVolume(blockProperties.trailBlock.Team, -blockProperties.volume);
+                    break;
+                }
             }
         }
-    }
 
-    public void RestoreBlock(Teams team, TrailBlockProperties blockProperties)
-    {
-        foreach (var cell in Cells)
+        public void RestoreBlock(Teams team, TrailBlockProperties blockProperties)
         {
-            if (cell.ContainsPosition(blockProperties.position))
+            foreach (var cell in cells)
             {
-                cell.ChangeVolume(team, blockProperties.volume);
-                break;
+                if (cell.ContainsPosition(blockProperties.position))
+                {
+                    cell.ChangeVolume(team, blockProperties.volume);
+                    break;
+                }
             }
         }
-    }
 
-    public void OutputNodeControl()
-    {
-        foreach (var cell in Cells)
+        public void OutputNodeControl()
         {
-            if (cell.enabled)
-                Debug.LogWarning($"Node Control - Node ID: {cell.ID}, Controlling Team: {cell.ControllingTeam}, Green Volume: {cell.GetTeamVolume(Teams.Jade)}, Red Volume: {cell.GetTeamVolume(Teams.Ruby)}");
+            foreach (var cell in cells)
+            {
+                if (cell.enabled)
+                    Debug.LogWarning(
+                        $"Node Control - Node ID: {cell.ID}, Controlling Team: {cell.ControllingTeam}, Green Volume: {cell.GetTeamVolume(Teams.Jade)}, Red Volume: {cell.GetTeamVolume(Teams.Ruby)}");
+            }
         }
     }
 }
+

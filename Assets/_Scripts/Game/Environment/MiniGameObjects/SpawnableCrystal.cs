@@ -1,19 +1,21 @@
-using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
-public class SpawnableCrystal : SpawnableAbstractBase
+namespace CosmicShore.Game
 {
-    [SerializeField] Crystal Crystal;
-    static int ObjectsSpawned = 0;
-
-    public override GameObject Spawn()
+    public class SpawnableCrystal : SpawnableAbstractBase
     {
-        GameObject container = new GameObject();
-        container.name = "Crystal" + ObjectsSpawned++;
+        [SerializeField] Crystal Crystal;
+        static int ObjectsSpawned = 0;
 
-        var crystal = Instantiate(Crystal);
-        crystal.transform.SetParent(container.transform);
+        public override GameObject Spawn()
+        {
+            GameObject container = new GameObject();
+            container.name = "Crystal" + ObjectsSpawned++;
 
-        return container;
+            var crystal = Instantiate(Crystal);
+            crystal.transform.SetParent(container.transform);
+
+            return container;
+        }
     }
 }

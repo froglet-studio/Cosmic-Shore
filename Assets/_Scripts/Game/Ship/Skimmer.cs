@@ -1,12 +1,10 @@
-using CosmicShore.Environment.FlowField;
-using CosmicShore.Game;
 using CosmicShore.Game.IO;
-using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     public class Skimmer : ElementalShipComponent
     {
@@ -435,19 +433,19 @@ namespace CosmicShore.Core
         }
 
         /*
-Change: Instead of computing the misalignment between the ship’s up and the radial from the tube center (which produced a repulsive feel), 
-we now compute the desired radial by projecting the ship’s up vector onto the plane perpendicular to the tube’s forward. 
+Change: Instead of computing the misalignment between the shipï¿½s up and the radial from the tube center (which produced a repulsive feel), 
+we now compute the desired radial by projecting the shipï¿½s up vector onto the plane perpendicular to the tubeï¿½s forward. 
 This lets the player's roll input (the ship's up vector) determine the lateral target. 
-Then we compute the tangent direction along the tube’s cross–section and slerp the rotation toward that, 
+Then we compute the tangent direction along the tubeï¿½s crossï¿½section and slerp the rotation toward that, 
 while keeping the existing subtle velocity nudging.
 */
         /*
-Change: Instead of using a misalignment-based repulsive approach, this version computes a desired tube position based on the ship’s current up vector. 
+Change: Instead of using a misalignment-based repulsive approach, this version computes a desired tube position based on the shipï¿½s current up vector. 
 That is, the desired tube position is defined as the tube center plus (ship.Transform.up * sweetSpot). 
-Then, the target forward is the direction from the ship’s current position to that desired position.
-This approach, combined with the existing subtle velocity nudging, attracts the ship toward the tube’s surface without imposing lateral displacement.
+Then, the target forward is the direction from the shipï¿½s current position to that desired position.
+This approach, combined with the existing subtle velocity nudging, attracts the ship toward the tubeï¿½s surface without imposing lateral displacement.
 */
-        // Change: Instead of using the ship’s up versus radial misalignment (which repelled the ship), this version computes an error vector (U - radial) and nudges the forward direction accordingly—so the ship’s forward is adjusted toward a path that will bring it to the tube’s surface while preserving the player's roll.
+        // Change: Instead of using the shipï¿½s up versus radial misalignment (which repelled the ship), this version computes an error vector (U - radial) and nudges the forward direction accordinglyï¿½so the shipï¿½s forward is adjusted toward a path that will bring it to the tubeï¿½s surface while preserving the player's roll.
         void AlignAndNudge(float combinedWeight)
         {
             if (!minMatureBlock || nextBlocks.Count < 5)

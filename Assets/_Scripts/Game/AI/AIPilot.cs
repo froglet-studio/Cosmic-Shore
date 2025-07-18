@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 using Obvious.Soap;
-using CosmicShore.Core;
 
 namespace CosmicShore.Game.AI
 {
@@ -37,9 +36,6 @@ namespace CosmicShore.Game.AI
         float throttle;
         float aggressiveness;
 
-        public float X;
-        public float Y;
-
         public float defaultThrottle => Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, SkillLevel);
         public float defaultAggressiveness => Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, SkillLevel);
         float throttleIncrease => Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, SkillLevel);
@@ -51,7 +47,6 @@ namespace CosmicShore.Game.AI
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
-        [SerializeField] bool LookingAtCrystal;
         [SerializeField] bool ram;
         [SerializeField] bool drift;
 
@@ -83,8 +78,7 @@ namespace CosmicShore.Game.AI
 
         Vector3 _targetPosition;
         Vector3 _distance;
-
-        [HideInInspector] public FlowFieldData flowFieldData;
+        bool LookingAtCrystal;
 
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 
@@ -128,11 +122,11 @@ namespace CosmicShore.Game.AI
             if (activeCell == null)
                 activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
 
-            var cellItems = activeCell.GetItems();
+            var cellItems = activeCell.CellItems;
             float MinDistance = Mathf.Infinity;
             CellItem closestItem = null;
 
-            foreach (var item in cellItems.Values)
+            foreach (var item in cellItems)
             {
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
@@ -148,12 +142,6 @@ namespace CosmicShore.Game.AI
 
             _targetPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
         }
-
-
-        /*public void AssignShip(IShip ship)
-        {
-            _ship = ship;
-        }*/
 
         public void Initialize(bool enableAutoPilot, IShip ship)
         {
@@ -177,8 +165,7 @@ namespace CosmicShore.Game.AI
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
 
-            foreach
-                (var ability in abilities)
+            foreach (var ability in abilities)
             {
                 StartCoroutine(UseAbilityCoroutine(ability));
             }
@@ -244,9 +231,6 @@ namespace CosmicShore.Game.AI
             return transform.forward * _maxDistance - (transform.position + position);
         }
 
-        
-
-
         IEnumerator UseAbilityCoroutine(AIAbility action) 
         {
             yield return new WaitForSeconds(3);
@@ -258,48 +242,7 @@ namespace CosmicShore.Game.AI
                 yield return new WaitForSeconds(action.Cooldown);
             }
         }
-
-
-        /*IEnumerator SetTargetCoroutine()
-        {
-            // TODO - these lists if needed, should be specified separate.
-            List<ShipClassType> aggressiveShips = new List<ShipClassType> 
-            { 
-                ShipClassType.Rhino, 
-                ShipClassType.Sparrow,
-            };
-
-            var rand = new System.Random();
-
-            // Assume activeNode can't change.
-            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);  
-            if (activeCell == null)
-                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
-
-            while (true)
-            {
-                if (activeCell != null && 
-                    // TODO - Commented out as aggressive 
-                    // aggressiveShips.Contains(_ship.ShipStatus.ShipType) && 
-                    activeCell.ControllingTeam != Teams.None)
-                {
-                    if ((_shipStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
-                    {
-                        _targetPosition = _crystalPosition;
-                    }
-                    else
-                    {
-                        _targetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
-                    }
-                }
-                else
-                {
-                    _targetPosition = _crystalPosition;
-                }
-                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
-            }
-        }*/
-
+        
         #region Unused Methods
 
         float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
@@ -320,6 +263,48 @@ namespace CosmicShore.Game.AI
             float output = 2 * (1 / (1 + Mathf.Exp(-0.1f * input)) - 0.5f);
             return output;
         }
+        
+        
+        /*IEnumerator SetTargetCoroutine()
+        {
+            // TODO - these lists if needed, should be specified separate.
+            List<ShipClassType> aggressiveShips = new List<ShipClassType>
+            {
+                ShipClassType.Rhino,
+                ShipClassType.Sparrow,
+            };
+
+            var rand = new System.Random();
+
+            // Assume activeNode can't change.
+            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
+            if (activeCell == null)
+                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
+
+            while (true)
+            {
+                if (activeCell != null &&
+                    // TODO - Commented out as aggressive
+                    // aggressiveShips.Contains(_ship.ShipStatus.ShipType) &&
+                    activeCell.ControllingTeam != Teams.None)
+                {
+                    if ((_shipStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
+                    {
+                        _targetPosition = _crystalPosition;
+                    }
+                    else
+                    {
+                        _targetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
+                    }
+                }
+                else
+                {
+                    _targetPosition = _crystalPosition;
+                }
+                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
+            }
+        }*/
+
 
         #endregion
     }
