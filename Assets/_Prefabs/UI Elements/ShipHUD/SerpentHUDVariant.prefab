@@ -34,8 +34,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 4.756836, y: -35.01581}
-  m_SizeDelta: {x: 72.6121, y: 22.0351}
+  m_AnchoredPosition: {x: 5.7717285, y: -43.486816}
+  m_SizeDelta: {x: 90.4416, y: 27.3448}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8096232731187507729
 CanvasRenderer:
@@ -110,6 +110,81 @@ RectTransform:
   m_AnchoredPosition: {x: -828, y: 175}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1569713813438158955
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6813415235637396711}
+  - component: {fileID: 1949337874827354482}
+  - component: {fileID: 3892421901917098691}
+  m_Layer: 0
+  m_Name: XBOX_Icon_2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &6813415235637396711
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1569713813438158955}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4789951449404768566}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0.000061035156, y: -88.5}
+  m_SizeDelta: {x: 40, y: 40}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1949337874827354482
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1569713813438158955}
+  m_CullTransparentMesh: 1
+--- !u!114 &3892421901917098691
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1569713813438158955}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &2162419680752100906
 GameObject:
   m_ObjectHideFlags: 0
@@ -151,8 +226,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 881.3, y: -207}
-  m_SizeDelta: {x: 120, y: 120}
+  m_AnchoredPosition: {x: 881.3, y: -125}
+  m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 1, y: 1}
 --- !u!222 &7747827319141031689
 CanvasRenderer:
@@ -204,24 +279,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useSegmentedDisplay: 1
-  verboseLogging: 0
+  displayMode: 1
   backgroundImage: {fileID: 1808271107567822185}
   backgroundSprite: {fileID: 21300000, guid: 4c658fc7d6d20eb46b669d6f8befeba5, type: 3}
   fuelLevelText: {fileID: 0}
+  fuelLevelImage: {fileID: 1808271107567822185}
   fuelLevelImages:
   - {fileID: 21300000, guid: 08e38fe44f29cff4aa0ce2160229d9cd, type: 3}
   - {fileID: 21300000, guid: d320933c328d5204abd767aedb91b8ba, type: 3}
   - {fileID: 21300000, guid: be0cc2fc852328549893bfb0e4c2b48c, type: 3}
   - {fileID: 21300000, guid: 23b2228fe5720774095a51b56473e6ec, type: 3}
   - {fileID: 21300000, guid: 9e9fe37f377d75544bbe3483c12d55d7, type: 3}
-  fuelLevelImage: {fileID: 1808271107567822185}
   resourceFillAnimator: {fileID: 4418354567053508256}
-  segmentedLevelImages:
+  sliderFillImage: {fileID: 1808271107567822185}
+  sliderFillSegments:
   - {fileID: 9075646459729255439}
   - {fileID: 8466132245844471700}
   - {fileID: 5514159278745048897}
   - {fileID: 9156666358281271725}
+  sliderNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  sliderFullColor: {r: 1, g: 0.06119465, b: 0, a: 1}
+  shouldChangeColor: 0
+  spriteSwapImage: {fileID: 0}
+  spriteSwapSprites: []
+  verboseLogging: 0
 --- !u!114 &7090403262909044987
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -279,6 +360,43 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boostFillImage: {fileID: 1808271107567822185}
+--- !u!1 &2318935073279052150
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4789951449404768566}
+  m_Layer: 0
+  m_Name: XBOX_Root
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4789951449404768566
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2318935073279052150}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1647316759925192705}
+  - {fileID: 6813415235637396711}
+  m_Father: {fileID: 3412957971693408596}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 906.2, y: -391.5}
+  m_SizeDelta: {x: 40, y: 217}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2684549187044434082
 GameObject:
   m_ObjectHideFlags: 0
@@ -348,8 +466,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 12.199951, y: 9.802795}
-  m_SizeDelta: {x: 74.4587, y: 20.2919}
+  m_AnchoredPosition: {x: 15.04248, y: 12.131592}
+  m_SizeDelta: {x: 92.7417, y: 25.1815}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4255614443293342404
 CanvasRenderer:
@@ -389,6 +507,43 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &4307188901509612615
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6170892365461866388}
+  m_Layer: 0
+  m_Name: PS_Root
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &6170892365461866388
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4307188901509612615}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4483772760495998245}
+  - {fileID: 3204114555045534111}
+  m_Father: {fileID: 3412957971693408596}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 906.2, y: -391.5}
+  m_SizeDelta: {x: 40, y: 217}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &4872406676216432099
 GameObject:
   m_ObjectHideFlags: 0
@@ -423,8 +578,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -5.4799805, y: -12.799988}
-  m_SizeDelta: {x: 76.0985, y: 20.2919}
+  m_AnchoredPosition: {x: -6.9785156, y: -15.917603}
+  m_SizeDelta: {x: 94.7841, y: 25.1815}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7398991520272293629
 CanvasRenderer:
@@ -464,6 +619,231 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &6116439071726984266
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4483772760495998245}
+  - component: {fileID: 716640829663437169}
+  - component: {fileID: 5878947470192150121}
+  m_Layer: 0
+  m_Name: XBOX_Icon_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4483772760495998245
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6116439071726984266}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6170892365461866388}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0.000061035156, y: 88.5}
+  m_SizeDelta: {x: 40, y: 40}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &716640829663437169
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6116439071726984266}
+  m_CullTransparentMesh: 1
+--- !u!114 &5878947470192150121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6116439071726984266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: d0c32912438b25c4ea722d320e4fe380, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!1 &6755536813944105863
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1647316759925192705}
+  - component: {fileID: 6708871894719627526}
+  - component: {fileID: 394703000318318487}
+  m_Layer: 0
+  m_Name: XBOX_Icon_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1647316759925192705
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6755536813944105863}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4789951449404768566}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0.000061035156, y: 88.5}
+  m_SizeDelta: {x: 40, y: 40}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &6708871894719627526
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6755536813944105863}
+  m_CullTransparentMesh: 1
+--- !u!114 &394703000318318487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6755536813944105863}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: d3455f0a03e57f0429707897e7e0b49d, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!1 &7223666680654582157
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3204114555045534111}
+  - component: {fileID: 2987604159959992125}
+  - component: {fileID: 2156649771817447049}
+  m_Layer: 0
+  m_Name: XBOX_Icon_2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &3204114555045534111
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7223666680654582157}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6170892365461866388}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0.000061035156, y: -88.5}
+  m_SizeDelta: {x: 40, y: 40}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &2987604159959992125
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7223666680654582157}
+  m_CullTransparentMesh: 1
+--- !u!114 &2156649771817447049
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7223666680654582157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: c9570d3c2306b8144a9e9a522fe420dc, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &8575641597917031352
 GameObject:
   m_ObjectHideFlags: 0
@@ -498,8 +878,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -3.5822754, y: 32.103455}
-  m_SizeDelta: {x: 87.2566, y: 20.4623}
+  m_AnchoredPosition: {x: -4.61499, y: 39.80597}
+  m_SizeDelta: {x: 108.6819, y: 25.3931}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1778532647835046659
 CanvasRenderer:
@@ -682,6 +1062,14 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 6262616819589991067}
+    - targetCorrespondingSourceObject: {fileID: 6557045720525393826, guid: bc09c07dcb0724842a327c887609f156,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4789951449404768566}
+    - targetCorrespondingSourceObject: {fileID: 6557045720525393826, guid: bc09c07dcb0724842a327c887609f156,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6170892365461866388}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3323122711064239023, guid: bc09c07dcb0724842a327c887609f156,
         type: 3}
@@ -712,7 +1100,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57dc27a3f7264d548b51007c0615f701, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _trailBlock: {fileID: 8668551932930292702}
   hudType: 7
   resourceDisplays:
   - ResourceName: Wall Seeds
@@ -721,6 +1108,8 @@ MonoBehaviour:
     Display: {fileID: 2671096847325640786}
   silhouetteContainer: {fileID: 7277748476972212419}
   trailContainer: {fileID: 7950429970536442718}
+  psIconRoot: {fileID: 4307188901509612615}
+  xboxIconRoot: {fileID: 2318935073279052150}
   serpentBoostButton: {fileID: 7090403262909044987}
   serpentWallDisplayButton: {fileID: 6875924332061672232}
   dolphinBoostFeedback: {fileID: 0}
@@ -728,13 +1117,10 @@ MonoBehaviour:
   mantaBoost2Button: {fileID: 0}
   rhinoBoostFeedback: {fileID: 0}
   squirrelBoostDisplay: {fileID: 0}
-  sparrowBoostButton: {fileID: 0}
---- !u!1 &8668551932930292702 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1004003000473298216, guid: bc09c07dcb0724842a327c887609f156,
-    type: 3}
-  m_PrefabInstance: {fileID: 8476352183690256118}
-  m_PrefabAsset: {fileID: 0}
+  sparrowFullAutoAction: {fileID: 0}
+  sparrowOverheatingBoostAction: {fileID: 0}
+  sparrowSkyBurstMissileAction: {fileID: 0}
+  sparrowExhaustBarrage: {fileID: 0}
 --- !u!1001 &9080380028743660798
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -782,12 +1168,12 @@ PrefabInstance:
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 100
+      value: 150
       objectReference: {fileID: 0}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 100
+      value: 150
       objectReference: {fileID: 0}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
@@ -827,12 +1213,12 @@ PrefabInstance:
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 771
+      value: 731.1
       objectReference: {fileID: 0}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -353
+      value: -302
       objectReference: {fileID: 0}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
