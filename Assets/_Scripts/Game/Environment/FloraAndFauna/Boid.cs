@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore;
-using CosmicShore.Game;
 
 public enum BoidCollisionEffects
 {
@@ -53,8 +52,9 @@ public class Boid : Fauna
     List<Collider> separatedBoids = new List<Collider>();
 
 
-    public override void Initialize(Cell cell)
+    protected override void Start()
     {
+        base.Start();
         AddSpindle(spindle);
         BlockCollider = healthBlock.GetComponent<BoxCollider>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);

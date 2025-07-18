@@ -28,9 +28,9 @@ public class LightFauna : Fauna
 
     [HideInInspector] public float Phase;
 
-    public override void Initialize(Cell cell)
+    protected override void Start()
     {
-        base.Initialize(cell);
+        base.Start();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         StartCoroutine(UpdateBehaviorCoroutine());
     }

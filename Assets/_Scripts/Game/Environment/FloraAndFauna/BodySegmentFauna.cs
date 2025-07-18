@@ -8,8 +8,14 @@ public class BodySegmentFauna : Fauna
     public bool IsHead;
     public bool IsTail;
 
+    protected override void Start()
+    {
+        base.Start();
+    }
+
     protected override void Die()
     {
+        
         if (!IsHead && !IsTail)
         {
             ParentWorm.SplitWorm(this);

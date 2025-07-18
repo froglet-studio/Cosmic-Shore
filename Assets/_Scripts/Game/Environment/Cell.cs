@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
 using Obvious.Soap;
-using Random = UnityEngine.Random;
 
 
 namespace CosmicShore.Game
@@ -70,6 +68,15 @@ namespace CosmicShore.Game
                 countGrids.Add(t, new BlockCountDensityGrid(t));
                 //volumeGrids.Add(t, new BlockVolumeDensityGrid(t));
             }
+        }
+        void OnEnable()
+        {
+            Crystal.OnCrystalMove += UpdateItem;
+        }
+
+        void OnDisable()
+        {
+            Crystal.OnCrystalMove -= UpdateItem;
         }
         
         void Start()
@@ -210,6 +217,9 @@ namespace CosmicShore.Game
 
         public bool TryAddItem(CellItem item)
         {
+            if (!ContainsPosition(item.transform.position))
+                return false;
+
             if (item.GetID() != 0)
                 return false;
             
@@ -222,6 +232,9 @@ namespace CosmicShore.Game
 
         public bool TryRemoveItem(CellItem item)
         {
+            if (!ContainsPosition(item.transform.position))
+                return false;
+
             if (!CellItems.Contains(item))
                 return false;
             
@@ -315,7 +328,6 @@ namespace CosmicShore.Game
             {
                 var newFlora = Instantiate(floraConfiguration.Flora, transform.position, Quaternion.identity);
                 newFlora.Team = spawnJade ? (Teams)Random.Range(1, 5): (Teams)Random.Range(2, 5);
-                newFlora.Initialize(this);
             }
             while (true)
             {
@@ -324,7 +336,6 @@ namespace CosmicShore.Game
                 {
                     var newFlora = Instantiate(floraConfiguration.Flora, transform.position, Quaternion.identity);
                     newFlora.Team = spawnJade ? (Teams)Random.Range(1, 5) : (Teams)Random.Range(2, 5);
-                    newFlora.Initialize(this);
                 }
                 if (floraConfiguration.OverrideDefaultPlantPeriod) yield return new WaitForSeconds(floraConfiguration.NewPlantPeriod);
                 else yield return new WaitForSeconds(floraConfiguration.Flora.PlantPeriod);
@@ -340,6 +351,7 @@ namespace CosmicShore.Game
                 var period = baseFaunaSpawnTime * faunaSpawnVolumeThreshold / controllingVolume; //TODO: use this to adjust spawn rate
                 if (controllingVolume > faunaSpawnVolumeThreshold)
                 {
+                    
                     var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
                     newPopulation.Team = ControllingTeam;
                     newPopulation.Goal = Crystal.transform.position;

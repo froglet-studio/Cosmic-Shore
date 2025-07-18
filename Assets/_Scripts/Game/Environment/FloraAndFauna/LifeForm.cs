@@ -1,11 +1,9 @@
-using System;
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Game;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace CosmicShore
 {
@@ -20,18 +18,17 @@ namespace CosmicShore
         public Teams Team;
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
         protected Crystal crystal;
-        protected Cell cell;
+        protected Cell node;
         bool mature = false;
         bool dying = false;
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
 
-        public virtual void Initialize(Cell cell)
+        protected virtual void Start()
         {
             if (shieldPeriod > 0) StartCoroutine(ShieldRegen());
             crystal = GetComponentInChildren<Crystal>();
-            
-            this.cell = cell;
-            StatsManager.Instance.LifeformCreated(cell.ID);
+            node = CellControlManager.Instance.GetCellByPosition(transform.position);
+            StatsManager.Instance.LifeformCreated(node.ID);
         }
 
         public virtual void AddHealthBlock(HealthBlock healthBlock)
@@ -85,7 +82,7 @@ namespace CosmicShore
         protected virtual void Die()
         {
             crystal.ActivateCrystal();
-            StatsManager.Instance.LifeformDestroyed(cell.ID);
+            StatsManager.Instance.LifeformDestroyed(node.ID);
             foreach (HealthBlock healthBlock in healthBlocks.ToArray())
             {
                 healthBlock.Damage(Random.onUnitSphere, Teams.None, "Guy Fawkes", true);
