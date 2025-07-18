@@ -1,10 +1,20 @@
+using System.Collections.Generic;
 using CosmicShore.Game.UI;
 using CosmicShore.Utilities;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
+    [System.Serializable]
+    public struct ButtonIconMapping
+    {
+        [Tooltip("The numeric ID you pass into OnButtonPressed / OnButtonReleased")]
+        public int ButtonNumber;
+        public ControllerButtonIconReferences Icon;
+    }
+    
     [System.Serializable]
     public struct ResourceDisplayRef
     {
@@ -19,7 +29,7 @@ namespace CosmicShore.Game
         Unknown
     }
 
-    public class ShipHUDView : MonoBehaviour, IShipHUDView
+    public class ShipHUDView : MonoBehaviour,IShipHUDView
     {
         public ShipTypes ShipHUDType => hudType;
 
@@ -53,7 +63,13 @@ namespace CosmicShore.Game
         [SerializeField] private Button sparrowSkyBurstMissileAction;
         [SerializeField] private Button sparrowExhaustBarrage;
 
+        [Header("Button-to-Icon mappings")]
+        [SerializeField]
+        private ButtonIconMapping[] buttonIconMappings;
 
+        // a fast lookup at runtime
+        private Dictionary<int, ControllerButtonIconReferences> _iconMap;
+        
         public Transform GetSilhouetteContainer() => silhouetteContainer;
         public Transform GetTrailContainer() => trailContainer;
 
@@ -63,59 +79,74 @@ namespace CosmicShore.Game
                 if (rd.ResourceName == name) return rd.Display;
             return null;
         }
+        
+        private void Awake()
+        {
+            _iconMap = new Dictionary<int, ControllerButtonIconReferences>();
+            foreach (var bm in buttonIconMappings)
+                if (bm.Icon != null && !_iconMap.ContainsKey(bm.ButtonNumber))
+                    _iconMap.Add(bm.ButtonNumber, bm.Icon);
+        }
 
         public void Initialize(IShipHUDController controller)
         {
-            // Remove previous listeners if re-initializing
-            RemoveAllButtonListeners();
-            Debug.Log($"[ShipHUDView] Initialize called for {hudType}");
-            switch (hudType)
-            {
-                case ShipTypes.Serpent:
-                    if (serpentBoostButton != null)
-                        serpentBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
-                    if (serpentWallDisplayButton != null)
-                        serpentWallDisplayButton.onClick.AddListener(() => controller.OnButtonPressed(2));
-                    break;
-                case ShipTypes.Dolphin:
-                    if (dolphinBoostFeedback != null)
-                        dolphinBoostFeedback.onClick.AddListener(() => controller.OnButtonPressed(1));
-                    break;
-                case ShipTypes.Manta:
-                    if (mantaBoostButton != null)
-                        mantaBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
-                    break;
-                case ShipTypes.Rhino:
-                    //if (rhinoBoostButton != null)
-                    //    rhinoBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
-                    break;
-                case ShipTypes.Squirrel:
+            // // Remove previous listeners if re-initializing
+            // RemoveAllButtonListeners();
+            // Debug.Log($"[ShipHUDView] Initialize called for {hudType}");
+            // switch (hudType)
+            // {
+            //     case ShipTypes.Serpent:
+            //         if (serpentBoostButton != null)
+            //             serpentBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
+            //         if (serpentWallDisplayButton != null)
+            //             serpentWallDisplayButton.onClick.AddListener(() => controller.OnButtonPressed(2));
+            //         break;
+            //     case ShipTypes.Dolphin:
+            //         if (dolphinBoostFeedback != null)
+            //             dolphinBoostFeedback.onClick.AddListener(() => controller.OnButtonPressed(1));
+            //         break;
+            //     case ShipTypes.Manta:
+            //         if (mantaBoostButton != null)
+            //             mantaBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
+            //         break;
+            //     case ShipTypes.Rhino:
+            //         //if (rhinoBoostButton != null)
+            //         //    rhinoBoostButton.onClick.AddListener(() => controller.OnButtonPressed(1));
+            //         break;
+            //     case ShipTypes.Squirrel:
+            //
+            //         break;
+            //     case ShipTypes.Sparrow:
+            //         if (sparrowFullAutoAction != null)
+            //             Debug.Log($"[ShipHUDView] Adding listener to: {sparrowFullAutoAction.gameObject.name}");
+            //         sparrowFullAutoAction.onClick.AddListener(() => {
+            //                 Debug.Log($"[Sparrow HUD] UI Button: {sparrowFullAutoAction.gameObject.name} triggers Right Stick Action (OnButtonPressed(4))");
+            //                 controller.OnButtonPressed(4); // Right Stick Action
+            //             });
+            //         if (sparrowOverheatingBoostAction != null)
+            //             sparrowOverheatingBoostAction.onClick.AddListener(() => {
+            //                 Debug.Log($"[Sparrow HUD] UI Button: {sparrowOverheatingBoostAction.gameObject.name} triggers Overheating Boost (OnButtonPressed(2))");
+            //                 controller.OnButtonPressed(2); // Button 2 Action
+            //             });
+            //         if (sparrowSkyBurstMissileAction != null)
+            //             sparrowSkyBurstMissileAction.onClick.AddListener(() => {
+            //                 Debug.Log($"[Sparrow HUD] UI Button: {sparrowSkyBurstMissileAction.gameObject.name} triggers Sky Burst Missile (OnButtonPressed(3))");
+            //                 controller.OnButtonPressed(3); // Button 3 Action
+            //             });
+            //         if (sparrowExhaustBarrage != null)
+            //             sparrowExhaustBarrage.onClick.AddListener(() => {
+            //                 Debug.Log($"[Sparrow HUD] UI Button: {sparrowExhaustBarrage.gameObject.name} triggers Exhaust Barrage (OnButtonPressed(1))");
+            //                 controller.OnButtonPressed(1); // Button 1 Action
+            //             });
+            //         break;
+            // }
+            //
+            // foreach (var rd in resourceDisplays)
+            //     rd.Display.SetFill(1f);
 
-                    break;
-                case ShipTypes.Sparrow:
-                    if (sparrowFullAutoAction != null)
-                        Debug.Log($"[ShipHUDView] Adding listener to: {sparrowFullAutoAction.gameObject.name}");
-                    sparrowFullAutoAction.onClick.AddListener(() => {
-                            Debug.Log($"[Sparrow HUD] UI Button: {sparrowFullAutoAction.gameObject.name} triggers Right Stick Action (OnButtonPressed(4))");
-                            controller.OnButtonPressed(4); // Right Stick Action
-                        });
-                    if (sparrowOverheatingBoostAction != null)
-                        sparrowOverheatingBoostAction.onClick.AddListener(() => {
-                            Debug.Log($"[Sparrow HUD] UI Button: {sparrowOverheatingBoostAction.gameObject.name} triggers Overheating Boost (OnButtonPressed(2))");
-                            controller.OnButtonPressed(2); // Button 2 Action
-                        });
-                    if (sparrowSkyBurstMissileAction != null)
-                        sparrowSkyBurstMissileAction.onClick.AddListener(() => {
-                            Debug.Log($"[Sparrow HUD] UI Button: {sparrowSkyBurstMissileAction.gameObject.name} triggers Sky Burst Missile (OnButtonPressed(3))");
-                            controller.OnButtonPressed(3); // Button 3 Action
-                        });
-                    if (sparrowExhaustBarrage != null)
-                        sparrowExhaustBarrage.onClick.AddListener(() => {
-                            Debug.Log($"[Sparrow HUD] UI Button: {sparrowExhaustBarrage.gameObject.name} triggers Exhaust Barrage (OnButtonPressed(1))");
-                            controller.OnButtonPressed(1); // Button 1 Action
-                        });
-                    break;
-            }
+            // make sure PS/Xbox icons are in their default state
+            UpdateControllerIcons();
+
         }
 
         private void RemoveAllButtonListeners()
@@ -143,6 +174,21 @@ namespace CosmicShore.Game
             var rd = GetResourceDisplayByIndex(idx);
             rd.AnimateFillUp(duration, endAmt);
         }
+        
+        public void OnSeedAssembleStarted()   => Debug.Log("[HUD] Seed Assemble Started");
+        public void OnSeedAssembleCompleted() => Debug.Log("[HUD] Seed Assemble Completed");
+
+        public void OnOverheatBuildStarted()    => Debug.Log("[HUD] Heat building");
+        public void OnOverheated()              => Debug.Log("[HUD] Overheated!");
+        public void OnHeatDecayCompleted()      => Debug.Log("[HUD] Heat cooled");
+
+        public void OnFullAutoStarted()         => Debug.Log("[HUD] Full‐Auto firing");
+        public void OnFullAutoStopped()         => Debug.Log("[HUD] Full‐Auto stopped");
+
+        public void OnFireGunFired()            => Debug.Log("[HUD] FireGun shot");
+
+        public void OnStationaryToggled(bool on)
+            => Debug.Log($"[HUD] Stationary mode {(on ? "Enabled":"Disabled")}");
 
         /// <summary>
         /// Call this method to auto-update which icons are visible. Call it at Start, on scene load, and when input devices change.
@@ -169,22 +215,38 @@ namespace CosmicShore.Game
             }
         }
 
-        /// <summary>
+        /// <summary> 
         /// Returns detected controller type based on connected device names.
         /// </summary>
         public ControllerType DetectControllerType()
         {
-            foreach (string joystickName in Input.GetJoystickNames())
+            // Gamepad.all is an InputSystem list of all connected gamepads
+            foreach (var pad in Gamepad.all)
             {
-                if (string.IsNullOrEmpty(joystickName)) continue;
-
-                string lower = joystickName.ToLower();
-                if (lower.Contains("xbox") || lower.Contains("xinput"))
+                var name = pad.displayName.ToLower();
+                if (name.Contains("xbox") || name.Contains("xinput"))
                     return ControllerType.Xbox;
-                if (lower.Contains("playstation") || lower.Contains("dualshock") || lower.Contains("sony") || lower.Contains("wireless controller"))
+                if (name.Contains("playstation") 
+                    || name.Contains("dualshock") 
+                    || name.Contains("sony") 
+                    || name.Contains("wireless controller"))
                     return ControllerType.PlayStation;
             }
             return ControllerType.Unknown;
+        }
+        
+        public void OnInputPressed(int buttonNumber)
+        {
+            Debug.Log($"[ShipHUDView] Button {buttonNumber} pressed");
+            if (_iconMap.TryGetValue(buttonNumber, out var icon))
+                icon.ShowActive();
+        }
+
+        public void OnInputReleased(int buttonNumber)
+        {
+            Debug.Log($"[ShipHUDView] Button {buttonNumber} released");
+            if (_iconMap.TryGetValue(buttonNumber, out var icon))
+                icon.ShowInactive();
         }
 
     }

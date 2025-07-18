@@ -86,6 +86,7 @@ GameObject:
   - component: {fileID: 2758461845664795982}
   - component: {fileID: 7400884885304181915}
   - component: {fileID: 1297053226624011258}
+  - component: {fileID: 1240101790733401302}
   m_Layer: 8
   m_Name: ControllerIcon
   m_TagString: Untagged
@@ -150,6 +151,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1240101790733401302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 728795064987288401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92520f2c85c296419b2298c32c5b67d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inactiveIcon: {fileID: 21300000, guid: 3d3cabdf299b9ee43b7eea3682d80092, type: 3}
+  activeIcon: {fileID: 21300000, guid: 73c3589f6eb56a84b975bdf03afd8808, type: 3}
+  swapDuration: 0.2
 --- !u!1 &1086683476051315941
 GameObject:
   m_ObjectHideFlags: 0
@@ -421,6 +437,7 @@ GameObject:
   - component: {fileID: 218440458460514775}
   - component: {fileID: 1802372474475076656}
   - component: {fileID: 1567150480042267167}
+  - component: {fileID: 4981345111355707513}
   m_Layer: 8
   m_Name: ControllerIcon
   m_TagString: Untagged
@@ -485,6 +502,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &4981345111355707513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1954902563126533219}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92520f2c85c296419b2298c32c5b67d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inactiveIcon: {fileID: 21300000, guid: 10b26c3d0d51d9c46bc5fe94b93bde08, type: 3}
+  activeIcon: {fileID: 21300000, guid: ed1b135a0311ed6438bbb7a9f915eb57, type: 3}
+  swapDuration: 0.2
 --- !u!1 &2108857665267331791
 GameObject:
   m_ObjectHideFlags: 0
@@ -1005,6 +1037,7 @@ GameObject:
   - component: {fileID: 5526617431575846804}
   - component: {fileID: 6586135987065308308}
   - component: {fileID: 5834070726913383967}
+  - component: {fileID: 8857383060967785394}
   m_Layer: 8
   m_Name: ControllerIcon
   m_TagString: Untagged
@@ -1069,6 +1102,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &8857383060967785394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3383595914103618330}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92520f2c85c296419b2298c32c5b67d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inactiveIcon: {fileID: 21300000, guid: d3455f0a03e57f0429707897e7e0b49d, type: 3}
+  activeIcon: {fileID: 21300000, guid: fb2fa2c4c34566541a27a2c1bcb6f9c7, type: 3}
+  swapDuration: 0.2
 --- !u!1 &3552734141232270398
 GameObject:
   m_ObjectHideFlags: 0
@@ -1270,6 +1318,7 @@ GameObject:
   - component: {fileID: 936097552967916926}
   - component: {fileID: 820996943317082664}
   - component: {fileID: 2448425888116350771}
+  - component: {fileID: 4145846669073236415}
   m_Layer: 8
   m_Name: ControllerIcon
   m_TagString: Untagged
@@ -1324,7 +1373,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 10b26c3d0d51d9c46bc5fe94b93bde08, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 0f78f2c509abbaf4fb44bbeaa8b9f632, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -1334,6 +1383,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &4145846669073236415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4305153937426710730}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92520f2c85c296419b2298c32c5b67d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inactiveIcon: {fileID: 21300000, guid: 0f78f2c509abbaf4fb44bbeaa8b9f632, type: 3}
+  activeIcon: {fileID: 21300000, guid: 49f340b06d6d8c849a106200211a13f5, type: 3}
+  swapDuration: 0.2
 --- !u!1 &4758076270918377698
 GameObject:
   m_ObjectHideFlags: 0
@@ -1536,6 +1600,7 @@ GameObject:
   - component: {fileID: 5770345337697770405}
   - component: {fileID: 6973289720491982740}
   - component: {fileID: 8267981455805541141}
+  - component: {fileID: 721238320479886430}
   m_Layer: 8
   m_Name: ControllerIcon
   m_TagString: Untagged
@@ -1600,6 +1665,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &721238320479886430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4919645265112056018}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92520f2c85c296419b2298c32c5b67d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inactiveIcon: {fileID: 21300000, guid: f8a4939355545f7409216ea81225cbfb, type: 3}
+  activeIcon: {fileID: 21300000, guid: c9aa775315fd5704192918d64fb4d25c, type: 3}
+  swapDuration: 0.2
 --- !u!1 &5672865499994875086
 GameObject:
   m_ObjectHideFlags: 0
@@ -1646,6 +1726,7 @@ GameObject:
   - component: {fileID: 6542579103569740991}
   - component: {fileID: 2476678736708306433}
   - component: {fileID: 7009105561975567924}
+  - component: {fileID: 7945656785070743190}
   m_Layer: 8
   m_Name: ControllerIcon
   m_TagString: Untagged
@@ -1710,6 +1791,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7945656785070743190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6053999648255889245}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92520f2c85c296419b2298c32c5b67d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inactiveIcon: {fileID: 21300000, guid: d0c32912438b25c4ea722d320e4fe380, type: 3}
+  activeIcon: {fileID: 21300000, guid: 7a9bc5a04f63a7e4b83a8f0f9a6300e2, type: 3}
+  swapDuration: 0.2
 --- !u!1 &6152165959922352958
 GameObject:
   m_ObjectHideFlags: 0
@@ -1721,6 +1817,7 @@ GameObject:
   - component: {fileID: 2707216542089021084}
   - component: {fileID: 6009867672175696495}
   - component: {fileID: 5305759566500942968}
+  - component: {fileID: 4103608531734867793}
   m_Layer: 8
   m_Name: ControllerIcon
   m_TagString: Untagged
@@ -1785,6 +1882,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &4103608531734867793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6152165959922352958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92520f2c85c296419b2298c32c5b67d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inactiveIcon: {fileID: 21300000, guid: c9570d3c2306b8144a9e9a522fe420dc, type: 3}
+  activeIcon: {fileID: 21300000, guid: 73c3589f6eb56a84b975bdf03afd8808, type: 3}
+  swapDuration: 0.2
 --- !u!1 &8084628753008906546
 GameObject:
   m_ObjectHideFlags: 0
@@ -1796,6 +1908,7 @@ GameObject:
   - component: {fileID: 6301574654617878316}
   - component: {fileID: 4337759826625208289}
   - component: {fileID: 4056552343744102375}
+  - component: {fileID: 5714290267713752967}
   m_Layer: 8
   m_Name: ControllerIcon
   m_TagString: Untagged
@@ -1860,6 +1973,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5714290267713752967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8084628753008906546}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d92520f2c85c296419b2298c32c5b67d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inactiveIcon: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}
+  activeIcon: {fileID: 21300000, guid: a0df158da0fb3d74f8a1fd5e4e6bdb83, type: 3}
+  swapDuration: 0.2
 --- !u!1001 &2773207905854427674
 PrefabInstance:
   m_ObjectHideFlags: 0

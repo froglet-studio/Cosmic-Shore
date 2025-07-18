@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
@@ -5,6 +6,7 @@ using UnityEngine;
 
 public class FireGunAction : ShipAction
 {
+    public event Action OnGunFired;
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gun;
 
@@ -33,7 +35,7 @@ public class FireGunAction : ShipAction
             Vector3 inheritedVelocity;
             if (ShipStatus.Attached) inheritedVelocity = gun.transform.forward;
             else inheritedVelocity = ShipStatus.Course;
-
+            OnGunFired?.Invoke(); 
             gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
         }
     }
