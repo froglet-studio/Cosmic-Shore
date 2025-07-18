@@ -65,11 +65,10 @@ namespace CosmicShore.Game
             Instantiate(shipPrefab).TryGetComponent(out IShip ship);
             Ship = Hangar.Instance.SetShipProperties(ship, Team, !_isAI);
             Ship.Initialize(this, _isAI);
-            if (!_isAI)
-            {
-                InputController.Initialize(Ship);
-                CameraManager.Instance.Initialize(Ship);
-            }
+            
+            if (_isAI) return;
+            InputController.Initialize(Ship);
+            CameraManager.Instance.Initialize(Ship);
         }
 
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.
@@ -79,7 +78,7 @@ namespace CosmicShore.Game
         public void StartAutoPilot()
         {
             var ai = Ship?.ShipStatus?.AIPilot;
-            if (ai == null)
+            if (!ai)
             {
                 Debug.LogError("StartAutoPilot: no AIPilot found on ShipStatus.");
                 return;
@@ -96,7 +95,7 @@ namespace CosmicShore.Game
         public void StopAutoPilot()
         {
             var ai = Ship?.ShipStatus?.AIPilot;
-            if (ai == null)
+            if (!ai)
             {
                 Debug.LogError("StopAutoPilot: no AIPilot found on ShipStatus.");
                 return;

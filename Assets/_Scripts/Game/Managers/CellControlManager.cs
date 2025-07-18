@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Utilities;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -13,48 +14,36 @@ namespace CosmicShore.Game
 
         void OnEnable()
         {
-            GameManager.OnGameOver += OutputNodeControl;
+            GameManager.OnGameOver += OutputCodeControl;
         }
 
         void OnDisable()
         {
-            GameManager.OnGameOver -= OutputNodeControl;
+            GameManager.OnGameOver -= OutputCodeControl;
         }
         
         public void AddBlock(Teams team, TrailBlockProperties blockProperties)
         {
-            foreach (var cell in cells)
+            foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
-                if (cell.ContainsPosition(blockProperties.position))
-                {
-                    cell.ChangeVolume(team, blockProperties.volume);
-                    cell.AddBlock(blockProperties.trailBlock);
-                    break;
-                }
+                cell.ChangeVolume(team, blockProperties.volume);
+                cell.AddBlock(blockProperties.trailBlock);
+                break;
             }
         }
 
         public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
         {
-            foreach (var cell in cells)
+            foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
-                if (cell.ContainsPosition(blockProperties.position))
-                {
-                    cell.ChangeVolume(team, -blockProperties.volume);
-                    cell.RemoveBlock(blockProperties.trailBlock);
-                    break;
-                }
+                cell.ChangeVolume(team, -blockProperties.volume);
+                cell.RemoveBlock(blockProperties.trailBlock);
+                break;
             }
         }
 
-        public Cell GetCellByPosition(Vector3 position)
-        {
-            foreach (var cell in cells)
-                if (cell.ContainsPosition(position))
-                    return cell;
-
-            return null;
-        }
+        public Cell GetCellByPosition(Vector3 position) =>
+            cells.FirstOrDefault(cell => cell.ContainsPosition(position));
 
         public Cell GetNearestCell(Vector3 position)
         {
@@ -63,82 +52,67 @@ namespace CosmicShore.Game
             var minPosition = Mathf.Infinity;
             var result = cells[0];
 
-            foreach (var cell in cells)
-                if (Vector3.SqrMagnitude(position - cell.transform.position) < minPosition)
-                    result = cell;
+            foreach (var cell in cells.Where(IsCloseToCell))
+                result = cell;
 
             return result;
+            
+            bool IsCloseToCell(Cell cell) => Vector3.SqrMagnitude(position - cell.transform.position) < minPosition;
         }
 
 
         public void AddItem(CellItem item)
         {
-            foreach (var cell in cells)
+            foreach (var cell in cells.Where(cell => cell.ContainsPosition(item.transform.position)))
             {
-                if (cell.ContainsPosition(item.transform.position))
-                {
-                    cell.TryAddItem(item);
-                    break;
-                }
+                cell.TryAddItem(item);
+                break;
             }
         }
 
         public void RemoveItem(CellItem item)
         {
-            foreach (var cell in cells)
+            foreach (var cell in cells.Where(cell => cell.ContainsPosition(item.transform.position)))
             {
-                if (cell.ContainsPosition(item.transform.position))
-                {
-                    cell.TryRemoveItem(item);
-                    break;
-                }
+                cell.TryRemoveItem(item);
+                break;
             }
         }
 
         public void UpdateItem(CellItem item)
         {
-            foreach (var cell in cells)
+            foreach (var cell in cells.Where(cell => cell.ContainsPosition(item.transform.position)))
             {
-                if (cell.ContainsPosition(item.transform.position))
-                {
-                    cell.UpdateItem();
-                    break;
-                }
+                cell.UpdateItem();
+                break;
             }
         }
 
         public void StealBlock(Teams team, TrailBlockProperties blockProperties)
         {
-            foreach (var cell in cells)
+            foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
-                if (cell.ContainsPosition(blockProperties.position))
-                {
-                    cell.ChangeVolume(team, blockProperties.volume);
-                    cell.ChangeVolume(blockProperties.trailBlock.Team, -blockProperties.volume);
-                    break;
-                }
+                cell.ChangeVolume(team, blockProperties.volume);
+                cell.ChangeVolume(blockProperties.trailBlock.Team, -blockProperties.volume);
+                break;
             }
         }
 
         public void RestoreBlock(Teams team, TrailBlockProperties blockProperties)
         {
-            foreach (var cell in cells)
+            foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
-                if (cell.ContainsPosition(blockProperties.position))
-                {
-                    cell.ChangeVolume(team, blockProperties.volume);
-                    break;
-                }
+                cell.ChangeVolume(team, blockProperties.volume);
+                break;
             }
         }
 
-        public void OutputNodeControl()
+        void OutputCodeControl()
         {
-            foreach (var cell in cells)
+            foreach (var cell in cells.Where(cell => cell.enabled))
             {
-                if (cell.enabled)
-                    Debug.LogWarning(
-                        $"Node Control - Node ID: {cell.ID}, Controlling Team: {cell.ControllingTeam}, Green Volume: {cell.GetTeamVolume(Teams.Jade)}, Red Volume: {cell.GetTeamVolume(Teams.Ruby)}");
+                Debug.LogWarning(
+                    $"Node Control - Node ID: {cell.ID}, Controlling Team: {cell.ControllingTeam}, Green Volume: {cell.GetTeamVolume(Teams.Jade)}, Red Volume: {cell.GetTeamVolume(Teams.Ruby)}");
             }
         }
     }
