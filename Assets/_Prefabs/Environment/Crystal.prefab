@@ -78,7 +78,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OwnTeam: -1
+  Team: -1
   ItemType: 1
   crystalProperties:
     crystal: {fileID: 6588436222817790495}
@@ -97,10 +97,14 @@ MonoBehaviour:
     explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 650830ed7524d074991cd928a5356f37, type: 2}
     spaceCrystalAnimator: {fileID: 0}
-  allowVesselImpactEffect: 1
-  allowRespawnOnImpact: 1
+  shipImpactEffects: 1
+  RespawnOnImpact: 1
+  ImpactHapticType: 4
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  _crystalImpactEffects: []
+  crystalImpactEffects: 
+  AOEPrefab: {fileID: 0}
+  maxExplosionScale: 0
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!82 &6588436222817790494
 AudioSource:
   m_ObjectHideFlags: 0

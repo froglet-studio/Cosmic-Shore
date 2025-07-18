@@ -1,4 +1,8 @@
+using UnityEngine;
+using System.Collections.Generic;
 using CosmicShore;
+using CosmicShore.Core;
+using CosmicShore.Environment.FlowField;
 
 public class BodySegmentFauna : Fauna
 {

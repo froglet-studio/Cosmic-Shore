@@ -35,7 +35,6 @@ namespace CosmicShore.Game.Projectiles
         Vector3 rayDirection;
         protected List<Trail> trails = new List<Trail>();
 
-        // TODO - Check this out, to divide it to Initialize and Detonate methods
         /*public override void InitializeAndDetonate(IShip ship)
         {
             base.InitializeAndDetonate(ship);

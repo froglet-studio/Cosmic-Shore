@@ -1,6 +1,7 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
-using CosmicShore.Game;
+using System.Collections.Generic;
 
 /// <summary>
 /// Used for testing only (scene TestHarnessOctree).  Prints coordinates for three target sets (one for each color).

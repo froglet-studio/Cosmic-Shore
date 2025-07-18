@@ -4,12 +4,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using System.Linq;
+using CosmicShore.Game;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Environment.FlowField
 {
+
     [System.Serializable]
-    public class CrystalModelData
+    public struct CrystalModelData
     {
         public GameObject model;
         public Material defaultMaterial;
@@ -42,12 +43,13 @@ namespace CosmicShore.Game
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _crystalImpactEffects;
 
-        Material tempMaterial;
-        Vector3 origin = Vector3.zero;
+        protected Material tempMaterial;
+        Vector3 _origin = Vector3.zero;
 
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
+            AddSelfToNode();
         }
 
         protected virtual void OnTriggerEnter(Collider other)
@@ -55,14 +57,15 @@ namespace CosmicShore.Game
             Collide(other);
         }
 
-        protected void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
+        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
         {
-            // TODO - self ship status and impacted ship status need to be different.
-            var castedEffects = _crystalImpactEffects.Cast<IImpactEffect>();
-            var impactEffectData = new ImpactEffectData(ship.ShipStatus, ship.ShipStatus,
-                ship.ShipStatus.Course * ship.ShipStatus.Speed);
-            
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, crystalProperties);
+            foreach (IImpactEffect effect in _crystalImpactEffects)
+            {
+                if (effect is ICrystalImpactEffect crystalImpactEffect)
+                {
+                    crystalImpactEffect.Execute(new ImpactEffectData(ship.ShipStatus, ship.ShipStatus, ship.ShipStatus.Course * ship.ShipStatus.Speed), crystalProperties);
+                }
+            }
         }
 
         /*public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
@@ -135,8 +138,10 @@ namespace CosmicShore.Game
                 foreach (var model in crystalModels)
                     model.model.GetComponent<FadeIn>().StartFadeIn();
 
-                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + _origin, UnityEngine.Random.rotation);
                 OnCrystalMove?.Invoke();
+
+                UpdateSelfWithNode();  //TODO: check if we need to remove elmental crystals from the node
             }
             else
             {
@@ -204,7 +209,7 @@ namespace CosmicShore.Game
 
         public void SetOrigin(Vector3 origin)
         {
-            this.origin = origin;
+            this._origin = origin;
         }
 
         public void ActivateCrystal()

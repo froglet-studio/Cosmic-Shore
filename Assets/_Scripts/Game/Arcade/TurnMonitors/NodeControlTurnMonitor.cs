@@ -1,10 +1,9 @@
-using CosmicShore.Game;
 using UnityEngine;
 using CosmicShore.Game.Arcade;
 
 namespace CosmicShore
 {
-    public class CellControlTurnMonitor : TurnMonitor
+    public class NodeControlTurnMonitor : TurnMonitor
     {
         [SerializeField] private Cell monitoredNode;
         private MiniGame game;

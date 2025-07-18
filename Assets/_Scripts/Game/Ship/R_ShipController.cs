@@ -81,7 +81,6 @@ namespace CosmicShore.Game
         public override void Initialize(IPlayer player, bool enableAutoPilot)
         {
             ShipStatus.Player = player;
-
             ShipStatus.ActionHandler.Initialize(ShipStatus);
             ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
