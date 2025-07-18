@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using System.Linq;
 using CosmicShore.Core;
@@ -9,9 +8,6 @@ namespace CosmicShore
 {
     public class SeedAssemblerAction : ShipAction
     {
-        public event Action OnAssembleStarted;
-        public event Action OnAssembleCompleted;
-        
         float enhancementsPerFullAmmo = 4;
         TrailSpawner spawner;
         [SerializeField] Assembler assembler;
@@ -33,7 +29,6 @@ namespace CosmicShore
             if (ResourceSystem.Resources[resourceIndex].CurrentAmount >= ammoRequiredPerUse)
             {
                 ResourceSystem.ChangeResourceAmount(resourceIndex, -ammoRequiredPerUse);
-                OnAssembleStarted?.Invoke();   
                 var trailBlock = spawner.Trail.TrailList.Last().gameObject;
                 
                 var newAssembler = trailBlock.AddComponent(assembler.GetType()) as Assembler;
@@ -49,9 +44,7 @@ namespace CosmicShore
             seed.ActivateSuperShield();
             seed.transform.localScale *= 2f;
             currentAssembler.SeedBonding();
-            
             currentAssembler = null;
-            OnAssembleStarted?.Invoke();   
         }
 
         //void CopyComponentValues(Assembler sourceComp, Assembler targetComp)

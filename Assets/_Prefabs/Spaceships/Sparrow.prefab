@@ -13,31 +13,6 @@ PrefabInstance:
       propertyPath: m_Delegates.Array.data[0].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
-      propertyPath: FollowTarget
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
-      propertyPath: closeCamDistance
-      value: -20
-      objectReference: {fileID: 0}
-    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
-      propertyPath: FollowTargetPosition.y
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
-      propertyPath: FollowTargetPosition.z
-      value: -35
-      objectReference: {fileID: 0}
-    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
-      propertyPath: 'ControlOverrides.Array.data[0]'
-      value: 3
-      objectReference: {fileID: 0}
     - target: {fileID: 1435252848482629424, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: Resources.Array.size
@@ -241,29 +216,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6296814927952441826, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
-      propertyPath: _fireGunAction
-      value: 
-      objectReference: {fileID: 6591907414501626071}
-    - target: {fileID: 6296814927952441826, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
-      propertyPath: _fullAutoAction
-      value: 
-      objectReference: {fileID: 4237325330303342971}
-    - target: {fileID: 6296814927952441826, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
       propertyPath: _shipHUDContainer
       value: 
       objectReference: {fileID: 6838873068856233639}
-    - target: {fileID: 6296814927952441826, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
-      propertyPath: _overheatingAction
-      value: 
-      objectReference: {fileID: 8483720933455249323}
-    - target: {fileID: 6296814927952441826, guid: 7d34187cec80b624f82a3ed560c56324,
-        type: 3}
-      propertyPath: _stationaryModeAction
-      value: 
-      objectReference: {fileID: 6781656092668621609}
     - target: {fileID: 6328334184236050646, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: m_IsActive

@@ -1,4 +1,3 @@
-using System;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
@@ -11,9 +10,6 @@ namespace CosmicShore
 {
     public class FullAutoAction : ShipAction
     {
-        public event Action OnFullAutoStarted;
-        public event Action OnFullAutoStopped;
-        
         // TODO: WIP gun firing needs to be reworked
         [SerializeField] Gun gunContainer;
 
@@ -60,7 +56,6 @@ namespace CosmicShore
         public override void StartAction()
         {
             firing = true;
-            OnFullAutoStarted?.Invoke();   
             fireGunsCoroutine = StartCoroutine(FireGunsCoroutine());
         }
 
@@ -68,7 +63,6 @@ namespace CosmicShore
         {
             firing = false;
             StopAllCoroutines();
-            OnFullAutoStopped?.Invoke();   
         }
 
         IEnumerator FireGunsCoroutine()

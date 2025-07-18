@@ -63,14 +63,6 @@ namespace CosmicShore.Game
                     serializedObject.FindProperty("trailContainer"),
                     new GUIContent("Trail Container")
                 );
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("psIconRoot"),
-                    new GUIContent("PS Icon Root")
-                );
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("xboxIconRoot"),
-                    new GUIContent("XBOX Icon Root")
-                );
             });
 
             // Enum section

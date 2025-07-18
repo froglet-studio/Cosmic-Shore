@@ -1,15 +1,10 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
 using CosmicShore.Game;
 
 public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the name
 {
-    public event Action OnHeatBuildStarted;
-    public event Action OnOverheated;
-    public event Action OnHeatDecayCompleted;
-    
     [SerializeField] ShipAction wrappedAction;
     [SerializeField] int heatResourceIndex = 0;
     [SerializeField] float heatBuildRate = 0.02f;
@@ -48,7 +43,6 @@ public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the
 
     IEnumerator BuildHeatCoroutine()
     {
-        OnHeatBuildStarted?.Invoke(); 
         while (heatResource.CurrentAmount < heatResource.MaxAmount)
         {
             ResourceSystem.ChangeResourceAmount(heatResourceIndex, heatBuildRate);
@@ -56,7 +50,6 @@ public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the
         }
 
         isOverheating = true;
-        OnOverheated?.Invoke();  
         ShipStatus.Overheating = true;
         heatResource.CurrentAmount = heatResource.MaxAmount;
         wrappedAction.StopAction();
@@ -75,7 +68,7 @@ public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the
             ResourceSystem.ChangeResourceAmount(heatResourceIndex, -heatDecayRate.Value);
             yield return new WaitForSeconds(0.1f);
         }
-        OnHeatDecayCompleted?.Invoke();
+        
         heatResource.CurrentAmount = 0;
     }
 }

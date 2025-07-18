@@ -8,35 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 705402283976800655, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
-        type: 3}
-      propertyPath: FollowTarget
-      value: 
-      objectReference: {fileID: 7318750276014731638}
-    - target: {fileID: 705402283976800655, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
-        type: 3}
-      propertyPath: closeCamDistance
-      value: -100
-      objectReference: {fileID: 0}
-    - target: {fileID: 705402283976800655, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
-        type: 3}
-      propertyPath: farCamDistance.Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 705402283976800655, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
-        type: 3}
-      propertyPath: 'ControlOverrides.Array.data[0]'
-      value: 3
-      objectReference: {fileID: 0}
     - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: Ship
       value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
-        type: 3}
-      propertyPath: shipType
-      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
@@ -48,11 +23,12 @@ PrefabInstance:
       propertyPath: _shipHUDContainer
       value: 
       objectReference: {fileID: 8222987891369319599}
-    - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+    - target: {fileID: 3440187540988767646, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
-      propertyPath: _seedAssemblerAction
+      propertyPath: OnCellItemsUpdated
       value: 
-      objectReference: {fileID: 1617919780605015357}
+      objectReference: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd,
+        type: 2}
     - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: AOEPrefab
@@ -81,6 +57,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
+      propertyPath: _crystalImpactEffects.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
       propertyPath: 'crystalImpactEffects.Array.data[0]'
       value: 11
       objectReference: {fileID: 0}
@@ -96,6 +77,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: '_crystalImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 2f8a2619e6964e8478a9aefe0a4193b1,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _trailBlockImpactEffects.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
       propertyPath: 'trailBlockImpactEffects.Array.data[0]'
       value: 15
       objectReference: {fileID: 0}
@@ -104,6 +102,30 @@ PrefabInstance:
       propertyPath: 'trailBlockImpactEffects.Array.data[2]'
       value: 17
       objectReference: {fileID: 0}
+    - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 080ca62cf6620bc40ae443657abcf792,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 2684c642742bad2489f1f038b6416a47,
+        type: 2}
+    - target: {fileID: 3885827911418556293, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: '_trailBlockImpactEffects.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20,
+        type: 2}
+    - target: {fileID: 5086360743770514783, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _EventPipEventData
+      value: 
+      objectReference: {fileID: 11400000, guid: b45e336470396ed4fb50f1b0a287804d,
+        type: 2}
     - target: {fileID: 5928382658856804067, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -161,7 +183,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
+      propertyPath: _name
+      value: Serpent
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _shipType
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
       propertyPath: shipInstance
+      value: 
+      objectReference: {fileID: 585568732921870438}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _shipInstance
       value: 
       objectReference: {fileID: 585568732921870438}
     - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
@@ -171,9 +208,24 @@ PrefabInstance:
       objectReference: {fileID: 8222987891369319599}
     - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
+      propertyPath: _nearFieldSkimmer
+      value: 
+      objectReference: {fileID: 3818635087675583957}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: orientationHandle
+      value: 
+      objectReference: {fileID: 2508490649061416167}
+    - target: {fileID: 6441696348568773771, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
       propertyPath: _shipHUDController
       value: 
       objectReference: {fileID: 2715374829130864494}
+    - target: {fileID: 7553035612089645196, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _shipMono
+      value: 
+      objectReference: {fileID: 585568732921870438}
     - target: {fileID: 7553035612089645196, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: _shipObject
@@ -390,20 +442,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Serpent
-  _shipType: 7
-  nearFieldSkimmer: {fileID: 3818635087675583957}
-  orientationHandle: {fileID: 2508490649061416167}
-  AOEPrefab: {fileID: 2728798890556433942, guid: c4e6163ef5e206846bb8d245b11d1a61,
-    type: 3}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  boostMultiplier: 4
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
   isMultiplayerMode: 0
@@ -489,12 +527,6 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
---- !u!4 &7318750276014731638 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6722969896632727780, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
-    type: 3}
-  m_PrefabInstance: {fileID: 4097612766223157650}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &8222987891369319599 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5386391956911707453, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
