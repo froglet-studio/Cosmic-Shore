@@ -79,7 +79,7 @@ namespace CosmicShore.Core
             get => scaleAnimator?.TargetScale ?? transform.localScale;
             set
             {
-                scaleAnimator?.SetTargetScale(value);
+                if (scaleAnimator != null) scaleAnimator.SetTargetScale(value);
             }
         }
 
@@ -90,13 +90,14 @@ namespace CosmicShore.Core
             get => scaleAnimator?.MaxScale ?? Vector3.one * 10f;  // Default max scale as fallback
             set
             {
-                if (scaleAnimator is not null) scaleAnimator.MaxScale = value;
+                if (scaleAnimator != null)
+                    scaleAnimator.MaxScale = value;
             }
         }
 
         public void ChangeSize()
         {
-            if (scaleAnimator is not null)
+            if (scaleAnimator != null)
             {
                 scaleAnimator.SetTargetScale(TargetScale);
             }
@@ -178,15 +179,15 @@ namespace CosmicShore.Core
                 TrailBlockProperties = TrailBlockProperties
             });
 
-            if (CellControlManager.Instance is not null)
+            if (CellControlManager.Instance != null)
             {
                 CellControlManager.Instance.AddBlock(Team, TrailBlockProperties);
                 
                 // Setup team node tracking after block is fully initialized
-                Cell targetCell = CellControlManager.Instance.GetNearestCell(TrailBlockProperties.position);
+                Cell targetNode = CellControlManager.Instance.GetNearestCell(TrailBlockProperties.position);
                 System.Array.ForEach(new[] { Teams.Jade, Teams.Ruby, Teams.Gold }, t =>
                 {
-                    if (t != Team) targetCell.countGrids[t].AddBlock(this);
+                    if (t != Team) targetNode.countGrids[t].AddBlock(this);
                 });
             }
         }
@@ -198,24 +199,32 @@ namespace CosmicShore.Core
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent(out IVesselCollider vesselCollider))
+            if (other.gameObject.IsLayer("Ships"))
             {
-                var ship = vesselCollider.Ship;
+                if (!other.TryGetComponent(out IShip ship))
+                    return;
+
                 if (!ship.ShipStatus.Attached)
+                {
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
+                }
             }
-            
-            else if (other.TryGetComponent(out CellItem cellItem))
+
+            if (other.gameObject.IsLayer("Crystals"))
             {
                 if (!TrailBlockProperties.IsShielded)
+                {
                     ActivateShield();
+                }
             }
         }
 
         protected void OnTriggerExit(Collider other)
         {
             if (other.gameObject.IsLayer("Crystals"))
+            {
                 ActivateShield(2.0f);
+            }
         }
 
         // Destruction Methods

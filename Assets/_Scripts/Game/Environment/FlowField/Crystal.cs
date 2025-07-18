@@ -99,11 +99,9 @@ namespace CosmicShore.Game
 
         protected virtual void Collide(Collider other)
         {
-            if (!other.TryGetComponent(out IVesselCollider shipCollider))
+            if (!other.TryGetComponent(out IShip ship))
                 return;
 
-            var ship = shipCollider.Ship;
-            
             if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
                 return;
 
