@@ -58,7 +58,7 @@ namespace CosmicShore.Game
 
             if (!_shipPrefabContainer.TryGetShipPrefab(ShipType, out Transform shipPrefab))
             {
-                Debug.LogError($"Hangar.LoadPlayerShip: Could not find ship prefab for {ShipType}");
+                Debug.LogError($"Could not find ship prefab for {ShipType}");
                 return;
             }
 

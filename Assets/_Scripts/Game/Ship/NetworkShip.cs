@@ -177,10 +177,10 @@ namespace CosmicShore.Game
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
             if (_nearFieldSkimmer != null)
-                _nearFieldSkimmer.Initialize(this);
+                _nearFieldSkimmer.Initialize(ShipStatus);
 
             if (_farFieldSkimmer != null)
-                _farFieldSkimmer.Initialize(this);
+                _farFieldSkimmer.Initialize(ShipStatus);
             
 
             if (IsOwner)

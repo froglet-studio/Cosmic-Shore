@@ -55,7 +55,7 @@ public class ShipTransformer : MonoBehaviour
         accumulatedRotation = transform.rotation;
     }
 
-    public void Reset()
+    public void ResetShipTransformer()
     {
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;

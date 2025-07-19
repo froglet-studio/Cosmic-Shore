@@ -5,6 +5,7 @@ namespace CosmicShore.Game
     public interface IVesselCollider
     {
         IShip Ship { get; }
+        IShipStatus ShipStatus => Ship.ShipStatus;
     }
     
     public class VesselCollider : MonoBehaviour, IVesselCollider

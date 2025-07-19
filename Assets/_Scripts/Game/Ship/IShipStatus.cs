@@ -11,7 +11,7 @@ namespace CosmicShore.Game
     {
         
         IShip Ship { get; } // FOR TEMP USE, TRY REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
-
+        Transform Transform => Ship.Transform;
         AIPilot AIPilot { get; }
         bool AlignmentEnabled { get; set; }
         Material AOEConicExplosionMaterial { get; set; }

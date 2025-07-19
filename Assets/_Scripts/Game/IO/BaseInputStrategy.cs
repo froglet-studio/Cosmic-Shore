@@ -35,19 +35,6 @@ namespace CosmicShore.Game.IO
             InputStatus.InvertThrottleEnabled = status;
         }
 
-        public virtual void SetAutoPilotValues(Vector2 position)
-        {
-            InputStatus.EasedLeftJoystickPosition = position;
-        }
-        
-        public virtual void SetAutoPilotValues(float xSum, float ySum, float xDiff, float yDiff)
-        {
-            InputStatus.XSum = xSum;
-            InputStatus.YSum = ySum;
-            InputStatus.XDiff = xDiff;
-            InputStatus.YDiff = yDiff;
-        }
-
         protected float Ease(float input)
         {
             return input < 0 ?

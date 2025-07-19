@@ -89,10 +89,10 @@ namespace CosmicShore.Game
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
             if (ShipStatus.NearFieldSkimmer != null) 
-                ShipStatus.NearFieldSkimmer.Initialize(this);
+                ShipStatus.NearFieldSkimmer.Initialize(ShipStatus);
 
             if (ShipStatus.FarFieldSkimmer != null) 
-                ShipStatus.FarFieldSkimmer.Initialize(this);
+                ShipStatus.FarFieldSkimmer.Initialize(ShipStatus);
 
             if (isMultiplayerMode)
             {

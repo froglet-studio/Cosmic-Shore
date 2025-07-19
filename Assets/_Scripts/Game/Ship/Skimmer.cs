@@ -1,6 +1,7 @@
 using CosmicShore.Game.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Core;
 using UnityEngine;
 
@@ -27,12 +28,7 @@ namespace CosmicShore.Game
         [SerializeField] bool visible;
         [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
 
-        public IShip Ship { get; private set; }
-        public IPlayer Player => Ship.ShipStatus.Player;
-        public Teams Team => Ship.ShipStatus.Team;
-
-        float appliedScale;
-        ResourceSystem resourceSystem;
+        public IPlayer Player => _shipStatus.Player;
 
         Dictionary<string, float> skimStartTimes = new();
         CameraManager cameraManager;
@@ -49,192 +45,98 @@ namespace CosmicShore.Game
 
         [SerializeField] int resourceIndex = 0;
 
-        float minMatureBlockSqrDistance = Mathf.Infinity;
-        TrailBlock minMatureBlock;
-        List<TrailBlock> nextBlocks = new();
-        float fuel = 0;
+        TrailBlock _minMatureBlock;
+        List<TrailBlock> _nextBlocks = new();
 
-        float distanceWeight;
-        float directionWeight;
+        IShipStatus _shipStatus;
 
-        float sweetSpot;
-        float sqrSweetSpot;
-        float FWHM;
-        float sigma;
-        float sqrRadius;
+        float _minMatureBlockSqrDistance = Mathf.Infinity;
+        float _appliedScale;
+        float _distanceWeight;
+        float _directionWeight;
+        float _sweetSpot;
+        float _sqrSweetSpot;
+        float _FWHM;
+        float _sigma;
+        float _sqrRadius;
+        float _initialGap;
+        float _boosterTimer = 0;
 
-        float initialGap;
+        bool _onCoolDown = false;
 
         void Start()
         {
             cameraManager = CameraManager.Instance;
 
-            sweetSpot = transform.localScale.x / 4;
-            sqrSweetSpot = transform.localScale.x * transform.localScale.x / 16;
-            FWHM = sqrSweetSpot; //Full Width at Half Max
-            sigma = FWHM / 2.355f;
-            sqrRadius = transform.localScale.x * transform.localScale.x / 4;
+            _sweetSpot = transform.localScale.x / 4;
+            _sqrSweetSpot = transform.localScale.x * transform.localScale.x / 16;
+            _FWHM = _sqrSweetSpot; //Full Width at Half Max
+            _sigma = _FWHM / 2.355f;
+            _sqrRadius = transform.localScale.x * transform.localScale.x / 4;
 
-            if (appliedScale != Scale.Value)
+            if (_appliedScale != Scale.Value)
             {
-                appliedScale = Scale.Value;
-                transform.localScale = Vector3.one * appliedScale;
+                _appliedScale = Scale.Value;
+                transform.localScale = Vector3.one * _appliedScale;
             }
             
         }
 
         void Update()
         {
-            if (appliedScale != Scale.Value)
+            if (_appliedScale != Scale.Value)
             {
-                appliedScale = Scale.Value;
-                transform.localScale = Vector3.one * appliedScale;
+                _appliedScale = Scale.Value;
+                transform.localScale = Vector3.one * _appliedScale;
             }
         }
 
-        public void Initialize(IShip ship)
+        public void Initialize(IShipStatus shipStatus)
         {
-            Ship = ship;
-            if (Ship == null)
-            {
-                Debug.LogError("No ship found!");
-                return;
-            }
-
-            BindElementalFloats(Ship);
-            resourceSystem = Ship.ShipStatus.ResourceSystem;
+            _shipStatus = shipStatus;
+            BindElementalFloats(_shipStatus.Ship);
+            
             if (visible)
-                GetComponent<MeshRenderer>().material = new Material(Ship.ShipStatus.SkimmerMaterial);
+                GetComponent<MeshRenderer>().material = new Material(_shipStatus.SkimmerMaterial);
 
-            initialGap = Ship.ShipStatus.TrailSpawner.Gap;
+            _initialGap = _shipStatus.TrailSpawner.Gap;
 
-            if (markerContainer) markerContainer.transform.parent = ship.ShipStatus.Player.Transform;
+            if (markerContainer) markerContainer.transform.parent = _shipStatus.Player.Transform;
         }
 
         void PerformBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            /*foreach (TrailBlockImpactEffects effect in blockImpactEffects)
-            {
-                switch (effect)
-                {
-                    case TrailBlockImpactEffects.PlayHaptics:
-                        if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);
-                        break;
-                    case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(Ship.ShipStatus.Course * Ship.ShipStatus.Speed * Ship.ShipStatus.GetInertia, Team, Player.PlayerName);
-                        break;
-                    case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trailBlock.Steal(Player.PlayerName, Team);
-                        break;
-                    case TrailBlockImpactEffects.GainResourceByVolume:
-                        resourceSystem.ChangeResourceAmount(resourceIndex, (chargeAmount * trailBlockProperties.volume) + (activelySkimmingBlockCount * MultiSkimMultiplier));
-                        break;
-                    case TrailBlockImpactEffects.GainResource:
-                        resourceSystem.ChangeResourceAmount(resourceIndex, chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
-                        break;
-                    case TrailBlockImpactEffects.FX:
-                        StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlockProperties.trailBlock));
-                        break;
-                }
-            }*/
-
-            foreach (IImpactEffect effect in _blockImpactEffects)
-            {
-                if (effect is not ITrailBlockImpactEffect trailBlockEffect)
-                    continue;
-
-                trailBlockEffect.Execute(new ImpactEffectData(
-                    Ship.ShipStatus, null, Vector3.zero), trailBlockProperties);
-            }
+            var castedEffects = _blockImpactEffects.Cast<IImpactEffect>();
+            var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, default, trailBlockProperties);
         }
 
         void PerformShipImpactEffects(IShipStatus shipGeometry)
         {
-            if (Ship == null)
+            if (_shipStatus == null)
                 return;
 
             if (StatsManager.Instance != null)
-                StatsManager.Instance.SkimmerShipCollision(Ship, shipGeometry.Ship);
+                StatsManager.Instance.SkimmerShipCollision(_shipStatus.Ship, shipGeometry.Ship);
 
-            /*foreach (ShipImpactEffects effect in shipImpactEffects)
-            {
-                switch (effect)
-                {
-                    case ShipImpactEffects.TrailSpawnerCooldown:
-                        shipGeometry.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
-                        shipGeometry.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
-                        break;
-                    case ShipImpactEffects.PlayHaptics:
-                        if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
-                        break;
-                    case ShipImpactEffects.AreaOfEffectExplosion:
-                        if (onCoolDown || shipGeometry.Ship.ShipStatus.Team == Team) break;
-
-                        var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.InitializeAndDetonate(Ship);
-                        AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        // AOEExplosion.MaxScale = Ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
-                        StartCoroutine(CooldownCoroutine(AOEPeriod));
-                        break;
-                }
-            }*/
-
-            foreach (IImpactEffect effect in _shipImpactEffects)
-            {
-                if (effect is IBaseImpactEffect baseEffect)
-                {
-                    baseEffect.Execute(new ImpactEffectData(Ship.ShipStatus, null, Vector3.zero));
-                }
-            }
+            var castedEffects = _shipImpactEffects.Cast<IImpactEffect>();
+            var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData);
         }
 
 
-        bool onCoolDown = false;
         IEnumerator CooldownCoroutine(float Period)
         {
-            onCoolDown = true;
+            _onCoolDown = true;
             yield return new WaitForSeconds(Period);
-            onCoolDown = false;
+            _onCoolDown = false;
         }
 
         void PerformBlockStayEffects(float combinedWeight)
         {
-            /*foreach (SkimmerStayEffects effect in blockStayEffects)
-            {
-                switch (effect)
-                {
-                    case SkimmerStayEffects.ChangeResource:
-                        resourceSystem.ChangeResourceAmount(resourceIndex, fuel);
-                        break;
-                    case SkimmerStayEffects.Boost:
-                        Boost(combinedWeight);
-                        break;
-                    case SkimmerStayEffects.ScaleTrailAndCamera:
-                        ScaleTrailAndCamera();
-                        break;
-                    case SkimmerStayEffects.VizualizeDistance:
-                        if (Ship.ShipStatus.AlignmentEnabled) VizualizeDistance(combinedWeight);
-                        break;
-                    case SkimmerStayEffects.ScaleHapticWithDistance:
-                        ScaleHapticWithDistance(combinedWeight);
-                        break;
-                    case SkimmerStayEffects.ScalePitchAndYaw:
-                        ScalePitchAndYaw(combinedWeight);
-                        break;
-                    case SkimmerStayEffects.Align:
-                        if (Ship.ShipStatus.AlignmentEnabled) AlignAndNudge(combinedWeight);
-                        break;
-                    case SkimmerStayEffects.ScaleGap:
-                        ScaleGap(combinedWeight);
-                        break;
-                }
-            }*/
-
-            foreach (IImpactEffect effect in _blockStayEffects)
-            {
-                if (effect is IBaseImpactEffect baseEffect)
-                    baseEffect.Execute(new ImpactEffectData(Ship.ShipStatus, null, Vector3.zero));
-            }
+            var castedEffects = _blockStayEffects.Cast<IImpactEffect>();
+            var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);  
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData);
         }
 
         void StartSkim(TrailBlock trailBlock)
@@ -248,17 +150,18 @@ namespace CosmicShore.Game
 
         void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent<IShipStatus>(out var shipStatus))
+            if (other.TryGetComponent(out IVesselCollider vesselCollider))
             {
-                PerformShipImpactEffects(shipStatus);
+                PerformShipImpactEffects(vesselCollider.ShipStatus);
             }
 
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != Team))
-            {
-                StartSkim(trailBlock);
-                PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
-                MakeBoosters(trailBlock);
-            }
+            // TODO : Temp fix. Need better way
+            if (_shipStatus is null || !other.TryGetComponent<TrailBlock>(out var trailBlock) ||
+                (!affectSelf && trailBlock.Team == _shipStatus.Team)) return;
+            
+            StartSkim(trailBlock);
+            PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
+            MakeBoosters(trailBlock);
         }
 
         void VacuumCrystal(Crystal crystal)
@@ -271,9 +174,9 @@ namespace CosmicShore.Game
             if (minMatureBlock.Trail == null) return new List<TrailBlock> { minMatureBlock };
             var minIndex = minMatureBlock.TrailBlockProperties.Index;
             List<TrailBlock> nextBlocks;
-            if (directionWeight < 0 && minIndex > 0)
+            if (_directionWeight < 0 && minIndex > 0)
                 nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Backward, distance);
-            else if (directionWeight > 0 && minIndex < minMatureBlock.Trail.TrailList.Count - 1)
+            else if (_directionWeight > 0 && minIndex < minMatureBlock.Trail.TrailList.Count - 1)
                 nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
             else
                 nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
@@ -282,13 +185,17 @@ namespace CosmicShore.Game
 
         void OnTriggerStay(Collider other)
         {
+            // TODO : Temp fix. Need better way
+            if (_shipStatus is null)
+                return;
+            
             float skimDecayDuration = 1;
 
             if (other.TryGetComponent<Crystal>(out var crystal) && vacuumCrystal) VacuumCrystal(crystal);
 
             if (!other.TryGetComponent<TrailBlock>(out var trailBlock)) return;
             
-            if (trailBlock.Team == Team && !affectSelf) return;
+            if (trailBlock.Team == _shipStatus.Team && !affectSelf) return;
             
             // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
             if (!skimStartTimes.ContainsKey(trailBlock.ownerID))   
@@ -297,100 +204,65 @@ namespace CosmicShore.Game
             float sqrDistance = (transform.position - other.transform.position).sqrMagnitude;
             if (Time.time - trailBlock.TrailBlockProperties.TimeCreated > 4)
             {
-                minMatureBlockSqrDistance = Mathf.Min(minMatureBlockSqrDistance, sqrDistance);
+                _minMatureBlockSqrDistance = Mathf.Min(_minMatureBlockSqrDistance, sqrDistance);
 
-                if (sqrDistance == minMatureBlockSqrDistance)
+                if (Mathf.Approximately(sqrDistance, _minMatureBlockSqrDistance))
                 {
-                    // bool shouldUpdateMinMatureBlock = true;
-
-                    // Check reference equality directly
-                    //if (trailBlock != null && nextBlocks.Count > 0)
-                    //{
-                    //    foreach (var block in tempNextBlocks)
-                    //    {
-                    //        if (block.TrailBlockProperties.Index == trailBlock.TrailBlockProperties.Index)
-                    //        {
-                    //            shouldUpdateMinMatureBlock = false;
-                    //            break;
-                    //        }
-                    //    }
-                    //}
-
-                    minMatureBlock = trailBlock;
-                    nextBlocks = FindNextBlocks(minMatureBlock, 20);
-
-                    //if (shouldUpdateMinMatureBlock)
-                    //{
-                    //    tempNextBlocks = nextBlocks;
-                    //    if (markerContainer) VisualizeTubeAroundBlock(nextBlocks[^1]);
-                    //}
+                    _minMatureBlock = trailBlock;
+                    _nextBlocks = FindNextBlocks(_minMatureBlock, 20);
                 }
             }
-
-
-
-            //foreach (Transform child in trailBlock.transform)
-            //{
-            //    if (child.gameObject.CompareTag("Shard")) // Make sure to tag your marker prefabs
-            //    {
-            //        AdjustOpacity(child.gameObject, sqrDistance);
-            //    }
-            //}
-
-            // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
-            fuel = chargeAmount * (1 - (sqrDistance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
-
-            // apply decay
-            fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ownerID])) / skimDecayDuration);
-
-            // apply multiskim multiplier
-            fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
         }
 
         private void FixedUpdate()
         {
-            if (Ship == null)
+            // TODO : Temp fix. Need better way
+            if (_shipStatus == null)
                 return;
 
-            if (minMatureBlock)
+            if (_minMatureBlock)
             {
-                distanceWeight = ComputeGaussian(minMatureBlockSqrDistance, sqrSweetSpot, sigma);
-                directionWeight = Vector3.Dot(Ship.Transform.forward, minMatureBlock.transform.forward);
-                var combinedWeight = distanceWeight * Mathf.Abs(directionWeight);
+                _distanceWeight = ComputeGaussian(_minMatureBlockSqrDistance, _sqrSweetSpot, _sigma);
+                _directionWeight = Vector3.Dot(_shipStatus.Transform.forward, _minMatureBlock.transform.forward);
+                var combinedWeight = _distanceWeight * Mathf.Abs(_directionWeight);
                 PerformBlockStayEffects(combinedWeight);
             }
-            minMatureBlock = null;
-            minMatureBlockSqrDistance = Mathf.Infinity;
-            fuel = 0;
+            _minMatureBlock = null;
+            _minMatureBlockSqrDistance = Mathf.Infinity;
         }
 
         void OnTriggerExit(Collider other)
         {
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != Team))
-            {
-                if (skimStartTimes.ContainsKey(trailBlock.ownerID))
-                {
-                    skimStartTimes.Remove(trailBlock.ownerID);
-                    activelySkimmingBlockCount--;
-                    if (activelySkimmingBlockCount < 1) 
-                        PerformBlockStayEffects(0);
-                }
-            }
+            // TODO : Temp fix. Need better way
+            if (_shipStatus is null)
+                return;
+            
+            if (!other.TryGetComponent<TrailBlock>(out var trailBlock) ||
+                (!affectSelf && trailBlock.Team == _shipStatus.Team)) 
+                return;
+            
+            if (!skimStartTimes.ContainsKey(trailBlock.ownerID)) 
+                return;
+            
+            skimStartTimes.Remove(trailBlock.ownerID);
+            activelySkimmingBlockCount--;
+            
+            if (activelySkimmingBlockCount < 1) 
+                PerformBlockStayEffects(0);
         }
 
-        float boosterTimer = 0;
 
         void MakeBoosters(TrailBlock trailBlock)
         {
             var markerCount = 5;
             var cooldown = 4f;
-            if (Time.time - boosterTimer < cooldown) return;
-            boosterTimer = Time.time;
+            if (Time.time - _boosterTimer < cooldown) return;
+            _boosterTimer = Time.time;
             var nextBlocks = FindNextBlocks(trailBlock, markerCount*markerDistance);
             if (markerContainer)
             {
                 // Handle the case where there are no blocks or only 1 marker needed
-                if (nextBlocks.Count == 0 || markerCount <= 0)
+                if (nextBlocks.Count == 0)
                     return;
 
                 // Always visualize the last element
@@ -420,16 +292,17 @@ namespace CosmicShore.Game
 
         void ScaleTrailAndCamera()
         {
-            var normalizedDistance = Mathf.InverseLerp(15f, sqrRadius, minMatureBlockSqrDistance);
-            Ship.ShipStatus.TrailSpawner.SetNormalizedXScale(normalizedDistance);
+            var normalizedDistance = Mathf.InverseLerp(15f, _sqrRadius, _minMatureBlockSqrDistance);
+            _shipStatus.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
-            if (cameraManager != null && !Ship.ShipStatus.AutoPilotEnabled) 
+            if (cameraManager != null && !_shipStatus.AutoPilotEnabled) 
                 cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);
         }
 
         void ScaleGap(float combinedWeight)
         {
-            Ship.ShipStatus.TrailSpawner.Gap = Mathf.Lerp(initialGap, Ship.ShipStatus.TrailSpawner.MinimumGap, combinedWeight);
+            var trailSpawner = _shipStatus.TrailSpawner;
+            trailSpawner.Gap = Mathf.Lerp(_initialGap, trailSpawner.MinimumGap, combinedWeight);
         }
 
         /*
@@ -448,28 +321,28 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
         // Change: Instead of using the ship�s up versus radial misalignment (which repelled the ship), this version computes an error vector (U - radial) and nudges the forward direction accordingly�so the ship�s forward is adjusted toward a path that will bring it to the tube�s surface while preserving the player's roll.
         void AlignAndNudge(float combinedWeight)
         {
-            if (!minMatureBlock || nextBlocks.Count < 5)
+            if (!_minMatureBlock || _nextBlocks.Count < 5)
                 return;
 
             // Calculate distances and directions
-            var nextBlockDistance = (nextBlocks[0].transform.position - transform.position);
+            var nextBlockDistance = (_nextBlocks[0].transform.position - transform.position);
             var normNextBlockDistance = nextBlockDistance.normalized;
 
             // Apply velocity nudging to maintain sweet spot distance
-            if (minMatureBlockSqrDistance < sqrSweetSpot - 3)
+            if (_minMatureBlockSqrDistance < _sqrSweetSpot - 3)
             {
-                Ship.ShipStatus.ShipTransformer.ModifyVelocity(-normNextBlockDistance * 4f, Time.deltaTime * 2f);
+                _shipStatus.ShipTransformer.ModifyVelocity(-normNextBlockDistance * 4f, Time.deltaTime * 2f);
             }
-            else if (minMatureBlockSqrDistance > sqrSweetSpot + 3)
+            else if (_minMatureBlockSqrDistance > _sqrSweetSpot + 3)
             {
-                Ship.ShipStatus.ShipTransformer.ModifyVelocity(normNextBlockDistance * 4f, Time.deltaTime * 2f);
+                _shipStatus.ShipTransformer.ModifyVelocity(normNextBlockDistance * 4f, Time.deltaTime * 2f);
             }
 
             // Get the tube's forward direction from a block further ahead
-            Vector3 tubeForward = nextBlocks[4].transform.forward;
+            Vector3 tubeForward = _nextBlocks[4].transform.forward;
 
             // Calculate the radial direction, properly considering the tube's axis
-            Vector3 fromTube = transform.position - nextBlocks[0].transform.position;
+            Vector3 fromTube = transform.position - _nextBlocks[0].transform.position;
             Vector3 radial = Vector3.ProjectOnPlane(fromTube, tubeForward).normalized;
 
             // Determine if we're inside or outside the tube based on current up vector
@@ -479,38 +352,38 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
             // Calculate target forward direction
             Vector3 targetForward = Vector3.Lerp(
                 transform.forward,
-                directionWeight * tubeForward,
+                _directionWeight * tubeForward,
                 combinedWeight
             );
 
             // Apply the gentle spin with speed-based interpolation
-            float alignSpeed = Ship.ShipStatus.Speed * Time.deltaTime / 15f;
-            Ship.ShipStatus.ShipTransformer.GentleSpinShip(targetForward, targetUp, alignSpeed);
+            float alignSpeed = _shipStatus.Speed * Time.deltaTime / 15f;
+            _shipStatus.ShipTransformer.GentleSpinShip(targetForward, targetUp, alignSpeed);
         }
 
         void VizualizeDistance(float combinedWeight)
         {
-            Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, - Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].CurrentAmount);
-            Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, combinedWeight);
+            _shipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, - _shipStatus.ResourceSystem.Resources[resourceIndex].CurrentAmount);
+            _shipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, combinedWeight);
         }
 
         void ScalePitchAndYaw(float combinedWeight)
         {
             //ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 150 * (1 + (.5f*combinedWeight));
-            Ship.ShipStatus.ShipTransformer.PitchScaler = Ship.ShipStatus.ShipTransformer.YawScaler = 150 + (120 * combinedWeight);
+            _shipStatus.ShipTransformer.PitchScaler = _shipStatus.ShipTransformer.YawScaler = 150 + (120 * combinedWeight);
         }
 
         void ScaleHapticWithDistance(float combinedWeight)
         {
             var hapticScale = combinedWeight / 3;
-            if (!Ship.ShipStatus.AutoPilotEnabled)
+            if (!_shipStatus.AutoPilotEnabled)
                 HapticController.PlayConstant(hapticScale, hapticScale, Time.deltaTime);
         }
 
         void Boost(float combinedWeight)
         {
-            Ship.ShipStatus.Boosting = true;
-            Ship.ShipStatus.BoostMultiplier = 1 + (2.5f * combinedWeight);
+            _shipStatus.Boosting = true;
+            _shipStatus.BoostMultiplier = 1 + (2.5f * combinedWeight);
         }
 
         // Function to compute the Gaussian value at a given x
@@ -530,7 +403,7 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
             do
             {
                 var distance = trailBlock.transform.position - transform.position;
-                scaledTime = particleDurationAtSpeedOne / Ship.ShipStatus.Speed; // TODO: divide by zero possible
+                scaledTime = particleDurationAtSpeedOne / _shipStatus.Speed; // TODO: divide by zero possible
                 particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
                 particle.transform.SetPositionAndRotation(transform.position, Quaternion.LookRotation(distance, trailBlock.transform.up));
                 timer++;
@@ -544,7 +417,7 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
 
         private void VisualizeTubeAroundBlock(TrailBlock trailBlock)
         {
-            if (trailBlock) StartCoroutine(DrawCircle(trailBlock.transform, sweetSpot)); // radius can be adjusted
+            if (trailBlock) StartCoroutine(DrawCircle(trailBlock.transform, _sweetSpot)); // radius can be adjusted
         }
 
         HashSet<Vector3> shardPositions = new HashSet<Vector3>();
@@ -560,7 +433,7 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
                 Vector3 localPosition = (Mathf.Cos(angle + (Mathf.PI / 2)) * blockTransform.right + Mathf.Sin(angle + (Mathf.PI / 2)) * blockTransform.up) * radius;
                 Vector3 worldPosition = blockTransform.position + localPosition;
                 GameObject marker = markerContainer.SpawnFromPool("Shard", worldPosition,
-                    Quaternion.LookRotation(directionWeight * blockTransform.forward, localPosition));
+                    Quaternion.LookRotation(_directionWeight * blockTransform.forward, localPosition));
                 if (shardPositions.Contains(marker.transform.position))
                 {
                     markerContainer.ReturnToPool(marker, "Shard");
@@ -568,7 +441,7 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
                 }
                 shardPositions.Add(marker.transform.position);
                 marker.transform.localScale = blockTransform.localScale/2;
-                marker.GetComponentInChildren<NudgeShard>().Prisms = FindNextBlocks(blockTransform.GetComponent<TrailBlock>(), markerDistance * Ship.ShipStatus.ResourceSystem.Resources[0].CurrentAmount);
+                marker.GetComponentInChildren<NudgeShard>().Prisms = FindNextBlocks(blockTransform.GetComponent<TrailBlock>(), markerDistance * _shipStatus.ResourceSystem.Resources[0].CurrentAmount);
                 markers.Add(marker);
             }
             yield return new WaitForSeconds(8f);

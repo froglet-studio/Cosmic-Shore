@@ -431,7 +431,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
             ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
-            ActivePlayer.Ship.ShipStatus.ShipTransformer.Reset();
+            ActivePlayer.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();
             ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
             ActivePlayer.Ship.ShipStatus.ResourceSystem.Reset();
             ActivePlayer.Ship.SetResourceLevels(ResourceCollection);

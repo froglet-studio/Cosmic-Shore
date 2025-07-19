@@ -16,7 +16,7 @@ namespace CosmicShore.Game.AI
 
     public class AIPilot : MonoBehaviour
     {
-        public float SkillLevel { get; private set; }
+        [SerializeField] float skillLevel = 1;
 
         [SerializeField] float defaultThrottleHigh = .6f;
         [SerializeField] float defaultThrottleLow  = .6f;
@@ -36,11 +36,11 @@ namespace CosmicShore.Game.AI
         float throttle;
         float aggressiveness;
 
-        public float defaultThrottle => Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, SkillLevel);
-        public float defaultAggressiveness => Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, SkillLevel);
-        float throttleIncrease => Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, SkillLevel);
-        float avoidance => Mathf.Lerp(avoidanceLow, avoidanceHigh, SkillLevel);
-        float aggressivenessIncrease => Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, SkillLevel);
+        public float defaultThrottle => Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, skillLevel);
+        public float defaultAggressiveness => Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, skillLevel);
+        float throttleIncrease => Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, skillLevel);
+        float avoidance => Mathf.Lerp(avoidanceLow, avoidanceHigh, skillLevel);
+        float aggressivenessIncrease => Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, skillLevel);
 
         float targetUpdateFrequencySeconds = 2f;
 
@@ -205,13 +205,14 @@ namespace CosmicShore.Game.AI
 
             if (_shipStatus.SingleStickControls)
             {
-                _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                _inputStatus.YSum = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                float x = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                float y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                _inputStatus.EasedLeftJoystickPosition = new Vector2(x, y);
             }
             else
             {
-                _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
                 _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
                 _inputStatus.YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
                 _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
             }
