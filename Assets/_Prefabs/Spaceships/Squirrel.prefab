@@ -299,6 +299,7 @@ PrefabInstance:
       objectReference: {fileID: 7521805376144260223}
     m_RemovedComponents:
     - {fileID: 874579555101021527, guid: 31cd97d0f057e9e4b8355c7f7e86bd42, type: 3}
+    - {fileID: 4700913749334663174, guid: 31cd97d0f057e9e4b8355c7f7e86bd42, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -326,6 +327,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8016914216858330474}
+    - targetCorrespondingSourceObject: {fileID: 4884617224712114563, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7055008937679033114}
   m_SourcePrefab: {fileID: 100100000, guid: 31cd97d0f057e9e4b8355c7f7e86bd42, type: 3}
 --- !u!1 &2317573918143347535 stripped
 GameObject:
@@ -458,15 +463,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  shipType: 0
   onSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
     type: 2}
   _boostAction: {fileID: 0}
+  _seedAssemblerAction: {fileID: 0}
+  _overheatingAction: {fileID: 0}
+  _fullAutoAction: {fileID: 0}
+  _fireGunAction: {fileID: 0}
+  _stationaryModeAction: {fileID: 0}
 --- !u!1 &4246332038448295573 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4884617224712114563, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
     type: 3}
   m_PrefabInstance: {fileID: 8730127829626945302}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7055008937679033114
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4246332038448295573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 441acef06d19459685965bb962297fd8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipObject: {fileID: 1193681058774765883}
 --- !u!114 &4699205272245208311 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4040093138880822241, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
