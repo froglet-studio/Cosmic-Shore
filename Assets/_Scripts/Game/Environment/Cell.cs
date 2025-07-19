@@ -79,7 +79,7 @@ namespace CosmicShore.Game
             membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
             nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
             SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
-            SnowChanger.Crystal = Crystal.gameObject;
+            SnowChanger.Initialize(Crystal);
             SnowChanger.SetOrigin(transform.position);
 
             teamVolumes.Add(Teams.Jade, 0);
@@ -97,7 +97,7 @@ namespace CosmicShore.Game
                 }
                 SpawnLife();
             }
-            TryAddItem(Crystal);
+            TryInitializeAndAdd(Crystal);
             Crystal.gameObject.SetActive(true);
         }
 
@@ -208,12 +208,12 @@ namespace CosmicShore.Game
             return countGrids[team].FindDensestRegion();
         }
 
-        public bool TryAddItem(CellItem item)
+        public bool TryInitializeAndAdd(CellItem item)
         {
-            if (item.GetID() != 0)
+            if (item.Id != 0)
                 return false;
             
-            item.SetID(++_itemsAdded);
+            item.Initialize(++_itemsAdded, this);
             CellItems.Add(item);
             OnCellItemsUpdated.Raise();
 

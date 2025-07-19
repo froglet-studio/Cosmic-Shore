@@ -132,11 +132,11 @@ namespace CosmicShore.Game.AI
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
                     (item.ItemType != ItemType.Debuff || item.OwnTeam == _shipStatus.Team)) continue;
-                var distance = Vector3.SqrMagnitude(item.transform.position - transform.position);
-                if (distance < (MinDistance * MinDistance))
+                var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
+                if (sqDistance < (MinDistance * MinDistance))
                 {
                     closestItem = item;
-                    MinDistance = distance;
+                    MinDistance = sqDistance;
                 }
             }
 

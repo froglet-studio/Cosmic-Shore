@@ -12,19 +12,18 @@ namespace CosmicShore.Game
         protected override void Start()
         {
             base.Start();
-            if (isplayer) GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
+            if (isplayer) 
+                GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
         }
 
         protected override void Collide(Collider other)
         {
-            IShipStatus shipStatus;
-            
-            if (!other.TryGetComponent(out shipStatus))
+            if (!other.TryGetComponent(out IShipStatus shipStatus))
             {
                 if (!other.TryGetComponent(out Projectile projectile))
                     return;
-                else
-                    shipStatus = projectile.ShipStatus;
+
+                shipStatus = projectile.ShipStatus;
             }
 
             // TODO: use a different material if the fake crystal is on your team
@@ -32,13 +31,9 @@ namespace CosmicShore.Game
                 return;
 
             PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
-
             Explode(shipStatus.Ship);
-
             PlayExplosionAudio();
-
-            RemoveSelfFromNode();
-
+            cell.TryRemoveItem(this);
             Destroy(gameObject);
         }
     }

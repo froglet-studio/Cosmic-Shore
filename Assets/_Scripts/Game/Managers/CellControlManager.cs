@@ -65,7 +65,7 @@ namespace CosmicShore.Game
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(item.transform.position)))
             {
-                cell.TryAddItem(item);
+                cell.TryInitializeAndAdd(item);
                 break;
             }
         }

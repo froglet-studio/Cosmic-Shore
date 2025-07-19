@@ -20,10 +20,6 @@ namespace CosmicShore.Game
 
     public class Crystal : CellItem
     {
-        #region Events
-        public static Action OnCrystalMove;
-        #endregion
-
         #region Inspector Fields
         [SerializeField] public CrystalProperties crystalProperties;
         [SerializeField] public float sphereRadius = 100;
@@ -64,38 +60,6 @@ namespace CosmicShore.Game
             
             ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, crystalProperties);
         }
-
-        /*public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
-        {
-            foreach (CrystalImpactEffects effect in crystalImpactEffects)
-            {
-                switch (effect)
-                {
-                    case CrystalImpactEffects.PlayHaptics:
-                        if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(ImpactHapticType);
-                        break;
-                    case CrystalImpactEffects.ReduceSpeed:
-                        ship.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
-                        break;
-                    case CrystalImpactEffects.AreaOfEffectExplosion:
-                        var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Initialize(new AOEExplosion.InitializeStruct
-                        {
-                            OwnTeam = OwnTeam,
-                            Ship = ship,
-                            OverrideMaterial = AOEExplosionMaterial,
-                            MaxScale = maxExplosionScale,
-                            AnnonymousExplosion = true
-                        });
-                        AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.Detonate();
-                        break;
-                    case CrystalImpactEffects.AdjustLevel:
-                        ship.ShipStatus.ResourceSystem.AdjustLevel(crystalProperties.Element, crystalProperties.crystalValue);
-                        break;
-                }
-            }
-        }*/
 
         protected virtual void Collide(Collider other)
         {
@@ -138,11 +102,11 @@ namespace CosmicShore.Game
                     model.model.GetComponent<FadeIn>().StartFadeIn();
 
                 transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
-                OnCrystalMove?.Invoke();
+                cell.UpdateItem();
             }
             else
             {
-                RemoveSelfFromNode();
+                cell.TryRemoveItem(this);
                 Destroy(gameObject);
             }
         }
