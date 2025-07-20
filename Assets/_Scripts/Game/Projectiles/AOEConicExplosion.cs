@@ -30,12 +30,11 @@ namespace CosmicShore.Game.Projectiles
 
 
             Material = new Material(Ship.ShipStatus.AOEConicExplosionMaterial);
-            if (Material == null)
+            if (!Material)
                 Material = new Material(Ship.ShipStatus.AOEExplosionMaterial);
-
-            if (container == null) container = new GameObject("AOEContainer");
-            coneContainer = new GameObject("ExplosionCone");
-            coneContainer.transform.SetParent(container.transform, false);
+            
+            if (!coneContainer)
+                coneContainer = new GameObject("AOEContainer");
             coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);
             transform.SetParent(coneContainer.transform, false);
         }

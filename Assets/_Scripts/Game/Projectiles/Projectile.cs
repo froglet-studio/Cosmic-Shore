@@ -8,7 +8,7 @@ using UnityEditor.Build.Pipeline;
 
 namespace CosmicShore.Game.Projectiles
 {
-    public class Projectile : MonoBehaviour, IStoppable
+    public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
         public float Inertia = 1;

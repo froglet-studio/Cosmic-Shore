@@ -105,7 +105,11 @@ namespace CosmicShore.Game
             }
         }
 
-        public static void ExecuteImpactEffect(IEnumerable<IImpactEffect> effects, ImpactEffectData impactEffectData, CrystalProperties crystalProperties = default, TrailBlockProperties trailBlockProperties = null)
+        public static void ExecuteImpactEffect(
+            IEnumerable<IImpactEffect> effects, 
+            ImpactEffectData impactEffectData, 
+            CrystalProperties crystalProperties = default, 
+            TrailBlockProperties trailBlockProperties = null)
         {
             foreach (IImpactEffect effect in effects)
             {

@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     // TODO: Figure out a way to separate the IExplodableImpactEffect, and ITrailBlockImpactEffect
 
     [CreateAssetMenu(fileName = "ExplodeImpactEffect", menuName = "ScriptableObjects/Impact Effects/ExplodeImpactEffectSO")]
-    public class ExplodeEffectSO : ImpactEffectSO, IExplodableImpactEffect, ITrailBlockImpactEffect
+    public class ExplodeEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
     {
         [SerializeField]
         float _inertia;
@@ -24,20 +24,6 @@ namespace CosmicShore.Game
         [SerializeField]
         float _charge;
 
-        public void Execute(IExplodable explodable)
-        {
-            if (explodable == null)
-            {
-                Debug.LogWarning("Explodable is null, cannot execute ExplodeEffectSO.");
-                return;
-            }
-
-            explodable.Explode();
-            // _poolManager.ReturnToPool(gameObject, gameObject.tag);
-
-            // TODO -> Check out for Explodable Projectile detonate mechanics. and figure out how to access poolmanager
-        }
-
         public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
             var shipStatus = data.ThisShipStatus;
@@ -47,8 +33,8 @@ namespace CosmicShore.Game
 
             foreach (var AOE in _aoePrefabs)
             {
-                var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
-                AOEExplosion.Initialize(new AOEExplosion.InitializeStruct
+                var aoeExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
+                aoeExplosion.Initialize(new AOEExplosion.InitializeStruct
                 {
                     OwnTeam = data.ThisShipStatus.Team,
                     Ship = data.ThisShipStatus.Ship,
@@ -58,8 +44,8 @@ namespace CosmicShore.Game
                 });
 
                 Transform shipTransform = shipStatus.ShipTransform;
-                AOEExplosion.SetPositionAndRotation(shipTransform.position, shipTransform.rotation);
-                AOEExplosion.Detonate();
+                aoeExplosion.SetPositionAndRotation(shipTransform.position, shipTransform.rotation);
+                aoeExplosion.Detonate();
             }
         }
     }

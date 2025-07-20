@@ -25,7 +25,6 @@ namespace CosmicShore.Game.Projectiles
         protected Vector3 MaxScaleVector;
         protected float Inertia = 70;
         protected float speed;
-        protected GameObject container;
 
         // Material and Team
         public Material Material { get; protected set; }
@@ -33,7 +32,7 @@ namespace CosmicShore.Game.Projectiles
         public IShip Ship { get; protected set; }
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
-
+        
         public virtual void Initialize(InitializeStruct initStruct)
         {
             AnonymousExplosion = initStruct.AnnonymousExplosion;
@@ -55,9 +54,6 @@ namespace CosmicShore.Game.Projectiles
             Material = initStruct.OverrideMaterial != null ? initStruct.OverrideMaterial : Ship.ShipStatus.AOEExplosionMaterial;
             if (Material == null)
                 Material = new Material(Ship.ShipStatus.AOEExplosionMaterial);
-
-            if (container == null) container = new GameObject("AOEContainer");
-            transform.SetParent(container.transform, worldPositionStays: false);
         }
 
         public void Detonate() => StartCoroutine(ExplodeCoroutine());

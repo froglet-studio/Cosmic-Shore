@@ -25,16 +25,6 @@ namespace CosmicShore.Game
         void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties);
     }
 
-    public interface IStoppableImpactEffect : IImpactEffect
-    {
-        void Execute(IStoppable stoppable);
-    }
-
-    public interface IExplodableImpactEffect : IImpactEffect
-    {
-        void Execute(IExplodable explodable);
-    }
-
     public class ImpactEffectData
     {
         public IShipStatus ThisShipStatus { get; }

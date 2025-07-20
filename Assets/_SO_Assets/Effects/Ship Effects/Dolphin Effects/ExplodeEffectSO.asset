@@ -13,3 +13,8 @@ MonoBehaviour:
   m_Name: ExplodeEffectSO
   m_EditorClassIdentifier: 
   _inertia: 70
+  _aoePrefabs:
+  - {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
+  _minExplosionScale: 0
+  _maxExplosionScale: 0
+  _charge: 0
