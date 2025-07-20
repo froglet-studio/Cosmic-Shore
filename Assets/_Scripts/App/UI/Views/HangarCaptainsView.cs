@@ -166,7 +166,7 @@ namespace CosmicShore.App.UI.Views
             for (var i = 0; i < CaptainSelectionContainer.transform.childCount; i++)
                 CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().AssignCaptain(Models[i] as SO_Captain);
 
-            SelectCaptain(SelectedIndex);
+            SelectCaptain(shipClassTypeVariable.Value);
         }
 
         public virtual void OnClickBuy()

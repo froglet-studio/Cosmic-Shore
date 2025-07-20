@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.App.UI.Views
@@ -8,24 +9,26 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] NavGroup navGroup;
         public List<ScriptableObject> Models { get; set; }
         protected ScriptableObject SelectedModel { get; set; }
-        protected int SelectedIndex;
+
+        [SerializeField]
+        protected ScriptableVariable<int> shipClassTypeVariable;
 
         public virtual void AssignModel(ScriptableObject Model)
         {
             Models = new List<ScriptableObject> { Model };
-            Select(SelectedIndex);
+            Select(shipClassTypeVariable.Value);
         }
 
         public virtual void AssignModels(List<ScriptableObject> Models)
         {
             this.Models = Models;
-            Select(SelectedIndex);
+            Select(shipClassTypeVariable.Value);
         }
 
         public virtual void Select(int index)
         {
-            SelectedIndex = index;
-            if (Models != null && SelectedIndex < Models.Count)
+            shipClassTypeVariable.Value = index;
+            if (Models != null && shipClassTypeVariable.Value < Models.Count)
             {
                 SelectedModel = Models[index];
                 UpdateView();
