@@ -53232,6 +53232,7 @@ MonoBehaviour:
   followOffset: {x: 0, y: 5, z: -20}
   followSmoothTime: 0.2
   rotationSmoothTime: 5
+  disableRotationLerp: 0
   useFixedUpdate: 0
   farClipPlane: 10000
   fieldOfView: 60
@@ -53251,6 +53252,7 @@ MonoBehaviour:
   followOffset: {x: 0, y: 5, z: -20}
   followSmoothTime: 0.2
   rotationSmoothTime: 5
+  disableRotationLerp: 0
   useFixedUpdate: 0
   farClipPlane: 10000
   fieldOfView: 60
@@ -53270,6 +53272,7 @@ MonoBehaviour:
   followOffset: {x: 0, y: 5, z: -20}
   followSmoothTime: 0.2
   rotationSmoothTime: 5
+  disableRotationLerp: 1
   useFixedUpdate: 0
   farClipPlane: 10000
   fieldOfView: 60
