@@ -124,7 +124,7 @@ namespace CosmicShore.Game.IO
 
             //touchStrategy.Initialize(ship);
             //keyboardMouseStrategy.Initialize(ship);
-            gamepadStrategy.Initialize(_ship);
+            gamepadStrategy.Initialize(InputStatus);
             orientationHandler.Initialize(_ship, this);
         }
 
@@ -226,11 +226,15 @@ namespace CosmicShore.Game.IO
 
         IInputStatus TryAddInputStatus()
         {
-            bool found = TryGetComponent(out NetworkObject _);
+            // TODO - Testing if NetworkInputStatus can replace InputStatus
+            
+            /*bool found = TryGetComponent(out NetworkObject _);
             if (found)
                 return gameObject.GetOrAdd<NetworkInputStatus>();
             else
-                return gameObject.GetOrAdd<InputStatus>();
+                return gameObject.GetOrAdd<InputStatus>();*/
+            
+            return gameObject.GetOrAdd<NetworkInputStatus>();
         }
 
     }

@@ -9,8 +9,7 @@ namespace CosmicShore.Game
 {
     public interface IShipStatus
     {
-        
-        IShip Ship { get; } // FOR TEMP USE, TRY REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
+        IShip Ship { get; } // FOR TEMP USE, TRY TO REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
         Transform Transform => Ship.Transform;
         AIPilot AIPilot { get; }
         bool AlignmentEnabled { get; set; }
@@ -26,7 +25,6 @@ namespace CosmicShore.Game
         SO_Captain Captain { get; set; }
         float ChargedBoostCharge { get; set; }
         bool ChargedBoostDischarging { get; set; }
-        bool CommandStickControls { get; set; }
         Vector3 Course { get; set; }
         bool Drifting { get; set; }
         bool ElevatedResourceGain { get; set; }

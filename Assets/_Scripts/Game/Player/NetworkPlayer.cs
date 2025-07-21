@@ -12,6 +12,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
+    /// DEPRECATED
     /// This player is spawned to each client from server as 
     /// the main multiplayer player prefab instance.
     /// </summary>
@@ -82,12 +83,12 @@ namespace CosmicShore.Game
             Team = newValue;
         }
 
-        public void Initialize(IPlayer.InitializeData data)
+        public void Initialize(IPlayer.InitializeData data, IShip ship)
         {
             PlayerName = AuthenticationService.Instance.PlayerName;
             PlayerUUID = PlayerName;
 
-            _ship = data.Ship;
+            // _ship = data.Ship;
             _ship = Hangar.Instance.SetShipProperties(_ship, _ship.ShipStatus.Team, IsOwner);
 
             _ship.Initialize(this);

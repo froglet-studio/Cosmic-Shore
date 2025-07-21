@@ -1,9 +1,11 @@
-using CosmicShore.Game;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Game
 {
+    /// <summary>
+    /// DEPRECATED SCRIPT
+    /// </summary>
     public class PlayerLoader : MonoBehaviour
     {
         [SerializeField] GameObject playerPrefab;
@@ -34,7 +36,7 @@ namespace CosmicShore
                     PlayerName = PlayerNames[i],
                     PlayerUUID = "Player" + (i + 1),
                 };
-                player.Initialize(data);
+                // player.Initialize(data);
                 player.ToggleGameObject(true);
                 player.ToggleActive(true);
             }

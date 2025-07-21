@@ -8,6 +8,9 @@ using CosmicShore.Soap;
 
 namespace CosmicShore.Game
 {
+    /// <summary>
+    ///  DEPRECATED SCRIPT
+    /// </summary>
     public class Player : MonoBehaviour, IPlayer
     {
         [SerializeField] ShipPrefabContainer _shipPrefabContainer;
@@ -35,13 +38,14 @@ namespace CosmicShore.Game
 
         public Transform Transform => transform;
 
-        void Start()
+        /*void Start()
         {
             if (_selfSpawn)
                 Initialize(InitializeData);
         }
+        */
 
-        public void Initialize(IPlayer.InitializeData data)
+        public void Initialize(IPlayer.InitializeData data, IShip ship)
         {
             InitializeData = data;
             ShipType = data.ShipType;
@@ -62,7 +66,8 @@ namespace CosmicShore.Game
                 return;
             }
 
-            Instantiate(shipPrefab).TryGetComponent(out IShip ship);
+            // TODO - Dont Instantiate here, deprecated script!!
+            // Instantiate(shipPrefab).TryGetComponent(out IShip ship);
             Ship = Hangar.Instance.SetShipProperties(ship, Team, !_isAI);
             Ship.Initialize(this, _isAI);
             

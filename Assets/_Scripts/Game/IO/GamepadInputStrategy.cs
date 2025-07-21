@@ -14,9 +14,9 @@ namespace CosmicShore.Game.IO
         private Vector2 leftStickRaw;
         private Vector2 rightStickRaw;
 
-        public override void Initialize(IShip ship)
+        public override void Initialize(IInputStatus inputStatus)
         {
-            base.Initialize(ship);
+            base.Initialize(inputStatus);
             ResetInput();
         }
 
@@ -32,7 +32,7 @@ namespace CosmicShore.Game.IO
 
         private void ProcessStickInput()
         {
-            InputStatus.Throttle = Gamepad.current.rightShoulder.ReadValue();
+            inputStatus.Throttle = Gamepad.current.rightShoulder.ReadValue();
             leftStickRaw = Gamepad.current.leftStick.ReadValue();
             rightStickRaw = Gamepad.current.rightStick.ReadValue();
         }
@@ -41,97 +41,115 @@ namespace CosmicShore.Game.IO
         {
             // Primary action buttons
             if (Gamepad.current.buttonSouth.wasPressedThisFrame)
-                _ship.PerformShipControllerActions(InputEvents.Button1Action);
+                inputStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
+                //_ship.PerformShipControllerActions(InputEvents.Button1Action);
             if (Gamepad.current.buttonSouth.wasReleasedThisFrame)
-                _ship.StopShipControllerActions(InputEvents.Button1Action);
+                inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
+                // _ship.StopShipControllerActions(InputEvents.Button1Action);
 
             if (Gamepad.current.buttonEast.wasPressedThisFrame)
-                _ship.PerformShipControllerActions(InputEvents.Button2Action);
+                inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
+                // _ship.PerformShipControllerActions(InputEvents.Button2Action);
             if (Gamepad.current.buttonEast.wasReleasedThisFrame)
-                _ship.StopShipControllerActions(InputEvents.Button2Action);
+                inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
+                // _ship.StopShipControllerActions(InputEvents.Button2Action);
 
             if (Gamepad.current.buttonWest.wasPressedThisFrame)
-                _ship.PerformShipControllerActions(InputEvents.Button3Action);
+                inputStatus.OnButtonPressed.Raise(InputEvents.Button3Action);
+                // _ship.PerformShipControllerActions(InputEvents.Button3Action);
             if (Gamepad.current.buttonWest.wasReleasedThisFrame)
-                _ship.StopShipControllerActions(InputEvents.Button3Action);
+                inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
+                // _ship.StopShipControllerActions(InputEvents.Button3Action);
 
             // Shoulder buttons and triggers
             if (Gamepad.current.leftShoulder.wasPressedThisFrame)
             {
-                InputStatus.Idle = true;
-                _ship.PerformShipControllerActions(InputEvents.IdleAction);
+                inputStatus.Idle = true;
+                inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);;
+                // _ship.PerformShipControllerActions(InputEvents.IdleAction);
             }
             if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
             {
-                InputStatus.Idle = false;
-                _ship.StopShipControllerActions(InputEvents.IdleAction);
+                inputStatus.Idle = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);;
+                // _ship.StopShipControllerActions(InputEvents.IdleAction);
             }
 
             // Right shoulder for flip action
             if (Gamepad.current.rightShoulder.wasPressedThisFrame)
-                _ship.PerformShipControllerActions(InputEvents.FlipAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
+                // _ship.PerformShipControllerActions(InputEvents.FlipAction);
             if (Gamepad.current.rightShoulder.wasReleasedThisFrame)
-                _ship.StopShipControllerActions(InputEvents.FlipAction);
+                inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
+                // _ship.StopShipControllerActions(InputEvents.FlipAction);
 
             // Triggers for stick actions
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
-                _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
+                // _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
             if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
-                _ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
+                // _ship.StopShipControllerActions(InputEvents.LeftStickAction);
 
             if (Gamepad.current.rightTrigger.wasPressedThisFrame)
-                _ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
+                // _ship.PerformShipControllerActions(InputEvents.RightStickAction);
             if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
-                _ship.StopShipControllerActions(InputEvents.RightStickAction);
+                inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
+                // _ship.StopShipControllerActions(InputEvents.RightStickAction);
         }
 
         private void Reparameterize()
         {
             // Calculate eased joystick positions
-            InputStatus.EasedLeftJoystickPosition = new Vector2(
+            inputStatus.EasedLeftJoystickPosition = new Vector2(
                 Ease(2 * leftStickRaw.x),
                 Ease(2 * leftStickRaw.y)
             );
-            InputStatus.EasedRightJoystickPosition = new Vector2(
+            inputStatus.EasedRightJoystickPosition = new Vector2(
                 Ease(2 * rightStickRaw.x),
                 Ease(2 * rightStickRaw.y)
             );
 
             // Calculate sums and differences exactly as touch input does
-            InputStatus.XSum = Ease(rightStickRaw.x + leftStickRaw.x);
-            InputStatus.YSum = -Ease(rightStickRaw.y + leftStickRaw.y);
-            InputStatus.XDiff = (rightStickRaw.x - leftStickRaw.x + 2) / 4;
-            InputStatus.YDiff = Ease(rightStickRaw.y - leftStickRaw.y);
+            inputStatus.XSum = Ease(rightStickRaw.x + leftStickRaw.x);
+            inputStatus.YSum = -Ease(rightStickRaw.y + leftStickRaw.y);
+            inputStatus.XDiff = (rightStickRaw.x - leftStickRaw.x + 2) / 4;
+            inputStatus.YDiff = Ease(rightStickRaw.y - leftStickRaw.y);
         }
 
         private void PerformSpeedAndDirectionalEffects()
         {
             float threshold = .3f;
-            float sumOfRotations = Mathf.Abs(InputStatus.YDiff) + Mathf.Abs(InputStatus.YSum) + Mathf.Abs(InputStatus.XSum);
-            float DeviationFromFullSpeedStraight = (1 - InputStatus.XDiff) + sumOfRotations;
-            float DeviationFromMinimumSpeedStraight = InputStatus.XDiff + sumOfRotations;
+            float sumOfRotations = Mathf.Abs(inputStatus.YDiff) + Mathf.Abs(inputStatus.YSum) + Mathf.Abs(inputStatus.XSum);
+            float DeviationFromFullSpeedStraight = (1 - inputStatus.XDiff) + sumOfRotations;
+            float DeviationFromMinimumSpeedStraight = inputStatus.XDiff + sumOfRotations;
 
             if (DeviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
             {
                 fullSpeedStraightEffectsStarted = true;
-                _ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.FullSpeedStraightAction);
+                // _ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
             }
             else if (DeviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
             {
                 minimumSpeedStraightEffectsStarted = true;
-                _ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.MinimumSpeedStraightAction);
+                // _ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
             else
             {
                 if (fullSpeedStraightEffectsStarted && DeviationFromFullSpeedStraight > threshold)
                 {
                     fullSpeedStraightEffectsStarted = false;
-                    _ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
+                    inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
+                    // _ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
                 }
                 if (minimumSpeedStraightEffectsStarted && DeviationFromMinimumSpeedStraight > threshold)
                 {
                     minimumSpeedStraightEffectsStarted = false;
-                    _ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
+                    inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
+                    // _ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
             }
         }

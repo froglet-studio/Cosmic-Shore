@@ -1,21 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Core;
+
 
 namespace CosmicShore.Game.IO
 {
     public abstract class BaseInputStrategy : IInputStrategy
     {
         protected const float PI_OVER_FOUR = 0.785f;
-        protected IShip _ship;
 
-        protected IInputStatus InputStatus;
+        protected IInputStatus inputStatus;
 
-        public virtual void Initialize(IShip ship)
+        public virtual void Initialize(IInputStatus inputStatus)
         {
-            _ship = ship;
-            InputStatus = _ship.ShipStatus.InputStatus;
+            this.inputStatus = inputStatus; 
         }
 
         public abstract void ProcessInput();
@@ -27,12 +23,12 @@ namespace CosmicShore.Game.IO
 
         public virtual void SetInvertY(bool status)
         {
-            InputStatus.InvertYEnabled = status;
+            inputStatus.InvertYEnabled = status;
         }
 
         public virtual void SetInvertThrottle(bool status)
         {
-            InputStatus.InvertThrottleEnabled = status;
+            inputStatus.InvertThrottleEnabled = status;
         }
 
         protected float Ease(float input)
@@ -44,17 +40,17 @@ namespace CosmicShore.Game.IO
 
         protected virtual void ResetInput()
         {
-            InputStatus.XSum = 0;
-            InputStatus.YSum = 0;
-            InputStatus.XDiff = 0;
-            InputStatus.YDiff = 0;
-            InputStatus.EasedLeftJoystickPosition = Vector2.zero;
-            InputStatus.EasedRightJoystickPosition = Vector2.zero;
-            InputStatus.RightJoystickStart = Vector2.zero;
-            InputStatus.LeftJoystickStart = Vector2.zero;
-            InputStatus.RightNormalizedJoystickPosition = Vector2.zero;
-            InputStatus.LeftNormalizedJoystickPosition = Vector2.zero;
-            InputStatus.Idle = false;
+            inputStatus.XSum = 0;
+            inputStatus.YSum = 0;
+            inputStatus.XDiff = 0;
+            inputStatus.YDiff = 0;
+            inputStatus.EasedLeftJoystickPosition = Vector2.zero;
+            inputStatus.EasedRightJoystickPosition = Vector2.zero;
+            inputStatus.RightJoystickStart = Vector2.zero;
+            inputStatus.LeftJoystickStart = Vector2.zero;
+            inputStatus.RightNormalizedJoystickPosition = Vector2.zero;
+            inputStatus.LeftNormalizedJoystickPosition = Vector2.zero;
+            inputStatus.Idle = false;
         }
     }
 }

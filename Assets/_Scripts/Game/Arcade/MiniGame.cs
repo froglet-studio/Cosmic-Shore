@@ -219,7 +219,9 @@ namespace CosmicShore.Game.Arcade
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
                     PlayerUUID = PlayerNames[i]
                 };
-                Players[i].Initialize(data);
+                
+                // TODO - Player spawning and initializations are done using PlayerSpawner now!
+                // Players[i].Initialize(data);
                 Players[i].ToggleGameObject(true);
             }
 

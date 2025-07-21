@@ -16,7 +16,7 @@ namespace CosmicShore.Game
 
         public bool IsActive { get; }
 
-        public void Initialize(InitializeData data);
+        public void Initialize(InitializeData data, IShip ship);
         public void ToggleActive(bool active);
         public void ToggleGameObject(bool toggle);
 
@@ -25,9 +25,9 @@ namespace CosmicShore.Game
         {
             public ShipClassType ShipType;
             public Teams Team;
-            public IShip Ship;
             public string PlayerName;
             public string PlayerUUID;
+            public bool EnableAIPilot;
         }
     }
 }

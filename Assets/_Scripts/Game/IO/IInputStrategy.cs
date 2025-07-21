@@ -5,7 +5,7 @@ namespace CosmicShore.Game.IO
 {
     public interface IInputStrategy
     {
-        void Initialize(IShip ship);
+        void Initialize(IInputStatus inputStatus);
         void ProcessInput();
         void SetPortrait(bool portrait);
         void OnStrategyActivated();

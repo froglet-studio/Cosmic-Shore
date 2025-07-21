@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Game.IO;
+using CosmicShore.SOAP;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,6 +8,14 @@ namespace CosmicShore.Game
 {
     public class NetworkInputStatus : NetworkBehaviour, IInputStatus
     {
+        [SerializeField]
+        ScriptableEventInputEvents _onButtonPressed;
+        public ScriptableEventInputEvents OnButtonPressed => _onButtonPressed;
+        
+        [SerializeField]
+        ScriptableEventInputEvents _onButtonReleased;
+        public ScriptableEventInputEvents OnButtonReleased => _onButtonReleased;
+        
         public InputController InputController { get; set; }
 
         // Floats
@@ -23,6 +32,7 @@ namespace CosmicShore.Game
         private readonly NetworkVariable<bool> n_invertYEnabled = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<bool> n_invertThrottleEnabled = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<bool> n_oneTouchLeft = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<bool> n_commandStickControls = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         // Vectors
         private readonly NetworkVariable<Vector2> n_rightJoystickHome = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
@@ -102,6 +112,12 @@ namespace CosmicShore.Game
         {
             get => n_oneTouchLeft.Value;
             set => n_oneTouchLeft.Value = value;
+        }
+
+        public bool CommandStickControls
+        {
+            get =>  n_commandStickControls.Value;
+            set => n_commandStickControls.Value = value;
         }
 
         public Vector2 RightJoystickHome

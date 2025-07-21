@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
+using CosmicShore.SOAP;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -15,12 +16,11 @@ namespace CosmicShore.Game
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
 
-        [SerializeField] InputEventsEventChannelSO OnButton1Pressed;
-        [SerializeField] InputEventsEventChannelSO OnButton1Released;
-        [SerializeField] InputEventsEventChannelSO OnButton2Pressed;
-        [SerializeField] InputEventsEventChannelSO OnButton2Released;
-        [SerializeField] InputEventsEventChannelSO OnButton3Pressed;
-        [SerializeField] InputEventsEventChannelSO OnButton3Released;
+        [SerializeField]
+        ScriptableEventInputEvents _onButtonPressed;
+        
+        [SerializeField]
+        ScriptableEventInputEvents _onButtonReleased;
         
         readonly Dictionary<InputEvents, List<ShipAction>> _shipControlActions = new();
         readonly Dictionary<ResourceEvents, List<ShipAction>> _classResourceActions = new();
@@ -31,22 +31,14 @@ namespace CosmicShore.Game
 
         public void SubscribeEvents()
         {
-            OnButton1Pressed.OnEventRaised += PerformShipControllerActions;
-            OnButton1Released.OnEventRaised += StopShipControllerActions;
-            OnButton2Pressed.OnEventRaised += PerformShipControllerActions;
-            OnButton2Released.OnEventRaised += StopShipControllerActions;
-            OnButton3Pressed.OnEventRaised += PerformShipControllerActions;
-            OnButton3Released.OnEventRaised += StopShipControllerActions;
+            _onButtonPressed.OnRaised += PerformShipControllerActions;
+            _onButtonReleased.OnRaised += StopShipControllerActions;
         }
 
         public void UnsubscribeEvents()
         {
-            OnButton1Pressed.OnEventRaised -= PerformShipControllerActions;
-            OnButton1Released.OnEventRaised -= StopShipControllerActions;
-            OnButton2Pressed.OnEventRaised -= PerformShipControllerActions;
-            OnButton2Released.OnEventRaised -= StopShipControllerActions;
-            OnButton3Pressed.OnEventRaised -= PerformShipControllerActions;
-            OnButton3Released.OnEventRaised -= StopShipControllerActions;
+            _onButtonPressed.OnRaised += PerformShipControllerActions;
+            _onButtonReleased.OnRaised += StopShipControllerActions;
         }
 
         public void Initialize(IShipStatus shipStatus)

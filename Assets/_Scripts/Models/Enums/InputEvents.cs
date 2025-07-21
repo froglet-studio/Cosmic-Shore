@@ -1,3 +1,4 @@
+[System.Serializable]
 public enum InputEvents
 {
     FullSpeedStraightAction = 0,        // Fly with full speed and straight

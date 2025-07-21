@@ -1,4 +1,6 @@
 ﻿using CosmicShore.Game.IO;
+using CosmicShore.SOAP;
+using CosmicShore.Utilities;
 using UnityEngine;
 
 
@@ -8,6 +10,9 @@ namespace CosmicShore.Game
     {
         static ScreenOrientation CurrentOrientation;
 
+        ScriptableEventInputEvents OnButtonPressed {get;}
+        ScriptableEventInputEvents OnButtonReleased {get;}
+        
         InputController InputController { get; set; }
 
         // Floats
@@ -24,6 +29,7 @@ namespace CosmicShore.Game
         bool InvertYEnabled { get; set; }
         bool InvertThrottleEnabled { get; set; }
         bool OneTouchLeft { get; set; }
+        bool CommandStickControls { get; set; }
 
         // Vectors
         Vector2 RightJoystickHome { get; set; }

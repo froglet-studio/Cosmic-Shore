@@ -78,7 +78,7 @@ namespace CosmicShore.Game
             }
         }
 
-        public override void Initialize(IPlayer player, bool enableAutoPilot)
+        public override void Initialize(IPlayer player, bool enableAIPilot)
         {
             ShipStatus.Player = player;
 
@@ -128,7 +128,7 @@ namespace CosmicShore.Game
             // sets SingleStickControls to true/false. Try finding a solution to remove this
             // sequential dependency.
 
-            ShipStatus.AIPilot.Initialize(enableAutoPilot, this);
+            ShipStatus.AIPilot.Initialize(enableAIPilot, this);
 
             InvokeShipInitializedEvent();
         }

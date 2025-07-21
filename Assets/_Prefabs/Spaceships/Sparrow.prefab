@@ -374,6 +374,12 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 9172589084772723142, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: _onButtonPressed
+      value: 
+      objectReference: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9,
+        type: 2}
+    - target: {fileID: 9172589084772723142, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: OnButton1Released
       value: 
       objectReference: {fileID: 11400000, guid: badbc8ef2643e3d47b793be40335bdbc,
@@ -389,6 +395,12 @@ PrefabInstance:
       propertyPath: OnButton3Released
       value: 
       objectReference: {fileID: 11400000, guid: 8d28d7878c107ce449c50b14b57220ab,
+        type: 2}
+    - target: {fileID: 9172589084772723142, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: _onButtonReleased
+      value: 
+      objectReference: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e,
         type: 2}
     - target: {fileID: 9172589084772723142, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}

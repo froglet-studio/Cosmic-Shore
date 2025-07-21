@@ -11,7 +11,7 @@ namespace CosmicShore
         protected override void Start()
         {
             base.Start();
-            Ship.ShipStatus.CommandStickControls = true;
+            shipStatus.InputStatus.CommandStickControls = true;
             speed = .1f;
         }
 

@@ -83,9 +83,7 @@ namespace CosmicShore.Game
         public Transform FollowTarget { get; set; }
         public Transform ShipTransform => Ship.Transform;
         public IPlayer Player { get; set; }
-        // public Teams Team => Player.Team;
-        public InputController IputController => Player.InputController;
-        public IInputStatus InputStatus => IputController.InputStatus;
+        public IInputStatus InputStatus => Player.InputStatus;
         public Material AOEExplosionMaterial { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material ShipMaterial { get; set; }
@@ -233,7 +231,6 @@ namespace CosmicShore.Game
         public bool Turret { get; set; }
         public bool Portrait { get; set; }
         public bool SingleStickControls { get; set; }
-        public bool CommandStickControls { get; set; }
         public bool LiveProjectiles { get; set; }
         public bool Stationary { get; set; }
         public bool ElevatedResourceGain { get; set; }
