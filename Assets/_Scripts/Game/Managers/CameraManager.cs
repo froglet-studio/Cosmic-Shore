@@ -18,6 +18,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     [SerializeField] CustomCameraController deathCamera;
     [SerializeField] CustomCameraController endCamera;
 
+    ICameraController activeController;
+
     [SerializeField] Transform endCameraFollowTarget;
     [SerializeField] Transform endCameraLookAtTarget;
 
@@ -212,10 +214,12 @@ public class CameraManager : SingletonPersistent<CameraManager>
         if (activeCamera == mainMenuCamera)
         {
             mainMenuCamera.Priority = activePriority;
+            activeController = null;
         }
         else if (activeCamera == playerCamera)
         {
             playerCamera.gameObject.SetActive(true);
+            activeController = playerCamera;
             if (playerCamera.TryGetComponent(out UniversalAdditionalCameraData cameraData))
             {
                 cameraData.renderPostProcessing = true;
@@ -228,11 +232,18 @@ public class CameraManager : SingletonPersistent<CameraManager>
         else if (activeCamera == deathCamera)
         {
             deathCamera.gameObject.SetActive(true);
+            activeController = deathCamera;
         }
         else if (activeCamera == endCamera)
         {
             endCamera.gameObject.SetActive(true);
+            activeController = endCamera;
         }
+    }
+
+    public ICameraController GetActiveController()
+    {
+        return activeController;
     }
 
     void ClipPlaneAndOffsetLerper(float normalizedDistance)

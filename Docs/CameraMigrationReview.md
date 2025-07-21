@@ -17,6 +17,9 @@ This document tracks the migration to a new camera system.
 - **`CustomCameraController`** – manages camera movement and input.
 - **`ShipCameraCustomizer`** – configures follow targets and offsets for each ship.
 - **`CameraRigAnchor`** – helper for look‑at and follow transforms.
+- **`CameraSettingsSO`** – scriptable object containing per‑ship camera values.
+- **`ICameraController`** – interface implemented by camera controllers.
+- **`ICameraConfigurator`** – interface for applying `CameraSettingsSO`.
 
 ## Testing the Prefab
 
@@ -29,3 +32,10 @@ This document tracks the migration to a new camera system.
 For more information on the underlying system, see
 [CameraSystemAnalysis](CameraSystemAnalysis.md) and
 [CustomCameraSetupGuide](CustomCameraSetupGuide.md).
+
+### 2024 Update
+
+The camera architecture now relies on **CameraSettingsSO** assets. Ships use
+`ShipCameraCustomizer` to apply these settings through the new
+`ICameraConfigurator` interface. Runtime cameras implement `ICameraController`
+to consume the settings directly.

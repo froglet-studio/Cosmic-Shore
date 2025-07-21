@@ -3,29 +3,26 @@ using UnityEngine;
 namespace CosmicShore.Game.CameraSystem
 {
     [RequireComponent(typeof(Camera))]
-    public class CustomCameraController : MonoBehaviour
+    public class CustomCameraController : MonoBehaviour, ICameraController
     {
-        [Header("Follow Settings")] [SerializeField]
-        private Transform followTarget;
+        [Header("Follow Settings")] private Transform followTarget;
 
-        [SerializeField] private Vector3 followOffset = new Vector3(0f, 10f, -20f);
-        [SerializeField] private float followSmoothTime = 0.2f;
+        private Vector3 followOffset = new Vector3(0f, 10f, -20f);
+        private float followSmoothTime = 0.2f;
 
-        [Header("Rotation Settings")] [SerializeField]
-        private float rotationSmoothTime = 5f;
+        [Header("Rotation Settings")] private float rotationSmoothTime = 5f;
 
-        [Tooltip("If true, disables rotation smoothing entirely (instant look)")]
-        public bool disableRotationLerp = false;
+        [Tooltip("If true, disables rotation smoothing entirely (instant look)")] private bool disableRotationLerp = false;
 
-        [Header("Camera Settings")] [SerializeField]
-        private bool useFixedUpdate = false;
+        [Header("Camera Settings")] private bool useFixedUpdate = false;
 
-        [SerializeField] private float farClipPlane = 10000f;
-        [SerializeField] private float fieldOfView = 60f;
+        private float farClipPlane = 10000f;
+        private float fieldOfView = 60f;
 
         private Camera cachedCamera;
         private Vector3 velocity;
         private Vector3 _lastTargetPos;
+        private CameraSettingsSO currentSettings;
 
         public Camera Camera => cachedCamera;
 
@@ -50,9 +47,7 @@ namespace CosmicShore.Game.CameraSystem
         void Awake()
         {
             cachedCamera = GetComponent<Camera>();
-            cachedCamera.fieldOfView = fieldOfView;
             cachedCamera.useOcclusionCulling = false;
-            cachedCamera.farClipPlane = farClipPlane;
         }
 
         void LateUpdate()
@@ -143,5 +138,29 @@ namespace CosmicShore.Game.CameraSystem
             if (ortho)
                 cachedCamera.orthographicSize = size;
         }
+
+        #region ICameraController Implementation
+        public void ApplySettings(CameraSettingsSO settings)
+        {
+            currentSettings = settings;
+            if (currentSettings == null) return;
+
+            followOffset = currentSettings.followOffset;
+            followSmoothTime = currentSettings.followSmoothTime;
+            rotationSmoothTime = currentSettings.rotationSmoothTime;
+            disableRotationLerp = currentSettings.disableRotationLerp;
+            useFixedUpdate = currentSettings.useFixedUpdate;
+
+            cachedCamera.fieldOfView = currentSettings.fieldOfView;
+            cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
+            cachedCamera.farClipPlane = currentSettings.farClipPlane;
+            cachedCamera.orthographic = currentSettings.isOrthographic;
+            if (currentSettings.isOrthographic)
+                cachedCamera.orthographicSize = currentSettings.orthographicSize;
+        }
+
+        public void Activate() => gameObject.SetActive(true);
+        public void Deactivate() => gameObject.SetActive(false);
+        #endregion
     }
 }
