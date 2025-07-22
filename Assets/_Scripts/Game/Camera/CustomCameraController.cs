@@ -1,48 +1,26 @@
 using UnityEngine;
+using CosmicShore.Game.CameraSystem;
 
 namespace CosmicShore.Game.CameraSystem
 {
     [RequireComponent(typeof(Camera))]
     public class CustomCameraController : MonoBehaviour, ICameraController
     {
-        [Header("Follow Settings")] private Transform followTarget;
+        // ─── Configuration Fields (populated by ApplySettings) ─────────────────
 
-        private Vector3 followOffset = new Vector3(0f, 10f, -20f);
-        private float followSmoothTime = 0.2f;
+        private Transform followTarget;
+        private Vector3  followOffset        = new Vector3(0f, 10f, -20f);
+        private float    followSmoothTime    = 0.2f;
+        private float    rotationSmoothTime  = 5f;
+        private bool     disableRotationLerp = false;
+        private bool     useFixedUpdate      = false;
 
-        [Header("Rotation Settings")] private float rotationSmoothTime = 5f;
+        // ─── Runtime State ───────────────────────────────────────────────────────
 
-        [Tooltip("If true, disables rotation smoothing entirely (instant look)")] private bool disableRotationLerp = false;
-
-        [Header("Camera Settings")] private bool useFixedUpdate = false;
-
-        private float farClipPlane = 10000f;
-        private float fieldOfView = 60f;
-
-        private Camera cachedCamera;
-        private Vector3 velocity;
-        private Vector3 _lastTargetPos;
-        private CameraSettingsSO currentSettings;
-
-        public Camera Camera => cachedCamera;
-
-        public Transform FollowTarget
-        {
-            get => followTarget;
-            set => followTarget = value;
-        }
-
-        public float FollowSmoothTime
-        {
-            get => followSmoothTime;
-            set => followSmoothTime = Mathf.Max(0f, value);
-        }
-
-        public float RotationSmoothTime
-        {
-            get => rotationSmoothTime;
-            set => rotationSmoothTime = Mathf.Max(0f, value);
-        }
+        private Camera             cachedCamera;
+        private Vector3            velocity;
+        private Vector3            _lastTargetPos;
+        private CameraSettingsSO   currentSettings;  // holds last‐applied SO
 
         void Awake()
         {
@@ -62,26 +40,20 @@ namespace CosmicShore.Game.CameraSystem
                 UpdateCamera();
         }
 
-        void UpdateCamera()
+        private void UpdateCamera()
         {
-            if (followTarget == null)
-                return;
+            if (followTarget == null) return;
 
-            // Initialize last-frame position
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = followTarget.position;
 
-            //  Compute desired world pos
-            Quaternion offsetRot = followTarget.rotation;
-            Vector3 desiredPos = followTarget.position + offsetRot * followOffset;
+            // 1) Position
+            Vector3 desiredPos = followTarget.position + followTarget.rotation * followOffset;
+            Vector3 shipDelta  = followTarget.position - _lastTargetPos;
+            float   fwd        = Vector3.Dot(shipDelta, followTarget.forward);
+            float   lat        = Vector3.Dot(shipDelta, followTarget.right);
 
-            //  Detect how the ship moved this frame (in local space)
-            Vector3 shipDelta = followTarget.position - _lastTargetPos;
-            float fwdMove = Vector3.Dot(shipDelta, followTarget.forward);
-            float latMove = Vector3.Dot(shipDelta, followTarget.right);
-
-            // Position: smooth forward/back, snap sideways
-            if (Mathf.Abs(latMove) > Mathf.Abs(fwdMove))
+            if (Mathf.Abs(lat) > Mathf.Abs(fwd))
             {
                 transform.position = desiredPos;
                 velocity = Vector3.zero;
@@ -89,78 +61,89 @@ namespace CosmicShore.Game.CameraSystem
             else
             {
                 transform.position = Vector3.SmoothDamp(
-                    transform.position,
-                    desiredPos,
-                    ref velocity,
-                    followSmoothTime
+                    transform.position, desiredPos, ref velocity, followSmoothTime
                 );
             }
 
-            Vector3 toTarget = followTarget.position - transform.position;
-            Quaternion targetRot = Quaternion.LookRotation(toTarget, followTarget.up);
+            // 2) Rotation
+            Quaternion targetRot = Quaternion.LookRotation(
+                followTarget.position - transform.position,
+                followTarget.up
+            );
 
-            if (disableRotationLerp || Mathf.Abs(latMove) > Mathf.Abs(fwdMove))
-            {
-                // Instant look
+            if (disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
                 transform.rotation = targetRot;
-            }
             else
             {
-                // Smoothed look
                 float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    targetRot,
-                    t
-                );
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
             }
 
-            // 5. Store for next frame
             _lastTargetPos = followTarget.position;
         }
 
-        // --- Utility setters/getters ---
-        public void SetFollowTarget(Transform target) => followTarget = target;
-        public void SetFollowOffset(Vector3 offset) => followOffset = offset;
-        public Vector3 GetFollowOffset() => followOffset;
+        // ─── ICameraController ────────────────────────────────────────────────────
 
-        public void SetFieldOfView(float fov) => cachedCamera.fieldOfView = fov;
-
-        public void SetClipPlanes(float near, float far)
-        {
-            cachedCamera.nearClipPlane = near;
-            cachedCamera.farClipPlane = far;
-        }
-
-        public void SetOrthographic(bool ortho, float size)
-        {
-            cachedCamera.orthographic = ortho;
-            if (ortho)
-                cachedCamera.orthographicSize = size;
-        }
-
-        #region ICameraController Implementation
+        /// <summary>
+        /// Pull configuration from a CameraSettingsSO.
+        /// </summary>
         public void ApplySettings(CameraSettingsSO settings)
         {
             currentSettings = settings;
             if (currentSettings == null) return;
 
-            followOffset = currentSettings.followOffset;
-            followSmoothTime = currentSettings.followSmoothTime;
-            rotationSmoothTime = currentSettings.rotationSmoothTime;
-            disableRotationLerp = currentSettings.disableRotationLerp;
-            useFixedUpdate = currentSettings.useFixedUpdate;
+            // Common follow/rotation/update
+            followOffset         = currentSettings.followOffset;
+            followSmoothTime     = currentSettings.followSmoothTime;
+            rotationSmoothTime   = currentSettings.rotationSmoothTime;
+            disableRotationLerp  = currentSettings.disableRotationLerp;
+            useFixedUpdate       = currentSettings.useFixedUpdate;
 
-            cachedCamera.fieldOfView = currentSettings.fieldOfView;
+            // Frustum clip planes
             cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
-            cachedCamera.farClipPlane = currentSettings.farClipPlane;
-            cachedCamera.orthographic = currentSettings.isOrthographic;
-            if (currentSettings.isOrthographic)
-                cachedCamera.orthographicSize = currentSettings.orthographicSize;
+            cachedCamera.farClipPlane  = currentSettings.farClipPlane;
         }
 
-        public void Activate() => gameObject.SetActive(true);
+        /// <summary>
+        /// Set which Transform to follow.
+        /// </summary>
+        public void SetFollowTarget(Transform target)
+        {
+            followTarget   = target;
+            _lastTargetPos = Vector3.zero;
+        }
+
+        /// <summary>
+        /// Ensures settings re-apply when enabling.
+        /// </summary>
+        public void Activate()
+        {
+            gameObject.SetActive(true);
+            if (currentSettings != null)
+                ApplySettings(currentSettings);
+        }
+
+        /// <summary>
+        /// Simply disable the GameObject.
+        /// </summary>
         public void Deactivate() => gameObject.SetActive(false);
-        #endregion
+
+        // ─── Legacy API for CameraManager ────────────────────────────────────────
+
+        /// <summary>Expose underlying Camera for CameraManager (e.g. vCam).</summary>
+        public Camera Camera => cachedCamera;
+
+        /// <summary>Allow CameraManager to tweak the follow offset at runtime.</summary>
+        public void SetFollowOffset(Vector3 offset) => followOffset = offset;
+
+        /// <summary>Allow CameraManager to read the original offset.</summary>
+        public Vector3 GetFollowOffset() => followOffset;
+
+        /// <summary>Called by CameraManager.Orthographic(...)</summary>
+        public void SetOrthographic(bool ortho, float size)
+        {
+            cachedCamera.orthographic = ortho;
+            if (ortho) cachedCamera.orthographicSize = size;
+        }
     }
 }

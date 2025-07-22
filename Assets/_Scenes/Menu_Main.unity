@@ -53197,7 +53197,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 10000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -53228,14 +53228,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followTarget: {fileID: 0}
-  followOffset: {x: 0, y: 5, z: -20}
-  followSmoothTime: 0.2
-  rotationSmoothTime: 5
-  disableRotationLerp: 0
-  useFixedUpdate: 0
-  farClipPlane: 10000
-  fieldOfView: 60
 --- !u!114 &1564738391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53248,14 +53240,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followTarget: {fileID: 0}
-  followOffset: {x: 0, y: 5, z: -20}
-  followSmoothTime: 0.2
-  rotationSmoothTime: 5
-  disableRotationLerp: 0
-  useFixedUpdate: 0
-  farClipPlane: 10000
-  fieldOfView: 60
 --- !u!114 &1564738392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53268,14 +53252,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followTarget: {fileID: 0}
-  followOffset: {x: 0, y: 5, z: -20}
-  followSmoothTime: 0.2
-  rotationSmoothTime: 5
-  disableRotationLerp: 1
-  useFixedUpdate: 0
-  farClipPlane: 10000
-  fieldOfView: 60
 --- !u!1 &1565783685
 GameObject:
   m_ObjectHideFlags: 0

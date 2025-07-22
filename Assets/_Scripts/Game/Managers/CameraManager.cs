@@ -18,7 +18,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     [SerializeField] CustomCameraController deathCamera;
     [SerializeField] CustomCameraController endCamera;
 
-    ICameraController activeController;
+    private ICameraController activeController;
 
     [SerializeField] Transform endCameraFollowTarget;
     [SerializeField] Transform endCameraLookAtTarget;
@@ -204,29 +204,29 @@ public class CameraManager : SingletonPersistent<CameraManager>
     void SetActiveCamera(Component activeCamera)
     {
         Orthographic(isOrthographic);
-        Debug.Log($"SetActiveCamera {activeCamera.name}");
- 
-        mainMenuCamera.Priority = inactivePriority;
-        playerCamera.gameObject.SetActive(false);
-        deathCamera.gameObject.SetActive(false);
-        endCamera.gameObject.SetActive(false);
+        Debug.Log($"[CameraManager] Switching to camera: {activeCamera.name}");
 
+        // disable all first
+        playerCamera.Deactivate();
+        deathCamera.Deactivate();
+        endCamera.Deactivate();
+        mainMenuCamera.Priority = inactivePriority;
+
+        // enable & assign activeController
         if (activeCamera == mainMenuCamera)
         {
             mainMenuCamera.Priority = activePriority;
-            activeController = null;
+      
         }
         else if (activeCamera == playerCamera)
         {
-            playerCamera.gameObject.SetActive(true);
+            playerCamera.Activate();
             activeController = playerCamera;
-            if (playerCamera.TryGetComponent(out UniversalAdditionalCameraData cameraData))
-            {
-                cameraData.renderPostProcessing = true;
-            }
+            if (playerCamera.TryGetComponent<UniversalAdditionalCameraData>(out var camData))
+                camData.renderPostProcessing = true;
             InitializeRuntimeOffset();
             Vector3 finalOffset = runtimeFollowOffset;
-            SetRuntimeFollowOffset(runtimeFollowOffset + Vector3.back * startTransitionDistance);
+            SetRuntimeFollowOffset(finalOffset + Vector3.back * startTransitionDistance);
             SetOffsetPosition(finalOffset);
         }
         else if (activeCamera == deathCamera)
