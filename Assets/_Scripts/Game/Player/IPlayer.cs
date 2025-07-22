@@ -19,6 +19,7 @@ namespace CosmicShore.Game
         public void Initialize(InitializeData data, IShip ship);
         public void ToggleActive(bool active);
         public void ToggleGameObject(bool toggle);
+        public void ToggleAutoPilotMode(bool toggle);
 
         [System.Serializable]
         public class InitializeData
@@ -28,6 +29,7 @@ namespace CosmicShore.Game
             public string PlayerName;
             public string PlayerUUID;
             public bool EnableAIPilot;
+            public bool AllowSpawning;
         }
     }
 }

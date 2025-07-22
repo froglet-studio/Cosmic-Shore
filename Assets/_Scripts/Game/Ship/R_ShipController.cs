@@ -11,13 +11,14 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IShipStatus))]
     public class R_ShipController : R_ShipBase
     {
-        [SerializeField] bool isMultiplayerMode = false;
 
         [SerializeField] List<ImpactProperties> impactProperties;
 
         readonly NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
+        
+        bool isMultiplayerMode = false;
 
         void OnEnable()
         {
@@ -47,6 +48,8 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
+            isMultiplayerMode = true;
+            
             if (!isMultiplayerMode) return;
             if (!IsOwner)
             {
@@ -65,6 +68,8 @@ namespace CosmicShore.Game
                 n_Course.OnValueChanged -= OnCourseChanged;
                 n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
             }
+            
+            isMultiplayerMode = false;
         }
 
         void Update()
@@ -127,7 +132,6 @@ namespace CosmicShore.Game
             // TODO - Currently AIPilot's update should run only after SingleStickShipTransformer
             // sets SingleStickControls to true/false. Try finding a solution to remove this
             // sequential dependency.
-
             ShipStatus.AIPilot.Initialize(enableAIPilot, this);
 
             InvokeShipInitializedEvent();

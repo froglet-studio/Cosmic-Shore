@@ -1,10 +1,7 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Game.Arcade;
 using CosmicShore.Game.IO;
-using CosmicShore.Game.UI;
 using System;
 using System.Collections.Generic;
-using Unity.Android.Gradle.Manifest;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
@@ -12,9 +9,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// DEPRECATED
-    /// This player is spawned to each client from server as 
-    /// the main multiplayer player prefab instance.
+    /// DEPRECATED - Use R_Player instead
     /// </summary>
     public class NetworkPlayer : NetworkBehaviour, IPlayer
     {
@@ -91,7 +86,7 @@ namespace CosmicShore.Game
             // _ship = data.Ship;
             _ship = Hangar.Instance.SetShipProperties(_ship, _ship.ShipStatus.Team, IsOwner);
 
-            _ship.Initialize(this);
+            _ship.Initialize(this, false);
 
             if (IsOwner)
             {
@@ -122,5 +117,10 @@ namespace CosmicShore.Game
 
         public void ToggleGameObject(bool toggle) =>
             gameObject.SetActive(toggle);
+
+        public void ToggleAutoPilotMode(bool toggle)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

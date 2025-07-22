@@ -98,5 +98,6 @@ namespace CosmicShore.Game
         {
             throw new NotImplementedException();
         }
+        public void ToggleAutoPilot(bool toggle) => ShipStatus.AutoPilotEnabled = toggle;
     }
 }

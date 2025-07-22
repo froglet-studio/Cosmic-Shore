@@ -62,7 +62,6 @@ namespace CosmicShore.Game.AI
             BottomLeft,
             TopLeft,
         };
-        public bool AutoPilotEnabled { get; private set; }
 
         IShip _ship;
         IShipStatus _shipStatus => _ship.ShipStatus;
@@ -145,7 +144,6 @@ namespace CosmicShore.Game.AI
 
         public void Initialize(bool enableAutoPilot, IShip ship)
         {
-            AutoPilotEnabled = enableAutoPilot;
             _ship = ship;
 
             // Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
@@ -171,10 +169,9 @@ namespace CosmicShore.Game.AI
             }
         }
 
-
         void Update()
         {
-            if (!AutoPilotEnabled)
+            if (!_shipStatus.AutoPilotEnabled)
                 return;
 
             _distance = _targetPosition - transform.position;
@@ -220,18 +217,7 @@ namespace CosmicShore.Game.AI
             //aggressiveness += aggressivenessIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
         }
-        Vector3 ShootLaser(Vector3 position)
-        {
-            if (Physics.Raycast(transform.position + position, transform.forward, out _hit, _maxDistance))
-            {
-                Debug.DrawLine(transform.position + position, _hit.point, Color.red);
-                return _hit.point - (transform.position + position);
-            }
-
-            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * _maxDistance, Color.green);
-            return transform.forward * _maxDistance - (transform.position + position);
-        }
-
+        
         IEnumerator UseAbilityCoroutine(AIAbility action) 
         {
             yield return new WaitForSeconds(3);
@@ -246,6 +232,18 @@ namespace CosmicShore.Game.AI
         
         #region Unused Methods
 
+        Vector3 ShootLaser(Vector3 position)
+        {
+            if (Physics.Raycast(transform.position + position, transform.forward, out _hit, _maxDistance))
+            {
+                Debug.DrawLine(transform.position + position, _hit.point, Color.red);
+                return _hit.point - (transform.position + position);
+            }
+
+            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * _maxDistance, Color.green);
+            return transform.forward * _maxDistance - (transform.position + position);
+        }
+        
         float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
         {
             float rollAdjustment = 0f;
@@ -266,7 +264,12 @@ namespace CosmicShore.Game.AI
         }
         
         
-        /*IEnumerator SetTargetCoroutine()
+        /*
+         
+         // TODO - This method is moved inside AIPilot. Some logics and conditions might have
+         // been temporarily removed, but check this method, for adding those logics inside the
+         // new method of AIPilot
+         IEnumerator SetTargetCoroutine()
         {
             // TODO - these lists if needed, should be specified separate.
             List<ShipClassType> aggressiveShips = new List<ShipClassType>

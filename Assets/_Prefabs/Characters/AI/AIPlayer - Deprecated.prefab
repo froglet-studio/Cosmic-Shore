@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 9106189021102876755}
   - component: {fileID: 6189026688677294337}
   m_Layer: 0
-  m_Name: AIPlayer
+  m_Name: AIPlayer - Deprecated
   m_TagString: red
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

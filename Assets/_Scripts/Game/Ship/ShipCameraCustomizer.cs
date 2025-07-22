@@ -33,7 +33,7 @@ namespace CosmicShore
         {
 
             // Camera controls are only relevant for human pilots
-            if (Ship.ShipStatus.AIPilot.AutoPilotEnabled)
+            if (Ship.ShipStatus.AutoPilotEnabled)
                 return;
 
             foreach (ShipCameraOverrides effect in controlOverrides)

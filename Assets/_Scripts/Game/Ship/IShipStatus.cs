@@ -17,7 +17,7 @@ namespace CosmicShore.Game
         Material AOEExplosionMaterial { get; set; }
         bool Attached { get; set; }
         TrailBlock AttachedTrailBlock { get; set; }
-        bool AutoPilotEnabled { get; }
+        bool AutoPilotEnabled { get; set; }
         Quaternion blockRotation { get; set; }
         bool Boosting { get; set; }
         float BoostMultiplier { get; set; }

@@ -38,37 +38,10 @@ namespace CosmicShore.Game
         public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
         public void ToggleActive(bool active) => IsActive = active;
 
-        public void StartAutoPilot()
+        public void ToggleAutoPilotMode(bool toggle)
         {
-            var ai = Ship?.ShipStatus?.AIPilot;
-            if (!ai)
-            {
-                Debug.LogError("StartAutoPilot: no AIPilot found on ShipStatus.");
-                return;
-            }
-
-            // TODO - It should not initialize,
-            /*ai.AssignShip(Ship);
-            ai.Initialize(true);*/
-
-            InputController.SetPaused(true);
-            // Debug.Log("StartAutoPilot: AI initialized and player input paused.");
-        }
-
-        public void StopAutoPilot()
-        {
-            var ai = Ship?.ShipStatus?.AIPilot;
-            if (!ai)
-            {
-                Debug.LogError("StopAutoPilot: no AIPilot found on ShipStatus.");
-                return;
-            }
-
-            // TODO - It should not initialize,
-            // ai.Initialize(false);
-
-            InputController.SetPaused(false);
-            // Debug.Log("StopAutoPilot: AI disabled and player input unpaused.");
+            Ship.ToggleAutoPilot(toggle);
+            InputController.SetPaused(toggle);   
         }
     }
 }

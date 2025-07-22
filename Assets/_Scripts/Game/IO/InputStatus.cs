@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    /// <summary>
+    /// DEPRECATED - Use NetworkInputStatus instead
+    /// </summary>
     public class InputStatus : MonoBehaviour, IInputStatus
     {
         public static ScreenOrientation CurrentOrientation;

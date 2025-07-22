@@ -66,14 +66,18 @@ public class ShipTransformer : MonoBehaviour
 
     protected virtual void Update()
     {
+        // TODO - Ship should never be null if ShipTransformer is enabled.
+        // Find better way to do this.
         if (Ship == null)
             return;
 
-        if (InputStatus == null)
+        // TODO - InputStatus will be paused in auto-pilot mode,
+        // hence this check is invalid.
+        /*if (InputStatus == null)
             return;
 
         if (InputStatus.Paused)
-            return;
+            return;*/
 
         shipStatus.blockRotation = transform.rotation;
 

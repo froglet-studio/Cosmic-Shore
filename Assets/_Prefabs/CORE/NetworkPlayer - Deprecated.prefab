@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 183709116842290961}
   - component: {fileID: 1611646322854848499}
   m_Layer: 0
-  m_Name: NetworkPlayer
+  m_Name: NetworkPlayer - Deprecated
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

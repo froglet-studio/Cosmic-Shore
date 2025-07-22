@@ -220,11 +220,8 @@ namespace CosmicShore.Game
                 return _elementalStatsHandler;
             }
         }
-
-
-        public float GetInertia { get; set; }
-        public float Speed { get; set; }
-        public float ChargedBoostCharge { get; set; }
+        
+        // booleans
         public bool Boosting { get; set; }
         public bool ChargedBoostDischarging { get; set; }
         public bool Drifting { get; set; }
@@ -234,12 +231,17 @@ namespace CosmicShore.Game
         public bool LiveProjectiles { get; set; }
         public bool Stationary { get; set; }
         public bool ElevatedResourceGain { get; set; }
-        public bool AutoPilotEnabled => AIPilot.AutoPilotEnabled;
+        public bool AutoPilotEnabled { get; set; }
         public bool AlignmentEnabled { get; set; }
         public bool Slowed { get; set; }
         public bool Overheating { get; set; }
         public bool Attached { get; set; }
         public bool GunsActive { get; set; }
+        
+        public float GetInertia { get; set; }
+        public float Speed { get; set; }
+        public float ChargedBoostCharge { get; set; }
+        
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
 

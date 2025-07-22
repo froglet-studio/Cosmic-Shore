@@ -22,11 +22,11 @@ namespace CosmicShore.Game
             // if (shipStatus.Player.GameCanvas != null) shipStatus.Player.GameCanvas.MiniGameHUD.SetPipActive(!shipStatus.AIPilot.AutoPilotEnabled, mirrored);
             _EventPipEventData.Raise(new PipData()
             {
-                IsActive = !shipStatus.AIPilot.AutoPilotEnabled,
+                IsActive = !shipStatus.AutoPilotEnabled,
                 IsMirrored = mirrored
             });
 
-            if (pipCamera != null) pipCamera.gameObject.SetActive(!shipStatus.AIPilot.AutoPilotEnabled);
+            if (pipCamera != null) pipCamera.gameObject.SetActive(!shipStatus.AutoPilotEnabled);
         }
     }
 }

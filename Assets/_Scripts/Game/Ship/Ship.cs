@@ -555,6 +555,11 @@ namespace CosmicShore.Core
             PerformButtonActions(buttonNumber);
         }
 
+        public void ToggleAutoPilot(bool toggle)
+        {
+            throw new NotImplementedException();
+        }
+
         public void SetAISkillLevel(int value)
         {
             throw new NotImplementedException();

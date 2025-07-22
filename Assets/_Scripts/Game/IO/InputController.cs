@@ -4,7 +4,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.App.Systems;
 using CosmicShore.Utility.ClassExtensions;
-using Unity.Netcode;
 
 
 namespace CosmicShore.Game.IO
@@ -32,7 +31,6 @@ namespace CosmicShore.Game.IO
         {
             InputStatus ??= TryAddInputStatus();
             InputStatus.InputController = this;
-            enabled = false;
         }
 
         private void OnEnable()
@@ -54,32 +52,10 @@ namespace CosmicShore.Game.IO
             // Toggle the fullscreen state if the Escape key was pressed this frame on windows
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
                 Screen.fullScreen = !Screen.fullScreen;
-            }
 #endif
             if (InputStatus.Paused)
                 return;
-
-            // TODO - Move to AIPilot
-            /*if (InputStatus.Paused)
-            {
-                if (_ship != null && _ship.ShipStatus.AutoPilotEnabled)
-                {
-                    Debug.Log($"InputController.Update: {InputStatus.Paused} && {_ship.ShipStatus.AutoPilotEnabled} AutoPilot -> calling ProcessAutoPilot()");
-                    //Debug.Log("Input Status")
-                    ProcessAutoPilot();
-                }
-                return;
-            }*/
-
-            // TODO - Move to AIPilot
-            /*if (_ship != null && _ship.ShipStatus.AutoPilotEnabled)
-            {
-                // Debug.Log("InputController.Update: AutoPilotEnabled -> calling ProcessAutoPilot()");
-                ProcessAutoPilot();
-                return;
-            }*/
 
             if (PauseSystem.Paused)
             {
@@ -99,8 +75,6 @@ namespace CosmicShore.Game.IO
             InitializeStrategies();
             SetInitialStrategy();
             InitializeOrientation();
-
-            enabled = true;
         }
 
         private void SetInitialStrategy()
@@ -136,33 +110,6 @@ namespace CosmicShore.Game.IO
             }
             IInputStatus.CurrentOrientation = Screen.orientation;
         }
-
-        // TODO - Move these logics to AIPilot
-        /*private void ProcessAutoPilot()
-        {
-            if (currentStrategy == null)
-            {
-                Debug.LogWarning("ProcessAutoPilot: currentStrategy is NULL. Creating GamepadInputStrategy now.");
-                gamepadStrategy = new GamepadInputStrategy();
-                gamepadStrategy.Initialize(_ship);
-                currentStrategy = gamepadStrategy;
-                currentStrategy.OnStrategyActivated();
-            }
-
-            if (_ship.ShipStatus.SingleStickControls)
-            {
-                currentStrategy?.SetAutoPilotValues(new Vector2(_ship.ShipStatus.AIPilot.X, _ship.ShipStatus.AIPilot.Y));
-            }
-            else
-            {
-                currentStrategy?.SetAutoPilotValues(
-                    _ship.ShipStatus.AIPilot.XSum,
-                    _ship.ShipStatus.AIPilot.YSum,
-                    _ship.ShipStatus.AIPilot.XDiff,
-                    _ship.ShipStatus.AIPilot.YDiff
-                );
-            }
-        }*/
 
         private void UpdateInputStrategy()
         {
@@ -214,28 +161,14 @@ namespace CosmicShore.Game.IO
                 currentStrategy?.OnResumed();
         }
 
-        public Quaternion GetGyroRotation()
-        {
-            return orientationHandler.GetAttitudeRotation();
-        }
+        public Quaternion GetGyroRotation() =>
+            orientationHandler.GetAttitudeRotation();
+ 
+        public static bool UsingGamepad() =>
+            Gamepad.current != null;
 
-        public static bool UsingGamepad()
-        {
-            return Gamepad.current != null;
-        }
-
-        IInputStatus TryAddInputStatus()
-        {
-            // TODO - Testing if NetworkInputStatus can replace InputStatus
-            
-            /*bool found = TryGetComponent(out NetworkObject _);
-            if (found)
-                return gameObject.GetOrAdd<NetworkInputStatus>();
-            else
-                return gameObject.GetOrAdd<InputStatus>();*/
-            
-            return gameObject.GetOrAdd<NetworkInputStatus>();
-        }
+        IInputStatus TryAddInputStatus() =>
+            gameObject.GetOrAdd<NetworkInputStatus>();
 
     }
 }

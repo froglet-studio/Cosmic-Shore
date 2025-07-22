@@ -13,7 +13,7 @@ namespace CosmicShore.Game
 
         IShipStatus ShipStatus { get; }
 
-        void Initialize(IPlayer player, bool enableAIPilot = false);
+        void Initialize(IPlayer player, bool enableAIPilot);
         void PerformShipControllerActions(InputEvents @event);
         void StopShipControllerActions(InputEvents @event);
         void Teleport(Transform transform);
@@ -33,5 +33,6 @@ namespace CosmicShore.Game
         void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties);
         void PerformButtonActions(int buttonNumber);
         void OnButtonPressed(int buttonNumber);
+        void ToggleAutoPilot(bool toggle);
     }
 }

@@ -14,7 +14,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// /// DEPRECATED - Don't use this script anymore. Use IShip, R_ShipController instead.
+    /// DEPRECATED - Don't use this script anymore. Use IShip, R_ShipController instead.
     /// </summary>
     [RequireComponent(typeof(ShipStatus))]
     public class NetworkShip : NetworkBehaviour, IShip
@@ -443,6 +443,11 @@ namespace CosmicShore.Game
         }
 
         public void OnButtonPressed(int buttonNumber)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ToggleAutoPilot(bool toggle)
         {
             throw new NotImplementedException();
         }

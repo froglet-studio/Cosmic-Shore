@@ -9,7 +9,7 @@ using CosmicShore.Soap;
 namespace CosmicShore.Game
 {
     /// <summary>
-    ///  DEPRECATED SCRIPT
+    ///  DEPRECATED SCRIPT - Use R_Player instead
     /// </summary>
     public class Player : MonoBehaviour, IPlayer
     {
@@ -78,6 +78,11 @@ namespace CosmicShore.Game
 
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.
         public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
+        public void ToggleAutoPilotMode(bool toggle)
+        {
+            throw new NotImplementedException();
+        }
+
         public void ToggleActive(bool active) => IsActive = active;
 
         public void StartAutoPilot()
