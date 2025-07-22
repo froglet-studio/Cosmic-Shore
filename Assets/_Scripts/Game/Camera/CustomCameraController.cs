@@ -120,7 +120,10 @@ namespace CosmicShore.Game.CameraSystem
         {
             gameObject.SetActive(true);
             if (currentSettings != null)
-                ApplySettings(currentSettings);
+            {
+                cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
+                cachedCamera.farClipPlane  = currentSettings.farClipPlane;
+            }
         }
 
         /// <summary>
