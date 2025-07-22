@@ -9,7 +9,7 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-public class CameraManager : SingletonPersistent<CameraManager>
+public class CameraManager : Singleton<CameraManager>
 {
     [SerializeField]
     ThemeManagerDataContainerSO _themeManagerData;

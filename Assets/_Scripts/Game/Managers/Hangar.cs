@@ -9,7 +9,7 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
-    public class Hangar : SingletonPersistent<Hangar>
+    public class Hangar : Singleton<Hangar>
     {
         const string SELECTED_SHIP_KEY = "SelectedShip";
 

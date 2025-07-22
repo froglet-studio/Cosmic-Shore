@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2267044654069565993}
   - component: {fileID: 2267044654069565992}
   m_Layer: 0
-  m_Name: MainMenuDependencyLoader
+  m_Name: MainMenuDependencyLoader - Deprecated
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

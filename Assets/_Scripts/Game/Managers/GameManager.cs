@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 namespace CosmicShore.Core
 {
     [DefaultExecutionOrder(0)]
-    public class GameManager : SingletonPersistent<GameManager>
+    public class GameManager : Singleton<GameManager>
     {
         public static Action OnPlayGame;
         public static Action OnGameOver;

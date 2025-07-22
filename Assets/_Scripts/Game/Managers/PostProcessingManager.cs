@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace CosmicShore
 {
-    public class PostProcessingManager : SingletonPersistent<PostProcessingManager>
+    public class PostProcessingManager : Singleton<PostProcessingManager>
     {
         Volume thisVolume;
         // this serializes a new postprocess profile
