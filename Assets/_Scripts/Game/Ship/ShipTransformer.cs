@@ -265,8 +265,11 @@ public class ShipTransformer : MonoBehaviour
             Ship.ShipStatus.ShipAnimation.StopFlareBody();
     }
 
-    private void OnDisable()
+    // TODO - Should not access hangar like this.
+    // Use different way!
+    /*private void OnDisable()
     {
-        Hangar.Instance.SlowedShipTransforms.Remove(transform);
-    }
+        
+        // Hangar.Instance.SlowedShipTransforms.Remove(transform);
+    }*/
 }

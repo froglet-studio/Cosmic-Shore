@@ -170,6 +170,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void LookAtCrystal()
     {
+        if (!CellControlManager.Instance)
+            return;
+        
         mainMenuCamera.LookAt = CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
     }
 
@@ -294,6 +297,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void Orthographic(bool isOrthographic)
     {
+        if (!PostProcessingManager.Instance)
+            return;
+        
         PostProcessingManager.Instance.Orthographic(isOrthographic);
         playerCamera.SetOrthographic(isOrthographic, 1300);
 
