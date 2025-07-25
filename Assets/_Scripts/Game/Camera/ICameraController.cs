@@ -8,5 +8,9 @@ namespace CosmicShore.Game.CameraSystem
         void SetFollowTarget(Transform target);
         void Activate();
         void Deactivate();
+
+        void SetCameraDistance(float distance);
+        float GetCameraDistance();
+        void LerpCameraDistance(float start, float end, float duration);
     }
 }

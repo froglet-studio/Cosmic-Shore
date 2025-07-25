@@ -59,8 +59,14 @@ namespace CosmicShore.Game.CameraSystem
                 MessageType.Info);
 
             EditorGUILayout.LabelField("Select Override Modes", EditorStyles.boldLabel);
-            settings.controlOverrides = (ControlOverrideFlags)
-                EditorGUILayout.EnumFlagsField(controlOverridesProp.displayName, settings.controlOverrides);
+            var origFlags = settings.controlOverrides;
+            var newFlags = (ControlOverrideFlags)EditorGUILayout.EnumFlagsField(controlOverridesProp.displayName, origFlags);
+            // If either close or far cam is checked, only those can be checked!
+            if ((newFlags.HasFlag(ControlOverrideFlags.FarCam) || newFlags.HasFlag(ControlOverrideFlags.CloseCam)))
+            {
+                newFlags &= (ControlOverrideFlags.CloseCam | ControlOverrideFlags.FarCam);
+            }
+            settings.controlOverrides = newFlags;
 
             EditorGUILayout.Space();
 

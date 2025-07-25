@@ -52807,7 +52807,7 @@ PrefabInstance:
     - target: {fileID: 4853709196820857186, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: startTransitionDistance
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4853709196820857187, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}

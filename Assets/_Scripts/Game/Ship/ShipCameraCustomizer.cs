@@ -26,7 +26,9 @@ namespace CosmicShore
         {
             this.ship = ship;
             cameraManager = CameraManager.Instance;
-            cameraCtrl     = cameraManager.GetActiveController();
+
+            // Here, use playerCamera or ask CameraManager for the correct controller directly.
+            cameraCtrl = cameraManager.GetActiveController();
 
             if (cameraCtrl == null)
             {
@@ -42,31 +44,31 @@ namespace CosmicShore
             ApplyControlOverrides();
         }
 
-        /// <summary>
-        /// ICameraConfigurator implementation remains empty because
-        /// we drive everything from Initialize().
-        /// </summary>
         public void Configure(ICameraController controller) { }
 
         private void ApplyControlOverrides()
         {
             var flags = settings.controlOverrides;
-            Vector3 desiredOffset = settings.followOffset; 
-         
-            if (flags.HasFlag(ControlOverrideFlags.CloseCam) ||
-                flags.HasFlag(ControlOverrideFlags.FarCam))
+
+            // 1. Set camera distance (CloseCam/FarCam logic)
+            if (flags.HasFlag(ControlOverrideFlags.FarCam))
             {
-                float targetDist = flags.HasFlag(ControlOverrideFlags.FarCam)
-                    ? settings.farCamDistance
-                    : settings.closeCamDistance;
-     
-                desiredOffset = new Vector3(
-                    settings.followOffset.x,
-                    settings.followOffset.y,
-                    -targetDist
-                );
+                cameraCtrl.SetCameraDistance(settings.farCamDistance);
+            }
+            else
+            {
+                cameraCtrl.SetCameraDistance(settings.closeCamDistance);
             }
 
+            // 2. FixedOffset (rare, but if you need to support, add to controller API)
+            if (flags.HasFlag(ControlOverrideFlags.FixedOffset))
+            {
+                // If you want to allow full custom world-space offset (not recommended for most gameplay cams)
+                if (cameraCtrl is CustomCameraController ccc)
+                    ccc.SetFollowOffset(settings.fixedOffsetPosition);
+            }
+
+            // 3. FollowTarget (move ship then set target)
             if (flags.HasFlag(ControlOverrideFlags.FollowTarget))
             {
                 ship.Transform.position = settings.followTargetPosition;
@@ -77,20 +79,13 @@ namespace CosmicShore
                 cameraCtrl.SetFollowTarget(ship.Transform);
             }
 
-            if (flags.HasFlag(ControlOverrideFlags.FixedOffset))
-            {
-                desiredOffset = settings.fixedOffsetPosition;
-            }
-            cameraManager.SetOffsetPosition(desiredOffset);
-            cameraManager.FreezeRuntimeOffset = true;
-
+            // 4. Orthographic
             if (flags.HasFlag(ControlOverrideFlags.Orthographic) &&
-                cameraCtrl is CustomCameraController ccc)
+                cameraCtrl is CustomCameraController ccc2)
             {
-                ccc.SetOrthographic(true, settings.orthographicSize);
+                ccc2.SetOrthographic(true, settings.orthographicSize);
                 Debug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");
             }
         }
     } 
 }
-

@@ -1,26 +1,23 @@
 using CosmicShore;
 using CosmicShore.Core;
+using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utilities;
-using CosmicShore.Utility;
-using System.Collections;
-using CosmicShore.Game;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
-    [SerializeField]
-    ThemeManagerDataContainerSO _themeManagerData;
+    [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
-    [SerializeField] CinemachineCamera mainMenuCamera;
-    [SerializeField] CustomCameraController playerCamera;
-    [SerializeField] CustomCameraController deathCamera;
-    [SerializeField] CustomCameraController endCamera;
+    private ICameraController playerCamera;
+    private ICameraController deathCamera;
+    [SerializeField] CustomCameraController endCamera; // this can be as is if only one
 
     private ICameraController activeController;
 
+    [SerializeField] private CinemachineCamera mainMenuCamera;
     [SerializeField] Transform endCameraFollowTarget;
     [SerializeField] Transform endCameraLookAtTarget;
 
@@ -28,57 +25,43 @@ public class CameraManager : SingletonPersistent<CameraManager>
     readonly int activePriority = 10;
     readonly int inactivePriority = 1;
 
-    // Runtime-only properties (not serialized)
-    private Vector3 originalFollowOffset;
-    private Vector3 runtimeFollowOffset;
-    private bool hasOriginalOffset = false;
+    [HideInInspector] public bool FollowOverride = false;
+    [HideInInspector] public bool FixedFollow = false;
+    [HideInInspector] public bool isOrthographic = false;
 
-    // Drift stuff
-    bool zoomingOut;
-    [HideInInspector]
-    public bool FollowOverride = false;
-    [HideInInspector]
-    public bool FixedFollow = false;
-    [HideInInspector]
-    public bool isOrthographic = false;
+    [HideInInspector] public float CloseCamDistance;
+    [HideInInspector] public float FarCamDistance;
 
-    [HideInInspector]
-    public float CloseCamDistance;
-    [HideInInspector]
-    public float FarCamDistance;
-
-    [SerializeField]
-    float startTransitionDistance = 40f;
+    [SerializeField] float startTransitionDistance = 40f;
 
     Camera vCam;
 
-    Coroutine zoomOutCoroutine;
-    Coroutine returnToNeutralCoroutine;
-    Coroutine lerper;
-    
     public bool FreezeRuntimeOffset { get; set; } = false;
 
     public override void Awake()
     {
         base.Awake();
 
-        EnsureController(ref playerCamera, "CM PlayerCam");
-        EnsureController(ref deathCamera, "CM DeathCam");
-        EnsureController(ref endCamera, "CM EndCam");
+        // Find or assign ICameraController references
+        playerCamera = GetOrFindCameraController("CM PlayerCam");
+        deathCamera = GetOrFindCameraController("CM DeathCam");
+        endCamera = endCamera ?? GetOrFindCameraController("CM EndCam") as CustomCameraController;
     }
 
-    void EnsureController(ref CustomCameraController controller, string name)
+    private ICameraController GetOrFindCameraController(string name)
     {
-        if (controller == null)
+        Transform t = transform.Find(name);
+        if (t)
         {
-            Transform t = transform.Find(name);
-            if (t)
-                controller = t.gameObject.GetComponent<CustomCameraController>() ?? t.gameObject.AddComponent<CustomCameraController>();
+            var ctrl = t.GetComponent<ICameraController>();
+            if (ctrl == null)
+            {
+                ctrl = t.gameObject.AddComponent<CustomCameraController>();
+            }
+            return ctrl;
         }
-        else if (controller.GetComponent<CustomCameraController>() == null)
-        {
-            controller = controller.gameObject.AddComponent<CustomCameraController>();
-        }
+        Debug.LogWarning($"[CameraManager] Could not find camera controller: {name}");
+        return null;
     }
 
     private void OnEnable()
@@ -91,61 +74,17 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.OnPlayGame -= SetupGamePlayCameras;
         GameManager.OnGameOver -= SetEndCameraActive;
-
-        // Restore original offset when disabled
-        RestoreOriginalOffset();
     }
 
     void Start()
     {
-        vCam = playerCamera.Camera;
-        InitializeRuntimeOffset();
+        vCam = (playerCamera as CustomCameraController)?.Camera;
         OnMainMenu();
     }
 
-    void LateUpdate()
-    {
-        if (Application.isPlaying && hasOriginalOffset)
-        {
-            ApplyRuntimeOffset();
-        }
-    }
+    public Transform GetCloseCamera() => (playerCamera as CustomCameraController)?.transform;
 
-    private void ApplyRuntimeOffset()
-    {
-        playerCamera.SetFollowOffset(runtimeFollowOffset);
-    }
-
-    private void RestoreOriginalOffset()
-    {
-        if (hasOriginalOffset)
-        {
-            playerCamera.SetFollowOffset(originalFollowOffset);
-        }
-    }
-
-    private void SetRuntimeFollowOffset(Vector3 offset)
-    {
-        runtimeFollowOffset = offset;
-        playerCamera.SetFollowOffset(runtimeFollowOffset);
-    }
-
-    private void InitializeRuntimeOffset()
-    {
-        if (!hasOriginalOffset)
-        {
-            originalFollowOffset = playerCamera.GetFollowOffset();
-            runtimeFollowOffset = originalFollowOffset;
-            hasOriginalOffset = true;
-        }
-    }
-
-    public Transform GetCloseCamera()
-    {
-        return playerCamera.transform;
-    }
-
-    public Vector3 CurrentOffset => runtimeFollowOffset;
+    public Vector3 CurrentOffset => (playerCamera as CustomCameraController)?.GetFollowOffset() ?? Vector3.zero;
 
     public void OnMainMenu()
     {
@@ -162,206 +101,90 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void SetupGamePlayCameras(Transform _transform)
     {
         playerFollowTarget = _transform;
-        playerCamera.SetFollowTarget(playerFollowTarget);
-        deathCamera.SetFollowTarget(playerFollowTarget);
+        playerCamera?.SetFollowTarget(playerFollowTarget);
+        deathCamera?.SetFollowTarget(playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
-        
+
         SetCloseCameraActive();
-        
+
         var shipGO = playerFollowTarget.gameObject;
         var shipCustomizer = shipGO.GetComponent<ShipCameraCustomizer>();
         if (shipCustomizer != null)
-        {
             shipCustomizer.Initialize(shipGO.GetComponent<IShip>());
-        }
     }
 
     public void SetMainMenuCameraActive()
     {
-        SetActiveCamera(mainMenuCamera);
-        Invoke("LookAtCrystal", 1); // Delay to allow the old crystal to be destroyed
+        // 1. Set Cinemachine main menu camera to active/priority
+        if (mainMenuCamera != null)
+        {
+            mainMenuCamera.Priority = activePriority;
+            mainMenuCamera.gameObject.SetActive(true);
+        }
+        else
+        {
+            Debug.LogWarning("[CameraManager] Main menu camera is not assigned!");
+        }
+
+        // 2. Deactivate all gameplay cameras
+        if (playerCamera is CustomCameraController pcc)
+            pcc.Deactivate();
+        if (deathCamera is CustomCameraController dcc)
+            dcc.Deactivate();
+        if (endCamera != null)
+            endCamera.Deactivate();
+
+        activeController = null;
+
+        // 3. If you had LookAt logic for a crystal, restore it here:
+        Invoke("LookAtCrystal", 1f);
     }
 
     void LookAtCrystal()
     {
-        mainMenuCamera.LookAt = NodeControlManager.Instance.GetNearestNode(Vector3.zero).GetCrystal().transform;
+        if (mainMenuCamera != null)
+            mainMenuCamera.LookAt = NodeControlManager.Instance.GetNearestNode(Vector3.zero).GetCrystal().transform;
     }
 
-    public void SetCloseCameraActive()
+
+    public void SetCloseCameraActive() => SetActiveCamera(playerCamera);
+
+    public void SetDeathCameraActive() => SetActiveCamera(deathCamera);
+
+    public void SetEndCameraActive() => SetActiveCamera(endCamera);
+
+    void SetActiveCamera(ICameraController controller)
     {
-        SetActiveCamera(playerCamera);
+        if (playerCamera != null) playerCamera.Deactivate();
+        if (deathCamera != null) deathCamera.Deactivate();
+        if (endCamera != null) endCamera.Deactivate();
+
+        controller?.Activate();
+        activeController = controller;
     }
 
-    public void SetDeathCameraActive()
-    {
-        SetActiveCamera(deathCamera);
-    }
-
-    public void SetEndCameraActive()
-    {
-        SetActiveCamera(endCamera);
-    }
-
-    public void SetFixedFollowOffset(Vector3 offset)
-    {
-        FixedFollow = true;
-        StartCoroutine(SetFollowOffsetCoroutine(offset));
-    }
-
-    IEnumerator SetFollowOffsetCoroutine(Vector3 offset)
-    {
-        yield return new WaitForSeconds(1);
-        InitializeRuntimeOffset();
-        SetRuntimeFollowOffset(offset);
-    }
-
-    void SetActiveCamera(Component activeCamera)
-    {
-        Orthographic(isOrthographic);
-
-        // disable all first
-        playerCamera.Deactivate();
-        deathCamera.Deactivate();
-        endCamera.Deactivate();
-        mainMenuCamera.Priority = inactivePriority;
-
-        // enable & assign activeController
-        if (activeCamera == mainMenuCamera)
-        {
-            mainMenuCamera.Priority = activePriority;
-      
-        }
-        else if (activeCamera == playerCamera)
-        {
-            playerCamera.Activate();
-            activeController = playerCamera;
-            if (playerCamera.TryGetComponent<UniversalAdditionalCameraData>(out var camData))
-                camData.renderPostProcessing = true;
-            InitializeRuntimeOffset();
-            Vector3 finalOffset = runtimeFollowOffset;
-            SetRuntimeFollowOffset(finalOffset + Vector3.back * startTransitionDistance);
-            SetOffsetPosition(finalOffset);
-        }
-        else if (activeCamera == deathCamera)
-        {
-            deathCamera.gameObject.SetActive(true);
-            activeController = deathCamera;
-        }
-        else if (activeCamera == endCamera)
-        {
-            endCamera.gameObject.SetActive(true);
-            activeController = endCamera;
-        }
-    }
-
-    public ICameraController GetActiveController()
-    {
-        return activeController;
-    }
-
-    void ClipPlaneAndOffsetLerper(float normalizedDistance)
-    {
-        float CloseCamClipPlane = .5f;
-        float FarCamClipPlane = .7f;
-        if (lerper != null)
-            StopCoroutine(lerper);
-
-        float startNormalized = (runtimeFollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance);
-
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(startNormalized,
-            normalizedDistance, 1.5f, (i) =>
-            {
-                vCam.nearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
-                SetRuntimeFollowOffset(new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance));
-            }));
-    }
-
-    void ClipPlaneAndOffsetLerper(Vector3 offsetPosition)
-    {
-        if (lerper != null)
-            StopCoroutine(lerper);
-
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(runtimeFollowOffset,
-            offsetPosition, 1.5f, (i) =>
-            {
-                SetRuntimeFollowOffset(i);
-            }));
-    }
+    public ICameraController GetActiveController() => activeController;
 
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
-        if (FixedFollow) return;
-        InitializeRuntimeOffset();
-
-        Vector3 targetOffset = new Vector3(0, 0, normalizedDistance);
-        if (runtimeFollowOffset != targetOffset)
-        {
-            ClipPlaneAndOffsetLerper(normalizedDistance);
-        }
-    }
-
-    public void SetOffsetPosition(Vector3 position)
-    {
-        InitializeRuntimeOffset();
-
-        if (runtimeFollowOffset != position)
-        {
-            ClipPlaneAndOffsetLerper(position);
-        }
-    }
-
-    void Orthographic(bool isOrthographic)
-    {
-        PostProcessingManager.Instance.Orthographic(isOrthographic);
-        playerCamera.SetOrthographic(isOrthographic, 1300);
-
+        if (playerCamera == null) return;
+        float close = CloseCamDistance > 0 ? CloseCamDistance : 10f;
+        float far = FarCamDistance > 0 ? FarCamDistance : 40f;
+        float distance = Mathf.Lerp(close, far, normalizedDistance);
+        playerCamera.SetCameraDistance(distance);
     }
 
     public void ZoomCloseCameraOut(float growthRate)
     {
-        if (FixedFollow) return;
-        if (returnToNeutralCoroutine != null)
-        {
-            StopCoroutine(returnToNeutralCoroutine);
-            returnToNeutralCoroutine = null;
-        }
-        zoomingOut = true;
-        zoomOutCoroutine = StartCoroutine(ZoomOutCloseCameraCoroutine(growthRate));
-    }
-
-    IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
-    {
-        InitializeRuntimeOffset();
-
-        while (zoomingOut && runtimeFollowOffset.z > FarCamDistance)
-        {
-            SetRuntimeFollowOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward);
-            yield return null;
-        }
+        if (playerCamera == null) return;
+        float start = playerCamera.GetCameraDistance();
+        playerCamera.LerpCameraDistance(start, FarCamDistance, growthRate);
     }
 
     public void ResetCloseCameraToNeutral(float shrinkRate)
     {
-        if (FixedFollow) return;
-        if (zoomOutCoroutine != null)
-        {
-            StopCoroutine(zoomOutCoroutine);
-            zoomOutCoroutine = null;
-        }
-        zoomingOut = false;
-        returnToNeutralCoroutine = StartCoroutine(ReturnCloseCameraToNeutralCoroutine(shrinkRate));
-    }
-
-    IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
-    {
-        InitializeRuntimeOffset();
-
-        while (runtimeFollowOffset.z <= CloseCamDistance)
-        {
-            SetRuntimeFollowOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward);
-            yield return null;
-        }
-
-        SetRuntimeFollowOffset(new Vector3(0, 0, CloseCamDistance));
+        if (playerCamera == null) return;
+        float start = playerCamera.GetCameraDistance();
+        playerCamera.LerpCameraDistance(start, CloseCamDistance, shrinkRate);
     }
 }

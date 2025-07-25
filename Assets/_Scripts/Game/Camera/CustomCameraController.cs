@@ -1,25 +1,26 @@
 using UnityEngine;
-using CosmicShore.Game.CameraSystem;
 
 namespace CosmicShore.Game.CameraSystem
 {
     [RequireComponent(typeof(Camera))]
     public class CustomCameraController : MonoBehaviour, ICameraController
     {
-        // Configuration Fields (populated by ApplySettings)
-
+        // Target and Offset
         private Transform followTarget;
-        private Vector3  followOffset        = new Vector3(0f, 10f, -20f);
-        private float    followSmoothTime    = 0.2f;
-        private float    rotationSmoothTime  = 5f;
-        private bool     disableRotationLerp = false;
-        private bool     useFixedUpdate      = false;
+        private Vector3 followOffset = new(0f, 10f, 0f); // Z=0 by default, X/Y as desired
 
-        //Runtime State
-        private Camera             cachedCamera;
-        private Vector3            velocity;
-        private Vector3            _lastTargetPos;
-        private CameraSettingsSO   currentSettings;  
+        // Smoothing and Update Control
+        private float followSmoothTime = 0.2f;
+        private float rotationSmoothTime = 5f;
+        private bool disableRotationLerp = false;
+        private bool useFixedUpdate = false;
+
+        // Internal State
+        private Camera cachedCamera;
+        private Vector3 velocity;
+        private Vector3 _lastTargetPos;
+        private CameraSettingsSO currentSettings;
+        private Coroutine distanceLerpRoutine;
 
         void Awake()
         {
@@ -46,11 +47,11 @@ namespace CosmicShore.Game.CameraSystem
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = followTarget.position;
 
-            // 1) Position
+            // Always use current followOffset (X/Y from SO, Z set by SetCameraDistance)
             Vector3 desiredPos = followTarget.position + followTarget.rotation * followOffset;
-            Vector3 shipDelta  = followTarget.position - _lastTargetPos;
-            float   fwd        = Vector3.Dot(shipDelta, followTarget.forward);
-            float   lat        = Vector3.Dot(shipDelta, followTarget.right);
+            Vector3 shipDelta = followTarget.position - _lastTargetPos;
+            float fwd = Vector3.Dot(shipDelta, followTarget.forward);
+            float lat = Vector3.Dot(shipDelta, followTarget.right);
 
             if (Mathf.Abs(lat) > Mathf.Abs(fwd))
             {
@@ -64,7 +65,6 @@ namespace CosmicShore.Game.CameraSystem
                 );
             }
 
-            // 2) Rotation
             Quaternion targetRot = Quaternion.LookRotation(
                 followTarget.position - transform.position,
                 followTarget.up
@@ -81,64 +81,108 @@ namespace CosmicShore.Game.CameraSystem
             _lastTargetPos = followTarget.position;
         }
 
-        /// <summary>
-        /// Pull configuration from a CameraSettingsSO.
-        /// </summary>
         public void ApplySettings(CameraSettingsSO settings)
         {
             currentSettings = settings;
             if (currentSettings == null) return;
 
-            // Common follow/rotation/update
-            followOffset         = currentSettings.followOffset;
-            followSmoothTime     = currentSettings.followSmoothTime;
-            rotationSmoothTime   = currentSettings.rotationSmoothTime;
-            disableRotationLerp  = currentSettings.disableRotationLerp;
-            useFixedUpdate       = currentSettings.useFixedUpdate;
+            // Only use X/Y for offset from SO. Z is always set by SetCameraDistance.
+            followOffset.x = currentSettings.followOffset.x;
+            followOffset.y = currentSettings.followOffset.y;
+            // DO NOT copy Z, always keep Z controlled by SetCameraDistance!
 
-            // Frustum clip planes
+            followSmoothTime = currentSettings.followSmoothTime;
+            rotationSmoothTime = currentSettings.rotationSmoothTime;
+            disableRotationLerp = currentSettings.disableRotationLerp;
+            useFixedUpdate = currentSettings.useFixedUpdate;
             cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
-            cachedCamera.farClipPlane  = currentSettings.farClipPlane;
+            cachedCamera.farClipPlane = currentSettings.farClipPlane;
+
+            // Set Z via camera distance based on override flags
+            if (currentSettings.controlOverrides.HasFlag(ControlOverrideFlags.FarCam))
+                SetCameraDistance(currentSettings.farCamDistance);
+            else
+                SetCameraDistance(currentSettings.closeCamDistance);
         }
 
-        /// <summary>
-        /// Set which Transform to follow.
-        /// </summary>
         public void SetFollowTarget(Transform target)
         {
-            followTarget   = target;
+            followTarget = target;
             _lastTargetPos = Vector3.zero;
         }
 
-        /// <summary>
-        /// Ensures settings re-apply when enabling.
-        /// </summary>
         public void Activate()
         {
             gameObject.SetActive(true);
             if (currentSettings != null)
             {
                 cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
-                cachedCamera.farClipPlane  = currentSettings.farClipPlane;
+                cachedCamera.farClipPlane = currentSettings.farClipPlane;
             }
         }
 
-        /// <summary>
-        /// Simply disable the GameObject.
-        /// </summary>
         public void Deactivate() => gameObject.SetActive(false);
 
-        //Legacy API for CameraManager
-        /// <summary>Expose underlying Camera for CameraManager (e.g. vCam).</summary>
         public Camera Camera => cachedCamera;
 
-        /// <summary>Allow CameraManager to tweak the follow offset at runtime.</summary>
-        public void SetFollowOffset(Vector3 offset) => followOffset = offset;
+        /// <summary>
+        /// Sets the Z (distance) component of the offset. Always negative.
+        /// </summary>
+        public void SetCameraDistance(float distance)
+        {
+            if (distanceLerpRoutine != null)
+            {
+                StopCoroutine(distanceLerpRoutine);
+                distanceLerpRoutine = null;
+            }
+            // Always behind: negative Z
+            followOffset.z = -Mathf.Abs(distance);
+        }
 
-        /// <summary>Allow CameraManager to read the original offset.</summary>
+        /// <summary>
+        /// Returns the positive distance value (ignoring sign).
+        /// </summary>
+        public float GetCameraDistance() => Mathf.Abs(followOffset.z);
+
+        /// <summary>
+        /// Lerps the Z (distance) component of the offset.
+        /// </summary>
+        public void LerpCameraDistance(float start, float end, float duration)
+        {
+            if (distanceLerpRoutine != null)
+                StopCoroutine(distanceLerpRoutine);
+            distanceLerpRoutine = StartCoroutine(LerpCameraDistanceRoutine(start, end, duration));
+        }
+
+        private System.Collections.IEnumerator LerpCameraDistanceRoutine(float start, float end, float duration)
+        {
+            float t = 0;
+            while (t < duration)
+            {
+                float z = Mathf.Lerp(start, end, t / duration);
+                followOffset.z = -Mathf.Abs(z);
+                t += Time.deltaTime;
+                yield return null;
+            }
+            followOffset.z = -Mathf.Abs(end);
+        }
+
+        /// <summary>
+        /// Directly sets the full offset (rarely needed, usually for FixedOffset override).
+        /// </summary>
+        public void SetFollowOffset(Vector3 offset)
+        {
+            followOffset = offset;
+        }
+
+        /// <summary>
+        /// Returns the current full offset.
+        /// </summary>
         public Vector3 GetFollowOffset() => followOffset;
 
-        /// <summary>Called by CameraManager.Orthographic(...)</summary>
+        /// <summary>
+        /// Sets camera to orthographic mode if desired.
+        /// </summary>
         public void SetOrthographic(bool ortho, float size)
         {
             cachedCamera.orthographic = ortho;
