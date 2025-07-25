@@ -6,6 +6,7 @@ using CosmicShore.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
@@ -26,6 +27,8 @@ namespace CosmicShore.Core
         [SerializeField]
         ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
 
+        [SerializeField]
+        ScriptableEventNoParam _onStartSceneTransition;
 
         Dictionary<GameModes, SO_ArcadeGame> ArcadeGameLookup = new();
         Dictionary<GameModes, SO_TrainingGame> TrainingGameLookup = new();
@@ -144,14 +147,9 @@ namespace CosmicShore.Core
             return ArcadeGames.Games.Where(x => x.DisplayName == displayName).FirstOrDefault();
         }
 
-        public void RegisterSceneTransitionAnimator(Animator animator)
-        {
-            SceneTransitionAnimator = animator;
-        }
-
         IEnumerator LaunchGameCoroutine(string sceneName)
         {
-            SceneTransitionAnimator.SetTrigger("Start");
+            _onStartSceneTransition.Raise();
 
             yield return new WaitForSecondsRealtime(.5f);
 

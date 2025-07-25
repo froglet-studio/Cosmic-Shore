@@ -5,6 +5,7 @@ using CosmicShore.Utilities;
 using CosmicShore.Utility;
 using System.Collections;
 using CosmicShore.Game;
+using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -13,6 +14,16 @@ public class CameraManager : Singleton<CameraManager>
 {
     [SerializeField]
     ThemeManagerDataContainerSO _themeManagerData;
+
+    [SerializeField] 
+    ScriptableEventNoParam _onReturnToMainMenu;
+    
+    [SerializeField] 
+    ScriptableEventNoParam _onPlayGame;
+        
+    [SerializeField]
+    ScriptableEventNoParam _onGameOver;
+    
 
     [SerializeField] CinemachineCamera mainMenuCamera;
     [SerializeField] CustomCameraController playerCamera;
@@ -58,6 +69,40 @@ public class CameraManager : Singleton<CameraManager>
         EnsureController(ref endCamera, "CM EndCam");
     }
 
+    private void OnEnable()
+    {
+        _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
+        _onPlayGame.OnRaised += SetupGamePlayCameras;
+        _onGameOver.OnRaised += SetEndCameraActive;
+    }
+
+    void OnDisable()
+    {
+        _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
+        _onPlayGame.OnRaised -= SetupGamePlayCameras;
+        _onGameOver.OnRaised -= SetEndCameraActive;
+
+        // Restore original offset when disabled
+        RestoreOriginalOffset();
+    }
+
+    void Start()
+    {
+        vCam = playerCamera.Camera;
+        InitializeRuntimeOffset();
+        OnEnteredMainMenu();
+    }
+
+    void LateUpdate()
+    {
+        if (Application.isPlaying && hasOriginalOffset)
+        {
+            ApplyRuntimeOffset();
+        }
+    }
+
+    public void Initialize(IShip ship) => selectedShip = ship;
+
     void EnsureController(ref CustomCameraController controller, string name)
     {
         if (controller == null)
@@ -71,39 +116,7 @@ public class CameraManager : Singleton<CameraManager>
             controller = controller.gameObject.AddComponent<CustomCameraController>();
         }
     }
-
-    private void OnEnable()
-    {
-        GameManager.OnPlayGame += SetupGamePlayCameras;
-        GameManager.OnGameOver += SetEndCameraActive;
-    }
-
-    void OnDisable()
-    {
-        GameManager.OnPlayGame -= SetupGamePlayCameras;
-        GameManager.OnGameOver -= SetEndCameraActive;
-
-        // Restore original offset when disabled
-        RestoreOriginalOffset();
-    }
-
-    void Start()
-    {
-        vCam = playerCamera.Camera;
-        InitializeRuntimeOffset();
-        OnMainMenu();
-    }
-
-    void LateUpdate()
-    {
-        if (Application.isPlaying && hasOriginalOffset)
-        {
-            ApplyRuntimeOffset();
-        }
-    }
-
-    public void Initialize(IShip ship) => selectedShip = ship;
-
+    
     private void ApplyRuntimeOffset()
     {
         playerCamera.SetFollowOffset(runtimeFollowOffset);
@@ -140,7 +153,7 @@ public class CameraManager : Singleton<CameraManager>
 
     public Vector3 CurrentOffset => runtimeFollowOffset;
 
-    public void OnMainMenu()
+    public void OnEnteredMainMenu()
     {
         SetMainMenuCameraActive();
         _themeManagerData.SetBackgroundColor(Camera.main);

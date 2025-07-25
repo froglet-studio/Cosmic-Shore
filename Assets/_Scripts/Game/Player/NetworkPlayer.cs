@@ -19,7 +19,7 @@ namespace CosmicShore.Game
         public NetworkVariable<ShipClassType> NetDefaultShipType = new(ShipClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Teams> NetTeam = new();
 
-        public ShipClassType ShipType { get; set; }
+        public ShipClassType ShipClass { get; set; }
         public Teams Team { get; private set; }
 
         public string PlayerName { get; private set; }
@@ -70,7 +70,7 @@ namespace CosmicShore.Game
 
         private void OnNetDefaultShipTypeValueChanged(ShipClassType previousValue, ShipClassType newValue)
         {
-            ShipType = newValue;
+            ShipClass = newValue;
         }
 
         private void OnNetTeamValueChanged(Teams previousValue, Teams newValue)
@@ -119,6 +119,11 @@ namespace CosmicShore.Game
             gameObject.SetActive(toggle);
 
         public void ToggleAutoPilotMode(bool toggle)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ToggleStationaryMode(bool toggle)
         {
             throw new NotImplementedException();
         }

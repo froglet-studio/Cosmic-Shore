@@ -26,11 +26,11 @@ namespace CosmicShore.Game.Arcade
 
             // TODO: perhaps coerce stats manager to create an entry for the player here
         }
-        private void Update()
-        {
 
-            if (Display != null)
-                Display.text = ((int)((hostileShip.Ship.Transform.position - Game.ActivePlayer.Ship.Transform.position).magnitude/10f)).ToString();
+        protected override void RestrictedUpdate()
+        {
+                var message = ((int)((hostileShip.Ship.Transform.position - Game.ActivePlayer.Ship.Transform.position).magnitude/10f)).ToString();
+                onUpdateTurnMonitorDisplay.Raise(message);
         }
     }
 }

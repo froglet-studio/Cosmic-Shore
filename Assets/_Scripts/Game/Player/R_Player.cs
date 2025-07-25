@@ -10,7 +10,7 @@ namespace CosmicShore.Game
 {
     public class R_Player : NetworkBehaviour, IPlayer
     { 
-        public ShipClassType ShipType => InitializeData.ShipType;   
+        public ShipClassType ShipClass => InitializeData.ShipClass;   
         public Teams Team => InitializeData.Team;
         public string PlayerName => InitializeData.PlayerName;
         public string PlayerUUID => InitializeData.PlayerUUID;
@@ -43,5 +43,8 @@ namespace CosmicShore.Game
             Ship.ToggleAutoPilot(toggle);
             InputController.SetPaused(toggle);   
         }
+
+        public void ToggleStationaryMode(bool toggle) =>
+            Ship.ShipStatus.IsStationary = toggle;
     }
 }

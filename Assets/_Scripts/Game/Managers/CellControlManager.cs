@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Utilities;
 using System.Collections.Generic;
 using System.Linq;
+using Obvious.Soap;
 using UnityEngine;
 
 
@@ -11,15 +12,18 @@ namespace CosmicShore.Game
     public class CellControlManager : Singleton<CellControlManager>
     {
         [SerializeField] List<Cell> cells;
+        
+        [SerializeField]
+        ScriptableEventNoParam _onGameOver;
 
         void OnEnable()
         {
-            GameManager.OnGameOver += OutputCodeControl;
+            _onGameOver.OnRaised += OutputCodeControl;
         }
 
         void OnDisable()
         {
-            GameManager.OnGameOver -= OutputCodeControl;
+            _onGameOver.OnRaised -= OutputCodeControl;
         }
         
         public void AddBlock(Teams team, TrailBlockProperties blockProperties)

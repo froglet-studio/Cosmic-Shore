@@ -22,8 +22,9 @@ namespace CosmicShore.Game
                 });*/
             }
 
-            GameManager.UnPauseGame();
-            GameManager.Instance.WaitOnPlayerLoading();
+            // TODO - Should not access GameManager directly, use events
+            // GameManager.UnPauseGame();
+            // GameManager.Instance.WaitOnPlayerLoading();
         }
     }
 }

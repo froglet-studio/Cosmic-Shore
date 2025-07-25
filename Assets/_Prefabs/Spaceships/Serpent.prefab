@@ -28,6 +28,12 @@ PrefabInstance:
       propertyPath: 'ControlOverrides.Array.data[0]'
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 874579555101021522, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: _onGameOver
+      value: 
+      objectReference: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b,
+        type: 2}
     - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: Ship
@@ -478,7 +484,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
-  isMultiplayerMode: 0
   impactProperties:
   - fuelBonus: 0
     fuelPenalty: 0

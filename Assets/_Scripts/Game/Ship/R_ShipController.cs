@@ -86,17 +86,16 @@ namespace CosmicShore.Game
         public override void Initialize(IPlayer player, bool enableAIPilot)
         {
             ShipStatus.Player = player;
-
             ShipStatus.ActionHandler.Initialize(ShipStatus);
             ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
-            if (ShipStatus.NearFieldSkimmer != null) 
+            if (ShipStatus.NearFieldSkimmer) 
                 ShipStatus.NearFieldSkimmer.Initialize(ShipStatus);
 
-            if (ShipStatus.FarFieldSkimmer != null) 
+            if (ShipStatus.FarFieldSkimmer) 
                 ShipStatus.FarFieldSkimmer.Initialize(ShipStatus);
 
             if (isMultiplayerMode)

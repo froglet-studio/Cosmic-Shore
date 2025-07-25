@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
+    // TODO - DEPRECATED SCRIPT, Use R_CourseMiniGame instead
     public class CourseMiniGame : MiniGame
     {
         [SerializeField] Crystal Crystal;

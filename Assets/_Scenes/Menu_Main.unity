@@ -41586,6 +41586,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cells:
   - {fileID: 1422060011}
+  _onGameOver: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b, type: 2}
 --- !u!1 &1245639255
 GameObject:
   m_ObjectHideFlags: 0
@@ -63747,11 +63748,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: CSAnalyticsManager
       objectReference: {fileID: 0}
-    - target: {fileID: 1458278359188228940, guid: 82df1cddf1f4f455cbbc8834a8f7b5b5,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -73352,6 +73348,11 @@ MonoBehaviour:
   DailyChallengeCard: {fileID: 353572116}
   ArcadeGameConfigureModal: {fileID: 1847035622}
   RespectInventoryForGameSelection: 0
+  _selectedShipClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
+    type: 2}
+  _selectedPlayerCount: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69,
+    type: 2}
+  _selectedIntensity: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
 --- !u!224 &175867981159570580
 RectTransform:
   m_ObjectHideFlags: 0
@@ -91649,7 +91650,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: 237.9324}
+  m_AnchoredPosition: {x: -32, y: 212.14212}
   m_SizeDelta: {x: 64, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &5840560526580898137
@@ -92544,6 +92545,12 @@ PrefabInstance:
       propertyPath: _multiplayerSetup
       value: 
       objectReference: {fileID: 921810066}
+    - target: {fileID: 2052326737652235165, guid: 05a0a8954cada1a4eab8ad2dbc328131,
+        type: 3}
+      propertyPath: _onStartSceneTransition
+      value: 
+      objectReference: {fileID: 11400000, guid: d0647730cca39114980951ca62c870da,
+        type: 2}
     - target: {fileID: 4826558273232955342, guid: 05a0a8954cada1a4eab8ad2dbc328131,
         type: 3}
       propertyPath: m_Name
@@ -93205,6 +93212,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4983872992474410972}
     m_Modifications:
+    - target: {fileID: 2061170156, guid: 37c5e5722efdd184bbb0e51f04fb4e91, type: 3}
+      propertyPath: _onStartSceneTransition
+      value: 
+      objectReference: {fileID: 11400000, guid: d0647730cca39114980951ca62c870da,
+        type: 2}
     - target: {fileID: 6236172666001697302, guid: 37c5e5722efdd184bbb0e51f04fb4e91,
         type: 3}
       propertyPath: m_Pivot.x

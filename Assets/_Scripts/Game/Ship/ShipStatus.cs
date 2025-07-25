@@ -229,7 +229,7 @@ namespace CosmicShore.Game
         public bool Portrait { get; set; }
         public bool SingleStickControls { get; set; }
         public bool LiveProjectiles { get; set; }
-        public bool Stationary { get; set; }
+        public bool IsStationary { get; set; }
         public bool ElevatedResourceGain { get; set; }
         public bool AutoPilotEnabled { get; set; }
         public bool AlignmentEnabled { get; set; }

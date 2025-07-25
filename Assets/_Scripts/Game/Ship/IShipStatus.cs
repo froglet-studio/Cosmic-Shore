@@ -67,7 +67,7 @@ namespace CosmicShore.Game
         float Speed { get; set; }
         bool SingleStickControls { get; set; }
         bool Slowed { get; set; }
-        bool Stationary { get; set; }
+        bool IsStationary { get; set; }
         bool Turret { get; set; }
         TrailSpawner TrailSpawner { get; }
         ShipHUDContainer ShipHUDContainer { get; }

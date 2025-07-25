@@ -1,7 +1,5 @@
-using CosmicShore.Game.Arcade;
 using CosmicShore.SOAP;
 using CosmicShore.Utilities;
-using System;
 using UnityEngine;
 
 namespace CosmicShore.Game.UI
@@ -26,7 +24,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] private InputEventsEventChannelSO onButton3Pressed;
         [SerializeField] private InputEventsEventChannelSO onButton3Released;
         [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
-
+        
         private void Reset()
         {
             // auto-assign the view if omitted
@@ -86,7 +84,7 @@ namespace CosmicShore.Game.UI
             }
         }
 
-        // — SO event handlers call into the view —
+        // ï¿½ SO event handlers call into the view ï¿½
 
         public void OnPipInitialized(PipData data)
         {
@@ -130,5 +128,9 @@ namespace CosmicShore.Game.UI
         // Public methods you may call externally:
         public void Show() => view.gameObject.SetActive(true);
         public void Hide() => view.gameObject.SetActive(false);
+
+        public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
+        public void UpdateTurnMonitorDisplay(string message) => view.RoundTimeDisplay.text = message;
+        
     }
 }

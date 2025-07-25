@@ -2,7 +2,6 @@ using CosmicShore.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Integrations.Firebase.Controller;
 using CosmicShore.Integrations.PlayFab.PlayStream;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -89,7 +88,7 @@ namespace CosmicShore.Game.Arcade
             countdownTimer = HUD.View.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
 
-            foreach (var turnMonitor in TurnMonitors)
+            /*foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
                     tbtMonitor.Display = HUD.View.RoundTimeDisplay;
                 else if (turnMonitor is VolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
@@ -97,9 +96,9 @@ namespace CosmicShore.Game.Arcade
                 else if (turnMonitor is ShipCollisionTurnMonitor scMonitor) // TODO: consolidate with above
                     scMonitor.Display = HUD.View.RoundTimeDisplay;
                 else if (turnMonitor is DistanceTurnMonitor dtMonitor) // TODO: consolidate with above
-                    dtMonitor.Display = HUD.View.RoundTimeDisplay;
+                    dtMonitor.Display = HUD.View.RoundTimeDisplay;*/
 
-            GameManager.UnPauseGame();
+            PauseSystem.TogglePauseGame(false);
         }
 
         protected virtual void Start()
@@ -109,18 +108,22 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnEnable()
         {
-            GameManager.OnPlayGame += InitializeGame;
-            OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
-            OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
+            // GameManager.OnPlayGame += InitializeGame;
+            
+            // TODO - Replaced in R_MiniGameBase
+            // OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused += HandleGamePaused;
             PauseSystem.OnGameResumed += HandleGameResumed;
         }
 
         protected virtual void OnDisable()
         {
-            GameManager.OnPlayGame -= InitializeGame;
-            OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
-            OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
+            // GameManager.OnPlayGame -= InitializeGame;
+            
+            // TODO - Replaced in R_MiniGameBase
+            // OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
 
@@ -148,11 +151,6 @@ namespace CosmicShore.Game.Arcade
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
-        public void Exit()
-        {
-            GameManager.ReturnToLobby();
-        }
-
         public void OnReadyClicked()
         {
             ReadyButton.gameObject.SetActive(false);
@@ -160,21 +158,13 @@ namespace CosmicShore.Game.Arcade
             countdownTimer.BeginCountdown(() =>
             {
                 StartTurn();
-
-                ActivePlayer.InputController.InputStatus.Paused = false;
-
-                if (EnableTrails)
-                {
-                    ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
-                    ActivePlayer.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
-                }
             });
         }
 
         protected virtual void StartNewGame()
         {
             //Debug.Log($"Playing as {PlayerCaptain.Name} - \"{PlayerCaptain.Description}\"");
-            if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
+            PauseSystem.TogglePauseGame(false);
 
             RemainingPlayers = new();
             for (var i = 0; i < Players.Count; i++) RemainingPlayers.Add(i);
@@ -214,7 +204,7 @@ namespace CosmicShore.Game.Arcade
                 Players.Add(player);
                 IPlayer.InitializeData data = new()
                 {
-                    ShipType = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType,
+                    ShipClass = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType,
                     Team = PlayerTeams[i],
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
                     PlayerUUID = PlayerNames[i]
@@ -255,6 +245,14 @@ namespace CosmicShore.Game.Arcade
             ScoreTracker.StartTurn(Players[activePlayerId].PlayerName, Players[activePlayerId].Team);
 
             Debug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
+            
+            ActivePlayer.InputController.InputStatus.Paused = false;
+
+            if (EnableTrails)
+            {
+                ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
+                ActivePlayer.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+            }
         }
 
         protected virtual void EndTurn()
@@ -381,7 +379,7 @@ namespace CosmicShore.Game.Arcade
                     UserAction.GetGameplayUserActionLabel(gameMode, PlayerShipType, IntensityLevel)));
 
             CameraManager.Instance.SetEndCameraActive();
-            PauseSystem.TogglePauseGame();
+            PauseSystem.TogglePauseGame(true);
             gameRunning = false;
             EndGameScreen.SetActive(true);
 
@@ -391,12 +389,6 @@ namespace CosmicShore.Game.Arcade
                 GameCanvas.scoreboard.ShowSinglePlayerView();
 
             OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
-        }
-
-        void LoopActivePlayerIndex()
-        {
-            RemainingPlayersActivePlayerIndex++;
-            RemainingPlayersActivePlayerIndex %= RemainingPlayers.Count;
         }
 
         List<int> EliminatedPlayers = new();
@@ -449,7 +441,8 @@ namespace CosmicShore.Game.Arcade
 
         protected void ReadyNextPlayer()
         {
-            LoopActivePlayerIndex();
+            RemainingPlayersActivePlayerIndex++;
+            RemainingPlayersActivePlayerIndex %= RemainingPlayers.Count;
             activePlayerId = RemainingPlayers[RemainingPlayersActivePlayerIndex];
             ActivePlayer = Players[activePlayerId];
 

@@ -70,20 +70,12 @@ public class ShipTransformer : MonoBehaviour
         // Find better way to do this.
         if (Ship == null)
             return;
-
-        // TODO - InputStatus will be paused in auto-pilot mode,
-        // hence this check is invalid.
-        /*if (InputStatus == null)
-            return;
-
-        if (InputStatus.Paused)
-            return;*/
-
+        
         shipStatus.blockRotation = transform.rotation;
 
         RotateShip();
 
-        if (shipStatus.Stationary)
+        if (shipStatus.IsStationary)
             return;
 
         ApplyThrottleModifiers();

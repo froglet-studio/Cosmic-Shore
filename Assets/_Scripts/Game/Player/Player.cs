@@ -24,7 +24,7 @@ namespace CosmicShore.Game
 
         [SerializeField] bool _isAI = false;
 
-        public ShipClassType ShipType { get; private set; }
+        public ShipClassType ShipClass { get; private set; }
         public Teams Team { get; private set; }
         public string PlayerName { get; private set; }
         public string PlayerUUID { get; private set; }
@@ -48,21 +48,21 @@ namespace CosmicShore.Game
         public void Initialize(IPlayer.InitializeData data, IShip ship)
         {
             InitializeData = data;
-            ShipType = data.ShipType;
+            ShipClass = data.ShipClass;
             Team = data.Team;
             PlayerName = data.PlayerName;
             PlayerUUID = data.PlayerUUID;
 
-            if (ShipType == ShipClassType.Random)
+            if (ShipClass == ShipClassType.Random)
             {
                 var values = Enum.GetValues(typeof(ShipClassType));
                 var random = new System.Random();
-                ShipType = (ShipClassType)values.GetValue(random.Next(1, values.Length));
+                ShipClass = (ShipClassType)values.GetValue(random.Next(1, values.Length));
             }
 
-            if (!_shipPrefabContainer.TryGetShipPrefab(ShipType, out Transform shipPrefab))
+            if (!_shipPrefabContainer.TryGetShipPrefab(ShipClass, out Transform shipPrefab))
             {
-                Debug.LogError($"Could not find ship prefab for {ShipType}");
+                Debug.LogError($"Could not find ship prefab for {ShipClass}");
                 return;
             }
 
@@ -79,6 +79,11 @@ namespace CosmicShore.Game
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.
         public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
         public void ToggleAutoPilotMode(bool toggle)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ToggleStationaryMode(bool toggle)
         {
             throw new NotImplementedException();
         }

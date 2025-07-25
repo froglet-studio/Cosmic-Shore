@@ -1,5 +1,8 @@
 // Remember folks, only you can prevent Unity from arbitrarily swapping enum values in files.
 // Always assign a static numeric value to your enum types
+
+// TODO - Add namespace
+[System.Serializable]
 public enum ShipClassType
 {
     Any = -1,

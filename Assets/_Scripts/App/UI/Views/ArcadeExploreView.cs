@@ -9,6 +9,7 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -28,6 +29,10 @@ namespace CosmicShore.App.UI.Views
         [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
         [SerializeField] bool RespectInventoryForGameSelection = false;
 
+        [SerializeField] ShipClassTypeVariable _selectedShipClassType;
+        [SerializeField] IntVariable _selectedPlayerCount;
+        [SerializeField] IntVariable _selectedIntensity;
+        
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
 
@@ -120,8 +125,10 @@ namespace CosmicShore.App.UI.Views
         {
             Debug.Log($"SelectShip: {selectedShip.Name}");
 
+            _selectedShipClassType.Value = selectedShip.Class;
+            // TODO - Remove statics from MiniGame, use SOAP Data Container
             // notify the mini game engine that this is the ship to play
-            MiniGame.PlayerShipType = selectedShip.Class;
+            // MiniGame.PlayerShipType = selectedShip.Class;
 
             // if game.captains matches selectedShip.captains, that's the one
             foreach (var captain in selectedShip.Captains)
@@ -131,23 +138,27 @@ namespace CosmicShore.App.UI.Views
                     MiniGame.ResourceCollection = captain.InitialResourceLevels;
             }
         }
-
+        
         public void SetPlayerCount(int playerCount)
         {
             Debug.Log($"SetPlayerCount: {playerCount}");
 
+            _selectedPlayerCount.Value = playerCount;
+            
+            // TODO - Remove static properties from MiniGame
             // notify the mini game engine that this is the number of players
-            MiniGame.NumberOfPlayers = playerCount;
+            // MiniGame.NumberOfPlayers = playerCount;
         }
 
         public void SetIntensity(int intensity)
         {
             Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
 
-            Hangar.Instance.SetAiIntensityLevel(intensity);
-
+            _selectedIntensity.Value = intensity;
+            // TODO - Remove Hangar dependency and also remove static properties from MiniGame
+            // Hangar.Instance.SetAiIntensityLevel(intensity);
             // notify the mini game engine that this is the difficulty
-            MiniGame.IntensityLevel = intensity;
+            // MiniGame.IntensityLevel = intensity;
         }
 
         public void PlaySelectedGame()

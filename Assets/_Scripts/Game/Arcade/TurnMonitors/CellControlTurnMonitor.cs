@@ -40,6 +40,7 @@ namespace CosmicShore
             }
         }
 
+        protected override void RestrictedUpdate() { }
     }
     
 }

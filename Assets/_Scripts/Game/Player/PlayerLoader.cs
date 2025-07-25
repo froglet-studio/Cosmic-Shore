@@ -31,7 +31,7 @@ namespace CosmicShore.Game
 
                 IPlayer.InitializeData data = new()
                 {
-                    ShipType = PlayerShipTypes[i],
+                    ShipClass = PlayerShipTypes[i],
                     Team = PlayerTeams[i],
                     PlayerName = PlayerNames[i],
                     PlayerUUID = "Player" + (i + 1),

@@ -18,14 +18,13 @@ namespace CosmicShore.Game.Arcade
             elapsedTime = 0;
         }
 
-        void Update()
+        protected override void RestrictedUpdate()
         {
             if (paused) return;
 
             elapsedTime += Time.deltaTime;
-
-            if (Display != null)
-                Display.text = ((int)duration - (int)elapsedTime).ToString();
+            var message = ((int)duration - (int)elapsedTime).ToString();
+            onUpdateTurnMonitorDisplay.Raise(message);
         }
     }
 }

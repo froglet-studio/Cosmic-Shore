@@ -1,7 +1,7 @@
 using CosmicShore.App.Systems;
 using CosmicShore.Utilities;
-using System;
 using System.Collections;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,74 +11,47 @@ namespace CosmicShore.Core
     [DefaultExecutionOrder(0)]
     public class GameManager : Singleton<GameManager>
     {
-        public static Action OnPlayGame;
-        public static Action OnGameOver;
+        const float WAIT_FOR_SECONDS_BEFORE_RETURN_TO_MAIN_MENU = .5f;
 
-        [SerializeField] public SO_GameList AllGames;
-        [SerializeField] public SO_ShipList AllShips;
-
-        Animator SceneTransitionAnimator;
-        int deathCount = 0;
-        public int DeathCount { get { return deathCount; } }
-
-        [Header("Scene Names")]
-        static string mainMenuScene = "Menu_Main";
+        [SerializeField]
+        SceneNameListSO _sceneNames;
         
+        [SerializeField] public SO_GameList AllGames;
 
-        public static void EndGame()
-        {
-            Debug.Log("GameManager.EndGame");
-            OnGameOver?.Invoke();
-        }
+        [SerializeField]
+        ScriptableEventNoParam _onStartSceneTransition;
+
+        [SerializeField]
+        ScriptableEventNoParam _onReturnToMainMenu;
+        
+        [SerializeField] 
+        ScriptableEventNoParam _onPlayGame;
+        
+        [SerializeField]
+        ScriptableEventNoParam _onGameOver;
+
+        public void StartGame() => _onPlayGame.Raise();
+
+        public void EndGame() => _onGameOver.Raise();
 
         public void RestartGame()
         {
-            Debug.Log("GameManager.RestartGame");
-            deathCount = 0;
+            // Debug.Log("GameManager.RestartGame");
 
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            UnPauseGame();
+            PauseSystem.TogglePauseGame(true);
         }
 
-        public static void ReturnToLobby()
+        public void ReturnToMainMenu() => StartCoroutine(ReturnToMainMenuCoroutine());
+
+        IEnumerator ReturnToMainMenuCoroutine()
         {
-            Instance.StartCoroutine(ReturnToLobbyCoroutine());
-        }
-
-        public static void UnPauseGame()
-        {
-            if (PauseSystem.Paused) TogglePauseGame();
-        }
-
-        public static void PauseGame()
-        {
-            if (!PauseSystem.Paused) TogglePauseGame();
-        }
-
-        public static void TogglePauseGame()
-        {
-            PauseSystem.TogglePauseGame();
-        }
-
-        public void WaitOnPlayerLoading()
-        {
-            OnPlayGame?.Invoke();
-        }
-
-        public void RegisterSceneTransitionAnimator(Animator animator)
-        {
-            SceneTransitionAnimator = animator;
-        }
-
-        static IEnumerator ReturnToLobbyCoroutine()
-        {
-            Instance.SceneTransitionAnimator?.SetTrigger("Start");
-
-            yield return new WaitForSecondsRealtime(.5f);
-
-            SceneManager.LoadScene(mainMenuScene);
-            UnPauseGame();
-            CameraManager.Instance.OnMainMenu();
+            _onStartSceneTransition.Raise();
+            
+            yield return new WaitForSecondsRealtime(WAIT_FOR_SECONDS_BEFORE_RETURN_TO_MAIN_MENU);
+            
+            SceneManager.LoadScene(_sceneNames.MainMenuScene);
+            PauseSystem.TogglePauseGame(false);
         }
     }
 }

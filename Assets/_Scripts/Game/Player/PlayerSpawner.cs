@@ -1,4 +1,3 @@
-using System;
 using CosmicShore.Core;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -22,27 +21,32 @@ namespace CosmicShore.Game
         private void Start()
         {
             if (_spawnAtStart)
-                SpawnAllPlayersAndShipsForSinglePlayer();
+                SpawnDefaultPlayersAndShips();
         }
 
         [ContextMenu(("Spawn all Players and Ships"))]
-        public void SpawnAllPlayersAndShipsForSinglePlayer()
+        public void SpawnDefaultPlayersAndShips()
         {
             foreach (IPlayer.InitializeData data in _initializeDatas)
-            {
-                if (!data.AllowSpawning)
-                    continue;
+                SpawnPlayerAndShip(data);
+        }
+
+        public IPlayer SpawnPlayerAndShip(IPlayer.InitializeData data)
+        {
+            if (!data.AllowSpawning)
+                return null;
                 
-                IPlayer player = (IPlayer)Instantiate(_playerPrefab);
-                _shipSpawner.SpawnShip(data.ShipType, out IShip ship);
-                ship = Hangar.Instance.SetShipProperties(ship, data.Team, !data.EnableAIPilot);
-                player.Initialize(data, ship);
-                ship.Initialize(player, data.EnableAIPilot);
-                player.ToggleAutoPilotMode(data.EnableAIPilot);
+            IPlayer player = (IPlayer)Instantiate(_playerPrefab);
+            _shipSpawner.SpawnShip(data.ShipClass, out IShip ship);
+            ship = Hangar.Instance.SetShipProperties(ship, data.Team, !data.EnableAIPilot);
+            player.Initialize(data, ship);
+            ship.Initialize(player, data.EnableAIPilot);
+            player.ToggleAutoPilotMode(data.EnableAIPilot);
                 
-                if (!data.EnableAIPilot)
-                    CameraManager.Instance.Initialize(ship);
-            }
+            if (!data.EnableAIPilot)
+                CameraManager.Instance.Initialize(ship);
+            
+            return player;
         }
     }
 }
