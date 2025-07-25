@@ -12,16 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd4e6f3597f7439ba7333b35a3a9e164, type: 3}
   m_Name: SparrowCameraSettingsSO
   m_EditorClassIdentifier: 
-  followOffset: {x: 0, y: 12, z: -20}
+  followOffset: {x: 0, y: 12, z: -15}
   followSmoothTime: 0.2
   rotationSmoothTime: 5
   disableRotationLerp: 1
   useFixedUpdate: 0
   nearClipPlane: 0.3
   farClipPlane: 12000
-  controlOverrides: 31
-  closeCamDistance: 8
-  farCamDistance: 12
+  controlOverrides: 3
+  closeCamDistance: 15
+  farCamDistance: 17
   followTargetPosition: {x: 0, y: 0, z: 0}
   fixedOffsetPosition: {x: 0, y: 0, z: 0}
   orthographicSize: 5

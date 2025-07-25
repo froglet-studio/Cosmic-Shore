@@ -19,7 +19,7 @@ MonoBehaviour:
   useFixedUpdate: 0
   nearClipPlane: 0.3
   farClipPlane: 12000
-  controlOverrides: 31
+  controlOverrides: 3
   closeCamDistance: 8
   farCamDistance: 12
   followTargetPosition: {x: 0, y: 0, z: 0}

@@ -4,6 +4,7 @@ using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utilities;
 using CosmicShore.Utility;
 using System.Collections;
+using CosmicShore.Game;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -39,15 +40,21 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public bool FixedFollow = false;
     public bool isOrthographic = false;
 
+    [HideInInspector]
     public float CloseCamDistance;
+    [HideInInspector]
     public float FarCamDistance;
-    [SerializeField] float startTransitionDistance = 40f;
+
+    [SerializeField]
+    float startTransitionDistance = 40f;
 
     Camera vCam;
 
     Coroutine zoomOutCoroutine;
     Coroutine returnToNeutralCoroutine;
     Coroutine lerper;
+    
+    public bool FreezeRuntimeOffset { get; set; } = false;
 
     public override void Awake()
     {
@@ -156,8 +163,15 @@ public class CameraManager : SingletonPersistent<CameraManager>
         playerCamera.SetFollowTarget(playerFollowTarget);
         deathCamera.SetFollowTarget(playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
-
+        
         SetCloseCameraActive();
+        
+        var shipGO = playerFollowTarget.gameObject;
+        var shipCustomizer = shipGO.GetComponent<ShipCameraCustomizer>();
+        if (shipCustomizer != null)
+        {
+            shipCustomizer.Initialize(shipGO.GetComponent<IShip>());
+        }
     }
 
     public void SetMainMenuCameraActive()
