@@ -9,7 +9,7 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-public class CameraManager : SingletonPersistent<CameraManager>
+public class CameraManager : SingletonPersistent<CameraManager>, ICameraManager
 {
     [SerializeField]
     ThemeManagerDataContainerSO _themeManagerData;
@@ -28,13 +28,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     readonly int activePriority = 10;
     readonly int inactivePriority = 1;
 
-    // Runtime-only properties (not serialized)
-    private Vector3 originalFollowOffset;
-    private Vector3 runtimeFollowOffset;
-    private bool hasOriginalOffset = false;
-
     // Drift stuff
-    bool zoomingOut;
     [HideInInspector]
     public bool FollowOverride = false;
     [HideInInspector]
@@ -52,9 +46,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     Camera vCam;
 
-    Coroutine zoomOutCoroutine;
-    Coroutine returnToNeutralCoroutine;
-    Coroutine lerper;
+    ICameraOffsetHandler offsetHandler;
     
     public bool FreezeRuntimeOffset { get; set; } = false;
 
@@ -93,50 +85,22 @@ public class CameraManager : SingletonPersistent<CameraManager>
         GameManager.OnGameOver -= SetEndCameraActive;
 
         // Restore original offset when disabled
-        RestoreOriginalOffset();
+        offsetHandler?.Restore();
     }
 
     void Start()
     {
         vCam = playerCamera.Camera;
-        InitializeRuntimeOffset();
+        offsetHandler = new CameraOffsetHandler(playerCamera, this);
+        offsetHandler.Initialize();
         OnMainMenu();
     }
 
     void LateUpdate()
     {
-        if (Application.isPlaying && hasOriginalOffset)
+        if (Application.isPlaying && offsetHandler != null)
         {
-            ApplyRuntimeOffset();
-        }
-    }
-
-    private void ApplyRuntimeOffset()
-    {
-        playerCamera.SetFollowOffset(runtimeFollowOffset);
-    }
-
-    private void RestoreOriginalOffset()
-    {
-        if (hasOriginalOffset)
-        {
-            playerCamera.SetFollowOffset(originalFollowOffset);
-        }
-    }
-
-    private void SetRuntimeFollowOffset(Vector3 offset)
-    {
-        runtimeFollowOffset = offset;
-        playerCamera.SetFollowOffset(runtimeFollowOffset);
-    }
-
-    private void InitializeRuntimeOffset()
-    {
-        if (!hasOriginalOffset)
-        {
-            originalFollowOffset = playerCamera.GetFollowOffset();
-            runtimeFollowOffset = originalFollowOffset;
-            hasOriginalOffset = true;
+            offsetHandler.Apply();
         }
     }
 
@@ -145,7 +109,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         return playerCamera.transform;
     }
 
-    public Vector3 CurrentOffset => runtimeFollowOffset;
+    public Vector3 CurrentOffset => offsetHandler?.CurrentOffset ?? Vector3.zero;
 
     public void OnMainMenu()
     {
@@ -211,8 +175,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     IEnumerator SetFollowOffsetCoroutine(Vector3 offset)
     {
         yield return new WaitForSeconds(1);
-        InitializeRuntimeOffset();
-        SetRuntimeFollowOffset(offset);
+        offsetHandler.Initialize();
+        offsetHandler.SetOffset(offset);
     }
 
     void SetActiveCamera(Component activeCamera)
@@ -237,9 +201,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
             activeController = playerCamera;
             if (playerCamera.TryGetComponent<UniversalAdditionalCameraData>(out var camData))
                 camData.renderPostProcessing = true;
-            InitializeRuntimeOffset();
-            Vector3 finalOffset = runtimeFollowOffset;
-            SetRuntimeFollowOffset(finalOffset + Vector3.back * startTransitionDistance);
+            offsetHandler.Initialize();
+            Vector3 finalOffset = offsetHandler.CurrentOffset;
+            offsetHandler.SetOffset(finalOffset + Vector3.back * startTransitionDistance);
             SetOffsetPosition(finalOffset);
         }
         else if (activeCamera == deathCamera)
@@ -259,55 +223,15 @@ public class CameraManager : SingletonPersistent<CameraManager>
         return activeController;
     }
 
-    void ClipPlaneAndOffsetLerper(float normalizedDistance)
-    {
-        float CloseCamClipPlane = .5f;
-        float FarCamClipPlane = .7f;
-        if (lerper != null)
-            StopCoroutine(lerper);
-
-        float startNormalized = (runtimeFollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance);
-
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(startNormalized,
-            normalizedDistance, 1.5f, (i) =>
-            {
-                vCam.nearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
-                SetRuntimeFollowOffset(new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance));
-            }));
-    }
-
-    void ClipPlaneAndOffsetLerper(Vector3 offsetPosition)
-    {
-        if (lerper != null)
-            StopCoroutine(lerper);
-
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(runtimeFollowOffset,
-            offsetPosition, 1.5f, (i) =>
-            {
-                SetRuntimeFollowOffset(i);
-            }));
-    }
-
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
-        if (FixedFollow) return;
-        InitializeRuntimeOffset();
-
-        Vector3 targetOffset = new Vector3(0, 0, normalizedDistance);
-        if (runtimeFollowOffset != targetOffset)
-        {
-            ClipPlaneAndOffsetLerper(normalizedDistance);
-        }
+        offsetHandler.FixedFollow = FixedFollow;
+        offsetHandler.SetNormalizedDistance(this, normalizedDistance, CloseCamDistance, FarCamDistance);
     }
 
     public void SetOffsetPosition(Vector3 position)
     {
-        InitializeRuntimeOffset();
-
-        if (runtimeFollowOffset != position)
-        {
-            ClipPlaneAndOffsetLerper(position);
-        }
+        offsetHandler.SetOffsetPosition(this, position);
     }
 
     void Orthographic(bool isOrthographic)
@@ -319,49 +243,167 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void ZoomCloseCameraOut(float growthRate)
     {
-        if (FixedFollow) return;
-        if (returnToNeutralCoroutine != null)
-        {
-            StopCoroutine(returnToNeutralCoroutine);
-            returnToNeutralCoroutine = null;
-        }
-        zoomingOut = true;
-        zoomOutCoroutine = StartCoroutine(ZoomOutCloseCameraCoroutine(growthRate));
-    }
-
-    IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
-    {
-        InitializeRuntimeOffset();
-
-        while (zoomingOut && runtimeFollowOffset.z > FarCamDistance)
-        {
-            SetRuntimeFollowOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward);
-            yield return null;
-        }
+        offsetHandler.FixedFollow = FixedFollow;
+        offsetHandler.ZoomOut(this, growthRate, FarCamDistance);
     }
 
     public void ResetCloseCameraToNeutral(float shrinkRate)
     {
+        offsetHandler.FixedFollow = FixedFollow;
+        offsetHandler.ResetToNeutral(this, shrinkRate, CloseCamDistance);
+    }
+}
+
+internal class CameraOffsetHandler : ICameraOffsetHandler
+{
+    private readonly CustomCameraController playerCamera;
+    private readonly MonoBehaviour owner;
+    private readonly Camera vCam;
+
+    private Vector3 originalFollowOffset;
+    private Vector3 runtimeFollowOffset;
+    private bool hasOriginalOffset;
+
+    private bool zoomingOut;
+    private Coroutine zoomOutCoroutine;
+    private Coroutine returnToNeutralCoroutine;
+    private Coroutine lerper;
+
+    public bool FixedFollow { get; set; }
+
+    public Vector3 CurrentOffset => runtimeFollowOffset;
+
+    public CameraOffsetHandler(CustomCameraController cam, MonoBehaviour owner)
+    {
+        playerCamera = cam;
+        this.owner = owner;
+        vCam = cam.Camera;
+    }
+
+    public void Initialize()
+    {
+        if (!hasOriginalOffset)
+        {
+            originalFollowOffset = playerCamera.GetFollowOffset();
+            runtimeFollowOffset = originalFollowOffset;
+            hasOriginalOffset = true;
+        }
+    }
+
+    public void Apply()
+    {
+        playerCamera.SetFollowOffset(runtimeFollowOffset);
+    }
+
+    public void Restore()
+    {
+        if (hasOriginalOffset)
+            playerCamera.SetFollowOffset(originalFollowOffset);
+    }
+
+    public void SetOffset(Vector3 offset)
+    {
+        runtimeFollowOffset = offset;
+        playerCamera.SetFollowOffset(offset);
+    }
+
+    public void SetNormalizedDistance(MonoBehaviour caller, float normalizedDistance, float closeCamDistance, float farCamDistance)
+    {
+        if (FixedFollow) return;
+        Initialize();
+
+        Vector3 targetOffset = new Vector3(0, 0, normalizedDistance);
+        if (runtimeFollowOffset != targetOffset)
+        {
+            ClipPlaneAndOffsetLerper(normalizedDistance, closeCamDistance, farCamDistance);
+        }
+    }
+
+    public void SetOffsetPosition(MonoBehaviour caller, Vector3 position)
+    {
+        if (FixedFollow) return;
+        Initialize();
+
+        if (runtimeFollowOffset != position)
+        {
+            ClipPlaneAndOffsetLerper(position);
+        }
+    }
+
+    public void ZoomOut(MonoBehaviour caller, float growthRate, float farCamDistance)
+    {
+        if (FixedFollow) return;
+        if (returnToNeutralCoroutine != null)
+        {
+            caller.StopCoroutine(returnToNeutralCoroutine);
+            returnToNeutralCoroutine = null;
+        }
+        zoomingOut = true;
+        zoomOutCoroutine = caller.StartCoroutine(ZoomOutCloseCameraCoroutine(growthRate, farCamDistance));
+    }
+
+    public void ResetToNeutral(MonoBehaviour caller, float shrinkRate, float closeCamDistance)
+    {
         if (FixedFollow) return;
         if (zoomOutCoroutine != null)
         {
-            StopCoroutine(zoomOutCoroutine);
+            caller.StopCoroutine(zoomOutCoroutine);
             zoomOutCoroutine = null;
         }
         zoomingOut = false;
-        returnToNeutralCoroutine = StartCoroutine(ReturnCloseCameraToNeutralCoroutine(shrinkRate));
+        returnToNeutralCoroutine = caller.StartCoroutine(ReturnCloseCameraToNeutralCoroutine(shrinkRate, closeCamDistance));
     }
 
-    IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
+    private void ClipPlaneAndOffsetLerper(float normalizedDistance, float closeCamDistance, float farCamDistance)
     {
-        InitializeRuntimeOffset();
+        float closeCamClipPlane = .5f;
+        float farCamClipPlane = .7f;
+        if (lerper != null)
+            owner.StopCoroutine(lerper);
 
-        while (runtimeFollowOffset.z <= CloseCamDistance)
+        float startNormalized = (runtimeFollowOffset.z - closeCamDistance) / (farCamDistance - closeCamDistance);
+
+        lerper = owner.StartCoroutine(LerpUtilities.LerpingCoroutine(startNormalized,
+            normalizedDistance, 1.5f, (i) =>
+            {
+                vCam.nearClipPlane = (farCamClipPlane - closeCamClipPlane) * i + closeCamClipPlane;
+                SetOffset(new Vector3(0, 0, (farCamDistance - closeCamDistance) * i + closeCamDistance));
+            }));
+    }
+
+    private void ClipPlaneAndOffsetLerper(Vector3 offsetPosition)
+    {
+        if (lerper != null)
+            owner.StopCoroutine(lerper);
+
+        lerper = owner.StartCoroutine(LerpUtilities.LerpingCoroutine(runtimeFollowOffset,
+            offsetPosition, 1.5f, (i) =>
+            {
+                SetOffset(i);
+            }));
+    }
+
+    private IEnumerator ZoomOutCloseCameraCoroutine(float growthRate, float farCamDistance)
+    {
+        Initialize();
+
+        while (zoomingOut && runtimeFollowOffset.z > farCamDistance)
         {
-            SetRuntimeFollowOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward);
+            SetOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward);
+            yield return null;
+        }
+    }
+
+    private IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate, float closeCamDistance)
+    {
+        Initialize();
+
+        while (runtimeFollowOffset.z <= closeCamDistance)
+        {
+            SetOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward);
             yield return null;
         }
 
-        SetRuntimeFollowOffset(new Vector3(0, 0, CloseCamDistance));
+        SetOffset(new Vector3(0, 0, closeCamDistance));
     }
 }
