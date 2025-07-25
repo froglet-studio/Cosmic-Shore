@@ -1,4 +1,3 @@
-// Assets/Scripts/CameraSystem/CameraSettingsSO.cs
 using UnityEngine;
 using System;
 

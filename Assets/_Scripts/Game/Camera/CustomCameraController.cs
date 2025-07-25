@@ -6,7 +6,7 @@ namespace CosmicShore.Game.CameraSystem
     [RequireComponent(typeof(Camera))]
     public class CustomCameraController : MonoBehaviour, ICameraController
     {
-        // ─── Configuration Fields (populated by ApplySettings) ─────────────────
+        // Configuration Fields (populated by ApplySettings)
 
         private Transform followTarget;
         private Vector3  followOffset        = new Vector3(0f, 10f, -20f);
@@ -15,12 +15,11 @@ namespace CosmicShore.Game.CameraSystem
         private bool     disableRotationLerp = false;
         private bool     useFixedUpdate      = false;
 
-        // ─── Runtime State ───────────────────────────────────────────────────────
-
+        //Runtime State
         private Camera             cachedCamera;
         private Vector3            velocity;
         private Vector3            _lastTargetPos;
-        private CameraSettingsSO   currentSettings;  // holds last‐applied SO
+        private CameraSettingsSO   currentSettings;  
 
         void Awake()
         {
@@ -82,8 +81,6 @@ namespace CosmicShore.Game.CameraSystem
             _lastTargetPos = followTarget.position;
         }
 
-        // ─── ICameraController ────────────────────────────────────────────────────
-
         /// <summary>
         /// Pull configuration from a CameraSettingsSO.
         /// </summary>
@@ -131,8 +128,7 @@ namespace CosmicShore.Game.CameraSystem
         /// </summary>
         public void Deactivate() => gameObject.SetActive(false);
 
-        // ─── Legacy API for CameraManager ────────────────────────────────────────
-
+        //Legacy API for CameraManager
         /// <summary>Expose underlying Camera for CameraManager (e.g. vCam).</summary>
         public Camera Camera => cachedCamera;
 

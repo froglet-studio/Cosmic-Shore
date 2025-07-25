@@ -35,9 +35,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     // Drift stuff
     bool zoomingOut;
-
+    [HideInInspector]
     public bool FollowOverride = false;
+    [HideInInspector]
     public bool FixedFollow = false;
+    [HideInInspector]
     public bool isOrthographic = false;
 
     [HideInInspector]
@@ -208,17 +210,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator SetFollowOffsetCoroutine(Vector3 offset)
     {
-        yield return new WaitForSeconds(1); // Allow time for camera to stabilize
+        yield return new WaitForSeconds(1);
         InitializeRuntimeOffset();
         SetRuntimeFollowOffset(offset);
-
-        Debug.Log($"[CameraManager]  FollowOffset set to {offset} ->  Camera world-pos: {playerCamera.transform.position}");
     }
 
     void SetActiveCamera(Component activeCamera)
     {
         Orthographic(isOrthographic);
-        Debug.Log($"[CameraManager] Switching to camera: {activeCamera.name}");
 
         // disable all first
         playerCamera.Deactivate();
@@ -279,8 +278,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void ClipPlaneAndOffsetLerper(Vector3 offsetPosition)
     {
-        //float CloseCamClipPlane = .5f;
-        //float FarCamClipPlane = .7f;
         if (lerper != null)
             StopCoroutine(lerper);
 

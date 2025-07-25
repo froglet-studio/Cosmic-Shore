@@ -24,7 +24,7 @@ namespace CosmicShore.Game.CameraSystem
                            fixedOffsetPositionProp,
                            orthographicSizeProp;
 
-        // foldout toggle
+
         bool showAdvanced = false;
 
         void OnEnable()
@@ -52,21 +52,18 @@ namespace CosmicShore.Game.CameraSystem
         {
             serializedObject.Update();
 
-            // 1) Always show a one-line summary
             var settings = (CameraSettingsSO)target;
             EditorGUILayout.HelpBox(
                 $"Overrides: {settings.controlOverrides}\n" +
                 $"Default Offset: {settings.followOffset}",
                 MessageType.Info);
 
-            // 2) Let them pick which modes to use
             EditorGUILayout.LabelField("Select Override Modes", EditorStyles.boldLabel);
             settings.controlOverrides = (ControlOverrideFlags)
                 EditorGUILayout.EnumFlagsField(controlOverridesProp.displayName, settings.controlOverrides);
 
             EditorGUILayout.Space();
 
-            // 3) Show only the fields that matter for each flag
             var flags = settings.controlOverrides;
             if (flags.HasFlag(ControlOverrideFlags.CloseCam) || flags.HasFlag(ControlOverrideFlags.FarCam))
             {
