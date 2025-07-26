@@ -1,71 +1,92 @@
-using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game;
+using CosmicShore.Game.CameraSystem;
 
 namespace CosmicShore
 {
-    public class ShipCameraCustomizer : ElementalShipComponent
+    /// <summary>
+    /// Applies the CameraSettingsSO—including any ControlOverrideFlags—
+    /// to the active ICameraController and CameraManager.
+    /// </summary>
+    public class ShipCameraCustomizer : ElementalShipComponent, ICameraConfigurator
     {
-        public IShip Ship { get; private set; }
-
-        [SerializeField] public List<ShipCameraOverrides> ControlOverrides;
-        [SerializeField] float closeCamDistance;
-        [SerializeField] ElementalFloat farCamDistance;
-        CameraManager cameraManager;
         public Transform FollowTarget;
-        public Vector3 FollowTargetPosition;
+        
+        [Header("Per-Ship Camera Settings")]
+        [SerializeField] private CameraSettingsSO settings;
 
-        [SerializeField] bool isOrthographic = false;
+        private IShip               ship;
+        private CameraManager       cameraManager;
+        private ICameraController   cameraCtrl;
 
+        /// <summary>
+        /// Must be called when this ship becomes active (spawned/selected).
+        /// </summary>
         public void Initialize(IShip ship)
         {
-            Ship = ship;
+            this.ship = ship;
             cameraManager = CameraManager.Instance;
-            cameraManager.isOrthographic = isOrthographic;
+            cameraManager.Initialize(ship.ShipStatus);
 
-            Debug.Log($"Camera is being initialized {ship.ShipStatus.Name}");
-            
-            BindElementalFloats(Ship);
-            ApplyShipControlOverrides(ControlOverrides);
+            // Here, use playerCamera or ask CameraManager for the correct controller directly.
+            cameraCtrl = cameraManager.GetActiveController();
+
+            if (cameraCtrl == null)
+            {
+                Debug.LogWarning("[ShipCameraCustomizer] No ICameraController available.");
+                return;
+            }
+            if (settings == null)
+            {
+                Debug.LogWarning("[ShipCameraCustomizer] CameraSettingsSO is not assigned.");
+                return;
+            }
+            cameraCtrl.ApplySettings(settings);
+            ApplyControlOverrides();
         }
 
-        void ApplyShipControlOverrides(List<ShipCameraOverrides> controlOverrides)
+        public void Configure(ICameraController controller) { }
+
+        private void ApplyControlOverrides()
         {
-
-            // Camera controls are only relevant for human pilots
-            if (Ship.ShipStatus.AutoPilotEnabled)
-                return;
-
-            foreach (ShipCameraOverrides effect in controlOverrides)
+            var flags = settings.controlOverrides;
+            
+            // 1. Set camera distance (CloseCam/FarCam logic)
+            if (flags.HasFlag(ControlOverrideFlags.FarCam))
             {
-                Debug.Log($"<color=blue>The current effect {effect}");
-                switch (effect)
-                {
-                    case ShipCameraOverrides.CloseCam:
-                        cameraManager.CloseCamDistance = closeCamDistance;
-                        cameraManager.SetOffsetPosition(new Vector3(
-                            cameraManager.CurrentOffset.x,
-                            cameraManager.CurrentOffset.y,
-                            closeCamDistance));
-                        break;
-                    case ShipCameraOverrides.FarCam:
-                        cameraManager.FarCamDistance = farCamDistance.Value;
-                        break;
-                    case ShipCameraOverrides.SetFixedFollowOffset:
-                        cameraManager.SetCloseCameraActive();
-                        cameraManager.SetFixedFollowOffset(FollowTargetPosition);
-                        break;
-                    case ShipCameraOverrides.SetFollowTarget:
-                        FollowTarget.parent = null;
-                        FollowTarget.position = FollowTargetPosition;
-                        goto case ShipCameraOverrides.ChangeFollowTarget;
-                    case ShipCameraOverrides.ChangeFollowTarget:
-                        cameraManager.FollowOverride = true;
-                        cameraManager.SetupGamePlayCameras();
-                        break;
-                    
-                }
+                cameraCtrl.SetCameraDistance(settings.farCamDistance);
+            }
+            else
+            {
+                cameraCtrl.SetCameraDistance(settings.closeCamDistance);
+            }
+
+            // 2. FixedOffset (rare, but if you need to support, add to controller API)
+            if (flags.HasFlag(ControlOverrideFlags.FixedOffset))
+            {
+                // If you want to allow full custom world-space offset (not recommended for most gameplay cams)
+                if (cameraCtrl is CustomCameraController ccc)
+                    ccc.SetFollowOffset(settings.fixedOffsetPosition);
+            }
+
+            // 3. FollowTarget (move ship then set target)
+            if (flags.HasFlag(ControlOverrideFlags.FollowTarget))
+            {
+                ship.Transform.position = settings.followTargetPosition;
+                cameraCtrl.SetFollowTarget(ship.Transform);
+            }
+            else
+            {
+                cameraCtrl.SetFollowTarget(ship.Transform);
+            }
+
+            // 4. Orthographic
+            if (flags.HasFlag(ControlOverrideFlags.Orthographic) &&
+                cameraCtrl is CustomCameraController ccc2)
+            {
+                ccc2.SetOrthographic(true, settings.orthographicSize);
+                Debug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");
             }
         }
-    }
+    } 
 }

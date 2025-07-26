@@ -3,46 +3,29 @@ using UnityEngine;
 namespace CosmicShore.Game.CameraSystem
 {
     [RequireComponent(typeof(Camera))]
-    public class CustomCameraController : MonoBehaviour
+    public class CustomCameraController : MonoBehaviour, ICameraController
     {
-        [SerializeField] Transform followTarget;
-        [SerializeField] Vector3 followOffset = new(0f, 10f, -20f);
-        [SerializeField] float followSmoothTime = 0.2f;
-        [SerializeField] float rotationSmoothTime = 5f;
-        [SerializeField] bool useFixedUpdate = false;
-        [SerializeField] float farClipPlane = 10000f;
-        [SerializeField] float fieldOfView = 60f;
+        // Target and Offset
+        private Transform followTarget;
+        private Vector3 followOffset = new(0f, 10f, 0f); // Z=0 by default, X/Y as desired
 
-        Camera cachedCamera;
-        Vector3 velocity;
+        // Smoothing and Update Control
+        private float followSmoothTime = 0.2f;
+        private float rotationSmoothTime = 5f;
+        private bool disableRotationLerp = false;
+        private bool useFixedUpdate = false;
 
-        public Camera Camera => cachedCamera;
-
-        public Transform FollowTarget
-        {
-            get => followTarget;
-            set => followTarget = value;
-        }
-
-        public float FollowSmoothTime
-        {
-            get => followSmoothTime;
-            set => followSmoothTime = Mathf.Max(0f, value);
-        }
-
-        public float RotationSmoothTime
-        {
-            get => rotationSmoothTime;
-            set => rotationSmoothTime = Mathf.Max(0f, value);
-        }
-
+        // Internal State
+        private Camera cachedCamera;
+        private Vector3 velocity;
+        private Vector3 _lastTargetPos;
+        private CameraSettingsSO currentSettings;
+        private Coroutine distanceLerpRoutine;
 
         void Awake()
         {
             cachedCamera = GetComponent<Camera>();
-            cachedCamera.fieldOfView = fieldOfView;
             cachedCamera.useOcclusionCulling = false;
-            cachedCamera.farClipPlane = farClipPlane;
         }
 
         void LateUpdate()
@@ -57,49 +40,153 @@ namespace CosmicShore.Game.CameraSystem
                 UpdateCamera();
         }
 
-        void UpdateCamera()
+        private void UpdateCamera()
         {
-            if (followTarget == null)
-                return;
+            if (followTarget == null) return;
 
-            Debug.Log($"<color=green>We did enter here{followOffset}</color>");
+            if (_lastTargetPos == Vector3.zero)
+                _lastTargetPos = followTarget.position;
 
-            Quaternion offsetRot = followTarget.rotation;
-            Vector3 desiredPos = followTarget.position + offsetRot * followOffset;
+            // Always use current followOffset (X/Y from SO, Z set by SetCameraDistance)
+            Vector3 desiredPos = followTarget.position + followTarget.rotation * followOffset;
+            Vector3 shipDelta = followTarget.position - _lastTargetPos;
+            float fwd = Vector3.Dot(shipDelta, followTarget.forward);
+            float lat = Vector3.Dot(shipDelta, followTarget.right);
 
-            Vector3 currentLocal = followTarget.InverseTransformPoint(transform.position);
-            Vector3 desiredLocal = followTarget.InverseTransformPoint(desiredPos);
+            if (Mathf.Abs(lat) > Mathf.Abs(fwd))
+            {
+                transform.position = desiredPos;
+                velocity = Vector3.zero;
+            }
+            else
+            {
+                transform.position = Vector3.SmoothDamp(
+                    transform.position, desiredPos, ref velocity, followSmoothTime
+                );
+            }
 
-            currentLocal.z = Mathf.SmoothDamp(currentLocal.z, desiredLocal.z, ref velocity.z, followSmoothTime);
-            currentLocal.x = desiredLocal.x;
-            currentLocal.y = desiredLocal.y;
+            Quaternion targetRot = Quaternion.LookRotation(
+                followTarget.position - transform.position,
+                followTarget.up
+            );
 
-            transform.position = followTarget.TransformPoint(currentLocal);
-            
-            Vector3 toTarget = followTarget.position - transform.position;
-            Quaternion targetRot = Quaternion.LookRotation(toTarget, followTarget.up);
-            float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+            if (disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
+                transform.rotation = targetRot;
+            else
+            {
+                float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+            }
+
+            _lastTargetPos = followTarget.position;
         }
 
-        public void SetFollowTarget(Transform target) => followTarget = target;
+        public void ApplySettings(CameraSettingsSO settings)
+        {
+            currentSettings = settings;
+            if (currentSettings == null) return;
+
+            // Only use X/Y for offset from SO. Z is always set by SetCameraDistance.
+            followOffset.x = currentSettings.followOffset.x;
+            followOffset.y = currentSettings.followOffset.y;
+            // DO NOT copy Z, always keep Z controlled by SetCameraDistance!
+
+            followSmoothTime = currentSettings.followSmoothTime;
+            rotationSmoothTime = currentSettings.rotationSmoothTime;
+            disableRotationLerp = currentSettings.disableRotationLerp;
+            useFixedUpdate = currentSettings.useFixedUpdate;
+            cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
+            cachedCamera.farClipPlane = currentSettings.farClipPlane;
+
+            // Set Z via camera distance based on override flags
+            if (currentSettings.controlOverrides.HasFlag(ControlOverrideFlags.FarCam))
+                SetCameraDistance(currentSettings.farCamDistance);
+            else
+                SetCameraDistance(currentSettings.closeCamDistance);
+        }
+
+        public void SetFollowTarget(Transform target)
+        {
+            followTarget = target;
+            _lastTargetPos = Vector3.zero;
+        }
+
+        public void Activate()
+        {
+            gameObject.SetActive(true);
+            if (currentSettings != null)
+            {
+                cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
+                cachedCamera.farClipPlane = currentSettings.farClipPlane;
+            }
+        }
+
+        public void Deactivate() => gameObject.SetActive(false);
+
+        public Camera Camera => cachedCamera;
+
+        /// <summary>
+        /// Sets the Z (distance) component of the offset. Always negative.
+        /// </summary>
+        public void SetCameraDistance(float distance)
+        {
+            if (distanceLerpRoutine != null)
+            {
+                StopCoroutine(distanceLerpRoutine);
+                distanceLerpRoutine = null;
+            }
+            // Always behind: negative Z
+            followOffset.z = -Mathf.Abs(distance);
+        }
+
+        /// <summary>
+        /// Returns the positive distance value (ignoring sign).
+        /// </summary>
+        public float GetCameraDistance() => Mathf.Abs(followOffset.z);
+
+        /// <summary>
+        /// Lerps the Z (distance) component of the offset.
+        /// </summary>
+        public void LerpCameraDistance(float start, float end, float duration)
+        {
+            if (distanceLerpRoutine != null)
+                StopCoroutine(distanceLerpRoutine);
+            distanceLerpRoutine = StartCoroutine(LerpCameraDistanceRoutine(start, end, duration));
+        }
+
+        private System.Collections.IEnumerator LerpCameraDistanceRoutine(float start, float end, float duration)
+        {
+            float t = 0;
+            while (t < duration)
+            {
+                float z = Mathf.Lerp(start, end, t / duration);
+                followOffset.z = -Mathf.Abs(z);
+                t += Time.deltaTime;
+                yield return null;
+            }
+            followOffset.z = -Mathf.Abs(end);
+        }
+
+        /// <summary>
+        /// Directly sets the full offset (rarely needed, usually for FixedOffset override).
+        /// </summary>
         public void SetFollowOffset(Vector3 offset)
         {
             followOffset = offset;
         }
+
+        /// <summary>
+        /// Returns the current full offset.
+        /// </summary>
         public Vector3 GetFollowOffset() => followOffset;
 
-        public void SetFieldOfView(float fov) => cachedCamera.fieldOfView = fov;
-        public void SetClipPlanes(float near, float far)
-        {
-            cachedCamera.nearClipPlane = near;
-            cachedCamera.farClipPlane = far;
-        }
+        /// <summary>
+        /// Sets camera to orthographic mode if desired.
+        /// </summary>
         public void SetOrthographic(bool ortho, float size)
         {
             cachedCamera.orthographic = ortho;
-            if (ortho)
-                cachedCamera.orthographicSize = size;
+            if (ortho) cachedCamera.orthographicSize = size;
         }
     }
 }

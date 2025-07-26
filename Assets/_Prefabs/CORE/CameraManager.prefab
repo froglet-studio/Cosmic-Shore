@@ -257,9 +257,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4853709195325629896}
-  - component: {fileID: 2352544221469309862}
-  - component: {fileID: 6778108298392198650}
-  - component: {fileID: 5851677024291113611}
+  - component: {fileID: 2105885322480173500}
+  - component: {fileID: 5849539143529044720}
+  - component: {fileID: 6125180911537347192}
+  - component: {fileID: 2114565240875935139}
   m_Layer: 0
   m_Name: CM PlayerCam
   m_TagString: Untagged
@@ -282,7 +283,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4853709196820857187}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!20 &2352544221469309862
+--- !u!114 &2105885322480173500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4853709195325629910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!20 &5849539143529044720
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -314,7 +327,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 10000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -333,7 +346,7 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!114 &6778108298392198650
+--- !u!114 &6125180911537347192
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -377,7 +390,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &5851677024291113611
+--- !u!114 &2114565240875935139
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -389,13 +402,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followTarget: {fileID: 0}
-  followOffset: {x: 0, y: 5, z: -20}
-  followSmoothTime: 0.2
-  rotationSmoothTime: 5
-  useFixedUpdate: 0
-  farClipPlane: 10000
-  fieldOfView: 60
 --- !u!1 &4853709195735906028
 GameObject:
   m_ObjectHideFlags: 0
@@ -406,9 +412,10 @@ GameObject:
   m_Component:
   - component: {fileID: 4853709195735906031}
   - component: {fileID: 1209939419297618945}
-  - component: {fileID: 2085690659241264385}
-  - component: {fileID: 8465576736306076611}
-  - component: {fileID: 8670149599032821785}
+  - component: {fileID: 3366203402667083352}
+  - component: {fileID: 280304770941603471}
+  - component: {fileID: 8640876238184196264}
+  - component: {fileID: 6365285886361244282}
   m_Layer: 0
   m_Name: CM EndCam
   m_TagString: Untagged
@@ -474,7 +481,19 @@ MonoBehaviour:
       BarrelClipping: 0.25
       Anamorphism: 0
   BlendHint: 0
---- !u!20 &2085690659241264385
+--- !u!114 &3366203402667083352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4853709195735906028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!20 &280304770941603471
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -525,7 +544,7 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!114 &8465576736306076611
+--- !u!114 &8640876238184196264
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -569,7 +588,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &8670149599032821785
+--- !u!114 &6365285886361244282
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -581,13 +600,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followTarget: {fileID: 0}
-  followOffset: {x: 0, y: 5, z: -20}
-  followSmoothTime: 0.2
-  rotationSmoothTime: 5
-  useFixedUpdate: 0
-  farClipPlane: 10000
-  fieldOfView: 60
 --- !u!1 &4853709196453371477
 GameObject:
   m_ObjectHideFlags: 0
@@ -645,7 +657,7 @@ GameObject:
   - component: {fileID: 4853709196820857187}
   - component: {fileID: 4853709196820857186}
   m_Layer: 0
-  m_Name: CameraManager
+  m_Name: Cinemachine Vcams
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -687,14 +699,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  _onReturnToMainMenu: {fileID: 11400000, guid: ee5d65f9d27de024590573c0a92ca4d7,
-    type: 2}
-  _onPlayGame: {fileID: 11400000, guid: eb5e153898e484447b1b63bc08e1b3ed, type: 2}
-  _onGameOver: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b, type: 2}
   mainMenuCamera: {fileID: 2966085564903086687}
-  playerCamera: {fileID: 5851677024291113611}
-  deathCamera: {fileID: 4702444986085968189}
-  endCamera: {fileID: 8670149599032821785}
+  playerCamera: {fileID: 0}
+  deathCamera: {fileID: 0}
+  endCamera: {fileID: 0}
   endCameraFollowTarget: {fileID: 4853709195319085108}
   endCameraLookAtTarget: {fileID: 4853709196453371476}
   FollowOverride: 0
@@ -713,9 +721,10 @@ GameObject:
   m_Component:
   - component: {fileID: 1217215852786208964}
   - component: {fileID: 8616612116677775270}
-  - component: {fileID: 6811892066535604504}
-  - component: {fileID: 2435532915494104424}
-  - component: {fileID: 4702444986085968189}
+  - component: {fileID: 7297289691090116732}
+  - component: {fileID: 5263803201998501468}
+  - component: {fileID: 5199003394709133264}
+  - component: {fileID: 1178664408997018761}
   m_Layer: 0
   m_Name: CM DeathCam
   m_TagString: Untagged
@@ -781,7 +790,19 @@ MonoBehaviour:
       BarrelClipping: 0.25
       Anamorphism: 0
   BlendHint: 0
---- !u!20 &6811892066535604504
+--- !u!114 &7297289691090116732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5491404131115096251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!20 &5263803201998501468
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -832,7 +853,7 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!114 &2435532915494104424
+--- !u!114 &5199003394709133264
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -876,7 +897,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &4702444986085968189
+--- !u!114 &1178664408997018761
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -888,10 +909,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followTarget: {fileID: 0}
-  followOffset: {x: 0, y: 5, z: -20}
-  followSmoothTime: 0.2
-  rotationSmoothTime: 5
-  useFixedUpdate: 0
-  farClipPlane: 10000
-  fieldOfView: 60
