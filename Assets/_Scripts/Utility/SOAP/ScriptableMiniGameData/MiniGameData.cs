@@ -44,7 +44,7 @@ namespace CosmicShore.SOAP
             ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Ship.Teleport(activePlayerOrigin);
             ActivePlayer.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();
-            ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+            // ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
             ActivePlayer.Ship.ShipStatus.ResourceSystem.Reset();
             // ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
 
@@ -64,7 +64,7 @@ namespace CosmicShore.SOAP
         {
             ActivePlayer.ToggleStationaryMode(false);
             ActivePlayer.InputController.InputStatus.Paused = false;
-            ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
+            // ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
         }
 
         public void SetupForNextTurn()
