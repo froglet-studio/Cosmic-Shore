@@ -20,6 +20,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
+      propertyPath: settings
+      value: 
+      objectReference: {fileID: 11400000, guid: 248bca06cd2b45e2967b60bc822d6112,
+        type: 2}
+    - target: {fileID: 705402283976800655, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
       propertyPath: FollowTarget
       value: 
       objectReference: {fileID: 0}
@@ -43,6 +49,12 @@ PrefabInstance:
       propertyPath: 'ControlOverrides.Array.data[0]'
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 874579555101021522, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+      propertyPath: _onGameOver
+      value: 
+      objectReference: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b,
+        type: 2}
     - target: {fileID: 1435252848482629424, guid: 7d34187cec80b624f82a3ed560c56324,
         type: 3}
       propertyPath: Resources.Array.size
@@ -652,7 +664,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
-  isMultiplayerMode: 0
   impactProperties: []
 --- !u!114 &7155368086038761248
 MonoBehaviour:

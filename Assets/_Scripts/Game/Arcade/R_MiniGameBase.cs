@@ -33,8 +33,8 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] 
         protected ScriptableEventBool _onToggleReadyButton;
         
-        [SerializeField] 
-        ScriptableEventNoParam _onPlayGame;
+        /*[SerializeField] 
+        ScriptableEventNoParam _onPlayGame;*/
         
         [SerializeField]
         Transform[] _playerOrigins;
@@ -46,7 +46,7 @@ namespace CosmicShore.Game.Arcade
         
         protected virtual void OnEnable() 
         {
-            _onPlayGame.OnRaised += InitializeGame;
+            // _onPlayGame.OnRaised += InitializeGame;
             PauseSystem.OnGamePaused  += OnGamePaused;
             PauseSystem.OnGameResumed += OnGameResumed;
         }
@@ -55,7 +55,8 @@ namespace CosmicShore.Game.Arcade
         {
             _miniGameData.Value.PlayerOrigins =  _playerOrigins;
             _miniGameData.Value.GameMode = gameMode;
-            _miniGameData.InvokeInitialize();   
+            _miniGameData.InvokeInitialize();
+            InitializeGame();
         }
         
         protected virtual void Update() {
@@ -67,7 +68,7 @@ namespace CosmicShore.Game.Arcade
         }
 
         protected virtual void OnDisable() {
-            _onPlayGame.OnRaised -= InitializeGame;
+            // _onPlayGame.OnRaised -= InitializeGame;
             PauseSystem.OnGamePaused  -= OnGamePaused;
             PauseSystem.OnGameResumed -= OnGameResumed;
         }
@@ -102,8 +103,9 @@ namespace CosmicShore.Game.Arcade
         {
             monitorController.ResumeAll();
             IPlayer activePlayer = _miniGameData.Value.ActivePlayer;
-            if (activePlayer is not null)
-                activePlayer.ToggleStationaryMode(false);
+            if (activePlayer is null)
+                return;
+            _miniGameData.Value.PlayActivePlayer();
             scoreTracker.StartTurn(activePlayer.PlayerName, activePlayer.Team);
         }
         

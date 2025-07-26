@@ -156,6 +156,12 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 3953285837003103147, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: settings
+      value: 
+      objectReference: {fileID: 11400000, guid: 6f9693afb46548dd83870cfb0b1ce939,
+        type: 2}
     - target: {fileID: 4565115236557560491, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: m_IsTrigger
@@ -239,7 +245,7 @@ PrefabInstance:
     - target: {fileID: 6417075533431866457, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: m_Layer
-      value: 8
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
@@ -321,6 +327,11 @@ PrefabInstance:
       propertyPath: '_shipGeometries.Array.data[4]'
       value: 
       objectReference: {fileID: 347255307872648837}
+    - target: {fileID: 8125833072914905471, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+      propertyPath: shipType
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 9172589084772723142, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
         type: 3}
       propertyPath: OnButton1Pressed

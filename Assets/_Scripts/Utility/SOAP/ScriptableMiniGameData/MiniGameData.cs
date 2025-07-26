@@ -23,21 +23,21 @@ namespace CosmicShore.SOAP
         public void AddPlayer(IPlayer p)
         {
             Players.Add(p);
-            RemainingPlayers.Add(Players.Count-1);
+            // RemainingPlayers.Add(Players.Count-1);
             ActivePlayer ??= p;
         }
 
         public bool TryAdvanceActivePlayer(out IPlayer activePlayer)
         {
             activePlayer = null;
-            if (RemainingPlayers.Count == 0)
+            /*if (RemainingPlayers.Count == 0)
             {
                 Debug.LogError($"No remaining player found to set as active player!");
                 return false; 
-            }
-            
-            ActivePlayerId = (ActivePlayerId + 1) % RemainingPlayers.Count; 
-            ActivePlayer = Players[RemainingPlayers[ActivePlayerId]];
+            }*/
+
+            ActivePlayerId = 0; // (ActivePlayerId + 1) % RemainingPlayers.Count; 
+            ActivePlayer = Players[0]; // Players[RemainingPlayers[ActivePlayerId]];
             Transform activePlayerOrigin =  PlayerOrigins[ActivePlayerId];
             
             ActivePlayer.Transform.SetPositionAndRotation(activePlayerOrigin.position, activePlayerOrigin.rotation);
@@ -58,6 +58,13 @@ namespace CosmicShore.SOAP
             
             activePlayer = ActivePlayer;
             return true;
+        }
+
+        public void PlayActivePlayer()
+        {
+            ActivePlayer.ToggleStationaryMode(false);
+            ActivePlayer.InputController.InputStatus.Paused = false;
+            ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
         }
 
         public void SetupForNextTurn()

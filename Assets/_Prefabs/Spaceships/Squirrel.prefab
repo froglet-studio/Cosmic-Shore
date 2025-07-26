@@ -212,6 +212,12 @@ PrefabInstance:
       propertyPath: _shipHUDController
       value: 
       objectReference: {fileID: 8016914216858330474}
+    - target: {fileID: 6989089190155014109, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
+        type: 3}
+      propertyPath: settings
+      value: 
+      objectReference: {fileID: 11400000, guid: 3c3fc507fffc4f5e86ab043ee7543cd2,
+        type: 2}
     - target: {fileID: 7779107667008759293, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
         type: 3}
       propertyPath: _shipGeometries.Array.size
@@ -494,7 +500,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipType: 0
+  shipType: 6
   onSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
     type: 2}
   _boostAction: {fileID: 0}

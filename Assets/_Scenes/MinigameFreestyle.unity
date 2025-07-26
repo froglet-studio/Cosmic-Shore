@@ -1324,8 +1324,8 @@ MonoBehaviour:
   _miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  _onPlayGame: {fileID: 11400000, guid: eb5e153898e484447b1b63bc08e1b3ed, type: 2}
-  _playerOrigins: []
+  _playerOrigins:
+  - {fileID: 1192541911}
   crystal: {fileID: 1715503258}
   crystalStartPosition: {x: 0, y: 0, z: -120}
   segmentSpawner: {fileID: 1020381236}
