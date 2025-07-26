@@ -657,7 +657,7 @@ GameObject:
   - component: {fileID: 4853709196820857187}
   - component: {fileID: 4853709196820857186}
   m_Layer: 0
-  m_Name: Cinemachine Vcams
+  m_Name: CameraManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -699,15 +699,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  _onReturnToMainMenu: {fileID: 11400000, guid: ee5d65f9d27de024590573c0a92ca4d7,
+    type: 2}
+  _onPlayGame: {fileID: 11400000, guid: eb5e153898e484447b1b63bc08e1b3ed, type: 2}
+  _onGameOver: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b, type: 2}
+  endCamera: {fileID: 3366203402667083352}
   mainMenuCamera: {fileID: 2966085564903086687}
-  playerCamera: {fileID: 0}
-  deathCamera: {fileID: 0}
-  endCamera: {fileID: 0}
   endCameraFollowTarget: {fileID: 4853709195319085108}
   endCameraLookAtTarget: {fileID: 4853709196453371476}
   FollowOverride: 0
   FixedFollow: 0
-  isOrthographic: 0
   CloseCamDistance: -10
   FarCamDistance: 1
   startTransitionDistance: 2

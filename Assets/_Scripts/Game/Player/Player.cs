@@ -73,7 +73,7 @@ namespace CosmicShore.Game
             
             if (_isAI) return;
             InputController.Initialize(Ship);
-            CameraManager.Instance.Initialize(Ship);
+            CameraManager.Instance.Initialize(Ship.ShipStatus);
         }
 
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.

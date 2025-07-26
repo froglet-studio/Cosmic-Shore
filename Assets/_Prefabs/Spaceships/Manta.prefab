@@ -132,6 +132,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
+      propertyPath: _name
+      value: Manta
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: _shipType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441696348568773771, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
       propertyPath: shipInstance
       value: 
       objectReference: {fileID: 8122013569914019445}
@@ -322,18 +332,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1399677111066937373}
   m_SourcePrefab: {fileID: 100100000, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
---- !u!114 &954762401694888925 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3138628630497430536, guid: 920c06d41c62d1f4482a2f80e793bbf8,
-    type: 3}
-  m_PrefabInstance: {fileID: 2788107796120846293}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1542022231737996529 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3735459123231730468, guid: 920c06d41c62d1f4482a2f80e793bbf8,
@@ -358,18 +356,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 157d1c45073c0774eb76576e7526dc76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &3067646495909944210 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 874579554510349383, guid: 920c06d41c62d1f4482a2f80e793bbf8,
-    type: 3}
-  m_PrefabInstance: {fileID: 2788107796120846293}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &3079316406996955652 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 867704553499413969, guid: 920c06d41c62d1f4482a2f80e793bbf8,
@@ -385,12 +371,6 @@ MonoBehaviour:
 --- !u!1 &3866487968874358762 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1376376450048088127, guid: 920c06d41c62d1f4482a2f80e793bbf8,
-    type: 3}
-  m_PrefabInstance: {fileID: 2788107796120846293}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &4369352182913313440 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1878660672777590133, guid: 920c06d41c62d1f4482a2f80e793bbf8,
     type: 3}
   m_PrefabInstance: {fileID: 2788107796120846293}
   m_PrefabAsset: {fileID: 0}
@@ -510,23 +490,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _name: Manta
-  _shipType: 1
-  nearFieldSkimmer: {fileID: 3067646495909944210}
-  orientationHandle: {fileID: 4369352182913313440}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
-    type: 3}
-  farFieldSkimmer: {fileID: 954762401694888925}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  boostMultiplier: 2
-  bottomEdgeButtons: 0
-  Inertia: 70
-  ElementStats: []
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
-  isMultiplayerMode: 0
   impactProperties: []
 --- !u!114 &775316478932164512
 MonoBehaviour:

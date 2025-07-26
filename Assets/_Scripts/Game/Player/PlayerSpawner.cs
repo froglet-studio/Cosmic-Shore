@@ -42,10 +42,6 @@ namespace CosmicShore.Game
             player.Initialize(data, ship);
             ship.Initialize(player, data.EnableAIPilot);
             player.ToggleAutoPilotMode(data.EnableAIPilot);
-                
-            if (!data.EnableAIPilot)
-                CameraManager.Instance.Initialize(ship);
-            
             return player;
         }
     }
