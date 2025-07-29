@@ -142,7 +142,26 @@ namespace CosmicShore.Game
 
         public override void PerformButtonActions(int buttonNumber)
         {
-            Debug.Log($"[R_ShipController] PerformButtonActions({buttonNumber}) called!");
+            InputEvents controlType;
+            switch (buttonNumber)
+            {
+                case 1:
+                    controlType = InputEvents.Button1Action;
+                    break;
+                case 2:
+                    controlType = InputEvents.Button2Action;
+                    break;
+                case 3:
+                    controlType = InputEvents.Button3Action;
+                    break;
+                default:
+                    controlType = InputEvents.Button1Action;
+                    break;
+            }
+            PerformShipControllerActions(controlType);
+            
+            
+            /*Debug.Log($"[R_ShipController] PerformButtonActions({buttonNumber}) called!");
             switch (buttonNumber)
             {
                 case 1:
@@ -157,12 +176,30 @@ namespace CosmicShore.Game
                     if (ShipStatus.ActionHandler != null && ShipStatus.ActionHandler.HasAction(InputEvents.Button3Action))
                         ShipStatus.ActionHandler.PerformShipControllerActions(InputEvents.Button3Action);
                     break;
-            }
+            }*/
         }
 
         public void StopButtonActions(int buttonNumber)
         {
+            InputEvents controlType;
             switch (buttonNumber)
+            {
+                case 1:
+                    controlType = InputEvents.Button1Action;
+                    break;
+                case 2:
+                    controlType = InputEvents.Button2Action;
+                    break;
+                case 3:
+                    controlType = InputEvents.Button3Action;
+                    break;
+                default:
+                    controlType = InputEvents.Button1Action;
+                    break;
+            }
+            StopShipControllerActions(controlType);
+            
+            /*switch (buttonNumber)
             {
                 case 1:
                     if (ShipStatus.ActionHandler != null && ShipStatus.ActionHandler.HasAction(InputEvents.Button1Action))
@@ -176,7 +213,7 @@ namespace CosmicShore.Game
                     if (ShipStatus.ActionHandler != null && ShipStatus.ActionHandler.HasAction(InputEvents.Button3Action))
                         ShipStatus.ActionHandler.StopShipControllerActions(InputEvents.Button3Action);
                     break;
-            }
+            }*/
         }
 
         public void ToggleCollision(bool enabled)

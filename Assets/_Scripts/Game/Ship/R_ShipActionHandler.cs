@@ -37,8 +37,8 @@ namespace CosmicShore.Game
 
         public void UnsubscribeEvents()
         {
-            _onButtonPressed.OnRaised += PerformShipControllerActions;
-            _onButtonReleased.OnRaised += StopShipControllerActions;
+            _onButtonPressed.OnRaised -= PerformShipControllerActions;
+            _onButtonReleased.OnRaised -= StopShipControllerActions;
         }
 
         public void Initialize(IShipStatus shipStatus)
@@ -50,11 +50,16 @@ namespace CosmicShore.Game
 
         public void PerformShipControllerActions(InputEvents controlType)
         {
+            if (!HasAction(controlType))
+                return;
             ShipHelper.PerformShipControllerActions(controlType, _inputAbilityStartTimes, _shipControlActions);
         }
 
         public void StopShipControllerActions(InputEvents controlType)
         {
+            if (!HasAction(controlType))
+                return;
+            
             if (StatsManager.Instance != null)
                 StatsManager.Instance.AbilityActivated(_shipStatus.Team, _shipStatus.Player.PlayerName, controlType,
                     Time.time - _inputAbilityStartTimes[controlType]);
