@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd4e6f3597f7439ba7333b35a3a9e164, type: 3}
   m_Name: DolphinCameraSettingsSO
   m_EditorClassIdentifier: 
-  followOffset: {x: 0, y: 10, z: -20}
-  followSmoothTime: 0.2
-  rotationSmoothTime: 5
+  followOffset: {x: 0, y: 0, z: -20}
+  followSmoothTime: 0
+  rotationSmoothTime: 0
   disableRotationLerp: 1
   useFixedUpdate: 0
   nearClipPlane: 0.3
