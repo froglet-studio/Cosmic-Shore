@@ -1,36 +1,37 @@
 ﻿using CosmicShore.Game.IO;
-using CosmicShore.Game.UI;
 using CosmicShore.Utility;
-using UnityEngine;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game
 {
     public interface IPlayer : ITransform
     {
-        public ShipTypes ShipType { get; set; }
-        public Teams Team { get; }
-        public string PlayerName { get; }
-        public string PlayerUUID { get; }
-        public IShip Ship { get; }
-        public InputController InputController { get; }
-        // public GameCanvas GameCanvas { get; }
-        public bool IsActive { get; }
+        ShipClassType ShipClass { get; }
+        Teams Team { get; }
+        string PlayerName { get; }
+        string PlayerUUID { get; }
+        IShip Ship { get; }
+        InputController InputController { get; }
+        IInputStatus InputStatus { get; }
 
-        public void Initialize(InitializeData data);
-        public void ToggleActive(bool active);
-        public void InitializeShip(ShipTypes shipType, Teams team);
-        public void ToggleGameObject(bool toggle);
+        bool IsActive { get; }
+
+        void Initialize(InitializeData data, IShip ship);
+        void ToggleActive(bool active);
+        void ToggleGameObject(bool toggle);
+        void ToggleAutoPilotMode(bool toggle);
+        void ToggleStationaryMode(bool toggle);
 
         [System.Serializable]
-        public struct InitializeData
+        public class InitializeData
         {
-            public ShipTypes DefaultShipType;
+            [FormerlySerializedAs("ShipType")] public ShipClassType ShipClass;
             public Teams Team;
-            public IShip Ship;
             public string PlayerName;
             public string PlayerUUID;
-            public string Name;
+            public bool EnableAIPilot;
+            public bool AllowSpawning;
         }
     }
 }

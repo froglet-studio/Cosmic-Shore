@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Core;
+using Obvious.Soap;
 using Unity.Multiplayer.Samples.Utilities;
 using UnityEngine;
 
@@ -6,9 +7,14 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [RequireComponent(typeof(NetcodeHooks))]
-
     public class NetworkStatsManager : StatsManager
     {
+        [SerializeField] 
+        ScriptableEventNoParam _onPlayGame;
+        
+        [SerializeField]
+        ScriptableEventNoParam _onGameOver;
+        
         NetcodeHooks _netcodeHooks;
 
         public override void Awake()
@@ -19,8 +25,8 @@ namespace CosmicShore.Game
 
         protected override void OnEnable()
         {
-            GameManager.OnPlayGame += ResetStats;
-            GameManager.OnGameOver += OutputRoundStats;
+            _onPlayGame.OnRaised += ResetStats;
+            _onGameOver.OnRaised += OutputRoundStats;
 
 
             _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
@@ -29,8 +35,8 @@ namespace CosmicShore.Game
 
         protected override void OnDisable()
         {
-            GameManager.OnPlayGame -= ResetStats;
-            GameManager.OnGameOver -= OutputRoundStats;
+            _onPlayGame.OnRaised -= ResetStats;
+            _onGameOver.OnRaised -= OutputRoundStats;
 
             _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
             _netcodeHooks.OnNetworkDespawnHook -= OnNetworkDespawn;

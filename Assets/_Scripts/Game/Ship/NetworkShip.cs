@@ -13,6 +13,9 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    /// <summary>
+    /// DEPRECATED - Don't use this script anymore. Use IShip, R_ShipController instead.
+    /// </summary>
     [RequireComponent(typeof(ShipStatus))]
     public class NetworkShip : NetworkBehaviour, IShip
     {
@@ -20,7 +23,7 @@ namespace CosmicShore.Game
 
         [Header("Ship Meta")]
         [SerializeField] string _name;
-        [SerializeField] ShipTypes _shipType;
+        [SerializeField] ShipClassType _shipType;
 
         [Header("Ship Components")]
         [SerializeField] Skimmer _nearFieldSkimmer;
@@ -99,9 +102,6 @@ namespace CosmicShore.Game
             get
             {
                 _shipStatus ??= GetComponent<ShipStatus>();
-                _shipStatus.Name = _name;
-                _shipStatus.BoostMultiplier = boostMultiplier;
-                _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
         }
@@ -169,21 +169,18 @@ namespace CosmicShore.Game
             }
         }
 
-        public void Initialize(IPlayer player)
+        public void Initialize(IPlayer player, bool enableAIPilot)
         {
             ShipStatus.Player = player;
-
-            SetPlayerToShipStatusAndSkimmers(player);
-            SetTeamToShipStatusAndSkimmers(player.Team);
 
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
             if (_nearFieldSkimmer != null)
-                _nearFieldSkimmer.Initialize(this);
+                _nearFieldSkimmer.Initialize(ShipStatus);
 
             if (_farFieldSkimmer != null)
-                _farFieldSkimmer.Initialize(this);
+                _farFieldSkimmer.Initialize(ShipStatus);
             
 
             if (IsOwner)
@@ -197,8 +194,8 @@ namespace CosmicShore.Game
                 InitializeShipControlActions();
                 InitializeClassResourceActions();
 
-                ShipStatus.AIPilot.AssignShip(this);
-                ShipStatus.AIPilot.Initialize(false);
+                /*ShipStatus.AIPilot.AssignShip(this);
+                ShipStatus.AIPilot.Initialize(false);*/
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
             }
@@ -208,20 +205,6 @@ namespace CosmicShore.Game
             ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
 
             OnShipInitialized?.Invoke(ShipStatus);
-        }
-
-        void SetTeamToShipStatusAndSkimmers(Teams team)
-        {
-            ShipStatus.Team = team;
-            if (_nearFieldSkimmer != null) _nearFieldSkimmer.Team = team;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Team = team;
-        }
-
-        void SetPlayerToShipStatusAndSkimmers(IPlayer player)
-        {
-            ShipStatus.Player = player;
-            if (_nearFieldSkimmer != null) _nearFieldSkimmer.Player = player;
-            if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;
         }
 
         void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, _inputEventShipActions, _shipControlActions);
@@ -261,7 +244,7 @@ namespace CosmicShore.Game
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            /*foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
                 {
@@ -273,7 +256,7 @@ namespace CosmicShore.Game
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
                             ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
-                        aoeExplosion.Detonate(this);
+                        aoeExplosion.InitializeAndDetonate(this);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
@@ -294,7 +277,7 @@ namespace CosmicShore.Game
                         ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
                 }
-            }
+            }*/
         }
 
         public void SetBoostMultiplier(float multiplier)
@@ -460,6 +443,11 @@ namespace CosmicShore.Game
         }
 
         public void OnButtonPressed(int buttonNumber)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ToggleAutoPilot(bool toggle)
         {
             throw new NotImplementedException();
         }

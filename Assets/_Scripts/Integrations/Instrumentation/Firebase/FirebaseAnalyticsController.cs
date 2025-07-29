@@ -2,10 +2,12 @@ using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Utilities;
 
 #if !UNITY_WEBGL
+using CosmicShore.SOAP;
 using Firebase;
 using Firebase.Analytics;
 #endif
 using System;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Integrations.Firebase.Controller
@@ -18,8 +20,17 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private static Action _dependencyResolved;
         
-        #region Firebase Analytics Controller Initialization and Enabling
+        [SerializeField] ScriptableEventMiniGameData _onStartMiniGame;
+        [SerializeField] ScriptableEventMiniGameData _onEndMiniGame;
         
+        #region Firebase Analytics Controller Initialization and Enabling
+
+        private void OnEnable()
+        {
+            _onStartMiniGame.OnRaised += LogEventMiniGameStart;
+            _onEndMiniGame.OnRaised +=  LogEventMiniGameEnd;
+        }
+
         private void Start()
         {
             CheckDependencies();
@@ -29,6 +40,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private void OnDisable()
         {
+            _onStartMiniGame.OnRaised -= LogEventMiniGameStart;
+            _onEndMiniGame.OnRaised -=  LogEventMiniGameEnd;
             _dependencyResolved -= InitializeFirebaseAnalytics;
             if(UserActionSystem.Instance) UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
         }
@@ -178,25 +191,18 @@ namespace CosmicShore.Integrations.Firebase.Controller
         #endregion
 
         #region Mini Game Events
-        
-        /// <summary>
-        /// Log Event Mini Game Start
-        /// </summary>
-        /// <param name="mode"></param>
-        /// <param name="ship"></param>
-        /// <param name="playerCount"></param>
-        /// <param name="intensity"></param>
-        public static void LogEventMiniGameStart(GameModes mode, ShipTypes ship, int playerCount, int intensity)
+
+        void LogEventMiniGameStart(MiniGameData data)
         {
             if (!_analyticsEnabled) return;
             
             // Event parameters for Firebase
             var parameters = new[] {
                 new Parameter(FirebaseAnalytics.ParameterLevel, nameof(GameModes)),
-                new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
-                new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
-                new Parameter(FirebaseAnalytics.ParameterQuantity, playerCount),
-                new Parameter(FirebaseAnalytics.ParameterIndex, intensity)
+                new Parameter(FirebaseAnalytics.ParameterLevelName, data.GameMode.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterCharacter, data.SelectedShipClass.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterQuantity, data.SelectedPlayerCount),
+                new Parameter(FirebaseAnalytics.ParameterIndex, data.SelectedIntensity)
             };
             
             // // Event dictionary for Unity Analytics Service
@@ -218,27 +224,19 @@ namespace CosmicShore.Integrations.Firebase.Controller
             // Debug.LogFormat("{0} - {1} - Unity Service logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
             
         }
-
-        /// <summary>
-        /// Log Event Mini Game End
-        /// </summary>
-        /// <param name="mode">Mini Game Mode</param>
-        /// <param name="ship">Ship Type</param>
-        /// <param name="playerCount">Player Count</param>
-        /// <param name="intensity">Intensity</param>
-        /// <param name="highScore">HighScore</param>
-        public static void LogEventMiniGameEnd(GameModes mode, ShipTypes ship, int playerCount, int intensity, int highScore)
+        
+        void LogEventMiniGameEnd(MiniGameData data)
         {
             if (!_analyticsEnabled) return;
             
             // Event parameters for Firebase
             var parameters = new [] {
                 new Parameter(FirebaseAnalytics.ParameterLevel, nameof(GameModes)),
-                new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
-                new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
-                new Parameter(FirebaseAnalytics.ParameterQuantity, playerCount),
-                new Parameter(FirebaseAnalytics.ParameterIndex, intensity),
-                new Parameter(FirebaseAnalytics.ParameterScore, highScore)
+                new Parameter(FirebaseAnalytics.ParameterLevelName, data.GameMode.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterCharacter, data.SelectedShipClass.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterQuantity, data.SelectedPlayerCount),
+                new Parameter(FirebaseAnalytics.ParameterIndex, data.SelectedIntensity),
+                new Parameter(FirebaseAnalytics.ParameterScore, data.HighScore)
             };
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);

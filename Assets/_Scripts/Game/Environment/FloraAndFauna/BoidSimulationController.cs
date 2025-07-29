@@ -2,6 +2,7 @@ using UnityEngine;
 using CosmicShore.Core;
 using System.Collections.Generic;
 using System.Collections;
+using CosmicShore.Game;
 
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
 public struct Entity
@@ -193,7 +194,7 @@ public class BoidSImulationController : MonoBehaviour
     private TrailBlock FindBlockByPosition(Vector3 position)
     {
         // Get the node that contains the position
-        Node containingNode = NodeControlManager.Instance.GetNodeByPosition(position);
+        Cell containingNode = CellControlManager.Instance.GetCellByPosition(position);
 
         // If there's no node that contains the position, return null
         if (containingNode == null)
@@ -202,13 +203,12 @@ public class BoidSImulationController : MonoBehaviour
         }
 
         // Iterate through all NodeItems in the node to find the closest TrailBlock
-        Dictionary<int, NodeItem> nodeItems = containingNode.GetItems();
+        IList<CellItem> cellItems = containingNode.CellItems;
         TrailBlock closestBlock = null;
         float closestDistance = float.MaxValue;
 
-        foreach (var itemPair in nodeItems)
+        foreach (var item in cellItems)
         {
-            NodeItem item = itemPair.Value;
             if (item.GetComponent<TrailBlock>() && !item.CompareTag("Fauna"))
             {
                 float distance = Vector3.Distance(position, item.transform.position);

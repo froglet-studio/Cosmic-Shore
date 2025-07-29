@@ -1,10 +1,9 @@
-using CosmicShore.Environment.FlowField;
 using CosmicShore.Events;
-using DG.Tweening;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
+    // TODO - DEPRECATED SCRIPT, Use R_CourseMiniGame instead
     public class CourseMiniGame : MiniGame
     {
         [SerializeField] Crystal Crystal;
@@ -27,7 +26,7 @@ namespace CosmicShore.Game.Arcade
             SegmentSpawner.Seed = new System.Random().Next();
             if (ScaleNumberOfSegmentsWithIntensity) numberOfSegments *= IntensityLevel;
 
-            if (PlayerShipType == ShipTypes.Rhino)
+            if (PlayerShipType == ShipClassType.Rhino)
                 ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
 
             if (helix) helix.firstOrderRadius = helix.secondOrderRadius = IntensityLevel / helixIntensitycaling;

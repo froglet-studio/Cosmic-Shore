@@ -43,10 +43,13 @@ namespace CosmicShore.Game.Arcade
             StatsManager.Instance.ResetStats();
         }
 
-        private void Update()
+        protected override void RestrictedUpdate()
         {
-            if (Display != null && StatsManager.Instance.TeamStats.ContainsKey(team))
-                Display.text = ((int)((Amount - StatsManager.Instance.TeamStats[team].VolumeCreated) / volumeUnitConverstion)).ToString();
+            if (StatsManager.Instance.TeamStats.ContainsKey(team))
+            {
+                string message = ((int)((Amount - StatsManager.Instance.TeamStats[team].VolumeCreated) / volumeUnitConverstion)).ToString();
+                onUpdateTurnMonitorDisplay.Raise(message);
+            }
         }
     }
 }

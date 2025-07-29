@@ -10,7 +10,7 @@ namespace CosmicShore
         [SerializeField] public SO_ArcadeGame Game;
         [SerializeField] public SO_Element ElementOne;
         [SerializeField] public SO_Element ElementTwo;
-        [SerializeField] public SO_Ship ShipClass;
+        [SerializeField] public SO_Ship _SO_Ship;
         [Range(1,4)]
         [SerializeField] public int DailyChallengeIntensity;
         [SerializeField] public GameplayReward DailyChallengeTierOneReward;

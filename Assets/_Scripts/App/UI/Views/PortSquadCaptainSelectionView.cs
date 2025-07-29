@@ -49,7 +49,7 @@ namespace CosmicShore.App.UI.Views
                 else
                     Rows[row].transform.GetChild(2).GetComponent<TMP_Text>().text = captain.Flavor;
 
-                if (row == SelectedIndex)
+                if (row == shipClassTypeVariable.Value)
                     Rows[row].GetComponent<Image>().color = SelectedRowColor;
                 else
                     Rows[row].GetComponent<Image>().color = UnselectedRowColor;
@@ -75,7 +75,7 @@ namespace CosmicShore.App.UI.Views
         public override void Select(int index)
         {
             Debug.Log($"Selected {index}");
-            SelectedIndex = index;
+            shipClassTypeVariable.Value = index;
             OnSelect?.Invoke(sortedCaptains[index]);
 
             UpdateView();

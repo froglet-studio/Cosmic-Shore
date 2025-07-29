@@ -1,4 +1,3 @@
-using CosmicShore.Game;
 using System.Collections;
 using UnityEngine;
 
@@ -27,7 +26,11 @@ namespace CosmicShore.Game.UI
 
         IEnumerator InitializeCoroutine()
         {
-            yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
+            // TODO - Can't have ActivePlayer as static, find other way! Use Player Ready event!
+            // yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
+            // TEMP
+            yield return null;
+            enabled = false;
 
             playerReady = true;
         }
@@ -36,7 +39,9 @@ namespace CosmicShore.Game.UI
         {
             if (!playerReady) return;
 
-            if (Player.ActivePlayer.Ship.ShipStatus.InputController.Portrait)
+            // TODO - Can't have ActivePlayer as static
+            // if (Player.ActivePlayer.Ship.ShipStatus.InputController.Portrait)
+            if (true) // TEMP
             {
                 // Set the anchorMin and anchorMax values to center the RectTransform
                 rectTransform.anchorMin = portraitAnchorMin;

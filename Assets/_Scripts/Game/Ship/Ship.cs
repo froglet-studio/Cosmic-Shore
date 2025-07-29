@@ -1,6 +1,5 @@
 using CosmicShore.Game;
 using CosmicShore.Game.IO;
-using CosmicShore.Game.Projectiles;
 using CosmicShore.Models;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utilities;
@@ -14,6 +13,9 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
+    /// <summary>
+    /// DEPRECATED - Don't use this script anymore. Use IShip, R_ShipController instead.
+    /// </summary>
     [RequireComponent(typeof(IShipStatus))]
     public class Ship : MonoBehaviour, IShip
     {
@@ -28,7 +30,7 @@ namespace CosmicShore.Core
         [SerializeField] string _name;
 
         [FormerlySerializedAs("ShipType")]
-        [SerializeField] ShipTypes _shipType;
+        [SerializeField] ShipClassType _shipType;
 
 
         [Header("Ship Components")]
@@ -50,9 +52,6 @@ namespace CosmicShore.Core
             get
             {
                 _shipStatus ??= GetComponent<IShipStatus>();
-                _shipStatus.Name = _name;
-                _shipStatus.BoostMultiplier = boostMultiplier;
-                _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
         }
@@ -156,7 +155,7 @@ namespace CosmicShore.Core
             OnButton3Released.OnEventRaised -= StopShipControllerActions;
         }
 
-        public void Initialize(IPlayer player)
+        public void Initialize(IPlayer player, bool enableAIPilot)
         {
             SetPlayerToShipStatusAndSkimmers(player);
             SetTeamToShipStatusAndSkimmers(player.Team);
@@ -174,11 +173,11 @@ namespace CosmicShore.Core
             ShipStatus.ShipTransformer.Initialize(this);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
 
-            ShipStatus.AIPilot.AssignShip(this);
-            ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.AutoPilotEnabled);
+            /*ShipStatus.AIPilot.AssignShip(this);
+            ShipStatus.AIPilot.Initialize(isAI);*/
             
-            nearFieldSkimmer?.Initialize(this);
-            farFieldSkimmer?.Initialize(this);
+            nearFieldSkimmer?.Initialize(ShipStatus);
+            farFieldSkimmer?.Initialize(ShipStatus);
             ShipStatus.ShipCameraCustomizer.Initialize(this);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
@@ -213,16 +212,16 @@ namespace CosmicShore.Core
 
         void SetTeamToShipStatusAndSkimmers(Teams team)
         {
-            ShipStatus.Team = team;
+            /*ShipStatus.Team = team;
             if (nearFieldSkimmer != null) nearFieldSkimmer.Team = team;
-            if (farFieldSkimmer != null) farFieldSkimmer.Team = team;
+            if (farFieldSkimmer != null) farFieldSkimmer.Team = team;*/
         }
 
         void SetPlayerToShipStatusAndSkimmers(IPlayer player)
         {
-            ShipStatus.Player = player;
+            /*ShipStatus.Player = player;
             if (nearFieldSkimmer != null) nearFieldSkimmer.Player = player;
-            if (farFieldSkimmer != null) farFieldSkimmer.Player = player;
+            if (farFieldSkimmer != null) farFieldSkimmer.Player = player;*/
         }
 
         void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(ShipStatus, inputEventShipActions, ShipControlActions);
@@ -240,16 +239,16 @@ namespace CosmicShore.Core
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) // TODO: move to an ability system with separate classes
         {
-            foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            /*foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
                 {
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex 
+                        aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
                             ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
-                        aoeExplosion.Detonate(this);
+                        aoeExplosion.InitializeAndDetonate(this);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
@@ -269,9 +268,9 @@ namespace CosmicShore.Core
                     case CrystalImpactEffects.GainFullAmmo:
                         ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
-                    // Play Haptics
+                        // Play Haptics
                 }
-            }
+            }*/
         }
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
@@ -554,6 +553,11 @@ namespace CosmicShore.Core
         public void OnButtonPressed(int buttonNumber)
         {
             PerformButtonActions(buttonNumber);
+        }
+
+        public void ToggleAutoPilot(bool toggle)
+        {
+            throw new NotImplementedException();
         }
 
         public void SetAISkillLevel(int value)

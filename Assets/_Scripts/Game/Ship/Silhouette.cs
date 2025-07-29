@@ -68,13 +68,13 @@ namespace CosmicShore
                 }
             }*/
 
-            if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled)
+            if (!_ship.ShipStatus.AutoPilotEnabled)
             {
                 OnSilhouetteInitialized.RaiseEvent(new SilhouetteData()
                 {
                     Sender = this,
-                    IsSilhouetteActive = !ship.ShipStatus.AIPilot.AutoPilotEnabled && ship.ShipStatus.Player.IsActive,
-                    IsTrailDisplayActive = !ship.ShipStatus.AIPilot.AutoPilotEnabled,
+                    IsSilhouetteActive = !ship.ShipStatus.AutoPilotEnabled && ship.ShipStatus.Player.IsActive,
+                    IsTrailDisplayActive = !ship.ShipStatus.AutoPilotEnabled,
                     Silhouettes = silhouetteParts
                 });
             }
@@ -99,7 +99,7 @@ namespace CosmicShore
 
         private void calculateDriftAngle(float dotProduct)
         {
-            foreach (var part in silhouetteParts) { part.gameObject.SetActive(!_ship.ShipStatus.AIPilot.AutoPilotEnabled && _ship.ShipStatus.Player.IsActive); } // TODO: why?
+            foreach (var part in silhouetteParts) { part.gameObject.SetActive(!_ship.ShipStatus.AutoPilotEnabled && _ship.ShipStatus.Player.IsActive); } // TODO: why?
 
             // TODO - SilhouetteContainer should be set by the HUD that is listening to our initialize event.
             if (_silhouetteContainer != null)
@@ -122,7 +122,7 @@ namespace CosmicShore
 
         private void HandleBlockCreation(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
-            if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled)
+            if (!_ship.ShipStatus.AutoPilotEnabled)
             {
                 if (poolSize < 1)
                 {
@@ -173,7 +173,7 @@ namespace CosmicShore
             if (_trailDisplayContainer == null)
                 return;
 
-            if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled)
+            if (!_ship.ShipStatus.AutoPilotEnabled)
             {
                 for (int j = 0; j < 2; j++)
                 {

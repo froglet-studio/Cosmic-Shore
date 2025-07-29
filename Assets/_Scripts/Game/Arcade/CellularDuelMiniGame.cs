@@ -9,7 +9,7 @@ namespace CosmicShore.Game.Arcade
         protected override void Start()
         {
             base.Start();
-            hostilePilot.Ship.ShipStatus.AIPilot.SkillLevel = .4f + IntensityLevel*.15f;
+            // hostilePilot.Ship.ShipStatus.AIPilot.SkillLevel = .4f + IntensityLevel*.15f;
         }
     }
 }

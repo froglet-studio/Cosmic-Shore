@@ -1,4 +1,3 @@
-using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade

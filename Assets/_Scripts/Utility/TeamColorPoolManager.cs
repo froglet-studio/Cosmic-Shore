@@ -77,7 +77,7 @@ namespace CosmicShore.Game
                 Teams.Gold => $"{FossilTag}_Gold",
                 Teams.Blue => $"{FossilTag}_Blue",
                 Teams.Jade => $"{FossilTag}_Jade",
-                _ => FossilTag,
+                _ => $"{FossilTag}_Gold",                   // This should never happen
             };
         }
     }

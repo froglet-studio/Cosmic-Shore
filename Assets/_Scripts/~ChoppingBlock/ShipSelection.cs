@@ -2,20 +2,27 @@ using CosmicShore.Core;
 using TMPro;
 using UnityEngine;
 
-[RequireComponent(typeof(TMP_Dropdown))]
-public class ShipSelection : MonoBehaviour
+
+namespace CosmicShore.Game.UI
 {
-    TMP_Dropdown dropdown;
-
-    // Start is called before the first frame update
-    void Start()
+    [RequireComponent(typeof(TMP_Dropdown))]
+    public class ShipSelection : MonoBehaviour
     {
-        dropdown = GetComponent<TMP_Dropdown>();
-        dropdown.value = (int) Hangar.Instance.GetPlayerShipType();
-    }
+        TMP_Dropdown dropdown;
 
-    public void HangarSetPlayerShip(int shipType)
-    {
-        Hangar.Instance.SetPlayerShip(shipType);
+        // Start is called before the first frame update
+        void Start()
+        {
+            dropdown = GetComponent<TMP_Dropdown>();
+
+            // TODO - Get from separate data container. Don't access Hanger directly.
+            dropdown.value = (int)Hangar.Instance.ChoosenClassType;
+        }
+
+        // TODO - Store in separate data container. Don't access Hanger directly.
+        public void HangarSetPlayerShip(int shipClassType)
+        {
+            Hangar.Instance.SetPlayerShip(shipClassType);
+        }
     }
 }

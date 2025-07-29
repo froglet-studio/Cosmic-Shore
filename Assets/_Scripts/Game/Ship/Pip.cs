@@ -1,31 +1,33 @@
-using CosmicShore.Core;
-using CosmicShore.Game;
-using CosmicShore.Utilities;
+using CosmicShore.SOAP;
 using UnityEngine;
 
-
-[RequireComponent(typeof(IShipStatus))]
-public class Pip : MonoBehaviour
+namespace CosmicShore.Game
 {
-    [SerializeField] Camera pipCamera;
-    [SerializeField] bool mirrored;
-    [SerializeField]
-    PipEventChannelSO OnPipInitializedEventChannel;
-
-
-    void Start()
+    [RequireComponent(typeof(IShipStatus))]
+    public class Pip : MonoBehaviour
     {
-        IShipStatus shipStatus = GetComponent<IShipStatus>();
+        [SerializeField] Camera pipCamera;
+        [SerializeField] bool mirrored;
+
+        [SerializeField]
+        ScriptableEventPipData _EventPipEventData;
 
 
-        // TODO - remove GameCanvas dependency
-        // if (shipStatus.Player.GameCanvas != null) shipStatus.Player.GameCanvas.MiniGameHUD.SetPipActive(!shipStatus.AIPilot.AutoPilotEnabled, mirrored);
-        OnPipInitializedEventChannel?.RaiseEvent(new PipEventData()
+        void Start()
         {
-            IsActive = !shipStatus.AIPilot.AutoPilotEnabled,
-            IsMirrored = mirrored
-        });
-        
-        if (pipCamera != null) pipCamera.gameObject.SetActive(!shipStatus.AIPilot.AutoPilotEnabled);
+            IShipStatus shipStatus = GetComponent<IShipStatus>();
+
+
+            // TODO - remove GameCanvas dependency
+            // if (shipStatus.Player.GameCanvas != null) shipStatus.Player.GameCanvas.MiniGameHUD.SetPipActive(!shipStatus.AIPilot.AutoPilotEnabled, mirrored);
+            _EventPipEventData.Raise(new PipData()
+            {
+                IsActive = !shipStatus.AutoPilotEnabled,
+                IsMirrored = mirrored
+            });
+
+            if (pipCamera != null) pipCamera.gameObject.SetActive(!shipStatus.AutoPilotEnabled);
+        }
     }
 }
+

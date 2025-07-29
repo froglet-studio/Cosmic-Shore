@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Arcade
 
         private void Start()
         {
-            if (NodeControlManager.Instance != null) nodeID = NodeControlManager.Instance.GetNearestNode(Vector3.zero).ID;
+            if (CellControlManager.Instance != null) nodeID = CellControlManager.Instance.GetNearestCell(Vector3.zero).ID;
         }
 
         public override bool CheckForEndOfTurn()
@@ -36,12 +36,12 @@ namespace CosmicShore.Game.Arcade
             StatsManager.Instance.ResetStats();
         }
 
-        void Update()
+        protected override void RestrictedUpdate()
         {
             if (paused) return;
 
-            if (Display != null)
-            Display.text = (StatsManager.Instance.CellStats[nodeID].LifeFormsInNode).ToString();
+            string message = (StatsManager.Instance.CellStats[nodeID].LifeFormsInNode).ToString();
+            onUpdateTurnMonitorDisplay.Raise(message);
         }
     }
 }

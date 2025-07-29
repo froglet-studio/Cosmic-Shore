@@ -12,7 +12,7 @@ public class BoostAction : ShipAction
         if (ShipStatus != null)
         {
             ShipStatus.Boosting = true;
-            ShipStatus.Stationary = false;
+            ShipStatus.IsStationary = false;
         }
     }
 

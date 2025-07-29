@@ -9,20 +9,20 @@ namespace CosmicShore.App.Systems
 
         public static event Action OnGamePaused;
         public static event Action OnGameResumed;
-
-        public static void TogglePauseGame()
+        
+        public static void TogglePauseGame(bool pause)
         {
-            if (Paused)
+            if (Paused && !pause)
             {
                 Time.timeScale = 1f;
                 Paused = false;
-                //OnGameResumed?.Invoke();
+                OnGameResumed?.Invoke();
             }
-            else
+            else if (!Paused && pause)
             {
                 Time.timeScale = 0f;
                 Paused = true;
-                //OnGamePaused?.Invoke();
+                OnGamePaused?.Invoke();
             }
         }
     }

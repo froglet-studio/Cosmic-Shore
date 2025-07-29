@@ -1869,6 +1869,10 @@ GameObject:
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 1302784739002126863}
   - component: {fileID: 6793423672001803902}
+  - component: {fileID: 9172589084772723142}
+  - component: {fileID: 3885827911418556293}
+  - component: {fileID: 7779107667008759293}
+  - component: {fileID: 4248184753307651523}
   m_Layer: 0
   m_Name: Termite
   m_TagString: Player_Ship
@@ -1919,7 +1923,7 @@ MonoBehaviour:
     speedPenalty: 0
     hapticType: 0
     trailBlock: {fileID: 0}
-  Name: Termite
+  _name: Termite
   _shipType: 8
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
@@ -1981,7 +1985,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipInstance: {fileID: 874579555101021527}
+  _shipInstance: {fileID: 0}
+  _shipHUDController: {fileID: 0}
+  shipHUDContainer: {fileID: 0}
+  boostMultiplier: 4
+  _name: 
+  _shipType: 0
+  _nearFieldSkimmer: {fileID: 0}
+  _farFieldSkimmer: {fileID: 0}
+  orientationHandle: {fileID: 0}
 --- !u!114 &3055397634636183824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2051,7 +2063,6 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 0a5b78684a1e89341a2483949089f33c,
     type: 3}
   skimmer: {fileID: 874579554510349383}
-  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 2
   minWavelength: 2
   defaultWaitTime: 0.2
@@ -2193,8 +2204,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pipCamera: {fileID: 1507913478050007905}
   mirrored: 0
-  OnPipInitializedEventChannel: {fileID: 11400000, guid: f6bc516bf0c99be4285e51e90caab8f1,
-    type: 2}
+  _EventPipEventData: {fileID: 11400000, guid: b45e336470396ed4fb50f1b0a287804d, type: 2}
 --- !u!114 &2731003324702047408
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2274,6 +2284,66 @@ MonoBehaviour:
   m_DefaultActionMap: 
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &9172589084772723142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _inputEventShipActions: []
+  _resourceEventClassActions: []
+  OnButton1Pressed: {fileID: 0}
+  OnButton1Released: {fileID: 0}
+  OnButton2Pressed: {fileID: 0}
+  OnButton2Released: {fileID: 0}
+  OnButton3Pressed: {fileID: 0}
+  OnButton3Released: {fileID: 0}
+--- !u!114 &3885827911418556293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7c950cbe6934cc49b4940a883bc0c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _crystalImpactEffects: []
+  _trailBlockImpactEffects: []
+--- !u!114 &7779107667008759293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54b4f9e9438fc6c49adc4ff81dc84db8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _shipGeometries: []
+--- !u!114 &4248184753307651523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13cf865c37b39d048a7f43eec35a11e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ElementStats: []
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0
@@ -3388,7 +3458,7 @@ PrefabInstance:
         type: 3}
       propertyPath: ship
       value: 
-      objectReference: {fileID: 874579555101021527}
+      objectReference: {fileID: 0}
     - target: {fileID: 5419495559165528622, guid: 2cc33d568cdf5f34f86740bf9701776c,
         type: 3}
       propertyPath: m_Pivot.x

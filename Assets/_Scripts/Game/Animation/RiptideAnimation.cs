@@ -36,13 +36,13 @@ namespace CosmicShore.Game.Animation
 
         private void OnDisable()
         {
-            if (topJaw) ShipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
+            if (topJaw) _shipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
         }
         public override void Initialize(IShipStatus shipStatus)
         {
             base.Initialize(shipStatus);
 
-            if (topJaw) ShipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+            if (topJaw) base._shipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
 
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
         }
@@ -58,9 +58,9 @@ namespace CosmicShore.Game.Animation
                         roll * animationScaler,
                         Vector3.zero);
 
-            if (ShipStatus.Drifting)
+            if (_shipStatus.Drifting)
             {
-                DriftHandle.rotation = Quaternion.LookRotation(ShipStatus.Course, transform.up);
+                DriftHandle.rotation = Quaternion.LookRotation(_shipStatus.Course, transform.up);
                 RightWing.parent = DriftHandle;
                 LeftWing.parent = DriftHandle;
                 wingPosition = forwardWingPosition;

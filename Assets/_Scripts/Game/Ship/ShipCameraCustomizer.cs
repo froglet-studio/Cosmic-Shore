@@ -26,6 +26,7 @@ namespace CosmicShore
         {
             this.ship = ship;
             cameraManager = CameraManager.Instance;
+            cameraManager.Initialize(ship.ShipStatus);
 
             // Here, use playerCamera or ask CameraManager for the correct controller directly.
             cameraCtrl = cameraManager.GetActiveController();
@@ -49,7 +50,7 @@ namespace CosmicShore
         private void ApplyControlOverrides()
         {
             var flags = settings.controlOverrides;
-
+            
             // 1. Set camera distance (CloseCam/FarCam logic)
             if (flags.HasFlag(ControlOverrideFlags.FarCam))
             {

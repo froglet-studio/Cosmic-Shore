@@ -60,15 +60,12 @@ public class GunShipTransformer : ShipTransformer
         float lookThreshold = -.6f;
         float zeroPosition = .2f;
 
-        var throttle = (InputStatus.XDiff - zeroPosition) / (1 - zeroPosition);
+        // TODO - Ship components should not be accessing InputStatus directly.
+        // var throttle = (InputStatus.XDiff - zeroPosition) / (1 - zeroPosition);
+        var throttle = 0;
 
         if (Vector3.Dot(transform.forward, shipStatus.Course) < lookThreshold && throttle > 0)
             moveForward = !moveForward;
-
-        //if ((moveForward && throttle > 0) || (!moveForward && throttle < 0))
-        //    trailFollower.SetDirection(TrailFollowerDirection.Forward);
-        //else
-        //    trailFollower.SetDirection(TrailFollowerDirection.Backward);
 
         trailFollower.Throttle = Mathf.Abs(throttle);
         trailFollower.RideTheTrail();

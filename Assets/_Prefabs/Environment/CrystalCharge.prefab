@@ -78,7 +78,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Team: -1
+  OwnTeam: -1
   ItemType: 1
   crystalProperties:
     crystal: {fileID: 6588436222817790495}
@@ -100,7 +100,11 @@ MonoBehaviour:
   shipImpactEffects: 0
   RespawnOnImpact: 0
   ImpactHapticType: 4
+  _themeManagerData: {fileID: 0}
   crystalImpactEffects: 080000000b000000
+  _crystalImpactEffects:
+  - {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f, type: 2}
+  - {fileID: 11400000, guid: 777ffc4b1f0c4d84d842912b63a857f2, type: 2}
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
   AOEExplosionMaterial: {fileID: 0}

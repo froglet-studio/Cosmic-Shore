@@ -8,8 +8,8 @@ public class ToggleStationaryModeAction : ShipAction
     
     public override void StartAction()
     {
-        ShipStatus.Stationary = !ShipStatus.Stationary;
-        bool isOn = ShipStatus.Stationary;
+        ShipStatus.IsStationary = !ShipStatus.IsStationary;
+        bool isOn = ShipStatus.IsStationary;
 
         if (isOn)
             Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();

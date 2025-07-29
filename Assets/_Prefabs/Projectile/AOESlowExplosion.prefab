@@ -53,11 +53,14 @@ MonoBehaviour:
   ExplosionDuration: 3
   ExplosionDelay: 0.2
   shipImpactEffects: 0400000001000000
+  _shipImpactEffects:
+  - {fileID: 11400000, guid: 7a5c6ccc0c9cabaebdb76fa302d64fd6, type: 2}
+  - {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f, type: 2}
   affectSelf: 0
   destructive: 0
   devastating: 0
+  shielding: 0
   Team: 0
-  Ship: {fileID: 0}
   AnonymousExplosion: 0
 --- !u!33 &8683897607158942398
 MeshFilter:
@@ -84,6 +87,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:

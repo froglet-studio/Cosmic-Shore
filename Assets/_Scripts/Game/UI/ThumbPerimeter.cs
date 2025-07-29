@@ -2,7 +2,6 @@ using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game.UI
@@ -25,8 +24,7 @@ namespace CosmicShore.Game.UI
         bool imageEnabled = true;
 
         Vector2 leftStartPosition, rightStartPosition;
-        InputController _inputController;
-        IInputStatus _inputStatus => _inputController.InputStatus;
+        IInputStatus _inputStatus;
 
         private void OnEnable()
         {
@@ -37,6 +35,8 @@ namespace CosmicShore.Game.UI
         {
             GameSetting.OnChangeJoystickVisualsStatus -= OnToggleJoystickVisuals;
         }
+
+        public void Initialize(IInputStatus inputStatus) => _inputStatus = inputStatus;
 
         private void OnToggleJoystickVisuals(bool status)
         {
@@ -49,7 +49,7 @@ namespace CosmicShore.Game.UI
             image = GetComponent<Image>();
             image.sprite = ActivePerimeterImage;
             imageEnabled = GameSetting.Instance.JoystickVisualsEnabled;
-            //set Image color alpha
+
             color.a = 0;
             image.color = color;
             StartCoroutine(InitializeCoroutine());
@@ -58,21 +58,27 @@ namespace CosmicShore.Game.UI
         // Wait until the input controller is wired up then only show if there is no gamepad and the left one when flying with single stick controls 
         IEnumerator InitializeCoroutine()
         {
-            yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
+            // TODO - Can't have ActivePlayer as static
+            /*yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
             bool isActive = Gamepad.current == null && !Player.ActivePlayer.Ship.ShipStatus.CommandStickControls && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls);
             if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
             {
                 gameObject.SetActive(isActive);
                 _inputController = Player.ActivePlayer.Ship.ShipStatus.InputController;
                 initialized = isActive;
-            }               
+            }    */
+            // TEMP Suspended
+            yield return null;
+            enabled = false;
         }
 
         void Update()
         {
             if(!imageEnabled) { return; }
 
-            if (initialized && !Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
+            // TODO - Can't have ActivePlayer as static
+            // if (initialized && !Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
+            if (true) // TEMP  
             {
                 if (Input.touches.Length == 0)
                 {

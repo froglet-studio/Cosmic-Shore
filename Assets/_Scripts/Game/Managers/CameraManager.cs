@@ -3,13 +3,24 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utilities;
+using CosmicShore.Utility.ClassExtensions;
+using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
-public class CameraManager : SingletonPersistent<CameraManager>
+
+public class CameraManager : Singleton<CameraManager>
 {
     [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+    
+    [SerializeField] 
+    ScriptableEventNoParam _onReturnToMainMenu;
+    
+    [SerializeField] 
+    ScriptableEventNoParam _onPlayGame;
+        
+    [SerializeField]
+    ScriptableEventNoParam _onGameOver;
 
     private ICameraController playerCamera;
     private ICameraController deathCamera;
@@ -27,14 +38,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     [HideInInspector] public bool FollowOverride = false;
     [HideInInspector] public bool FixedFollow = false;
-    [HideInInspector] public bool isOrthographic = false;
 
     [HideInInspector] public float CloseCamDistance;
     [HideInInspector] public float FarCamDistance;
 
     [SerializeField] float startTransitionDistance = 40f;
 
-    Camera vCam;
+    private Camera vCam;
+    private IShipStatus shipStatus;
 
     public bool FreezeRuntimeOffset { get; set; } = false;
 
@@ -47,12 +58,41 @@ public class CameraManager : SingletonPersistent<CameraManager>
         deathCamera = GetOrFindCameraController("CM DeathCam");
         endCamera = endCamera ?? GetOrFindCameraController("CM EndCam") as CustomCameraController;
     }
+    
+    private void OnEnable()
+    {
+        _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
+        _onPlayGame.OnRaised += SetupGamePlayCameras;
+        _onGameOver.OnRaised += SetEndCameraActive;
+    }
 
+    void OnDisable()
+    {
+        _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
+        _onPlayGame.OnRaised -= SetupGamePlayCameras;
+        _onGameOver.OnRaised -= SetEndCameraActive;
+
+        // Restore original offset when disabled
+        // RestoreOriginalOffset();
+    }
+
+    void Start()
+    {
+        vCam = (playerCamera as CustomCameraController)?.Camera;
+        OnEnteredMainMenu();
+    }
+
+    // TODO - Remove this later, not needed
+    public void Initialize(IShipStatus shipStatus) =>  this.shipStatus = shipStatus;
+    
+    // void EnsureController(ref CustomCameraController controller, string name)
+    
     private ICameraController GetOrFindCameraController(string name)
     {
         Transform t = transform.Find(name);
         if (t)
         {
+            // use GetOrAdd extension
             var ctrl = t.GetComponent<ICameraController>();
             if (ctrl == null)
             {
@@ -64,29 +104,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
         return null;
     }
 
-    private void OnEnable()
-    {
-        GameManager.OnPlayGame += SetupGamePlayCameras;
-        GameManager.OnGameOver += SetEndCameraActive;
-    }
-
-    void OnDisable()
-    {
-        GameManager.OnPlayGame -= SetupGamePlayCameras;
-        GameManager.OnGameOver -= SetEndCameraActive;
-    }
-
-    void Start()
-    {
-        vCam = (playerCamera as CustomCameraController)?.Camera;
-        OnMainMenu();
-    }
-
     public Transform GetCloseCamera() => (playerCamera as CustomCameraController)?.transform;
 
     public Vector3 CurrentOffset => (playerCamera as CustomCameraController)?.GetFollowOffset() ?? Vector3.zero;
-
-    public void OnMainMenu()
+    
+    void OnEnteredMainMenu()
     {
         SetMainMenuCameraActive();
         _themeManagerData.SetBackgroundColor(Camera.main);
@@ -94,7 +116,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetupGamePlayCameras()
     {
-        playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipStatus.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.Transform;
+        playerFollowTarget = FollowOverride ? shipStatus.ShipCameraCustomizer.FollowTarget : shipStatus.Transform;
         SetupGamePlayCameras(playerFollowTarget);
     }
 
@@ -142,8 +164,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void LookAtCrystal()
     {
-        if (mainMenuCamera != null)
-            mainMenuCamera.LookAt = NodeControlManager.Instance.GetNearestNode(Vector3.zero).GetCrystal().transform;
+        if (mainMenuCamera)
+            mainMenuCamera.LookAt = CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
     }
 
 

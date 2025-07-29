@@ -7,17 +7,19 @@ using TMPro;
 using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
+using Obvious.Soap;
 using Unity.Services.Matchmaker.Models;
 
 namespace CosmicShore.Core
 {
+    [System.Serializable]
+    public struct NodeStats
+    {
+        public int LifeFormsInNode;
+    }
+    
     public class StatsManager : Singleton<StatsManager>
     {
-        public struct NodeStats
-        {
-            public int LifeFormsInNode;
-        }
-
         [SerializeField]
         List<GameObject> EndOfRoundStatContainers;
         [SerializeField]
@@ -30,6 +32,12 @@ namespace CosmicShore.Core
         protected TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
         [SerializeField]
         protected TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+        
+        [SerializeField] 
+        ScriptableEventNoParam _onPlayGame;
+        
+        [SerializeField]
+        ScriptableEventNoParam _onGameOver;
 
         // Stats dictionaries
         public Dictionary<Teams, IRoundStats> TeamStats = new();
@@ -44,8 +52,8 @@ namespace CosmicShore.Core
 
         protected virtual void OnEnable()
         {
-            GameManager.OnPlayGame += ResetStats;
-            GameManager.OnGameOver += OutputRoundStats;
+            _onPlayGame.OnRaised += ResetStats;
+            _onGameOver.OnRaised += OutputRoundStats;
             _onTrailBlockCreatedEventChannel.OnEventRaised += OnBlockCreated;
             _onTrailBlockDestroyedEventChannel.OnEventRaised += OnBlockDestroyed;
             _onTrailBlockRestoredEventChannel.OnEventRaised += OnBlockRestored;
@@ -53,8 +61,8 @@ namespace CosmicShore.Core
 
         protected virtual void OnDisable()
         {
-            GameManager.OnPlayGame -= ResetStats;
-            GameManager.OnGameOver -= OutputRoundStats;
+            _onPlayGame.OnRaised -= ResetStats;
+            _onGameOver.OnRaised -= OutputRoundStats;
             _onTrailBlockCreatedEventChannel.OnEventRaised -= OnBlockCreated;
             _onTrailBlockDestroyedEventChannel.OnEventRaised -= OnBlockDestroyed;
             _onTrailBlockRestoredEventChannel.OnEventRaised -= OnBlockRestored;
@@ -434,7 +442,7 @@ namespace CosmicShore.Core
             Debug.Log(JsonConvert.SerializeObject(PlayerStats, Formatting.Indented));
             Debug.Log(JsonConvert.SerializeObject(TeamStats, Formatting.Indented));
 
-            // Populate end-of-round UI (still tightly coupled—consider moving to a UI controller)
+            // Populate end-of-round UI (still tightly coupledï¿½consider moving to a UI controller)
             int i = 0;
             foreach (var playerName in PlayerStats.Keys)
             {

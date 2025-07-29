@@ -37,18 +37,18 @@ public class ShipHUDControllerEditor : Editor
         EditorGUILayout.PropertyField(shipTypeProp, new GUIContent("Ship Type"));
 
         // Only show the relevant action fields
-        ShipTypes type = (ShipTypes)shipTypeProp.intValue;
+        ShipClassType type = (ShipClassType)shipTypeProp.intValue;
         GUILayout.Space(6);
         DrawSection(type + " Actions", sectionColor, () =>
         {
             switch (type)
             {
-                case ShipTypes.Serpent:
+                case ShipClassType.Serpent:
                     EditorGUILayout.PropertyField(boostProp, new GUIContent("Boost Action"));
                     EditorGUILayout.PropertyField(seedProp,  new GUIContent("Seed Assembler"));
                     break;
 
-                case ShipTypes.Sparrow:
+                case ShipClassType.Sparrow:
                     EditorGUILayout.PropertyField(overheatProp, new GUIContent("Overheating Action"));
                     EditorGUILayout.PropertyField(fullAutoProp, new GUIContent("Full-Auto Action"));
                     EditorGUILayout.PropertyField(fireGunProp,  new GUIContent("Fire Gun Action"));

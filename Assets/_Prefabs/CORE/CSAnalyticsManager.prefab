@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &388665109179592267
 Transform:
   m_ObjectHideFlags: 0
@@ -45,6 +45,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a36cc94ce19d64e55b6223445b007a33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _onStartMiniGame: {fileID: 11400000, guid: d5983804e01917b4abbce14c95f0db20, type: 2}
+  _onEndMiniGame: {fileID: 11400000, guid: 67b3a6e895a489c4d8fe25e8f0c8f326, type: 2}
 --- !u!114 &7002274348588857392
 MonoBehaviour:
   m_ObjectHideFlags: 0

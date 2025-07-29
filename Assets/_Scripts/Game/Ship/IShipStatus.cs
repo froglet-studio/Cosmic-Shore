@@ -9,9 +9,8 @@ namespace CosmicShore.Game
 {
     public interface IShipStatus
     {
-        
-        IShip Ship { get; } // FOR TEMP USE, TRY REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
-
+        IShip Ship { get; } // FOR TEMP USE, TRY TO REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
+        Transform Transform => Ship.Transform;
         AIPilot AIPilot { get; }
         bool AlignmentEnabled { get; set; }
         Material AOEConicExplosionMaterial { get; set; }
@@ -26,7 +25,6 @@ namespace CosmicShore.Game
         SO_Captain Captain { get; set; }
         float ChargedBoostCharge { get; set; }
         bool ChargedBoostDischarging { get; set; }
-        bool CommandStickControls { get; set; }
         Vector3 Course { get; set; }
         bool Drifting { get; set; }
         bool ElevatedResourceGain { get; set; }
@@ -36,7 +34,6 @@ namespace CosmicShore.Game
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
         bool LiveProjectiles { get; set; }
-        string Name { get; set; }
         bool Overheating { get; set; }
         IPlayer Player { get; set; }
         string PlayerName
@@ -50,6 +47,7 @@ namespace CosmicShore.Game
                 return "No-name";
             }
         }
+        Teams Team => Player.Team;
 
         bool Portrait { get; set; }
         ResourceSystem ResourceSystem { get; }
@@ -58,16 +56,19 @@ namespace CosmicShore.Game
         List<GameObject> ShipGeometries { get; set; }
         Transform ShipTransform { get;}
         ShipTransformer ShipTransformer { get; }
-        ShipTypes ShipType { get; set; }
+        string Name { get; }
+        ShipClassType ShipType { get; }
+        Skimmer NearFieldSkimmer { get; }
+        Skimmer FarFieldSkimmer { get; }
+        GameObject OrientationHandle { get; }
         Silhouette Silhouette { get; }
         Material ShipMaterial { get; set; }
         Material SkimmerMaterial { get; set; }
         float Speed { get; set; }
         bool SingleStickControls { get; set; }
         bool Slowed { get; set; }
-        bool Stationary { get; set; }
+        bool IsStationary { get; set; }
         bool Turret { get; set; }
-        Teams Team { get; set; }
         TrailSpawner TrailSpawner { get; }
         ShipHUDContainer ShipHUDContainer { get; }
         IShipHUDView ShipHUDView { get; set; }
@@ -75,6 +76,7 @@ namespace CosmicShore.Game
         R_ShipCustomization Customization { get; }
         R_ShipActionHandler ActionHandler { get; }
         R_ShipImpactHandler ImpactHandler { get; }
+        R_ShipElementStatsHandler ElementalStatsHandler { get; }
 
         void ResetValues();
     }

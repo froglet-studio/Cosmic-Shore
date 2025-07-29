@@ -1,11 +1,13 @@
 using UnityEngine;
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
 using System.Collections.Generic;
 using CosmicShore.Game;
 
 public class ShipTransformer : MonoBehaviour
 {
+    protected const float LERP_AMOUNT = 1.5f;
+
+
     [SerializeField]
     protected bool toggleManualThrottle;
 
@@ -15,11 +17,9 @@ public class ShipTransformer : MonoBehaviour
     protected ResourceSystem resourceSystem;
     #endregion
 
-    protected InputController inputController;
-    protected IInputStatus InputStatus => inputController.InputStatus;
+    protected IInputStatus InputStatus => shipStatus.InputStatus;
 
     protected float speed;
-    protected readonly float lerpAmount = 1.5f;
     protected Quaternion accumulatedRotation;
 
     [HideInInspector] public float MinimumSpeed;
@@ -46,7 +46,6 @@ public class ShipTransformer : MonoBehaviour
     {
         this.Ship = ship;
         resourceSystem = ship.ShipStatus.ResourceSystem;
-        inputController = ship.ShipStatus.InputController;
     }
 
     protected virtual void Start()
@@ -56,7 +55,7 @@ public class ShipTransformer : MonoBehaviour
         accumulatedRotation = transform.rotation;
     }
 
-    public void Reset()
+    public void ResetShipTransformer()
     {
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
@@ -67,27 +66,16 @@ public class ShipTransformer : MonoBehaviour
 
     protected virtual void Update()
     {
+        // TODO - Ship should never be null if ShipTransformer is enabled.
+        // Find better way to do this.
         if (Ship == null)
             return;
-
-        if (inputController == null)
-        {
-            inputController = Ship.ShipStatus.InputController;
-        }
-
-        if (inputController == null)
-            return;
-
-        if (InputStatus.Paused)
-            return;
-
         
-
         shipStatus.blockRotation = transform.rotation;
 
         RotateShip();
 
-        if (shipStatus.Stationary)
+        if (shipStatus.IsStationary)
             return;
 
         ApplyThrottleModifiers();
@@ -106,54 +94,20 @@ public class ShipTransformer : MonoBehaviour
         if (InputStatus.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
         {
             // Updates GameObjects blockRotation from input device's gyroscope
-            transform.rotation = Quaternion.Lerp(
+            transform.rotation = Quaternion.Slerp(
                                         transform.rotation,
-                                        accumulatedRotation * inputController.GetGyroRotation(),
-                                        lerpAmount * Time.deltaTime);
+                                        accumulatedRotation * InputStatus.GetGyroRotation(),
+                                        LERP_AMOUNT * Time.deltaTime);
         }
         else
         {
-            transform.rotation = Quaternion.Lerp(
+            transform.rotation = Quaternion.Slerp(
                                         transform.rotation,
                                         accumulatedRotation,
-                                        lerpAmount * Time.deltaTime);
+                                        LERP_AMOUNT * Time.deltaTime);
         }
     }
 
-    /*protected virtual void RotateShip()
-    {
-
-        if (inputController != null)
-        {
-
-            Roll();
-            Yaw();
-            Pitch();
-
-            if (inputStatus.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
-            {
-                // Updates GameObjects blockRotation from input device's gyroscope
-                transform.rotation = Quaternion.Lerp(
-                                            transform.rotation,
-                                            accumulatedRotation * inputController.GetGyroRotation(),
-                                            lerpAmount * Time.deltaTime);
-            }
-            else
-            {
-                transform.rotation = Quaternion.Lerp(
-                                            transform.rotation,
-                                            accumulatedRotation,
-                                            lerpAmount * Time.deltaTime);
-            }
-        }
-        else
-        {
-            transform.rotation = Quaternion.Lerp(
-                                        transform.rotation,
-                                        accumulatedRotation,
-                                        lerpAmount * Time.deltaTime);
-        }
-    }*/
     #region Public Rotation Methods
     public void FlatSpinShip(float YAngle)
     {
@@ -219,9 +173,7 @@ public class ShipTransformer : MonoBehaviour
             boostAmount = Ship.ShipStatus.BoostMultiplier;
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
-        if (inputController != null)
-        speed = Mathf.Lerp(speed, InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
-
+        speed = Mathf.Lerp(speed, InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
         speed *= throttleMultiplier;
 
         if (toggleManualThrottle)
@@ -305,8 +257,11 @@ public class ShipTransformer : MonoBehaviour
             Ship.ShipStatus.ShipAnimation.StopFlareBody();
     }
 
-    private void OnDisable()
+    // TODO - Should not access hangar like this.
+    // Use different way!
+    /*private void OnDisable()
     {
-        Hangar.Instance.SlowedShipTransforms.Remove(transform);
-    }
+        
+        // Hangar.Instance.SlowedShipTransforms.Remove(transform);
+    }*/
 }
