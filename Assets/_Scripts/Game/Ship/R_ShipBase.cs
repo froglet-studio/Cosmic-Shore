@@ -3,6 +3,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Game.AI;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -76,15 +77,11 @@ namespace CosmicShore.Game
 
         protected void InvokeShipInitializedEvent() => OnShipInitialized?.Invoke(ShipStatus);
 
-        public void PerformShipControllerActions(InputEvents controlType)
-        {
-            ShipStatus.ActionHandler.PerformShipControllerActions(controlType);
-        }
+        public void PerformShipControllerActions(InputEvents controlType) =>
+                ShipStatus.ActionHandler.PerformShipControllerActions(controlType);
 
-        public void StopShipControllerActions(InputEvents controlType)
-        {
-            ShipStatus.ActionHandler.StopShipControllerActions(controlType);
-        }
+        public void StopShipControllerActions(InputEvents controlType) =>
+                ShipStatus.ActionHandler.StopShipControllerActions(controlType);
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) =>
             ShipStatus.ImpactHandler.PerformCrystalImpactEffects(crystalProperties);
@@ -98,6 +95,13 @@ namespace CosmicShore.Game
         {
             throw new NotImplementedException();
         }
-        public void ToggleAutoPilot(bool toggle) => ShipStatus.AutoPilotEnabled = toggle;
+
+        public void ToggleAutoPilot(bool toggle)
+        {
+            if (toggle)
+                ShipStatus.AIPilot.StartAIPilot();
+            else
+                ShipStatus.AIPilot.StopAIPilot();
+        }
     }
 }

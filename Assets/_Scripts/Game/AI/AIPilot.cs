@@ -101,6 +101,7 @@ namespace CosmicShore.Game.AI
         }
         #endregion
 
+        public bool AutoPilotEnabled { get; private set; }
 
         private void OnEnable()
         {
@@ -162,16 +163,31 @@ namespace CosmicShore.Game.AI
                 { Corner.BottomLeft, new AvoidanceBehavior (-raycastWidth, -raycastHeight, Clockwise, Vector3.zero ) },
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
+        }
 
+        public void StartAIPilot()
+        {
+            AutoPilotEnabled = true;
+            
             foreach (var ability in abilities)
             {
                 StartCoroutine(UseAbilityCoroutine(ability));
             }
         }
 
+        public void StopAIPilot()
+        {
+            AutoPilotEnabled = false;
+            
+            foreach (var ability in abilities)
+            {
+                StopCoroutine(UseAbilityCoroutine(ability));
+            }
+        }
+
         void Update()
         {
-            if (!_shipStatus.AutoPilotEnabled)
+            if (!AutoPilotEnabled)
                 return;
 
             _distance = _targetPosition - transform.position;
@@ -221,7 +237,7 @@ namespace CosmicShore.Game.AI
         IEnumerator UseAbilityCoroutine(AIAbility action) 
         {
             yield return new WaitForSeconds(3);
-            while (true)
+            while (AutoPilotEnabled)
             {
                 action.Ability.StartAction();
                 yield return new WaitForSeconds(action.Duration);

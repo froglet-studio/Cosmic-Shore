@@ -7,115 +7,81 @@ namespace CosmicShore.Game.CameraSystem
     [CustomEditor(typeof(CameraSettingsSO))]
     public class CameraSettingsSOEditor : Editor
     {
-        SerializedProperty followOffsetProp,
-                           followSmoothTimeProp,
-                           rotationSmoothTimeProp,
-                           disableRotationLerpProp,
-                           useFixedUpdateProp;
+        SerializedProperty modeProp;
+        SerializedProperty followOffsetProp;
 
-        SerializedProperty nearClipPlaneProp,
-                           farClipPlaneProp;
+        SerializedProperty dynamicMinProp, dynamicMaxProp;
+        SerializedProperty followSmoothTimeProp, rotationSmoothTimeProp, disableSmoothingProp;
 
-        SerializedProperty controlOverridesProp;
+        SerializedProperty nearClipProp, farClipProp;
 
-        SerializedProperty closeCamDistanceProp,
-                           farCamDistanceProp,
-                           followTargetPositionProp,
-                           fixedOffsetPositionProp,
-                           orthographicSizeProp;
-
-
-        bool showAdvanced = false;
+        SerializedProperty followTargetPosProp, fixedOffsetPosProp, orthoSizeProp;
 
         void OnEnable()
         {
             var so = serializedObject;
-            followOffsetProp         = so.FindProperty(nameof(CameraSettingsSO.followOffset));
-            followSmoothTimeProp     = so.FindProperty(nameof(CameraSettingsSO.followSmoothTime));
-            rotationSmoothTimeProp   = so.FindProperty(nameof(CameraSettingsSO.rotationSmoothTime));
-            disableRotationLerpProp  = so.FindProperty(nameof(CameraSettingsSO.disableRotationLerp));
-            useFixedUpdateProp       = so.FindProperty(nameof(CameraSettingsSO.useFixedUpdate));
-
-            nearClipPlaneProp        = so.FindProperty(nameof(CameraSettingsSO.nearClipPlane));
-            farClipPlaneProp         = so.FindProperty(nameof(CameraSettingsSO.farClipPlane));
-
-            controlOverridesProp     = so.FindProperty(nameof(CameraSettingsSO.controlOverrides));
-
-            closeCamDistanceProp     = so.FindProperty(nameof(CameraSettingsSO.closeCamDistance));
-            farCamDistanceProp       = so.FindProperty(nameof(CameraSettingsSO.farCamDistance));
-            followTargetPositionProp = so.FindProperty(nameof(CameraSettingsSO.followTargetPosition));
-            fixedOffsetPositionProp  = so.FindProperty(nameof(CameraSettingsSO.fixedOffsetPosition));
-            orthographicSizeProp     = so.FindProperty(nameof(CameraSettingsSO.orthographicSize));
+            modeProp               = so.FindProperty(nameof(CameraSettingsSO.mode));
+            followOffsetProp       = so.FindProperty(nameof(CameraSettingsSO.followOffset));
+            dynamicMinProp         = so.FindProperty(nameof(CameraSettingsSO.dynamicMinDistance));
+            dynamicMaxProp         = so.FindProperty(nameof(CameraSettingsSO.dynamicMaxDistance));
+            followSmoothTimeProp   = so.FindProperty(nameof(CameraSettingsSO.followSmoothTime));
+            rotationSmoothTimeProp = so.FindProperty(nameof(CameraSettingsSO.rotationSmoothTime));
+            disableSmoothingProp   = so.FindProperty(nameof(CameraSettingsSO.disableSmoothing));
+            nearClipProp           = so.FindProperty(nameof(CameraSettingsSO.nearClipPlane));
+            farClipProp            = so.FindProperty(nameof(CameraSettingsSO.farClipPlane));
+            followTargetPosProp    = so.FindProperty(nameof(CameraSettingsSO.followTargetPosition));
+            fixedOffsetPosProp     = so.FindProperty(nameof(CameraSettingsSO.fixedOffsetPosition));
+            orthoSizeProp          = so.FindProperty(nameof(CameraSettingsSO.orthographicSize));
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
             var settings = (CameraSettingsSO)target;
-            EditorGUILayout.HelpBox(
-                $"Overrides: {settings.controlOverrides}\n" +
-                $"Default Offset: {settings.followOffset}",
-                MessageType.Info);
 
-            EditorGUILayout.LabelField("Select Override Modes", EditorStyles.boldLabel);
-            var origFlags = settings.controlOverrides;
-            var newFlags = (ControlOverrideFlags)EditorGUILayout.EnumFlagsField(controlOverridesProp.displayName, origFlags);
-            // If either close or far cam is checked, only those can be checked!
-            if ((newFlags.HasFlag(ControlOverrideFlags.FarCam) || newFlags.HasFlag(ControlOverrideFlags.CloseCam)))
-            {
-                newFlags &= (ControlOverrideFlags.CloseCam | ControlOverrideFlags.FarCam);
-            }
-            settings.controlOverrides = newFlags;
-
+            EditorGUILayout.LabelField("Mode", EditorStyles.boldLabel);
+            settings.mode = (CameraMode)EditorGUILayout.EnumPopup("Camera Mode", settings.mode);
             EditorGUILayout.Space();
 
-            var flags = settings.controlOverrides;
-            if (flags.HasFlag(ControlOverrideFlags.CloseCam) || flags.HasFlag(ControlOverrideFlags.FarCam))
+            switch (settings.mode)
             {
-                EditorGUILayout.LabelField("Close/Far Distances", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(closeCamDistanceProp);
-                EditorGUILayout.PropertyField(farCamDistanceProp);
-                EditorGUILayout.Space();
+                case CameraMode.FixedCamera:
+                    EditorGUILayout.LabelField("Fixed Offset", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(followOffsetProp, new GUIContent("Offset X/Y/Z"));
+                    break;
+
+                case CameraMode.DynamicCamera:
+                    EditorGUILayout.LabelField("Dynamic Distances", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(dynamicMinProp, new GUIContent("Min Distance"));
+                    EditorGUILayout.PropertyField(dynamicMaxProp, new GUIContent("Max Distance"));
+                    EditorGUILayout.Space();
+
+                    EditorGUILayout.LabelField("Smoothing", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(followSmoothTimeProp, new GUIContent("Follow Smooth Time"));
+                    EditorGUILayout.PropertyField(rotationSmoothTimeProp, new GUIContent("Rotation Smooth Time"));
+                    EditorGUILayout.PropertyField(disableSmoothingProp,  new GUIContent("Disable Smoothing"));
+                    break;
+
+                case CameraMode.FollowTarget:
+                    EditorGUILayout.LabelField("Follow-Target Mode", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(followTargetPosProp, new GUIContent("Target Position"));
+                    break;
+
+                case CameraMode.FixedOffset:
+                    EditorGUILayout.LabelField("Fixed-Offset Mode", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(fixedOffsetPosProp, new GUIContent("World Offset"));
+                    break;
+
+                case CameraMode.Orthographic:
+                    EditorGUILayout.LabelField("Orthographic Mode", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(orthoSizeProp, new GUIContent("Ortho Size"));
+                    break;
             }
 
-            if (flags.HasFlag(ControlOverrideFlags.FollowTarget))
-            {
-                EditorGUILayout.LabelField("Follow-Target Mode", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(followTargetPositionProp);
-                EditorGUILayout.Space();
-            }
-
-            if (flags.HasFlag(ControlOverrideFlags.FixedOffset))
-            {
-                EditorGUILayout.LabelField("Fixed-Offset Mode", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(fixedOffsetPositionProp);
-                EditorGUILayout.Space();
-            }
-
-            if (flags.HasFlag(ControlOverrideFlags.Orthographic))
-            {
-                EditorGUILayout.LabelField("Orthographic Mode", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(orthographicSizeProp);
-                EditorGUILayout.Space();
-            }
-
-            // 4) Advanced foldout for the rest
-            showAdvanced = EditorGUILayout.Foldout(showAdvanced, "Advanced Settings");
-            if (showAdvanced)
-            {
-                EditorGUILayout.LabelField("Follow & Rotation", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(followOffsetProp);
-                EditorGUILayout.PropertyField(followSmoothTimeProp);
-                EditorGUILayout.PropertyField(rotationSmoothTimeProp);
-                EditorGUILayout.PropertyField(disableRotationLerpProp);
-                EditorGUILayout.PropertyField(useFixedUpdateProp);
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("View Frustum", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(nearClipPlaneProp);
-                EditorGUILayout.PropertyField(farClipPlaneProp);
-            }
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("View Frustum", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(nearClipProp, new GUIContent("Near Clip Plane"));
+            EditorGUILayout.PropertyField(farClipProp,  new GUIContent("Far Clip Plane"));
 
             serializedObject.ApplyModifiedProperties();
         }

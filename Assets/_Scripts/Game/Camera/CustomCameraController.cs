@@ -5,17 +5,17 @@ namespace CosmicShore.Game.CameraSystem
     [RequireComponent(typeof(Camera))]
     public class CustomCameraController : MonoBehaviour, ICameraController
     {
-        // Target and Offset
+        // --- Target and Offset ---
         private Transform followTarget;
-        private Vector3 followOffset = new(0f, 10f, 0f); // Z=0 by default, X/Y as desired
+        private Vector3 followOffset = new(0f, 10f, 0f); // Z=0 by default; distance via SetCameraDistance
 
-        // Smoothing and Update Control
+        // --- Smoothing and Update Control ---
         private float followSmoothTime = 0.2f;
         private float rotationSmoothTime = 5f;
-        private bool disableRotationLerp = false;
+        private bool disableRotationLerp = false; 
         private bool useFixedUpdate = false;
 
-        // Internal State
+        // --- Internal State ---
         private Camera cachedCamera;
         private Vector3 velocity;
         private Vector3 _lastTargetPos;
@@ -47,22 +47,31 @@ namespace CosmicShore.Game.CameraSystem
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = followTarget.position;
 
-            // Always use current followOffset (X/Y from SO, Z set by SetCameraDistance)
             Vector3 desiredPos = followTarget.position + followTarget.rotation * followOffset;
             Vector3 shipDelta = followTarget.position - _lastTargetPos;
             float fwd = Vector3.Dot(shipDelta, followTarget.forward);
             float lat = Vector3.Dot(shipDelta, followTarget.right);
 
-            if (Mathf.Abs(lat) > Mathf.Abs(fwd))
+            if (disableRotationLerp)
             {
+                // Hard snap the camera position
                 transform.position = desiredPos;
                 velocity = Vector3.zero;
             }
             else
             {
-                transform.position = Vector3.SmoothDamp(
-                    transform.position, desiredPos, ref velocity, followSmoothTime
-                );
+                // Old logic : Only viable for manta if required in future
+                if (Mathf.Abs(lat) > Mathf.Abs(fwd))
+                {
+                    transform.position = desiredPos;
+                    velocity = Vector3.zero;
+                }
+                else
+                {
+                    transform.position = Vector3.SmoothDamp(
+                        transform.position, desiredPos, ref velocity, followSmoothTime
+                    );
+                }
             }
 
             Quaternion targetRot = Quaternion.LookRotation(
@@ -71,7 +80,9 @@ namespace CosmicShore.Game.CameraSystem
             );
 
             if (disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
+            {
                 transform.rotation = targetRot;
+            }
             else
             {
                 float t = 1f - Mathf.Exp(-rotationSmoothTime * Time.deltaTime);
@@ -86,23 +97,27 @@ namespace CosmicShore.Game.CameraSystem
             currentSettings = settings;
             if (currentSettings == null) return;
 
-            // Only use X/Y for offset from SO. Z is always set by SetCameraDistance.
-            followOffset.x = currentSettings.followOffset.x;
-            followOffset.y = currentSettings.followOffset.y;
-            // DO NOT copy Z, always keep Z controlled by SetCameraDistance!
+            var flags = currentSettings.mode;
 
-            followSmoothTime = currentSettings.followSmoothTime;
-            rotationSmoothTime = currentSettings.rotationSmoothTime;
-            disableRotationLerp = currentSettings.disableRotationLerp;
-            useFixedUpdate = currentSettings.useFixedUpdate;
             cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
-            cachedCamera.farClipPlane = currentSettings.farClipPlane;
+            cachedCamera.farClipPlane  = currentSettings.farClipPlane;
 
-            // Set Z via camera distance based on override flags
-            if (currentSettings.controlOverrides.HasFlag(ControlOverrideFlags.FarCam))
-                SetCameraDistance(currentSettings.farCamDistance);
+            if (flags.HasFlag(CameraMode.DynamicCamera))
+            {
+                followOffset.x = settings.followOffset.x;
+                followOffset.y = settings.followOffset.y;
+
+                followSmoothTime    = settings.followSmoothTime;
+                rotationSmoothTime  = settings.rotationSmoothTime;
+                disableRotationLerp = settings.disableSmoothing;
+
+                SetCameraDistance(settings.dynamicMinDistance);
+            }
             else
-                SetCameraDistance(currentSettings.closeCamDistance);
+            {
+                followOffset = settings.followOffset;
+                disableRotationLerp = true;
+            }
         }
 
         public void SetFollowTarget(Transform target)
@@ -117,7 +132,7 @@ namespace CosmicShore.Game.CameraSystem
             if (currentSettings != null)
             {
                 cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
-                cachedCamera.farClipPlane = currentSettings.farClipPlane;
+                cachedCamera.farClipPlane  = currentSettings.farClipPlane;
             }
         }
 
@@ -126,7 +141,7 @@ namespace CosmicShore.Game.CameraSystem
         public Camera Camera => cachedCamera;
 
         /// <summary>
-        /// Sets the Z (distance) component of the offset. Always negative.
+        /// Sets the distance (Z) behind the target. Always negative.
         /// </summary>
         public void SetCameraDistance(float distance)
         {
@@ -135,17 +150,16 @@ namespace CosmicShore.Game.CameraSystem
                 StopCoroutine(distanceLerpRoutine);
                 distanceLerpRoutine = null;
             }
-            // Always behind: negative Z
             followOffset.z = -Mathf.Abs(distance);
         }
 
         /// <summary>
-        /// Returns the positive distance value (ignoring sign).
+        /// Gets the current distance (absolute value).
         /// </summary>
         public float GetCameraDistance() => Mathf.Abs(followOffset.z);
 
         /// <summary>
-        /// Lerps the Z (distance) component of the offset.
+        /// Smoothly lerps the distance (Z) over the given duration.
         /// </summary>
         public void LerpCameraDistance(float start, float end, float duration)
         {
@@ -153,7 +167,6 @@ namespace CosmicShore.Game.CameraSystem
                 StopCoroutine(distanceLerpRoutine);
             distanceLerpRoutine = StartCoroutine(LerpCameraDistanceRoutine(start, end, duration));
         }
-
         private System.Collections.IEnumerator LerpCameraDistanceRoutine(float start, float end, float duration)
         {
             float t = 0;
@@ -168,7 +181,7 @@ namespace CosmicShore.Game.CameraSystem
         }
 
         /// <summary>
-        /// Directly sets the full offset (rarely needed, usually for FixedOffset override).
+        /// Rarely used override to set full offset directly.
         /// </summary>
         public void SetFollowOffset(Vector3 offset)
         {
@@ -176,12 +189,12 @@ namespace CosmicShore.Game.CameraSystem
         }
 
         /// <summary>
-        /// Returns the current full offset.
+        /// Returns the current full offset vector.
         /// </summary>
         public Vector3 GetFollowOffset() => followOffset;
 
         /// <summary>
-        /// Sets camera to orthographic mode if desired.
+        /// Switches to orthographic view if requested.
         /// </summary>
         public void SetOrthographic(bool ortho, float size)
         {

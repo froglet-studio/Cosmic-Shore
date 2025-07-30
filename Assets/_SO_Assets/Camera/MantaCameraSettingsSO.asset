@@ -12,16 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd4e6f3597f7439ba7333b35a3a9e164, type: 3}
   m_Name: MantaCameraSettingsSO
   m_EditorClassIdentifier: 
+  mode: 1
   followOffset: {x: 0, y: 2, z: -5}
-  followSmoothTime: 0.5
-  rotationSmoothTime: 2
-  disableRotationLerp: 0
-  useFixedUpdate: 0
+  dynamicMinDistance: 20
+  dynamicMaxDistance: 25
+  followSmoothTime: 0.6
+  rotationSmoothTime: 5
+  disableSmoothing: 0
   nearClipPlane: 0.3
   farClipPlane: 12000
-  controlOverrides: 3
-  closeCamDistance: 15
-  farCamDistance: 50
   followTargetPosition: {x: 0, y: 0, z: 0}
   fixedOffsetPosition: {x: 0, y: 0, z: 0}
   orthographicSize: 5
