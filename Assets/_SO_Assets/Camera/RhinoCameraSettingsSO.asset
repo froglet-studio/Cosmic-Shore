@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd4e6f3597f7439ba7333b35a3a9e164, type: 3}
   m_Name: RhinoCameraSettingsSO
   m_EditorClassIdentifier: 
-  followOffset: {x: 0, y: 10, z: -30}
+  followOffset: {x: 0, y: 0, z: -45}
   followSmoothTime: 0.2
   rotationSmoothTime: 5
   disableRotationLerp: 1
@@ -20,8 +20,8 @@ MonoBehaviour:
   nearClipPlane: 0.3
   farClipPlane: 12000
   controlOverrides: 3
-  closeCamDistance: 16
-  farCamDistance: 17
+  closeCamDistance: 45
+  farCamDistance: 45
   followTargetPosition: {x: 0, y: 0, z: 0}
   fixedOffsetPosition: {x: 0, y: 0, z: 0}
   orthographicSize: 5

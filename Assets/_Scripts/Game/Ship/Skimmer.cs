@@ -295,8 +295,8 @@ namespace CosmicShore.Game
             var normalizedDistance = Mathf.InverseLerp(15f, _sqrRadius, _minMatureBlockSqrDistance);
             _shipStatus.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
-            if (cameraManager != null && !_shipStatus.AutoPilotEnabled) 
-                cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);
+            // if (cameraManager != null && !_shipStatus.AutoPilotEnabled) 
+            //     cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);
         }
 
         void ScaleGap(float combinedWeight)

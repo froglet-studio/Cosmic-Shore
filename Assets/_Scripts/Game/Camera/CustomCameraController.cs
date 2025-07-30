@@ -74,7 +74,6 @@ namespace CosmicShore.Game.CameraSystem
                 }
             }
 
-            // --- ROTATION ---
             Quaternion targetRot = Quaternion.LookRotation(
                 followTarget.position - transform.position,
                 followTarget.up
@@ -82,7 +81,6 @@ namespace CosmicShore.Game.CameraSystem
 
             if (disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
             {
-                // Hard snap rotation
                 transform.rotation = targetRot;
             }
             else
@@ -99,22 +97,27 @@ namespace CosmicShore.Game.CameraSystem
             currentSettings = settings;
             if (currentSettings == null) return;
 
-            // Only copy X/Y from SO; Z is controlled by SetCameraDistance()
-            followOffset.x = currentSettings.followOffset.x;
-            followOffset.y = currentSettings.followOffset.y;
+            var flags = currentSettings.mode;
 
-            followSmoothTime    = currentSettings.followSmoothTime;
-            rotationSmoothTime  = currentSettings.rotationSmoothTime;
-            disableRotationLerp = currentSettings.disableRotationLerp;
-            useFixedUpdate      = currentSettings.useFixedUpdate;
             cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
             cachedCamera.farClipPlane  = currentSettings.farClipPlane;
 
-            // Immediately apply the proper distance
-            if (currentSettings.controlOverrides.HasFlag(ControlOverrideFlags.FarCam))
-                SetCameraDistance(currentSettings.farCamDistance);
+            if (flags.HasFlag(CameraMode.DynamicCamera))
+            {
+                followOffset.x = settings.followOffset.x;
+                followOffset.y = settings.followOffset.y;
+
+                followSmoothTime    = settings.followSmoothTime;
+                rotationSmoothTime  = settings.rotationSmoothTime;
+                disableRotationLerp = settings.disableSmoothing;
+
+                SetCameraDistance(settings.dynamicMinDistance);
+            }
             else
-                SetCameraDistance(currentSettings.closeCamDistance);
+            {
+                followOffset = settings.followOffset;
+                disableRotationLerp = true;
+            }
         }
 
         public void SetFollowTarget(Transform target)
