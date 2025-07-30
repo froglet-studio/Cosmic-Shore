@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Game.IO;
 using CosmicShore.Utility;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 
@@ -30,7 +31,11 @@ namespace CosmicShore.Game
             public Teams Team;
             public string PlayerName;
             public string PlayerUUID;
+            
+            [Tooltip("If true, the player-ship will spawn as AI")]
             public bool EnableAIPilot;
+            
+            [Tooltip("If true, then only this player-ship will spawn")]
             public bool AllowSpawning;
         }
     }

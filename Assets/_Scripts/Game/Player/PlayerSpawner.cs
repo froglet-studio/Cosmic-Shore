@@ -15,7 +15,7 @@ namespace CosmicShore.Game
         [SerializeField] 
         ShipSpawner _shipSpawner;
 
-        [SerializeField]
+        [SerializeField, Tooltip("If true, the player-ships inside the initialize datas marked with allow spawning will spawn when the start method gets invoked.")]
         bool _spawnAtStart;
 
         private void Start()
