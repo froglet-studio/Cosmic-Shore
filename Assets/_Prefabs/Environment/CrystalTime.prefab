@@ -97,17 +97,12 @@ MonoBehaviour:
     explodingMaterial: {fileID: 2100000, guid: 6e9b15f827bcc1943a958d55538e790d, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: dd71abb5d85f02a4a8c2f41b424ce6d1, type: 2}
     spaceCrystalAnimator: {fileID: 0}
-  shipImpactEffects: 0
-  RespawnOnImpact: 0
-  ImpactHapticType: 4
+  allowVesselImpactEffect: 1
+  allowRespawnOnImpact: 0
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  crystalImpactEffects: 080000000b000000
   _crystalImpactEffects:
   - {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f, type: 2}
   - {fileID: 11400000, guid: 777ffc4b1f0c4d84d842912b63a857f2, type: 2}
-  AOEPrefab: {fileID: 0}
-  maxExplosionScale: 0
-  AOEExplosionMaterial: {fileID: 0}
 --- !u!82 &6588436222817790494
 AudioSource:
   m_ObjectHideFlags: 0
@@ -303,7 +298,12 @@ PrefabInstance:
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 4109669bc21cfa844bd19bbbb8697e6f, type: 2}
+      objectReference: {fileID: 2100000, guid: 12e1837538975dc4eb371bb8ba9a2ccd, type: 2}
+    - target: {fileID: -61668413891335124, guid: 2ba95de60da486749bc7cb7a7a421a4e,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
     - target: {fileID: 919132149155446097, guid: 2ba95de60da486749bc7cb7a7a421a4e,
         type: 3}
       propertyPath: m_Name
