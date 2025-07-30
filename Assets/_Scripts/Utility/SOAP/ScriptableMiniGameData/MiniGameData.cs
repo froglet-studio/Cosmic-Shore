@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Game;
 using Obvious.Soap;
@@ -19,6 +20,17 @@ namespace CosmicShore.SOAP
 
         public int ActivePlayerId { get; private set; } = -1;
         public IPlayer ActivePlayer { get; private set; }
+
+        public void ResetData()
+        {
+            GameMode = GameModes.Random;
+            HighScore = 0;
+            Players.Clear();
+            RemainingPlayers.Clear();
+            PlayerOrigins = Array.Empty<Transform>();
+            ActivePlayerId = 0;
+            ActivePlayer = null;
+        }
         
         public void AddPlayer(IPlayer p)
         {

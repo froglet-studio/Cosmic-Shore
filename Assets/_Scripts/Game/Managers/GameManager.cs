@@ -1,4 +1,3 @@
-using CosmicShore.App.Systems;
 using CosmicShore.Utilities;
 using System.Collections;
 using Obvious.Soap;
@@ -16,13 +15,11 @@ namespace CosmicShore.Core
         [SerializeField]
         SceneNameListSO _sceneNames;
         
-        [SerializeField] public SO_GameList AllGames;
+        [SerializeField] 
+        public SO_GameList AllGames;
 
         [SerializeField]
         ScriptableEventNoParam _onStartSceneTransition;
-
-        [SerializeField]
-        ScriptableEventNoParam _onReturnToMainMenu;
         
         [SerializeField] 
         ScriptableEventNoParam _onPlayGame;
@@ -39,7 +36,7 @@ namespace CosmicShore.Core
             // Debug.Log("GameManager.RestartGame");
 
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            PauseSystem.TogglePauseGame(true);
+            // PauseSystem.TogglePauseGame(true);
         }
 
         public void ReturnToMainMenu() => StartCoroutine(ReturnToMainMenuCoroutine());
@@ -51,7 +48,7 @@ namespace CosmicShore.Core
             yield return new WaitForSecondsRealtime(WAIT_FOR_SECONDS_BEFORE_RETURN_TO_MAIN_MENU);
             
             SceneManager.LoadScene(_sceneNames.MainMenuScene);
-            PauseSystem.TogglePauseGame(false);
+            // PauseSystem.TogglePauseGame(false);
         }
     }
 }
