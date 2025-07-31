@@ -29,8 +29,6 @@ namespace CosmicShore.Game.CameraSystem
             disableSmoothingProp   = so.FindProperty(nameof(CameraSettingsSO.disableSmoothing));
             nearClipProp           = so.FindProperty(nameof(CameraSettingsSO.nearClipPlane));
             farClipProp            = so.FindProperty(nameof(CameraSettingsSO.farClipPlane));
-            followTargetPosProp    = so.FindProperty(nameof(CameraSettingsSO.followTargetPosition));
-            fixedOffsetPosProp     = so.FindProperty(nameof(CameraSettingsSO.fixedOffsetPosition));
             orthoSizeProp          = so.FindProperty(nameof(CameraSettingsSO.orthographicSize));
         }
 
@@ -60,16 +58,6 @@ namespace CosmicShore.Game.CameraSystem
                     EditorGUILayout.PropertyField(followSmoothTimeProp, new GUIContent("Follow Smooth Time"));
                     EditorGUILayout.PropertyField(rotationSmoothTimeProp, new GUIContent("Rotation Smooth Time"));
                     EditorGUILayout.PropertyField(disableSmoothingProp,  new GUIContent("Disable Smoothing"));
-                    break;
-
-                case CameraMode.FollowTarget:
-                    EditorGUILayout.LabelField("Follow-Target Mode", EditorStyles.boldLabel);
-                    EditorGUILayout.PropertyField(followTargetPosProp, new GUIContent("Target Position"));
-                    break;
-
-                case CameraMode.FixedOffset:
-                    EditorGUILayout.LabelField("Fixed-Offset Mode", EditorStyles.boldLabel);
-                    EditorGUILayout.PropertyField(fixedOffsetPosProp, new GUIContent("World Offset"));
                     break;
 
                 case CameraMode.Orthographic:

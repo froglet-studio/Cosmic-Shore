@@ -258,9 +258,10 @@ GameObject:
   m_Component:
   - component: {fileID: 4853709195325629896}
   - component: {fileID: 2105885322480173500}
-  - component: {fileID: 5849539143529044720}
-  - component: {fileID: 6125180911537347192}
   - component: {fileID: 2114565240875935139}
+  - component: {fileID: 8554704982892035080}
+  - component: {fileID: 6404784924102139360}
+  - component: {fileID: 7077911994176950342}
   m_Layer: 0
   m_Name: CM PlayerCam
   m_TagString: Untagged
@@ -295,7 +296,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!20 &5849539143529044720
+--- !u!114 &2114565240875935139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4853709195325629910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!20 &8554704982892035080
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -346,7 +359,7 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!114 &6125180911537347192
+--- !u!114 &6404784924102139360
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -390,7 +403,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &2114565240875935139
+--- !u!114 &7077911994176950342
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -413,9 +426,10 @@ GameObject:
   - component: {fileID: 4853709195735906031}
   - component: {fileID: 1209939419297618945}
   - component: {fileID: 3366203402667083352}
-  - component: {fileID: 280304770941603471}
-  - component: {fileID: 8640876238184196264}
   - component: {fileID: 6365285886361244282}
+  - component: {fileID: 6341687506120079055}
+  - component: {fileID: 5286545974263388706}
+  - component: {fileID: 3273930913064528445}
   m_Layer: 0
   m_Name: CM EndCam
   m_TagString: Untagged
@@ -493,7 +507,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!20 &280304770941603471
+--- !u!114 &6365285886361244282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4853709195735906028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!20 &6341687506120079055
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -544,7 +570,7 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!114 &8640876238184196264
+--- !u!114 &5286545974263388706
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -588,7 +614,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &6365285886361244282
+--- !u!114 &3273930913064528445
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -657,7 +683,7 @@ GameObject:
   - component: {fileID: 4853709196820857187}
   - component: {fileID: 4853709196820857186}
   m_Layer: 0
-  m_Name: CameraManager
+  m_Name: Cinemachine Vcams
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -699,19 +725,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  _onReturnToMainMenu: {fileID: 11400000, guid: ee5d65f9d27de024590573c0a92ca4d7,
-    type: 2}
-  _onPlayGame: {fileID: 11400000, guid: eb5e153898e484447b1b63bc08e1b3ed, type: 2}
-  _onGameOver: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b, type: 2}
-  endCamera: {fileID: 3366203402667083352}
+  endCamera: {fileID: 0}
   mainMenuCamera: {fileID: 2966085564903086687}
   endCameraFollowTarget: {fileID: 4853709195319085108}
   endCameraLookAtTarget: {fileID: 4853709196453371476}
   FollowOverride: 0
   FixedFollow: 0
+  isOrthographic: 0
   CloseCamDistance: -10
   FarCamDistance: 1
-  startTransitionDistance: 2
+  startTransitionDistance: 1
 --- !u!1 &5491404131115096251
 GameObject:
   m_ObjectHideFlags: 0
@@ -723,9 +746,10 @@ GameObject:
   - component: {fileID: 1217215852786208964}
   - component: {fileID: 8616612116677775270}
   - component: {fileID: 7297289691090116732}
-  - component: {fileID: 5263803201998501468}
-  - component: {fileID: 5199003394709133264}
   - component: {fileID: 1178664408997018761}
+  - component: {fileID: 2207655263072004458}
+  - component: {fileID: 8152557392043162435}
+  - component: {fileID: 343818128705401807}
   m_Layer: 0
   m_Name: CM DeathCam
   m_TagString: Untagged
@@ -803,7 +827,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!20 &5263803201998501468
+--- !u!114 &1178664408997018761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5491404131115096251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9da4dd020c6c449eb507dd45e223055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!20 &2207655263072004458
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -854,7 +890,7 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!114 &5199003394709133264
+--- !u!114 &8152557392043162435
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -898,7 +934,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &1178664408997018761
+--- !u!114 &343818128705401807
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

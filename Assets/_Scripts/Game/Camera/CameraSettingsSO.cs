@@ -6,8 +6,7 @@ namespace CosmicShore.Game.CameraSystem
     {
         FixedCamera,     // “Static” offset (X,Y,Z)
         DynamicCamera,   // Zoomable between min/max distances
-        FollowTarget,    // Reposition ship, then follow
-        FixedOffset,     // Lock world-space offset
+
         Orthographic     // Orthographic projection
     }
 
@@ -37,8 +36,7 @@ namespace CosmicShore.Game.CameraSystem
         public float nearClipPlane = 0.3f;
         public float farClipPlane  = 1000f;
 
-        public Vector3 followTargetPosition = Vector3.zero;   // Used only in FollowTarget mode
-        public Vector3 fixedOffsetPosition  = Vector3.zero;   // Used only in FixedOffset mode
+
         public float   orthographicSize      = 5f;            // Used only in Orthographic mode
     }
 }
