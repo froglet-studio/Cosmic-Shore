@@ -42,6 +42,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd,
         type: 2}
+    - target: {fileID: 3472521546628908041, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: ThrottleScalerMultiplier.Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3760634199116340760, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
       propertyPath: m_LocalScale.y
@@ -176,6 +181,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20,
         type: 2}
+    - target: {fileID: 5250038223226325085, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -21
+      objectReference: {fileID: 0}
     - target: {fileID: 5302681132313811143, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
       propertyPath: settings
