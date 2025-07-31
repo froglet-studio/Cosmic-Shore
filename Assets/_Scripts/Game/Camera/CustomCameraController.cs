@@ -223,7 +223,7 @@ namespace CosmicShore.Game.CameraSystem
 
         private IEnumerator ZoomOutCoroutine(float speedNormalized)
         {
-            float maxD      = currentSettings.dynamicMaxDistance;
+            float maxD      = currentSettings.adaptiveMaxDistance;
             float targetZ   = -Mathf.Abs(maxD);
             float startZ    = followOffset.z;
             float range     = Mathf.Abs(startZ - targetZ);
@@ -251,7 +251,7 @@ namespace CosmicShore.Game.CameraSystem
         {
             float startZ    = followOffset.z;
             float targetZ   = _neutralOffsetZ;
-            float range     = Mathf.Abs(startZ - targetZ);
+            // float range     = Mathf.Abs(startZ - targetZ);
             float worldSpeed = Mathf.Abs(speedNormalized);
 
             Debug.Log($"[Camera] ZoomIn from {startZ:F2} back toward {targetZ:F2} at {worldSpeed:F2}u/s");

@@ -205,7 +205,7 @@ public class CameraManager : Singleton<CameraManager>
     public void ResetCloseCameraToNeutral(float rateNormalized)
     {
         if (playerCamera is CustomCameraController customCameraController)
-            customCameraController.StartZoomIn(rateNormalized * 5f);
+            customCameraController.StartZoomIn(rateNormalized * 3f);
     }
 
     // Overloads for ElementalFloat

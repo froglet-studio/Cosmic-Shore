@@ -21,4 +21,6 @@ MonoBehaviour:
   disableSmoothing: 0
   nearClipPlane: 0.3
   farClipPlane: 12000
+  enableAdaptiveZoom: 1
+  adaptiveMaxDistance: 200
   orthographicSize: 5

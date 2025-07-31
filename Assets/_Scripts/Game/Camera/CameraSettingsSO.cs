@@ -32,7 +32,12 @@ namespace CosmicShore.Game.CameraSystem
         public float nearClipPlane = 0.3f;
         public float farClipPlane  = 1000f;
 
+        [Tooltip("Enable smooth zoom-out on button hold")]
+        public bool enableAdaptiveZoom;
 
+        [Tooltip("Maximum extra distance (behind target) when Adaptive Zoom is enabled")]
+        public float adaptiveMaxDistance;
+        
         public float   orthographicSize      = 5f;            // Used only in Orthographic mode
     }
 }
