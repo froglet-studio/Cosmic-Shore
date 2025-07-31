@@ -62,4 +62,10 @@ public class GrowActionBase : ShipAction
         }
         target.transform.localScale = minSize * Vector3.one;
     }
+
+    public void SetShrinkRate(ElementalFloat newShrinkRate)
+    {
+        shrinkRate = newShrinkRate;
+    }
+
 }

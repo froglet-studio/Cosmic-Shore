@@ -1,3 +1,5 @@
+using System.Collections;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Game.CameraSystem
@@ -12,7 +14,7 @@ namespace CosmicShore.Game.CameraSystem
         // --- Smoothing and Update Control ---
         private float followSmoothTime = 0.2f;
         private float rotationSmoothTime = 5f;
-        private bool disableRotationLerp = false; 
+        private bool disableRotationLerp = false;
         private bool useFixedUpdate = false;
 
         // --- Internal State ---
@@ -21,6 +23,9 @@ namespace CosmicShore.Game.CameraSystem
         private Vector3 _lastTargetPos;
         private CameraSettingsSO currentSettings;
         private Coroutine distanceLerpRoutine;
+        private Coroutine zoomOutCoroutine;
+        private Coroutine resetZoomCoroutine;
+        private float _neutralOffsetZ;
 
         void Awake()
         {
@@ -100,15 +105,15 @@ namespace CosmicShore.Game.CameraSystem
             var flags = currentSettings.mode;
 
             cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
-            cachedCamera.farClipPlane  = currentSettings.farClipPlane;
+            cachedCamera.farClipPlane = currentSettings.farClipPlane;
 
             if (flags.HasFlag(CameraMode.DynamicCamera))
             {
                 followOffset.x = settings.followOffset.x;
                 followOffset.y = settings.followOffset.y;
 
-                followSmoothTime    = settings.followSmoothTime;
-                rotationSmoothTime  = settings.rotationSmoothTime;
+                followSmoothTime = settings.followSmoothTime;
+                rotationSmoothTime = settings.rotationSmoothTime;
                 disableRotationLerp = settings.disableSmoothing;
 
                 SetCameraDistance(settings.dynamicMinDistance);
@@ -117,6 +122,7 @@ namespace CosmicShore.Game.CameraSystem
             {
                 followOffset = settings.followOffset;
                 disableRotationLerp = true;
+                _neutralOffsetZ = followOffset.z;
             }
         }
 
@@ -132,7 +138,7 @@ namespace CosmicShore.Game.CameraSystem
             if (currentSettings != null)
             {
                 cachedCamera.nearClipPlane = currentSettings.nearClipPlane;
-                cachedCamera.farClipPlane  = currentSettings.farClipPlane;
+                cachedCamera.farClipPlane = currentSettings.farClipPlane;
             }
         }
 
@@ -150,6 +156,7 @@ namespace CosmicShore.Game.CameraSystem
                 StopCoroutine(distanceLerpRoutine);
                 distanceLerpRoutine = null;
             }
+
             followOffset.z = -Mathf.Abs(distance);
         }
 
@@ -167,6 +174,7 @@ namespace CosmicShore.Game.CameraSystem
                 StopCoroutine(distanceLerpRoutine);
             distanceLerpRoutine = StartCoroutine(LerpCameraDistanceRoutine(start, end, duration));
         }
+
         private System.Collections.IEnumerator LerpCameraDistanceRoutine(float start, float end, float duration)
         {
             float t = 0;
@@ -177,6 +185,7 @@ namespace CosmicShore.Game.CameraSystem
                 t += Time.deltaTime;
                 yield return null;
             }
+
             followOffset.z = -Mathf.Abs(end);
         }
 
@@ -201,5 +210,62 @@ namespace CosmicShore.Game.CameraSystem
             cachedCamera.orthographic = ortho;
             if (ortho) cachedCamera.orthographicSize = size;
         }
+
+        private Coroutine _zoomOutRoutine;
+        private Coroutine _zoomInRoutine;
+
+        public void StartZoomOut(float speedNormalized)
+        {
+            if (_zoomInRoutine != null) StopCoroutine(_zoomInRoutine);
+            if (_zoomOutRoutine != null) StopCoroutine(_zoomOutRoutine);
+            _zoomOutRoutine = StartCoroutine(ZoomOutCoroutine(speedNormalized));
+        }
+
+        private IEnumerator ZoomOutCoroutine(float speedNormalized)
+        {
+            float maxD      = currentSettings.dynamicMaxDistance;
+            float targetZ   = -Mathf.Abs(maxD);
+            float startZ    = followOffset.z;
+            float range     = Mathf.Abs(startZ - targetZ);
+            float worldSpeed= Mathf.Abs(speedNormalized);
+
+            Debug.Log($"[Camera] ZoomOut from {startZ:F2} toward {targetZ:F2} at {worldSpeed:F2}u/s");
+            while (followOffset.z > targetZ)
+            {
+                followOffset.z = Mathf.Max(followOffset.z - worldSpeed * Time.deltaTime, targetZ);
+                yield return null;
+            }
+
+            Debug.Log($"[Camera] ZoomOut stopped at {followOffset.z:F2}");
+        }
+        
+        public void StartZoomIn(float speedNormalized)
+        {
+            Debug.Log($"[Camera] ZoomIn back to {_neutralOffsetZ:F2} at speed {speedNormalized:F2}");
+            if (_zoomOutRoutine != null) StopCoroutine(_zoomOutRoutine);
+            if (_zoomInRoutine != null) StopCoroutine(_zoomInRoutine);
+            _zoomInRoutine = StartCoroutine(ZoomInCoroutine(speedNormalized));
+        }
+        
+        private IEnumerator ZoomInCoroutine(float speedNormalized)
+        {
+            float startZ    = followOffset.z;
+            float targetZ   = _neutralOffsetZ;
+            float range     = Mathf.Abs(startZ - targetZ);
+            float worldSpeed = Mathf.Abs(speedNormalized);
+
+            Debug.Log($"[Camera] ZoomIn from {startZ:F2} back toward {targetZ:F2} at {worldSpeed:F2}u/s");
+
+            // keep moving until we've passed the neutral distance
+            while (followOffset.z < targetZ)
+            {
+                followOffset.z = Mathf.Min(followOffset.z + worldSpeed * Time.deltaTime, targetZ);
+                yield return null;
+            }
+
+            Debug.Log($"[Camera] ZoomIn stopped at {followOffset.z:F2}");
+        }
+
+
     }
 }

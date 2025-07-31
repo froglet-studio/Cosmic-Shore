@@ -2,17 +2,23 @@ using UnityEngine;
 
 public class ZoomOutAction : ShipAction
 {
-    [SerializeField] public float ZoomOutRate;
-    [SerializeField] public ElementalFloat ZoomInRate;
+    [SerializeField] private float zoomOutRate;
+    [SerializeField] private ElementalFloat zoomInRate;
 
     public override void StartAction()
     {
-        // if (!Ship.ShipStatus.AutoPilotEnabled) /*Ship.ShipStatus.*/ CameraManager.Instance.ZoomCloseCameraOut(ZoomOutRate);
+        if (!Ship.ShipStatus.AutoPilotEnabled)
+            CameraManager.Instance.ZoomCloseCameraOut(zoomOutRate);
     }
 
     public override void StopAction()
     {
-        // if (!Ship.ShipStatus.AutoPilotEnabled) /*Ship.ShipStatus.*/ CameraManager.Instance.ResetCloseCameraToNeutral(ZoomInRate.Value);
+        if (!Ship.ShipStatus.AutoPilotEnabled)
+            CameraManager.Instance.ResetCloseCameraToNeutral(zoomInRate.Value);
+    }
+    public void SetZoomInRate(ElementalFloat newZoomInRate)
+    {
+        zoomInRate = newZoomInRate;
     }
 
 }

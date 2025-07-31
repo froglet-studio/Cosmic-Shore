@@ -4,16 +4,12 @@ namespace CosmicShore.Game.CameraSystem
 {
     public enum CameraMode
     {
-        FixedCamera,     // “Static” offset (X,Y,Z)
-        DynamicCamera,   // Zoomable between min/max distances
-
-        Orthographic     // Orthographic projection
+        FixedCamera, 
+        DynamicCamera,   
+        Orthographic    
     }
 
-    [CreateAssetMenu(
-        fileName = "CameraSettings",
-        menuName = "CosmicShore/Camera/CameraSettingsSO",
-        order = 30)]
+    [CreateAssetMenu(fileName = "CameraSettings", menuName = "CosmicShore/Camera/CameraSettingsSO", order = 30)]
     public class CameraSettingsSO : ScriptableObject
     {
         [Tooltip("Set the type of camera. Use Fixed Camera for no smoothening or dampening features, use dynamic if you want them!")]

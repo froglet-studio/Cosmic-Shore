@@ -196,17 +196,22 @@ public class CameraManager : Singleton<CameraManager>
         playerCamera.SetCameraDistance(distance);
     }
 
-    public void ZoomCloseCameraOut(float growthRate)
+    public void ZoomCloseCameraOut(float rateNormalized)
     {
-        if (playerCamera == null) return;
-        float start = playerCamera.GetCameraDistance();
-        playerCamera.LerpCameraDistance(start, FarCamDistance, growthRate);
+        if (playerCamera is CustomCameraController customCameraController)
+            customCameraController.StartZoomOut(rateNormalized);
     }
 
-    public void ResetCloseCameraToNeutral(float shrinkRate)
+    public void ResetCloseCameraToNeutral(float rateNormalized)
     {
-        if (playerCamera == null) return;
-        float start = playerCamera.GetCameraDistance();
-        playerCamera.LerpCameraDistance(start, CloseCamDistance, shrinkRate);
+        if (playerCamera is CustomCameraController customCameraController)
+            customCameraController.StartZoomIn(rateNormalized * 5f);
     }
+
+    // Overloads for ElementalFloat
+    public void ZoomCloseCameraOut(ElementalFloat rate)
+        => ZoomCloseCameraOut(rate.Value);
+
+    public void ResetCloseCameraToNeutral(ElementalFloat rate)
+        => ResetCloseCameraToNeutral(rate.Value);
 }
