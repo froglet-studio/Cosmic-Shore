@@ -61,19 +61,7 @@ namespace CosmicShore
                     cccFixed.SetFollowOffset(settings.followOffset);
                 }
             }
-
-            if (flags.HasFlag(CameraMode.FixedOffset))
-            {
-                if (cameraCtrl is CustomCameraController cccFO)
-                {
-                    cccFO.SetFollowOffset(settings.fixedOffsetPosition);
-                }
-            }
             
-            if (flags.HasFlag(CameraMode.FollowTarget))
-            {
-                ship.Transform.position = settings.followTargetPosition;
-            }
             cameraCtrl.SetFollowTarget(ship.Transform);
 
             if (flags.HasFlag(CameraMode.Orthographic) &&
