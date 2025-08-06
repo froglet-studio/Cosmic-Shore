@@ -1,5 +1,55 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5318093176999598557
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5858116210327739441}
+  - component: {fileID: 9056571385549122153}
+  m_Layer: 0
+  m_Name: DeployTeamCrystalAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5858116210327739441
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5318093176999598557}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2115861672426906489}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9056571385549122153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5318093176999598557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bf8ac47bd45e9548a2a7e3d3d3e64f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
+    type: 3}
+  forwardOffset: 120
+  rayMask:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!1001 &2417643104629141196
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -438,7 +488,7 @@ PrefabInstance:
     - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
       propertyPath: _inputEventShipActions.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
@@ -452,6 +502,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
+      propertyPath: _inputEventShipActions.Array.data[2].InputEvent
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
       propertyPath: _inputEventShipActions.Array.data[0].ShipActions.Array.size
       value: 4
       objectReference: {fileID: 0}
@@ -459,6 +514,11 @@ PrefabInstance:
         type: 3}
       propertyPath: _inputEventShipActions.Array.data[1].ShipActions.Array.size
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: _inputEventShipActions.Array.data[2].ShipActions.Array.size
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
@@ -500,6 +560,26 @@ PrefabInstance:
       propertyPath: '_inputEventShipActions.Array.data[1].ShipActions.Array.data[3]'
       value: 
       objectReference: {fileID: 1247662573361435524}
+    - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_inputEventShipActions.Array.data[2].ShipActions.Array.data[0]'
+      value: 
+      objectReference: {fileID: 9056571385549122153}
+    - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_inputEventShipActions.Array.data[2].ShipActions.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2779043931671567892}
+    - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_inputEventShipActions.Array.data[2].ShipActions.Array.data[2]'
+      value: 
+      objectReference: {fileID: 6935041424031358547}
+    - target: {fileID: 9172589084772723142, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      propertyPath: '_inputEventShipActions.Array.data[2].ShipActions.Array.data[3]'
+      value: 
+      objectReference: {fileID: 1247662573361435524}
     - target: {fileID: 9191385156675841330, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
       propertyPath: m_IsTrigger
@@ -520,7 +600,11 @@ PrefabInstance:
     - {fileID: 3175275174043340379, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
     - {fileID: 4327151730132459110, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4382069933912690101, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5858116210327739441}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 6417075533431866457, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
         type: 3}
@@ -704,6 +788,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shipObject: {fileID: 4863223154206343612}
+--- !u!4 &2115861672426906489 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4382069933912690101, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
+  m_PrefabInstance: {fileID: 2417643104629141196}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2760047560828040157 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 558614829108108561, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
