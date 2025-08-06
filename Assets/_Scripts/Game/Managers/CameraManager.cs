@@ -93,7 +93,7 @@ public class CameraManager : Singleton<CameraManager>
 
     public void SetupGamePlayCameras()
     {
-        _playerFollowTarget = FollowOverride ? _shipStatus.ShipCameraCustomizer.FollowTarget : _shipStatus.Transform;
+        _playerFollowTarget = FollowOverride ? _shipStatus.ShipCameraCustomizer.followTarget : _shipStatus.Transform;
         SetupGamePlayCameras(_playerFollowTarget);
     }
 

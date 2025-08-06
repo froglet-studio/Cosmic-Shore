@@ -1,6 +1,7 @@
 using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
+using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
@@ -10,26 +11,26 @@ namespace CosmicShore
     /// </summary>
     public class ShipCameraCustomizer : ElementalShipComponent, ICameraConfigurator
     {
-        public Transform FollowTarget;
+        [HideInInspector]public Transform followTarget;
 
         [Header("Per-Ship Camera Settings")]
         [SerializeField] private CameraSettingsSO settings;
 
-        private IShip             ship;
-        private CameraManager     cameraManager;
-        private ICameraController cameraCtrl;
+        private IShip _ship;
+        private CameraManager _cameraManager;
+        private ICameraController _cameraCtrl;
 
         /// <summary>
         /// Must be called when this ship becomes active (spawned/selected).
         /// </summary>
         public void Initialize(IShip ship)
         {
-            this.ship = ship;
-            cameraManager = CameraManager.Instance;
-            cameraManager.Initialize(ship.ShipStatus);
+            this._ship = ship;
+            _cameraManager = CameraManager.Instance;
+            _cameraManager.Initialize(ship.ShipStatus);
 
-            cameraCtrl = cameraManager.GetActiveController();
-            if (cameraCtrl == null)
+            _cameraCtrl = _cameraManager.GetActiveController();
+            if (_cameraCtrl == null)
             {
                 Debug.LogWarning("[ShipCameraCustomizer] No ICameraController available.");
                 return;
@@ -40,7 +41,7 @@ namespace CosmicShore
                 return;
             }
             
-            cameraCtrl.ApplySettings(settings);
+            _cameraCtrl.ApplySettings(settings);
             ApplyControlOverrides();
         }
 
@@ -52,20 +53,20 @@ namespace CosmicShore
 
             if (flags.HasFlag(CameraMode.DynamicCamera))
             {
-                cameraCtrl.SetCameraDistance(settings.dynamicMinDistance);
+                _cameraCtrl.SetCameraDistance(settings.dynamicMinDistance);
             }
             else
             {
-                if (cameraCtrl is CustomCameraController cccFixed)
+                if (_cameraCtrl is CustomCameraController cccFixed)
                 {
                     cccFixed.SetFollowOffset(settings.followOffset);
                 }
             }
             
-            cameraCtrl.SetFollowTarget(ship.Transform);
+            _cameraCtrl.SetFollowTarget(_ship.Transform);
 
             if (flags.HasFlag(CameraMode.Orthographic) &&
-                cameraCtrl is CustomCameraController cccOrtho)
+                _cameraCtrl is CustomCameraController cccOrtho)
             {
                 cccOrtho.SetOrthographic(true, settings.orthographicSize);
                 Debug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");

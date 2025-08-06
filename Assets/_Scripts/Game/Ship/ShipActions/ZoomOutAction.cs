@@ -52,29 +52,29 @@ public class ZoomOutAction : ShipAction
         _controller ??= CameraManager.Instance.GetActiveController();
         if (_scaleSource == null || _controller == null) return;
         
-        float ratio = _scaleSource.CurrentScale / Mathf.Max(_scaleSource.MinScale, 0.0001f);
+        var ratio = _scaleSource.CurrentScale / Mathf.Max(_scaleSource.MinScale, 0.0001f);
 
         if (ratio > _prevRatio + EPS) _zoomDir = ZoomDir.Out;
         else if (ratio < _prevRatio - EPS) _zoomDir = ZoomDir.In;
         
-        ZoomDir newDir = ratio > _prevRatio + EPS ? ZoomDir.Out
+        var newDir = ratio > _prevRatio + EPS ? ZoomDir.Out
             : ratio < _prevRatio - EPS ? ZoomDir.In
             : _zoomDir;
 
         if (newDir != _zoomDir) _vel = 0f;
         _zoomDir = newDir;
         
-        float eff = _zoomDir switch
+        var eff = _zoomDir switch
         {
             ZoomDir.Out => ratio * zoomOutMultiplier,
             ZoomDir.In => ratio / Mathf.Max(zoomInMultiplier, 0.0001f),
             _ => ratio
         };
 
-        float neutralZ = _controller.NeutralOffsetZ; // e.g. –45
-        float targetZ = Mathf.Min(neutralZ * eff, neutralZ); // never inside neutral
+        var neutralZ = _controller.NeutralOffsetZ; // e.g. –45
+        var targetZ = Mathf.Min(neutralZ * eff, neutralZ); // never inside neutral
 
-        float newZ = Mathf.SmoothDamp(_controller.GetCameraDistance(), targetZ, ref _vel, _controller.ZoomSmoothTime, MaxZoomSpeed);    
+        var newZ = Mathf.SmoothDamp(_controller.GetCameraDistance(), targetZ, ref _vel, _controller.ZoomSmoothTime, MaxZoomSpeed);    
         
         _controller.SetCameraDistance(newZ);
         
