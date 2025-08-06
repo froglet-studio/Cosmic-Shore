@@ -2,49 +2,68 @@
 using System.Collections;
 using UnityEngine;
 
-public class GrowActionBase : ShipAction
+public class GrowActionBase : ShipAction, IScaleProvider
 {
-    protected float minSize;
+    protected float MinSize;
     [SerializeField] protected ElementalFloat maxSize;
     [SerializeField] protected float growRate;
     [SerializeField] protected ElementalFloat shrinkRate = new ElementalFloat(1);
     [SerializeField] protected GameObject target;
 
-    protected Coroutine returnToNeutralCoroutine;
-    protected Coroutine growCoroutine;
-    protected bool growing;
+    public bool growing;
+
+    public float MinScale => MinSize;
+    private float MaxSize      => maxSize.Value;
+    public float CurrentScale => target.transform.lossyScale.z;
+
+    private enum ScaleDir { None, Grow, Shrink }
+
+    private ScaleDir _dir = ScaleDir.None;
 
     public override void Initialize(IShip ship)
     {
         base.Initialize(ship);
-        minSize = target.transform.localScale.z;
+        MinSize = target.transform.lossyScale.z;
     }
 
     public override void StartAction()
     {
-        if (returnToNeutralCoroutine != null)
-        {
-            StopCoroutine(returnToNeutralCoroutine);
-            returnToNeutralCoroutine = null;
-        }
-
-        growing = true;
-        growCoroutine = StartCoroutine(GrowCoroutine());
+        _dir = ScaleDir.Grow;
     }
 
     public override void StopAction()
     {
-        if (growCoroutine != null)
+        _dir = ScaleDir.Shrink;
+    }
+    
+    private void LateUpdate()
+    {
+        if (_dir == ScaleDir.None) return;
+
+        float dt = Time.deltaTime;
+
+        float worldR = target.transform.lossyScale.z; 
+        if (_dir == ScaleDir.Grow)
         {
-            StopCoroutine(growCoroutine);
-            growCoroutine = null;
+            worldR += growRate * dt;
+            if (worldR >= MaxSize) { worldR = MaxSize; _dir = ScaleDir.None; }
+        }
+        else 
+        {
+            worldR -= shrinkRate.Value * dt;
+            if (worldR <= MinScale) { worldR = MinScale; _dir = ScaleDir.None; }
         }
 
-        growing = false;
-        returnToNeutralCoroutine = StartCoroutine(ReturnToNeutralCoroutine());
-    }
+        float parentScaleZ = 1f;                             
+        if (target.transform.parent != null)
+            parentScaleZ = target.transform.parent.lossyScale.z;
 
-    protected virtual IEnumerator GrowCoroutine()
+        float localR = worldR / parentScaleZ;
+
+        target.transform.localScale = Vector3.one * localR;
+    }
+    
+    protected virtual IEnumerator GrowCoroutine(bool growing)
     {
         while (growing && target.transform.localScale.z < maxSize.Value)
         {
@@ -55,17 +74,11 @@ public class GrowActionBase : ShipAction
 
     protected virtual IEnumerator ReturnToNeutralCoroutine()
     {
-        while (target.transform.localScale.z > minSize)
+        while (target.transform.localScale.z > MinSize)
         {
             target.transform.localScale -= Time.deltaTime * shrinkRate.Value * Vector3.one;
             yield return null;
         }
-        target.transform.localScale = minSize * Vector3.one;
+        target.transform.localScale = MinSize * Vector3.one;
     }
-
-    public void SetShrinkRate(ElementalFloat newShrinkRate)
-    {
-        shrinkRate = newShrinkRate;
-    }
-
 }

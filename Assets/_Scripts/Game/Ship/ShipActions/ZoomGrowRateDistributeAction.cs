@@ -9,13 +9,13 @@ namespace CosmicShore
         void Awake()
         {
             Debug.Log("Storing values");
-            var grow = GetComponent<GrowActionBase>();
-            if (grow != null)
-                grow.SetShrinkRate(sharedRate);
+            // var grow = GetComponent<GrowActionBase>();
+            // if (grow != null)
+            //     grow.SetShrinkRate(sharedRate);
             
-            var zoom = GetComponent<ZoomOutAction>();
-            if (zoom != null)
-                zoom.SetZoomInRate(sharedRate);
+            // var zoom = GetComponent<ZoomOutAction>();
+            // if (zoom != null)
+            //     zoom.SetZoomInRate(sharedRate);
         }
 
         public override void StartAction()
