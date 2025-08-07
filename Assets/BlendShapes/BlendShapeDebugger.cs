@@ -65,8 +65,7 @@ public class BlendShapeDebugger : MonoBehaviour
         if (renderer != null)
         {
             // Calculate what the weights would be at this progress
-            Vector4 weights = CalculateWeightsAtProgress(animationProgress);
-            propertyBlock.SetVector("_DebugProgress", weights);
+            CalculateWeightsAtProgress(animationProgress);
             propertyBlock.SetFloat("_PauseAtProgress", animationProgress);
             renderer.SetPropertyBlock(propertyBlock);
         }

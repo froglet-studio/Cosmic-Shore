@@ -1,5 +1,8 @@
 using UnityEngine;
 using UnityEngine.Profiling;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class BlendShapePerformanceMonitor : MonoBehaviour
 {
@@ -24,8 +27,11 @@ public class BlendShapePerformanceMonitor : MonoBehaviour
             fps = frameCount / timer;
             memoryUsage = Profiler.GetTotalAllocatedMemoryLong() / 1048576; // Convert to MB
             
-            Debug.Log($"[Performance] FPS: {fps:F1} | Memory: {memoryUsage}MB | " +
-                     $"Draw Calls: {UnityStats.drawCalls} | Vertices: {UnityStats.vertices}");
+            string message = $"[Performance] FPS: {fps:F1} | Memory: {memoryUsage}MB";
+#if UNITY_EDITOR
+            message += $" | Draw Calls: {UnityStats.drawCalls} | Vertices: {UnityStats.vertices}";
+#endif
+            Debug.Log(message);
             
             timer = 0f;
             frameCount = 0;
