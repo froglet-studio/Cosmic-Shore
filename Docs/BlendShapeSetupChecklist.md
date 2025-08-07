@@ -3,7 +3,7 @@
 ### Pre-Setup Validation
 - [ ] Run BlendShapeValidator to confirm all 4 blend shapes exist
 - [ ] Check that blend shape names match expected patterns
-- [ ] Verify mesh has proper normals and tangents
+- [ ] Ensure mesh has valid normals and tangents (validator logs warnings if missing)
 
 ### Core Setup
 - [ ] Create shader file: BlendShapeAnimation.shader

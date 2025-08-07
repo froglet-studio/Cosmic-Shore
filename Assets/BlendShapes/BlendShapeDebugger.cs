@@ -22,53 +22,49 @@ public class BlendShapeDebugger : MonoBehaviour
     public bool showBlendWeights = true;
     
     private MaterialPropertyBlock propertyBlock;
+    private MeshRenderer meshRenderer;
     private string currentPhase = "";
     private Vector4 currentWeights;
-    
+
     void OnEnable()
     {
         propertyBlock = new MaterialPropertyBlock();
+        meshRenderer = GetComponent<MeshRenderer>();
+        if (meshRenderer != null && debugMaterial != null)
+        {
+            meshRenderer.sharedMaterial = debugMaterial;
+        }
     }
-    
+
     void Update()
     {
-        if (debugMaterial == null) return;
-        
+        if (meshRenderer == null) return;
+
+        propertyBlock.Clear();
+
         if (overrideAnimation)
         {
-            ApplyManualWeights();
-        }
-        else if (pauseAnimation)
-        {
-            ApplyPausedAnimation();
-        }
-        
-        UpdateDebugDisplay();
-    }
-    
-    private void ApplyManualWeights()
-    {
-        // Create a custom property block for manual control
-        var renderer = GetComponent<MeshRenderer>();
-        if (renderer != null)
-        {
-            propertyBlock.SetVector("_BlendWeights", 
-                new Vector4(manualShape1, manualShape2, manualShape3, manualShape4));
+            currentWeights = new Vector4(manualShape1, manualShape2, manualShape3, manualShape4);
+            currentPhase = "Manual Override";
+            propertyBlock.SetVector("_BlendWeights", currentWeights);
             propertyBlock.SetFloat("_UseManualWeights", 1f);
-            renderer.SetPropertyBlock(propertyBlock);
         }
-    }
-    
-    private void ApplyPausedAnimation()
-    {
-        var renderer = GetComponent<MeshRenderer>();
-        if (renderer != null)
+        else
         {
-            // Calculate what the weights would be at this progress
-            CalculateWeightsAtProgress(animationProgress);
-            propertyBlock.SetFloat("_PauseAtProgress", animationProgress);
-            renderer.SetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat("_UseManualWeights", 0f);
+            if (pauseAnimation)
+            {
+                propertyBlock.SetFloat("_PauseAtProgress", animationProgress);
+                CalculateWeightsAtProgress(animationProgress);
+            }
+            else
+            {
+                propertyBlock.SetFloat("_PauseAtProgress", 0f);
+            }
         }
+
+        meshRenderer.SetPropertyBlock(propertyBlock);
+        UpdateDebugDisplay();
     }
     
     private Vector4 CalculateWeightsAtProgress(float progress)

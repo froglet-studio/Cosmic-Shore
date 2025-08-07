@@ -40,7 +40,19 @@ public class BlendShapeValidator : MonoBehaviour
         
         Mesh mesh = targetRenderer.sharedMesh;
         detectedShapes.Clear();
-        
+
+        // Verify normals and tangents
+        bool hasNormals = mesh.normals != null && mesh.normals.Length == mesh.vertexCount;
+        bool hasTangents = mesh.tangents != null && mesh.tangents.Length == mesh.vertexCount;
+        if (!hasNormals)
+        {
+            Debug.LogWarning("Mesh is missing normals or they do not match the vertex count.");
+        }
+        if (!hasTangents)
+        {
+            Debug.LogWarning("Mesh is missing tangents or they do not match the vertex count.");
+        }
+
         Debug.Log($"Found {mesh.blendShapeCount} blend shapes in {mesh.name}:");
         
         for (int i = 0; i < mesh.blendShapeCount; i++)

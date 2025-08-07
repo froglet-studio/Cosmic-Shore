@@ -22,16 +22,20 @@ Shader "Custom/BlendShapeAnimation"
             #include "UnityCG.cginc"
 
             sampler2D _BlendShapeData;
+            float4 _BlendShapeData_TexelSize;
             float _AnimationDuration;
             float _UseManualWeights;
             float4 _BlendWeights;
             float _PauseAtProgress;
             float _DebugMode;
 
-            // Sample blend shape offset placeholder
+            // Sample vertex or normal delta from the blend shape texture
             float3 SampleBlendShapeOffset(uint vertexID, uint shapeIndex, bool sampleNormal)
             {
-                return float3(0,0,0);
+                float u = (vertexID + 0.5) * _BlendShapeData_TexelSize.x;
+                float row = shapeIndex * 2 + (sampleNormal ? 1 : 0);
+                float v = (row + 0.5) * _BlendShapeData_TexelSize.y;
+                return tex2D(_BlendShapeData, float2(u, v)).xyz;
             }
 
             float4 GetBlendShapeWeightsEnhanced(float time)
