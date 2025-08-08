@@ -7,23 +7,25 @@ using CosmicShore.Game;
 public class ShipHUDControllerEditor : Editor
 {
     // Props
-    SerializedProperty shipTypeProp;
-    SerializedProperty boostProp, seedProp;
-    SerializedProperty overheatProp, fullAutoProp, fireGunProp, stationaryProp;
+    private SerializedProperty _shipTypeProp;
+    private SerializedProperty _chargeBoostProp;
+    private SerializedProperty _boostProp, _seedProp;
+    private SerializedProperty _overheatProp, _fullAutoProp, _fireGunProp, _stationaryProp;
 
     // Colors (tweak as you like)
-    Color headerColor   = new Color(0.1f, 0.1f, 0.35f);
-    Color sectionColor  = new Color(0.12f, 0.12f, 0.25f);
+    private readonly Color _headerColor   = new Color(0.1f, 0.1f, 0.35f);
+    private readonly Color _sectionColor  = new Color(0.12f, 0.12f, 0.25f);
 
-    void OnEnable()
+    private void OnEnable()
     {
-        shipTypeProp       = serializedObject.FindProperty("shipType");
-        boostProp          = serializedObject.FindProperty("_boostAction");
-        seedProp           = serializedObject.FindProperty("_seedAssemblerAction");
-        overheatProp       = serializedObject.FindProperty("_overheatingAction");
-        fullAutoProp       = serializedObject.FindProperty("_fullAutoAction");
-        fireGunProp        = serializedObject.FindProperty("_fireGunAction");
-        stationaryProp     = serializedObject.FindProperty("_stationaryModeAction");
+        _shipTypeProp       = serializedObject.FindProperty("shipType");
+        _chargeBoostProp     = serializedObject.FindProperty("chargeBoostAction");
+        _boostProp          = serializedObject.FindProperty("boostAction");
+        _seedProp           = serializedObject.FindProperty("seedAssemblerAction");
+        _overheatProp       = serializedObject.FindProperty("overheatingAction");
+        _fullAutoProp       = serializedObject.FindProperty("fullAutoAction");
+        _fireGunProp        = serializedObject.FindProperty("fireGunAction");
+        _stationaryProp     = serializedObject.FindProperty("stationaryModeAction");
     }
 
     public override void OnInspectorGUI()
@@ -31,31 +33,44 @@ public class ShipHUDControllerEditor : Editor
         serializedObject.Update();
 
         // --- Header ---
-        DrawHeader("Ship HUD Controller", headerColor);
+        DrawHeader("Ship HUD Controller", _headerColor);
 
         // Ship type dropdown
-        EditorGUILayout.PropertyField(shipTypeProp, new GUIContent("Ship Type"));
+        EditorGUILayout.PropertyField(_shipTypeProp, new GUIContent("Ship Type"));
 
         // Only show the relevant action fields
-        ShipClassType type = (ShipClassType)shipTypeProp.intValue;
+        ShipClassType type = (ShipClassType)_shipTypeProp.intValue;
         GUILayout.Space(6);
-        DrawSection(type + " Actions", sectionColor, () =>
+        DrawSection(type + " Actions", _sectionColor, () =>
         {
             switch (type)
             {
                 case ShipClassType.Serpent:
-                    EditorGUILayout.PropertyField(boostProp, new GUIContent("Boost Action"));
-                    EditorGUILayout.PropertyField(seedProp,  new GUIContent("Seed Assembler"));
+                    EditorGUILayout.PropertyField(_boostProp, new GUIContent("Boost Action"));
+                    EditorGUILayout.PropertyField(_seedProp,  new GUIContent("Seed Assembler"));
                     break;
 
                 case ShipClassType.Sparrow:
-                    EditorGUILayout.PropertyField(overheatProp, new GUIContent("Overheating Action"));
-                    EditorGUILayout.PropertyField(fullAutoProp, new GUIContent("Full-Auto Action"));
-                    EditorGUILayout.PropertyField(fireGunProp,  new GUIContent("Fire Gun Action"));
-                    EditorGUILayout.PropertyField(stationaryProp, new GUIContent("Stationary Mode"));
+                    EditorGUILayout.PropertyField(_overheatProp, new GUIContent("Overheating Action"));
+                    EditorGUILayout.PropertyField(_fullAutoProp, new GUIContent("Full-Auto Action"));
+                    EditorGUILayout.PropertyField(_fireGunProp,  new GUIContent("Fire Gun Action"));
+                    EditorGUILayout.PropertyField(_stationaryProp, new GUIContent("Stationary Mode"));
                     break;
-
-                // add other variants here as needed...
+                
+                case ShipClassType.Dolphin:
+                    EditorGUILayout.PropertyField(_chargeBoostProp, new GUIContent("Charge Boost Action"));
+                    break;
+                case ShipClassType.Any:
+                case ShipClassType.Random:
+                case ShipClassType.Manta:
+                case ShipClassType.Rhino:
+                case ShipClassType.Urchin:
+                case ShipClassType.Grizzly:
+                case ShipClassType.Squirrel:
+                case ShipClassType.Termite:
+                case ShipClassType.Falcon:
+                case ShipClassType.Shrike:
+                    break;
                 default:
                     EditorGUILayout.HelpBox("No actions configured for this Ship Type.", MessageType.Info);
                     break;
@@ -65,7 +80,7 @@ public class ShipHUDControllerEditor : Editor
         serializedObject.ApplyModifiedProperties();
     }
 
-    void DrawHeader(string title, Color bg)
+    private static void DrawHeader(string title, Color bg)
     {
         var rect = GUILayoutUtility.GetRect(0, 28, GUILayout.ExpandWidth(true));
         EditorGUI.DrawRect(rect, bg);
@@ -79,7 +94,7 @@ public class ShipHUDControllerEditor : Editor
         GUILayout.Space(4);
     }
 
-    void DrawSection(string title, Color bg, System.Action drawContent)
+    private static void DrawSection(string title, Color bg, System.Action drawContent)
     {
         // Section title bar
         var rect = GUILayoutUtility.GetRect(0, 20, GUILayout.ExpandWidth(true));

@@ -191,14 +191,16 @@ namespace CosmicShore.Game.UI
                     if (resourceFillAnimator != null)
                         resourceFillAnimator.AnimateFillUp(duration, to);
                     break;
+
                 case DisplayMode.SliderFill:
                     if (sliderRoutine != null) StopCoroutine(sliderRoutine);
-                    float startVal = sliderFillImage ? sliderFillImage.fillAmount : 0f;
+                    var startVal = sliderFillImage ? sliderFillImage.fillAmount : currentLevel; // fallback to currentLevel
                     sliderRoutine = StartCoroutine(AnimateSliderFillRoutine(startVal, to, duration, shouldChangeColor));
                     break;
+
                 case DisplayMode.SpriteSwap:
                     if (spriteSwapRoutine != null) StopCoroutine(spriteSwapRoutine);
-                    float fromVal = spriteSwapImage ? spriteSwapImage.fillAmount : 0f;
+                    var fromVal = currentLevel;
                     spriteSwapRoutine = StartCoroutine(AnimateSpriteSwapRoutine(fromVal, to, duration));
                     break;
             }
@@ -209,11 +211,12 @@ namespace CosmicShore.Game.UI
 
         private IEnumerator AnimateSliderFillRoutine(float from, float to, float duration, bool colorChangeOnFull)
         {
-            float t = 0f;
+            var t = 0f;
             while (t < duration)
             {
                 t += Time.deltaTime;
-                float val = Mathf.Lerp(from, to, t / duration);
+                var val = Mathf.Lerp(from, to, t / duration);
+                currentLevel = val; 
 
                 if (sliderFillImage)
                 {
@@ -222,20 +225,20 @@ namespace CosmicShore.Game.UI
                         sliderFillImage.color = (val >= 0.99f) ? sliderFullColor : sliderNormalColor;
                 }
 
-                if (sliderFillSegments != null && sliderFillSegments.Count > 0)
+                if (sliderFillSegments is { Count: > 0 })
                 {
-                    int totalSegments = sliderFillSegments.Count;
-                    float fillPerSegment = 1f / totalSegments;
-                    for (int i = 0; i < totalSegments; i++)
+                    var totalSegments = sliderFillSegments.Count;
+                    var fillPerSegment = 1f / totalSegments;
+                    for (var i = 0; i < totalSegments; i++)
                     {
-                        float segmentFill = Mathf.Clamp01((val - (i * fillPerSegment)) * totalSegments);
+                        var segmentFill = Mathf.Clamp01((val - (i * fillPerSegment)) * totalSegments);
                         if (sliderFillSegments[i]) sliderFillSegments[i].fillAmount = segmentFill;
                     }
                 }
-
                 yield return null;
             }
 
+            currentLevel = to; 
             if (sliderFillImage)
             {
                 sliderFillImage.fillAmount = to;
@@ -243,13 +246,13 @@ namespace CosmicShore.Game.UI
                     sliderFillImage.color = (to >= 0.99f) ? sliderFullColor : sliderNormalColor;
             }
 
-            if (sliderFillSegments != null && sliderFillSegments.Count > 0)
+            if (sliderFillSegments is not { Count: > 0 }) yield break;
             {
-                int totalSegments = sliderFillSegments.Count;
-                float fillPerSegment = 1f / totalSegments;
-                for (int i = 0; i < totalSegments; i++)
+                var totalSegments = sliderFillSegments.Count;
+                var fillPerSegment = 1f / totalSegments;
+                for (var i = 0; i < totalSegments; i++)
                 {
-                    float segmentFill = Mathf.Clamp01((to - (i * fillPerSegment)) * totalSegments);
+                    var segmentFill = Mathf.Clamp01((to - (i * fillPerSegment)) * totalSegments);
                     if (sliderFillSegments[i]) sliderFillSegments[i].fillAmount = segmentFill;
                 }
             }
@@ -257,18 +260,22 @@ namespace CosmicShore.Game.UI
 
         private IEnumerator AnimateSpriteSwapRoutine(float from, float to, float duration)
         {
-            float t = 0f;
-            int maxIdx = spriteSwapSprites.Count - 1;
+            var t = 0f;
+            var maxIdx = spriteSwapSprites.Count - 1;
             while (t < duration)
             {
                 t += Time.deltaTime;
-                float lerpVal = Mathf.Lerp(from, to, t / duration);
-                int idx = Mathf.FloorToInt(Mathf.Clamp01(lerpVal) * maxIdx);
-                spriteSwapImage.sprite = spriteSwapSprites[idx];
+                var lerpVal = Mathf.Lerp(from, to, t / duration);
+                currentLevel = Mathf.Clamp01(lerpVal); 
+                var idx = Mathf.FloorToInt(currentLevel * maxIdx);
+                if (spriteSwapImage && maxIdx >= 0)
+                    spriteSwapImage.sprite = spriteSwapSprites[Mathf.Clamp(idx, 0, maxIdx)];
                 yield return null;
             }
-            int endIdx = Mathf.FloorToInt(Mathf.Clamp01(to) * maxIdx);
-            spriteSwapImage.sprite = spriteSwapSprites[endIdx];
+            currentLevel = Mathf.Clamp01(to); 
+            var endIdx = Mathf.FloorToInt(currentLevel * maxIdx);
+            if (spriteSwapImage && maxIdx >= 0)
+                spriteSwapImage.sprite = spriteSwapSprites[Mathf.Clamp(endIdx, 0, maxIdx)];
         }
 
         #endregion

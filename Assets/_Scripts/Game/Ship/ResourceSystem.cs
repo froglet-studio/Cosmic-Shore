@@ -15,7 +15,7 @@ namespace CosmicShore.Core
         public event ResourceUpdateDelegate OnResourceChange;
 
         [SerializeField] public string Name;
-        [HideInInspector] public ResourceDisplay Display;
+         public ResourceDisplay Display;
 
         [HideInInspector] public float initialResourceGainRate;
 
@@ -205,11 +205,7 @@ namespace CosmicShore.Core
             AdjustLevel(element, .1f);
         }
 
-        /// <summary>
-        /// Call this right after you instantiate a ResourceDisplay prefab
-        /// so that Resource.CurrentAmount updates drive the UI.
-        /// </summary>
-        public void RegisterDisplay(int resourceIndex, ResourceDisplay display)
+        private void RegisterDisplay(int resourceIndex, ResourceDisplay display)
         {
             if (resourceIndex < 0 || resourceIndex >= Resources.Count)
             {
@@ -223,7 +219,7 @@ namespace CosmicShore.Core
             // If you want to push the current value immediately:
             display.UpdateDisplay(resource.CurrentAmount);
 
-            // And (optionally) subscribe so you don’t rely on resource.Display inside the setter:
+            // And (optionally) subscribe so you donï¿½t rely on resource.Display inside the setter:
             resource.OnResourceChange += display.UpdateDisplay;
 
             Debug.Log($"Registerd Display{resource.Name}");
