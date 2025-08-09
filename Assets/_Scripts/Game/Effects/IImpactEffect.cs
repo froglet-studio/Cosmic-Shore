@@ -1,8 +1,10 @@
 using CosmicShore.Core;
 using UnityEngine;
 
+// DEPRECATED
 namespace CosmicShore.Game
 {
+    // DEPRECATED
     /// <summary>
     /// This interface must be implemented by all impact effects.
     /// This interface is used to define the contract for 
@@ -10,21 +12,25 @@ namespace CosmicShore.Game
     /// </summary>
     public interface IImpactEffect {}
 
+    // DEPRECATED
     public interface IBaseImpactEffect : IImpactEffect
     {
         void Execute(ImpactEffectData data);
     }
 
+    // DEPRECATED
     public interface ICrystalImpactEffect : IImpactEffect
     {
         void Execute(ImpactEffectData data, CrystalProperties crystalProperties);
     }
 
+    // DEPRECATED
     public interface ITrailBlockImpactEffect : IImpactEffect
     {
         void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties);
     }
 
+    // DEPRECATED
     public class ImpactEffectData
     {
         public IShipStatus ThisShipStatus { get; }

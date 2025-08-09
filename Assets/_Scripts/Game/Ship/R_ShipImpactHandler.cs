@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    // DEPRECATED
     /// <summary>
     /// Handles crystal and trail block effects for a ship.
     /// </summary>
