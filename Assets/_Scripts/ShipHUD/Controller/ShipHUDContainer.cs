@@ -13,16 +13,15 @@ namespace CosmicShore.Game
             public GameObject prefab;
         }
 
-        [SerializeField]
-        private List<HUDPrefabVariant> hudVariants;
+        [SerializeField] private List<HUDPrefabVariant> hudVariants;
 
-        [Header("Where to spawn the HUDs")]
-        [SerializeField]
+        [Header("Where to spawn the HUDs")] [SerializeField]
         private RectTransform contentTransform;
+
         public RectTransform ContentTransform => contentTransform;
 
-        private IShipHUDView activeHUDView;
-        public IShipHUDView ActiveHUDView => activeHUDView;
+        private IShipHUDView _activeHUDView;
+        public IShipHUDView ActiveHUDView => _activeHUDView;
 
         /// <summary>
         /// Finds & instantiates the prefab for this type directly under contentTransform,
@@ -37,16 +36,27 @@ namespace CosmicShore.Game
                 return null;
             }
 
-            // Instantiate as a child of contentTransform
-            var go = Instantiate(entry.prefab, contentTransform);
-            go.name = $"{type}HUD";
+            foreach (Transform content in contentTransform.GetComponentInChildren<Transform>())
+            {
+                if (content != null)
+                {
+                    content.gameObject.SetActive(true);
+                    content.gameObject.TryGetComponent<IShipHUDView>(out _activeHUDView);
+                }
+                else
+                {
+                    var go = Instantiate(entry.prefab, contentTransform);
+                    go.name = $"{type}HUD";
 
-            if (!go.TryGetComponent<IShipHUDView>(out activeHUDView))
-                Debug.LogError($"[ShipHUDContainer] Prefab {go.name} has no IShipHUDView!");
+                    if (!go.TryGetComponent<IShipHUDView>(out _activeHUDView))
+                        Debug.LogError($"[ShipHUDContainer] Prefab {go.name} has no IShipHUDView!");
+                }
 
-            activeHUDView.Initialize(controller);
+                _activeHUDView.Initialize(controller);
+                return _activeHUDView;
+            }
 
-            return activeHUDView;
+            return null;
         }
     }
 

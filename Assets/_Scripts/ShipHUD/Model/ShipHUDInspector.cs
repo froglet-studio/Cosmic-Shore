@@ -7,12 +7,11 @@ namespace CosmicShore.Game
     [CustomEditor(typeof(ShipHUDView), true)]
     public class ShipHUDViewInspector : Editor
     {
-        // Main header color (optional, can be static or variant-based)
-        Color headerColor = new Color(0.09f, 0.24f, 0.48f);
+        private readonly Color _headerColor = new Color(0.09f, 0.24f, 0.48f);
 
         // Base section colors
-        Color sectionBlue = new Color(0.14f, 0.22f, 0.36f);
-        Color sectionGreen = new Color(0.14f, 0.32f, 0.21f);
+        private readonly Color _sectionBlue = new Color(0.14f, 0.22f, 0.36f);
+        private readonly Color _sectionGreen = new Color(0.14f, 0.32f, 0.21f);
 
         public override void OnInspectorGUI()
         {
@@ -20,32 +19,23 @@ namespace CosmicShore.Game
             var view = (ShipHUDView)target;
 
             // Compute variant-specific header and section color
-            string variantName = view.ShipHUDType.ToString();
-            Color variantColor;
-            switch (view.ShipHUDType)
+            var variantName = view.ShipHUDType.ToString();
+            var variantColor = view.ShipHUDType switch
             {
-                case ShipClassType.Serpent:
-                    variantColor = new Color(0.6f, 0.1f, 0.1f); // e.g. red
-                    break;
-                case ShipClassType.Dolphin:
-                    variantColor = new Color(0.1f, 0.5f, 0.8f); // e.g. cyan
-                    break;
-                case ShipClassType.Manta:
-                    variantColor = new Color(0.2f, 0.2f, 0.5f); // e.g. indigo
-                    break;
-                case ShipClassType.Rhino:
-                    variantColor = new Color(0.5f, 0.5f, 0.1f); // e.g. yellow
-                    break;
-                case ShipClassType.Squirrel:
-                    variantColor = new Color(0.6f, 0.4f, 0.2f); // e.g. brown
-                    break;
-                case ShipClassType.Sparrow:
-                    variantColor = new Color(0.8f, 0.8f, 0.8f); // e.g. light gray
-                    break;
-                default:
-                    variantColor = headerColor;
-                    break;
-            }
+                ShipClassType.Serpent => new Color(0.6f, 0.1f, 0.1f) // e.g. red
+                ,
+                ShipClassType.Dolphin => new Color(0.1f, 0.5f, 0.8f) // e.g. cyan
+                ,
+                ShipClassType.Manta => new Color(0.2f, 0.2f, 0.5f) // e.g. indigo
+                ,
+                ShipClassType.Rhino => new Color(0.5f, 0.5f, 0.1f) // e.g. yellow
+                ,
+                ShipClassType.Squirrel => new Color(0.6f, 0.4f, 0.2f) // e.g. brown
+                ,
+                ShipClassType.Sparrow => new Color(0.8f, 0.8f, 0.8f) // e.g. light gray
+                ,
+                _ => _headerColor
+            };
 
             EditorGUILayout.Space(3);
             // Show the variant as header
@@ -53,7 +43,7 @@ namespace CosmicShore.Game
             EditorGUILayout.Space(8);
 
             // Common section
-            DrawSection("Common Variables", sectionBlue, () =>
+            DrawSection("Common Variables", _sectionBlue, () =>
             {
                 EditorGUILayout.PropertyField(
                      serializedObject.FindProperty("silhouetteContainer"),
@@ -71,10 +61,15 @@ namespace CosmicShore.Game
                     serializedObject.FindProperty("xboxIconRoot"),
                     new GUIContent("XBOX Icon Root")
                 );
+                
+                EditorGUILayout.PropertyField(
+                    serializedObject.FindProperty("hudType"),
+                    new GUIContent("HUD Effect Type")
+                );
             });
 
             // Enum section
-            DrawSection("HUD Type", sectionGreen, () =>
+            DrawSection("HUD Type", _sectionGreen, () =>
             {
                 EditorGUILayout.PropertyField(
                     serializedObject.FindProperty("hudType"),
@@ -82,7 +77,7 @@ namespace CosmicShore.Game
                 );
             });
 
-            DrawSection("Resource Display Information", sectionGreen, () =>
+            DrawSection("Resource Display Information", _sectionGreen, () =>
             {
                 EditorGUILayout.PropertyField(
                     serializedObject.FindProperty("resourceDisplays"),
@@ -148,6 +143,14 @@ namespace CosmicShore.Game
                         serializedObject.FindProperty("sparrowExhaustBarrage"),
                         new GUIContent("Exhause Barrage Button")
                         );
+                        break;
+                    case ShipClassType.Any:
+                    case ShipClassType.Random:
+                    case ShipClassType.Urchin:
+                    case ShipClassType.Grizzly:
+                    case ShipClassType.Termite:
+                    case ShipClassType.Falcon:
+                    case ShipClassType.Shrike:
                         break;
                     default:
                         EditorGUILayout.HelpBox(

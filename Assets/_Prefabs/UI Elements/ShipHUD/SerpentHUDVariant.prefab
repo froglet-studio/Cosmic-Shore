@@ -1044,7 +1044,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5582900316631961953, guid: bc09c07dcb0724842a327c887609f156, type: 3}
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 2086617415635028028, guid: bc09c07dcb0724842a327c887609f156, type: 3}
+    - {fileID: 1005613640110903854, guid: bc09c07dcb0724842a327c887609f156, type: 3}
+    - {fileID: 5336271327482257727, guid: bc09c07dcb0724842a327c887609f156, type: 3}
+    - {fileID: 1402986634580254532, guid: bc09c07dcb0724842a327c887609f156, type: 3}
+    - {fileID: 1122796962548227518, guid: bc09c07dcb0724842a327c887609f156, type: 3}
+    - {fileID: 3076615358020761740, guid: bc09c07dcb0724842a327c887609f156, type: 3}
+    - {fileID: 7108685055673142199, guid: bc09c07dcb0724842a327c887609f156, type: 3}
+    - {fileID: 4553172613325283414, guid: bc09c07dcb0724842a327c887609f156, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 6557045720525393826, guid: bc09c07dcb0724842a327c887609f156,
         type: 3}
@@ -1100,6 +1108,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57dc27a3f7264d548b51007c0615f701, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  effects: {fileID: 0}
   hudType: 7
   resourceDisplays:
   - ResourceName: Wall Seeds
@@ -1121,6 +1130,7 @@ MonoBehaviour:
   sparrowOverheatingBoostAction: {fileID: 0}
   sparrowSkyBurstMissileAction: {fileID: 0}
   sparrowExhaustBarrage: {fileID: 0}
+  buttonIconMappings: []
 --- !u!1001 &9080380028743660798
 PrefabInstance:
   m_ObjectHideFlags: 0

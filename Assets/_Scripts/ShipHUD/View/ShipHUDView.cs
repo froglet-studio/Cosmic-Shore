@@ -33,6 +33,8 @@ namespace CosmicShore.Game
     {
         public ShipClassType ShipHUDType => hudType;
 
+        [SerializeField] private ShipHUDEffects effects;
+        public IHUDEffects Effects => effects;
         [SerializeField] private ShipClassType hudType;
         [SerializeField] private ResourceDisplayRef[] resourceDisplays;
         [SerializeField] private Transform silhouetteContainer;
