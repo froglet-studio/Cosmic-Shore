@@ -4,9 +4,9 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "AttachImpactEffect", menuName = "ScriptableObjects/Impact Effects/AttachImpactEffectSO")]
-    public class AttachEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
+    public class AttachEffectSO : ImpactEffectSO
     {
-        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
+        /*public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
             if (data == null || trailBlockProperties == null)
             {
@@ -21,6 +21,10 @@ namespace CosmicShore.Game
 
             data.ThisShipStatus.Attached = true;
             data.ThisShipStatus.AttachedTrailBlock = trailBlock;
+        }*/
+        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

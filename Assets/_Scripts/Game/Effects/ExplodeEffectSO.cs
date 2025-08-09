@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     // TODO: Figure out a way to separate the IExplodableImpactEffect, and ITrailBlockImpactEffect
 
     [CreateAssetMenu(fileName = "ExplodeImpactEffect", menuName = "ScriptableObjects/Impact Effects/ExplodeImpactEffectSO")]
-    public class ExplodeEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
+    public class ExplodeEffectSO : ImpactEffectSO
     {
         [SerializeField]
         float _inertia;
@@ -24,7 +24,7 @@ namespace CosmicShore.Game
         [SerializeField]
         float _charge;
 
-        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
+        /*public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
             var shipStatus = data.ThisShipStatus;
 
@@ -47,6 +47,10 @@ namespace CosmicShore.Game
                 aoeExplosion.SetPositionAndRotation(shipTransform.position, shipTransform.rotation);
                 aoeExplosion.Detonate();
             }
+        }*/
+        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

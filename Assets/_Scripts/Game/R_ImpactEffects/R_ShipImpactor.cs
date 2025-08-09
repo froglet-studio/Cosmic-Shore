@@ -1,16 +1,34 @@
+using System;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     public class R_ShipImpactor : R_ImpactorBase
     {
-        [SerializeField] R_IImpactEffect[] shipPrismEffects;
-        [SerializeField] R_IImpactEffect[] shipOmniCrystalEffects;
-        [SerializeField] R_IImpactEffect[] shipElementalCrystalEffects;
-        [SerializeField] R_IImpactEffect[] shipFakeCrystalEffects;
-        [SerializeField] R_IImpactEffect[] shipProjectileEffects;
-        [SerializeField] R_IImpactEffect[] shipSkimmerEffects;
-        [SerializeField] R_IImpactEffect[] shipExplosionEffects;
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] shipPrismEffectsSO;
+        
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] shipOmniCrystalEffectsSO;
+        
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] shipElementalCrystalEffectsSO;
+        
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] shipFakeCrystalEffectsSO;
+        
+        R_IImpactEffect[] shipPrismEffects;
+        R_IImpactEffect[] shipOmniCrystalEffects;
+        R_IImpactEffect[] shipElementalCrystalEffects;
+        R_IImpactEffect[] shipFakeCrystalEffects;
+
+        private void Awake()
+        {
+            shipPrismEffects = Array.ConvertAll(shipPrismEffectsSO, so => (R_IImpactEffect)so);
+            shipOmniCrystalEffects = Array.ConvertAll(shipOmniCrystalEffectsSO, so => (R_IImpactEffect)so);
+            shipElementalCrystalEffects = Array.ConvertAll(shipElementalCrystalEffectsSO, so => (R_IImpactEffect)so);
+            shipFakeCrystalEffects = Array.ConvertAll(shipFakeCrystalEffectsSO, so => (R_IImpactEffect)so);
+        }
 
         protected override void AcceptImpactee(R_IImpactor impactee)
         {
@@ -27,15 +45,6 @@ namespace CosmicShore.Game
                     break;
                 case R_FakeCrystalImpactor fakeCrystalImpactor:
                     ExecuteEffect(impactee, shipFakeCrystalEffects);
-                    break;
-                case R_ProjectileImpactor projectileImpactor:
-                    ExecuteEffect(impactee, shipProjectileEffects);
-                    break;
-                case R_SkimmerImpactor shimmerImpactor:
-                    ExecuteEffect(impactee, shipSkimmerEffects);
-                    break;
-                case R_ExplosionImpactor explosionImpactor:
-                    ExecuteEffect(impactee, shipExplosionEffects);
                     break;
             }
         }

@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "AreaOfEffectExplosionImpactEffect", menuName = "ScriptableObjects/Impact Effects/AreaOfEffectExplosionImpactEffectSO")]
-    public class AreaOfEffectExplosionEffectSO : ImpactEffectSO, IBaseImpactEffect
+    public class AreaOfEffectExplosionEffectSO : ImpactEffectSO
     {
         [SerializeField]
         AOEExplosion _prefabGO;
@@ -21,7 +21,7 @@ namespace CosmicShore.Game
         [SerializeField]
         Material _aoeExplosionMaterial;
 
-        public void Execute(ImpactEffectData data)
+        /*public void Execute(ImpactEffectData data)
         {
             var aoeExplosion = Instantiate(_prefabGO).GetComponent<AOEExplosion>();
             aoeExplosion.Initialize(new AOEExplosion.InitializeStruct
@@ -39,6 +39,10 @@ namespace CosmicShore.Game
             Transform shipTransform = data.ThisShipStatus.ShipTransform;
             aoeExplosion.SetPositionAndRotation(shipTransform.position, shipTransform.rotation);
             aoeExplosion.Detonate();
+        }*/
+        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

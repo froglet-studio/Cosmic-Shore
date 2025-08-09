@@ -3,9 +3,9 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "KnockbackImpactEffect", menuName = "ScriptableObjects/Impact Effects/KnockbackImpactEffectSO")]
-    public class KnockbackEffectSO : ImpactEffectSO, IBaseImpactEffect
+    public class KnockbackEffectSO : ImpactEffectSO
     {
-        public void Execute(ImpactEffectData context)
+        /*public void Execute(ImpactEffectData context)
         {
             var shipStatus = context.ThisShipStatus;
 
@@ -16,6 +16,10 @@ namespace CosmicShore.Game
             }
             else
                 shipStatus.ShipTransformer.ModifyVelocity(context.ImpactVector * 100, 3);
+        }*/
+        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

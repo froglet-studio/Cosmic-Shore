@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using UnityEngine;
-using System.Linq;
-using UnityEditor.Build.Pipeline;
 
 
 namespace CosmicShore.Game.Projectiles
@@ -18,26 +16,26 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] 
         protected List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         protected List<ScriptableObject> _trailBlockImpactEffects;
 
 
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         protected List<ScriptableObject> _shipImpactEffects;
 
 
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         protected List<ScriptableObject> _crystalImpactEffects;
 
 
         [SerializeField] 
         protected List<TrailBlockImpactEffects> endEffects;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         protected List<ScriptableObject> _endEffects;
 
 
@@ -117,6 +115,7 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
+        
         protected virtual void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             /*foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
@@ -146,7 +145,7 @@ namespace CosmicShore.Game.Projectiles
                         break;
 
                 }
-            }*/
+            }
 
             foreach (ITrailBlockImpactEffect effect in _trailBlockImpactEffects.Cast<ITrailBlockImpactEffect>())
             {
@@ -154,9 +153,10 @@ namespace CosmicShore.Game.Projectiles
                     continue;
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero), trailBlockProperties); // TODO : impacted vector is not correct here.
-            }
+            }*/
         }
 
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
         protected virtual void PerformEndEffects()
         {
             /*foreach (TrailBlockImpactEffects effect in endEffects)
@@ -175,7 +175,7 @@ namespace CosmicShore.Game.Projectiles
                         // ((ExplodableProjectile)this).Detonate();         -> better to override the method in child ExplodableProjectile class.
                         break;
                 }
-            }*/
+            }
 
             foreach (IBaseImpactEffect effect in _endEffects.Cast<IBaseImpactEffect>())
             {
@@ -183,9 +183,10 @@ namespace CosmicShore.Game.Projectiles
                     continue;
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
-            }
+            }*/
         }
 
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
         protected virtual void PerformShipImpactEffects(IShipStatus shipStatus)
         {
             /*foreach (ShipImpactEffects effect in shipImpactEffects)
@@ -212,7 +213,7 @@ namespace CosmicShore.Game.Projectiles
                         shipStatus.Ship.ShipStatus.TrailSpawner.Charm(ShipStatus, 7);
                         break;
                 }
-            }*/
+            }
 
             foreach (IBaseImpactEffect effect in _endEffects.Cast<IBaseImpactEffect>())
             {
@@ -220,9 +221,10 @@ namespace CosmicShore.Game.Projectiles
                     continue;
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
-            }
+            }*/
         }
 
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
         protected virtual void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
             /*foreach (CrystalImpactEffects effect in crystalImpactEffects)
@@ -245,7 +247,7 @@ namespace CosmicShore.Game.Projectiles
                         ShipStatus.ResourceSystem.ChangeResourceAmount(0, ShipStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
                         break;
                 }
-            }*/
+            }
 
             foreach (ICrystalImpactEffect effect in _crystalImpactEffects.Cast<ICrystalImpactEffect>())
             {
@@ -253,7 +255,7 @@ namespace CosmicShore.Game.Projectiles
                     continue;
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero), crystalProperties); // TODO : impacted vector is not correct here.
-            }
+            }*/
         }
 
         public void LaunchProjectile(float projectileTime)

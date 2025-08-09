@@ -9,13 +9,13 @@ namespace CosmicShore.Game
 {
     public class Skimmer : ElementalShipComponent
     {
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         List<ScriptableObject> _blockImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         List<ScriptableObject> _blockStayEffects;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         List<ScriptableObject> _shipImpactEffects;
 
         [SerializeField] float vaccumAmount = 80f;
@@ -104,16 +104,19 @@ namespace CosmicShore.Game
             if (markerContainer) markerContainer.transform.parent = _shipStatus.Player.Transform;
         }
 
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
         void PerformBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            var castedEffects = _blockImpactEffects.Cast<IImpactEffect>();
+            /*var castedEffects = _blockImpactEffects.Cast<IImpactEffect>();
             var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, default, trailBlockProperties);
+            
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, default, trailBlockProperties);*/
         }
 
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
         void PerformShipImpactEffects(IShipStatus shipGeometry)
         {
-            if (_shipStatus == null)
+            /*if (_shipStatus == null)
                 return;
 
             if (StatsManager.Instance != null)
@@ -121,7 +124,9 @@ namespace CosmicShore.Game
 
             var castedEffects = _shipImpactEffects.Cast<IImpactEffect>();
             var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData);
+            
+            
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData);*/
         }
 
 
@@ -132,11 +137,13 @@ namespace CosmicShore.Game
             _onCoolDown = false;
         }
 
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
         void PerformBlockStayEffects(float combinedWeight)
         {
-            var castedEffects = _blockStayEffects.Cast<IImpactEffect>();
+            /*var castedEffects = _blockStayEffects.Cast<IImpactEffect>();
             var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);  
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData);
+            
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData);*/
         }
 
         void StartSkim(TrailBlock trailBlock)

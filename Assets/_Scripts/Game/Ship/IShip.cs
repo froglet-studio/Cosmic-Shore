@@ -20,7 +20,10 @@ namespace CosmicShore.Game
         void SetResourceLevels(ResourceCollection resources);
         void SetShipUp(float angle);
         void DisableSkimmer();
-        void PerformCrystalImpactEffects(CrystalProperties crystalProperties);
+        
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        // void PerformCrystalImpactEffects(CrystalProperties crystalProperties);
+        
         void SetBoostMultiplier (float boostMultiplier);
         void ToggleGameObject(bool toggle);
         void SetShipMaterial(Material material);
@@ -30,7 +33,10 @@ namespace CosmicShore.Game
         void SetSkimmerMaterial(Material material);
         void AssignCaptain(SO_Captain captain);
         void BindElementalFloat(string name, Element element);
-        void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties);
+        
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        // void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties);
+        
         void PerformButtonActions(int buttonNumber);
         void OnButtonPressed(int buttonNumber);
         void ToggleAutoPilot(bool toggle);

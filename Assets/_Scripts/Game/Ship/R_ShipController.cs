@@ -87,7 +87,7 @@ namespace CosmicShore.Game
         {
             ShipStatus.Player = player;
             ShipStatus.ActionHandler.Initialize(ShipStatus);
-            ShipStatus.ImpactHandler.Initialize(ShipStatus);
+            // ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);

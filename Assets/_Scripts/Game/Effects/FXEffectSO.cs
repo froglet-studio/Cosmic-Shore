@@ -5,14 +5,14 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "FXImpactEffect", menuName = "ScriptableObjects/Impact Effects/FXImpactEffectSO")]
-    public class FXEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
+    public class FXEffectSO : ImpactEffectSO
     {
         [SerializeField]
         float particleDurationAtSpeedOne = 300f;
 
         IShipStatus _shipStatus;
 
-        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
+        /*public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
             _shipStatus = data.ThisShipStatus;
             DisplaySkimParticleEffectAsync(trailBlockProperties.trailBlock).Forget(); // Fire and forget
@@ -49,6 +49,10 @@ namespace CosmicShore.Game
             while (timer < scaledTime);
 
             Destroy(particle);
+        }*/
+        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

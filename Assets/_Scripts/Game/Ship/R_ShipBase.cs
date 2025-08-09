@@ -83,11 +83,12 @@ namespace CosmicShore.Game
         public void StopShipControllerActions(InputEvents controlType) =>
                 ShipStatus.ActionHandler.StopShipControllerActions(controlType);
 
-        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) =>
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) =>
             ShipStatus.ImpactHandler.PerformCrystalImpactEffects(crystalProperties);
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties) =>
-            ShipStatus.ImpactHandler.PerformTrailBlockImpactEffects(trailBlockProperties);
+            ShipStatus.ImpactHandler.PerformTrailBlockImpactEffects(trailBlockProperties);*/
 
         public abstract void PerformButtonActions(int buttonNumber);
 

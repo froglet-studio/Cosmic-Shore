@@ -4,9 +4,9 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "BounceImpactEffect", menuName = "ScriptableObjects/Impact Effects/BounceImpactEffectSO")]
-    public class BounceEffectSO : ImpactEffectSO, ITrailBlockImpactEffect
+    public class BounceEffectSO : ImpactEffectSO
     {
-        public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
+        /*public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
         {
             Transform shipTransform = data.ThisShipStatus.ShipTransform;
 
@@ -17,6 +17,10 @@ namespace CosmicShore.Game
             data.ThisShipStatus.ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
             data.ThisShipStatus.ShipTransformer.ModifyVelocity((shipTransform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5,
                 Time.deltaTime * 15);
+        }*/
+        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

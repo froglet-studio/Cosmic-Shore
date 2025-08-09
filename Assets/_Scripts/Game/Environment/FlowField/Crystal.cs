@@ -3,8 +3,6 @@ using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
-using System.Linq;
 
 namespace CosmicShore.Game
 {
@@ -35,7 +33,7 @@ namespace CosmicShore.Game
         #endregion
 
         [Header("Crystal Effects")]
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         List<ScriptableObject> _crystalImpactEffects;
 
         Material tempMaterial;
@@ -51,14 +49,14 @@ namespace CosmicShore.Game
             Collide(other);
         }
 
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
         protected void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
         {
-            // TODO - self ship status and impacted ship status need to be different.
-            var castedEffects = _crystalImpactEffects.Cast<IImpactEffect>();
+            /*var castedEffects = _crystalImpactEffects.Cast<IImpactEffect>();
             var impactEffectData = new ImpactEffectData(ship.ShipStatus, ship.ShipStatus,
                 ship.ShipStatus.Course * ship.ShipStatus.Speed);
             
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, crystalProperties);
+            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, crystalProperties);*/
         }
 
         protected virtual void Collide(Collider other)
@@ -73,7 +71,8 @@ namespace CosmicShore.Game
 
             if (allowVesselImpactEffect)
             {
-                ship.PerformCrystalImpactEffects(crystalProperties);
+                // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+                // ship.PerformCrystalImpactEffects(crystalProperties);
 
                 // TODO - This class should not modify AIPilot's properties directly.
                 /*if (ship.ShipStatus.AIPilot != null)

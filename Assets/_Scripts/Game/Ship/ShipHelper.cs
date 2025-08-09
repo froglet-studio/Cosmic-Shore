@@ -105,7 +105,8 @@ namespace CosmicShore.Game
             }
         }
 
-        public static void ExecuteImpactEffect(
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*public static void ExecuteImpactEffect(
             IEnumerable<IImpactEffect> effects, 
             ImpactEffectData impactEffectData, 
             CrystalProperties crystalProperties = default, 
@@ -132,6 +133,6 @@ namespace CosmicShore.Game
                         break;
                 }
             }
-        }
+        }*/
     }
 }

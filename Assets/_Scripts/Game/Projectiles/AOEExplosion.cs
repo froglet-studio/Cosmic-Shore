@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         List<ScriptableObject> _shipImpactEffects;
 
         [SerializeField] private bool affectSelf = false;
@@ -118,11 +118,13 @@ namespace CosmicShore.Game.Projectiles
 
         protected virtual void PerformShipImpactEffects(IShipStatus shipStatus, Vector3 impactVector)
         {
-            var castedEffects = _shipImpactEffects.Cast<IImpactEffect>();
-            ShipHelper.ExecuteImpactEffect(
+            var castedEffects = _shipImpactEffects.Cast<R_IImpactEffect>();
+            
+            // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+            /*ShipHelper.ExecuteImpactEffect(
                 castedEffects,
                 new ImpactEffectData(shipStatus, null, impactVector)
-            );
+            );*/
         }
 
         public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
