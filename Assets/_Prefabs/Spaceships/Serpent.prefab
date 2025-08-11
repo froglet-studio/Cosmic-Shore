@@ -62,6 +62,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
+      propertyPath: boostAction
+      value: 
+      objectReference: {fileID: 3414556965331805843}
+    - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
       propertyPath: _boostAction
       value: 
       objectReference: {fileID: 3414556965331805843}
@@ -70,6 +75,11 @@ PrefabInstance:
       propertyPath: _shipHUDContainer
       value: 
       objectReference: {fileID: 8222987891369319599}
+    - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+      propertyPath: seedAssemblerAction
+      value: 
+      objectReference: {fileID: 1617919780605015357}
     - target: {fileID: 2122134531836714748, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
       propertyPath: _seedAssemblerAction

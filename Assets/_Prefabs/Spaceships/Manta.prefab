@@ -14,6 +14,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b,
         type: 2}
+    - target: {fileID: 1435252848482629424, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+      propertyPath: Resources.Array.data[0].Display
+      value: 
+      objectReference: {fileID: 7577682506107226651}
     - target: {fileID: 3440187540988767646, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
       propertyPath: OnCellItemsUpdated
@@ -373,7 +378,7 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 1095598395067388839, guid: 920c06d41c62d1f4482a2f80e793bbf8,
         type: 3}
-      insertIndex: -1
+      insertIndex: 0
       addedObject: {fileID: 3852079874623917857}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 6417075533431866457, guid: 920c06d41c62d1f4482a2f80e793bbf8,
@@ -643,6 +648,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shipObject: {fileID: 8122013569914019445}
+--- !u!114 &7577682506107226651 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5735350978680534478, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+    type: 3}
+  m_PrefabInstance: {fileID: 2788107796120846293}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8796527168282664312 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6675130274311316141, guid: 920c06d41c62d1f4482a2f80e793bbf8,
