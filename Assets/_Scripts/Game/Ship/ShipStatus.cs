@@ -22,7 +22,10 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(ShipCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
     [RequireComponent(typeof(R_ShipActionHandler))]
-    [RequireComponent(typeof(R_ShipImpactHandler))]
+    
+    // Deprecated - Use R_ShipImpactor instead
+    // [RequireComponent(typeof(R_ShipImpactHandler))]
+    
     [RequireComponent(typeof(R_ShipCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 

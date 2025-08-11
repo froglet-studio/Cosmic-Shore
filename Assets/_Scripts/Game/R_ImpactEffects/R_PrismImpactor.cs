@@ -1,14 +1,20 @@
+using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class R_PrismImpactor : R_ImpactorBase
+    public class R_PrismImpactor : R_ImpactorBase, R_IPrismImpactor
     {
+        [SerializeField]
+        TrailBlock trailBlock;
+        
         [SerializeField] R_IImpactEffect[] prismShipEffects;
         [SerializeField] R_IImpactEffect[] prismProjectileEffects;
         [SerializeField] R_IImpactEffect[] prismSkimmerEffects;
         [SerializeField] R_IImpactEffect[] prismExplosionEffects;
 
+        public TrailBlock TrailBlock => trailBlock;
+        
         protected override void AcceptImpactee(R_IImpactor impactee)
         {    
             switch (impactee)

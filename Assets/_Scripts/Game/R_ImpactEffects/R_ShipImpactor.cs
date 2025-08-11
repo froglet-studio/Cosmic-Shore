@@ -1,10 +1,14 @@
 using System;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace CosmicShore.Game
 {
-    public class R_ShipImpactor : R_ImpactorBase
+    public class R_ShipImpactor : R_ImpactorBase, R_IShipImpactor
     {
+        [SerializeField, RequireInterface(typeof(IShip))]
+        Object ship;
+        
         [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         ScriptableObject[] shipPrismEffectsSO;
         
@@ -22,6 +26,8 @@ namespace CosmicShore.Game
         R_IImpactEffect[] shipElementalCrystalEffects;
         R_IImpactEffect[] shipFakeCrystalEffects;
 
+        public IShip Ship => ship as IShip;
+        
         private void Awake()
         {
             shipPrismEffects = Array.ConvertAll(shipPrismEffectsSO, so => (R_IImpactEffect)so);

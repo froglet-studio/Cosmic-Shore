@@ -6,8 +6,8 @@ namespace CosmicShore.Game
 {
     // TODO: Figure out a way to separate the IExplodableImpactEffect, and ITrailBlockImpactEffect
 
-    [CreateAssetMenu(fileName = "ExplodeImpactEffect", menuName = "ScriptableObjects/Impact Effects/ExplodeImpactEffectSO")]
-    public class ExplodeEffectSO : ImpactEffectSO
+    [CreateAssetMenu(fileName = "ShipExplodePrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipExplodePrismEffectSO")]
+    public class ShipExplodePrismEffectSO : ImpactEffectSO
     {
         [SerializeField]
         float _inertia;
@@ -50,7 +50,21 @@ namespace CosmicShore.Game
         }*/
         public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
         {
-            throw new System.NotImplementedException();
+            if (impactor is not R_IShipImpactor shipImpactor)
+            {
+                Debug.LogError("No IShipImpactor found to run this effect!");
+                return;
+            }
+
+            if (impactee is not R_IPrismImpactor prismImpactor)
+            {
+                Debug.LogError("No IPrismImpactor found to run this effect!");
+                return;
+            }
+
+            var shipStatus = shipImpactor.Ship.ShipStatus;
+            prismImpactor.TrailBlock.Damage(_inertia * shipStatus.Speed * shipStatus.Course,
+                shipStatus.Team, shipStatus.PlayerName);
         }
     }
 }
