@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class R_PrismImpactor : R_ImpactorBase, R_IPrismImpactor
+    public class R_PrismImpactor : R_ImpactorBase
     {
         [SerializeField]
         TrailBlock trailBlock;

@@ -50,13 +50,13 @@ namespace CosmicShore.Game
         }*/
         public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
         {
-            if (impactor is not R_IShipImpactor shipImpactor)
+            if (impactor is not R_ShipImpactor shipImpactor)
             {
                 Debug.LogError("No IShipImpactor found to run this effect!");
                 return;
             }
 
-            if (impactee is not R_IPrismImpactor prismImpactor)
+            if (impactee is not R_PrismImpactor prismImpactor)
             {
                 Debug.LogError("No IPrismImpactor found to run this effect!");
                 return;

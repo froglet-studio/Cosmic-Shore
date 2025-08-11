@@ -4,7 +4,7 @@ using Object = UnityEngine.Object;
 
 namespace CosmicShore.Game
 {
-    public class R_ShipImpactor : R_ImpactorBase, R_IShipImpactor
+    public class R_ShipImpactor : R_ImpactorBase
     {
         [SerializeField, RequireInterface(typeof(IShip))]
         Object ship;
