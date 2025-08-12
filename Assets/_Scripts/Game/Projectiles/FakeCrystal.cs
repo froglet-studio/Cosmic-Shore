@@ -30,27 +30,5 @@ namespace CosmicShore.Game
             cell.TryRemoveItem(this);
             Destroy(gameObject);
         }
-
-        // Deprecated - Remove later
-        /*protected override void Collide(Collider other)
-        {
-            if (!other.TryGetComponent(out IShipStatus shipStatus))
-            {
-                if (!other.TryGetComponent(out Projectile projectile))
-                    return;
-
-                shipStatus = projectile.ShipStatus;
-            }
-
-            // TODO: use a different material if the fake crystal is on your team
-            if (shipStatus.Team == OwnTeam)
-                return;
-
-            PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
-            Explode(shipStatus.Ship);
-            PlayExplosionAudio();
-            cell.TryRemoveItem(this);
-            Destroy(gameObject);
-        }*/
     }
 }
