@@ -14,7 +14,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] float Scaler = 3f; //scale to max radius
 
         [SerializeField] Sprite ActivePerimeterImage;
-        [SerializeField] Player player;
+        [SerializeField] R_Player player;
         public float alpha = 0f;        
         
         Image image;

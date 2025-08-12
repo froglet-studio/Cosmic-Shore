@@ -6,7 +6,7 @@ namespace CosmicShore.Game.UI
     public class Minimap : MonoBehaviour
     {
         [SerializeField] Camera Camera;
-        [SerializeField] Player Player;
+        [SerializeField] R_Player Player;
         [SerializeField] float CameraRadius;
         [SerializeField] Cell activeNode;
 

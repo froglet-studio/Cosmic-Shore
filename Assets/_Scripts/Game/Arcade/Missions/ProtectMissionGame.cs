@@ -16,11 +16,11 @@ namespace CosmicShore
         [Header("Mission Configuration")]
         [SerializeField] SO_Mission MissionData;
         [SerializeField] List<Transform> SpawnLocations;
-        [SerializeField] Player SquadMateOne;
-        [SerializeField] Player SquadMateTwo;
-        [SerializeField] Player HostileAIOne;
-        [SerializeField] Player HostileAITwo;
-        [SerializeField] Player HostileAIThree;
+        [SerializeField] R_Player SquadMateOne;
+        [SerializeField] R_Player SquadMateTwo;
+        [SerializeField] R_Player HostileAIOne;
+        [SerializeField] R_Player HostileAITwo;
+        [SerializeField] R_Player HostileAIThree;
         [SerializeField] List<ShipClassType> EnemyShipClasses = new()
         {
             ShipClassType.Rhino,

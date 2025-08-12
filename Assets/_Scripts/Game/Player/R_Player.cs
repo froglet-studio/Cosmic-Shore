@@ -1,19 +1,27 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using CosmicShore.Soap;
 using CosmicShore.Utility.ClassExtensions;
 using Unity.Netcode;
+using Unity.Services.Authentication;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     public class R_Player : NetworkBehaviour, IPlayer
     { 
-        public ShipClassType ShipClass => InitializeData.ShipClass;   
-        public Teams Team => InitializeData.Team;
-        public string PlayerName => InitializeData.PlayerName;
-        public string PlayerUUID => InitializeData.PlayerUUID;
+        public static List<R_Player> NppList { get; private set; } = new();
+
+        // Declare the NetworkVariable without initializing its value.
+        public NetworkVariable<ShipClassType> NetDefaultShipType = new(ShipClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<Teams> NetTeam = new();
+
+        public ShipClassType ShipClass { get; private set; } // => InitializeData.ShipClass;   
+        public Teams Team { get; private set; } // => InitializeData.Team;
+        public string PlayerName { get; private set; } // => InitializeData.PlayerName;
+        public string PlayerUUID { get; private set; } // => InitializeData.PlayerUUID;
         public IShip Ship { get; private set; }
         public bool IsActive { get; private set; }
 
@@ -30,8 +38,34 @@ namespace CosmicShore.Game
         public void Initialize(IPlayer.InitializeData data, IShip ship)
         {
             InitializeData = data;
+            ShipClass = InitializeData.ShipClass;
+            Team = InitializeData.Team;
+            PlayerName = InitializeData.PlayerName;
+            PlayerUUID = InitializeData.PlayerUUID;
             Ship = ship;
             InputController.Initialize(Ship);
+        }
+        
+        public void InitializeShip(IShip ship) => Ship = ship;
+        
+        public override void OnNetworkSpawn()
+        {
+            NppList.Add(this);
+            gameObject.name = "Player_" + OwnerClientId;
+            PlayerName = AuthenticationService.Instance.PlayerName;
+            PlayerUUID = PlayerName;
+            InputController.enabled = IsOwner;
+
+            NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
+            NetTeam.OnValueChanged += OnNetTeamValueChanged;
+        }
+        
+        public override void OnNetworkDespawn()
+        {
+            NppList.Remove(this);
+
+            NetDefaultShipType.OnValueChanged -= OnNetDefaultShipTypeValueChanged;
+            NetTeam.OnValueChanged -= OnNetTeamValueChanged;
         }
 
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.
@@ -46,5 +80,11 @@ namespace CosmicShore.Game
 
         public void ToggleStationaryMode(bool toggle) =>
             Ship.ShipStatus.IsStationary = toggle;
+        
+        private void OnNetDefaultShipTypeValueChanged(ShipClassType previousValue, ShipClassType newValue) =>
+            ShipClass = newValue;
+
+        private void OnNetTeamValueChanged(Teams previousValue, Teams newValue) =>
+            Team = newValue;
     }
 }
