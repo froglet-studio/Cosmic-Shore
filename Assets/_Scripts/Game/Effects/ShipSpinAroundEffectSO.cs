@@ -3,15 +3,15 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "SpinAroundImpactEffect", menuName = "ScriptableObjects/Impact Effects/SpinAroundImpactEffectSO")]
-    public class SpinAroundEffectSO : ImpactEffectSO
+    [CreateAssetMenu(fileName = "ShipSpinAroundEffect", menuName = "ScriptableObjects/Impact Effects/ShipSpinAroundEffectSO")]
+    public class ShipSpinAroundEffectSO : ImpactEffectSO<R_ShipImpactor, R_ImpactorBase>
     {
         /*public void Execute(ImpactEffectData context)
         {
             context.ThisShipStatus.ShipTransformer.SpinShip(context.ImpactVector);
         }*/
 
-        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
+        protected override void ExecuteTyped(R_ShipImpactor impactor, R_ImpactorBase crystalImpactee)
         {
             throw new System.NotImplementedException();
         }

@@ -87,7 +87,6 @@ namespace CosmicShore.Game
             // PerformCrystalImpactEffects(crystalProperties, ship);
 
             Explode(ship);
-            
             PlayExplosionAudio();
 
             // Move the Crystal

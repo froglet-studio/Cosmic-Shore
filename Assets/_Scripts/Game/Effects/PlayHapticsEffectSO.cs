@@ -4,19 +4,15 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "PlayHapticsImpactEffect", menuName = "ScriptableObjects/Impact Effects/PlayHapticsImpactEffectSO")]
-    public class PlayHapticsEffectSO : ImpactEffectSO
+    public class PlayHapticsEffectSO : ImpactEffectSO<R_ShipImpactor, R_ImpactorBase>
     {
         [SerializeField]
         HapticType _hapticType;
 
-        /*public void Execute(ImpactEffectData data)
+        protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_ImpactorBase impactee)
         {
-            if (!data.ThisShipStatus.AutoPilotEnabled)
+            if (!shipImpactor.Ship.ShipStatus.AutoPilotEnabled)
                 HapticController.PlayHaptic(_hapticType);
-        }*/
-        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
-        {
-            throw new System.NotImplementedException();
         }
     }
 }

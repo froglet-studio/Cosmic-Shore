@@ -1,5 +1,3 @@
-using CosmicShore.Core;
-using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 
 namespace CosmicShore.Game

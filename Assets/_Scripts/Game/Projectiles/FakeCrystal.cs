@@ -16,7 +16,23 @@ namespace CosmicShore.Game
                 GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
         }
 
-        protected override void Collide(Collider other)
+        public override void ExecuteCommonVesselImpact(IShip ship)
+        {
+            // TODO: use a different material if the fake crystal is on your team
+            if (ship.ShipStatus.Team == OwnTeam)
+                return;
+
+            // TODO - Handled from R_CrystalImpactor.cs
+            // PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
+            
+            Explode(ship);
+            PlayExplosionAudio();
+            cell.TryRemoveItem(this);
+            Destroy(gameObject);
+        }
+
+        // Deprecated - Remove later
+        /*protected override void Collide(Collider other)
         {
             if (!other.TryGetComponent(out IShipStatus shipStatus))
             {
@@ -35,6 +51,6 @@ namespace CosmicShore.Game
             PlayExplosionAudio();
             cell.TryRemoveItem(this);
             Destroy(gameObject);
-        }
+        }*/
     }
 }
