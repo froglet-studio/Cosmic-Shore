@@ -32,6 +32,8 @@ namespace CosmicShore.Game
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
         #endregion
 
+        
+        // TODO - Remove this from here, as it is added to R_CrystalImpactor.cs
         [Header("Crystal Effects")]
         [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         List<ScriptableObject> _crystalImpactEffects;
@@ -44,22 +46,68 @@ namespace CosmicShore.Game
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
         }
 
-        protected virtual void OnTriggerEnter(Collider other)
-        {
-            Collide(other);
-        }
+         // Moved to R_CrystalImpactor.cs
+         /*protected virtual void OnTriggerEnter(Collider other)
+         {
+             Collide(other);
+         }*/
 
-        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        protected void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
+         // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+         /*protected void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
+         {
+             var castedEffects = _crystalImpactEffects.Cast<IImpactEffect>();
+             var impactEffectData = new ImpactEffectData(ship.ShipStatus, ship.ShipStatus,
+                 ship.ShipStatus.Course * ship.ShipStatus.Speed);
+
+             ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, crystalProperties);
+         }*/
+
+        public virtual void ExecuteCommonVesselImpact(IShip ship)
         {
-            /*var castedEffects = _crystalImpactEffects.Cast<IImpactEffect>();
-            var impactEffectData = new ImpactEffectData(ship.ShipStatus, ship.ShipStatus,
-                ship.ShipStatus.Course * ship.ShipStatus.Speed);
+            if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
+                return;
+
+            if (allowVesselImpactEffect)
+            {
+                // TODO - This class should not modify AIPilot's properties directly.
+                /*if (ship.ShipStatus.AIPilot != null)
+                {
+                    AIPilot aiPilot = ship.ShipStatus.AIPilot;
+
+                    aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+                    aiPilot.throttle = aiPilot.defaultThrottle;
+                }*/
+            }
+
+            // TODO - Add Event channels here rather than calling singletons directly.
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.CrystalCollected(ship, crystalProperties);
+
+            // TODO - Handled from R_CrystalImpactor.cs
+            // PerformCrystalImpactEffects(crystalProperties, ship);
+
+            Explode(ship);
             
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, crystalProperties);*/
-        }
+            PlayExplosionAudio();
 
-        protected virtual void Collide(Collider other)
+            // Move the Crystal
+            if (allowRespawnOnImpact)
+            {
+                foreach (var model in crystalModels)
+                    model.model.GetComponent<FadeIn>().StartFadeIn();
+
+                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+                cell.UpdateItem();
+            }
+            else
+            {
+                cell.TryRemoveItem(this);
+                Destroy(gameObject);
+            }
+        }
+        
+        // Deprecated - Remove later
+        /*protected virtual void Collide(Collider other)
         {
             if (!other.TryGetComponent(out IVesselCollider shipCollider))
                 return;
@@ -81,7 +129,7 @@ namespace CosmicShore.Game
 
                     aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
                     aiPilot.throttle = aiPilot.defaultThrottle;
-                }*/
+                }#1#
             }
 
             // TODO - Add Event channels here rather than calling singletons directly.
@@ -108,7 +156,7 @@ namespace CosmicShore.Game
                 cell.TryRemoveItem(this);
                 Destroy(gameObject);
             }
-        }
+        }*/
 
         //the following is a public method that can be called to grow the crystal
         public void GrowCrystal(float duration, float targetScale)

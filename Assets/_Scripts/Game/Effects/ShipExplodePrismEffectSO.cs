@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     // TODO: Figure out a way to separate the IExplodableImpactEffect, and ITrailBlockImpactEffect
 
     [CreateAssetMenu(fileName = "ShipExplodePrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipExplodePrismEffectSO")]
-    public class ShipExplodePrismEffectSO : ImpactEffectSO
+    public class ShipExplodePrismEffectSO : ImpactEffectSO<R_ShipImpactor, R_PrismImpactor>
     {
         [SerializeField]
         float _inertia;
@@ -23,23 +23,23 @@ namespace CosmicShore.Game
 
         [SerializeField]
         float _charge;
-
-        /*public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
+        
+        protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_PrismImpactor prismImpactee)
         {
-            var shipStatus = data.ThisShipStatus;
-
-            trailBlockProperties.trailBlock.Damage(_inertia * shipStatus.Speed * shipStatus.Course,
-                                shipStatus.Team, shipStatus.PlayerName);
-
+            var shipStatus = shipImpactor.Ship.ShipStatus;
+            
+            prismImpactee.TrailBlock.Damage(_inertia * shipStatus.Speed * shipStatus.Course,
+                shipStatus.Team, shipStatus.PlayerName);
+            
             foreach (var AOE in _aoePrefabs)
             {
                 var aoeExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
                 aoeExplosion.Initialize(new AOEExplosion.InitializeStruct
                 {
-                    OwnTeam = data.ThisShipStatus.Team,
-                    Ship = data.ThisShipStatus.Ship,
+                    OwnTeam = shipStatus.Team,
+                    Ship = shipStatus.Ship,
                     MaxScale = Mathf.Lerp(_minExplosionScale, _maxExplosionScale, _charge),
-                    OverrideMaterial = data.ThisShipStatus.AOEExplosionMaterial,
+                    OverrideMaterial = shipStatus.AOEExplosionMaterial,
                     AnnonymousExplosion = false
                 });
 
@@ -47,24 +47,6 @@ namespace CosmicShore.Game
                 aoeExplosion.SetPositionAndRotation(shipTransform.position, shipTransform.rotation);
                 aoeExplosion.Detonate();
             }
-        }*/
-        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
-        {
-            if (impactor is not R_ShipImpactor shipImpactor)
-            {
-                Debug.LogError("No IShipImpactor found to run this effect!");
-                return;
-            }
-
-            if (impactee is not R_PrismImpactor prismImpactor)
-            {
-                Debug.LogError("No IPrismImpactor found to run this effect!");
-                return;
-            }
-
-            var shipStatus = shipImpactor.Ship.ShipStatus;
-            prismImpactor.TrailBlock.Damage(_inertia * shipStatus.Speed * shipStatus.Course,
-                shipStatus.Team, shipStatus.PlayerName);
         }
     }
 }
