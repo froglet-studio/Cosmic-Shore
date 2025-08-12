@@ -3,34 +3,50 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// Any impact effect that is defined in the game should inherit from this class.
+    /// Any impact effect should inherit from this class.
+    /// Works with base/derived/interface types for both impactor & impactee.
     /// </summary>
     public abstract class ImpactEffectSO<TImpactor, TImpactee> : ScriptableObject, R_IImpactEffect
-    where TImpactor : class, R_IImpactor
-    where TImpactee : class, R_IImpactor
+        where TImpactor : class, R_IImpactor
+        where TImpactee : class, R_IImpactor
     {
-        // Do not override this; override ExecuteTyped instead.
         public void Execute(R_IImpactor impactor, R_IImpactor impactee)
         {
-            if (impactor is not TImpactor a)
+            if (impactor == null || impactee == null)
             {
 #if UNITY_EDITOR
-                Debug.LogError($"Expected impactor of type {typeof(TImpactor).Name} but got {impactor?.GetType().Name ?? "null"}", this);
+                Debug.LogError("Impactor or impactee was null.", this);
 #endif
                 return;
             }
 
-            if (impactee is not TImpactee b)
+            var impactorTypeOk = typeof(TImpactor).IsAssignableFrom(impactor.GetType());
+            var impacteeTypeOk = typeof(TImpactee).IsAssignableFrom(impactee.GetType());
+
+            if (!impactorTypeOk)
             {
 #if UNITY_EDITOR
-                Debug.LogError($"Expected impactee of type {typeof(TImpactee).Name} but got {impactee?.GetType().Name ?? "null"}", this);
+                Debug.LogError(
+                    $"Expected impactor assignable to {typeof(TImpactor).Name} " +
+                    $"but got {impactor.GetType().Name}", this);
 #endif
                 return;
             }
 
-            ExecuteTyped(a, b);
+            if (!impacteeTypeOk)
+            {
+#if UNITY_EDITOR
+                Debug.LogError(
+                    $"Expected impactee assignable to {typeof(TImpactee).Name} " +
+                    $"but got {impactee.GetType().Name}", this);
+#endif
+                return;
+            }
+
+            // Safe casts after assignability check
+            ExecuteTyped((TImpactor)impactor, (TImpactee)impactee);
         }
 
-        protected abstract void ExecuteTyped(TImpactor impactor, TImpactee crystalImpactee);
+        protected abstract void ExecuteTyped(TImpactor impactor, TImpactee impactee);
     }
 }

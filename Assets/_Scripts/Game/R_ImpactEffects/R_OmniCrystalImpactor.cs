@@ -21,6 +21,7 @@ namespace CosmicShore.Game
             {
                 case R_ShipImpactor shipImpactor:
                     ExecuteEffect(impactee, omniCrystalShipEffects);
+                    Crystal.ExecuteCommonVesselImpact(shipImpactor.Ship);
                     break;
             }
         }

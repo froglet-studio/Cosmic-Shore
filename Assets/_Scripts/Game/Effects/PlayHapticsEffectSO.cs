@@ -11,6 +11,7 @@ namespace CosmicShore.Game
 
         protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_ImpactorBase impactee)
         {
+            Debug.Log("Vessel encountered with the crystal");
             if (!shipImpactor.Ship.ShipStatus.AutoPilotEnabled)
                 HapticController.PlayHaptic(_hapticType);
         }
