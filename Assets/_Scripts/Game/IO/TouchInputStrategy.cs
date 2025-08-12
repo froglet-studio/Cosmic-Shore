@@ -18,9 +18,9 @@ namespace CosmicShore.Game.IO
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
-        public override void Initialize(IShip ship)
+        public override void Initialize(IInputStatus inputStatus)
         {
-            base.Initialize(ship);
+            base.Initialize(inputStatus);
             joystickRadius = Screen.dpi;
             leftJoystickValue = leftClampedPosition = new Vector2(joystickRadius, joystickRadius);
             rightJoystickValue = rightClampedPosition = new Vector2(Screen.currentResolution.width - joystickRadius, joystickRadius);
@@ -46,10 +46,11 @@ namespace CosmicShore.Game.IO
             else
             {
                 ResetInput();
-                if (!InputStatus.Idle)
+                if (!inputStatus.Idle)
                 {
-                    InputStatus.Idle = true;
-                    _ship.PerformShipControllerActions(InputEvents.IdleAction);
+                    inputStatus.Idle = true;
+                    inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);
+                    // _ship.PerformShipControllerActions(InputEvents.IdleAction);
                 }
             }
 
@@ -57,10 +58,11 @@ namespace CosmicShore.Game.IO
             {
                 Reparameterize();
                 PerformSpeedAndDirectionalEffects();
-                if (InputStatus.Idle)
+                if (inputStatus.Idle)
                 {
-                    InputStatus.Idle = false;
-                    _ship.StopShipControllerActions(InputEvents.IdleAction);
+                    inputStatus.Idle = false;
+                    inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);
+                    // _ship.StopShipControllerActions(InputEvents.IdleAction);
                 }
             }
         }
@@ -99,7 +101,8 @@ namespace CosmicShore.Game.IO
         {
             var position = Touch.activeTouches[0].screenPosition;
 
-            if (_ship != null && _ship.ShipStatus.CommandStickControls)
+            // TODO - CommandStickControls is not needed to be inside ShipStatus
+            if (inputStatus.CommandStickControls)
             {
                 ProcessCommandStickControls(position);
             }
@@ -116,27 +119,31 @@ namespace CosmicShore.Game.IO
 
         private void ProcessCommandStickControls(Vector2 position)
         {
-            InputStatus.SingleTouchValue = position;
+            inputStatus.SingleTouchValue = position;
             var tempThreeDPosition = new Vector3(
-                (InputStatus.SingleTouchValue.x - Screen.width / 2) * 2f,
-                (InputStatus.SingleTouchValue.y - Screen.height / 2) * 2f,
+                (inputStatus.SingleTouchValue.x - Screen.width / 2) * 2f,
+                (inputStatus.SingleTouchValue.y - Screen.height / 2) * 2f,
                 0
             );
 
             if (tempThreeDPosition.sqrMagnitude < 10000 &&
                 Touch.activeTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
             {
-                _ship.PerformShipControllerActions(InputEvents.NodeTapAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.NodeTapAction);
+                // _ship.PerformShipControllerActions(InputEvents.NodeTapAction);
             }
-            else if ((tempThreeDPosition - _ship.Transform.position).sqrMagnitude < 10000 &&
+            
+            // TODO - Can't access IShip here, things need to be fucking separated.
+            /*else if ((tempThreeDPosition - _ship.Transform.position).sqrMagnitude < 10000 &&
                      Touch.activeTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
             {
-                _ship.PerformShipControllerActions(InputEvents.SelfTapAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.SelfTapAction);
+                // _ship.PerformShipControllerActions(InputEvents.SelfTapAction);
             }
             else
             {
-                InputStatus.SingleTouchValue = tempThreeDPosition;
-            }
+                inputStatus.SingleTouchValue = tempThreeDPosition;
+            }*/
         }
 
         private void HandleLeftStick(Vector2 position)
@@ -144,11 +151,12 @@ namespace CosmicShore.Game.IO
             if (!leftStickEffectsStarted)
             {
                 leftStickEffectsStarted = true;
-                _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
+                // _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
             }
             leftJoystickValue = position;
             leftTouchIndex = 0;
-            InputStatus.OneTouchLeft = true;
+            inputStatus.OneTouchLeft = true;
             HandleJoystick(ref leftJoystickStart, leftTouchIndex, ref leftNormalizedJoystickPosition, ref leftClampedPosition);
             rightNormalizedJoystickPosition = Vector3.Lerp(rightNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
         }
@@ -158,11 +166,12 @@ namespace CosmicShore.Game.IO
             if (!rightStickEffectsStarted)
             {
                 rightStickEffectsStarted = true;
-                _ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
+                // _ship.PerformShipControllerActions(InputEvents.RightStickAction);
             }
             rightJoystickValue = position;
             rightTouchIndex = 0;
-            InputStatus.OneTouchLeft = false;
+            inputStatus.OneTouchLeft = false;
             HandleJoystick(ref rightJoystickStart, rightTouchIndex, ref rightNormalizedJoystickPosition, ref rightClampedPosition);
             leftNormalizedJoystickPosition = Vector3.Lerp(leftNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
         }
@@ -186,60 +195,66 @@ namespace CosmicShore.Game.IO
             if (leftStickEffectsStarted)
             {
                 leftStickEffectsStarted = false;
-                _ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
+                // _ship.StopShipControllerActions(InputEvents.LeftStickAction);
             }
             if (rightStickEffectsStarted)
             {
                 rightStickEffectsStarted = false;
-                _ship.StopShipControllerActions(InputEvents.RightStickAction);
+                inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
+                // _ship.StopShipControllerActions(InputEvents.RightStickAction);
             }
         }
 
         private void Reparameterize()
         {
-            InputStatus.EasedRightJoystickPosition = new Vector2(
+            inputStatus.EasedRightJoystickPosition = new Vector2(
                 Ease(2 * rightNormalizedJoystickPosition.x),
                 Ease(2 * rightNormalizedJoystickPosition.y)
             );
-            InputStatus.EasedLeftJoystickPosition = new Vector2(
+            inputStatus.EasedLeftJoystickPosition = new Vector2(
                 Ease(2 * leftNormalizedJoystickPosition.x),
                 Ease(2 * leftNormalizedJoystickPosition.y)
             );
 
-            InputStatus.XSum = Ease(rightNormalizedJoystickPosition.x + leftNormalizedJoystickPosition.x);
-            InputStatus.YSum = -Ease(rightNormalizedJoystickPosition.y + leftNormalizedJoystickPosition.y);
-            InputStatus.XDiff = (rightNormalizedJoystickPosition.x - leftNormalizedJoystickPosition.x + 2) / 4;
-            InputStatus.YDiff = Ease(rightNormalizedJoystickPosition.y - leftNormalizedJoystickPosition.y);
+            inputStatus.XSum = Ease(rightNormalizedJoystickPosition.x + leftNormalizedJoystickPosition.x);
+            inputStatus.YSum = -Ease(rightNormalizedJoystickPosition.y + leftNormalizedJoystickPosition.y);
+            inputStatus.XDiff = (rightNormalizedJoystickPosition.x - leftNormalizedJoystickPosition.x + 2) / 4;
+            inputStatus.YDiff = Ease(rightNormalizedJoystickPosition.y - leftNormalizedJoystickPosition.y);
         }
 
         private void PerformSpeedAndDirectionalEffects()
         {
             float threshold = .3f;
-            float sumOfRotations = Mathf.Abs(InputStatus.YDiff) + Mathf.Abs(InputStatus.YSum) + Mathf.Abs(InputStatus.XSum);
-            float DeviationFromFullSpeedStraight = (1 - InputStatus.XDiff) + sumOfRotations;
-            float DeviationFromMinimumSpeedStraight = InputStatus.XDiff + sumOfRotations;
+            float sumOfRotations = Mathf.Abs(inputStatus.YDiff) + Mathf.Abs(inputStatus.YSum) + Mathf.Abs(inputStatus.XSum);
+            float DeviationFromFullSpeedStraight = (1 - inputStatus.XDiff) + sumOfRotations;
+            float DeviationFromMinimumSpeedStraight = inputStatus.XDiff + sumOfRotations;
 
             if (DeviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
             {
                 fullSpeedStraightEffectsStarted = true;
-                _ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.FullSpeedStraightAction);
+                // _ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
             }
             else if (DeviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
             {
                 minimumSpeedStraightEffectsStarted = true;
-                _ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
+                inputStatus.OnButtonPressed.Raise(InputEvents.MinimumSpeedStraightAction);
+                // _ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
             else
             {
                 if (fullSpeedStraightEffectsStarted && DeviationFromFullSpeedStraight > threshold)
                 {
                     fullSpeedStraightEffectsStarted = false;
-                    _ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
+                    inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
+                    // _ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
                 }
                 if (minimumSpeedStraightEffectsStarted && DeviationFromMinimumSpeedStraight > threshold)
                 {
                     minimumSpeedStraightEffectsStarted = false;
-                    _ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
+                    inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
+                    // _ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
             }
         }

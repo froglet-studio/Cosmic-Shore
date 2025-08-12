@@ -1,42 +1,46 @@
 using UnityEngine;
-using CosmicShore.Core;
+using Obvious.Soap;
 using TMPro;
 
 namespace CosmicShore.Game
 {
     public class Timer : MonoBehaviour
     {
+        [SerializeField] 
+        ScriptableEventNoParam _onTimerEnded;
+        
+        [SerializeField] 
+        ScriptableEventNoParam _onPlayGame;
+        
         private float _timeRemaining;
         public float timeRemaining;
         public TMP_Text textMeshPro;
-        bool RoundEnded = false;
+        bool _timerEnded = true;
 
         private void OnEnable()
         {
-            GameManager.OnPlayGame += ResetTimer;
+            _onPlayGame.OnRaised += ResetTimer;
         }
 
         private void OnDisable()
         {
-            GameManager.OnPlayGame -= ResetTimer;
+            _onPlayGame.OnRaised -= ResetTimer;
         }
 
-        private void Start()
-        {
-            _timeRemaining = timeRemaining;
-        }
+        private void Start() => _timeRemaining = timeRemaining;
 
         void Update()
         {
-            if (RoundEnded) return;
+            if (_timerEnded) 
+                return;
 
             _timeRemaining -= Time.deltaTime;
 
             if (_timeRemaining <= 0)
             {
-                GameManager.EndGame();
                 _timeRemaining = 0;
-                RoundEnded = true;
+                _timerEnded = true;
+                _onTimerEnded.Raise();
             }
 
             textMeshPro.text = Mathf.Round(_timeRemaining).ToString();
@@ -44,7 +48,7 @@ namespace CosmicShore.Game
 
         void ResetTimer()
         {
-            RoundEnded = false;
+            _timerEnded = false;
             _timeRemaining = timeRemaining;
         }
     }

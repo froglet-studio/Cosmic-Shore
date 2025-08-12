@@ -79,7 +79,7 @@ namespace CosmicShore.Core
             get => scaleAnimator?.TargetScale ?? transform.localScale;
             set
             {
-                if (scaleAnimator != null) scaleAnimator.SetTargetScale(value);
+                scaleAnimator?.SetTargetScale(value);
             }
         }
 
@@ -90,14 +90,13 @@ namespace CosmicShore.Core
             get => scaleAnimator?.MaxScale ?? Vector3.one * 10f;  // Default max scale as fallback
             set
             {
-                if (scaleAnimator != null)
-                    scaleAnimator.MaxScale = value;
+                if (scaleAnimator is not null) scaleAnimator.MaxScale = value;
             }
         }
 
         public void ChangeSize()
         {
-            if (scaleAnimator != null)
+            if (scaleAnimator is not null)
             {
                 scaleAnimator.SetTargetScale(TargetScale);
             }
@@ -179,15 +178,15 @@ namespace CosmicShore.Core
                 TrailBlockProperties = TrailBlockProperties
             });
 
-            if (NodeControlManager.Instance != null)
+            if (CellControlManager.Instance is not null)
             {
-                NodeControlManager.Instance.AddBlock(Team, TrailBlockProperties);
+                CellControlManager.Instance.AddBlock(Team, TrailBlockProperties);
                 
                 // Setup team node tracking after block is fully initialized
-                Node targetNode = NodeControlManager.Instance.GetNearestNode(TrailBlockProperties.position);
+                Cell targetCell = CellControlManager.Instance.GetNearestCell(TrailBlockProperties.position);
                 System.Array.ForEach(new[] { Teams.Jade, Teams.Ruby, Teams.Gold }, t =>
                 {
-                    if (t != Team) targetNode.countGrids[t].AddBlock(this);
+                    if (t != Team) targetCell.countGrids[t].AddBlock(this);
                 });
             }
         }
@@ -199,32 +198,25 @@ namespace CosmicShore.Core
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
         {
-            if (other.gameObject.IsLayer("Ships"))
+            // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+            /*if (other.TryGetComponent(out IVesselCollider vesselCollider))
             {
-                if (!other.TryGetComponent(out IShip ship))
-                    return;
-
+                var ship = vesselCollider.Ship;
                 if (!ship.ShipStatus.Attached)
-                {
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
-                }
-            }
-
-            if (other.gameObject.IsLayer("Crystals"))
+            }*/
+            
+            if (other.TryGetComponent(out CellItem cellItem))
             {
                 if (!TrailBlockProperties.IsShielded)
-                {
                     ActivateShield();
-                }
             }
         }
 
         protected void OnTriggerExit(Collider other)
         {
             if (other.gameObject.IsLayer("Crystals"))
-            {
                 ActivateShield(2.0f);
-            }
         }
 
         // Destruction Methods
@@ -271,8 +263,8 @@ namespace CosmicShore.Core
                 TrailBlockProperties = TrailBlockProperties,
             });
 
-            if (NodeControlManager.Instance != null)
-                NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
+            if (CellControlManager.Instance != null)
+                CellControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
         }
 
         public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
@@ -315,8 +307,8 @@ namespace CosmicShore.Core
                     TrailBlockProperties = TrailBlockProperties
                 });
 
-                if (NodeControlManager.Instance != null)
-                    NodeControlManager.Instance.RestoreBlock(Team, TrailBlockProperties);
+                if (CellControlManager.Instance != null)
+                    CellControlManager.Instance.RestoreBlock(Team, TrailBlockProperties);
 
                 blockCollider.enabled = true;
                 meshRenderer.enabled = true;

@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using System.Collections;
+using CosmicShore.Game;
 using UnityEngine;
 
 namespace CosmicShore
@@ -10,12 +11,12 @@ namespace CosmicShore
         [SerializeField] float goalUpdateInterval = 5f;
         public Vector3 Goal;
         //public List<float> Weights;
-        protected Node node;
+        protected Cell node;
 
 
         protected virtual void Start()
         {
-            node = NodeControlManager.Instance.GetNearestNode(transform.position);
+            node = CellControlManager.Instance.GetNearestCell(transform.position);
             StartCoroutine(UpdateGoal());
         }
 

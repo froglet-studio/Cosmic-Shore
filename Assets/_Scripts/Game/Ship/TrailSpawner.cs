@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -44,6 +45,9 @@ namespace CosmicShore.Game
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
         ushort spawnedTrailCount;
+        
+        [SerializeField]
+        ScriptableEventNoParam _onGameOver;
 
         // Trails
         public Trail Trail = new Trail();
@@ -83,13 +87,13 @@ namespace CosmicShore.Game
         private void OnEnable()
         {
             cts = new CancellationTokenSource();
-            GameManager.OnGameOver += RestartAITrailSpawnerAfterDelay;
+            _onGameOver.OnRaised += RestartAITrailSpawnerAfterDelay;
         }
 
         private void OnDisable()
         {
             cts.Cancel();
-            GameManager.OnGameOver -= RestartAITrailSpawnerAfterDelay;
+            _onGameOver.OnRaised -= RestartAITrailSpawnerAfterDelay;
         }
 
         /// <summary>

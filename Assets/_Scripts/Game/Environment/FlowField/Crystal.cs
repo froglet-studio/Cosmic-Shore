@@ -1,20 +1,13 @@
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
-using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Game.AI;
-using CosmicShore.Utility.ClassExtensions;
-using System;
-using CosmicShore.Game;
 
-namespace CosmicShore.Environment.FlowField
+namespace CosmicShore.Game
 {
-
     [System.Serializable]
-    public struct CrystalModelData
+    public class CrystalModelData
     {
         public GameObject model;
         public Material defaultMaterial;
@@ -23,12 +16,8 @@ namespace CosmicShore.Environment.FlowField
         public SpaceCrystalAnimator spaceCrystalAnimator;
     }
 
-    public class Crystal : NodeItem
+    public class Crystal : CellItem
     {
-        #region Events
-        public static Action OnCrystalMove;
-        #endregion
-
         #region Inspector Fields
         [SerializeField] public CrystalProperties crystalProperties;
         [SerializeField] public float sphereRadius = 100;
@@ -36,164 +25,60 @@ namespace CosmicShore.Environment.FlowField
         [SerializeField] protected GameObject SpentCrystalPrefab;
 
         [SerializeField] protected List<CrystalModelData> crystalModels;
-        [SerializeField] protected bool shipImpactEffects = true;
-        [SerializeField] bool RespawnOnImpact;
-        [SerializeField] HapticType ImpactHapticType;
+        [SerializeField] protected bool allowVesselImpactEffect = true;
+        [SerializeField] bool allowRespawnOnImpact;
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
         #endregion
 
-        [Header("Optional Crystal Effects")]
-        #region Optional Fields
-        [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
-        [SerializeField] GameObject AOEPrefab;
-        [SerializeField] float maxExplosionScale;
-        [SerializeField] Material AOEExplosionMaterial;
-        #endregion
-
+        Material tempMaterial;
         Vector3 origin = Vector3.zero;
-
-        protected Material tempMaterial;
-        List<Collider> collisions;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static int _layerName;
-
-        protected virtual void Awake()
-        {
-            collisions = new List<Collider>();
-            
-            // Initialized Crystal game object layer, assign it to "Crystals"
-            _layerName = LayerMask.NameToLayer("Crystals");
-            gameObject.layer = _layerName;
-        }
-
 
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
-            AddSelfToNode();
         }
 
-        protected virtual void OnTriggerEnter(Collider other)
+        public virtual void ExecuteCommonVesselImpact(IShip ship)
         {
-            collisions.Add(other);
-        }
+            if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
+                return;
 
-        protected virtual void Update()
-        {
-            if (collisions.Count > 0 && collisions[0] != null)
-                Collide(collisions[0]);
-
-            collisions.Clear();
-        }
-
-        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
-        {
-            foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            if (allowVesselImpactEffect)
             {
-                switch (effect)
+                // TODO - This class should not modify AIPilot's properties directly.
+                /*if (ship.ShipStatus.AIPilot != null)
                 {
-                    case CrystalImpactEffects.PlayHaptics:
-                        if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(ImpactHapticType);
-                        break;
-                    case CrystalImpactEffects.ReduceSpeed:
-                        ship.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
-                        break;
-                    case CrystalImpactEffects.AreaOfEffectExplosion:
-                        var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Material = AOEExplosionMaterial;
-                        AOEExplosion.Team = Team;
-                        AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale = maxExplosionScale;
-                        AOEExplosion.AnonymousExplosion = true;
-                        AOEExplosion.Detonate(ship);
-                        break;
-                    case CrystalImpactEffects.IncrementLevel:
-                        ship.ShipStatus.ResourceSystem.AdjustLevel(crystalProperties.Element, crystalProperties.crystalValue);
-                        break;
-                }
+                    AIPilot aiPilot = ship.ShipStatus.AIPilot;
+
+                    aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+                    aiPilot.throttle = aiPilot.defaultThrottle;
+                }*/
             }
-        }
 
-        protected virtual void Collide(Collider other)
-        {
-            IShip ship;
+            // TODO - Add Event channels here rather than calling singletons directly.
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.CrystalCollected(ship, crystalProperties);
 
-            if (other.gameObject.IsLayer("Ships"))
-            {
-                if (!other.TryGetComponent(out ship))
-                    return;
-
-                if (Team == Teams.None || Team == ship.ShipStatus.Team)
-                {
-                    if (shipImpactEffects)
-                    {
-                        ship.PerformCrystalImpactEffects(crystalProperties);
-                        if (ship.ShipStatus.AIPilot != null)
-                        {
-                            AIPilot aiPilot = ship.ShipStatus.AIPilot;
-
-                            aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                            aiPilot.throttle = aiPilot.defaultThrottle;
-                        }
-                    }
-
-                    // TODO - Add Event channels here rather than calling singletons directly.
-                    if (StatsManager.Instance != null)
-                        StatsManager.Instance.CrystalCollected(ship, crystalProperties);
-                }
-                else return;
-            }
-            //else if (other.gameObject.IsLayer("Projectiles"))
-            //{
-            //    ship = other.GetComponent<Projectile>().Ship;
-            //    projectile = other.GetComponent<Projectile>();
-            //    if (Team == Teams.None || Team == ship.Team)
-            //    {
-            //        if (shipImpactEffects)
-            //        {
-            //            projectile.PerformCrystalImpactEffects(crystalProperties);
-            //            if (ship.TryGetComponent<AIPilot>(out var aiPilot))
-            //            {
-            //                aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-            //                aiPilot.throttle = aiPilot.defaultThrottle;
-            //            }
-            //        }
-                    
-            //        if (StatsManager.Instance != null)
-            //            StatsManager.Instance.CrystalCollected(ship, crystalProperties);
-            //    }
-            //    else return;
-            //}
-            else return;
-
-            //
-            // Do the crystal stuff that always happens (ship/projectile independent)
-            //
-            PerformCrystalImpactEffects(crystalProperties, ship);
+            // TODO - Handled from R_CrystalImpactor.cs
+            // PerformCrystalImpactEffects(crystalProperties, ship);
 
             Explode(ship);
-            
             PlayExplosionAudio();
 
             // Move the Crystal
-            if (RespawnOnImpact)
+            if (allowRespawnOnImpact)
             {
                 foreach (var model in crystalModels)
                     model.model.GetComponent<FadeIn>().StartFadeIn();
 
                 transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
-                OnCrystalMove?.Invoke();
-
-                UpdateSelfWithNode();  //TODO: check if we need to remove elmental crystals from the node
+                cell.UpdateItem();
             }
             else
             {
-                RemoveSelfFromNode();
+                cell.TryRemoveItem(this);
                 Destroy(gameObject);
             }
         }
@@ -262,7 +147,7 @@ namespace CosmicShore.Environment.FlowField
 
         public void ActivateCrystal()
         {
-            transform.parent = NodeControlManager.Instance.GetNearestNode(transform.position).transform;
+            transform.parent = CellControlManager.Instance.GetNearestCell(transform.position).transform;
             gameObject.GetComponent<SphereCollider>().enabled = true;
             enabled = true;
 
@@ -276,10 +161,9 @@ namespace CosmicShore.Environment.FlowField
             }
         }
 
-
         public void Steal(Teams team, float duration)
         {
-            Team = team;
+            OwnTeam = team;
             foreach (var modelData in crystalModels)
             {
                 StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(team), 1));
@@ -290,7 +174,7 @@ namespace CosmicShore.Environment.FlowField
         IEnumerator DecayingTheftCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            Team = Teams.None;
+            OwnTeam = Teams.None;
             foreach (var modelData in crystalModels)
             {
                 StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, modelData.defaultMaterial, 1));

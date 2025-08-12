@@ -22,25 +22,30 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(ShipCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
     [RequireComponent(typeof(R_ShipActionHandler))]
-    [RequireComponent(typeof(R_ShipImpactHandler))]
+    
+    // Deprecated - Use R_ShipImpactor instead
+    // [RequireComponent(typeof(R_ShipImpactHandler))]
+    
     [RequireComponent(typeof(R_ShipCustomization))]
+    [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class ShipStatus : MonoBehaviour, IShipStatus
     {
         public event Action<IShipStatus> OnShipInitialized;
 
+
         [SerializeField, RequireInterface(typeof(IShip))]
-        MonoBehaviour shipInstance;
+        UnityEngine.Object _shipInstance;
         public IShip Ship
         {
             get
             {
-                if (shipInstance == null)
+                if (_shipInstance == null)
                 {
                     Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
                     return null;
                 }
-                return shipInstance as IShip;
+                return _shipInstance as IShip;
             }
         }
         
@@ -53,14 +58,35 @@ namespace CosmicShore.Game
         ShipHUDContainer shipHUDContainer;
         public ShipHUDContainer ShipHUDContainer => shipHUDContainer;
 
-        public string Name { get; set; }
-        public ShipTypes ShipType { get; set; }
+        [SerializeField] protected float boostMultiplier = 4f;
+        public float BoostMultiplier
+        {
+            get => boostMultiplier;
+            set => boostMultiplier = value;
+        }
+
+        [Header("Ship Meta")]
+        [SerializeField] protected string _name;
+        public string Name => _name;
+
+        [SerializeField] protected ShipClassType _shipType;
+        public ShipClassType ShipType => _shipType;
+
+
+        [Header("Ship Components")]
+        [SerializeField] protected Skimmer _nearFieldSkimmer;
+        public Skimmer NearFieldSkimmer => _nearFieldSkimmer;
+
+        [SerializeField] protected Skimmer _farFieldSkimmer;
+        public Skimmer FarFieldSkimmer => _farFieldSkimmer;
+
+        [SerializeField] protected GameObject orientationHandle;
+        public GameObject OrientationHandle => orientationHandle;
+
         public Transform FollowTarget { get; set; }
         public Transform ShipTransform => Ship.Transform;
-        public Teams Team { get; set; }
         public IPlayer Player { get; set; }
-        public InputController IputController => Player.InputController;
-        public IInputStatus InputStatus => Player.InputController.InputStatus;
+        public IInputStatus InputStatus => Player.InputStatus;
         public Material AOEExplosionMaterial { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material ShipMaterial { get; set; }
@@ -77,16 +103,6 @@ namespace CosmicShore.Game
             {
                 actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_ShipActionHandler>();
                 return actionHandler;
-            }
-        }
-
-        R_ShipImpactHandler impactHandler;
-        public R_ShipImpactHandler ImpactHandler
-        {
-            get
-            {
-                impactHandler = impactHandler != null ? impactHandler : gameObject.GetOrAdd<R_ShipImpactHandler>();
-                return impactHandler;
             }
         }
 
@@ -188,27 +204,36 @@ namespace CosmicShore.Game
             }
         }
 
-
-        public float GetInertia { get; set; }
-        public float BoostMultiplier { get; set; }
-        public float Speed { get; set; }
-        public float ChargedBoostCharge { get; set; }
+        R_ShipElementStatsHandler _elementalStatsHandler;
+        public R_ShipElementStatsHandler ElementalStatsHandler
+        {
+            get
+            {
+                _elementalStatsHandler = _elementalStatsHandler != null ? _elementalStatsHandler : gameObject.GetOrAdd<R_ShipElementStatsHandler>();
+                return _elementalStatsHandler;
+            }
+        }
+        
+        // booleans
         public bool Boosting { get; set; }
         public bool ChargedBoostDischarging { get; set; }
         public bool Drifting { get; set; }
         public bool Turret { get; set; }
         public bool Portrait { get; set; }
         public bool SingleStickControls { get; set; }
-        public bool CommandStickControls { get; set; }
         public bool LiveProjectiles { get; set; }
-        public bool Stationary { get; set; }
+        public bool IsStationary { get; set; }
         public bool ElevatedResourceGain { get; set; }
-        public bool AutoPilotEnabled { get; set; }
         public bool AlignmentEnabled { get; set; }
         public bool Slowed { get; set; }
         public bool Overheating { get; set; }
         public bool Attached { get; set; }
         public bool GunsActive { get; set; }
+        
+        public float GetInertia { get; set; }
+        public float Speed { get; set; }
+        public float ChargedBoostCharge { get; set; }
+        
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
 

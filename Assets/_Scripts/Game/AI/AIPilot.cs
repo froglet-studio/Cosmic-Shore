@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
-using CosmicShore.Core;
 using System;
+using Obvious.Soap;
 
 namespace CosmicShore.Game.AI
 {
@@ -16,56 +16,44 @@ namespace CosmicShore.Game.AI
 
     public class AIPilot : MonoBehaviour
     {
-        public float SkillLevel;
+        [SerializeField] float skillLevel = 1;
 
-        //public float defaultThrottle = .6f;
         [SerializeField] float defaultThrottleHigh = .6f;
         [SerializeField] float defaultThrottleLow  = .6f;
 
-        //public float defaultAggressiveness = .035f;
         [SerializeField] float defaultAggressivenessHigh = .035f;
         [SerializeField] float defaultAggressivenessLow  = .035f;
 
-        //public float throttleIncrease = .001f;
         [SerializeField] float throttleIncreaseHigh = .001f;
         [SerializeField] float throttleIncreaseLow  = .001f;
 
-        //public float avoidance = 2.5f;
         [SerializeField] float avoidanceHigh = 2.5f;
         [SerializeField] float avoidanceLow = 2.5f;
 
-        //public float aggressivenessIncrease = .001f;
         [SerializeField] float aggressivenessIncreaseHigh = .001f;
         [SerializeField] float aggressivenessIncreaseLow  = .001f;
 
-        [HideInInspector] public float throttle;
-        [HideInInspector] public float aggressiveness;
+        float throttle;
+        float aggressiveness;
 
-        public float XSum;
-        public float YSum;
-        public float XDiff;
-        public float YDiff;
-
-        public float X;
-        public float Y;
-
-        public float defaultThrottle => Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, SkillLevel);
-        public float defaultAggressiveness => Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, SkillLevel);
-        float throttleIncrease => Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, SkillLevel);
-        float avoidance => Mathf.Lerp(avoidanceLow, avoidanceHigh, SkillLevel);
-        float aggressivenessIncrease => Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, SkillLevel);
+        public float defaultThrottle => Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, skillLevel);
+        public float defaultAggressiveness => Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, skillLevel);
+        float throttleIncrease => Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, skillLevel);
+        float avoidance => Mathf.Lerp(avoidanceLow, avoidanceHigh, skillLevel);
+        float aggressivenessIncrease => Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, skillLevel);
 
         float targetUpdateFrequencySeconds = 2f;
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
-        [SerializeField] bool LookingAtCrystal;
         [SerializeField] bool ram;
         [SerializeField] bool drift;
-        [HideInInspector] public bool SingleStickControls;
 
         [SerializeField] List<AIAbility> abilities;
+
+        [SerializeField]
+        ScriptableEventNoParam OnCellItemsUpdated;
 
         enum Corner 
         {
@@ -74,24 +62,22 @@ namespace CosmicShore.Game.AI
             BottomLeft,
             TopLeft,
         };
-        public bool AutoPilotEnabled { get; private set; }
 
         IShip _ship;
         IShipStatus _shipStatus => _ship.ShipStatus;
+        IInputStatus _inputStatus => _shipStatus.InputStatus;
 
-        float lastPitchTarget;
-        float lastYawTarget;
-        float lastRollTarget;
+        float _lastPitchTarget;
+        float _lastYawTarget;
+        float _lastRollTarget;
 
-        RaycastHit hit;
-        float maxDistance = 50f;
-        float maxDistanceSquared;
+        RaycastHit _hit;
+        float _maxDistance = 50f;
+        float _maxDistanceSquared;
 
-        [HideInInspector] public Vector3 CrystalPosition;
-        [HideInInspector] public Vector3 TargetPosition;
-        Vector3 distance;
-
-        [HideInInspector] public FlowFieldData flowFieldData;
+        Vector3 _targetPosition;
+        Vector3 _distance;
+        bool LookingAtCrystal;
 
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 
@@ -115,50 +101,59 @@ namespace CosmicShore.Game.AI
         }
         #endregion
 
-        
+        public bool AutoPilotEnabled { get; private set; }
 
-        public void NodeContentUpdated()
+        private void OnEnable()
+        {
+            OnCellItemsUpdated.OnRaised += UpdateCellContent;
+        }
+
+        private void OnDisable()
+        {
+            OnCellItemsUpdated.OnRaised -= UpdateCellContent;
+        }
+
+
+        void UpdateCellContent()
         {
             //Debug.Log($"NodeContentUpdated - transform.position: {transform.position}");
-            var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
+            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
 
-            if (activeNode == null)
-                activeNode = NodeControlManager.Instance.GetNearestNode(transform.position);
+            if (activeCell == null)
+                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
 
-            var nodeItems = activeNode.GetItems();
+            var cellItems = activeCell.CellItems;
             float MinDistance = Mathf.Infinity;
-            NodeItem closestItem = null;
+            CellItem closestItem = null;
 
-            foreach (var item in nodeItems.Values)
+            foreach (var item in cellItems)
             {
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
-                    (item.ItemType != ItemType.Debuff || item.Team == _ship.ShipStatus.Team)) continue;
-                var distance = Vector3.Distance(item.transform.position, transform.position);
-                if (distance < MinDistance)
+                    (item.ItemType != ItemType.Debuff || item.OwnTeam == _shipStatus.Team)) continue;
+                var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
+                if (sqDistance < (MinDistance * MinDistance))
                 {
                     closestItem = item;
-                    MinDistance = distance;
+                    MinDistance = sqDistance;
                 }
             }
 
-            CrystalPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
+            _targetPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
         }
 
-
-        public void AssignShip(IShip ship)
+        public void Initialize(bool enableAutoPilot, IShip ship)
         {
             _ship = ship;
-        }
 
-        public void Initialize(bool enableAutoPilot)
-        {
-            AutoPilotEnabled = enableAutoPilot;
-            Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
-            if (!AutoPilotEnabled)
-                return;
-            maxDistanceSquared = maxDistance * maxDistance;
+            // Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
+
+            // TODO - Even a player can have autopilot mode enabled. So we initialize anyway.
+            /*if (!AutoPilotEnabled)
+                return;*/
+
+            _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
 
@@ -168,81 +163,103 @@ namespace CosmicShore.Game.AI
                 { Corner.BottomLeft, new AvoidanceBehavior (-raycastWidth, -raycastHeight, Clockwise, Vector3.zero ) },
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
+        }
 
-            var activeNode = NodeControlManager.Instance?.GetNodeByPosition(transform.position);
-            activeNode?.RegisterForUpdates(this);
-
-            foreach
-                (var ability in abilities)
+        public void StartAIPilot()
+        {
+            AutoPilotEnabled = true;
+            
+            foreach (var ability in abilities)
             {
                 StartCoroutine(UseAbilityCoroutine(ability));
             }
-            StartCoroutine(SetTargetCoroutine());
         }
 
+        public void StopAIPilot()
+        {
+            AutoPilotEnabled = false;
+            
+            foreach (var ability in abilities)
+            {
+                StopCoroutine(UseAbilityCoroutine(ability));
+            }
+        }
 
         void Update()
         {
-            if (AutoPilotEnabled)
+            if (!AutoPilotEnabled)
+                return;
+
+            _distance = _targetPosition - transform.position;
+            Vector3 desiredDirection = _distance.normalized;
+
+            LookingAtCrystal = Vector3.Dot(desiredDirection, _shipStatus.Course) >= .9f;
+            if (LookingAtCrystal && drift && !_shipStatus.Drifting)
             {
-                _ship.ShipStatus.AutoPilotEnabled = true;
-
-                distance = TargetPosition - transform.position;
-                Vector3 desiredDirection = distance.normalized;
-
-                LookingAtCrystal = Vector3.Dot(desiredDirection, _shipStatus.Course) >= .9f;
-                if (LookingAtCrystal && drift && !_shipStatus.Drifting)
-                {
-                    _shipStatus.Course = desiredDirection;
-                    _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
-                    desiredDirection *= -1;
-                }
-                else if (LookingAtCrystal && _shipStatus.Drifting) desiredDirection *= -1;
-                else if (_shipStatus.Drifting) _ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                _shipStatus.Course = desiredDirection;
+                _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                desiredDirection *= -1;
+            }
+            else if (LookingAtCrystal && _shipStatus.Drifting) desiredDirection *= -1;
+            else if (_shipStatus.Drifting) _ship.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
-                if (distance.magnitude < float.Epsilon) // Avoid division by zero
-                    return;
+            if (_distance.magnitude < float.Epsilon) // Avoid division by zero
+                return;
 
-                Vector3 combinedLocalCrossProduct = Vector3.zero;
-                float sqrMagnitude = distance.sqrMagnitude;
-                Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
-                Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
-                combinedLocalCrossProduct += localCrossProduct;
+            Vector3 combinedLocalCrossProduct = Vector3.zero;
+            float sqrMagnitude = _distance.sqrMagnitude;
+            Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
+            Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
+            combinedLocalCrossProduct += localCrossProduct;
 
-                aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
-                float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
+            aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
+            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
-                if (SingleStickControls)
-                {
-                    X = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                    Y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                }
-                else
-                {
-                    YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                    XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                    YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+            if (_shipStatus.SingleStickControls)
+            {
+                float x = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                float y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                _inputStatus.EasedLeftJoystickPosition = new Vector2(x, y);
+            }
+            else
+            {
+                _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                _inputStatus.YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
+            }
 
-                    XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
-                }
-   
-                //aggressiveness += aggressivenessIncrease * Time.deltaTime;
-                throttle += throttleIncrease * Time.deltaTime;
+            //aggressiveness += aggressivenessIncrease * Time.deltaTime;
+            throttle += throttleIncrease * Time.deltaTime;
+        }
+        
+        IEnumerator UseAbilityCoroutine(AIAbility action) 
+        {
+            yield return new WaitForSeconds(3);
+            while (AutoPilotEnabled)
+            {
+                action.Ability.StartAction();
+                yield return new WaitForSeconds(action.Duration);
+                action.Ability.StopAction();
+                yield return new WaitForSeconds(action.Cooldown);
             }
         }
+        
+        #region Unused Methods
+
         Vector3 ShootLaser(Vector3 position)
         {
-            if (Physics.Raycast(transform.position + position, transform.forward, out hit, maxDistance))
+            if (Physics.Raycast(transform.position + position, transform.forward, out _hit, _maxDistance))
             {
-                Debug.DrawLine(transform.position + position, hit.point, Color.red);
-                return hit.point - (transform.position + position);
+                Debug.DrawLine(transform.position + position, _hit.point, Color.red);
+                return _hit.point - (transform.position + position);
             }
 
-            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * maxDistance, Color.green);
-            return transform.forward * maxDistance - (transform.position + position);
+            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * _maxDistance, Color.green);
+            return transform.forward * _maxDistance - (transform.position + position);
         }
-
+        
         float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
         {
             float rollAdjustment = 0f;
@@ -256,57 +273,59 @@ namespace CosmicShore.Game.AI
             return rollAdjustment;
         }
 
-
-        IEnumerator UseAbilityCoroutine(AIAbility action) 
-        {
-            yield return new WaitForSeconds(3);
-            while (true)
-            {
-                action.Ability.StartAction();
-                yield return new WaitForSeconds(action.Duration);
-                action.Ability.StopAction();
-                yield return new WaitForSeconds(action.Cooldown);
-            }
-        }
-
-
-        IEnumerator SetTargetCoroutine()
-        {
-            List<ShipTypes> aggressiveShips = new List<ShipTypes> { ShipTypes.Rhino, ShipTypes.Sparrow };
-
-            var rand = new System.Random();
-
-            var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);  // Assume activeNode can't change.
-            if (activeNode == null)
-                activeNode = NodeControlManager.Instance.GetNearestNode(transform.position);
-
-
-            while (true)
-            {
-                if (aggressiveShips.Contains(_ship.ShipStatus.ShipType) && (activeNode.ControllingTeam != Teams.None)) {
-                    if ((_ship.ShipStatus.Team == activeNode.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
-                    {
-                        TargetPosition = CrystalPosition;
-                    }
-                    else
-                    {
-                        TargetPosition = activeNode.GetExplosionTarget(activeNode.ControllingTeam);  // Block centroid belonging to the winning team
-                    }
-                }
-                else
-                {
-                    TargetPosition = CrystalPosition;
-                }
-                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
-            }
-        }
-
-
         float SigmoidResponse(float input)
         {
             float output = 2 * (1 / (1 + Mathf.Exp(-0.1f * input)) - 0.5f);
             return output;
         }
+        
+        
+        /*
+         
+         // TODO - This method is moved inside AIPilot. Some logics and conditions might have
+         // been temporarily removed, but check this method, for adding those logics inside the
+         // new method of AIPilot
+         IEnumerator SetTargetCoroutine()
+        {
+            // TODO - these lists if needed, should be specified separate.
+            List<ShipClassType> aggressiveShips = new List<ShipClassType>
+            {
+                ShipClassType.Rhino,
+                ShipClassType.Sparrow,
+            };
 
+            var rand = new System.Random();
+
+            // Assume activeNode can't change.
+            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
+            if (activeCell == null)
+                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
+
+            while (true)
+            {
+                if (activeCell != null &&
+                    // TODO - Commented out as aggressive
+                    // aggressiveShips.Contains(_ship.ShipStatus.ShipType) &&
+                    activeCell.ControllingTeam != Teams.None)
+                {
+                    if ((_shipStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
+                    {
+                        _targetPosition = _crystalPosition;
+                    }
+                    else
+                    {
+                        _targetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
+                    }
+                }
+                else
+                {
+                    _targetPosition = _crystalPosition;
+                }
+                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
+            }
+        }*/
+
+
+        #endregion
     }
 }

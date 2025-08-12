@@ -171,7 +171,7 @@ namespace CosmicShore
             if (SelectedGame.ElementOne.Element == Element.Time || SelectedGame.ElementTwo.Element == Element.Time )
                 shipResources.Time = 1;
             
-            Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame.ShipClass.Class, shipResources, Intensity, 1, false);
+            Arcade.Instance.LaunchTrainingGame(SelectedGame.Game.Mode, SelectedGame._SO_Ship.Class, shipResources, Intensity, 1, false);
         }
     }
 }

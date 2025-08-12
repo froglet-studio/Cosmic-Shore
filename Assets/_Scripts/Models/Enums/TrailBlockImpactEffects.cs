@@ -22,33 +22,3 @@ public enum TrailBlockImpactEffects
     FeelDanger = 17,
     Redirect = 18,
 }
-
-/*
-public enum ImpactEffects
-{
-    FillCharge = 1,
-    DrainAmmo = 2,
-    GainOneThirdMaxAmmo = 3,
-    Score = 4,
-    Boost = 5,
-    AreaOfEffectExplosion = 6,
-    ResetAggression = 7,
-    IncrementLevel = 8,
-    PlayFakeCrystalHaptics = 9,
-    ReduceSpeed = 10,
-    PlayHaptics = 11,
-
-    PlayHaptics = 0,
-    DrainHalfAmmo = 1,
-    DebuffSpeed = 2,
-    DeactivateTrailBlock = 3,
-    ActivateTrailBlock = 4,
-    OnlyBuffSpeed = 5,
-    ChangeBoost = 6,
-    Steal = 7,
-    DecrementLevel = 8,
-    Attach = 9,
-    ChangeAmmo = 10
-}
-*/
-// scan, sort, filter, reorganize as this list grows

@@ -23,14 +23,14 @@ namespace CosmicShore
             distanceTraveled = 0;
         }
 
-        void Update()
-        {
+        protected override void RestrictedUpdate()
+        { 
             if (paused) return;
             float speed = game.ActivePlayer.Ship.ShipStatus.Speed;
             distanceTraveled += speed * Time.deltaTime;
 
-            if (Display != null)
-                Display.text = ((int)(distance - distanceTraveled)).ToString();
+            string message = ((int)(distance - distanceTraveled)).ToString();
+            onUpdateTurnMonitorDisplay.Raise(message);
         }
     }
 }

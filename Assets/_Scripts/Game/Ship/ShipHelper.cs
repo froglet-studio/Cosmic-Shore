@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using CosmicShore.Core;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -103,5 +104,35 @@ namespace CosmicShore.Game
                 }
             }
         }
+
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*public static void ExecuteImpactEffect(
+            IEnumerable<IImpactEffect> effects, 
+            ImpactEffectData impactEffectData, 
+            CrystalProperties crystalProperties = default, 
+            TrailBlockProperties trailBlockProperties = null)
+        {
+            foreach (IImpactEffect effect in effects)
+            {
+                if (effect is null)
+                    continue;
+
+                switch (effect)
+                {
+                    case IBaseImpactEffect baseImpactEffect:
+                        baseImpactEffect.Execute(impactEffectData);
+                        break;
+                    case ICrystalImpactEffect crystalImpactEffect:
+                        crystalImpactEffect.Execute(impactEffectData, crystalProperties);
+                        break;
+                    case ITrailBlockImpactEffect trailBlockImpactEffect:
+                        trailBlockImpactEffect.Execute(impactEffectData, trailBlockProperties);
+                        break;
+                    default:
+                        Debug.LogWarning($"Unknown impact effect type: {effect.GetType()}");
+                        break;
+                }
+            }
+        }*/
     }
 }

@@ -34,7 +34,7 @@ namespace CosmicShore.App.UI.Views
         // Current Loadout Settings
         int activeIntensity = 0;
         int activePlayerCount = 0;
-        ShipTypes activeShipType = 0;
+        ShipClassType activeShipType = 0;
         GameModes activeGameMode = 0;
 
         void Start()
@@ -66,7 +66,7 @@ namespace CosmicShore.App.UI.Views
 
             // Default load out for building a new one
             if (!loadout.Initialized)
-                loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = GameModes.BlockBandit, ShipType = ShipTypes.Manta };
+                loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = GameModes.BlockBandit, ShipType = ShipClassType.Manta };
 
             // Load values from loadout
             activeIntensity = loadout.Intensity;

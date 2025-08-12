@@ -13,7 +13,8 @@ GameObject:
   - component: {fileID: 6588436222817790464}
   - component: {fileID: 6588436222817790495}
   - component: {fileID: 6588436222817790494}
-  - component: {fileID: 6494750148975969259}
+  - component: {fileID: 1123722253083159254}
+  - component: {fileID: 3935840462684288695}
   m_Layer: 9
   m_Name: Crystal
   m_TagString: Untagged
@@ -78,7 +79,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Team: -1
+  OwnTeam: -1
   ItemType: 1
   crystalProperties:
     crystal: {fileID: 6588436222817790495}
@@ -97,14 +98,9 @@ MonoBehaviour:
     explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 650830ed7524d074991cd928a5356f37, type: 2}
     spaceCrystalAnimator: {fileID: 0}
-  shipImpactEffects: 1
-  RespawnOnImpact: 1
-  ImpactHapticType: 4
+  allowVesselImpactEffect: 1
+  allowRespawnOnImpact: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  crystalImpactEffects: 
-  AOEPrefab: {fileID: 0}
-  maxExplosionScale: 0
-  AOEExplosionMaterial: {fileID: 0}
 --- !u!82 &6588436222817790494
 AudioSource:
   m_ObjectHideFlags: 0
@@ -203,33 +199,32 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!54 &6494750148975969259
-Rigidbody:
+--- !u!114 &1123722253083159254
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6588436222817790470}
-  serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 126
-  m_CollisionDetection: 0
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f916858793fd493e8479ee9641bfef57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  omniCrystalShipEffectsSO: []
+--- !u!114 &3935840462684288695
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6588436222817790470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 1123722253083159254}
 --- !u!1001 &2169973136896212108
 PrefabInstance:
   m_ObjectHideFlags: 0

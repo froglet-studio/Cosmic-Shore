@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.App.Systems;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -236,9 +237,9 @@ namespace CosmicShore.App.UI
             }
 
             if (ScreenIndex == HOME)
-                GameManager.UnPauseGame();
+                PauseSystem.TogglePauseGame(false);
             else
-                GameManager.PauseGame();
+                PauseSystem.TogglePauseGame(true);
 
             Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
             panelLocation = newLocation;

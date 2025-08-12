@@ -10,16 +10,33 @@ namespace CosmicShore.Game.Projectiles
         Vector3 containerPosition;
         Quaternion containerRotation;
 
-        public override void Detonate(IShip ship)
+        public override void Initialize(InitializeStruct initStruct)
         {
-            base.Detonate(ship);
-            Material = new Material(Ship.ShipStatus.AOEConicExplosionMaterial);
-            coneContainer = new GameObject("ExplosionCone");
-            coneContainer.transform.SetParent(container.transform, false);
-            coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);
-            transform.SetParent(coneContainer.transform, false);
+            AnonymousExplosion = initStruct.AnnonymousExplosion;
+            Ship = initStruct.Ship;
+            if (Ship == null)
+            {
+                Debug.LogError("Ship is not initialized in AOEExplosion!");
+                return;
+            }
+
+            Team = initStruct.OwnTeam;
+            if (Team == Teams.Unassigned)
+                Team = Ship.ShipStatus.Team;
+
+            MaxScale = initStruct.MaxScale;
             MaxScaleVector = new Vector3(MaxScale, MaxScale, height);
             speed = height / (ExplosionDuration * 4);
+
+
+            Material = new Material(Ship.ShipStatus.AOEConicExplosionMaterial);
+            if (!Material)
+                Material = new Material(Ship.ShipStatus.AOEExplosionMaterial);
+            
+            if (!coneContainer)
+                coneContainer = new GameObject("AOEContainer");
+            coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);
+            transform.SetParent(coneContainer.transform, false);
         }
 
         protected override IEnumerator ExplodeCoroutine()

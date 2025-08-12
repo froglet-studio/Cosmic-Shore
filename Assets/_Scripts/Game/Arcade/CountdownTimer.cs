@@ -8,48 +8,57 @@ namespace CosmicShore.Game.Arcade
 {
     public class CountdownTimer : MonoBehaviour
     {
-        [SerializeField] Image CountdownDisplay;
-        [SerializeField] Sprite Countdown3;
-        [SerializeField] Sprite Countdown2;
-        [SerializeField] Sprite Countdown1;
-        [SerializeField] Sprite Countdown0;
-        [SerializeField] AudioClip CountdownBeep;
-        [SerializeField] float CountdownGrowScale = 1.5f;
+        [SerializeField] Image   countdownDisplay;
+        [SerializeField] Sprite  countdown3;
+        [SerializeField] Sprite  countdown2;
+        [SerializeField] Sprite  countdown1;
+        [SerializeField] Sprite  countdown0;
+        [SerializeField] AudioClip countdownBeep;
+        [SerializeField] float     countdownDuration  = 1f;
+        [SerializeField] float     countdownGrowScale = 1.5f;
 
-        IEnumerator CountdownDigitCoroutine(Sprite digit)
+        Sprite[] _sprites;
+
+        void Awake()
         {
-            var elapsedTime = 0f;
-            CountdownDisplay.transform.localScale = Vector3.one;
-            CountdownDisplay.sprite = digit;
+            // cache into an array so we can loop
+            _sprites = new[] { countdown3, countdown2, countdown1, countdown0 };
+        }
 
-            AudioSystem.Instance.PlaySFXClip(CountdownBeep);
+        public void BeginCountdown(Action onComplete)
+        {
+            // stop any running countdown first
+            StopAllCoroutines();
+            StartCoroutine(CountdownCoroutine(onComplete));
+        }
 
-            while (elapsedTime < 1)
+        IEnumerator CountdownCoroutine(Action onComplete)
+        {
+            countdownDisplay.gameObject.SetActive(true);
+
+            foreach (var spr in _sprites)
             {
-                elapsedTime += Time.deltaTime;
-                CountdownDisplay.transform.localScale = Vector3.one + Vector3.one * ((CountdownGrowScale - 1) * elapsedTime);
-                yield return null;
+                countdownDisplay.sprite = spr;
+                countdownDisplay.transform.localScale = Vector3.one;
+                AudioSystem.Instance.PlaySFXClip(countdownBeep);
+
+                float elapsed = 0f;
+                while (elapsed < countdownDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    // Lerp scale from 1 → countdownGrowScale over the duration
+                    float t = Mathf.Clamp01(elapsed / countdownDuration);
+                    countdownDisplay.transform.localScale = Vector3.Lerp(
+                        Vector3.one,
+                        Vector3.one * countdownGrowScale,
+                        t
+                    );
+                    yield return null;
+                }
             }
-        }
 
-        public void BeginCountdown(Action countZero)
-        {
-            StartCoroutine(CountdownCoroutine(countZero));
-        }
-
-        IEnumerator CountdownCoroutine(Action countZero)
-        {
-            CountdownDisplay.gameObject.SetActive(true);
-
-            yield return StartCoroutine(CountdownDigitCoroutine(Countdown3));
-            yield return StartCoroutine(CountdownDigitCoroutine(Countdown2));
-            yield return StartCoroutine(CountdownDigitCoroutine(Countdown1));
-            yield return StartCoroutine(CountdownDigitCoroutine(Countdown0));
-
-            CountdownDisplay.transform.localScale = Vector3.one;
-            CountdownDisplay.gameObject.SetActive(false);
-
-            countZero.Invoke();
+            countdownDisplay.gameObject.SetActive(false);
+            onComplete?.Invoke();
         }
     }
 }

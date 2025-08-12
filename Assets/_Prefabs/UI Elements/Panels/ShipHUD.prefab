@@ -210,6 +210,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1720411786157758737}
   - component: {fileID: 1720411786157758736}
+  - component: {fileID: 7363510702798268052}
+  - component: {fileID: 6435682087160953486}
   m_Layer: 5
   m_Name: ShipHUD
   m_TagString: Untagged
@@ -258,36 +260,98 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa08588b33df93c4fb866d88d19a5a42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ScoreDisplay: {fileID: 1720411786844436948}
-  LeftNumberDisplay: {fileID: 1356472169748578620}
-  RightNumberDisplay: {fileID: 7162321741096836160}
-  RoundTimeDisplay: {fileID: 1720411787164405322}
-  CountdownDisplay: {fileID: 1720411787223648735}
-  ReadyButton: {fileID: 330862409471186351}
-  CountdownTimer: {fileID: 6828733908891021053}
-  pip: {fileID: 5023401565743585470}
-  silhouette: {fileID: 1247642187047997787}
-  trailDisplay: {fileID: 2224701857737343022}
-  buttonPanel: {fileID: 981011049214763772}
-  button1: {fileID: 2138804115987801885}
-  button2: {fileID: 287724296561927322}
-  button3: {fileID: 263015102588795879}
-  OnPipInitializedEventChannel: {fileID: 11400000, guid: f6bc516bf0c99be4285e51e90caab8f1,
-    type: 2}
+  view: {fileID: 0}
+  onPipInitializedEventChannel: {fileID: 0}
   onMoundDroneSpawned: {fileID: 11400000, guid: 7792e064d1fa59c4897fa2797e312a06,
     type: 2}
   onQueenDroneSpawned: {fileID: 11400000, guid: 062ba62fb83d43e459bd3a6dc7e23ac9,
     type: 2}
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
     type: 2}
-  OnButton1Pressed: {fileID: 11400000, guid: ea281f4848964144d81ee0a8e540ad2f, type: 2}
-  OnButton1Released: {fileID: 11400000, guid: badbc8ef2643e3d47b793be40335bdbc, type: 2}
-  OnButton2Pressed: {fileID: 11400000, guid: 6c079a6516dcdf249a1bd370ddc2154a, type: 2}
-  OnButton2Released: {fileID: 11400000, guid: 732537c5fb94779499e2743f12f2d6ca, type: 2}
-  OnButton3Pressed: {fileID: 11400000, guid: 9118ec0882fa02648b052c4e04259fbd, type: 2}
-  OnButton3Released: {fileID: 11400000, guid: 8d28d7878c107ce449c50b14b57220ab, type: 2}
-  OnSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
-    type: 2}
+  onButton1Pressed: {fileID: 0}
+  onButton1Released: {fileID: 0}
+  onButton2Pressed: {fileID: 0}
+  onButton2Released: {fileID: 0}
+  onButton3Pressed: {fileID: 0}
+  onButton3Released: {fileID: 0}
+  onSilhouetteInitialized: {fileID: 0}
+--- !u!114 &7363510702798268052
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1720411786157758742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 726155bbf4139474dbf25b978b006c3a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  miniGameType: 0
+  scoreDisplay: {fileID: 0}
+  leftNumberDisplay: {fileID: 0}
+  rightNumberDisplay: {fileID: 0}
+  roundTimeDisplay: {fileID: 0}
+  countdownDisplay: {fileID: 0}
+  readyButton: {fileID: 0}
+  countdownTimer: {fileID: 0}
+  pip: {fileID: 0}
+  silhouette: {fileID: 0}
+  trailDisplay: {fileID: 0}
+  buttonPanel: {fileID: 0}
+  button1: {fileID: 0}
+  button2: {fileID: 0}
+  button3: {fileID: 0}
+  OnButton1Pressed:
+    m_PersistentCalls:
+      m_Calls: []
+  OnButton2Pressed:
+    m_PersistentCalls:
+      m_Calls: []
+  OnButton3Pressed:
+    m_PersistentCalls:
+      m_Calls: []
+  OnButton1Released:
+    m_PersistentCalls:
+      m_Calls: []
+  OnButton2Released:
+    m_PersistentCalls:
+      m_Calls: []
+  OnButton3Released:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &6435682087160953486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1720411786157758742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 349e9e271cc1e4342b545fd2de9b8080, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _binding: 1
+  _disableAfterSubscribing: 0
+  _eventResponses:
+  - Delay: 0
+    _scriptableEvent: {fileID: 11400000, guid: b45e336470396ed4fb50f1b0a287804d, type: 2}
+    _response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1720411786157758736}
+          m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+          m_MethodName: OnPipInitialized
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &1720411786252055488
 GameObject:
   m_ObjectHideFlags: 0
@@ -2956,30 +3020,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 9040794087559793018}
   m_SourcePrefab: {fileID: 100100000, guid: fe865d309fab2f44cb225e312d612ddb, type: 3}
---- !u!1 &263015102588795879 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1460938349587056028, guid: fe865d309fab2f44cb225e312d612ddb,
-    type: 3}
-  m_PrefabInstance: {fileID: 1720411787775442555}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &287724296561927322 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1449616878181636833, guid: fe865d309fab2f44cb225e312d612ddb,
-    type: 3}
-  m_PrefabInstance: {fileID: 1720411787775442555}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &981011049214763772 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
-    type: 3}
-  m_PrefabInstance: {fileID: 1720411787775442555}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74fb5430b1bf6c44f9ce490b63ea062d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &2138804115987801885 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 742722737849981286, guid: fe865d309fab2f44cb225e312d612ddb,
@@ -3163,12 +3203,6 @@ PrefabInstance:
 --- !u!224 &5023401565743585469 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6678124231473903038, guid: d370a19728e4ce442882786116ae5f18,
-    type: 3}
-  m_PrefabInstance: {fileID: 1809254633410374915}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &5023401565743585470 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6678124231473903037, guid: d370a19728e4ce442882786116ae5f18,
     type: 3}
   m_PrefabInstance: {fileID: 1809254633410374915}
   m_PrefabAsset: {fileID: 0}
@@ -4736,18 +4770,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 24075243d2d9ac743a53ed64296a3d5b, type: 3}
---- !u!114 &6828733908891021053 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1536147401936628604, guid: 24075243d2d9ac743a53ed64296a3d5b,
-    type: 3}
-  m_PrefabInstance: {fileID: 5446528305527211393}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6dc248f311f840449b1976241e718871, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &8405952327405566658 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4553708469243297603, guid: 24075243d2d9ac743a53ed64296a3d5b,

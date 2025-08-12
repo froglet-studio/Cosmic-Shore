@@ -32,7 +32,7 @@ namespace CosmicShore.Game.Projectiles
                         break;
                     case TrailBlockImpactEffects.Explode:
                         Debug.Log("EndExplode");
-                        Detonate();
+                        // Detonate();
                         break;
                 }
             }
@@ -65,14 +65,14 @@ namespace CosmicShore.Game.Projectiles
                         break;
                     case TrailBlockImpactEffects.Explode:
                         Debug.Log("TrailExplode");
-                        Detonate();
+                        // Detonate();
                         break;
 
                 }
             }
         }
 
-        public void Detonate()
+        /*public void Detonate()
         {
             foreach (var AOE in AOEPrefabs)
             {
@@ -83,11 +83,23 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
+                AOEExplosion.Initialize(new AOEExplosion.InitializeStruct
+                {
+                    OwnTeam = OwnTeam,
+                    Ship = ShipStatus.Ship,
+                    MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge),
+                    OverrideMaterial = ShipStatus.Ship.ShipStatus.AOEExplosionMaterial,
+                    AnnonymousExplosion = false
+                });
                 AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
-                AOEExplosion.Detonate(ShipStatus.Ship);
+                AOEExplosion.Detonate();
             }
 
+            _poolManager.ReturnToPool(gameObject, gameObject.tag);
+        }*/
+
+        public void ExecuteExplodeEffect()
+        {
             _poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
     }

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd4e6f3597f7439ba7333b35a3a9e164, type: 3}
+  m_Name: SparrowCameraSettingsSO
+  m_EditorClassIdentifier: 
+  followOffset: {x: 0, y: 10, z: -50}
+  followSmoothTime: 0.2
+  rotationSmoothTime: 5
+  disableRotationLerp: 1
+  useFixedUpdate: 0
+  nearClipPlane: 0.3
+  farClipPlane: 12000
+  controlOverrides: 3
+  closeCamDistance: 40
+  farCamDistance: 50
+  followTargetPosition: {x: 0, y: 0, z: 0}
+  fixedOffsetPosition: {x: 0, y: 0, z: 0}
+  orthographicSize: 5

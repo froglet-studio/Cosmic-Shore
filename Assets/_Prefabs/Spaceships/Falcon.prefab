@@ -233,6 +233,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gunContainer: {fileID: 9219397688819371261}
+  gunTransforms: []
   projectileContainer: {fileID: 4311740880586632102}
   ammoIndex: 0
   ammoCost: 0
@@ -335,6 +336,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _firePeriod: 0.2
+  _poolManager: {fileID: 0}
 --- !u!114 &4048476215688099286
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -348,7 +350,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   radius: 25
-  ship: {fileID: 874579555101021527}
+  shipInstance: {fileID: 0}
   gunFocus: {fileID: 6765861661139230790}
 --- !u!1 &718813643571874445
 GameObject:
@@ -1998,6 +2000,10 @@ GameObject:
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
+  - component: {fileID: 9172589084772723142}
+  - component: {fileID: 3885827911418556293}
+  - component: {fileID: 7779107667008759293}
+  - component: {fileID: 4248184753307651523}
   m_Layer: 0
   m_Name: Falcon
   m_TagString: Player_Ship
@@ -2046,7 +2052,7 @@ MonoBehaviour:
     speedPenalty: 0
     hapticType: 0
     trailBlock: {fileID: 0}
-  Name: Falcon
+  _name: Falcon
   _shipType: 9
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
@@ -2105,7 +2111,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipInstance: {fileID: 874579555101021527}
+  _shipInstance: {fileID: 0}
+  _shipHUDController: {fileID: 0}
+  shipHUDContainer: {fileID: 0}
+  boostMultiplier: 4
+  _name: 
+  _shipType: 0
+  _nearFieldSkimmer: {fileID: 0}
+  _farFieldSkimmer: {fileID: 0}
+  orientationHandle: {fileID: 0}
 --- !u!114 &8900747579718772804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2175,7 +2189,6 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 963a0414633ad904183b2fe25c5731fd,
     type: 3}
   skimmer: {fileID: 874579554510349383}
-  shipStatusInstance: {fileID: 6441696348568773771}
   initialWavelength: 2
   minWavelength: 2
   defaultWaitTime: 1
@@ -2317,8 +2330,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pipCamera: {fileID: 1507913478050007905}
   mirrored: 0
-  OnPipInitializedEventChannel: {fileID: 11400000, guid: f6bc516bf0c99be4285e51e90caab8f1,
-    type: 2}
+  _EventPipEventData: {fileID: 11400000, guid: b45e336470396ed4fb50f1b0a287804d, type: 2}
 --- !u!114 &2731003324702047408
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2369,6 +2381,66 @@ MonoBehaviour:
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
+--- !u!114 &9172589084772723142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _inputEventShipActions: []
+  _resourceEventClassActions: []
+  OnButton1Pressed: {fileID: 0}
+  OnButton1Released: {fileID: 0}
+  OnButton2Pressed: {fileID: 0}
+  OnButton2Released: {fileID: 0}
+  OnButton3Pressed: {fileID: 0}
+  OnButton3Released: {fileID: 0}
+--- !u!114 &3885827911418556293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7c950cbe6934cc49b4940a883bc0c44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _crystalImpactEffects: []
+  _trailBlockImpactEffects: []
+--- !u!114 &7779107667008759293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54b4f9e9438fc6c49adc4ff81dc84db8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _shipGeometries: []
+--- !u!114 &4248184753307651523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13cf865c37b39d048a7f43eec35a11e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ElementStats: []
 --- !u!1 &6668583968434973599
 GameObject:
   m_ObjectHideFlags: 0
@@ -2695,11 +2767,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pools:
+  _configDatas:
   - prefab: {fileID: 7877928849292311340, guid: dfaf0d694cb864748887b79fb4435061,
       type: 3}
     size: 1000
-  shipInstance: {fileID: 0}
 --- !u!1 &7418954139309595168
 GameObject:
   m_ObjectHideFlags: 0

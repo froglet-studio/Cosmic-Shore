@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Game;
 using UnityEngine;
 
 namespace CosmicShore
@@ -41,16 +42,16 @@ namespace CosmicShore
 
         private int spawnedItemCount = 0;
 
-        protected override void Start()
+        public override void Initialize(Cell cell)
         {
-            base.Start();
+            base.Initialize(cell);
             if (isCrystaltropic)
             {
-                goal = node.GetCrystal().transform.position;
+                goal = cell.GetCrystal().transform.position;
             }
             //activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
             SeedBranches(); // add more truncks
-            transform.rotation = Quaternion.LookRotation(node.GetCrystal().transform.position);
+            transform.rotation = Quaternion.LookRotation(cell.GetCrystal().transform.position);
         }
 
         void SeedBranches()
@@ -88,7 +89,7 @@ namespace CosmicShore
                         {
                             var distance = newHealthblock.transform.position - crystal.transform.position;
                             var newLifeform = Instantiate(SecondarySpawn, crystal.transform.position + (2 * distance), Quaternion.LookRotation(-distance), this.transform);
-                            newLifeform.node = node;
+                            newLifeform.cell = cell;
                             newLifeform.Team = Team;
                             newLifeform.goal = newHealthblock.transform.position;
                             hasPlantedSecondary = true;
@@ -127,7 +128,7 @@ namespace CosmicShore
 
         public override void Plant()
         {
-            if (plantAroundCrystal) transform.position = node.GetCrystal().transform.position + (plantRadius * Random.onUnitSphere);
+            if (plantAroundCrystal) transform.position = cell.GetCrystal().transform.position + (plantRadius * Random.onUnitSphere);
         }
 
         void ScaleAndPositionBranch(ref Branch newBranch, Branch branch)

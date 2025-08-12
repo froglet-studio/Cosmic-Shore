@@ -5,7 +5,7 @@ using CosmicShore.Core;
 
 namespace CosmicShore.Editor
 {
-    [CustomEditor(typeof(Ship))]
+    /*[CustomEditor(typeof(Ship))]
     public class ShipEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
@@ -34,5 +34,5 @@ namespace CosmicShore.Editor
             }
             serializedObject.ApplyModifiedProperties();
         }
-    }
+    }*/
 }

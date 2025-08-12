@@ -1,4 +1,3 @@
-using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -15,7 +14,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int initialSegments = 100;
         [SerializeField] int intensitySegments = 50;
 
-        public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
+        public static new ShipClassType PlayerShipType = ShipClassType.Rhino;
 
         protected override void Start()
         {

@@ -1,9 +1,7 @@
-using CosmicShore.Environment.FlowField;
-using CosmicShore.Core;
-using CosmicShore.Utility.ClassExtensions;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
-namespace CosmicShore.Game.Projectiles
+namespace CosmicShore.Game
 {
     public class FakeCrystal : Crystal
     {
@@ -14,34 +12,22 @@ namespace CosmicShore.Game.Projectiles
         protected override void Start()
         {
             base.Start();
-            if (isplayer) GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
+            if (isplayer) 
+                GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
         }
 
-        protected override void Collide(Collider other)
+        public override void ExecuteCommonVesselImpact(IShip ship)
         {
-            if (!other.gameObject.IsLayer("Ships") && !other.gameObject.IsLayer("Projectiles"))
-                return;
-
-            var shipStatus = other.gameObject.IsLayer("Ships") ? other.GetComponent<IShipStatus>() : other.GetComponent<Projectile>().ShipStatus;
-        
-            if (shipStatus == null)
-            {
-                Debug.LogError("Ship Status cannot be null!");
-                return;
-            }
-
             // TODO: use a different material if the fake crystal is on your team
-            if (shipStatus.Team == Team)
+            if (ship.ShipStatus.Team == OwnTeam)
                 return;
 
-            PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
-
-            Explode(shipStatus.Ship);
-
+            // TODO - Handled from R_CrystalImpactor.cs
+            // PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
+            
+            Explode(ship);
             PlayExplosionAudio();
-
-            RemoveSelfFromNode();
-
+            cell.TryRemoveItem(this);
             Destroy(gameObject);
         }
     }

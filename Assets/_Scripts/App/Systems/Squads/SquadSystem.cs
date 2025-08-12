@@ -74,7 +74,7 @@ namespace CosmicShore.App.Systems.Squads
             }
         }
 
-        public static void SetSquadLeader(ShipTypes shipClass, Element element)
+        public static void SetSquadLeader(ShipClassType shipClass, Element element)
         {
             Squad.SquadLeaderElement = element;
             Squad.SquadLeaderClass = shipClass;
@@ -86,7 +86,7 @@ namespace CosmicShore.App.Systems.Squads
             Squad.SquadLeaderClass = captain.Ship.Class;
         }
 
-        public static void SetRogueOne(ShipTypes shipClass, Element element)
+        public static void SetRogueOne(ShipClassType shipClass, Element element)
         {
             Squad.RogueOneElement = element;
             Squad.RogueOneClass = shipClass;
@@ -98,7 +98,7 @@ namespace CosmicShore.App.Systems.Squads
             Squad.RogueOneClass = captain.Ship.Class;
         }
 
-        public static void SetRogueTwo(ShipTypes shipClass, Element element)
+        public static void SetRogueTwo(ShipClassType shipClass, Element element)
         {
             Squad.RogueTwoElement = element;
             Squad.RogueTwoClass = shipClass;

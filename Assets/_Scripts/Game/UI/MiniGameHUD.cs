@@ -1,6 +1,5 @@
-using CosmicShore.Game.Arcade;
+using CosmicShore.SOAP;
 using CosmicShore.Utilities;
-using System;
 using UnityEngine;
 
 namespace CosmicShore.Game.UI
@@ -14,7 +13,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] private MiniGameHUDView view;
 
         [Header("Event Channels")]
-        [SerializeField] private PipEventChannelSO onPipInitializedEventChannel;
+
         [SerializeField] private IntEventChannelSO onMoundDroneSpawned;
         [SerializeField] private IntEventChannelSO onQueenDroneSpawned;
         [SerializeField] private BoolEventChannelSO onBottomEdgeButtonsEnabled;
@@ -25,7 +24,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] private InputEventsEventChannelSO onButton3Pressed;
         [SerializeField] private InputEventsEventChannelSO onButton3Released;
         [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
-
+        
         private void Reset()
         {
             // auto-assign the view if omitted
@@ -35,7 +34,6 @@ namespace CosmicShore.Game.UI
         private void OnEnable()
         {
             // SO ? Controller
-            onPipInitializedEventChannel.OnEventRaised += OnPipInitialized;
             onMoundDroneSpawned.OnEventRaised += OnMoundDroneSpawned;
             onQueenDroneSpawned.OnEventRaised += OnQueenDroneSpawned;
             onBottomEdgeButtonsEnabled.OnEventRaised += OnBottomEdgeButtonsEnabled;
@@ -47,7 +45,6 @@ namespace CosmicShore.Game.UI
 
         private void OnDisable()
         {
-            onPipInitializedEventChannel.OnEventRaised -= OnPipInitialized;
             onMoundDroneSpawned.OnEventRaised -= OnMoundDroneSpawned;
             onQueenDroneSpawned.OnEventRaised -= OnQueenDroneSpawned;
             onBottomEdgeButtonsEnabled.OnEventRaised -= OnBottomEdgeButtonsEnabled;
@@ -87,9 +84,9 @@ namespace CosmicShore.Game.UI
             }
         }
 
-        // — SO event handlers call into the view —
+        // ï¿½ SO event handlers call into the view ï¿½
 
-        private void OnPipInitialized(PipEventData data)
+        public void OnPipInitialized(PipData data)
         {
             view.Pip.SetActive(data.IsActive);
             view.Pip.GetComponent<PipUI>().SetMirrored(data.IsMirrored);
@@ -131,5 +128,9 @@ namespace CosmicShore.Game.UI
         // Public methods you may call externally:
         public void Show() => view.gameObject.SetActive(true);
         public void Hide() => view.gameObject.SetActive(false);
+
+        public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
+        public void UpdateTurnMonitorDisplay(string message) => view.RoundTimeDisplay.text = message;
+        
     }
 }

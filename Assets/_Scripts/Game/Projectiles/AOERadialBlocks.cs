@@ -35,16 +35,17 @@ namespace CosmicShore.Game.Projectiles
         Vector3 rayDirection;
         protected List<Trail> trails = new List<Trail>();
 
-        public override void Detonate(IShip ship)
+        // TODO - Check this out, to divide it to Initialize and Detonate methods
+        /*public override void InitializeAndDetonate(IShip ship)
         {
-            base.Detonate(ship);
+            base.InitializeAndDetonate(ship);
             blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team)
                 : _themeManagerData.GetTeamBlockMaterial(Ship.ShipStatus.Team);
 
             baseBlockScale.z *= depthScale.Value;
             maxRadius *= depthScale.Value;
             BindElementalFloats(Ship);
-        }
+        }*/
 
         protected override IEnumerator ExplodeCoroutine()
         {

@@ -1,5 +1,4 @@
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,28 +17,31 @@ namespace CosmicShore.Game.Animation
         protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
 
-        protected InputController inputController;
-        protected IInputStatus InputStatus;
-        protected IShipStatus ShipStatus;
+        protected IInputStatus _inputStatus;
+        protected IShipStatus _shipStatus;
+
+
+        bool _isInitialized;
 
         protected virtual void Update()
         {
-            if (inputController == null) // the line above makes this run the moment it has the handle
+            if (!_isInitialized)
                 return;
-            
-            if (InputStatus.Idle) Idle();
-            else if (ShipStatus.SingleStickControls) PerformShipPuppetry(InputStatus.EasedLeftJoystickPosition.y, InputStatus.EasedLeftJoystickPosition.x, 0, 0);
-            else PerformShipPuppetry(InputStatus.YSum, InputStatus.XSum, InputStatus.YDiff, InputStatus.XDiff);
+
+            if (_inputStatus.Idle) Idle();
+            else if (_shipStatus.SingleStickControls) PerformShipPuppetry(_inputStatus.EasedLeftJoystickPosition.y, _inputStatus.EasedLeftJoystickPosition.x, 0, 0);
+            else PerformShipPuppetry(_inputStatus.YSum, _inputStatus.XSum, _inputStatus.YDiff, _inputStatus.XDiff);
         }
 
         public virtual void Initialize(IShipStatus shipStatus)
         {
-            ShipStatus = shipStatus;
-            inputController = ShipStatus.InputController;
-            InputStatus = inputController.InputStatus;
-            ShipStatus.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
+            _shipStatus = shipStatus;
+            _inputStatus = shipStatus.InputStatus;
+            _shipStatus.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
 
             AssignTransforms();
+
+            _isInitialized = true;
         }
         protected abstract void AssignTransforms();
 

@@ -1,127 +1,91 @@
-using Unity.Cinemachine;
-using CosmicShore.Core;
-using CosmicShore.Utility;
-using System.Collections;
-using UnityEngine;
 using CosmicShore;
+using CosmicShore.Core;
+using CosmicShore.Game;
+using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utilities;
+using CosmicShore.Utility.ClassExtensions;
+using Obvious.Soap;
+using Unity.Cinemachine;
+using UnityEngine;
+using UnityEngine.Serialization;
 
-public class CameraManager : SingletonPersistent<CameraManager>
+
+public class CameraManager : Singleton<CameraManager>
 {
-    [SerializeField]
-    ThemeManagerDataContainerSO _themeManagerData;
+    [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+    [SerializeField] private ScriptableEventNoParam _onReturnToMainMenu;
+    [SerializeField] private ScriptableEventNoParam _onPlayGame;
+    [SerializeField] private ScriptableEventNoParam _onGameOver;
 
-    [SerializeField] CinemachineCamera mainMenuCamera;
-    [SerializeField] CinemachineVirtualCameraBase playerCamera;
-    [SerializeField] CinemachineVirtualCameraBase deathCamera;
-    [SerializeField] CinemachineVirtualCameraBase endCamera;
+    private ICameraController _playerCamera;
+    private ICameraController _deathCamera;
+    private ICameraController _activeController;
+    
+    [SerializeField] private CustomCameraController endCamera; 
+    [SerializeField] private CinemachineCamera mainMenuCamera;
+    [SerializeField] private Transform endCameraFollowTarget;
+    [SerializeField] private Transform endCameraLookAtTarget;
+    [SerializeField] private float startTransitionDistance = 40f;
+    
+    private Transform _playerFollowTarget;
+    private const int ActivePriority = 10;
+    private const bool FollowOverride = false;
 
-    [SerializeField] Transform endCameraFollowTarget;
-    [SerializeField] Transform endCameraLookAtTarget;
+    private Camera _vCam;
+    private IShipStatus _shipStatus;
 
-    Transform playerFollowTarget;
-    readonly int activePriority = 10;
-    readonly int inactivePriority = 1;
-
-    // Runtime-only properties (not serialized)
-    private Vector3 originalFollowOffset;
-    private Vector3 runtimeFollowOffset;
-    private bool hasOriginalOffset = false;
-
-    // Drift stuff
-    bool zoomingOut;
-
-    public bool FollowOverride = false;
-    public bool FixedFollow = false;
-    public bool isOrthographic = false;
-
-    public float CloseCamDistance;
-    public float FarCamDistance;
-
-    CinemachineCamera vCam;
-    CinemachineFollow transposer;
-
-    Coroutine zoomOutCoroutine;
-    Coroutine returnToNeutralCoroutine;
-    Coroutine lerper;
-
+    public override void Awake()
+    {
+        base.Awake();
+        _playerCamera = GetOrFindCameraController("CM PlayerCam");
+        _deathCamera = GetOrFindCameraController("CM DeathCam");
+        endCamera = endCamera ?? GetOrFindCameraController("CM EndCam") as CustomCameraController;
+    }
+    
     private void OnEnable()
     {
-        GameManager.OnPlayGame += SetupGamePlayCameras;
-        GameManager.OnGameOver += SetEndCameraActive;
+        _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
+        _onPlayGame.OnRaised += SetupGamePlayCameras;
+        _onGameOver.OnRaised += SetEndCameraActive;
     }
 
     void OnDisable()
     {
-        GameManager.OnPlayGame -= SetupGamePlayCameras;
-        GameManager.OnGameOver -= SetEndCameraActive;
-
-        // Restore original offset when disabled
-        RestoreOriginalOffset();
+        _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
+        _onPlayGame.OnRaised -= SetupGamePlayCameras;
+        _onGameOver.OnRaised -= SetEndCameraActive;
     }
 
     void Start()
     {
-        vCam = playerCamera.gameObject.GetComponent<CinemachineCamera>();
-        OnMainMenu();
+        _vCam = (_playerCamera as CustomCameraController)?.Camera;
+        OnEnteredMainMenu();
     }
 
-    void LateUpdate()
+    // TODO - Remove this later, not needed
+    public void Initialize(IShipStatus shipStatus) =>  this._shipStatus = shipStatus;
+    
+    private ICameraController GetOrFindCameraController(string name)
     {
-        // Apply runtime offset without modifying the serialized property
-        if (transposer != null && Application.isPlaying && hasOriginalOffset)
+        Transform t = transform.Find(name);
+        if (t)
         {
-            ApplyRuntimeOffset();
-        }
-    }
-
-    private void ApplyRuntimeOffset()
-    {
-        // Use reflection to set the offset without marking scene dirty
-        var field = typeof(CinemachineFollow).GetField("m_FollowOffset",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (field != null)
-        {
-            field.SetValue(transposer, runtimeFollowOffset);
-        }
-    }
-
-    private void RestoreOriginalOffset()
-    {
-        if (transposer != null && hasOriginalOffset)
-        {
-            var field = typeof(CinemachineFollow).GetField("m_FollowOffset",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (field != null)
+            var ctrl = t.GetComponent<ICameraController>();
+            if (ctrl == null)
             {
-                field.SetValue(transposer, originalFollowOffset);
+                ctrl = t.gameObject.AddComponent<CustomCameraController>();
             }
+            return ctrl;
         }
+        Debug.LogWarning($"[CameraManager] Could not find camera controller: {name}");
+        return null;
     }
 
-    private void SetRuntimeFollowOffset(Vector3 offset)
-    {
-        runtimeFollowOffset = offset;
-    }
+    public Transform GetCloseCamera() => (_playerCamera as CustomCameraController)?.transform;
 
-    private void InitializeRuntimeOffset()
-    {
-        if (transposer != null && !hasOriginalOffset)
-        {
-            originalFollowOffset = transposer.FollowOffset;
-            runtimeFollowOffset = originalFollowOffset;
-            hasOriginalOffset = true;
-        }
-    }
-
-    public Transform GetCloseCamera()
-    {
-        return playerCamera.transform;
-    }
-
-    public void OnMainMenu()
+    public Vector3 CurrentOffset => (_playerCamera as CustomCameraController)?.GetFollowOffset() ?? Vector3.zero;
+    
+    void OnEnteredMainMenu()
     {
         SetMainMenuCameraActive();
         _themeManagerData.SetBackgroundColor(Camera.main);
@@ -129,194 +93,79 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetupGamePlayCameras()
     {
-        playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipStatus.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.Transform;
-        SetupGamePlayCameras(playerFollowTarget);
+        _playerFollowTarget = FollowOverride ? _shipStatus.ShipCameraCustomizer.followTarget : _shipStatus.Transform;
+        SetupGamePlayCameras(_playerFollowTarget);
     }
 
     public void SetupGamePlayCameras(Transform _transform)
     {
-        playerFollowTarget = _transform;
-        playerCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
-        playerCamera.Follow = deathCamera.Follow = playerFollowTarget;
+        _playerFollowTarget = _transform;
+        _playerCamera?.SetFollowTarget(_playerFollowTarget);
+        _deathCamera?.SetFollowTarget(_playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
 
         SetCloseCameraActive();
+
+        var shipGO = _playerFollowTarget.gameObject;
+        var shipCustomizer = shipGO.GetComponent<ShipCameraCustomizer>();
+        if (shipCustomizer != null)
+            shipCustomizer.Initialize(shipGO.GetComponent<IShip>());
     }
 
     public void SetMainMenuCameraActive()
     {
-        SetActiveCamera(mainMenuCamera);
-        Invoke("LookAtCrystal", 1); // Delay to allow the old crystal to be destroyed
+        if (mainMenuCamera != null)
+        {
+            mainMenuCamera.Priority = ActivePriority;
+            mainMenuCamera.gameObject.SetActive(true);
+        }
+        else
+        {
+            Debug.LogWarning("[CameraManager] Main menu camera is not assigned!");
+        }
+        
+        if (_playerCamera is CustomCameraController pcc)
+            pcc.Deactivate();
+        if (_deathCamera is CustomCameraController dcc)
+            dcc.Deactivate();
+        if (endCamera != null)
+            endCamera.Deactivate();
+
+        _activeController = null;
+        Invoke("LookAtCrystal", 1f);
     }
 
     void LookAtCrystal()
     {
-        mainMenuCamera.LookAt = NodeControlManager.Instance.GetNearestNode(Vector3.zero).GetCrystal().transform;
+        if (mainMenuCamera)
+            mainMenuCamera.LookAt = CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
     }
 
-    public void SetCloseCameraActive()
+
+    public void SetCloseCameraActive() => SetActiveCamera(_playerCamera);
+
+    public void SetDeathCameraActive() => SetActiveCamera(_deathCamera);
+
+    public void SetEndCameraActive() => SetActiveCamera(endCamera);
+
+    void SetActiveCamera(ICameraController controller)
     {
-        SetActiveCamera(playerCamera);
+        if (_playerCamera != null) _playerCamera.Deactivate();
+        if (_deathCamera != null) _deathCamera.Deactivate();
+        if (endCamera != null) endCamera.Deactivate();
+
+        controller?.Activate();
+        _activeController = controller;
     }
 
-    public void SetDeathCameraActive()
-    {
-        SetActiveCamera(deathCamera);
-    }
-
-    public void SetEndCameraActive()
-    {
-        SetActiveCamera(endCamera);
-    }
-
-    public void SetFixedFollowOffset(Vector3 offset)
-    {
-        FixedFollow = true;
-        StartCoroutine(SetFollowOffsetCoroutine(offset));
-    }
-
-    IEnumerator SetFollowOffsetCoroutine(Vector3 offset)
-    {
-        yield return new WaitForSeconds(1); // Allow time for camera to stabilize
-        transposer = vCam.GetComponent<CinemachineFollow>();
-        InitializeRuntimeOffset();
-        SetRuntimeFollowOffset(offset);
-    }
-
-    void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
-    {
-        Orthographic(isOrthographic);
-        Debug.Log($"SetActiveCamera {activeCamera.Name}");
-
-        mainMenuCamera.Priority = inactivePriority;
-        playerCamera.Priority = inactivePriority;
-        endCamera.Priority = inactivePriority;
-        deathCamera.Priority = inactivePriority;
-
-        activeCamera.Priority = activePriority;
-        transposer = vCam.GetComponent<CinemachineFollow>();
-        InitializeRuntimeOffset();
-
-        if (activeCamera == playerCamera)
-        {
-            SetOffsetPosition(runtimeFollowOffset);
-        }
-    }
-
-    void ClipPlaneAndOffsetLerper(float normalizedDistance)
-    {
-        float CloseCamClipPlane = .5f;
-        float FarCamClipPlane = .7f;
-        if (lerper != null)
-            StopCoroutine(lerper);
-
-        float startNormalized = (runtimeFollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance);
-
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(startNormalized,
-            normalizedDistance, 1.5f, (i) =>
-            {
-                vCam.Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
-                SetRuntimeFollowOffset(new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance));
-            }));
-    }
-
-    void ClipPlaneAndOffsetLerper(Vector3 offsetPosition)
-    {
-        float CloseCamClipPlane = .5f;
-        //float FarCamClipPlane = .7f;
-        if (lerper != null)
-            StopCoroutine(lerper);
-
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(runtimeFollowOffset,
-            offsetPosition, 1.5f, (i) =>
-            {
-                //vCam.Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
-                SetRuntimeFollowOffset(i);
-            }));
-    }
+    public ICameraController GetActiveController() => _activeController;
 
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
-        if (FixedFollow) return;
-        transposer = vCam.GetComponent<CinemachineFollow>();
-        InitializeRuntimeOffset();
-
-        Vector3 targetOffset = new Vector3(0, 0, normalizedDistance);
-        if (runtimeFollowOffset != targetOffset)
-        {
-            ClipPlaneAndOffsetLerper(normalizedDistance);
-        }
-    }
-
-    public void SetOffsetPosition(Vector3 position)
-    {
-        //offsetVector = position;
-        transposer = vCam.GetComponent<CinemachineFollow>();
-        InitializeRuntimeOffset();
-
-        if (runtimeFollowOffset != position)
-        {
-            ClipPlaneAndOffsetLerper(position);
-        }
-    }
-
-    void Orthographic(bool isOrthographic)
-    {
-        PostProcessingManager.Instance.Orthographic(isOrthographic);
-        vCam.Lens.ModeOverride = LensSettings.OverrideModes.Orthographic;
-        vCam.Lens.OrthographicSize = 1300;
-
-        Transform LookAtTarget = isOrthographic ? new GameObject().transform : playerFollowTarget;
-        vCam.LookAt = LookAtTarget;
-    }
-
-    public void ZoomCloseCameraOut(float growthRate)
-    {
-        if (FixedFollow) return;
-        if (returnToNeutralCoroutine != null)
-        {
-            StopCoroutine(returnToNeutralCoroutine);
-            returnToNeutralCoroutine = null;
-        }
-        zoomingOut = true;
-        zoomOutCoroutine = StartCoroutine(ZoomOutCloseCameraCoroutine(growthRate));
-    }
-
-    IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
-    {
-        transposer = vCam.GetComponent<CinemachineFollow>();
-        InitializeRuntimeOffset();
-
-        while (zoomingOut && runtimeFollowOffset.z > FarCamDistance)
-        {
-            SetRuntimeFollowOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward);
-            yield return null;
-        }
-    }
-
-    public void ResetCloseCameraToNeutral(float shrinkRate)
-    {
-        if (FixedFollow) return;
-        if (zoomOutCoroutine != null)
-        {
-            StopCoroutine(zoomOutCoroutine);
-            zoomOutCoroutine = null;
-        }
-        zoomingOut = false;
-        returnToNeutralCoroutine = StartCoroutine(ReturnCloseCameraToNeutralCoroutine(shrinkRate));
-    }
-
-    IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
-    {
-        transposer = vCam.GetComponent<CinemachineFollow>();
-        InitializeRuntimeOffset();
-
-        while (runtimeFollowOffset.z <= CloseCamDistance)
-        {
-            SetRuntimeFollowOffset(runtimeFollowOffset + Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward);
-            yield return null;
-        }
-
-        SetRuntimeFollowOffset(new Vector3(0, 0, CloseCamDistance));
+        if (_playerCamera == null) return;
+        // float close = CloseCamDistance > 0 ? CloseCamDistance : 10f;
+        // float far = FarCamDistance > 0 ? FarCamDistance : 40f;
+        // float distance = Mathf.Lerp(close, far, normalizedDistance);
+        // _playerCamera.SetCameraDistance(distance);
     }
 }

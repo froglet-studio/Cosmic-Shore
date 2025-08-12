@@ -1,4 +1,3 @@
-using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -7,14 +6,14 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] Crystal Crystal;
         [SerializeField] Vector3 CrystalStartPosition;
-        [SerializeField] Node node;
+        [SerializeField] Cell node;
 
         [SerializeField] SO_CellType Intensity1Cell;
         [SerializeField] SO_CellType Intensity2Cell;
         [SerializeField] SO_CellType Intensity3Cell;
         [SerializeField] SO_CellType Intensity4Cell;
 
-        public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
+        public static new ShipClassType PlayerShipType = ShipClassType.Rhino;
 
         protected override void Awake()
         {

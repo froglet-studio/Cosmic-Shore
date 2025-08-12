@@ -1,5 +1,3 @@
-using CosmicShore.Core;
-using CosmicShore.Game.AI;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,13 +11,14 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IShipStatus))]
     public class R_ShipController : R_ShipBase
     {
-        [SerializeField] bool isMultiplayerMode = false;
 
         [SerializeField] List<ImpactProperties> impactProperties;
 
         readonly NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
+        
+        bool isMultiplayerMode = false;
 
         void OnEnable()
         {
@@ -49,6 +48,8 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
+            isMultiplayerMode = true;
+            
             if (!isMultiplayerMode) return;
             if (!IsOwner)
             {
@@ -67,6 +68,8 @@ namespace CosmicShore.Game
                 n_Course.OnValueChanged -= OnCourseChanged;
                 n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
             }
+            
+            isMultiplayerMode = false;
         }
 
         void Update()
@@ -80,33 +83,32 @@ namespace CosmicShore.Game
             }
         }
 
-        public override void Initialize(IPlayer player)
+        public override void Initialize(IPlayer player, bool enableAIPilot)
         {
-            SetPlayerToShipStatusAndSkimmers(player);
-            SetTeamToShipStatusAndSkimmers(player.Team);
-
+            ShipStatus.Player = player;
             ShipStatus.ActionHandler.Initialize(ShipStatus);
-            ShipStatus.ImpactHandler.Initialize(ShipStatus);
+            // ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
-
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
 
-            if (nearFieldSkimmer != null) nearFieldSkimmer.Initialize(this);
-            if (farFieldSkimmer != null) farFieldSkimmer.Initialize(this);
+            if (ShipStatus.NearFieldSkimmer) 
+                ShipStatus.NearFieldSkimmer.Initialize(ShipStatus);
+
+            if (ShipStatus.FarFieldSkimmer) 
+                ShipStatus.FarFieldSkimmer.Initialize(ShipStatus);
 
             if (isMultiplayerMode)
             {
                 if (IsOwner)
                 {
-                    if (!ShipStatus.FollowTarget) ShipStatus.FollowTarget = transform;
+                    if (!ShipStatus.FollowTarget) 
+                        ShipStatus.FollowTarget = transform;
 
-                    ShipStatus.ShipHUDController.InitializeShipHUD(_shipType);
-
-                    onBottomEdgeButtonsEnabled.RaiseEvent(true);
-
+                    ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
+                    onBottomEdgeButtonsEnabled.RaiseEvent(true);
                 }
 
                 ShipStatus.ShipTransformer.enabled = IsOwner;
@@ -115,23 +117,21 @@ namespace CosmicShore.Game
             }
             else
             {
-                if (ShipStatus.FollowTarget == null) ShipStatus.FollowTarget = transform;
-                onBottomEdgeButtonsEnabled.RaiseEvent(true);
-
+                if (ShipStatus.FollowTarget == null) 
+                    ShipStatus.FollowTarget = transform;
 
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
-
-                ShipStatus.AIPilot.AssignShip(this);
-
-                ShipStatus.AutoPilotEnabled = ShipStatus.AIPilot.enabled;
-
-                ShipStatus.AIPilot.Initialize(ShipStatus.AIPilot.enabled);
-                ShipStatus.ShipHUDController.InitializeShipHUD(_shipType);
-
+                ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
+                onBottomEdgeButtonsEnabled.RaiseEvent(true);
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);                
             }
+
+            // TODO - Currently AIPilot's update should run only after SingleStickShipTransformer
+            // sets SingleStickControls to true/false. Try finding a solution to remove this
+            // sequential dependency.
+            ShipStatus.AIPilot.Initialize(enableAIPilot, this);
 
             InvokeShipInitializedEvent();
         }
@@ -142,6 +142,26 @@ namespace CosmicShore.Game
 
         public override void PerformButtonActions(int buttonNumber)
         {
+            InputEvents controlType;
+            switch (buttonNumber)
+            {
+                case 1:
+                    controlType = InputEvents.Button1Action;
+                    break;
+                case 2:
+                    controlType = InputEvents.Button2Action;
+                    break;
+                case 3:
+                    controlType = InputEvents.Button3Action;
+                    break;
+                default:
+                    controlType = InputEvents.Button1Action;
+                    break;
+            }
+            PerformShipControllerActions(controlType);
+            
+            
+            /*Debug.Log($"[R_ShipController] PerformButtonActions({buttonNumber}) called!");
             switch (buttonNumber)
             {
                 case 1:
@@ -156,12 +176,30 @@ namespace CosmicShore.Game
                     if (ShipStatus.ActionHandler != null && ShipStatus.ActionHandler.HasAction(InputEvents.Button3Action))
                         ShipStatus.ActionHandler.PerformShipControllerActions(InputEvents.Button3Action);
                     break;
-            }
+            }*/
         }
 
         public void StopButtonActions(int buttonNumber)
         {
+            InputEvents controlType;
             switch (buttonNumber)
+            {
+                case 1:
+                    controlType = InputEvents.Button1Action;
+                    break;
+                case 2:
+                    controlType = InputEvents.Button2Action;
+                    break;
+                case 3:
+                    controlType = InputEvents.Button3Action;
+                    break;
+                default:
+                    controlType = InputEvents.Button1Action;
+                    break;
+            }
+            StopShipControllerActions(controlType);
+            
+            /*switch (buttonNumber)
             {
                 case 1:
                     if (ShipStatus.ActionHandler != null && ShipStatus.ActionHandler.HasAction(InputEvents.Button1Action))
@@ -175,7 +213,7 @@ namespace CosmicShore.Game
                     if (ShipStatus.ActionHandler != null && ShipStatus.ActionHandler.HasAction(InputEvents.Button3Action))
                         ShipStatus.ActionHandler.StopShipControllerActions(InputEvents.Button3Action);
                     break;
-            }
+            }*/
         }
 
         public void ToggleCollision(bool enabled)
@@ -184,8 +222,7 @@ namespace CosmicShore.Game
                 collider.enabled = enabled;
         }
 
-        public void FlipShipUpsideDown() => orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
-        public void FlipShipRightsideUp() => orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
-        public void OnButtonPressed(int buttonNumber) => PerformButtonActions(buttonNumber);
+        public void FlipShipUpsideDown() => ShipStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
+        public void FlipShipRightsideUp() => ShipStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
     }
 }

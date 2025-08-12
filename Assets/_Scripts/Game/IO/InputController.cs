@@ -4,7 +4,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.App.Systems;
 using CosmicShore.Utility.ClassExtensions;
-using Unity.Netcode;
 
 
 namespace CosmicShore.Game.IO
@@ -19,25 +18,19 @@ namespace CosmicShore.Game.IO
             public Vector2 clampedPosition;
         }
 
-        private IInputStatus _inputStatus;
-        public IInputStatus InputStatus => _inputStatus ??= TryAddInputStatus();
+        public IInputStatus InputStatus { get; private set; }
 
         [SerializeField] public bool Portrait;
-        public IShip Ship { get; private set; }
-
-        // public bool AutoPilotEnabled => Ship.ShipStatus.AutoPilotEnabled;
-
-        [HideInInspector] public static ScreenOrientation currentOrientation;
+        IShip _ship;
 
         private IInputStrategy currentStrategy;
-        //private TouchInputStrategy touchStrategy;
-        //private KeyboardMouseInputStrategy keyboardMouseStrategy;
         private GamepadInputStrategy gamepadStrategy;
         private DeviceOrientationHandler orientationHandler;
 
         private void Awake()
         {
-            enabled = false;
+            InputStatus ??= TryAddInputStatus();
+            InputStatus.InputController = this;
         }
 
         private void OnEnable()
@@ -57,30 +50,12 @@ namespace CosmicShore.Game.IO
         private void Update()
         {
             // Toggle the fullscreen state if the Escape key was pressed this frame on windows
-            #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
                 Screen.fullScreen = !Screen.fullScreen;
-            }
 #endif
-
             if (InputStatus.Paused)
-            {
-                if (Ship != null && Ship.ShipStatus.AutoPilotEnabled)
-                {
-                    Debug.Log($"InputController.Update: {InputStatus.Paused} && {Ship.ShipStatus.AutoPilotEnabled} AutoPilot -> calling ProcessAutoPilot()");
-                    //Debug.Log("Input Status")
-                    ProcessAutoPilot();
-                }
                 return;
-            }
-
-            if (Ship != null && Ship.ShipStatus.AutoPilotEnabled)
-            {
-                // Debug.Log("InputController.Update: AutoPilotEnabled -> calling ProcessAutoPilot()");
-                ProcessAutoPilot();
-                return;
-            }
 
             if (PauseSystem.Paused)
             {
@@ -96,12 +71,10 @@ namespace CosmicShore.Game.IO
 
         public void Initialize(IShip ship)
         {
-            Ship = ship;
+            _ship = ship;
             InitializeStrategies();
             SetInitialStrategy();
             InitializeOrientation();
-
-            enabled = true;
         }
 
         private void SetInitialStrategy()
@@ -125,44 +98,17 @@ namespace CosmicShore.Game.IO
 
             //touchStrategy.Initialize(ship);
             //keyboardMouseStrategy.Initialize(ship);
-            gamepadStrategy.Initialize(Ship);
-            orientationHandler.Initialize(Ship, this);
+            gamepadStrategy.Initialize(InputStatus);
+            orientationHandler.Initialize(_ship, this);
         }
 
         private void InitializeOrientation()
         {
             if (Portrait)
             {
-                Ship.SetShipUp(90);
+                _ship.SetShipUp(90);
             }
-            currentOrientation = Screen.orientation;
-        }
-
-
-        private void ProcessAutoPilot()
-        {
-            if (currentStrategy == null)
-            {
-                Debug.LogWarning("ProcessAutoPilot: currentStrategy is NULL. Creating GamepadInputStrategy now.");
-                gamepadStrategy = new GamepadInputStrategy();
-                gamepadStrategy.Initialize(Ship);
-                currentStrategy = gamepadStrategy;
-                currentStrategy.OnStrategyActivated();
-            }
-
-            if (Ship.ShipStatus.SingleStickControls)
-            {
-                currentStrategy?.SetAutoPilotValues(new Vector2(Ship.ShipStatus.AIPilot.X, Ship.ShipStatus.AIPilot.Y));
-            }
-            else
-            {
-                currentStrategy?.SetAutoPilotValues(
-                    Ship.ShipStatus.AIPilot.XSum,
-                    Ship.ShipStatus.AIPilot.YSum,
-                    Ship.ShipStatus.AIPilot.XDiff,
-                    Ship.ShipStatus.AIPilot.YDiff
-                );
-            }
+            IInputStatus.CurrentOrientation = Screen.orientation;
         }
 
         private void UpdateInputStrategy()
@@ -215,24 +161,14 @@ namespace CosmicShore.Game.IO
                 currentStrategy?.OnResumed();
         }
 
-        public Quaternion GetGyroRotation()
-        {
-            return orientationHandler.GetAttitudeRotation();
-        }
+        public Quaternion GetGyroRotation() =>
+            orientationHandler.GetAttitudeRotation();
+ 
+        public static bool UsingGamepad() =>
+            Gamepad.current != null;
 
-        public static bool UsingGamepad()
-        {
-            return Gamepad.current != null;
-        }
-
-        IInputStatus TryAddInputStatus()
-        {
-            bool found = TryGetComponent(out NetworkObject _);
-            if (found)
-                return gameObject.GetOrAdd<NetworkInputStatus>();
-            else
-                return gameObject.GetOrAdd<InputStatus>();
-        }
+        IInputStatus TryAddInputStatus() =>
+            gameObject.GetOrAdd<NetworkInputStatus>();
 
     }
 }

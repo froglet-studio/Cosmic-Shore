@@ -1,7 +1,6 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
-using System.Collections.Generic;
+using CosmicShore.Game;
 
 /// <summary>
 /// Used for testing only (scene TestHarnessOctree).  Prints coordinates for three target sets (one for each color).
@@ -19,7 +18,7 @@ public class TestHarnessOctreeDensitySearch : MonoBehaviour
     {
         yield return new WaitForSeconds(3);
         
-        Node targetNode = NodeControlManager.Instance.GetNearestNode(transform.position);
+        Cell targetNode = CellControlManager.Instance.GetNearestCell(transform.position);
 
         Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
         foreach (Teams t in teams)

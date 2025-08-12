@@ -2,6 +2,7 @@ using CosmicShore.Game.IO;
 using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
+using CosmicShore.Game;
 
 
 /// <summary>
@@ -29,7 +30,7 @@ public class SnsShare : MonoBehaviour
         Texture2D ss = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
         ss.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
 
-        if (InputController.currentOrientation == ScreenOrientation.LandscapeRight)
+        if (IInputStatus.CurrentOrientation == ScreenOrientation.LandscapeRight)
         {
             Color[] pixels = ss.GetPixels();
             System.Array.Reverse(pixels);
@@ -42,7 +43,7 @@ public class SnsShare : MonoBehaviour
 
         Destroy(ss); // Must destroy to prevent memory leaks
 
-        Screen.orientation = InputController.currentOrientation;
+        Screen.orientation = IInputStatus.CurrentOrientation;
 
         new NativeShare().AddFile(filePath)
             .SetSubject("").SetText("").SetUrl("")
