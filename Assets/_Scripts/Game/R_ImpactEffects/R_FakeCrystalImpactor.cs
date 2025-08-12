@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class R_FakeCrystalImpactor : R_ImpactorBase
+    public class R_FakeCrystalImpactor : R_CrystalImpactor
     {
         [SerializeField] R_IImpactEffect[] fakeCrystalShipEffects;
         [SerializeField] R_IImpactEffect[] fakeCrystalProjectileEffects;

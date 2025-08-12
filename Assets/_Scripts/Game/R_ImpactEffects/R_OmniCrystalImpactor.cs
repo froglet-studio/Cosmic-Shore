@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class R_OmniCrystalImpactor : R_ImpactorBase
+    public class R_OmniCrystalImpactor : R_CrystalImpactor
     {
         [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         ScriptableObject[] omniCrystalShipEffectsSO;

@@ -11,9 +11,6 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IShipStatus))]
     public class R_ShipController : R_ShipBase
     {
-
-        [SerializeField] List<ImpactProperties> impactProperties;
-
         readonly NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
@@ -87,7 +84,6 @@ namespace CosmicShore.Game
         {
             ShipStatus.Player = player;
             ShipStatus.ActionHandler.Initialize(ShipStatus);
-            // ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
