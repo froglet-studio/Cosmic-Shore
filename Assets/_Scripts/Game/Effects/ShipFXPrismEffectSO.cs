@@ -4,27 +4,29 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "FXImpactEffect", menuName = "ScriptableObjects/Impact Effects/FXImpactEffectSO")]
-    public class FXEffectSO : ImpactEffectSO
+    [CreateAssetMenu(fileName = "ShipFXPrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipFXPrismEffectSO")]
+    public class ShipFXPrismEffectSO : ImpactEffectSO<R_ShipImpactor, R_PrismImpactor>
     {
-        [SerializeField]
-        float particleDurationAtSpeedOne = 300f;
+        [SerializeField] private float particleDurationAtSpeedOne = 300f;
 
-        IShipStatus _shipStatus;
-
-        /*public void Execute(ImpactEffectData data, TrailBlockProperties trailBlockProperties)
+        private IShipStatus _shipStatus;
+        
+        protected override void ExecuteTyped(R_ShipImpactor impactor, R_PrismImpactor prismImpactee)
         {
-            _shipStatus = data.ThisShipStatus;
+            var shipStatus = impactor.Ship.ShipStatus;
+            var trailBlockProperties = prismImpactee.TrailBlock.TrailBlockProperties;
+            
+            _shipStatus = shipStatus;
+            
             DisplaySkimParticleEffectAsync(trailBlockProperties.trailBlock).Forget(); // Fire and forget
         }
-
+        
         async UniTaskVoid DisplaySkimParticleEffectAsync(TrailBlock trailBlock)
         {
             if (trailBlock == null || _shipStatus == null || _shipStatus.ShipTransform == null)
                 return;
 
-            var particle = Object.Instantiate(trailBlock.ParticleEffect);
-            particle.transform.SetParent(trailBlock.transform);
+            var particle = Object.Instantiate(trailBlock.ParticleEffect, trailBlock.transform, true);
 
             int timer = 0;
             float scaledTime = 0;
@@ -49,10 +51,6 @@ namespace CosmicShore.Game
             while (timer < scaledTime);
 
             Destroy(particle);
-        }*/
-        public override void Execute(R_IImpactor impactor, R_IImpactor impactee)
-        {
-            throw new System.NotImplementedException();
         }
     }
 }
