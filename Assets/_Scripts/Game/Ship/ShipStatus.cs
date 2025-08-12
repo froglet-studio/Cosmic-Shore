@@ -106,16 +106,6 @@ namespace CosmicShore.Game
             }
         }
 
-        R_ShipImpactHandler impactHandler;
-        public R_ShipImpactHandler ImpactHandler
-        {
-            get
-            {
-                impactHandler = impactHandler != null ? impactHandler : gameObject.GetOrAdd<R_ShipImpactHandler>();
-                return impactHandler;
-            }
-        }
-
         R_ShipCustomization customization;
         public R_ShipCustomization Customization
         {
