@@ -52051,6 +52051,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f916858793fd493e8479ee9641bfef57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  crystal: {fileID: 0}
   omniCrystalShipEffectsSO: []
 --- !u!114 &1559828718
 MonoBehaviour:
@@ -91690,7 +91691,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: 212.15396}
+  m_AnchoredPosition: {x: -32, y: 187.00009}
   m_SizeDelta: {x: 64, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &5840560526580898137

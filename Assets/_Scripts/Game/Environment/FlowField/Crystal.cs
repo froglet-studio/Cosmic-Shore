@@ -30,14 +30,22 @@ namespace CosmicShore.Game
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        
+        [SerializeField] protected GameObject FakeCrystalPrefab;
         #endregion
-
+        
+        bool _nextImpactIsDecoy;
+        bool _hasDecoySnapshot;
+        Vector3 _decoyWorldPosition;
+        
         Material tempMaterial;
         Vector3 origin = Vector3.zero;
 
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
+            _decoyWorldPosition = transform.localPosition; 
+            Debug.Log(transform.localPosition + " & " + transform.position);
         }
 
         public virtual void ExecuteCommonVesselImpact(IShip ship)
@@ -64,10 +72,21 @@ namespace CosmicShore.Game
             // TODO - Handled from R_CrystalImpactor.cs
             // PerformCrystalImpactEffects(crystalProperties, ship);
 
+            if (_nextImpactIsDecoy)
+            {
+                _nextImpactIsDecoy = false;                  
+                SpawnFakeCrystal();
+                CrystalRespawn();
+                return;
+            }
+
             Explode(ship);
             PlayExplosionAudio();
-
-            // Move the Crystal
+            CrystalRespawn();
+        }
+        
+        private void CrystalRespawn()
+        {
             if (allowRespawnOnImpact)
             {
                 foreach (var model in crystalModels)
@@ -209,5 +228,32 @@ namespace CosmicShore.Game
             renderer.material = targetMaterial;
             Destroy(tempMaterial);
         }
+        
+        public void MarkNextImpactAsDecoy()
+        {
+            _nextImpactIsDecoy  = true;
+            _hasDecoySnapshot   = true;
+        }
+
+        private void SpawnFakeCrystal()
+        {
+            if (!FakeCrystalPrefab)
+            {
+                Debug.LogError("[Crystal] FakeCrystalPrefab is NOT assigned.", this);
+                return;
+            }
+
+            var pos = _hasDecoySnapshot ? _decoyWorldPosition : transform.position;
+
+            var fake = Instantiate(FakeCrystalPrefab);
+            fake.transform.position = pos;
+
+            if (fake.TryGetComponent<FakeCrystal>(out var fc))
+                fc.OwnTeam = this.OwnTeam;
+
+            Debug.Log($"[Crystal] Decoy spawned at {pos} (hasSnapshot={_hasDecoySnapshot}).");
+        }
+
+
     }
 }

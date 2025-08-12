@@ -2315,7 +2315,7 @@ MonoBehaviour:
   shipPrismEffectsSO:
   - {fileID: 11400000, guid: da9a61387d3051441a02b9233553614a, type: 2}
   shipOmniCrystalEffectsSO:
-  - {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f, type: 2}
+  - {fileID: 11400000, guid: ff89ef91b7f55d44d95e4f57a70eef64, type: 2}
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
 --- !u!1 &6675130274311316141

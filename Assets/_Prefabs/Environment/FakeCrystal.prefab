@@ -144,7 +144,7 @@ Transform:
   m_GameObject: {fileID: 6588436222817790470}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 175.9}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -206,17 +206,10 @@ MonoBehaviour:
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
   crystalModels: []
-  shipImpactEffects: 0
-  RespawnOnImpact: 0
-  ImpactHapticType: 5
+  allowVesselImpactEffect: 1
+  allowRespawnOnImpact: 0
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  crystalImpactEffects: 0b0000000a000000
-  _crystalImpactEffects:
-  - {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f, type: 2}
-  - {fileID: 11400000, guid: 777ffc4b1f0c4d84d842912b63a857f2, type: 2}
-  AOEPrefab: {fileID: 0}
-  maxExplosionScale: 0
-  AOEExplosionMaterial: {fileID: 0}
+  FakeCrystalPrefab: {fileID: 0}
   blueCrystalMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
   isplayer: 0
 --- !u!82 &6588436222817790494
