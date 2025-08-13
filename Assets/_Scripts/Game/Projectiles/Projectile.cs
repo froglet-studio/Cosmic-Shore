@@ -9,13 +9,14 @@ namespace CosmicShore.Game.Projectiles
     public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
-        public float Inertia = 1;
-        
+
         [HideInInspector] public Vector3 InitialScale;
         
         [SerializeField]
         R_ProjectileImpactor projectileImpactor;
 
+        public float Charge { get; private set; }
+        
         #region Deprecated
         // Has been moved to ProjectileImpactor
         [SerializeField] 
@@ -85,7 +86,8 @@ namespace CosmicShore.Game.Projectiles
             OwnTeam = ownTeam;
             ShipStatus = shipStatus;
             _poolManager = poolManager;
-
+            Charge = charge;
+            
             if (TryGetComponent(out Gun gun) && ShipStatus != null)
             {
                 gun.Initialize(ShipStatus);
@@ -322,7 +324,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (moveCoroutine != null) StopCoroutine(moveCoroutine);
         }
-
-        void ReturnToPool() => _poolManager.ReturnToPool(gameObject, gameObject.tag);
+        
+        public void ReturnToPool() => _poolManager.ReturnToPool(gameObject, gameObject.tag);
     }
 }

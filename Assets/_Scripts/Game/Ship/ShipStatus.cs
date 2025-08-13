@@ -229,8 +229,6 @@ namespace CosmicShore.Game
         public bool Overheating { get; set; }
         public bool Attached { get; set; }
         public bool GunsActive { get; set; }
-        
-        public float GetInertia { get; set; }
         public float Speed { get; set; }
         public float ChargedBoostCharge { get; set; }
         

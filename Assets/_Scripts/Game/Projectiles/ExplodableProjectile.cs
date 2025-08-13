@@ -97,10 +97,5 @@ namespace CosmicShore.Game.Projectiles
 
             _poolManager.ReturnToPool(gameObject, gameObject.tag);
         }*/
-
-        public void ExecuteExplodeEffect()
-        {
-            _poolManager.ReturnToPool(gameObject, gameObject.tag);
-        }
     }
 }

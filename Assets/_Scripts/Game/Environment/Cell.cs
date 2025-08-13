@@ -121,7 +121,7 @@ namespace CosmicShore.Game
             {
                 for (int i = 0; i < FloraTypeCount; i++)
                 {
-                    var floraConfiguration = SpawnRandomFlora();
+                    var floraConfiguration = ConfigureFlora();
                     StartCoroutine(SpawnFlora(floraConfiguration, spawnJade));
                 }
             }
@@ -130,13 +130,13 @@ namespace CosmicShore.Game
             {
                 for (int i = 0; i < FaunaTypeCount; i++)
                 {
-                    var fauna = SpawnRandomPopulation();
-                    StartCoroutine(SpawnFauna(fauna));
+                    var population = ConfigurePopulation();
+                    StartCoroutine(SpawnPopulation(population));
                 }
             }
         }
 
-        Population SpawnRandomPopulation()
+        Population ConfigurePopulation()
         {
             var spawnWeight = Random.value;
             var spawnIndex = 0;
@@ -150,7 +150,7 @@ namespace CosmicShore.Game
             return cellType.SupportedFauna[spawnIndex].Population;
         }
 
-        FloraConfiguration SpawnRandomFlora()
+        FloraConfiguration ConfigureFlora()
         {
             var spawnWeight = Random.value;
             var spawnIndex = 0;
@@ -326,12 +326,18 @@ namespace CosmicShore.Game
                     newFlora.Team = spawnJade ? (Teams)Random.Range(1, 5) : (Teams)Random.Range(2, 5);
                     newFlora.Initialize(this);
                 }
-                if (floraConfiguration.OverrideDefaultPlantPeriod) yield return new WaitForSeconds(floraConfiguration.NewPlantPeriod);
-                else yield return new WaitForSeconds(floraConfiguration.Flora.PlantPeriod);
+
+                float waitPeriod;
+                if (floraConfiguration.OverrideDefaultPlantPeriod)
+                    waitPeriod = floraConfiguration.NewPlantPeriod;
+                else
+                    waitPeriod = floraConfiguration.Flora.PlantPeriod;
+                    
+                yield return new WaitForSeconds(waitPeriod);
             }
         }
         
-        IEnumerator SpawnFauna(Population population)
+        IEnumerator SpawnPopulation(Population population)
         {
             yield return new WaitForSeconds(initialFaunaSpawnWaitTime);
             while (true)

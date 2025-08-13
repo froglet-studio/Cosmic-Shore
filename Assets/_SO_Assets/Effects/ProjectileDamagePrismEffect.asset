@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1aa90733b0f74a65ab2c60e8f6cb4f63, type: 3}
   m_Name: ProjectileDamagePrismEffect
   m_EditorClassIdentifier: 
+  _inertia: 70
