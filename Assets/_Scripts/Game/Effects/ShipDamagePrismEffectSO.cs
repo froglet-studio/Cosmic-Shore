@@ -2,10 +2,10 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "PrismDeactivateByShipEffect", menuName = "ScriptableObjects/Impact Effects/PrismDeactivateByShipEffectSO")]
-    public class PrismDeactivateByShipEffectSO : ImpactEffectSO<R_PrismImpactor, R_ShipImpactor>
+    [CreateAssetMenu(fileName = "ShipDamagePrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipDamagePrismEffectSO")]
+    public class ShipDamagePrismEffectSO : ImpactEffectSO<R_ShipImpactor, R_PrismImpactor>
     {
-        protected override void ExecuteTyped(R_PrismImpactor prismImpactor, R_ShipImpactor shipImpactor)
+        protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_PrismImpactor prismImpactor)
         {
             var trailBlockProperties = prismImpactor.TrailBlock.TrailBlockProperties;
             var shipStatus = shipImpactor.Ship.ShipStatus;
@@ -14,6 +14,5 @@ namespace CosmicShore.Game
                 shipStatus.Course * shipStatus.Speed * shipStatus.GetInertia, 
                 shipStatus.Team, shipStatus.PlayerName);
         }
-        
     }
 }

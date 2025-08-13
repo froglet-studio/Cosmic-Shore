@@ -12,7 +12,12 @@ namespace CosmicShore.Game.Projectiles
         public float Inertia = 1;
         
         [HideInInspector] public Vector3 InitialScale;
+        
+        [SerializeField]
+        R_ProjectileImpactor projectileImpactor;
 
+        #region Deprecated
+        // Has been moved to ProjectileImpactor
         [SerializeField] 
         protected List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
@@ -38,6 +43,7 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         protected List<ScriptableObject> _endEffects;
 
+        #endregion
 
         public float ProjectileTime;
 
@@ -86,14 +92,16 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-       
+        public bool DisallowImpactOnPrism(Teams trailBlockTeam) => !friendlyFire && trailBlockTeam == OwnTeam;
 
-        protected virtual void OnTriggerEnter(Collider other)
+        public bool DisallowImpactOnVessel(Teams vesselTeam) => vesselTeam == OwnTeam;
+        
+        /*protected virtual void OnTriggerEnter(Collider other)
         { 
             HandleCollision(other);
-        }
+        }*/
 
-        void HandleCollision(Collider other)
+        /*void HandleCollision(Collider other)
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
@@ -113,12 +121,12 @@ namespace CosmicShore.Game.Projectiles
 
                 // if (!_pierceShip) ExecuteStopEffect();
             }
-        }
+        }*/
 
-        
-        protected virtual void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*protected virtual void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            /*foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
+            foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
             {
                 switch (effect)
                 {
@@ -153,13 +161,13 @@ namespace CosmicShore.Game.Projectiles
                     continue;
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero), trailBlockProperties); // TODO : impacted vector is not correct here.
-            }*/
-        }
+            }
+        }*/
 
         // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        protected virtual void PerformEndEffects()
+        /*protected virtual void PerformEndEffects()
         {
-            /*foreach (TrailBlockImpactEffects effect in endEffects)
+            foreach (TrailBlockImpactEffects effect in endEffects)
             {
                 switch (effect)
                 {
@@ -183,13 +191,13 @@ namespace CosmicShore.Game.Projectiles
                     continue;
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
-            }*/
-        }
+            }
+        }*/
 
         // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        protected virtual void PerformShipImpactEffects(IShipStatus shipStatus)
+        /*protected virtual void PerformShipImpactEffects(IShipStatus shipStatus)
         {
-            /*foreach (ShipImpactEffects effect in shipImpactEffects)
+            foreach (ShipImpactEffects effect in shipImpactEffects)
             {
                 switch (effect)
                 {
@@ -221,13 +229,13 @@ namespace CosmicShore.Game.Projectiles
                     continue;
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
-            }*/
-        }
+            }
+        }*/
 
         // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        protected virtual void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
+        /*protected virtual void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            /*foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
                 {
@@ -255,8 +263,8 @@ namespace CosmicShore.Game.Projectiles
                     continue;
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero), crystalProperties); // TODO : impacted vector is not correct here.
-            }*/
-        }
+            }
+        }*/
 
         public void LaunchProjectile(float projectileTime)
         {
@@ -286,11 +294,12 @@ namespace CosmicShore.Game.Projectiles
                 // Only check for raycasting collisions if spike is true
                 if (spike)
                 {
-                    if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, moveDistance.magnitude))
+                    // This should be done from R_ProjectileImpactor
+                    /*if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, moveDistance.magnitude))
                     {
                         transform.position = hit.point;
                         HandleCollision(hit.collider);
-                    }
+                    }*/
 
                     var stretchedPoint = new Vector3(.5f, .5f, elapsedTime * growthRate);
                     var percentRemaining = elapsedTime / projectileTime;
@@ -304,8 +313,8 @@ namespace CosmicShore.Game.Projectiles
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
-            if (endEffects.Count > 0) PerformEndEffects();
-
+            //if (endEffects.Count > 0) PerformEndEffects();
+            projectileImpactor.ExecuteEndEffects();
             ReturnToPool();
         }
 

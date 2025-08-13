@@ -17,7 +17,7 @@ namespace CosmicShore.Game.Projectiles
             Charge = charge;
         }
 
-        protected override void PerformEndEffects()
+        /*protected override void PerformEndEffects()
         {
             foreach (TrailBlockImpactEffects effect in endEffects)
             {
@@ -36,9 +36,9 @@ namespace CosmicShore.Game.Projectiles
                         break;
                 }
             }
-        }
+        }*/
 
-        protected override void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
+        /*protected override void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
             {
@@ -70,7 +70,7 @@ namespace CosmicShore.Game.Projectiles
 
                 }
             }
-        }
+        }*/
 
         /*public void Detonate()
         {
