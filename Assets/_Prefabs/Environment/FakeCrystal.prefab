@@ -128,6 +128,8 @@ GameObject:
   - component: {fileID: 6588436222817790464}
   - component: {fileID: 8379901470580388096}
   - component: {fileID: 6588436222817790494}
+  - component: {fileID: 8698266874642915508}
+  - component: {fileID: 7362625795735233320}
   m_Layer: 9
   m_Name: FakeCrystal
   m_TagString: Untagged
@@ -209,8 +211,9 @@ MonoBehaviour:
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 0
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  FakeCrystalPrefab: {fileID: 0}
   blueCrystalMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
+  explodeAfterSeconds: 20
+  verbose: 1
   isplayer: 0
 --- !u!82 &6588436222817790494
 AudioSource:
@@ -310,3 +313,30 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &8698266874642915508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6588436222817790470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 0}
+--- !u!114 &7362625795735233320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6588436222817790470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f916858793fd493e8479ee9641bfef57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  crystal: {fileID: 0}
+  omniCrystalShipEffectsSO: []

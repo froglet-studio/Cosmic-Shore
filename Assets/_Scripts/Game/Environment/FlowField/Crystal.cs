@@ -2,6 +2,7 @@ using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -30,69 +31,63 @@ namespace CosmicShore.Game
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
-        
-        [SerializeField] protected GameObject FakeCrystalPrefab;
+
         #endregion
-        
-        bool _nextImpactIsDecoy;
-        bool _hasDecoySnapshot;
-        Vector3 _decoyWorldPosition;
+
+        public List<CrystalModelData> CrystalModels => crystalModels;
         
         Material tempMaterial;
         Vector3 origin = Vector3.zero;
 
+        public bool IsDecoyCrystal { get; set; }
+
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
-            _decoyWorldPosition = transform.localPosition; 
-            Debug.Log(transform.localPosition + " & " + transform.position);
         }
 
-        public virtual void ExecuteCommonVesselImpact(IShip ship)
-        {
-            if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
-                return;
+//         public virtual void ExecuteCommonVesselImpact(IShip ship)
+//         {
+//             if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
+//                 return;
+//
+//             if (allowVesselImpactEffect)
+//             {
+//                 // TODO - This class should not modify AIPilot's properties directly.
+//                 /*if (ship.ShipStatus.AIPilot != null)
+//                 {
+//                     AIPilot aiPilot = ship.ShipStatus.AIPilot;
+//
+//                     aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+//                     aiPilot.throttle = aiPilot.defaultThrottle;
+//                 }*/
+//             }
+//
+//             // TODO - Add Event channels here rather than calling singletons directly.
+//             if (StatsManager.Instance != null)
+//                 StatsManager.Instance.CrystalCollected(ship, crystalProperties);
+//
+//             // TODO - Handled from R_CrystalImpactor.cs
+//             // PerformCrystalImpactEffects(crystalProperties, ship);
+//             // TODO : Pass only ship status
+//             Explode(ship);
+//             PlayExplosionAudio();
+//             CrystalRespawn();
+//         }
 
-            if (allowVesselImpactEffect)
-            {
-                // TODO - This class should not modify AIPilot's properties directly.
-                /*if (ship.ShipStatus.AIPilot != null)
-                {
-                    AIPilot aiPilot = ship.ShipStatus.AIPilot;
-
-                    aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                    aiPilot.throttle = aiPilot.defaultThrottle;
-                }*/
-            }
-
-            // TODO - Add Event channels here rather than calling singletons directly.
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.CrystalCollected(ship, crystalProperties);
-
-            // TODO - Handled from R_CrystalImpactor.cs
-            // PerformCrystalImpactEffects(crystalProperties, ship);
-
-            if (_nextImpactIsDecoy)
-            {
-                _nextImpactIsDecoy = false;                  
-                SpawnFakeCrystal();
-                CrystalRespawn();
-                return;
-            }
-
-            Explode(ship);
-            PlayExplosionAudio();
-            CrystalRespawn();
-        }
+        public bool IsOwnTeamSameAsShipTeam(Teams shipTeam) => OwnTeam != Teams.None && OwnTeam != shipTeam;
         
-        private void CrystalRespawn()
+        public void CrystalRespawn()
         {
             if (allowRespawnOnImpact)
             {
                 foreach (var model in crystalModels)
+                {
+                    model.model.SetActive(true);
                     model.model.GetComponent<FadeIn>().StartFadeIn();
+                }
 
-                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+                transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, Random.rotation);
                 cell.UpdateItem();
             }
             else
@@ -128,7 +123,7 @@ namespace CosmicShore.Game
             transform.localScale = targetScaleVector;
         }
 
-        protected void Explode(IShip ship)
+        public void Explode(IShipStatus shipStatus)
         {
             for (int i = 0; i < crystalModels.Count; i++)
             {
@@ -148,12 +143,11 @@ namespace CosmicShore.Game
                     var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                     spentAnimator.timer = thisAnimator.timer;
                 }
-                var shipStatus = ship.ShipStatus;
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, ship.ShipStatus.Player.PlayerName);
+                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, shipStatus.Player.PlayerName);
             }
         }
 
-        protected void PlayExplosionAudio()
+        public void PlayExplosionAudio()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
             AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
@@ -228,32 +222,6 @@ namespace CosmicShore.Game
             renderer.material = targetMaterial;
             Destroy(tempMaterial);
         }
-        
-        public void MarkNextImpactAsDecoy()
-        {
-            _nextImpactIsDecoy  = true;
-            _hasDecoySnapshot   = true;
-        }
-
-        private void SpawnFakeCrystal()
-        {
-            if (!FakeCrystalPrefab)
-            {
-                Debug.LogError("[Crystal] FakeCrystalPrefab is NOT assigned.", this);
-                return;
-            }
-
-            var pos = _hasDecoySnapshot ? _decoyWorldPosition : transform.position;
-
-            var fake = Instantiate(FakeCrystalPrefab);
-            fake.transform.position = pos;
-
-            if (fake.TryGetComponent<FakeCrystal>(out var fc))
-                fc.OwnTeam = this.OwnTeam;
-
-            Debug.Log($"[Crystal] Decoy spawned at {pos} (hasSnapshot={_hasDecoySnapshot}).");
-        }
-
-
     }
 }
+

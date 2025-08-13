@@ -56,19 +56,19 @@ namespace CosmicShore.Game
             // Destroy(gameObject);
         }
 
-        public override void ExecuteCommonVesselImpact(IShip ship)
-        {
-            // TODO: use a different material if the fake crystal is on your team
-            if (ship.ShipStatus.Team == OwnTeam)
-                return;
-
-            // TODO - Handled from R_CrystalImpactor.cs
-            // PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
-            
-            Explode(ship);
-            PlayExplosionAudio();
-            cell.TryRemoveItem(this);
-            Destroy(gameObject);
-        }
+        // public override void ExecuteCommonVesselImpact(IShip ship)
+        // {
+        //     // TODO: use a different material if the fake crystal is on your team
+        //     if (ship.ShipStatus.Team == OwnTeam)
+        //         return;
+        //
+        //     // TODO - Handled from R_CrystalImpactor.cs
+        //     // PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
+        //     
+        //     Explode(ship);
+        //     PlayExplosionAudio();
+        //     cell.TryRemoveItem(this);
+        //     Destroy(gameObject);
+        // }
     }
 }

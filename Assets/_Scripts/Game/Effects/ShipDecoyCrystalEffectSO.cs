@@ -1,39 +1,60 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    /// <summary>
-    /// When a ship impacts any R_ImpactorBase that has/ is on a Crystal,
-    /// mark that Crystal so the NEXT vessel-impact behaves as a "decoy":
-    /// skip explosion + audio, and spawn a fake crystal instead.
-    /// </summary>
     [CreateAssetMenu(fileName = "ShipDecoyCrystalEffect", menuName = "ScriptableObjects/Impact Effects/ShipDecoyCrystalEffectSO")]
-    public class ShipDecoyCrystalEffectSO : ImpactEffectSO<R_ShipImpactor, R_ImpactorBase>
+    public class ShipDecoyCrystalEffectSO : ImpactEffectSO<R_ShipImpactor, R_OmniCrystalImpactor>
     {
-        [SerializeField] private float cooldownDuration = 5f;
+        [SerializeField] private float debounceSeconds = 0.15f;
         [SerializeField] private bool verbose = false;
-        private static readonly Dictionary<Crystal, float> s_cooldownUntil = new();
-        protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_ImpactorBase impactee)
+        [SerializeField] private GameObject fakeCrystalPrefab;
+
+        private static readonly Dictionary<Crystal, float> _nextAllowedAt = new();
+
+        protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_OmniCrystalImpactor impactee)
         {
-            if (verbose) Debug.Log("[ShipDecoy] Impacted : ", impactee);
+            var crystal = impactee.Crystal;
+            if (!crystal) return;
+
+            crystal.IsDecoyCrystal = true;
+            if (_nextAllowedAt.TryGetValue(crystal, out var t) && Time.time < t) return;
+            _nextAllowedAt[crystal] = Time.time + debounceSeconds;
             
-            var crystal = impactee.GetComponent<Crystal>();
-            if (!crystal)
+            var models = crystal.CrystalModels;
+            if (models != null)
+                foreach (var m in models.Where(m => m?.model)) m.model.SetActive(false);
+
+            // Robust world spawn position (collider / renderer center)
+            var spawnPosition = crystal.transform.localPosition;
+            
+            if (crystal.TryGetComponent<SphereCollider>(out var sphere))
+                spawnPosition = sphere.bounds.center;
+            else if (crystal.TryGetComponent<Collider>(out var anyCol))
+                spawnPosition = anyCol.bounds.center;
+            else
             {
-                if (verbose) Debug.Log("[Decoy] Impacted has no Crystal in hierarchy.", impactee);
-                return;
+                var r = crystal.GetComponentInChildren<Renderer>();
+                if (r) spawnPosition = r.bounds.center;
             }
 
-            if (s_cooldownUntil.TryGetValue(crystal, out var until) && Time.time < until)
+            var spawnRotation = crystal.transform.rotation;
+
+            if (fakeCrystalPrefab)
             {
-                if (verbose) Debug.Log("[Decoy] On cooldown; skipping.", crystal);
-                return;
+                var fake = Instantiate(fakeCrystalPrefab, spawnPosition, spawnRotation);
+                fake.transform.SetParent(null, true);
+
+                if (fake.TryGetComponent<FakeCrystal>(out var fc))
+                    fc.OwnTeam = crystal.OwnTeam;
+
+                if (verbose) Debug.Log($"[Decoy] Spawned FakeCrystal @ {spawnPosition}");
             }
-
-            crystal.MarkNextImpactAsDecoy();
-
-            s_cooldownUntil[crystal] = Time.time + cooldownDuration;
+            else if (verbose)
+            {
+                Debug.LogWarning("[Decoy] No FakeCrystalPrefab set on Crystal.");
+            }
         }
     }
 }

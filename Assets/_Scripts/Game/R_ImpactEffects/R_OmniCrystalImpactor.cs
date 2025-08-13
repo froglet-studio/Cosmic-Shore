@@ -7,8 +7,8 @@ namespace CosmicShore.Game
     {
         [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         ScriptableObject[] omniCrystalShipEffectsSO;
-        
-        R_IImpactEffect[] omniCrystalShipEffects;
+
+        private R_IImpactEffect[] omniCrystalShipEffects;
 
         private void Awake()
         {
@@ -16,13 +16,14 @@ namespace CosmicShore.Game
         }
 
         protected override void AcceptImpactee(R_IImpactor impactee)
-        {    
+        {
             switch (impactee)
             {
                 case R_ShipImpactor shipImpactor:
-                    ExecuteEffect(impactee, omniCrystalShipEffects);
-                    Crystal.ExecuteCommonVesselImpact(shipImpactor.Ship);
+                {
+                    ExecuteEffect(shipImpactor, omniCrystalShipEffects);
                     break;
+                }
             }
         }
     }
