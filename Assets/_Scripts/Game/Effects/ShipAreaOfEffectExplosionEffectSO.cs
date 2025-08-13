@@ -24,7 +24,7 @@ namespace CosmicShore.Game
         protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_ImpactorBase impactee)
         {
             IShipStatus shipStatus = shipImpactor.Ship.ShipStatus;
-            
+            Transform shipTransform = shipStatus.ShipTransform;
             var aoeExplosion = Instantiate(_prefabGO).GetComponent<AOEExplosion>();
             aoeExplosion.Initialize(new AOEExplosion.InitializeStruct
             {
@@ -36,10 +36,11 @@ namespace CosmicShore.Game
                     ? Mathf.Lerp(_minExplosionScale, _maxExplosionScale, shipStatus.ResourceSystem.Resources[_ammoResourceIndex].CurrentAmount)
                     : _maxExplosionScale,
 
-                AnnonymousExplosion = true
+                AnnonymousExplosion = true,
+                SpawnPosition = shipTransform.position,
+                SpawnRotation = shipTransform.rotation,
             });
-            Transform shipTransform = shipStatus.ShipTransform;
-            aoeExplosion.SetPositionAndRotation(shipTransform.position, shipTransform.rotation);
+            
             aoeExplosion.Detonate();
         }
     }

@@ -7,11 +7,12 @@ namespace CosmicShore.Game.Projectiles
     {
         [SerializeField] float height = 800; // TODO: maybe pull from node diameter
         GameObject coneContainer;
-        Vector3 containerPosition;
-        Quaternion containerRotation;
 
         public override void Initialize(InitializeStruct initStruct)
         {
+            SpawnPosition = initStruct.SpawnPosition;
+            SpawnRotation = initStruct.SpawnRotation;
+            
             AnonymousExplosion = initStruct.AnnonymousExplosion;
             Ship = initStruct.Ship;
             if (Ship == null)
@@ -35,7 +36,7 @@ namespace CosmicShore.Game.Projectiles
             
             if (!coneContainer)
                 coneContainer = new GameObject("AOEContainer");
-            coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);
+            coneContainer.transform.SetPositionAndRotation(SpawnPosition, SpawnRotation);
             transform.SetParent(coneContainer.transform, false);
         }
 
@@ -60,10 +61,10 @@ namespace CosmicShore.Game.Projectiles
             Destroy(gameObject);
         }
 
-        public override void SetPositionAndRotation(Vector3 position, Quaternion rotation)
+        /*public override void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
             containerPosition = position;
             containerRotation = rotation;
-        }
+        }*/
     }
 }

@@ -25,6 +25,8 @@ namespace CosmicShore.Game.Projectiles
         protected Vector3 MaxScaleVector;
         protected float Inertia = 70;
         protected float speed;
+        protected Vector3 SpawnPosition;
+        protected Quaternion SpawnRotation;
 
         // Material and Team
         public Material Material { get; protected set; }
@@ -35,6 +37,9 @@ namespace CosmicShore.Game.Projectiles
         
         public virtual void Initialize(InitializeStruct initStruct)
         {
+            SpawnPosition = initStruct.SpawnPosition;
+            SpawnRotation = initStruct.SpawnRotation;
+            
             AnonymousExplosion = initStruct.AnnonymousExplosion;
             Ship = initStruct.Ship;
             if (Ship == null)
@@ -127,10 +132,10 @@ namespace CosmicShore.Game.Projectiles
             );*/
         }
 
-        public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
+        /*public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
             transform.SetPositionAndRotation(position, rotation);
-        }
+        }*/
 
 
 
@@ -141,6 +146,8 @@ namespace CosmicShore.Game.Projectiles
             public IShip Ship;
             public Material OverrideMaterial;
             public float MaxScale;
+            public Vector3 SpawnPosition;
+            public Quaternion SpawnRotation;
         }
     }
 }

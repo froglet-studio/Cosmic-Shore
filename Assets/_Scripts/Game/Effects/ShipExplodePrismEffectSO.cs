@@ -26,6 +26,7 @@ namespace CosmicShore.Game
         protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_PrismImpactor prismImpactee)
         {
             var shipStatus = shipImpactor.Ship.ShipStatus;
+            Transform shipTransform = shipStatus.ShipTransform;
             
             prismImpactee.TrailBlock.Damage(_inertia * shipStatus.Speed * shipStatus.Course,
                 shipStatus.Team, shipStatus.PlayerName);
@@ -39,11 +40,11 @@ namespace CosmicShore.Game
                     Ship = shipStatus.Ship,
                     MaxScale = Mathf.Lerp(_minExplosionScale, _maxExplosionScale, _charge),
                     OverrideMaterial = shipStatus.AOEExplosionMaterial,
-                    AnnonymousExplosion = false
+                    AnnonymousExplosion = false,
+                    SpawnPosition = shipTransform.position,
+                    SpawnRotation = shipTransform.rotation,
                 });
-
-                Transform shipTransform = shipStatus.ShipTransform;
-                aoeExplosion.SetPositionAndRotation(shipTransform.position, shipTransform.rotation);
+                
                 aoeExplosion.Detonate();
             }
         }

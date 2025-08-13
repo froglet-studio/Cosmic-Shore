@@ -24,10 +24,10 @@ namespace CosmicShore.Game
                     Ship = shipStatus.Ship,
                     MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, projectile.Charge),
                     OverrideMaterial = shipStatus.AOEExplosionMaterial,
-                    AnnonymousExplosion = false
+                    AnnonymousExplosion = false,
+                    SpawnPosition = projectile.transform.position,
+                    SpawnRotation = projectile.transform.rotation
                 });
-                
-                spawnedExplosion.SetPositionAndRotation(projectile.transform.position, projectile.transform.rotation);
                 spawnedExplosion.Detonate();
             }
 
