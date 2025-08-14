@@ -1,5 +1,6 @@
 using CosmicShore.SOAP;
 using CosmicShore.Utilities;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game.UI
@@ -16,7 +17,8 @@ namespace CosmicShore.Game.UI
 
         [SerializeField] private IntEventChannelSO onMoundDroneSpawned;
         [SerializeField] private IntEventChannelSO onQueenDroneSpawned;
-        [SerializeField] private BoolEventChannelSO onBottomEdgeButtonsEnabled;
+        // [SerializeField] private BoolEventChannelSO onBottomEdgeButtonsEnabled;
+        [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
         [SerializeField] private InputEventsEventChannelSO onButton1Pressed;
         [SerializeField] private InputEventsEventChannelSO onButton1Released;
         [SerializeField] private InputEventsEventChannelSO onButton2Pressed;
@@ -36,7 +38,8 @@ namespace CosmicShore.Game.UI
             // SO ? Controller
             onMoundDroneSpawned.OnEventRaised += OnMoundDroneSpawned;
             onQueenDroneSpawned.OnEventRaised += OnQueenDroneSpawned;
-            onBottomEdgeButtonsEnabled.OnEventRaised += OnBottomEdgeButtonsEnabled;
+            // onBottomEdgeButtonsEnabled.OnEventRaised += OnBottomEdgeButtonsEnabled;
+            onBottomEdgeButtonsEnabled.OnRaised += OnBottomEdgeButtonsEnabled;
             onSilhouetteInitialized.OnEventRaised += OnSilhouetteInitialized;
 
             // View ? Controller
@@ -47,7 +50,8 @@ namespace CosmicShore.Game.UI
         {
             onMoundDroneSpawned.OnEventRaised -= OnMoundDroneSpawned;
             onQueenDroneSpawned.OnEventRaised -= OnQueenDroneSpawned;
-            onBottomEdgeButtonsEnabled.OnEventRaised -= OnBottomEdgeButtonsEnabled;
+            // onBottomEdgeButtonsEnabled.OnEventRaised -= OnBottomEdgeButtonsEnabled;
+            onBottomEdgeButtonsEnabled.OnRaised -= OnBottomEdgeButtonsEnabled;
             onSilhouetteInitialized.OnEventRaised -= OnSilhouetteInitialized;
         }
 

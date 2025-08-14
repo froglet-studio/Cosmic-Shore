@@ -4,6 +4,7 @@ using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using CosmicShore.Game.AI;
+using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -16,7 +17,8 @@ namespace CosmicShore.Game
         public event Action<IShipStatus> OnShipInitialized;
 
         [Header("Event Channels")]
-        [SerializeField] protected BoolEventChannelSO onBottomEdgeButtonsEnabled;
+        // [SerializeField] protected BoolEventChannelSO onBottomEdgeButtonsEnabled;
+        [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
 
         protected IShipStatus _shipStatus;
         public IShipStatus ShipStatus

@@ -104,7 +104,8 @@ namespace CosmicShore.Game
                     ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
-                    onBottomEdgeButtonsEnabled.RaiseEvent(true);
+                    // onBottomEdgeButtonsEnabled.RaiseEvent(true);
+                    onBottomEdgeButtonsEnabled.Raise(true);
                 }
 
                 ShipStatus.ShipTransformer.enabled = IsOwner;
@@ -119,9 +120,10 @@ namespace CosmicShore.Game
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
                 ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
-                onBottomEdgeButtonsEnabled.RaiseEvent(true);
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
-                ShipStatus.TrailSpawner.Initialize(ShipStatus);                
+                ShipStatus.TrailSpawner.Initialize(ShipStatus);  
+                // onBottomEdgeButtonsEnabled.RaiseEvent(true);
+                onBottomEdgeButtonsEnabled.Raise(true);
             }
 
             // TODO - Currently AIPilot's update should run only after SingleStickShipTransformer
