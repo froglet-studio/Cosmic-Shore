@@ -39,6 +39,7 @@ namespace CosmicShore.Game
         ControlMode _mode = ControlMode.Crystal;
         Vector3 _overridePosition;
         Transform _overrideTransform;
+        bool _nudgeControlArmed = false;   
         Quaternion _nudgeOriginalRotation;
         
         void OnEnable()
@@ -62,43 +63,42 @@ namespace CosmicShore.Game
             shardFieldBus?.Unregister(this);   // unregister
         }
 
-        public void Initialize(Crystal crystal)
-        {
-            _crystal = crystal;
-            origin = newOrigin;
-
-            shardsX = (int)(crystalSize.x / shardDistance);
-            shardsY = (int)(crystalSize.y / shardDistance);
-            shardsZ = (int)(crystalSize.z / shardDistance);
-
+        public void Initialize(Crystal crystal) 
+        { 
+            _crystal = crystal; // TODO: this should be injected by the node, but that's not working at the moment :/
+            origin = newOrigin; 
+            shardsX = (int)(crystalSize.x / shardDistance); 
+            shardsY = (int)(crystalSize.y / shardDistance); 
+            shardsZ = (int)(crystalSize.z / shardDistance); 
+                
             if (_crystal != null) 
-                sphereDiameter = sphereScaler * _crystal.GetComponent<Crystal>().sphereRadius;
-
-            crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1];
-            _originalPositions = new Vector3[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1]; // new
-
-            for (int x = -shardsX; x <= shardsX; x++)
-            for (int y = -shardsY; y <= shardsY; y++)
-            for (int z = -shardsZ; z <= shardsZ; z++)
+                sphereDiameter = sphereScaler * _crystal.GetComponent<Crystal>().sphereRadius; 
+            
+            crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1]; // both sides of each axis plus the midplane
+            
+            for(int x = -shardsX; x <= shardsX; x++)
             {
-                GameObject tempSnow = Instantiate(snow, transform, true);
-                tempSnow.transform.localScale = Vector3.one * nodeScaler;
-                Vector3 pos = origin + new Vector3(
-                    x * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2),
-                    y * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2),
-                    z * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2));
-
-                tempSnow.transform.position = pos;
-                crystalLattice[x + shardsX, y + shardsY, z + shardsZ] = tempSnow;
-                _originalPositions[x + shardsX, y + shardsY, z + shardsZ] = pos; // store
-            }
-
-            ChangeSnowSize();
+                for(int y = -shardsY; y <= shardsY; y++) 
+                { 
+                    for (int z = -shardsZ; z <= shardsZ; z++) 
+                    { 
+                        var tempSnow = Instantiate(snow, transform, true); 
+                        tempSnow.transform.localScale = Vector3.one * nodeScaler; 
+                        tempSnow.transform.position = origin + new Vector3(x * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2), y * shardDistance + 
+                            Random.Range(-shardDistance / 2, shardDistance / 2), z * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2)); 
+                            
+                        crystalLattice[x + shardsX, y + shardsY, z + shardsZ] = tempSnow; } 
+                }
+            } 
+            
+            _mode = ControlMode.Crystal;
+            _nudgeControlArmed = false;
+            ChangeSnowSize(); 
         }
         
-        void ChangeSnowSize()
+         void ChangeSnowSize()
         {
-             float nodeScalerOverThree = nodeScaler / 3;
+            float nodeScalerOverThree = nodeScaler / 3;
 
             for (int x = 0; x < shardsX * 2 + 1; x++)
             for (int y = 0; y < shardsY * 2 + 1; y++)
@@ -111,29 +111,30 @@ namespace CosmicShore.Game
                 {
                     float clampedDistance = Mathf.Clamp(
                         (shard.transform.position - _crystal.transform.position).magnitude, 0, sphereDiameter);
-                    normalizedDistance = clampedDistance / sphereDiameter;
+                    normalizedDistance = sphereDiameter > 0f ? clampedDistance / sphereDiameter : 0f;
                     shard.transform.LookAt(_crystal.transform);
                 }
                 else if (_mode == ControlMode.Transform && _overrideTransform != null)
                 {
-                    Vector3 dir = (_overrideTransform.position - shard.transform.position);
+                    Vector3 dir = _overrideTransform.position - shard.transform.position;
                     float m = dir.magnitude;
-                    normalizedDistance = (m <= 0f ? 0f : 1f);
                     if (m > 0.0001f) shard.transform.rotation = Quaternion.LookRotation(dir);
+                    normalizedDistance = 1f;
                 }
                 else if (_mode == ControlMode.Position)
                 {
-                    Vector3 dir = (_overridePosition - shard.transform.position);
+                    Vector3 dir = _overridePosition - shard.transform.position;
                     float m = dir.magnitude;
-                    normalizedDistance = (m <= 0f ? 0f : 1f);
                     if (m > 0.0001f) shard.transform.rotation = Quaternion.LookRotation(dir);
+                    normalizedDistance = 1f;
                 }
-                else // Axis (existing behavior)
+                else // Axis
                 {
-                    var reject = shard.transform.position - (Vector3.Dot(shard.transform.position, targetAxis.normalized) * targetAxis.normalized);
+                    var reject = shard.transform.position
+                               - (Vector3.Dot(shard.transform.position, targetAxis.normalized) * targetAxis.normalized);
                     var maxDistance = Mathf.Max(shardsX, shardsY) * shardDistance;
-                    float clampedDistance = Mathf.Clamp(reject.magnitude, 0, maxDistance);
-                    normalizedDistance = clampedDistance / maxDistance;
+                    float clampedDistance = Mathf.Clamp(reject.magnitude, 0, Mathf.Max(1f, maxDistance));
+                    normalizedDistance = clampedDistance / Mathf.Max(1f, maxDistance);
 
                     if (lookAt) shard.transform.rotation = Quaternion.LookRotation(-reject.normalized);
                     else shard.transform.rotation = Quaternion.LookRotation(targetAxis);
@@ -144,10 +145,10 @@ namespace CosmicShore.Game
                     Vector3.one     * (normalizedDistance * nodeScalerOverThree + nodeSize);
             }
 
-            UpdateNudgeRootRotation();
+            // Only rotate the parent NudgeShards while armed (i.e., after button press)
+            if (_nudgeControlArmed)
+                UpdateNudgeRootRotation();
         }
-
-        public void SetOrigin(Vector3 origin) => this.origin = origin;
 
         void UpdateNudgeRootRotation()
         {
@@ -164,7 +165,6 @@ namespace CosmicShore.Game
                     targetPos = _overridePosition;
                     break;
                 case ControlMode.Axis:
-                    // Point the nudge root “down the axis” from its current position
                     targetPos = nudgeRoot.position + targetAxis.normalized * 10f;
                     break;
                 case ControlMode.Crystal:
@@ -179,11 +179,14 @@ namespace CosmicShore.Game
                 nudgeRoot.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
         }
         
+        public void SetOrigin(Vector3 origin) => this.origin = origin;
+
         // ======= Public control surface called by the bus =======
         public void PointAtTransform(Transform t)
         {
             _overrideTransform = t;
             _mode = ControlMode.Transform;
+            _nudgeControlArmed = true;                     // <— arm parent rotation
             Debug.Log($"[SnowChanger] PointAtTransform -> {t?.name}");
             ChangeSnowSize();
         }
@@ -192,6 +195,7 @@ namespace CosmicShore.Game
         {
             _overridePosition = worldPos;
             _mode = ControlMode.Position;
+            _nudgeControlArmed = true;                     // <— arm parent rotation
             Debug.Log($"[SnowChanger] PointAtPosition -> {worldPos}");
             ChangeSnowSize();
         }
@@ -201,6 +205,7 @@ namespace CosmicShore.Game
             targetAxis = axis;
             lookAt = shouldLookAtReject;
             _mode = ControlMode.Axis;
+            _nudgeControlArmed = true;                     // <— arm parent rotation
             Debug.Log($"[SnowChanger] AlignToAxis -> axis {axis} lookAt={lookAt}");
             ChangeSnowSize();
         }
@@ -209,14 +214,13 @@ namespace CosmicShore.Game
         {
             _overrideTransform = null;
             _mode = ControlMode.Crystal;
+            _nudgeControlArmed = false;                    // <— disarm parent rotation
 
-            // OPTIONAL: if you also want positions to snap back (kept from previous patch),
-            // keep your cached originalPositions logic here. Rotation goes back to crystal:
             Debug.Log("[SnowChanger] RestoreToCrystal");
             ChangeSnowSize();
 
-            // Also put the NudgeShards parent back to original orientation for a perfect reset
-            if (nudgeRoot != null) nudgeRoot.rotation = _nudgeOriginalRotation;
+            if (nudgeRoot != null)
+                nudgeRoot.rotation = _nudgeOriginalRotation; // reset the parent exactly
         }
     }
 }

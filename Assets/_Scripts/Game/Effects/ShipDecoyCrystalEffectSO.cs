@@ -55,6 +55,7 @@ namespace CosmicShore.Game
             {
                 Debug.LogWarning("[Decoy] No FakeCrystalPrefab set on Crystal.");
             }
+            crystal.CrystalRespawn();
         }
     }
 }
