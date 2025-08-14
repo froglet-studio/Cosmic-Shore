@@ -3208,8 +3208,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a15d4ce4fd80d3a4ab78eefd082aa82f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  alternateTargetAxis: {x: 0, y: 1, z: 175}
-  lookAtAlternate: 1
+  shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
+  mode: 1
+  targetTransform: {fileID: 282447970148362685}
+  targetPosition: {x: 0, y: 2, z: -1020}
+  axis: {x: 0, y: 1, z: 0}
+  axisLookAtReject: 1
 --- !u!1001 &1057105632154500541
 PrefabInstance:
   m_ObjectHideFlags: 0
