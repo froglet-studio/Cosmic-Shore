@@ -1,22 +1,71 @@
+using CosmicShore.Core;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    [RequireComponent(typeof(AOEExplosion))]
     public class R_ExplosionImpactor : R_ImpactorBase
     {
-        [SerializeField] R_IImpactEffect[] explosionShipEffects;
-        [SerializeField] R_IImpactEffect[] explosionPrismEffects;
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] explosionShipEffectsSO;
+        
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] explosionPrismEffectsSO;
+        
+        [SerializeField] bool affectSelf = false;
+        [SerializeField] bool destructive = true;
+        [SerializeField] bool devastating = false;
+        [SerializeField] bool shielding = false;
+
+        AOEExplosion explosion;
+        public AOEExplosion Explosion => explosion ??= GetComponent<AOEExplosion>();
+        
+        R_IImpactEffect[] explosionShipEffects;
+        R_IImpactEffect[] explosionPrismEffects;
+        
         
         protected override void AcceptImpactee(R_IImpactor impactee)
         {    
+            var impactVector = Explosion.CalculateImpactVector(impactee.Transform.position);
+            
             switch (impactee)
             {
-                case R_ShipImpactor shipImpactor:
-                    ExecuteEffect(impactee, explosionShipEffects);
+                case R_ShipImpactor shipImpactee:
+                    if (shipImpactee.Ship.ShipStatus.Team == Explosion.Team && !affectSelf)
+                        break;
+                    ExecuteEffect(shipImpactee, explosionShipEffects);
                     break;
-                case R_PrismImpactor prismImpactor:
-                    ExecuteEffect(impactee, explosionPrismEffects);
+                
+                case R_PrismImpactor prismImpactee:
+                    ExecuteCommonPrismCommands(prismImpactee.Prism, impactVector);
+                    ExecuteEffect(prismImpactee, explosionPrismEffects);
                     break;
+            }
+        }
+        
+        void ExecuteCommonPrismCommands(TrailBlock prism, Vector3 impactVector)
+        {
+            if ((prism.Team != Explosion.Team || affectSelf) && prism.TrailBlockProperties.IsSuperShielded)
+            {
+                prism.DeactivateShields();
+                Destroy(gameObject);    // TODO: This seems wrong...
+            } 
+            if ((prism.Team == Explosion.Team && !affectSelf) || !destructive)
+            {
+                if (shielding && prism.Team == Explosion.Team)
+                    prism.ActivateShield();
+                else 
+                    prism.ActivateShield(2f);
+                return;
+            }
+            
+            if (Explosion.AnonymousExplosion)
+                prism.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
+            else
+            {
+                var shipStatus = Explosion.Ship.ShipStatus;
+                prism.Damage(impactVector, shipStatus.Team, shipStatus.Player.PlayerName, devastating);
             }
         }
     }

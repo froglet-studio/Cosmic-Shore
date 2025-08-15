@@ -9,6 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6de00463aac3e754e88fe44d93dc2bd4, type: 3}
-  m_Name: StunEffectSO
-  m_EditorClassIdentifier:
+  m_Script: {fileID: 11500000, guid: 79c5310fba0d4512aa689a3137d09946, type: 3}
+  m_Name: OtherHapticsToShipEffectWrapper
+  m_EditorClassIdentifier: 
+  shipHapticsByOtherEffect: {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f,
+    type: 2}

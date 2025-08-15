@@ -19,9 +19,9 @@ namespace CosmicShore.Game
         {
             switch (impactee)
             {
-                case R_ShipImpactor shipImpactor:
+                case R_ShipImpactor shipImpactee:
                 {
-                    ExecuteEffect(shipImpactor, omniCrystalShipEffects);
+                    ExecuteEffect(shipImpactee, omniCrystalShipEffects);
                     break;
                 }
             }

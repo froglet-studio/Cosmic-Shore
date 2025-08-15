@@ -38,7 +38,7 @@ namespace CosmicShore.Game
                     break;
                 case R_PrismImpactor prismImpactor:
                     ExecuteEffect(impactee, skimmerPrismEffects);
-                    skimmer.ExecuteImpactOnPrism(prismImpactor.TrailBlock);
+                    skimmer.ExecuteImpactOnPrism(prismImpactor.Prism);
                     break;
                 case R_ElementalCrystalImpactor elementalCrystalImpactor:
                     ExecuteEffect(impactee, skimmerElementalCrystalEffects);

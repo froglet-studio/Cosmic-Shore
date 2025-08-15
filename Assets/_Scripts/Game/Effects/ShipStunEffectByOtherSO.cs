@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipStunEffect", menuName = "ScriptableObjects/Impact Effects/ShipStunEffectSO")]
-    public class ShipStunEffectSO : ImpactEffectSO<R_ShipImpactor, R_ImpactorBase>
+    [CreateAssetMenu(fileName = "ShipStunEffectByOther", menuName = "ScriptableObjects/Impact Effects/ShipStunEffectByOtherSO")]
+    public class ShipStunEffectByOtherSO : ImpactEffectSO<R_ShipImpactor, R_ImpactorBase>
     {
         protected override void ExecuteTyped(R_ShipImpactor impactor, R_ImpactorBase impactee)
         {

@@ -28,7 +28,7 @@ namespace CosmicShore.Game
             var shipStatus = shipImpactor.Ship.ShipStatus;
             Transform shipTransform = shipStatus.ShipTransform;
             
-            prismImpactee.TrailBlock.Damage(_inertia * shipStatus.Speed * shipStatus.Course,
+            prismImpactee.Prism.Damage(_inertia * shipStatus.Speed * shipStatus.Course,
                 shipStatus.Team, shipStatus.PlayerName);
             
             foreach (var AOE in _aoePrefabs)

@@ -2742,7 +2742,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 354762010696593788}
   shipPrismEffectsSO:
   - {fileID: 11400000, guid: 89f84fbba3cfe336d229d942c07fd521, type: 2}
   shipOmniCrystalEffectsSO: []

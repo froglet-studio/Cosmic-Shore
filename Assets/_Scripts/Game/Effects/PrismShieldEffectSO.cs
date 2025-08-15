@@ -8,7 +8,7 @@ namespace CosmicShore.Game
     {
         protected override void ExecuteTyped(R_PrismImpactor impactor, R_ImpactorBase crystalImpactee)
         {
-            var trailBlockProperties = impactor.TrailBlock.TrailBlockProperties;
+            var trailBlockProperties = impactor.Prism.TrailBlockProperties;
             if (trailBlockProperties == null || trailBlockProperties.trailBlock == null)
             {
                 Debug.LogWarning("ShieldEffectSO: trailBlockProperties or trailBlock is null");

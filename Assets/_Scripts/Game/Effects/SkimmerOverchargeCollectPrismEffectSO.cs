@@ -18,7 +18,7 @@ namespace CosmicShore.Game
         
         protected override void ExecuteTyped(R_SkimmerImpactor impactor, R_PrismImpactor prismImpactee)
         {
-            if (prismImpactee.TrailBlock.Team == Teams.Jade)
+            if (prismImpactee.Prism.Team == Teams.Jade)
             {
                 if (verbose) Debug.Log("[SkimmerOvercharge] Ignored Jade team prism.", prismImpactee);
                 return;

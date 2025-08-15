@@ -5,13 +5,7 @@ namespace CosmicShore.Game
 {
     public abstract class R_ImpactorBase : MonoBehaviour, R_IImpactor
     {
-        private void OnTriggerEnter(Collider other)
-        {
-            if (!other.TryGetComponent(out R_IImpactCollider impacteeCollider))
-                return;
-            
-            AcceptImpactee(impacteeCollider.Impactor);
-        }
+        public Transform Transform => transform;
         
         protected abstract void AcceptImpactee(R_IImpactor impactee);
 
@@ -25,5 +19,14 @@ namespace CosmicShore.Game
                 effect.Execute(this, impactee);
             }
         }
+        
+        void OnTriggerEnter(Collider other)
+        {
+            if (!other.TryGetComponent(out R_IImpactCollider impacteeCollider))
+                return;
+            
+            AcceptImpactee(impacteeCollider.Impactor);
+        }
+
     }
 }

@@ -4849,6 +4849,8 @@ GameObject:
   - component: {fileID: 4192802169378720406}
   - component: {fileID: 5964216561461172267}
   - component: {fileID: 4839249780886849078}
+  - component: {fileID: 4749048350673939572}
+  - component: {fileID: 8128070141949752426}
   m_Layer: 10
   m_Name: AOEConicExplosion
   m_TagString: Untagged
@@ -4884,23 +4886,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4954cc91a9f2d64f9738ee263dae759, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 20
-  MaxScale: 200
   ExplosionDuration: 2.7
   ExplosionDelay: 0
-  shipImpactEffects: 0200000003000000040000000100000000000000
-  _shipImpactEffects:
-  - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
-  - {fileID: 11400000, guid: 9812496630d0c2a2c3ffc7be7340c460, type: 2}
-  - {fileID: 11400000, guid: 7a5c6ccc0c9cabaebdb76fa302d64fd6, type: 2}
-  - {fileID: 11400000, guid: 250b0db57fac04545b909dcf65601cac, type: 2}
-  - {fileID: 11400000, guid: f5953fa836edea4a271739c5d600df33, type: 2}
   affectSelf: 0
   destructive: 1
   devastating: 1
   shielding: 0
-  Team: 0
-  AnonymousExplosion: 0
   height: 800
 --- !u!33 &520348123677097672
 MeshFilter:
@@ -4990,7 +4981,7 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -5015,3 +5006,39 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.24
   m_Center: {x: 0, y: -0.5, z: 0}
+--- !u!114 &4749048350673939572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9218889541719856748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosionShipEffectsSO:
+  - {fileID: 11400000, guid: d193028d71934664f819e86ecadbfb7e, type: 2}
+  - {fileID: 11400000, guid: afd81f4d056931a47a8fc5c5df243996, type: 2}
+  - {fileID: 11400000, guid: 035ba5d46da4a0342969fad5f39f060a, type: 2}
+  - {fileID: 11400000, guid: e4e63a66eb9954744b4650934a1a1084, type: 2}
+  - {fileID: 11400000, guid: 6f820921378520c41afd8e61bfffadbe, type: 2}
+  explosionPrismEffectsSO: []
+  affectSelf: 0
+  destructive: 1
+  devastating: 1
+  shielding: 0
+--- !u!114 &8128070141949752426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9218889541719856748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 4749048350673939572}

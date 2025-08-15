@@ -10,7 +10,7 @@ namespace CosmicShore.Game
     {
         protected override void ExecuteTyped(R_PrismImpactor prismImpactor, R_ShipImpactor shipImpactee)
         {
-            var trailBlockProperties = prismImpactor.TrailBlock.TrailBlockProperties;
+            var trailBlockProperties = prismImpactor.Prism.TrailBlockProperties;
             
             if (trailBlockProperties == null)
             {

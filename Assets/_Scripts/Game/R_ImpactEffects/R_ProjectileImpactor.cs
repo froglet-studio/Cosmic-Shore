@@ -4,11 +4,9 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    [RequireComponent(typeof(Projectile))]
     public class R_ProjectileImpactor : R_ImpactorBase
     {
-        [SerializeField] Projectile projectile;
-
-        
         [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         ScriptableObject[] projectileShipEffectsSO;
         
@@ -21,8 +19,8 @@ namespace CosmicShore.Game
         [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
         ScriptableObject[] projectileEndEffectsSO;
         
-        
-        public Projectile Projectile => projectile;
+        Projectile projectile;
+        public Projectile Projectile => projectile ??= GetComponent<Projectile>();
 
         R_IImpactEffect[] projectileShipEffects;
         R_IImpactEffect[] projectilePrismEffects;
@@ -57,7 +55,7 @@ namespace CosmicShore.Game
                     break;
                 
                 case R_PrismImpactor prismImpactor:
-                    if (projectile.DisallowImpactOnPrism(prismImpactor.TrailBlock.Team))
+                    if (projectile.DisallowImpactOnPrism(prismImpactor.Prism.Team))
                         break;
                     ExecuteEffect(impactee, projectilePrismEffects);
                     break;

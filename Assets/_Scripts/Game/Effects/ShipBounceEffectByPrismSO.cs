@@ -9,7 +9,7 @@ namespace CosmicShore.Game
         protected override void ExecuteTyped(R_ShipImpactor shipImpactor, R_PrismImpactor prismImpactee)
         {
             IShipStatus shipStatus = shipImpactor.Ship.ShipStatus;
-            TrailBlockProperties trailBlockProperties = prismImpactee.TrailBlock.TrailBlockProperties;
+            TrailBlockProperties trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;
             Transform shipTransform = shipStatus.ShipTransform;
 
             var cross = Vector3.Cross(shipTransform.forward, trailBlockProperties.trailBlock.transform.forward);

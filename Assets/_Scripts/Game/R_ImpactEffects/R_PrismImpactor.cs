@@ -1,19 +1,39 @@
+using System;
 using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    [RequireComponent(typeof(TrailBlock))]
     public class R_PrismImpactor : R_ImpactorBase
     {
-        [SerializeField]
-        TrailBlock trailBlock;
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] prismShipEffectsSO;
         
-        [SerializeField] R_IImpactEffect[] prismShipEffects;
-        [SerializeField] R_IImpactEffect[] prismProjectileEffects;
-        [SerializeField] R_IImpactEffect[] prismSkimmerEffects;
-        [SerializeField] R_IImpactEffect[] prismExplosionEffects;
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] prismProjectileEffectsSO;
+        
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] prismSkimmerEffectsSO;
+        
+        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        ScriptableObject[] prismExplosionEffectsSO;
+        
+        R_IImpactEffect[] prismShipEffects;
+        R_IImpactEffect[] prismProjectileEffects;
+        R_IImpactEffect[] prismSkimmerEffects;
+        R_IImpactEffect[] prismExplosionEffects;
 
-        public TrailBlock TrailBlock => trailBlock;
+        private TrailBlock prism;
+        public TrailBlock Prism => prism ??= GetComponent<TrailBlock>();
+
+        void Awake()
+        {
+            prismShipEffects = Array.ConvertAll(prismShipEffectsSO, so => so as R_IImpactEffect);
+            prismProjectileEffects = Array.ConvertAll(prismProjectileEffectsSO, so => so as R_IImpactEffect);
+            prismSkimmerEffects = Array.ConvertAll(prismSkimmerEffectsSO, so => so as R_IImpactEffect);
+            prismExplosionEffects = Array.ConvertAll(prismExplosionEffectsSO, so => so as R_IImpactEffect);
+        }
         
         protected override void AcceptImpactee(R_IImpactor impactee)
         {    
