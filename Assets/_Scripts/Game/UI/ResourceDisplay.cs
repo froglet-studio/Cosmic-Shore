@@ -93,7 +93,7 @@ namespace CosmicShore.Game.UI
             switch (displayMode)
             {
                 case DisplayMode.LegacyFuelImages:
-                    UpdateLegacyDisplay(currentLevel);
+                    // UpdateLegacyDisplay(currentLevel);
                     break;
                 case DisplayMode.SliderFill:
                     UpdateSliderDisplay(currentLevel, shouldChangeColor);

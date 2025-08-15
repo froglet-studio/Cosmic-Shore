@@ -3865,7 +3865,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   skimmerShipEffectsSO: []
   skimmerPrismEffectsSO:
-  - {fileID: 11400000, guid: afba2c4482f756f4081fd32cc1aef7c3, type: 2}
+  - {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
   skimmerElementalCrystalEffectsSO: []
   skimmer: {fileID: 874579554510349383}
 --- !u!114 &2722643089655899311

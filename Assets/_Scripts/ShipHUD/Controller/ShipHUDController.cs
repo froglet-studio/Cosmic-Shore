@@ -132,47 +132,45 @@ namespace CosmicShore.Game
                 return;
             }
 
-            int idx = chargeBoostAction.ResourceIndex;
-            HUDLog($"Subscribing ChargeBoostAction | meterIndex={idx}");
+            int idx = chargeBoostAction.BoostResourceIndex;
+            float Max() => Mathf.Max(0.0001f, chargeBoostAction.MaxChargeUnits);
+            float N(float units) => Mathf.Clamp01(units / Max());
 
-            _chargeStartedHandler = (from) =>
+            _chargeStartedHandler = (fromUnits) =>
             {
-                HUDLog($"ChargeStarted from={from:F3} -> toggle ChargeBoosting ON, set meter");
+                HUDLog($"ChargeStarted from={fromUnits:F3}");
                 Effects.SetToggle("ChargeBoosting", true);
-                Effects.SetMeter(idx, from);
+                Effects.SetMeter(idx, N(fromUnits));      
             };
 
-            _chargeProgressHandler = (val) =>
+            _chargeProgressHandler = (units) =>
             {
-                HUDLog($"ChargeProgress val={val:F3} -> set meter");
-                Effects.SetMeter(idx, val);
+                Effects.SetMeter(idx, N(units));         
             };
 
             _chargeEndedHandler = () =>
             {
-                HUDLog("ChargeEnded -> animate small settle to 1.0");
+                // Only top off visually if it actually ended at full.
                 Effects.AnimateRefill(idx, 0.1f, 1f);
             };
 
-            _dischargeStartedHandler = (from) =>
+            _dischargeStartedHandler = (fromUnits) =>
             {
-                HUDLog($"DischargeStarted from={from:F3} -> toggle ChargeBoosting OFF, set meter");
+                HUDLog($"DischargeStarted from={fromUnits:F3}");
                 Effects.SetToggle("ChargeBoosting", false);
-                Effects.SetMeter(idx, from);
+                Effects.SetMeter(idx, N(fromUnits));      
             };
 
-            _dischargeProgressHandler = (val) =>
+            _dischargeProgressHandler = (units) =>
             {
-                HUDLog($"DischargeProgress val={val:F3} -> set meter");
-                Effects.SetMeter(idx, val);
+                Effects.SetMeter(idx, N(units));          
             };
 
             _dischargeEndedHandler = () =>
             {
-                HUDLog("DischargeEnded -> animate small settle to 0.0");
-                Effects.AnimateDrain(idx, 0.1f, 0f);
+                Effects.AnimateDrain(idx, 0.1f, 0f);   
             };
-
+            
             chargeBoostAction.OnChargeStarted     += _chargeStartedHandler;
             chargeBoostAction.OnChargeProgress    += _chargeProgressHandler;
             chargeBoostAction.OnChargeEnded       += _chargeEndedHandler;

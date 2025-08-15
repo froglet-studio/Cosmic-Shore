@@ -711,12 +711,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83c4d9a1b2407d4790cb6b65a698b7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxBoostMultiplier: 5
-  boostChargeRate: 0.33
-  boostDischargeRate: 0.25
+  maxBoostMultiplier: 2
+  chargePerSecond: 0.5
+  dischargePerSecond: 2.5
   tickSeconds: 0.1
-  boostResourceIndex: 1
+  boostBoostResourceIndex: 0
   maxNormalizedCharge: 5
+  rechargeCooldownSeconds: 0
   verbose: 0
 --- !u!1 &2794760492430465044
 GameObject:
