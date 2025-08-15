@@ -27,11 +27,15 @@ namespace CosmicShore.Core
 
         [Header("Event Channels")]
         [SerializeField]
-        protected TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
+        // protected TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
+        protected ScriptableEventTrailBlockEventData _onTrailBlockCreatedEventChannel;
         [SerializeField]
-        protected TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
+        // protected TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
+        protected ScriptableEventTrailBlockEventData _onTrailBlockDestroyedEventChannel;
         [SerializeField]
-        protected TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+        // protected TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+        protected ScriptableEventTrailBlockEventData _onTrailBlockRestoredEventChannel;
+        
         
         [SerializeField] 
         ScriptableEventNoParam _onPlayGame;
@@ -54,18 +58,18 @@ namespace CosmicShore.Core
         {
             _onPlayGame.OnRaised += ResetStats;
             _onGameOver.OnRaised += OutputRoundStats;
-            _onTrailBlockCreatedEventChannel.OnEventRaised += OnBlockCreated;
-            _onTrailBlockDestroyedEventChannel.OnEventRaised += OnBlockDestroyed;
-            _onTrailBlockRestoredEventChannel.OnEventRaised += OnBlockRestored;
+            _onTrailBlockCreatedEventChannel.OnRaised += OnBlockCreated;
+            _onTrailBlockDestroyedEventChannel.OnRaised += OnBlockDestroyed;
+            _onTrailBlockRestoredEventChannel.OnRaised += OnBlockRestored;
         }
 
         protected virtual void OnDisable()
         {
             _onPlayGame.OnRaised -= ResetStats;
             _onGameOver.OnRaised -= OutputRoundStats;
-            _onTrailBlockCreatedEventChannel.OnEventRaised -= OnBlockCreated;
-            _onTrailBlockDestroyedEventChannel.OnEventRaised -= OnBlockDestroyed;
-            _onTrailBlockRestoredEventChannel.OnEventRaised -= OnBlockRestored;
+            _onTrailBlockCreatedEventChannel.OnRaised -= OnBlockCreated;
+            _onTrailBlockDestroyedEventChannel.OnRaised -= OnBlockDestroyed;
+            _onTrailBlockRestoredEventChannel.OnRaised -= OnBlockRestored;
         }
 
         public void LifeformCreated(string nodeID)
