@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipFXPrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipFXPrismEffectSO")]
+    [CreateAssetMenu(fileName = "ShipFXPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipFXPrismEffectSO")]
     public class ShipFXPrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
     {
         [SerializeField] private float particleDurationAtSpeedOne = 300f;

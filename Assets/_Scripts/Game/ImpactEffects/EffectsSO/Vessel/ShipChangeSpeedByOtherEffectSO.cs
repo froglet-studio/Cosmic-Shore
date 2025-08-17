@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipChangeSpeedByOtherEffect", menuName = "ScriptableObjects/Impact Effects/ShipChangeSpeedByOtherEffectSO")]
+    [CreateAssetMenu(fileName = "ShipChangeSpeedByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipChangeSpeedByOtherEffectSO")]
     public class ShipChangeSpeedByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
     {
         [SerializeField] float _amount = .1f;

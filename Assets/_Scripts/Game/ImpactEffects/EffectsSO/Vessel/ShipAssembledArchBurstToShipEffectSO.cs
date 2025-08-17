@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipAssembledArchBurstToShipEffect", menuName = "ScriptableObjects/Impact Effects/ShipAssembledArchBurstToShipEffectSO")]
+    [CreateAssetMenu(fileName = "ShipAssembledArchBurstToShipEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAssembledArchBurstToShipEffectSO")]
     public class ShipAssembledArchBurstToShipEffectSO : ImpactEffectSO<ShipImpactor, ShipImpactor>
     {
         #region Config Values

@@ -3,7 +3,7 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "OtherPrismSpawnCooldownToShipEffectWrapper", menuName = "ScriptableObjects/Impact Effects/OtherPrismSpawnCooldownToShipEffectWrapperSO")]
+    [CreateAssetMenu(fileName = "OtherPrismSpawnCooldownToShipEffectWrapper", menuName = "ScriptableObjects/Impact Effects/Other/OtherPrismSpawnCooldownToShipEffectWrapperSO")]
     public class OtherPrismSpawnCooldownToShipEffectWrapperSO : ImpactEffectSO<ImpactorBase, ShipImpactor>
     {
         [FormerlySerializedAs("shipTrailSpawnerCooldownByOtherEffect")] [SerializeField]

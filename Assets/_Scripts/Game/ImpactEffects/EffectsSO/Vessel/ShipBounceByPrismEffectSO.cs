@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipBounceByPrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipBounceByPrismEffectSO")]
+    [CreateAssetMenu(fileName = "ShipBounceByPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipBounceByPrismEffectSO")]
     public class ShipBounceByPrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
     {
         protected override void ExecuteTyped(ShipImpactor shipImpactor, PrismImpactor prismImpactee)

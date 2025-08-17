@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipChangeResourceByOtherEffect", menuName = "ScriptableObjects/Impact Effects/ShipChangeResourceByOtherEffectSO")]
+    [CreateAssetMenu(fileName = "ShipChangeResourceByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipChangeResourceByOtherEffectSO")]
     public class ShipChangeResourceByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
     {
         [SerializeField]
