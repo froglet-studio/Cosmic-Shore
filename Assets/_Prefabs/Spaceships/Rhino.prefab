@@ -1691,7 +1691,7 @@ MonoBehaviour:
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
-  OnSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+  OnSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
     type: 2}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
@@ -1799,7 +1799,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 8374620423313890364}
   shipPrismEffectsSO:
   - {fileID: 11400000, guid: 4c7ad73243860764b9a6cb505c840cc0, type: 2}
   shipOmniCrystalEffectsSO: []

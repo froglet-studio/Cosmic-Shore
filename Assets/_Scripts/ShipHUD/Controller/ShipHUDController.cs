@@ -9,9 +9,8 @@ namespace CosmicShore.Game
     {
         [SerializeField] private ShipClassType shipType;
         
-        [Header("Event Channels")]
-        [SerializeField] 
-        private SilhouetteEventChannelSO onSilhouetteInitialized;
+        // [Header("Event Channels")]
+        // [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
 
         private IShipStatus _shipStatus;
         private IShip _ship;

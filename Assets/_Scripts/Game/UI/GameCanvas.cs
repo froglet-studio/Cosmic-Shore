@@ -26,18 +26,18 @@ namespace CosmicShore.Game.UI
         [SerializeField] public List<Image> EncounteredCaptainImages;
         [SerializeField] public TMP_Text EncounteredCaptainText;
 
-        [SerializeField]
-        ShipHUDEventChannelSO onShipHUDInitialized;
+        // [SerializeField] ShipHUDEventChannelSO onShipHUDInitialized;
+        [SerializeField] ScriptableEventShipHUDData onShipHUDInitialized;
 
         private void OnEnable()
         {
-            onShipHUDInitialized.OnEventRaised += OnShipHUDInitialized;
+            onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
         }
 
 
         private void OnDisable()
         {
-            onShipHUDInitialized.OnEventRaised -= OnShipHUDInitialized;
+            onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
         }
         private void OnShipHUDInitialized(ShipHUDData data)
         {
