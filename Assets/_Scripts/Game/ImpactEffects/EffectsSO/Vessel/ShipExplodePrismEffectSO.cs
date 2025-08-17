@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     // TODO - Separate Damage Effect and Explode Effect by asking Garrett
-    [CreateAssetMenu(fileName = "ShipExplodePrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipExplodePrismEffectSO")]
+    [CreateAssetMenu(fileName = "ShipExplodePrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipExplodePrismEffectSO")]
     public class ShipExplodePrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
     {
         [SerializeField]

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipFeelDangerByPrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipFeelDangerByPrismEffectSO")]
+    [CreateAssetMenu(fileName = "ShipFeelDangerByPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipFeelDangerByPrismEffectSO")]
     public class ShipFeelDangerByPrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
     {
         [SerializeField] private float duration;

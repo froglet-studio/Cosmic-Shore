@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipChangeSpeedByPrismEffect", menuName = "ScriptableObjects/Impact Effects/ShipChangeSpeedByPrismEffect")]
+    [CreateAssetMenu(fileName = "ShipChangeSpeedByPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipChangeSpeedByPrismEffect")]
     public class ShipChangeSpeedByPrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
     {
         [SerializeField] private float speedModifierDuration;

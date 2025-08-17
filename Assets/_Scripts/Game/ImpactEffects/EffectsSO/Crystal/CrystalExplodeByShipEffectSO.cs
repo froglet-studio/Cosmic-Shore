@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "CrystalExplodeByShipEffect", menuName = "ScriptableObjects/Impact Effects/CrystalExplodeByShipEffectSO")]
+    [CreateAssetMenu(fileName = "CrystalExplodeByShipEffect", menuName = "ScriptableObjects/Impact Effects/Crystal/CrystalExplodeByShipEffectSO")]
     public class CrystalExplodeByShipEffectSO : ImpactEffectSO<CrystalImpactor, ShipImpactor>
     {
         protected override void ExecuteTyped(CrystalImpactor crystalImpactor, ShipImpactor shipImpactee)

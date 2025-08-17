@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipSpinByOtherEffect", menuName = "ScriptableObjects/Impact Effects/ShipSpinByOtherEffectSO")]
+    [CreateAssetMenu(fileName = "ShipSpinByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipSpinByOtherEffectSO")]
     public class ShipSpinByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
     {
         [SerializeField]

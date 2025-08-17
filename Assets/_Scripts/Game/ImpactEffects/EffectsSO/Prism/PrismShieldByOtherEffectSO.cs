@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "PrismShieldByOtherEffect", menuName = "ScriptableObjects/Impact Effects/PrismShieldByOtherEffectSO")]
+    [CreateAssetMenu(fileName = "PrismShieldByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Prism/PrismShieldByOtherEffectSO")]
     public class PrismShieldByOtherEffectSO : ImpactEffectSO<PrismImpactor, ImpactorBase>
     {
         protected override void ExecuteTyped(PrismImpactor impactor, ImpactorBase crystalImpactee)

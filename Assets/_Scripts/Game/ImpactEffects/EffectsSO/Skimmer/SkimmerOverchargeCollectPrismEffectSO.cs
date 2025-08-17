@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "SkimmerOverchargeCollectPrismEffect", menuName = "ScriptableObjects/Impact Effects/SkimmerOverchargeCollectPrismEffectSO")] 
+    [CreateAssetMenu(fileName = "SkimmerOverchargeCollectPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer/SkimmerOverchargeCollectPrismEffectSO")] 
     public class SkimmerOverchargeCollectPrismEffectSO:ImpactEffectSO<SkimmerImpactor, PrismImpactor>
     {
         [Header("Overcharge Settings")]

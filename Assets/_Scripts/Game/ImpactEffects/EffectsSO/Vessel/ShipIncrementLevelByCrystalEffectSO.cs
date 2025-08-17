@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipIncrementLevelByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/ShipIncrementLevelByCrystalEffectSO")]
+    [CreateAssetMenu(fileName = "ShipIncrementLevelByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipIncrementLevelByCrystalEffectSO")]
     public class ShipIncrementLevelByCrystalEffectSO : ImpactEffectSO<ShipImpactor, CrystalImpactor>
     {
         protected override void ExecuteTyped(ShipImpactor shipImpactor, CrystalImpactor crystalImpactee)

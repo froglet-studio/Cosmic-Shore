@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ProjectileExplodeByOtherEffect", menuName = "ScriptableObjects/Impact Effects/ProjectileExplodeByOtherEffectSO")]
+    [CreateAssetMenu(fileName = "ProjectileExplodeByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Projectile/ProjectileExplodeByOtherEffectSO")]
     public class ProjectileExplodeByOtherEffectSO : ImpactEffectSO<ProjectileImpactor, ImpactorBase>
     {
         [SerializeField] AOEExplosion[] aoePrefabs;

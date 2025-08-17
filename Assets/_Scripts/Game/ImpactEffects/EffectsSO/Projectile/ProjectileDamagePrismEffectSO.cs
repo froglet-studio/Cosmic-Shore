@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ProjectileDamagePrismEffect", menuName = "ScriptableObjects/Impact Effects/ProjectileDamagePrismEffectSO")]
+    [CreateAssetMenu(fileName = "ProjectileDamagePrismEffect", menuName = "ScriptableObjects/Impact Effects/Projectile/ProjectileDamagePrismEffectSO")]
     public class ProjectileDamagePrismEffectSO : ImpactEffectSO<ProjectileImpactor, PrismImpactor>
     {
         [SerializeField]

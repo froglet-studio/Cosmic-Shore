@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipGainAmmoByOtherEffect", menuName = "ScriptableObjects/Impact Effects/ShipGainAmmoByOtherEffectSO")]
+    [CreateAssetMenu(fileName = "ShipGainAmmoByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipGainAmmoByOtherEffectSO")]
     public class ShipGainAmmoByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
     {
         [SerializeField] private int ammoResourceIndex;

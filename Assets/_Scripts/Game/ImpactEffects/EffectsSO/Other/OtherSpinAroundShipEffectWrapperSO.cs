@@ -3,7 +3,7 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "OtherSpinAroundShipEffectWrapper", menuName = "ScriptableObjects/Impact Effects/OtherSpinAroundShipEffectWrapperSO")]
+    [CreateAssetMenu(fileName = "OtherSpinAroundShipEffectWrapper", menuName = "ScriptableObjects/Impact Effects/Other/OtherSpinAroundShipEffectWrapperSO")]
     public class OtherSpinAroundShipEffectWrapperSO : ImpactEffectSO<ImpactorBase, ShipImpactor>
     {
         [FormerlySerializedAs("shipSpinAroundByOtherEffect")] [SerializeField]
