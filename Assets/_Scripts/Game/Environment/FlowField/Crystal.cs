@@ -19,6 +19,8 @@ namespace CosmicShore.Game
 
     public class Crystal : CellItem
     {
+        const int MinimumSpaceBetweenCurrentAndLastSpawnPos = 100;
+        
         #region Inspector Fields
         [SerializeField] public CrystalProperties crystalProperties;
         [SerializeField] public float sphereRadius = 100;
@@ -31,6 +33,8 @@ namespace CosmicShore.Game
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
+        [SerializeField] private Collider collider;
 
         #endregion
 
@@ -76,6 +80,8 @@ namespace CosmicShore.Game
 //         }
 
         public bool IsOwnTeamSameAsShipTeam(Teams shipTeam) => OwnTeam != Teams.None && OwnTeam != shipTeam;
+
+        private Vector3 _lastSpawnPosition;
         
         public void CrystalRespawn()
         {
@@ -86,9 +92,20 @@ namespace CosmicShore.Game
                     model.model.SetActive(true);
                     model.model.GetComponent<FadeIn>().StartFadeIn();
                 }
-
-                transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, Random.rotation);
+                
+                
+                Vector3 spawnPos;
+                do
+                {
+                    spawnPos = Random.insideUnitSphere * sphereRadius + origin;
+                } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);
+                
+                
+                transform.SetPositionAndRotation(spawnPos, Random.rotation);
+                collider.enabled = true;
                 cell.UpdateItem();
+                origin = transform.position;
+                _lastSpawnPosition = spawnPos;
             }
             else
             {
@@ -125,6 +142,8 @@ namespace CosmicShore.Game
 
         public void Explode(IShipStatus shipStatus)
         {
+            collider.enabled = false;
+            
             for (int i = 0; i < crystalModels.Count; i++)
             {
                 var modelData = crystalModels[i];
@@ -132,8 +151,9 @@ namespace CosmicShore.Game
 
                 tempMaterial = new Material(modelData.explodingMaterial);
                 var spentCrystal = Instantiate(SpentCrystalPrefab);
-                spentCrystal.transform.position = transform.position;
-                spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
+                /*spentCrystal.transform.position = transform.position;
+                spentCrystal.transform.localEulerAngles = transform.localEulerAngles;*/
+                spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
                 spentCrystal.GetComponent<Renderer>().material = tempMaterial;
                 spentCrystal.transform.localScale = transform.lossyScale;
 

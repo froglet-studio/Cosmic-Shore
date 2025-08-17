@@ -13,7 +13,7 @@ namespace CosmicShore.Game.Projectiles
         [HideInInspector] public Vector3 InitialScale;
         
         [SerializeField]
-        R_ProjectileImpactor projectileImpactor;
+        ProjectileImpactor projectileImpactor;
 
         public float Charge { get; private set; }
         
@@ -22,26 +22,26 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] 
         protected List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
         protected List<ScriptableObject> _trailBlockImpactEffects;
 
 
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
         protected List<ScriptableObject> _shipImpactEffects;
 
 
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
 
-        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
         protected List<ScriptableObject> _crystalImpactEffects;
 
 
         [SerializeField] 
         protected List<TrailBlockImpactEffects> endEffects;
 
-        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
         protected List<ScriptableObject> _endEffects;
 
         #endregion

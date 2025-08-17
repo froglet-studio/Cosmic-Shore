@@ -101,6 +101,7 @@ MonoBehaviour:
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  collider: {fileID: 6588436222817790464}
 --- !u!82 &6588436222817790494
 AudioSource:
   m_ObjectHideFlags: 0
