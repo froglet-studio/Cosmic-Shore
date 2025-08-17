@@ -965,7 +965,7 @@ MonoBehaviour:
   - {fileID: 900027578394383705}
   - {fileID: 4311952714550248258}
   EncounteredCaptainText: {fileID: 0}
-  onShipHUDInitialized: {fileID: 11400000, guid: 90378e512b4a92c41985892083096667,
+  onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
     type: 2}
 --- !u!1 &5497835174820813627
 GameObject:

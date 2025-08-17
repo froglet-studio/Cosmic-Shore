@@ -15,17 +15,15 @@ namespace CosmicShore.Game.UI
 
         [Header("Event Channels")]
 
-        [SerializeField] private IntEventChannelSO onMoundDroneSpawned;
-        [SerializeField] private IntEventChannelSO onQueenDroneSpawned;
+        // [SerializeField] private IntEventChannelSO onMoundDroneSpawned;
+        [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
+        // [SerializeField] private IntEventChannelSO onQueenDroneSpawned;
+        [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
         // [SerializeField] private BoolEventChannelSO onBottomEdgeButtonsEnabled;
         [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
-        [SerializeField] private InputEventsEventChannelSO onButton1Pressed;
-        [SerializeField] private InputEventsEventChannelSO onButton1Released;
-        [SerializeField] private InputEventsEventChannelSO onButton2Pressed;
-        [SerializeField] private InputEventsEventChannelSO onButton2Released;
-        [SerializeField] private InputEventsEventChannelSO onButton3Pressed;
-        [SerializeField] private InputEventsEventChannelSO onButton3Released;
-        [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
+
+        // [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
+        [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
         
         private void Reset()
         {
@@ -36,11 +34,11 @@ namespace CosmicShore.Game.UI
         private void OnEnable()
         {
             // SO ? Controller
-            onMoundDroneSpawned.OnEventRaised += OnMoundDroneSpawned;
-            onQueenDroneSpawned.OnEventRaised += OnQueenDroneSpawned;
+            onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
+            onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
             // onBottomEdgeButtonsEnabled.OnEventRaised += OnBottomEdgeButtonsEnabled;
             onBottomEdgeButtonsEnabled.OnRaised += OnBottomEdgeButtonsEnabled;
-            onSilhouetteInitialized.OnEventRaised += OnSilhouetteInitialized;
+            onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
 
             // View ? Controller
             view.Initialize(this);
@@ -48,44 +46,44 @@ namespace CosmicShore.Game.UI
 
         private void OnDisable()
         {
-            onMoundDroneSpawned.OnEventRaised -= OnMoundDroneSpawned;
-            onQueenDroneSpawned.OnEventRaised -= OnQueenDroneSpawned;
+            onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
+            onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
             // onBottomEdgeButtonsEnabled.OnEventRaised -= OnBottomEdgeButtonsEnabled;
             onBottomEdgeButtonsEnabled.OnRaised -= OnBottomEdgeButtonsEnabled;
-            onSilhouetteInitialized.OnEventRaised -= OnSilhouetteInitialized;
+            onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
         }
 
         // IMiniGameHUDController
         public void OnButtonPressed(int buttonNumber)
         {
-            switch (buttonNumber)
-            {
-                case 1:
-                    onButton1Pressed.RaiseEvent(InputEvents.Button1Action);
-                    break;
-                case 2:
-                    onButton2Pressed.RaiseEvent(InputEvents.Button2Action);
-                    break;
-                case 3:
-                    onButton3Pressed.RaiseEvent(InputEvents.Button3Action);
-                    break;
-            }
+            // switch (buttonNumber)
+            // {
+            //     case 1:
+            //         onButton1Pressed.RaiseEvent(InputEvents.Button1Action);
+            //         break;
+            //     case 2:
+            //         onButton2Pressed.RaiseEvent(InputEvents.Button2Action);
+            //         break;
+            //     case 3:
+            //         onButton3Pressed.RaiseEvent(InputEvents.Button3Action);
+            //         break;
+            // }
         }
 
         public void OnButtonReleased(int buttonNumber)
         {
-            switch (buttonNumber)
-            {
-                case 1:
-                    onButton1Released.RaiseEvent(InputEvents.Button1Action);
-                    break;
-                case 2:
-                    onButton2Released.RaiseEvent(InputEvents.Button2Action);
-                    break;
-                case 3:
-                    onButton3Released.RaiseEvent(InputEvents.Button3Action);
-                    break;
-            }
+            // switch (buttonNumber)
+            // {
+            //     case 1:
+            //         onButton1Released.RaiseEvent(InputEvents.Button1Action);
+            //         break;
+            //     case 2:
+            //         onButton2Released.RaiseEvent(InputEvents.Button2Action);
+            //         break;
+            //     case 3:
+            //         onButton3Released.RaiseEvent(InputEvents.Button3Action);
+            //         break;
+            // }
         }
 
         // � SO event handlers call into the view �

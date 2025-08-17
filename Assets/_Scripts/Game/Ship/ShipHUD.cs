@@ -9,8 +9,8 @@ namespace CosmicShore
     {
         [SerializeField] R_ShipBase ship;
 
-        [SerializeField]
-        ShipHUDEventChannelSO onShipHUDInitialized;
+        // [SerializeField] ShipHUDEventChannelSO onShipHUDInitialized;
+        [SerializeField] ScriptableEventShipHUDData onShipHUDInitialized;
 
         void Start()
         {
@@ -36,7 +36,7 @@ namespace CosmicShore
             }*/
 
             shipHUD.gameObject.SetActive(true);
-            onShipHUDInitialized.RaiseEvent(new ShipHUDData()
+            onShipHUDInitialized.Raise(new ShipHUDData()
             {
                 ShipHUD = shipHUD
             });

@@ -261,9 +261,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   view: {fileID: 0}
-  onMoundDroneSpawned: {fileID: 11400000, guid: 7792e064d1fa59c4897fa2797e312a06,
+  onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
     type: 2}
-  onQueenDroneSpawned: {fileID: 11400000, guid: 062ba62fb83d43e459bd3a6dc7e23ac9,
+  onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
     type: 2}
   onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
     type: 2}
