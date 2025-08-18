@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipAreaOfEffectExplosionByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAreaOfEffectExplosionByOtherEffectSO")]
-    public class ShipAreaOfEffectExplosionByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
+    [CreateAssetMenu(fileName = "ShipExplosionByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipExplosionByOtherEffectSO")]
+    public class ShipExplosionByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
     {
         [SerializeField]
         AOEExplosion _prefabGO;
