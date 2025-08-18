@@ -79,7 +79,7 @@ namespace CosmicShore.Game
 //             CrystalRespawn();
 //         }
 
-        public bool IsOwnTeamSameAsShipTeam(Teams shipTeam) => OwnTeam != Teams.None && OwnTeam != shipTeam;
+        public bool CanBeCollected(Teams shipTeam) => OwnTeam == Teams.None || OwnTeam == shipTeam;
 
         private Vector3 _lastSpawnPosition;
         

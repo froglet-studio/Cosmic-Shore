@@ -5,6 +5,7 @@ namespace CosmicShore.Game
     /// <summary>
     /// Any impact effect should inherit from this class.
     /// Works with base/derived/interface types for both impactor & impactee.
+    /// Each impact effect assets can be added to only the monobehaviour component of TImpactor.
     /// </summary>
     public abstract class ImpactEffectSO<TImpactor, TImpactee> : ScriptableObject, IImpactEffect
         where TImpactor : class, IImpactor
