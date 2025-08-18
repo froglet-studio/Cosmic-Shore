@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 1158389878633052016}
   - component: {fileID: 7530736874585816541}
   - component: {fileID: 4173946516839143748}
+  - component: {fileID: 6566958221143598841}
+  - component: {fileID: 5983478941718291683}
   m_Layer: 10
   m_Name: AOEShieldExplosion
   m_TagString: Untagged
@@ -48,18 +50,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3aee2172b77b5524797b5b5f0a9d1efe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 0.5
-  MaxScale: 0
   ExplosionDuration: 3
   ExplosionDelay: 0.2
-  shipImpactEffects: 
+  _shipImpactEffects: []
   affectSelf: 0
   destructive: 0
   devastating: 0
   shielding: 1
-  Team: 0
-  Ship: {fileID: 0}
-  AnonymousExplosion: 0
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -85,6 +82,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -125,7 +125,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -154,7 +154,35 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
+--- !u!114 &6566958221143598841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosion: {fileID: 3479271500403630839}
+  explosionShipEffectsSO: []
+  explosionPrismEffectsSO: []
+--- !u!114 &5983478941718291683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 6566958221143598841}

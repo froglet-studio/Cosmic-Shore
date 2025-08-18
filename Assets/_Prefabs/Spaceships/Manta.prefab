@@ -1873,7 +1873,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 104738665
+  GlobalObjectIdHash: 3392890734
   InScenePlacedSourceGlobalObjectIdHash: 104738665
   DeferredDespawnTick: 0
   Ownership: 1
@@ -2178,7 +2178,7 @@ MonoBehaviour:
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
-  OnSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+  OnSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
     type: 2}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
@@ -2234,9 +2234,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
+  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
     type: 2}
-  impactProperties: []
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2312,10 +2311,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 7318663848403301360}
   shipPrismEffectsSO:
   - {fileID: 11400000, guid: da9a61387d3051441a02b9233553614a, type: 2}
-  shipOmniCrystalEffectsSO: []
+  shipOmniCrystalEffectsSO:
+  - {fileID: 11400000, guid: ff89ef91b7f55d44d95e4f57a70eef64, type: 2}
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
 --- !u!1 &6675130274311316141
@@ -3817,7 +3816,15 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8469300474470268824}
+    - targetCorrespondingSourceObject: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2722643089655899311}
   m_SourcePrefab: {fileID: 100100000, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
 --- !u!4 &282447970148362685 stripped
 Transform:
@@ -3831,12 +3838,48 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 7471713358279828738}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &2695624631939139826 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
+    type: 3}
+  m_PrefabInstance: {fileID: 7471713358279828738}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8469300474470268824
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1731f6481c2493aa107099246bb1af8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skimmerShipEffectsSO: []
+  skimmerPrismEffectsSO:
+  - {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
+  skimmerElementalCrystalEffectsSO: []
+  skimmer: {fileID: 874579554510349383}
+--- !u!114 &2722643089655899311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 8469300474470268824}
 --- !u!1001 &8546359282292252367
 PrefabInstance:
   m_ObjectHideFlags: 0

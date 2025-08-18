@@ -35,6 +35,12 @@ namespace CosmicShore.Game.Projectiles
         Vector3 rayDirection;
         protected List<Trail> trails = new List<Trail>();
 
+        public override void Initialize(InitializeStruct initStruct)
+        {
+            base.Initialize(initStruct);
+            rayDirection = SpawnRotation * Vector3.forward;
+        }
+
         // TODO - Check this out, to divide it to Initialize and Detonate methods
         /*public override void InitializeAndDetonate(IShip ship)
         {
@@ -115,10 +121,10 @@ namespace CosmicShore.Game.Projectiles
             return block;
         }
 
-        public override void SetPositionAndRotation(Vector3 position, Quaternion rotation)
+        /*public override void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
             base.SetPositionAndRotation(position, rotation);
             rayDirection = rotation * Vector3.forward;
-        }
+        }*/
     }
 }

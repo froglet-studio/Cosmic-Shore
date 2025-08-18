@@ -14,8 +14,9 @@ GameObject:
   - component: {fileID: 4704425947628343467}
   - component: {fileID: 7669076058770026044}
   - component: {fileID: 8504388981194176714}
-  - component: {fileID: -2002303674843682208}
   - component: {fileID: 8504388981194176713}
+  - component: {fileID: 6107227404135030877}
+  - component: {fileID: 8345937152385841895}
   m_Layer: 12
   m_Name: ExplodableProjectile
   m_TagString: Projectile
@@ -4863,34 +4864,6 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
---- !u!114 &-2002303674843682208
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7877928849292311340}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 724040231d9c9bf41a9fd3a9819ece89, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Velocity: {x: 0, y: 0, z: 0}
-  ImpactOnEnd: 0
-  Inertia: 1
-  InitialScale: {x: 0, y: 0, z: 0}
-  trailBlockImpactEffects: 0b000000
-  shipImpactEffects: 040000000300000002000000
-  crystalImpactEffects: 
-  endEffects: 
-  ProjectileTime: 0
-  spike: 0
-  growthRate: 1
-  friendlyFire: 0
-  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  AOEPrefabs: []
-  minExplosionScale: 50
-  maxExplosionScale: 600
 --- !u!199 &8504388981194176713
 ParticleSystemRenderer:
   serializedVersion: 6
@@ -4969,3 +4942,47 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
+--- !u!114 &6107227404135030877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7877928849292311340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0abdb3ebc3c413846859b59615823360, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Velocity: {x: 0, y: 0, z: 0}
+  InitialScale: {x: 0, y: 0, z: 0}
+  projectileImpactor: {fileID: 0}
+  trailBlockImpactEffects: 
+  _trailBlockImpactEffects: []
+  shipImpactEffects: 
+  _shipImpactEffects: []
+  crystalImpactEffects: 
+  _crystalImpactEffects: []
+  endEffects: 
+  _endEffects: []
+  ProjectileTime: 0
+  spike: 0
+  growthRate: 1
+  friendlyFire: 0
+  _themeManagerData: {fileID: 0}
+--- !u!114 &8345937152385841895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7877928849292311340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  projectileShipEffectsSO: []
+  projectilePrismEffectsSO: []
+  projectileFakeCrystalEffectsSO: []
+  projectileEndEffectsSO: []

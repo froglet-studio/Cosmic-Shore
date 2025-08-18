@@ -4,6 +4,7 @@ using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using CosmicShore.Game.AI;
+using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -16,7 +17,8 @@ namespace CosmicShore.Game
         public event Action<IShipStatus> OnShipInitialized;
 
         [Header("Event Channels")]
-        [SerializeField] protected BoolEventChannelSO onBottomEdgeButtonsEnabled;
+        // [SerializeField] protected BoolEventChannelSO onBottomEdgeButtonsEnabled;
+        [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
 
         protected IShipStatus _shipStatus;
         public IShipStatus ShipStatus
@@ -82,13 +84,6 @@ namespace CosmicShore.Game
 
         public void StopShipControllerActions(InputEvents controlType) =>
                 ShipStatus.ActionHandler.StopShipControllerActions(controlType);
-
-        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        /*public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) =>
-            ShipStatus.ImpactHandler.PerformCrystalImpactEffects(crystalProperties);
-
-        public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties) =>
-            ShipStatus.ImpactHandler.PerformTrailBlockImpactEffects(trailBlockProperties);*/
 
         public abstract void PerformButtonActions(int buttonNumber);
 

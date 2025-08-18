@@ -3,6 +3,7 @@ using UnityEngine;
 using CosmicShore.Game.IO;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
+using Obvious.Soap;
 
 namespace CosmicShore
 {
@@ -12,10 +13,10 @@ namespace CosmicShore
         GameObject container;
 
         [SerializeField]
-        IntEventChannelSO onMoundDroneSpawned;
+        ScriptableEventInt onMoundDroneSpawned;
 
         [SerializeField]
-        IntEventChannelSO onQueenDroneSpawned;
+        ScriptableEventInt onQueenDroneSpawned;
 
         List<GameObject> queenDrones = new List<GameObject>();
         List<GameObject> moundDrones = new List<GameObject>();
@@ -41,7 +42,7 @@ namespace CosmicShore
 
                 // TODO - Remove MiniGameHUD dependency
                 // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
-                onQueenDroneSpawned.RaiseEvent(queenDrones.Count);
+                onQueenDroneSpawned.Raise(queenDrones.Count);
             }
             else
             {
@@ -49,7 +50,7 @@ namespace CosmicShore
 
                 // TODO - Remove MiniGameHUD dependency
                 // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
-                onMoundDroneSpawned.RaiseEvent(moundDrones.Count);
+                onMoundDroneSpawned.Raise(moundDrones.Count);
             }
         }
 
@@ -63,9 +64,9 @@ namespace CosmicShore
                 queenDrones.Add(drone);
 
                 // TODO - Remove MiniGameHUD dependency
-                onMoundDroneSpawned.RaiseEvent(moundDrones.Count);
+                onMoundDroneSpawned.Raise(moundDrones.Count);
                 // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
-                onQueenDroneSpawned.RaiseEvent(queenDrones.Count);
+                onQueenDroneSpawned.Raise(queenDrones.Count);
                 // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
             }
             else if (!toQueen && queenDrones.Count > 0)
@@ -76,9 +77,9 @@ namespace CosmicShore
                 moundDrones.Add(drone);
 
                 // TODO - Remove MiniGameHUD dependency
-                onQueenDroneSpawned.RaiseEvent(queenDrones.Count);
+                onQueenDroneSpawned.Raise(queenDrones.Count);
                 // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
-                onMoundDroneSpawned.RaiseEvent(moundDrones.Count);
+                onMoundDroneSpawned.Raise(moundDrones.Count);
                 // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
             }
             else

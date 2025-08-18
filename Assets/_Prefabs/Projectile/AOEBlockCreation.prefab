@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6454128237993233764}
   - component: {fileID: -6804145696766762189}
+  - component: {fileID: 4822283212795160684}
   m_Layer: 10
   m_Name: AOEBlockCreation
   m_TagString: Untagged
@@ -44,17 +45,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5caf50b607e36f8419e3201a390c1563, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 5
-  MaxScale: 200
   ExplosionDuration: 2
   ExplosionDelay: 0.2
-  shipImpactEffects: 
   affectSelf: 0
   destructive: 1
   devastating: 0
   shielding: 0
-  Team: 0
-  AnonymousExplosion: 0
   trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
     type: 3}
   blockScale: {x: 6, y: 4, z: 2}
@@ -63,3 +59,21 @@ MonoBehaviour:
   blockCount: 8
   ringCount: 4
   radius: 12
+--- !u!114 &4822283212795160684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosionShipEffectsSO: []
+  explosionPrismEffectsSO: []
+  affectSelf: 0
+  destructive: 1
+  devastating: 0
+  shielding: 0

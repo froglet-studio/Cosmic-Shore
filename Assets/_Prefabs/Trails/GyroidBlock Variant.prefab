@@ -93,6 +93,12 @@ PrefabInstance:
       propertyPath: TargetScale.z
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: _onTrailBlockCreatedEventChannel
+      value: 
+      objectReference: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
+        type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -110,18 +116,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 4980530451716370270}
   m_SourcePrefab: {fileID: 100100000, guid: 1488a2ac58b2b4c43b14f84206bd9195, type: 3}
---- !u!114 &8110546509497104660 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
-    type: 3}
-  m_PrefabInstance: {fileID: 2814791341805296853}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8591085806180840750}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f76793d2a031124f900d060d1bbb2bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &8591085806180840750 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5776304996075792891, guid: 1488a2ac58b2b4c43b14f84206bd9195,
@@ -162,7 +156,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a83a5b15530145f2b806342c2109654e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailBlock: {fileID: 8110546509497104660}
+  prismShipEffectsSO: []
+  prismProjectileEffectsSO: []
+  prismSkimmerEffectsSO: []
+  prismExplosionEffectsSO: []
 --- !u!114 &4980530451716370270
 MonoBehaviour:
   m_ObjectHideFlags: 0

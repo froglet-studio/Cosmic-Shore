@@ -13,7 +13,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] Vector2 offset;
         [SerializeField] Sprite InactiveImage;
         [SerializeField] Sprite ActiveImage;
-        [SerializeField] Player player;
+        [SerializeField] R_Player player;
 
         Image image;
         bool initialized;

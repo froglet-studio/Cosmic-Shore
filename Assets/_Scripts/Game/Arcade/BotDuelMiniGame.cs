@@ -5,7 +5,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class BotDuelMiniGame : MiniGame 
     {
-        [SerializeField] Player hostilePilot;
+        [SerializeField] R_Player hostilePilot;
         protected override void Start()
         {
             base.Start();

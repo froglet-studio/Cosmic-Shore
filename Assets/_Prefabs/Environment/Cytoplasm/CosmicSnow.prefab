@@ -45,13 +45,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 355219de309c3c1418444878b646dca4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Crystal: {fileID: 0}
+  shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
   snow: {fileID: 639495420572631487}
   crystalSize: {x: 500, y: 500, z: 500}
   shardDistance: 100
   lookAt: 0
   targetAxis: {x: 0, y: 0, z: 0}
   newOrigin: {x: 0, y: 0, z: 0}
+  nudgeRoot: {fileID: 639495420572631486}
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
 --- !u!1 &639495420572631487
 GameObject:

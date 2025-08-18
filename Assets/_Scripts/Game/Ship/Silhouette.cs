@@ -22,8 +22,8 @@ namespace CosmicShore
 
         [SerializeField] Vector3 sihouetteScale = Vector3.one;
 
-        [SerializeField]
-        SilhouetteEventChannelSO OnSilhouetteInitialized;
+        // [SerializeField] SilhouetteEventChannelSO OnSilhouetteInitialized;
+        // [SerializeField] ScriptableEventSilhouetteData OnSilhouetteInitialized;
 
         // jaws //
         [SerializeField] GameObject topJaw;
@@ -68,16 +68,16 @@ namespace CosmicShore
                 }
             }*/
 
-            if (!_ship.ShipStatus.AutoPilotEnabled)
-            {
-                OnSilhouetteInitialized.RaiseEvent(new SilhouetteData()
-                {
-                    Sender = this,
-                    IsSilhouetteActive = !ship.ShipStatus.AutoPilotEnabled && ship.ShipStatus.Player.IsActive,
-                    IsTrailDisplayActive = !ship.ShipStatus.AutoPilotEnabled,
-                    Silhouettes = silhouetteParts
-                });
-            }
+            // if (!_ship.ShipStatus.AutoPilotEnabled)
+            // {
+            //     OnSilhouetteInitialized.Raise(new SilhouetteData()
+            //     {
+            //         Sender = this,
+            //         IsSilhouetteActive = !ship.ShipStatus.AutoPilotEnabled && ship.ShipStatus.Player.IsActive,
+            //         IsTrailDisplayActive = !ship.ShipStatus.AutoPilotEnabled,
+            //         Silhouettes = silhouetteParts
+            //     });
+            // }
 
             if (topJaw) _ship.ShipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;

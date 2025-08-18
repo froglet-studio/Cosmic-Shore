@@ -62,7 +62,7 @@ public class WormManager : Population
         if (targetUpdateTimer >= targetUpdateInterval)
         {
             targetUpdateTimer = 0f;
-            Vector3 highDensityPosition = node.GetExplosionTarget(Team);
+            Vector3 highDensityPosition = cell.GetExplosionTarget(Team);
             foreach (Worm worm in activeWorms)
             {
                 worm.SetTarget(highDensityPosition);

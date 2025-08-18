@@ -4,7 +4,8 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
 {
-    public class ExplodableProjectile : Projectile
+    // DEPRECATED - Use Projectile.cs
+    /*public class ExplodableProjectile : Projectile
     {
         [SerializeField] List<AOEExplosion> AOEPrefabs;
         [SerializeField] float minExplosionScale;
@@ -72,7 +73,7 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        /*public void Detonate()
+        public void Detonate()
         {
             foreach (var AOE in AOEPrefabs)
             {
@@ -96,11 +97,6 @@ namespace CosmicShore.Game.Projectiles
             }
 
             _poolManager.ReturnToPool(gameObject, gameObject.tag);
-        }*/
-
-        public void ExecuteExplodeEffect()
-        {
-            _poolManager.ReturnToPool(gameObject, gameObject.tag);
         }
-    }
+    }*/
 }

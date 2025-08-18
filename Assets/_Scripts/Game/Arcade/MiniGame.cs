@@ -486,10 +486,10 @@ namespace CosmicShore.Game.Arcade
             if (!gameRunning || ActivePlayer == null) return;
 
             // hand control to the AI
-            Player activePlayer = ((Player)ActivePlayer);
+            R_Player activePlayer = ((R_Player)ActivePlayer);
 
             // TODO -  Should not directly call StartAutoPilot, use event
-            activePlayer.StartAutoPilot();
+            // activePlayer.StartAutoPilot();
         }
 
         private void HandleGameResumed()
@@ -497,10 +497,10 @@ namespace CosmicShore.Game.Arcade
             if (!gameRunning || ActivePlayer == null) return;
 
             // give control back to the player
-            Player activePlayer = ((Player)ActivePlayer);
+            R_Player activePlayer = ((R_Player)ActivePlayer);
 
             // TODO -  Should not directly call StartAutoPilot, use event
-            activePlayer.StopAutoPilot();
+            // activePlayer.StopAutoPilot();
         }
 
         struct TimedCallback

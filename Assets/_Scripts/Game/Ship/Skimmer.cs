@@ -9,15 +9,8 @@ namespace CosmicShore.Game
 {
     public class Skimmer : ElementalShipComponent
     {
-        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
-        List<ScriptableObject> _blockImpactEffects;
-
-        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
+        [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _blockStayEffects;
-
-        [SerializeField, RequireInterface(typeof(R_IImpactEffect))]
-        List<ScriptableObject> _shipImpactEffects;
-
         [SerializeField] float vaccumAmount = 80f;
         [SerializeField] bool vacuumCrystal = true;
 
@@ -103,33 +96,7 @@ namespace CosmicShore.Game
 
             if (markerContainer) markerContainer.transform.parent = _shipStatus.Player.Transform;
         }
-
-        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        void PerformBlockImpactEffects(TrailBlockProperties trailBlockProperties)
-        {
-            /*var castedEffects = _blockImpactEffects.Cast<IImpactEffect>();
-            var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);
-            
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, default, trailBlockProperties);*/
-        }
-
-        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        void PerformShipImpactEffects(IShipStatus shipGeometry)
-        {
-            /*if (_shipStatus == null)
-                return;
-
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.SkimmerShipCollision(_shipStatus.Ship, shipGeometry.Ship);
-
-            var castedEffects = _shipImpactEffects.Cast<IImpactEffect>();
-            var impactEffectData = new ImpactEffectData(_shipStatus, null, Vector3.zero);
-            
-            
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData);*/
-        }
-
-
+        
         IEnumerator CooldownCoroutine(float Period)
         {
             _onCoolDown = true;
@@ -155,19 +122,17 @@ namespace CosmicShore.Game
             skimStartTimes.Add(trailBlock.ownerID, Time.time);
         }
 
-        void OnTriggerEnter(Collider other)
+        public void ExecuteImpactOnShip(IShip ship)
         {
-            if (other.TryGetComponent(out IVesselCollider vesselCollider))
-            {
-                PerformShipImpactEffects(vesselCollider.ShipStatus);
-            }
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.SkimmerShipCollision(_shipStatus.Ship, ship);
+        }
 
-            // TODO : Temp fix. Need better way
-            if (_shipStatus is null || !other.TryGetComponent<TrailBlock>(out var trailBlock) ||
-                (!affectSelf && trailBlock.Team == _shipStatus.Team)) return;
-            
+        public void ExecuteImpactOnPrism(TrailBlock trailBlock)
+        {
+            if (_shipStatus is null || (!affectSelf && trailBlock.Team == _shipStatus.Team)) return;
+                
             StartSkim(trailBlock);
-            PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
             MakeBoosters(trailBlock);
         }
 

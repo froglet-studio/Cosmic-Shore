@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6454128237993233764}
   - component: {fileID: 8507666106090082286}
   - component: {fileID: 1144906062442093120}
+  - component: {fileID: 2957460689854987115}
   m_Layer: 10
   m_Name: AOEFiveRingSpawner
   m_TagString: Untagged
@@ -45,17 +46,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68f57ba7e4f214f49b194da79a32585c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 50
-  MaxScale: 200
   ExplosionDuration: 2
   ExplosionDelay: 0.01
-  shipImpactEffects: 
   affectSelf: 0
   destructive: 0
   devastating: 0
   shielding: 0
-  Team: 0
-  AnonymousExplosion: 0
   trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
     type: 3}
   blockScale: {x: 42, y: 42, z: 42}
@@ -83,3 +79,21 @@ MonoBehaviour:
   blocksPerRing: 80
   ringRadius: 200
   scale: {x: 3, y: 0.2, z: 35}
+--- !u!114 &2957460689854987115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosionShipEffectsSO: []
+  explosionPrismEffectsSO: []
+  affectSelf: 0
+  destructive: 0
+  devastating: 0
+  shielding: 0

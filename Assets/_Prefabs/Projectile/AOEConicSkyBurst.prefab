@@ -4849,6 +4849,8 @@ GameObject:
   - component: {fileID: 4192802169378720406}
   - component: {fileID: 5964216561461172267}
   - component: {fileID: 4839249780886849078}
+  - component: {fileID: 4162623732586539737}
+  - component: {fileID: 3387120665438013235}
   m_Layer: 10
   m_Name: AOEConicSkyBurst
   m_TagString: Untagged
@@ -4884,17 +4886,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29c7270b521a36b41a544f515c98162f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 0
-  MaxScale: 200
   ExplosionDuration: 0.1
   ExplosionDelay: 0
-  shipImpactEffects: 
   affectSelf: 1
   destructive: 1
   devastating: 1
   shielding: 0
-  Team: 0
-  AnonymousExplosion: 0
   height: 90
   growthRate: 0.05
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
@@ -5045,3 +5042,34 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.24
   m_Center: {x: 0, y: -0.5, z: 0}
+--- !u!114 &4162623732586539737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9218889541719856748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosionShipEffectsSO: []
+  explosionPrismEffectsSO: []
+  affectSelf: 1
+  destructive: 1
+  devastating: 1
+  shielding: 0
+--- !u!114 &3387120665438013235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9218889541719856748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 4162623732586539737}

@@ -138,7 +138,7 @@ namespace CosmicShore.Game
             }
 
             // Get the ship type from the NetworkPlayer.
-            NetworkPlayer networkPlayer = playerNetworkObject.GetComponent<NetworkPlayer>();
+            R_Player networkPlayer = playerNetworkObject.GetComponent<R_Player>();
             if (networkPlayer == null)
             {
                 Debug.LogError($"SpawnPlayerAndShipForClient: NetworkPlayer component not found for client {clientId}.");

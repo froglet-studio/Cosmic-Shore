@@ -46,9 +46,9 @@ namespace CosmicShore.Game
         {
             if (_netcodeHooks.IsServer)
             {
-                _onTrailBlockCreatedEventChannel.OnEventRaised += OnBlockCreated;
-                _onTrailBlockDestroyedEventChannel.OnEventRaised += OnBlockDestroyed;
-                _onTrailBlockRestoredEventChannel.OnEventRaised += OnBlockRestored;
+                _onTrailBlockCreatedEventChannel.OnRaised += OnBlockCreated;
+                _onTrailBlockDestroyedEventChannel.OnRaised += OnBlockDestroyed;
+                _onTrailBlockRestoredEventChannel.OnRaised += OnBlockRestored;
             }
         }
 
@@ -56,9 +56,9 @@ namespace CosmicShore.Game
         {
             if (_netcodeHooks.IsServer)
             {
-                _onTrailBlockCreatedEventChannel.OnEventRaised -= OnBlockCreated;
-                _onTrailBlockDestroyedEventChannel.OnEventRaised -= OnBlockDestroyed;
-                _onTrailBlockRestoredEventChannel.OnEventRaised -= OnBlockRestored;
+                _onTrailBlockCreatedEventChannel.OnRaised -= OnBlockCreated;
+                _onTrailBlockDestroyedEventChannel.OnRaised -= OnBlockDestroyed;
+                _onTrailBlockRestoredEventChannel.OnRaised -= OnBlockRestored;
             }
         }
 

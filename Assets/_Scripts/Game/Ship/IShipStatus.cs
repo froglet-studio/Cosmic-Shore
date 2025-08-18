@@ -29,7 +29,6 @@ namespace CosmicShore.Game
         bool Drifting { get; set; }
         bool ElevatedResourceGain { get; set; }
         Transform FollowTarget { get; set; }
-        float GetInertia { get; set; }
         bool GunsActive { get; set; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }

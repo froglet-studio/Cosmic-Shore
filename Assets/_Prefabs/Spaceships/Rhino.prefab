@@ -493,6 +493,7 @@ Transform:
   - {fileID: 1378795933305234275}
   - {fileID: 3337163778756290160}
   - {fileID: 7290237123723737518}
+  - {fileID: 3088948616910878261}
   m_Father: {fileID: 5928382658856804067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2131910783175408860
@@ -1029,6 +1030,73 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a731e767698ec5948b84919808aa176e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &5077424405219628151
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3088948616910878261}
+  - component: {fileID: 1157228592276573644}
+  m_Layer: 0
+  m_Name: DangerBlockAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &3088948616910878261
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5077424405219628151}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 320384695113571315}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1157228592276573644
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5077424405219628151}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7c5ebbdcc324bf48ff6b0fe464d5ec9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rodPrefab: {fileID: 8311550868408875785, guid: 09931e573b970be46a07d86f460e8c2d,
+    type: 3}
+  rayDistance: 1200
+  rayMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  fallbackForward: 60
+  width: 200
+  height: 100
+  bowDepth: 70
+  forwardPush: 5
+  uDiv: 8
+  vDiv: 6
+  lattice: 1
+  seed: 0
+  jitter: 0.15
+  surfaceNoise: 0.2
+  surfaceNoiseScale: 1.4
+  layers: 2
+  layerSpacing: 2.25
+  structureParent: {fileID: 5928382658856804067}
+  blockScale: {x: 2, y: 2, z: 14}
+  enforceScaleNextFrame: 1
 --- !u!1 &5546161687949175897
 GameObject:
   m_ObjectHideFlags: 0
@@ -1354,7 +1422,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2444635677
+  GlobalObjectIdHash: 234294682
   InScenePlacedSourceGlobalObjectIdHash: 3922501974
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1495,9 +1563,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
+  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
     type: 2}
-  impactProperties: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1692,7 +1759,7 @@ MonoBehaviour:
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
-  OnSilhouetteInitialized: {fileID: 11400000, guid: be4b9529cf77d6945bdf557a83168887,
+  OnSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
     type: 2}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
@@ -1800,7 +1867,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 8374620423313890364}
   shipPrismEffectsSO:
   - {fileID: 11400000, guid: 4c7ad73243860764b9a6cb505c840cc0, type: 2}
   shipOmniCrystalEffectsSO: []

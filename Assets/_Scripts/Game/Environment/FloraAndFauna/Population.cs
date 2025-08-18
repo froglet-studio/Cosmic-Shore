@@ -11,12 +11,12 @@ namespace CosmicShore
         [SerializeField] float goalUpdateInterval = 5f;
         public Vector3 Goal;
         //public List<float> Weights;
-        protected Cell node;
+        protected Cell cell;
 
 
         protected virtual void Start()
         {
-            node = CellControlManager.Instance.GetNearestCell(transform.position);
+            cell = CellControlManager.Instance.GetNearestCell(transform.position);
             StartCoroutine(UpdateGoal());
         }
 
@@ -39,7 +39,7 @@ namespace CosmicShore
             while (true)
             {
                 yield return new WaitForSeconds(goalUpdateInterval);
-                Vector3 highDensityPosition = node.GetExplosionTarget(Team);
+                Vector3 highDensityPosition = cell.GetExplosionTarget(Team);
                 Goal = highDensityPosition;
                 //CalculateTeamWeights();
             }

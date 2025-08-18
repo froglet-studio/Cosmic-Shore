@@ -101,6 +101,7 @@ MonoBehaviour:
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  collider: {fileID: 6588436222817790464}
 --- !u!82 &6588436222817790494
 AudioSource:
   m_ObjectHideFlags: 0
@@ -211,7 +212,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f916858793fd493e8479ee9641bfef57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  omniCrystalShipEffectsSO: []
+  crystal: {fileID: 6588436222817790495}
+  omniCrystalShipEffectsSO:
+  - {fileID: 11400000, guid: 8f49e7abdc07d0646b29d55cdc16f33d, type: 2}
 --- !u!114 &3935840462684288695
 MonoBehaviour:
   m_ObjectHideFlags: 0

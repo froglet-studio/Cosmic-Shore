@@ -373,8 +373,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f330c08a1e7665643adcc232c0cffef9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Nodes:
-  - {fileID: 1521877506}
+  cells: []
+  _onGameOver: {fileID: 0}
 --- !u!4 &507066190
 Transform:
   m_ObjectHideFlags: 0
@@ -849,12 +849,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EndOfRoundStatContainers: []
   nodeGame: 0
-  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
-    type: 2}
-  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
-    type: 2}
-  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
-    type: 2}
+  _onTrailBlockCreatedEventChannel: {fileID: 0}
+  _onTrailBlockDestroyedEventChannel: {fileID: 0}
+  _onTrailBlockRestoredEventChannel: {fileID: 0}
+  _onPlayGame: {fileID: 0}
+  _onGameOver: {fileID: 0}
+  _onPlayGame: {fileID: 0}
+  _onGameOver: {fileID: 0}
 --- !u!1001 &961744967
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -957,12 +958,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EndOfRoundStatContainers: []
   nodeGame: 0
-  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
-  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
     type: 2}
-  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: b5c1a6869a63cbf469f649a5c0b811fc,
     type: 2}
+  _onPlayGame: {fileID: 0}
+  _onGameOver: {fileID: 0}
+  _onPlayGame: {fileID: 0}
+  _onGameOver: {fileID: 0}
 --- !u!1 &1074736316
 GameObject:
   m_ObjectHideFlags: 0
@@ -1289,18 +1294,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cb702179ff5b42f41a3521ccd59e6934, type: 3}
---- !u!114 &1521877506 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-    type: 3}
-  m_PrefabInstance: {fileID: 1521877505}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &1521877507 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
