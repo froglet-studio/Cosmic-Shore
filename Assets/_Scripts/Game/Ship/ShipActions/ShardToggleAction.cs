@@ -1,31 +1,26 @@
-using System;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// On StartAction: redirect all SnowChanger shards via the shared bus.
-    /// On StopAction: restore normal (look-at-crystal) behavior.
+    /// Toggle ability:
+    /// - First press: find the nearest Cell → get the densest region for the configured Team → redirect shards there.
+    /// - Second press: restore shards to their normal (crystal) behavior.
     /// </summary>
     public class ShardToggleAction : ShipAction
     {
-        public enum RedirectMode
-        {
-            PointAtTransform,
-            PointAtPosition,
-            AlignToAxis
-        }
+        [Header("Bus (required)")]
+        [SerializeField] private ShardFieldBus shardFieldBus;
 
-        [Header("Bus")]
-        [SerializeField] ShardFieldBus shardFieldBus;
+        [Header("Mass Centroids Settings")]
+        [Tooltip("Team whose density grid is queried for the explosion target.")]
+        [SerializeField] private Teams team = Teams.Jade;
 
-        [Header("Mode & Params")]
-        [SerializeField] RedirectMode mode = RedirectMode.PointAtPosition;
+        [Tooltip("Max distance to search for a cell (used by CellControlManager on its side, if applicable).")]
+        [SerializeField] private float searchRadiusHint = 0f; // optional / unused here, kept for future
 
-        [SerializeField] Transform targetTransform; // for PointAtTransform
-        [SerializeField] Vector3   targetPosition;  // for PointAtPosition
-        [SerializeField] Vector3   axis = Vector3.up; // for AlignToAxis
-        [SerializeField] bool axisLookAtReject = true;
+        // Runtime toggle state
+        bool _redirectActive = false;
 
         public override void StartAction()
         {
@@ -34,38 +29,30 @@ namespace CosmicShore.Game
                 Debug.LogWarning("[ShardToggleAction] No ShardFieldBus assigned!");
                 return;
             }
-
-            Debug.Log($"[ShardToggleAction] StartAction triggered. Mode={mode}");
-
-            switch (mode)
+            
+            if (!_redirectActive)
             {
-                case RedirectMode.PointAtTransform:
-                    Debug.Log($"[ShardToggleAction] Redirecting shards to Transform: {targetTransform?.name}");
-                    shardFieldBus.BroadcastPointAtTransform(targetTransform);
-                    break;
+                var shipPos = Ship != null ? Ship.Transform.position : transform.position;
+                var cell = CellControlManager.Instance.GetNearestCell(shipPos);
 
-                case RedirectMode.PointAtPosition:
-                    Debug.Log($"[ShardToggleAction] Redirecting shards to Position: {targetPosition}");
-                    shardFieldBus.BroadcastPointAtPosition(targetPosition);
-                    break;
+                Vector3 highDensityPosition = cell.GetExplosionTarget(team);
 
-                case RedirectMode.AlignToAxis:
-                    Debug.Log($"[ShardToggleAction] Aligning shards to Axis: {axis} (lookAt={axisLookAtReject})");
-                    shardFieldBus.BroadcastAlignToAxis(axis, axisLookAtReject);
-                    break;
+                Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={team} Target={highDensityPosition}");
+                shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
+
+                _redirectActive = true;
+            }
+            else
+            {
+                Debug.Log("[ShardToggleAction] Toggled OFF → restoring shards to crystal.");
+                shardFieldBus.BroadcastRestoreToCrystal();
+                _redirectActive = false;
             }
         }
 
         public override void StopAction()
         {
-            if (shardFieldBus == null)
-            {
-                Debug.LogWarning("[ShardToggleAction] No ShardFieldBus assigned!");
-                return;
-            }
-
-            Debug.Log("[ShardToggleAction] StopAction triggered. Restoring shards to original crystal orientation.");
-            shardFieldBus.BroadcastRestoreToCrystal();
+ 
         }
     }
 }
