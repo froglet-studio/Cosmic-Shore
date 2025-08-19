@@ -7,6 +7,7 @@ using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 
@@ -30,16 +31,23 @@ public class CameraManager : Singleton<CameraManager>
     private Transform _playerFollowTarget;
     private const int ActivePriority = 10;
     private const bool FollowOverride = false;
+    public Transform PlayerFollowTarget
+    {
+        get => _playerFollowTarget;
+        set => _playerFollowTarget = value;
+    }
 
     private Camera _vCam;
+    
     private IShipStatus _shipStatus;
+    private const string mainMenuName= "Menu_Main";
 
     public override void Awake()
     {
         base.Awake();
         _playerCamera = GetOrFindCameraController("CM PlayerCam");
         _deathCamera = GetOrFindCameraController("CM DeathCam");
-        endCamera = endCamera ?? GetOrFindCameraController("CM EndCam") as CustomCameraController;
+        endCamera = GetOrFindCameraController("CM EndCam") as CustomCameraController;
     }
     
     private void OnEnable()
@@ -59,11 +67,18 @@ public class CameraManager : Singleton<CameraManager>
     void Start()
     {
         _vCam = (_playerCamera as CustomCameraController)?.Camera;
-        OnEnteredMainMenu();
+        InitializeSceneCamera();
     }
 
-    // TODO - Remove this later, not needed
-    public void Initialize(IShipStatus shipStatus) =>  this._shipStatus = shipStatus;
+    private void InitializeSceneCamera()
+    {
+        var activeScene = SceneManager.GetActiveScene().name;
+
+        if (activeScene == mainMenuName)
+        {
+            OnEnteredMainMenu();
+        }
+    }
     
     private ICameraController GetOrFindCameraController(string name)
     {
@@ -82,34 +97,35 @@ public class CameraManager : Singleton<CameraManager>
     }
 
     public Transform GetCloseCamera() => (_playerCamera as CustomCameraController)?.transform;
-
-    public Vector3 CurrentOffset => (_playerCamera as CustomCameraController)?.GetFollowOffset() ?? Vector3.zero;
     
     void OnEnteredMainMenu()
     {
         SetMainMenuCameraActive();
         _themeManagerData.SetBackgroundColor(Camera.main);
     }
-
+    
     public void SetupGamePlayCameras()
     {
-        _playerFollowTarget = FollowOverride ? _shipStatus.ShipCameraCustomizer.followTarget : _shipStatus.Transform;
+        if (SceneManager.GetActiveScene().name == mainMenuName) return;
+        
+        _playerFollowTarget = PlayerFollowTarget;
         SetupGamePlayCameras(_playerFollowTarget);
     }
 
-    public void SetupGamePlayCameras(Transform _transform)
+    public void SetupGamePlayCameras(Transform transform)
     {
-        _playerFollowTarget = _transform;
+        if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
+        
+        _playerFollowTarget = transform;
         _playerCamera?.SetFollowTarget(_playerFollowTarget);
         _deathCamera?.SetFollowTarget(_playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
-
+        
         SetCloseCameraActive();
 
         var shipGO = _playerFollowTarget.gameObject;
         var shipCustomizer = shipGO.GetComponent<ShipCameraCustomizer>();
-        if (shipCustomizer != null)
-            shipCustomizer.Initialize(shipGO.GetComponent<IShip>());
+        shipCustomizer.Configure(_playerCamera);
     }
 
     public void SetMainMenuCameraActive()
@@ -150,12 +166,14 @@ public class CameraManager : Singleton<CameraManager>
 
     void SetActiveCamera(ICameraController controller)
     {
-        if (_playerCamera != null) _playerCamera.Deactivate();
-        if (_deathCamera != null) _deathCamera.Deactivate();
-        if (endCamera != null) endCamera.Deactivate();
+            if (_playerCamera != null) _playerCamera.Deactivate();
+            if (_deathCamera != null) _deathCamera.Deactivate();
+            if (endCamera != null) endCamera.Deactivate();
+
 
         controller?.Activate();
         _activeController = controller;
+        mainMenuCamera.gameObject.SetActive(false);
     }
 
     public ICameraController GetActiveController() => _activeController;

@@ -25,27 +25,18 @@ namespace CosmicShore
         /// </summary>
         public void Initialize(IShip ship)
         {
-            this._ship = ship;
+            _ship = ship;
             _cameraManager = CameraManager.Instance;
-            _cameraManager.Initialize(ship.ShipStatus);
-
-            _cameraCtrl = _cameraManager.GetActiveController();
-            if (_cameraCtrl == null)
-            {
-                Debug.LogWarning("[ShipCameraCustomizer] No ICameraController available.");
-                return;
-            }
-            if (settings == null)
-            {
-                Debug.LogWarning("[ShipCameraCustomizer] CameraSettingsSO is not assigned.");
-                return;
-            }
-            
-            _cameraCtrl.ApplySettings(settings);
-            ApplyControlOverrides();
+            _cameraManager.PlayerFollowTarget = _ship.ShipStatus.FollowTarget;
+            _cameraManager.SetupGamePlayCameras();
         }
 
-        public void Configure(ICameraController controller) { }
+        public void Configure(ICameraController controller)
+        {
+            _cameraCtrl = controller;
+            controller.ApplySettings(settings);
+            ApplyControlOverrides();
+        }
 
         private void ApplyControlOverrides()
         {
