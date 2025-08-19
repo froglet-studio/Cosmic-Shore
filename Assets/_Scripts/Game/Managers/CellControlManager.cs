@@ -2,7 +2,6 @@ using CosmicShore.Core;
 using CosmicShore.Utilities;
 using System.Collections.Generic;
 using System.Linq;
-using Obvious.Soap;
 using UnityEngine;
 
 
@@ -12,19 +11,6 @@ namespace CosmicShore.Game
     public class CellControlManager : Singleton<CellControlManager>
     {
         [SerializeField] List<Cell> cells;
-        
-        [SerializeField]
-        ScriptableEventNoParam _onGameOver;
-
-        void OnEnable()
-        {
-            _onGameOver.OnRaised += OutputCodeControl;
-        }
-
-        void OnDisable()
-        {
-            _onGameOver.OnRaised -= OutputCodeControl;
-        }
         
         public void AddBlock(Teams team, TrailBlockProperties blockProperties)
         {
@@ -108,15 +94,6 @@ namespace CosmicShore.Game
             {
                 cell.ChangeVolume(team, blockProperties.volume);
                 break;
-            }
-        }
-
-        void OutputCodeControl()
-        {
-            foreach (var cell in cells.Where(cell => cell.enabled))
-            {
-                Debug.LogWarning(
-                    $"Node Control - Node ID: {cell.ID}, Controlling Team: {cell.ControllingTeam}, Green Volume: {cell.GetTeamVolume(Teams.Jade)}, Red Volume: {cell.GetTeamVolume(Teams.Ruby)}");
             }
         }
     }

@@ -1,7 +1,8 @@
 using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
-using UnityEngine.Serialization;
+using CosmicShore.Utilities;
+
 
 namespace CosmicShore
 {
@@ -11,13 +12,12 @@ namespace CosmicShore
     /// </summary>
     public class ShipCameraCustomizer : ElementalShipComponent, ICameraConfigurator
     {
-        [HideInInspector]public Transform followTarget;
-
         [Header("Per-Ship Camera Settings")]
         [SerializeField] private CameraSettingsSO settings;
+        
+        [SerializeField] ScriptableEventTransform OnInitializePlayerCamera;
 
         private IShip _ship;
-        private CameraManager _cameraManager;
         private ICameraController _cameraCtrl;
 
         /// <summary>
@@ -26,9 +26,7 @@ namespace CosmicShore
         public void Initialize(IShip ship)
         {
             _ship = ship;
-            _cameraManager = CameraManager.Instance;
-            _cameraManager.PlayerFollowTarget = _ship.ShipStatus.FollowTarget;
-            _cameraManager.SetupGamePlayCameras();
+            OnInitializePlayerCamera.Raise(_ship.ShipStatus.FollowTarget);
         }
 
         public void Configure(ICameraController controller)

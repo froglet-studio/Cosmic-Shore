@@ -7,8 +7,6 @@ namespace CosmicShore.Game
     {
         [SerializeField] MiniGameDataVariable _miniGameData;
 
-        [SerializeField] int _aiCount;
-
         [SerializeField] PlayerSpawner _playerSpawner;
 
         private void OnEnable()
@@ -29,12 +27,14 @@ namespace CosmicShore.Game
 
         void InstantiateAndInitializeAI()
         {
-            for (int i = 0; i < _aiCount; i++)
+            int initializeDataCount = _playerSpawner.InitializeDatas.Length;
+            for (int i = 0; i < initializeDataCount; i++)
             {
-                if (i >= _playerSpawner.InitializeDatas.Length)
-                    return;
+                var data =  _playerSpawner.InitializeDatas[i];
+                if (!data.AllowSpawning)
+                    continue;
                 
-                IPlayer spawnerAI = _playerSpawner.SpawnPlayerAndShip(_playerSpawner.InitializeDatas[i]);
+                IPlayer spawnerAI = _playerSpawner.SpawnPlayerAndShip(data);
                 _miniGameData.Value.AddPlayer(spawnerAI);
                 spawnerAI.ToggleStationaryMode(true);
             }

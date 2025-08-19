@@ -2504,7 +2504,6 @@ MonoBehaviour:
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
   startDelay: 2
-  _onGameOver: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b, type: 2}
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -2638,8 +2637,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followTarget: {fileID: 0}
   settings: {fileID: 11400000, guid: f10d7f93948741e7aae295c727637a55, type: 2}
+  OnInitializePlayerCamera: {fileID: 11400000, guid: dfc4b3d01080dac408975d4a25c6c1ea,
+    type: 2}
 --- !u!114 &7104697071719053143
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3205,11 +3205,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
-  mode: 1
-  targetTransform: {fileID: 282447970148362685}
-  targetPosition: {x: 0, y: 2, z: -1020}
-  axis: {x: 0, y: 1, z: 0}
-  axisLookAtReject: 1
+  team: 1
+  searchRadiusHint: 0
 --- !u!1001 &1057105632154500541
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -60,7 +60,7 @@ namespace CosmicShore.SOAP
             ActivePlayer.Ship.ShipStatus.ResourceSystem.Reset();
             // ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
 
-            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
+            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
             
             foreach (var player in Players)
             {

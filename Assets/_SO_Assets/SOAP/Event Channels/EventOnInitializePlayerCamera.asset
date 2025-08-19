@@ -9,9 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a49b7e678b3ebb7418adb84806d24646, type: 3}
-  m_Name: EventOnPlayGameNoParam
+  m_Script: {fileID: 11500000, guid: f1f3ec0fa6380454fb65ed4f3971f794, type: 3}
+  m_Name: EventOnInitializePlayerCamera
   m_EditorClassIdentifier: 
   CategoryIndex: 0
   Description: 
   _debugLogEnabled: 0
+  _debugValue: {fileID: 0}

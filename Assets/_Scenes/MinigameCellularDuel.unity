@@ -819,7 +819,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cells:
   - {fileID: 1156664489}
-  _onGameOver: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b, type: 2}
 --- !u!1 &1527998405
 GameObject:
   m_ObjectHideFlags: 0
@@ -940,7 +939,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  _aiCount: 0
   _playerSpawner: {fileID: 1870184177}
 --- !u!1001 &1666789273
 PrefabInstance:
@@ -1168,8 +1166,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
         type: 3}
+      propertyPath: _spawnAtStart
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
+        type: 3}
       propertyPath: _initializeDatas.Array.data[0].Team
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
         type: 3}
@@ -1257,7 +1260,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281825, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281827, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
