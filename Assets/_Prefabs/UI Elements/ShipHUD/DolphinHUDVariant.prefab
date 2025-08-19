@@ -380,6 +380,7 @@ GameObject:
   - component: {fileID: 3600453519462528314}
   - component: {fileID: 8136549440389847612}
   - component: {fileID: 278140171850316985}
+  - component: {fileID: 1428349722784883325}
   m_Layer: 5
   m_Name: Boost Display
   m_TagString: Untagged
@@ -452,7 +453,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9116355348945120470}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
   m_Name: 
@@ -539,6 +540,41 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &1428349722784883325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9116355348945120470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 094d1d1f538f4cfe952081221263c19f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  index: 3
+  mode: 2
+  verbose: 0
+  fillImage: {fileID: 0}
+  segments: []
+  changeColorOnFull: 0
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  fullColor: {r: 1, g: 0, b: 0, a: 1}
+  spriteTarget: {fileID: 4555261423385514484}
+  sprites:
+  - {fileID: 21300000, guid: b0b7cc6147182e343a67f9f3dd4c2a14, type: 3}
+  - {fileID: 21300000, guid: c01efd69e5cdf63438526b4772a2456b, type: 3}
+  - {fileID: 21300000, guid: eea25e7f51a0d3c4db61260e803e4b00, type: 3}
+  - {fileID: 21300000, guid: b55a8beee77af224ab67089101f5af7b, type: 3}
+  - {fileID: 21300000, guid: eae5ce8d36037a3448e0d0283e6bddd9, type: 3}
+  - {fileID: 21300000, guid: 8fc000cd022db844a91f0dbeb137a53e, type: 3}
+  - {fileID: 21300000, guid: 038f1e2016e849340890078e390251a0, type: 3}
+  - {fileID: 21300000, guid: 8d86b39d29aa2b94fa36a0689727bbd2, type: 3}
+  - {fileID: 21300000, guid: 3c4839f8ca5b635458b324afcfae3123, type: 3}
+  - {fileID: 21300000, guid: ebd2f15e7d73175498f07dddbfa485c7, type: 3}
+  - {fileID: 21300000, guid: aad49fc654926f14c9289f1805aed1ee, type: 3}
+  stepObjects:
+  - {fileID: 0}
 --- !u!1001 &7010235006159734966
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -574,6 +610,11 @@ PrefabInstance:
       objectReference: {fileID: 8158450568318545151}
     - target: {fileID: 5582900316631961953, guid: bc09c07dcb0724842a327c887609f156,
         type: 3}
+      propertyPath: effectsBehaviour
+      value: 
+      objectReference: {fileID: 5036997863663752226}
+    - target: {fileID: 5582900316631961953, guid: bc09c07dcb0724842a327c887609f156,
+        type: 3}
       propertyPath: silhouetteContainer
       value: 
       objectReference: {fileID: 7975473975168714622}
@@ -601,6 +642,11 @@ PrefabInstance:
         type: 3}
       propertyPath: sparrowSkyBurstMissileAction
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5582900316631961953, guid: bc09c07dcb0724842a327c887609f156,
+        type: 3}
+      propertyPath: buttonIconMappings.Array.size
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5582900316631961953, guid: bc09c07dcb0724842a327c887609f156,
         type: 3}
@@ -748,7 +794,11 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8162764410783605377}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3323122711064239023, guid: bc09c07dcb0724842a327c887609f156,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5036997863663752226}
   m_SourcePrefab: {fileID: 100100000, guid: bc09c07dcb0724842a327c887609f156, type: 3}
 --- !u!224 &4302650473703376660 stripped
 RectTransform:
@@ -756,3 +806,25 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 7010235006159734966}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &5717110714044027673 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3323122711064239023, guid: bc09c07dcb0724842a327c887609f156,
+    type: 3}
+  m_PrefabInstance: {fileID: 7010235006159734966}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5036997863663752226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5717110714044027673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78265ba243654364c8c43d02d238c393, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  meters:
+  - {fileID: 1428349722784883325}
+  toggles: []
+  animators: []

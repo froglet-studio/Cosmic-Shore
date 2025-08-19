@@ -711,10 +711,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83c4d9a1b2407d4790cb6b65a698b7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxBoostMultiplier: 2
-  chargePerSecond: 0.5
-  dischargePerSecond: 2.5
-  tickSeconds: 0.1
+  maxBoostMultiplier: 6
+  chargePerSecond: 2.5
+  dischargePerSecond: 4
+  tickSeconds: 0.2
   boostBoostResourceIndex: 0
   maxNormalizedCharge: 5
   rechargeCooldownSeconds: 0
@@ -2244,6 +2244,7 @@ GameObject:
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 1575183985793957456}
+  - component: {fileID: 2208631719963443964}
   m_Layer: 0
   m_Name: Dolphin
   m_TagString: Player_Ship
@@ -2653,14 +2654,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shipType: 2
-  chargeBoostAction: {fileID: 4734135289798570143}
-  boostAction: {fileID: 0}
-  seedAssemblerAction: {fileID: 0}
-  overheatingAction: {fileID: 0}
-  fullAutoAction: {fileID: 0}
-  fireGunAction: {fileID: 0}
-  stationaryModeAction: {fileID: 0}
-  verboseHUDLogs: 1
+  profile: {fileID: 11400000, guid: fe90c3d45f3cf0f488b0accecbd94201, type: 2}
+  refs: {fileID: 2208631719963443964}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2743,6 +2738,25 @@ MonoBehaviour:
   shipOmniCrystalEffectsSO: []
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
+--- !u!114 &2208631719963443964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 821427f0df9d40fe8197352f2ad737c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  chargeBoost: {fileID: 4734135289798570143}
+  consumeBoost: {fileID: 0}
+  seedAssembler: {fileID: 0}
+  overheating: {fileID: 0}
+  fullAuto: {fileID: 0}
+  fireGun: {fileID: 0}
+  stationary: {fileID: 0}
 --- !u!1 &6999220331312364478
 GameObject:
   m_ObjectHideFlags: 0
@@ -3205,11 +3219,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
-  mode: 1
-  targetTransform: {fileID: 282447970148362685}
-  targetPosition: {x: 0, y: 2, z: -1020}
-  axis: {x: 0, y: 1, z: 0}
-  axisLookAtReject: 1
+  team: 1
+  searchRadiusHint: 0
 --- !u!1001 &1057105632154500541
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3443,6 +3454,36 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7188691891492468360}
     m_Modifications:
+    - target: {fileID: 1428349722784883325, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: mode
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1428349722784883325, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: verbose
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1428349722784883325, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: fillImage
+      value: 
+      objectReference: {fileID: 7661196456212890269}
+    - target: {fileID: 1428349722784883325, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: spriteTarget
+      value: 
+      objectReference: {fileID: 7661196456212890269}
+    - target: {fileID: 1428349722784883325, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: stepObjects.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3184935380099750359, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: hudType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4302650473703376660, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       propertyPath: m_Pivot.x
@@ -3565,7 +3606,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 6603799810469492647}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
   m_Name: 
@@ -3576,6 +3617,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 6603799810469492647}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7661196456212890269 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3600453519462528314, guid: 3a48a770e15885e4dbc159855aebb73e,
+    type: 3}
+  m_PrefabInstance: {fileID: 6603799810469492647}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &7471713358279828738
 PrefabInstance:
   m_ObjectHideFlags: 0

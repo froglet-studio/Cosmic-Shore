@@ -7,156 +7,133 @@ namespace CosmicShore.Game
     [CustomEditor(typeof(ShipHUDView), true)]
     public class ShipHUDViewInspector : Editor
     {
-        private readonly Color _headerColor = new Color(0.09f, 0.24f, 0.48f);
+        private readonly Color _headerColor  = new(0.09f, 0.24f, 0.48f);
+        private readonly Color _sectionBlue  = new(0.14f, 0.22f, 0.36f);
+        private readonly Color _sectionGreen = new(0.14f, 0.32f, 0.21f);
 
-        // Base section colors
-        private readonly Color _sectionBlue = new Color(0.14f, 0.22f, 0.36f);
-        private readonly Color _sectionGreen = new Color(0.14f, 0.32f, 0.21f);
+        // Cached props
+        SerializedProperty hudTypeProp;
+        SerializedProperty effectsBehaviourProp;
+        SerializedProperty silhouetteProp, trailProp;
+        SerializedProperty psRootProp, xboxRootProp;
+        SerializedProperty buttonIconMappingsProp;
+
+        // Variant props
+        SerializedProperty serpentBoostBtnProp, serpentWallBtnProp;
+        SerializedProperty dolphinBoostBtnProp;
+        SerializedProperty mantaBoostBtnProp, mantaBoost2BtnProp;
+        SerializedProperty rhinoBoostImgProp;
+        SerializedProperty squirrelBoostImgProp;
+        SerializedProperty sparrowFullAutoBtnProp, sparrowOverheatBtnProp, sparrowSkyBurstBtnProp, sparrowExhaustBtnProp;
+
+        void OnEnable()
+        {
+            hudTypeProp             = serializedObject.FindProperty("hudType");
+            effectsBehaviourProp    = serializedObject.FindProperty("effectsBehaviour");
+            silhouetteProp          = serializedObject.FindProperty("silhouetteContainer");
+            trailProp               = serializedObject.FindProperty("trailContainer");
+            psRootProp              = serializedObject.FindProperty("psIconRoot");
+            xboxRootProp            = serializedObject.FindProperty("xboxIconRoot");
+            buttonIconMappingsProp  = serializedObject.FindProperty("buttonIconMappings");
+
+            serpentBoostBtnProp     = serializedObject.FindProperty("serpentBoostButton");
+            serpentWallBtnProp      = serializedObject.FindProperty("serpentWallDisplayButton");
+
+            dolphinBoostBtnProp     = serializedObject.FindProperty("dolphinBoostFeedback");
+
+            mantaBoostBtnProp       = serializedObject.FindProperty("mantaBoostButton");
+            mantaBoost2BtnProp      = serializedObject.FindProperty("mantaBoost2Button");
+
+            rhinoBoostImgProp       = serializedObject.FindProperty("rhinoBoostFeedback");
+            squirrelBoostImgProp    = serializedObject.FindProperty("squirrelBoostDisplay");
+
+            sparrowFullAutoBtnProp  = serializedObject.FindProperty("sparrowFullAutoAction");
+            sparrowOverheatBtnProp  = serializedObject.FindProperty("sparrowOverheatingBoostAction");
+            sparrowSkyBurstBtnProp  = serializedObject.FindProperty("sparrowSkyBurstMissileAction");
+            sparrowExhaustBtnProp   = serializedObject.FindProperty("sparrowExhaustBarrage");
+        }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
             var view = (ShipHUDView)target;
 
-            // Compute variant-specific header and section color
-            var variantName = view.ShipHUDType.ToString();
+            var variantName  = view.ShipHUDType.ToString();
             var variantColor = view.ShipHUDType switch
             {
-                ShipClassType.Serpent => new Color(0.6f, 0.1f, 0.1f) // e.g. red
-                ,
-                ShipClassType.Dolphin => new Color(0.1f, 0.5f, 0.8f) // e.g. cyan
-                ,
-                ShipClassType.Manta => new Color(0.2f, 0.2f, 0.5f) // e.g. indigo
-                ,
-                ShipClassType.Rhino => new Color(0.5f, 0.5f, 0.1f) // e.g. yellow
-                ,
-                ShipClassType.Squirrel => new Color(0.6f, 0.4f, 0.2f) // e.g. brown
-                ,
-                ShipClassType.Sparrow => new Color(0.8f, 0.8f, 0.8f) // e.g. light gray
-                ,
+                ShipClassType.Serpent  => new Color(0.6f, 0.1f, 0.1f),
+                ShipClassType.Dolphin  => new Color(0.1f, 0.5f, 0.8f),
+                ShipClassType.Manta    => new Color(0.2f, 0.2f, 0.5f),
+                ShipClassType.Rhino    => new Color(0.5f, 0.5f, 0.1f),
+                ShipClassType.Squirrel => new Color(0.6f, 0.4f, 0.2f),
+                ShipClassType.Sparrow  => new Color(0.8f, 0.8f, 0.8f),
                 _ => _headerColor
             };
 
             EditorGUILayout.Space(3);
-            // Show the variant as header
             DrawHeader(variantName + " HUD View", variantColor);
             EditorGUILayout.Space(8);
 
-            // Common section
-            DrawSection("Common Variables", _sectionBlue, () =>
+            // Common
+            DrawSection("Common", _sectionBlue, () =>
             {
-                EditorGUILayout.PropertyField(
-                     serializedObject.FindProperty("silhouetteContainer"),
-                     new GUIContent("Silhouette Container")
-                );
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("trailContainer"),
-                    new GUIContent("Trail Container")
-                );
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("psIconRoot"),
-                    new GUIContent("PS Icon Root")
-                );
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("xboxIconRoot"),
-                    new GUIContent("XBOX Icon Root")
-                );
-                
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("hudType"),
-                    new GUIContent("HUD Effect Type")
-                );
+                EditorGUILayout.PropertyField(hudTypeProp, new GUIContent("HUD Type"));
+                EditorGUILayout.PropertyField(effectsBehaviourProp, new GUIContent("Effects (IHUDEffects)"));
+                EditorGUILayout.PropertyField(silhouetteProp, new GUIContent("Silhouette Container"));
+                EditorGUILayout.PropertyField(trailProp, new GUIContent("Trail Container"));
             });
 
-            // Enum section
-            DrawSection("HUD Type", _sectionGreen, () =>
+            // Controller Icons (common toggle for all ships)
+            DrawSection("Controller Icons", _sectionGreen, () =>
             {
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("hudType"),
-                    new GUIContent("HUD Type")
-                );
+                EditorGUILayout.PropertyField(psRootProp,   new GUIContent("PS Icon Root"));
+                EditorGUILayout.PropertyField(xboxRootProp, new GUIContent("XBOX Icon Root"));
+                EditorGUILayout.PropertyField(buttonIconMappingsProp, new GUIContent("Button → Icon Mappings"), true);
+
+                if (GUILayout.Button("Refresh Controller Icons (Play Mode)"))
+                {
+                    if (Application.isPlaying)
+                        view.UpdateControllerIcons();
+                }
             });
 
-            DrawSection("Resource Display Information", _sectionGreen, () =>
-            {
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty("resourceDisplays"),
-                    new GUIContent("Resource Displays")
-                );
-            });
-
-            // Variant section with dynamic color and label
-            DrawSection(variantName + " Buttons", variantColor, () =>
+            // Variant fields
+            DrawSection(variantName + " Variant", variantColor, () =>
             {
                 switch (view.ShipHUDType)
                 {
                     case ShipClassType.Serpent:
-                        EditorGUILayout.PropertyField(
-                            serializedObject.FindProperty("serpentBoostButton"),
-                            new GUIContent("Boost Button")
-                        );
-                        EditorGUILayout.PropertyField(
-                            serializedObject.FindProperty("serpentWallDisplayButton"),
-                            new GUIContent("Wall Display Button")
-                        );
-            
+                        EditorGUILayout.PropertyField(serpentBoostBtnProp, new GUIContent("Boost Button"));
+                        EditorGUILayout.PropertyField(serpentWallBtnProp,  new GUIContent("Wall Display Button"));
                         break;
-                    case ShipClassType.Dolphin:
-                        EditorGUILayout.PropertyField(
-                            serializedObject.FindProperty("dolphinBoostFeedback"),
-                            new GUIContent("Boost Feedback")
-                        );
-                        break;
-                    case ShipClassType.Manta:
-                        EditorGUILayout.PropertyField(
-                            serializedObject.FindProperty("mantaBoostButton"),
-                            new GUIContent("Boost Button")
-                        );
 
+                    case ShipClassType.Dolphin:
+                        EditorGUILayout.PropertyField(dolphinBoostBtnProp, new GUIContent("Boost Feedback (Button)"));
                         break;
+
+                    case ShipClassType.Manta:
+                        EditorGUILayout.PropertyField(mantaBoostBtnProp,  new GUIContent("Boost Button"));
+                        EditorGUILayout.PropertyField(mantaBoost2BtnProp, new GUIContent("Boost 2 Button"));
+                        break;
+
                     case ShipClassType.Rhino:
-                        EditorGUILayout.PropertyField(
-                            serializedObject.FindProperty("rhinoBoostFeedback"),
-                            new GUIContent("Boost Feedback")
-                        );
+                        EditorGUILayout.PropertyField(rhinoBoostImgProp, new GUIContent("Boost Feedback (Image)"));
                         break;
+
                     case ShipClassType.Squirrel:
-                        EditorGUILayout.PropertyField(
-                            serializedObject.FindProperty("squirrelBoostDisplay"),
-                            new GUIContent("Boost Display")
-                        );
+                        EditorGUILayout.PropertyField(squirrelBoostImgProp, new GUIContent("Boost Display (Image)"));
                         break;
+
                     case ShipClassType.Sparrow:
-                        EditorGUILayout.PropertyField(
-                            serializedObject.FindProperty("sparrowFullAutoAction"),
-                            new GUIContent("Full Auto Action Button")
-                        );
-                        EditorGUILayout.PropertyField(
-                        serializedObject.FindProperty("sparrowOverheatingBoostAction"),
-                        new GUIContent("Overheating Boost Button")
-                        );
-                        EditorGUILayout.PropertyField(
-                        serializedObject.FindProperty("sparrowSkyBurstMissileAction"),
-                        new GUIContent("Sky Burst Missile Button")
-                        );
-                        EditorGUILayout.PropertyField(
-                        serializedObject.FindProperty("sparrowExhaustBarrage"),
-                        new GUIContent("Exhause Barrage Button")
-                        );
+                        EditorGUILayout.PropertyField(sparrowFullAutoBtnProp, new GUIContent("Full Auto Button"));
+                        EditorGUILayout.PropertyField(sparrowOverheatBtnProp, new GUIContent("Overheating Boost Button"));
+                        EditorGUILayout.PropertyField(sparrowSkyBurstBtnProp, new GUIContent("Sky Burst Missile Button"));
+                        EditorGUILayout.PropertyField(sparrowExhaustBtnProp, new GUIContent("Exhaust Barrage Button"));
                         break;
-                    case ShipClassType.Any:
-                    case ShipClassType.Random:
-                    case ShipClassType.Urchin:
-                    case ShipClassType.Grizzly:
-                    case ShipClassType.Termite:
-                    case ShipClassType.Falcon:
-                    case ShipClassType.Shrike:
-                        break;
+
+                    // Other ship types currently have no special fields
                     default:
-                        EditorGUILayout.HelpBox(
-                            "Select a valid HUD Type to assign variant buttons.",
-                            MessageType.Info
-                        );
+                        EditorGUILayout.HelpBox("No variant-specific UI for this ship.", MessageType.Info);
                         break;
                 }
             });
@@ -164,7 +141,8 @@ namespace CosmicShore.Game
             serializedObject.ApplyModifiedProperties();
         }
 
-        // Draw header with custom color
+        // --- UI helpers ---
+
         void DrawHeader(string label, Color bgColor)
         {
             Rect r = GUILayoutUtility.GetRect(0, 26, GUILayout.ExpandWidth(true));
@@ -173,15 +151,13 @@ namespace CosmicShore.Game
             {
                 fontSize = 16,
                 alignment = TextAnchor.MiddleLeft,
-                normal = { textColor = Color.white },
-                padding = new RectOffset(10, 0, 0, 0)
+                normal   = { textColor = Color.white },
+                padding  = new RectOffset(10, 0, 0, 0)
             };
-            r.x += 10;
-            r.width -= 10;
+            r.x += 10; r.width -= 10;
             GUI.Label(r, label, headerStyle);
         }
 
-        // Generic section drawer
         void DrawSection(string label, Color color, System.Action drawContent)
         {
             GUILayout.Space(2);
@@ -190,8 +166,8 @@ namespace CosmicShore.Game
             var sectionStyle = new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 13,
-                normal = { textColor = Color.white },
-                padding = new RectOffset(10, 0, 0, 0)
+                normal   = { textColor = Color.white },
+                padding  = new RectOffset(10, 0, 0, 0)
             };
             GUI.Label(new Rect(r.x + 10, r.y + 2, r.width - 10, r.height - 2), label, sectionStyle);
 
@@ -202,6 +178,4 @@ namespace CosmicShore.Game
         }
     }
 }
-
-
 #endif

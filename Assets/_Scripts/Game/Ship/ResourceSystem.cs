@@ -71,15 +71,15 @@ namespace CosmicShore.Core
                     for (int i = 0; i < Resources.Count; i++)
                     {
                         var resource = Resources[i];
-                        var display = hudView.GetResourceDisplay(resource.Name);
-                        if (display != null)
-                        {
-                            RegisterDisplay(i, display);
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"No ResourceDisplay found for resource: {resource.Name}");
-                        }
+                        //var display = hudView.GetResourceDisplay(resource.Name);
+                        // if (display != null)
+                        // {
+                        //     RegisterDisplay(i, display);
+                        // }
+                        // else
+                        // {
+                        //     Debug.LogWarning($"No ResourceDisplay found for resource: {resource.Name}");
+                        // }
                     }
                 }
                 else

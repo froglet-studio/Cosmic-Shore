@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using CosmicShore.Game;
 using UnityEngine;
 
 public class ChargeBoostAction : ShipAction
@@ -28,19 +29,26 @@ public class ChargeBoostAction : ShipAction
     private bool _charging;
     private float _cooldownUntilUtc; 
 
-    public int BoostResourceIndex => boostBoostResourceIndex;
-
-    public event Action<float> OnChargeStarted;
-    public event Action<float> OnChargeProgress;
-    public event Action        OnChargeEnded;
-    public event Action<float> OnDischargeStarted;
-    public event Action<float> OnDischargeProgress;
-    public event Action        OnDischargeEnded;
+    public event Action<float> OnChargeStarted,OnChargeProgress,OnDischargeStarted,OnDischargeProgress;
+    public event Action OnChargeEnded;
+    public event Action OnDischargeEnded;
 
     public float MaxChargeUnits => maxNormalizedCharge;
-    public float Normalized01 => (maxNormalizedCharge > 0f) ? Mathf.Clamp01(GetNorm() / maxNormalizedCharge) : 0f;
 
-
+    
+    // private void OnEnable()
+    // {
+    //     // Cache the IShipStatus found up the parent chain (your ships already have this)
+    //     if (bus != null && Ship.ShipStatus != null)
+    //         bus.Register(Ship.ShipStatus, this);
+    // }
+    //
+    // private void OnDisable()
+    // {
+    //     if (bus != null && Ship.ShipStatus != null)
+    //         bus.Unregister(Ship.ShipStatus, this);
+    // }
+    
     public override void StartAction()
     {
         if (Time.unscaledTime < _cooldownUntilUtc)
@@ -86,7 +94,8 @@ public class ChargeBoostAction : ShipAction
             $"perSec={dischargePerSecond:F3} tick={tickSeconds:F3}");
 
         OnDischargeStarted?.Invoke(start);
-        StartCoroutine(DischargeRoutine());
+        StartCoroutine(DischargeRoutine()); 
+
     }
 
     private IEnumerator ChargeRoutine()
