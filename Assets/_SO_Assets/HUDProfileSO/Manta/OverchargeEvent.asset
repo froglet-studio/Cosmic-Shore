@@ -9,11 +9,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a29eec48c9d96e4d9966fb92ffb4469, type: 3}
-  m_Name: SkimmerOverchargeCollectPrismEffect
+  m_Script: {fileID: 11500000, guid: b6ea68dbd90c4d6a8009e23cb260e37d, type: 3}
+  m_Name: OverchargeEvent
   m_EditorClassIdentifier: 
-  maxBlockHits: 100
-  cooldownDuration: 5
-  verbose: 1
-  overchargedMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
-  textKey: OverchargeText

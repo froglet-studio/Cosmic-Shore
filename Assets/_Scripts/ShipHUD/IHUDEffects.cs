@@ -7,6 +7,6 @@ namespace CosmicShore.Game
         void SetMeter(int index, float normalized);
 
         void SetToggle(string key, bool on);
-
+        void SetText(string key, string text);
     }
 }

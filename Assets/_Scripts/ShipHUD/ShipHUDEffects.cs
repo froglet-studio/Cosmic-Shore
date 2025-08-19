@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -23,17 +25,24 @@ namespace CosmicShore.Game
         [Header("Animators (by key)")]
         [SerializeField] private NamedAnimator[] animators;
 
-        private readonly Dictionary<string, GameObject> _toggleMap = new();
+        [Serializable]
+        public struct NamedText
+        {
+            public string key; public TMP_Text text;
+        }
+
+        [Header("Texts (by key)")]
+        [SerializeField] private NamedText[] texts;
+
+        readonly Dictionary<string, GameObject> _toggleMap = new();
+        readonly Dictionary<string, TMP_Text>   _textMap   = new();
+        readonly Dictionary<int, Coroutine>     _meterCo   = new();
 
         void Awake()
         {
-            _toggleMap.Clear();
-            foreach (var t in toggles)
-                if (!string.IsNullOrEmpty(t.key) && t.target)
-                    _toggleMap[t.key] = t.target; ;
+            foreach (var t in toggles) if (!string.IsNullOrEmpty(t.key) && t.target) _toggleMap[t.key] = t.target;
+            foreach (var t in texts)   if (!string.IsNullOrEmpty(t.key) && t.text)   _textMap[t.key]   = t.text;
         }
-
-        // -------- IHUDEffects --------
 
         public void SetMeter(int index, float normalized)
         {
@@ -64,7 +73,12 @@ namespace CosmicShore.Game
             if (_toggleMap.TryGetValue(key, out var go) && go)
                 go.SetActive(on);
         }
-        
+
+        public void SetText(string key, string value)
+        {
+            if (_textMap.TryGetValue(key, out var txt) && txt) txt.text = value;
+        }
+
         private R_ResourceDisplay GetMeter(int index)
         {
             if (meters == null || index < 0 || index >= meters.Length) return null;
