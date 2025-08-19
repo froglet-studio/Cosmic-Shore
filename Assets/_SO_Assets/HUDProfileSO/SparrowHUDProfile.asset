@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1329855edeb4338ba6d95cc45621948, type: 3}
-  m_Name: ChargeBoostHudSub
+  m_Script: {fileID: 11500000, guid: 0a4a9987f9014e2a928d32dfc8987ddb, type: 3}
+  m_Name: SparrowHUDProfile
   m_EditorClassIdentifier: 
-  meterIndex: 0
-  chargeSeconds: 0.3
-  dischargeSeconds: 0.3
+  shipType: 11
+  subscriptions:
+  - {fileID: 11400000, guid: c318f3c69a1eef943960c90ebfa24133, type: 2}

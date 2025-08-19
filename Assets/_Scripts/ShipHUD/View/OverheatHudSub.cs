@@ -1,40 +1,48 @@
-﻿using CosmicShore.Game;
-using UnityEngine;
+﻿using UnityEngine;
+using CosmicShore.Game;
 
 [CreateAssetMenu(fileName="OverheatHudSub", menuName="HUD/Subs/Overheat")]
 public class OverheatHudSub : HudSubscriptionSO
 {
-    [SerializeField] private OverheatingAction action;
-    [SerializeField] private string heatWarnKey = "HeatWarning";
-    [SerializeField] private string overheatedTrigger = "Overheated";
+    [Header("Meter slot (ShipHUDEffects → Meters array)")]
+    [SerializeField] private int meterIndex = 0;
+
+    [Header("Timings")]
+    [SerializeField] private float buildSeconds   = 0.6f;  // fill duration when heat starts building
+    [SerializeField] private float cooldownSeconds= 0.6f;  // drain duration when heat finishes cooling
+
+    // cached
+    private OverheatingAction _action;
+    private System.Action _onBuild;
+    private System.Action _onOverheated;
+    private System.Action _onDecayDone;
 
     protected override void OnEnableSubscriptions()
     {
-        if (!action || Effects == null) return;
-        action.OnHeatBuildStarted += () => Effects.SetToggle(heatWarnKey, true);
-        // action.OnOverheated += () => Effects.TriggerAnim(overheatedTrigger);
-        action.OnHeatDecayCompleted += () => Effects.SetToggle(heatWarnKey, false);
+        _action = Refs ? Refs.overheating : null;
+        if (_action == null || Effects == null) return;
+
+        // Smooth refill to full when heat starts building
+        _onBuild       = () => Effects.AnimateRefill(meterIndex, buildSeconds, 1f);
+        // Ensure meter lands at full when overheated
+        _onOverheated  = () => Effects.AnimateRefill(meterIndex, 0.05f, 1f);
+        // Smooth drain to empty when heat finishes decaying
+        _onDecayDone   = () => Effects.AnimateDrain(meterIndex, cooldownSeconds, 0f);
+
+        _action.OnHeatBuildStarted   += _onBuild;
+        _action.OnOverheated         += _onOverheated;
+        _action.OnHeatDecayCompleted += _onDecayDone;
     }
+
     protected override void OnDisableSubscriptions()
     {
-        if (!action) return;
-        action.OnHeatBuildStarted -= actionOnOnHeatBuildStarted;
-        action.OnOverheated -= actionOnOnOverheated;
-        action.OnHeatDecayCompleted -= actionOnOnHeatDecayCompleted;
-    }
+        if (_action == null) return;
 
-    private void actionOnOnHeatDecayCompleted()
-    {
-        Effects.SetToggle(heatWarnKey, false);
-    }
+        if (_onBuild      != null) _action.OnHeatBuildStarted   -= _onBuild;
+        if (_onOverheated != null) _action.OnOverheated         -= _onOverheated;
+        if (_onDecayDone  != null) _action.OnHeatDecayCompleted -= _onDecayDone;
 
-    private void actionOnOnOverheated()
-    {
-        // Effects.TriggerAnim(overheatedTrigger);
-    }
-
-    private void actionOnOnHeatBuildStarted()
-    {
-        Effects.SetToggle(heatWarnKey, on: true);
+        _onBuild = _onOverheated = _onDecayDone = null;
+        _action = null;
     }
 }
