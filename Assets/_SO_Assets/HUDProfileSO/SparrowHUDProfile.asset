@@ -15,3 +15,5 @@ MonoBehaviour:
   shipType: 11
   subscriptions:
   - {fileID: 11400000, guid: c318f3c69a1eef943960c90ebfa24133, type: 2}
+  - {fileID: 11400000, guid: bc8e6781017c0e64d90774c19343912d, type: 2}
+  - {fileID: 11400000, guid: 431d24504e47ffa4ab3b9bdfcec7e69d, type: 2}

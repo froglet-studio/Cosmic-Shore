@@ -18,6 +18,7 @@ public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the
 
     Resource heatResource;
     bool isOverheating = false;
+    public int HeatResourceIndex => heatResourceIndex;
 
     public override void Initialize(IShip ship)
     {

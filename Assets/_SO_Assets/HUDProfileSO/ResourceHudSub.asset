@@ -9,7 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff3f18ed72a94e088f2ab531b4e4f9a2, type: 3}
-  m_Name: OverheatHudSub
+  m_Script: {fileID: 11500000, guid: 20a009ba198d4cba912689afb7d0ccbe, type: 3}
+  m_Name: ResourceHudSub
   m_EditorClassIdentifier: 
+  resourceIndex: 0
   meterIndex: 0
+  animate: 0
+  seconds: 0.3
