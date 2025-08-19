@@ -104,7 +104,6 @@ namespace CosmicShore.Game
                     ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
-                    // onBottomEdgeButtonsEnabled.RaiseEvent(true);
                     onBottomEdgeButtonsEnabled.Raise(true);
                 }
 
@@ -120,9 +119,7 @@ namespace CosmicShore.Game
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
                 ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
-                ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);  
-                // onBottomEdgeButtonsEnabled.RaiseEvent(true);
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
 
@@ -130,6 +127,9 @@ namespace CosmicShore.Game
             // sets SingleStickControls to true/false. Try finding a solution to remove this
             // sequential dependency.
             ShipStatus.AIPilot.Initialize(enableAIPilot, this);
+            
+            // if enable AI Pilot,
+            if (!enableAIPilot) ShipStatus.ShipCameraCustomizer.Initialize(this);
 
             InvokeShipInitializedEvent();
         }

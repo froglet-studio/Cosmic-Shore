@@ -5,6 +5,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Utilities;
 using UnityEngine;
 
 
@@ -22,30 +23,24 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(ShipCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
     [RequireComponent(typeof(R_ShipActionHandler))]
-    
-    // Deprecated - Use R_ShipImpactor instead
-    // [RequireComponent(typeof(R_ShipImpactHandler))]
-    
     [RequireComponent(typeof(R_ShipCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class ShipStatus : MonoBehaviour, IShipStatus
     {
         public event Action<IShipStatus> OnShipInitialized;
-
-
+        
         [SerializeField, RequireInterface(typeof(IShip))]
         UnityEngine.Object _shipInstance;
         public IShip Ship
         {
             get
             {
-                if (_shipInstance == null)
-                {
-                    Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
-                    return null;
-                }
-                return _shipInstance as IShip;
+                if (_shipInstance is not null) 
+                    return _shipInstance as IShip;
+                
+                Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
+                return null;
             }
         }
         

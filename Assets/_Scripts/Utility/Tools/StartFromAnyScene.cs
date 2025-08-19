@@ -3,6 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+/// <summary>
+///  DEPRECATED
+/// </summary>
 public class StartFromAnyScene : MonoBehaviour
 {
 
@@ -22,7 +26,7 @@ public class StartFromAnyScene : MonoBehaviour
     IEnumerator SetupCameraCoroutine()
     {
         yield return new WaitForEndOfFrame();
-        CameraManager.Instance.SetupGamePlayCameras();
+        // CameraManager.Instance.SetupGamePlayCameras();
     }
 
 

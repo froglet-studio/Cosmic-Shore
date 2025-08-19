@@ -3,20 +3,24 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utilities;
-using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Serialization;
 
 
 public class CameraManager : Singleton<CameraManager>
 {
+    [SerializeField]
+    SceneNameListSO _sceneNameList;
+    
     [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
     [SerializeField] private ScriptableEventNoParam _onReturnToMainMenu;
-    [SerializeField] private ScriptableEventNoParam _onPlayGame;
-    [SerializeField] private ScriptableEventNoParam _onGameOver;
+    [SerializeField] private ScriptableEventTransform _onInitializePlayerCamera;
+    
+    // TODO - Need to have a game over event, to activate the end camera
+    // += SetEndCameraActive
+    // [SerializeField] private ScriptableEventNoParam _onGameOver;
 
     private ICameraController _playerCamera;
     private ICameraController _deathCamera;
@@ -30,7 +34,7 @@ public class CameraManager : Singleton<CameraManager>
     
     private Transform _playerFollowTarget;
     private const int ActivePriority = 10;
-    private const bool FollowOverride = false;
+
     public Transform PlayerFollowTarget
     {
         get => _playerFollowTarget;
@@ -38,9 +42,7 @@ public class CameraManager : Singleton<CameraManager>
     }
 
     private Camera _vCam;
-    
     private IShipStatus _shipStatus;
-    private const string mainMenuName= "Menu_Main";
 
     public override void Awake()
     {
@@ -53,15 +55,13 @@ public class CameraManager : Singleton<CameraManager>
     private void OnEnable()
     {
         _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
-        _onPlayGame.OnRaised += SetupGamePlayCameras;
-        _onGameOver.OnRaised += SetEndCameraActive;
+        _onInitializePlayerCamera.OnRaised += SetupGamePlayCameras;
     }
 
     void OnDisable()
     {
         _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
-        _onPlayGame.OnRaised -= SetupGamePlayCameras;
-        _onGameOver.OnRaised -= SetEndCameraActive;
+        _onInitializePlayerCamera.OnRaised -= SetupGamePlayCameras;
     }
 
     void Start()
@@ -74,7 +74,7 @@ public class CameraManager : Singleton<CameraManager>
     {
         var activeScene = SceneManager.GetActiveScene().name;
 
-        if (activeScene == mainMenuName)
+        if (activeScene == _sceneNameList.MainMenuScene)
         {
             OnEnteredMainMenu();
         }
@@ -103,20 +103,12 @@ public class CameraManager : Singleton<CameraManager>
         SetMainMenuCameraActive();
         _themeManagerData.SetBackgroundColor(Camera.main);
     }
-    
-    public void SetupGamePlayCameras()
-    {
-        if (SceneManager.GetActiveScene().name == mainMenuName) return;
-        
-        _playerFollowTarget = PlayerFollowTarget;
-        SetupGamePlayCameras(_playerFollowTarget);
-    }
 
-    public void SetupGamePlayCameras(Transform transform)
+    public void SetupGamePlayCameras(Transform followTarget)
     {
         if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
         
-        _playerFollowTarget = transform;
+        _playerFollowTarget = followTarget;
         _playerCamera?.SetFollowTarget(_playerFollowTarget);
         _deathCamera?.SetFollowTarget(_playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);

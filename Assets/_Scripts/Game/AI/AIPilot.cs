@@ -190,6 +190,9 @@ namespace CosmicShore.Game.AI
             if (!AutoPilotEnabled)
                 return;
 
+            if (_shipStatus is null || _shipStatus.IsStationary)
+                return;
+
             _distance = _targetPosition - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 

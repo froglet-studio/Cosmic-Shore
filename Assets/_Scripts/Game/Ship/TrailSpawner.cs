@@ -44,11 +44,7 @@ namespace CosmicShore.Game
         [SerializeField] bool spawnerEnabled = true;
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
-        ushort spawnedTrailCount;
         
-        [SerializeField]
-        ScriptableEventNoParam _onGameOver;
-
         // Trails
         public Trail Trail = new Trail();
         readonly Trail Trail2 = new Trail();
@@ -75,7 +71,6 @@ namespace CosmicShore.Game
         // Properties
         public float MinWaveLength => minWavelength;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
-        public bool SpawnerEnabled => spawnerEnabled;
         public float TrailZScale => trailBlock.transform.localScale.z;
 
         private void Awake()
@@ -87,13 +82,11 @@ namespace CosmicShore.Game
         private void OnEnable()
         {
             cts = new CancellationTokenSource();
-            _onGameOver.OnRaised += RestartAITrailSpawnerAfterDelay;
         }
 
         private void OnDisable()
         {
             cts.Cancel();
-            _onGameOver.OnRaised -= RestartAITrailSpawnerAfterDelay;
         }
 
         /// <summary>
@@ -111,7 +104,6 @@ namespace CosmicShore.Game
 
             EnsureContainer();
             spawnerEnabled = true;
-            spawnedTrailCount = 0;
 
             // Start spawn loop
             _ = SpawnLoopAsync(cts.Token);
@@ -274,7 +266,6 @@ namespace CosmicShore.Game
 
             // event
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
-            spawnedTrailCount++;
         }
 
         public List<TrailBlock> GetLastTwoBlocks()
