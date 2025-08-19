@@ -5,9 +5,11 @@ namespace CosmicShore.Game
 {
     public class MiniGamePlayerSpawnerAdapter : MonoBehaviour
     {
-        [SerializeField] protected MiniGameDataVariable _miniGameData;
+        [SerializeField] MiniGameDataVariable _miniGameData;
 
-        [SerializeField] private PlayerSpawner _playerSpawner;
+        [SerializeField] int _aiCount;
+
+        [SerializeField] PlayerSpawner _playerSpawner;
 
         private void OnEnable()
         {
@@ -19,7 +21,24 @@ namespace CosmicShore.Game
             _miniGameData.OnInitialize -= OnInitializeMiniGame;
         }
 
-        private void OnInitializeMiniGame() => InstantiateAndInitializePlayer();
+        private void OnInitializeMiniGame()
+        {
+            InstantiateAndInitializePlayer();
+            InstantiateAndInitializeAI();
+        }
+
+        void InstantiateAndInitializeAI()
+        {
+            for (int i = 0; i < _aiCount; i++)
+            {
+                if (i >= _playerSpawner.InitializeDatas.Length)
+                    return;
+                
+                IPlayer spawnerAI = _playerSpawner.SpawnPlayerAndShip(_playerSpawner.InitializeDatas[i]);
+                _miniGameData.Value.AddPlayer(spawnerAI);
+                spawnerAI.ToggleStationaryMode(true);
+            }
+        }
         
         void InstantiateAndInitializePlayer()
         {
@@ -43,6 +62,7 @@ namespace CosmicShore.Game
             
             IPlayer spawnerPlayer = _playerSpawner.SpawnPlayerAndShip(data);
             _miniGameData.Value.AddPlayer(spawnerPlayer);
+            spawnerPlayer.ToggleStationaryMode(true);
         }
     }
 }

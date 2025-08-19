@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Arcade
         int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / _miniGameData.Value.SelectedIntensity : baseStraightLineLength;
         Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * _miniGameData.Value.SelectedIntensity : crystalStartPosition;
 
-        protected override void OnMiniGameReady() 
+        protected override void OnStartNewGame() 
         {
             segmentSpawner.Seed = Random.Range(int.MinValue,int.MaxValue);
             

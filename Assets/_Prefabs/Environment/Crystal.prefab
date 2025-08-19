@@ -212,7 +212,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f916858793fd493e8479ee9641bfef57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  crystal: {fileID: 6588436222817790495}
+  Crystal: {fileID: 6588436222817790495}
   omniCrystalShipEffectsSO:
   - {fileID: 11400000, guid: 8f49e7abdc07d0646b29d55cdc16f33d, type: 2}
 --- !u!114 &3935840462684288695

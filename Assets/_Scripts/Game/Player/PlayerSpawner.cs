@@ -9,6 +9,8 @@ namespace CosmicShore.Game
         [SerializeField] 
         IPlayer.InitializeData[] _initializeDatas;
 
+        public IPlayer.InitializeData[] InitializeDatas => _initializeDatas;
+        
         [SerializeField, RequireInterface((typeof(IPlayer)))]
         Object _playerPrefab;
 
