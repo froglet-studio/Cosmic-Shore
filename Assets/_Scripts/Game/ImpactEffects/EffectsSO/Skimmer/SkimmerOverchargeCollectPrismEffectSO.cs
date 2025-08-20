@@ -62,7 +62,6 @@ namespace CosmicShore.Game
             if (verbose) Debug.Log($"[SkimmerOvercharge] Overcharge triggered! ({hitSet.Count})", impactor);
         }
 
-        // ---- simplest bridge: write directly into this ship's HUD ----
         private void SetHudText(SkimmerImpactor impactor, string value)
         {
             if (_status?.ShipHUDView is ShipHUDView view)
