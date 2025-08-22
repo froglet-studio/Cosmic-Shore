@@ -100,6 +100,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
+    - _AlphaToMask: 0
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
@@ -132,7 +133,7 @@ Material:
     - _opacity: 1.0100001
     - _player: 0
     - _red: 0
-    - _spread: 0.15
+    - _spread: 0.005
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BrightCrystalColor: {r: 0.45490196, g: 4, b: 0, a: 0.9411765}
