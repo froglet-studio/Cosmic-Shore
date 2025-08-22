@@ -21,8 +21,8 @@ namespace CosmicShore.Game
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
 
-        [SerializeField]
-        ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
+        // [SerializeField] ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
+        [SerializeField] ScriptableEventArcadeData OnArcadeMultiplayerModeSelected;
 
         string _multiplayerSceneName;
         int _maxPlayerPerSession;
@@ -70,7 +70,7 @@ namespace CosmicShore.Game
             NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
 
-            OnArcadeMultiplayerModeSelected.OnEventRaised += OnMultiplayModeSelected;
+            OnArcadeMultiplayerModeSelected.OnRaised += OnMultiplayModeSelected;
         }
 
         async void Start()
@@ -89,7 +89,7 @@ namespace CosmicShore.Game
                 NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
             }
 
-            OnArcadeMultiplayerModeSelected.OnEventRaised -= OnMultiplayModeSelected;
+            OnArcadeMultiplayerModeSelected.OnRaised -= OnMultiplayModeSelected;
         }
 
         private void OnMultiplayModeSelected(ArcadeData data) => 
@@ -233,7 +233,7 @@ namespace CosmicShore.Game
             NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
             if (playerNetObj != null)
             {
-                NetworkPlayer player = playerNetObj.GetComponent<NetworkPlayer>();
+                R_Player player = playerNetObj.GetComponent<R_Player>();
                 if (player != null)
                 {
                     if (player.IsOwner)

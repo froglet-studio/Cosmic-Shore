@@ -5,6 +5,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Utilities;
 using UnityEngine;
 
 
@@ -22,27 +23,24 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(ShipCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
     [RequireComponent(typeof(R_ShipActionHandler))]
-    [RequireComponent(typeof(R_ShipImpactHandler))]
     [RequireComponent(typeof(R_ShipCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class ShipStatus : MonoBehaviour, IShipStatus
     {
         public event Action<IShipStatus> OnShipInitialized;
-
-
+        
         [SerializeField, RequireInterface(typeof(IShip))]
         UnityEngine.Object _shipInstance;
         public IShip Ship
         {
             get
             {
-                if (_shipInstance == null)
-                {
-                    Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
-                    return null;
-                }
-                return _shipInstance as IShip;
+                if (_shipInstance is not null) 
+                    return _shipInstance as IShip;
+                
+                Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
+                return null;
             }
         }
         
@@ -100,16 +98,6 @@ namespace CosmicShore.Game
             {
                 actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_ShipActionHandler>();
                 return actionHandler;
-            }
-        }
-
-        R_ShipImpactHandler impactHandler;
-        public R_ShipImpactHandler ImpactHandler
-        {
-            get
-            {
-                impactHandler = impactHandler != null ? impactHandler : gameObject.GetOrAdd<R_ShipImpactHandler>();
-                return impactHandler;
             }
         }
 
@@ -236,8 +224,6 @@ namespace CosmicShore.Game
         public bool Overheating { get; set; }
         public bool Attached { get; set; }
         public bool GunsActive { get; set; }
-        
-        public float GetInertia { get; set; }
         public float Speed { get; set; }
         public float ChargedBoostCharge { get; set; }
         

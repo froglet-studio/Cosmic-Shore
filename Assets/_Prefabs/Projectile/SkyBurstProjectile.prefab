@@ -14,8 +14,10 @@ GameObject:
   - component: {fileID: 4704425947628343467}
   - component: {fileID: 7669076058770026044}
   - component: {fileID: 8504388981194176714}
-  - component: {fileID: -2002303674843682208}
   - component: {fileID: 8504388981194176713}
+  - component: {fileID: 7613428080012511999}
+  - component: {fileID: 2638094848372366872}
+  - component: {fileID: 5884936712578775408}
   m_Layer: 12
   m_Name: SkyBurstProjectile
   m_TagString: Projectile
@@ -63,6 +65,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -4860,39 +4865,6 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
---- !u!114 &-2002303674843682208
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7877928849292311340}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 724040231d9c9bf41a9fd3a9819ece89, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Velocity: {x: 0, y: 0, z: 0}
-  Team: 0
-  Ship: {fileID: 0}
-  ImpactOnEnd: 1
-  Inertia: 1
-  InitialScale: {x: 0, y: 0, z: 0}
-  trailBlockImpactEffects: 0f000000
-  shipImpactEffects: 040000000300000002000000
-  crystalImpactEffects: 
-  endEffects: 0f000000
-  ProjectileTime: 0
-  spike: 0
-  growthRate: 1
-  friendlyFire: 1
-  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  AOEPrefabs:
-  - {fileID: 447888847298330991, guid: b6aa24b5cd6a7f24c9f24c32c20eba91, type: 3}
-  - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
-  minExplosionScale: 100
-  maxExplosionScale: 100
-  Charge: 0
 --- !u!199 &8504388981194176713
 ParticleSystemRenderer:
   serializedVersion: 6
@@ -4911,6 +4883,9 @@ ParticleSystemRenderer:
   m_ReflectionProbeUsage: 0
   m_RayTracingMode: 0
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -4968,3 +4943,62 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
+--- !u!114 &7613428080012511999
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7877928849292311340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0abdb3ebc3c413846859b59615823360, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Velocity: {x: 0, y: 0, z: 0}
+  InitialScale: {x: 0, y: 0, z: 0}
+  projectileImpactor: {fileID: 2638094848372366872}
+  trailBlockImpactEffects: 
+  _trailBlockImpactEffects: []
+  shipImpactEffects: 
+  _shipImpactEffects: []
+  crystalImpactEffects: 
+  _crystalImpactEffects: []
+  endEffects: 
+  _endEffects: []
+  ProjectileTime: 0
+  spike: 0
+  growthRate: 1
+  friendlyFire: 0
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &2638094848372366872
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7877928849292311340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  projectileShipEffectsSO: []
+  projectilePrismEffectsSO:
+  - {fileID: 11400000, guid: 313049a902eeca141942959a2b52c25f, type: 2}
+  projectileFakeCrystalEffectsSO: []
+  projectileEndEffectsSO:
+  - {fileID: 11400000, guid: 313049a902eeca141942959a2b52c25f, type: 2}
+--- !u!114 &5884936712578775408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7877928849292311340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 2638094848372366872}

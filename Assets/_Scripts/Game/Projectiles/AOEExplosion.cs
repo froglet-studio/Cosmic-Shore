@@ -1,7 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
@@ -14,9 +11,6 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
 
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        List<ScriptableObject> _shipImpactEffects;
-
         [SerializeField] private bool affectSelf = false;
         [SerializeField] private bool destructive = true;
         [SerializeField] private bool devastating = false;
@@ -25,6 +19,8 @@ namespace CosmicShore.Game.Projectiles
         protected Vector3 MaxScaleVector;
         protected float Inertia = 70;
         protected float speed;
+        protected Vector3 SpawnPosition;
+        protected Quaternion SpawnRotation;
 
         // Material and Team
         public Material Material { get; protected set; }
@@ -35,6 +31,9 @@ namespace CosmicShore.Game.Projectiles
         
         public virtual void Initialize(InitializeStruct initStruct)
         {
+            SpawnPosition = initStruct.SpawnPosition;
+            SpawnRotation = initStruct.SpawnRotation;
+            
             AnonymousExplosion = initStruct.AnnonymousExplosion;
             Ship = initStruct.Ship;
             if (Ship == null)
@@ -58,7 +57,11 @@ namespace CosmicShore.Game.Projectiles
 
         public void Detonate() => StartCoroutine(ExplodeCoroutine());
 
-        protected virtual void OnTriggerEnter(Collider other)
+        public Vector3 CalculateImpactVector(Vector3 impacteePosition) =>
+            impacteePosition - transform.position.normalized * speed * Inertia ;
+        
+        // Deprecated - Moved to R_ExplosionImpactor.cs
+        /*protected virtual void OnTriggerEnter(Collider other)
         {
             var impactVector = (other.transform.position - transform.position).normalized * speed * Inertia ;
 
@@ -94,7 +97,7 @@ namespace CosmicShore.Game.Projectiles
             {
                 Debug.Log("AOEExplosion.OnTriggerEnter - not a ship or a trail block: " + other.name);
             }
-        }
+        }*/
 
         protected virtual IEnumerator ExplodeCoroutine()
         {
@@ -116,9 +119,11 @@ namespace CosmicShore.Game.Projectiles
             Destroy(gameObject);
         }
 
-        protected virtual void PerformShipImpactEffects(IShipStatus shipStatus, Vector3 impactVector)
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*protected virtual void PerformShipImpactEffects(IShipStatus shipStatus, Vector3 impactVector)
         {
-            var castedEffects = _shipImpactEffects.Cast<IImpactEffect>();
+            var castedEffects = _shipImpactEffects.Cast<R_IImpactEffect>();
+
             ShipHelper.ExecuteImpactEffect(
                 castedEffects,
                 new ImpactEffectData(shipStatus, null, impactVector)
@@ -128,7 +133,7 @@ namespace CosmicShore.Game.Projectiles
         public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
             transform.SetPositionAndRotation(position, rotation);
-        }
+        }*/
 
 
 
@@ -139,6 +144,8 @@ namespace CosmicShore.Game.Projectiles
             public IShip Ship;
             public Material OverrideMaterial;
             public float MaxScale;
+            public Vector3 SpawnPosition;
+            public Quaternion SpawnRotation;
         }
     }
 }

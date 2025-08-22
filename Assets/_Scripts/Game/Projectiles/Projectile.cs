@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using UnityEngine;
-using System.Linq;
-using UnityEditor.Build.Pipeline;
 
 
 namespace CosmicShore.Game.Projectiles
@@ -11,10 +9,16 @@ namespace CosmicShore.Game.Projectiles
     public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
-        public float Inertia = 1;
-        
-        [HideInInspector] public Vector3 InitialScale;
 
+        [HideInInspector] public Vector3 InitialScale;
+        
+        [SerializeField]
+        ProjectileImpactor projectileImpactor;
+
+        public float Charge { get; private set; }
+        
+        #region Deprecated
+        // Has been moved to ProjectileImpactor
         [SerializeField] 
         protected List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
@@ -40,6 +44,7 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         protected List<ScriptableObject> _endEffects;
 
+        #endregion
 
         public float ProjectileTime;
 
@@ -81,21 +86,24 @@ namespace CosmicShore.Game.Projectiles
             OwnTeam = ownTeam;
             ShipStatus = shipStatus;
             _poolManager = poolManager;
-
+            Charge = charge;
+            
             if (TryGetComponent(out Gun gun) && ShipStatus != null)
             {
                 gun.Initialize(ShipStatus);
             }
         }
 
-       
+        public bool DisallowImpactOnPrism(Teams trailBlockTeam) => !friendlyFire && trailBlockTeam == OwnTeam;
 
-        protected virtual void OnTriggerEnter(Collider other)
+        public bool DisallowImpactOnVessel(Teams vesselTeam) => vesselTeam == OwnTeam;
+        
+        /*protected virtual void OnTriggerEnter(Collider other)
         { 
             HandleCollision(other);
-        }
+        }*/
 
-        void HandleCollision(Collider other)
+        /*void HandleCollision(Collider other)
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
@@ -115,11 +123,12 @@ namespace CosmicShore.Game.Projectiles
 
                 // if (!_pierceShip) ExecuteStopEffect();
             }
-        }
+        }*/
 
-        protected virtual void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*protected virtual void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            /*foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
+            foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
             {
                 switch (effect)
                 {
@@ -146,7 +155,7 @@ namespace CosmicShore.Game.Projectiles
                         break;
 
                 }
-            }*/
+            }
 
             foreach (ITrailBlockImpactEffect effect in _trailBlockImpactEffects.Cast<ITrailBlockImpactEffect>())
             {
@@ -155,11 +164,12 @@ namespace CosmicShore.Game.Projectiles
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero), trailBlockProperties); // TODO : impacted vector is not correct here.
             }
-        }
+        }*/
 
-        protected virtual void PerformEndEffects()
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*protected virtual void PerformEndEffects()
         {
-            /*foreach (TrailBlockImpactEffects effect in endEffects)
+            foreach (TrailBlockImpactEffects effect in endEffects)
             {
                 switch (effect)
                 {
@@ -175,7 +185,7 @@ namespace CosmicShore.Game.Projectiles
                         // ((ExplodableProjectile)this).Detonate();         -> better to override the method in child ExplodableProjectile class.
                         break;
                 }
-            }*/
+            }
 
             foreach (IBaseImpactEffect effect in _endEffects.Cast<IBaseImpactEffect>())
             {
@@ -184,11 +194,12 @@ namespace CosmicShore.Game.Projectiles
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
             }
-        }
+        }*/
 
-        protected virtual void PerformShipImpactEffects(IShipStatus shipStatus)
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*protected virtual void PerformShipImpactEffects(IShipStatus shipStatus)
         {
-            /*foreach (ShipImpactEffects effect in shipImpactEffects)
+            foreach (ShipImpactEffects effect in shipImpactEffects)
             {
                 switch (effect)
                 {
@@ -212,7 +223,7 @@ namespace CosmicShore.Game.Projectiles
                         shipStatus.Ship.ShipStatus.TrailSpawner.Charm(ShipStatus, 7);
                         break;
                 }
-            }*/
+            }
 
             foreach (IBaseImpactEffect effect in _endEffects.Cast<IBaseImpactEffect>())
             {
@@ -221,11 +232,12 @@ namespace CosmicShore.Game.Projectiles
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
             }
-        }
+        }*/
 
-        protected virtual void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
+        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+        /*protected virtual void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            /*foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
                 {
@@ -245,7 +257,7 @@ namespace CosmicShore.Game.Projectiles
                         ShipStatus.ResourceSystem.ChangeResourceAmount(0, ShipStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
                         break;
                 }
-            }*/
+            }
 
             foreach (ICrystalImpactEffect effect in _crystalImpactEffects.Cast<ICrystalImpactEffect>())
             {
@@ -254,7 +266,7 @@ namespace CosmicShore.Game.Projectiles
 
                 effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero), crystalProperties); // TODO : impacted vector is not correct here.
             }
-        }
+        }*/
 
         public void LaunchProjectile(float projectileTime)
         {
@@ -284,11 +296,12 @@ namespace CosmicShore.Game.Projectiles
                 // Only check for raycasting collisions if spike is true
                 if (spike)
                 {
-                    if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, moveDistance.magnitude))
+                    // This should be done from R_ProjectileImpactor
+                    /*if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, moveDistance.magnitude))
                     {
                         transform.position = hit.point;
                         HandleCollision(hit.collider);
-                    }
+                    }*/
 
                     var stretchedPoint = new Vector3(.5f, .5f, elapsedTime * growthRate);
                     var percentRemaining = elapsedTime / projectileTime;
@@ -302,8 +315,8 @@ namespace CosmicShore.Game.Projectiles
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
-            if (endEffects.Count > 0) PerformEndEffects();
-
+            //if (endEffects.Count > 0) PerformEndEffects();
+            projectileImpactor.ExecuteEndEffects();
             ReturnToPool();
         }
 
@@ -311,7 +324,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (moveCoroutine != null) StopCoroutine(moveCoroutine);
         }
-
-        void ReturnToPool() => _poolManager.ReturnToPool(gameObject, gameObject.tag);
+        
+        public void ReturnToPool() => _poolManager.ReturnToPool(gameObject, gameObject.tag);
     }
 }

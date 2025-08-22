@@ -1,4 +1,4 @@
-using CosmicShore.Utilities;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,141 +8,70 @@ namespace CosmicShore.Game
     public class ShipHUDController : MonoBehaviour, IShipHUDController
     {
         [SerializeField] private ShipClassType shipType;
+        [SerializeField] private ShipHUDProfileSO profile;
+        [SerializeField] private ShipHUDRefs refs;
+        private IShip _ship;
         
-        [Header("Event Channels")]
-        [SerializeField] 
-        SilhouetteEventChannelSO onSilhouetteInitialized;
+        private IShipStatus _status;
+        private IShipHUDView _view;
 
-        IShipStatus _shipStatus;
-        IShip _ship;
-
-        //serpent 
-        [SerializeField] private ConsumeBoostAction _boostAction;
-        [SerializeField] private SeedAssemblerAction _seedAssemblerAction;
-        
-        //sparrow
-        [SerializeField] private OverheatingAction _overheatingAction;
-        [SerializeField] private FullAutoAction _fullAutoAction;
-        [SerializeField] private FireGunAction _fireGunAction;
-        [SerializeField] private ToggleStationaryModeAction _stationaryModeAction;
-        
+        private readonly List<HudSubscriptionSO> _liveSubs = new();
 
         private void Awake()
         {
             _ship = GetComponent<IShip>();
-            _shipStatus = GetComponent<IShipStatus>();
+            _status = _ship.ShipStatus;
         }
 
-        private void OnEnable()
+        private void OnEnable()  => InitializeShipHUD(shipType);
+        private void OnDisable() => DisposeHUD();
+
+        public void InitializeShipHUD(ShipClassType type)
         {
-            // onSilhouetteInitialized.OnEventRaised += HandleSilhouetteInitialized;
-        }
+            if (_status == null || _status.AutoPilotEnabled) return;
+            if (SceneManager.GetActiveScene().name == "Menu_Main") return;
 
-        private void OnDisable()
-        {
-            // onSilhouetteInitialized.OnEventRaised -= HandleSilhouetteInitialized;
-        }
+            var view = _status.ShipHUDContainer.InitializeView(this, type);
+            if (view == null) { Debug.LogError($"[ShipHUDController] HUD init failed for {type}"); return; }
 
+            _status.ShipHUDView = view;
+            _view = view;
 
-        public void InitializeShipHUD(ShipClassType shipType)
-        {
-            Debug.Log(_shipStatus.AutoPilotEnabled);
+            // Effects from view (ShipHUDView exposes IHUDEffects via IHasEffects)
+            var effects = (_view is IHasEffects hasFx) ? hasFx.Effects : null;
 
-            if (!_shipStatus.AutoPilotEnabled)
+            if (profile?.subscriptions == null || profile.subscriptions.Length == 0)
             {
-                if (SceneManager.GetActiveScene().name == "Main_Menu") return;
-                _shipStatus.ShipHUDView = _shipStatus.ShipHUDContainer.InitializeView(this, shipType);
+                Debug.LogWarning("[ShipHUDController] No subscriptions in profile."); return;
+            }
 
-                // InitializeBoostAction();
-                
-                SubscribeBoostAction();
-                SubscribeSeedAssemblerAction();
-                SubscribeOverheatingAction();
-                SubscribeFullAutoAction();
-                SubscribeFireGunAction();
-                SubscribeStationaryModeAction();
+            foreach (var sub in profile.subscriptions)
+            {
+                if (!sub) continue;
+                var runtime = Instantiate(sub);
+                runtime.name = sub.name + " (Runtime)";
+                runtime.Initialize(_ship, _status, effects, refs);
+                _liveSubs.Add(runtime);
             }
         }
 
-        private void SubscribeBoostAction()
+        public void DisposeHUD()
         {
-            if (_boostAction == null) return;
-            var view = _shipStatus.ShipHUDView;
-            _boostAction.OnBoostStarted += (dur, amt) =>
-                view.AnimateBoostFillDown(_boostAction.ResourceIndex, dur, amt);
-            _boostAction.OnBoostEnded   += () =>
-                view.AnimateBoostFillUp(_boostAction.ResourceIndex, _boostAction.BoostDuration, 1f);
-        }
+            for (int i = 0; i < _liveSubs.Count; i++)
+                if (_liveSubs[i] != null) _liveSubs[i].Dispose();
+            _liveSubs.Clear();
 
-        private void SubscribeSeedAssemblerAction()
-        {
-            if (_seedAssemblerAction == null) return;
-            var view = _shipStatus.ShipHUDView;
-            _seedAssemblerAction.OnAssembleCompleted   += () => view.OnSeedAssembleStarted();
-            _seedAssemblerAction.OnAssembleCompleted += () => view.OnSeedAssembleCompleted();
-        }
-
-        private void SubscribeOverheatingAction()
-        {
-            if (_overheatingAction == null) return;
-            var view = _shipStatus.ShipHUDView;
-            _overheatingAction.OnHeatBuildStarted += () => view.OnOverheatBuildStarted();
-            _overheatingAction.OnOverheated        += () => view.OnOverheated();
-            _overheatingAction.OnHeatDecayCompleted += () => view.OnHeatDecayCompleted();
-        }
-
-        private void SubscribeFullAutoAction()
-        {
-            if (_fullAutoAction == null) return;
-            var view = _shipStatus.ShipHUDView;
-            _fullAutoAction.OnFullAutoStarted += () => view.OnFullAutoStarted();
-            _fullAutoAction.OnFullAutoStopped += () => view.OnFullAutoStopped();
-        }
-
-        private void SubscribeFireGunAction()
-        {
-            if (_fireGunAction == null) return;
-            var view = _shipStatus.ShipHUDView;
-            _fireGunAction.OnGunFired += () => view.OnFireGunFired();
-        }
-
-        private void SubscribeStationaryModeAction()
-        {
-            if (_stationaryModeAction == null) return;
-            var view = _shipStatus.ShipHUDView;
-            _stationaryModeAction.OnStationaryToggled += isOn => view.OnStationaryToggled(isOn);
+            if (_status?.ShipHUDView is not MonoBehaviour mb || !mb) return;
+            Destroy(mb.gameObject);
+            _status.ShipHUDView = null;
+            _view = null;
         }
 
         public void OnButtonPressed(int buttonNumber)
         {
-            Debug.Log($"[ShipHUDController] OnButtonPressed({buttonNumber}) called!");
-            _ship.PerformButtonActions(buttonNumber);
-            
-            if (_shipStatus.ShipHUDView != null)
-                _shipStatus.ShipHUDView.OnInputPressed(buttonNumber);
+            _ship?.PerformButtonActions(buttonNumber);
+            _view?.OnInputPressed(buttonNumber);
         }
-        
-        public void OnButtonReleased(int buttonNumber)
-        {
-            Debug.Log($"[ShipHUDController] OnButtonReleased({buttonNumber}) called!");
-            if (_shipStatus.ShipHUDView != null)
-                _shipStatus.ShipHUDView.OnInputReleased(buttonNumber);
-        }
-
-        private void HandleSilhouetteInitialized(SilhouetteData data)
-        {
-            var sil = _shipStatus.ShipHUDView.GetSilhouetteContainer();
-            var trail = _shipStatus.ShipHUDView.GetTrailContainer();
-
-            sil.gameObject.SetActive(data.IsSilhouetteActive);
-            trail.gameObject.SetActive(data.IsTrailDisplayActive);
-
-            foreach (var part in data.Silhouettes)
-            {
-                part.transform.SetParent(sil.transform, false);
-                part.SetActive(true);
-            }
-            data.Sender.SetSilhouetteReference(sil.transform, trail.transform);
-        }
+        public void OnButtonReleased(int buttonNumber) => _view?.OnInputReleased(buttonNumber);
     }
 }

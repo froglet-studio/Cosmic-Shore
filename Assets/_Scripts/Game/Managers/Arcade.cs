@@ -24,8 +24,8 @@ namespace CosmicShore.Core
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
         
-        [SerializeField]
-        ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
+        // [SerializeField] ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
+        [SerializeField] ScriptableEventArcadeData OnArcadeMultiplayerModeSelected;
 
         [SerializeField]
         ScriptableEventNoParam _onStartSceneTransition;
@@ -96,7 +96,7 @@ namespace CosmicShore.Core
                 // TODO: Remove MultiplayerSetup dependency
 
                 // _multiplayerSetup.ExecuteMultiplayerSetup(ArcadeGameLookup[gameMode].SceneName, GetArcadeGameByMode(gameMode).MaxPlayersForMultiplayer);
-                OnArcadeMultiplayerModeSelected.RaiseEvent(new ArcadeData()
+                OnArcadeMultiplayerModeSelected.Raise(new ArcadeData()
                 {
                     SceneName = ArcadeGameLookup[gameMode].SceneName, 
                     MaxPlayers = GetArcadeGameByMode(gameMode).MaxPlayersForMultiplayer

@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 1158389878633052016}
   - component: {fileID: 7530736874585816541}
   - component: {fileID: 4173946516839143748}
+  - component: {fileID: 7759378028267402252}
+  - component: {fileID: 6974085109394251555}
   m_Layer: 10
   m_Name: AOEKnockBackExplosion
   m_TagString: Untagged
@@ -48,20 +50,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3aee2172b77b5524797b5b5f0a9d1efe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 50
-  MaxScale: 200
   ExplosionDuration: 4
   ExplosionDelay: 0.2
-  shipImpactEffects: 0300000001000000
-  _shipImpactEffects:
-  - {fileID: 11400000, guid: 9812496630d0c2a2c3ffc7be7340c460, type: 2}
-  - {fileID: 11400000, guid: 250b0db57fac04545b909dcf65601cac, type: 2}
+  _shipImpactEffects: []
   affectSelf: 1
   destructive: 1
   devastating: 0
   shielding: 0
-  Team: 0
-  AnonymousExplosion: 0
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -163,3 +158,37 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
+--- !u!114 &7759378028267402252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosion: {fileID: 5915562654621825366}
+  explosionShipEffectsSO:
+  - {fileID: 11400000, guid: afd81f4d056931a47a8fc5c5df243996, type: 2}
+  - {fileID: 11400000, guid: e4e63a66eb9954744b4650934a1a1084, type: 2}
+  explosionPrismEffectsSO: []
+  affectSelf: 0
+  destructive: 1
+  devastating: 0
+  shielding: 0
+--- !u!114 &6974085109394251555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 7759378028267402252}

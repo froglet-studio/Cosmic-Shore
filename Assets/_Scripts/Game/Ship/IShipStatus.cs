@@ -3,6 +3,7 @@ using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
+using CosmicShore.Utilities;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -29,7 +30,6 @@ namespace CosmicShore.Game
         bool Drifting { get; set; }
         bool ElevatedResourceGain { get; set; }
         Transform FollowTarget { get; set; }
-        float GetInertia { get; set; }
         bool GunsActive { get; set; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
@@ -75,7 +75,10 @@ namespace CosmicShore.Game
         IShipHUDController ShipHUDController { get; }
         R_ShipCustomization Customization { get; }
         R_ShipActionHandler ActionHandler { get; }
-        R_ShipImpactHandler ImpactHandler { get; }
+        
+        // Deprecated  - Use R_ShipImpactor instead
+        // R_ShipImpactHandler ImpactHandler { get; }
+        
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
 
         void ResetValues();

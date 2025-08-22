@@ -2,9 +2,8 @@ using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using System;
 using System.Linq;
+using UnityEngine;
 
 namespace CosmicShore.Game
 {
@@ -20,6 +19,8 @@ namespace CosmicShore.Game
 
     public class Crystal : CellItem
     {
+        const int MinimumSpaceBetweenCurrentAndLastSpawnPos = 100;
+        
         #region Inspector Fields
         [SerializeField] public CrystalProperties crystalProperties;
         [SerializeField] public float sphereRadius = 100;
@@ -32,77 +33,79 @@ namespace CosmicShore.Game
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
+        [SerializeField] private Collider collider;
+
         #endregion
 
-        [Header("Crystal Effects")]
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        List<ScriptableObject> _crystalImpactEffects;
-
+        public List<CrystalModelData> CrystalModels => crystalModels;
+        
         Material tempMaterial;
         Vector3 origin = Vector3.zero;
+
+        public bool IsDecoyCrystal { get; set; }
 
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
         }
 
-        protected virtual void OnTriggerEnter(Collider other)
+//         public virtual void ExecuteCommonVesselImpact(IShip ship)
+//         {
+//             if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
+//                 return;
+//
+//             if (allowVesselImpactEffect)
+//             {
+//                 // TODO - This class should not modify AIPilot's properties directly.
+//                 /*if (ship.ShipStatus.AIPilot != null)
+//                 {
+//                     AIPilot aiPilot = ship.ShipStatus.AIPilot;
+//
+//                     aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+//                     aiPilot.throttle = aiPilot.defaultThrottle;
+//                 }*/
+//             }
+//
+//             // TODO - Add Event channels here rather than calling singletons directly.
+//             if (StatsManager.Instance != null)
+//                 StatsManager.Instance.CrystalCollected(ship, crystalProperties);
+//
+//             // TODO - Handled from R_CrystalImpactor.cs
+//             // PerformCrystalImpactEffects(crystalProperties, ship);
+//             // TODO : Pass only ship status
+//             Explode(ship);
+//             PlayExplosionAudio();
+//             CrystalRespawn();
+//         }
+
+        public bool CanBeCollected(Teams shipTeam) => OwnTeam == Teams.None || OwnTeam == shipTeam;
+
+        private Vector3 _lastSpawnPosition;
+        
+        public void CrystalRespawn()
         {
-            Collide(other);
-        }
-
-        protected void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
-        {
-            // TODO - self ship status and impacted ship status need to be different.
-            var castedEffects = _crystalImpactEffects.Cast<IImpactEffect>();
-            var impactEffectData = new ImpactEffectData(ship.ShipStatus, ship.ShipStatus,
-                ship.ShipStatus.Course * ship.ShipStatus.Speed);
-            
-            ShipHelper.ExecuteImpactEffect(castedEffects, impactEffectData, crystalProperties);
-        }
-
-        protected virtual void Collide(Collider other)
-        {
-            if (!other.TryGetComponent(out IVesselCollider shipCollider))
-                return;
-
-            var ship = shipCollider.Ship;
-            
-            if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
-                return;
-
-            if (allowVesselImpactEffect)
-            {
-                ship.PerformCrystalImpactEffects(crystalProperties);
-
-                // TODO - This class should not modify AIPilot's properties directly.
-                /*if (ship.ShipStatus.AIPilot != null)
-                {
-                    AIPilot aiPilot = ship.ShipStatus.AIPilot;
-
-                    aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                    aiPilot.throttle = aiPilot.defaultThrottle;
-                }*/
-            }
-
-            // TODO - Add Event channels here rather than calling singletons directly.
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.CrystalCollected(ship, crystalProperties);
-
-            PerformCrystalImpactEffects(crystalProperties, ship);
-
-            Explode(ship);
-            
-            PlayExplosionAudio();
-
-            // Move the Crystal
             if (allowRespawnOnImpact)
             {
                 foreach (var model in crystalModels)
+                {
+                    model.model.SetActive(true);
                     model.model.GetComponent<FadeIn>().StartFadeIn();
-
-                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+                }
+                
+                
+                Vector3 spawnPos;
+                do
+                {
+                    spawnPos = Random.insideUnitSphere * sphereRadius + origin;
+                } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);
+                
+                
+                transform.SetPositionAndRotation(spawnPos, Random.rotation);
+                collider.enabled = true;
                 cell.UpdateItem();
+                origin = transform.position;
+                _lastSpawnPosition = spawnPos;
             }
             else
             {
@@ -137,8 +140,10 @@ namespace CosmicShore.Game
             transform.localScale = targetScaleVector;
         }
 
-        protected void Explode(IShip ship)
+        public void Explode(IShipStatus shipStatus)
         {
+            collider.enabled = false;
+            
             for (int i = 0; i < crystalModels.Count; i++)
             {
                 var modelData = crystalModels[i];
@@ -146,8 +151,9 @@ namespace CosmicShore.Game
 
                 tempMaterial = new Material(modelData.explodingMaterial);
                 var spentCrystal = Instantiate(SpentCrystalPrefab);
-                spentCrystal.transform.position = transform.position;
-                spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
+                /*spentCrystal.transform.position = transform.position;
+                spentCrystal.transform.localEulerAngles = transform.localEulerAngles;*/
+                spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
                 spentCrystal.GetComponent<Renderer>().material = tempMaterial;
                 spentCrystal.transform.localScale = transform.lossyScale;
 
@@ -157,12 +163,11 @@ namespace CosmicShore.Game
                     var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                     spentAnimator.timer = thisAnimator.timer;
                 }
-                var shipStatus = ship.ShipStatus;
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, ship.ShipStatus.Player.PlayerName);
+                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, shipStatus.Player.PlayerName);
             }
         }
 
-        protected void PlayExplosionAudio()
+        public void PlayExplosionAudio()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
             AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
@@ -239,3 +244,4 @@ namespace CosmicShore.Game
         }
     }
 }
+

@@ -9,13 +9,15 @@ namespace CosmicShore.Game
         [SerializeField] 
         IPlayer.InitializeData[] _initializeDatas;
 
+        public IPlayer.InitializeData[] InitializeDatas => _initializeDatas;
+        
         [SerializeField, RequireInterface((typeof(IPlayer)))]
         Object _playerPrefab;
 
         [SerializeField] 
         ShipSpawner _shipSpawner;
 
-        [SerializeField]
+        [SerializeField, Tooltip("If true, the player-ships inside the initialize datas marked with allow spawning will spawn when the start method gets invoked.")]
         bool _spawnAtStart;
 
         private void Start()

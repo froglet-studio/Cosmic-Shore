@@ -7,7 +7,7 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] int Collisions;
         [SerializeField] MiniGame Game;
-        [SerializeField] Player hostileShip;
+        [SerializeField] R_Player hostileShip;
 
         public override bool CheckForEndOfTurn()
         {

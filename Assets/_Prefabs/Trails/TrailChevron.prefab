@@ -17,6 +17,8 @@ GameObject:
   - component: {fileID: 4602755863303170595}
   - component: {fileID: 1079158693656293726}
   - component: {fileID: 4925357549984409314}
+  - component: {fileID: 7919969373296424924}
+  - component: {fileID: 5169883615076576656}
   m_Layer: 0
   m_Name: TrailChevron
   m_TagString: Untagged
@@ -149,11 +151,11 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
-  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 0a163cbed75c47d488291d5a963da743,
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
-  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 410e837e6975b7742b4bde58201869f7,
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
     type: 2}
-  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: cb93d548c3bec7a44be620b250fdf4e0,
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: b5c1a6869a63cbf469f649a5c0b811fc,
     type: 2}
   _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
@@ -210,3 +212,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &7919969373296424924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3296339347280791465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a83a5b15530145f2b806342c2109654e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prismShipEffectsSO: []
+  prismProjectileEffectsSO: []
+  prismSkimmerEffectsSO: []
+  prismExplosionEffectsSO: []
+--- !u!114 &5169883615076576656
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3296339347280791465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 7919969373296424924}

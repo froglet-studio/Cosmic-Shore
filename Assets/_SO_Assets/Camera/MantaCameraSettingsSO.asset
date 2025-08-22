@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: MantaCameraSettingsSO
   m_EditorClassIdentifier: 
   mode: 1
-  followOffset: {x: 0, y: 2, z: -5}
-  dynamicMinDistance: 20
-  dynamicMaxDistance: 25
-  followSmoothTime: 0.6
-  rotationSmoothTime: 5
+  followOffset: {x: 0, y: 0, z: -30}
+  dynamicMinDistance: -27
+  dynamicMaxDistance: -30
+  followSmoothTime: 0.02
+  rotationSmoothTime: 10
   disableSmoothing: 0
   nearClipPlane: 0.3
   farClipPlane: 12000
-  followTargetPosition: {x: 0, y: 0, z: 0}
-  fixedOffsetPosition: {x: 0, y: 0, z: 0}
+  enableAdaptiveZoom: 0
+  adaptiveMaxDistance: 0
   orthographicSize: 5

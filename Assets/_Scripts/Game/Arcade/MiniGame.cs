@@ -18,6 +18,9 @@ using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
+    /// <summary>
+    /// DEPRECATED - Use R_MiniGameBase instead
+    /// </summary>
     public abstract class MiniGame : MonoBehaviour
     {
         [SerializeField] protected GameModes gameMode;
@@ -430,7 +433,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Ship.ShipStatus.ResourceSystem.Reset();
             ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
 
-            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
+            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
 
             // For single player games, don't require the extra button press
             if (Players.Count > 1)
@@ -486,10 +489,10 @@ namespace CosmicShore.Game.Arcade
             if (!gameRunning || ActivePlayer == null) return;
 
             // hand control to the AI
-            Player activePlayer = ((Player)ActivePlayer);
+            R_Player activePlayer = ((R_Player)ActivePlayer);
 
             // TODO -  Should not directly call StartAutoPilot, use event
-            activePlayer.StartAutoPilot();
+            // activePlayer.StartAutoPilot();
         }
 
         private void HandleGameResumed()
@@ -497,10 +500,10 @@ namespace CosmicShore.Game.Arcade
             if (!gameRunning || ActivePlayer == null) return;
 
             // give control back to the player
-            Player activePlayer = ((Player)ActivePlayer);
+            R_Player activePlayer = ((R_Player)ActivePlayer);
 
             // TODO -  Should not directly call StartAutoPilot, use event
-            activePlayer.StopAutoPilot();
+            // activePlayer.StopAutoPilot();
         }
 
         struct TimedCallback

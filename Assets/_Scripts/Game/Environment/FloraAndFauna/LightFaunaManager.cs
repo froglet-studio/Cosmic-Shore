@@ -35,6 +35,7 @@ public class LightFaunaManager : Population
             fauna.Team = Team;
             fauna.Population = this;
             fauna.Phase = PhaseIncrease*i;
+            fauna.Initialize(cell);
             
             activeFauna.Add(fauna);
         }

@@ -35,9 +35,14 @@ namespace CosmicShore.Core
         public string ownerID;
 
         [Header("Event Channels")]
-        [SerializeField] TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
-        [SerializeField] TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
-        [SerializeField] TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+        
+        // [SerializeField] TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
+        [SerializeField] ScriptableEventTrailBlockEventData _onTrailBlockCreatedEventChannel;
+        // [SerializeField] TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
+        [SerializeField] ScriptableEventTrailBlockEventData _onTrailBlockDestroyedEventChannel;
+        // [SerializeField] TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+        [SerializeField] ScriptableEventTrailBlockEventData _onTrailBlockRestoredEventChannel;
+        
         [SerializeField] TrailBlockEventChannelWithReturnSO _onFlockSpawnedEventChannel;
 
         public Teams Team
@@ -171,7 +176,7 @@ namespace CosmicShore.Core
             /*if (StatsManager.Instance != null)
                 StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);*/
 
-            _onTrailBlockCreatedEventChannel.RaiseEvent(new TrailBlockEventData
+            _onTrailBlockCreatedEventChannel.Raise(new TrailBlockEventData
             {
                 OwnTeam = Team,
                 PlayerName = PlayerName,
@@ -198,14 +203,15 @@ namespace CosmicShore.Core
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent(out IVesselCollider vesselCollider))
+            // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
+            /*if (other.TryGetComponent(out IVesselCollider vesselCollider))
             {
                 var ship = vesselCollider.Ship;
                 if (!ship.ShipStatus.Attached)
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
-            }
+            }*/
             
-            else if (other.TryGetComponent(out CellItem cellItem))
+            if (other.TryGetComponent(out CellItem cellItem))
             {
                 if (!TrailBlockProperties.IsShielded)
                     ActivateShield();
@@ -255,7 +261,7 @@ namespace CosmicShore.Core
             /*if (StatsManager.Instance != null)
                 StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);*/
 
-            _onTrailBlockDestroyedEventChannel.RaiseEvent(new TrailBlockEventData
+            _onTrailBlockDestroyedEventChannel.Raise(new TrailBlockEventData
             {
                 OwnTeam = team,
                 PlayerName = playerName,
@@ -299,7 +305,7 @@ namespace CosmicShore.Core
                 /*if (StatsManager.Instance != null)
                     StatsManager.Instance.BlockRestored(Team, PlayerName, TrailBlockProperties);*/
 
-                _onTrailBlockRestoredEventChannel.RaiseEvent(new TrailBlockEventData
+                _onTrailBlockRestoredEventChannel.Raise(new TrailBlockEventData
                 {
                     OwnTeam = Team,
                     PlayerName = PlayerName,

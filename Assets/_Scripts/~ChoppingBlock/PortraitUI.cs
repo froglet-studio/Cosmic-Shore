@@ -6,7 +6,7 @@ namespace CosmicShore.Game.UI
 {
     public class PortraitUI : MonoBehaviour
     {
-        [SerializeField] Player player;
+        [SerializeField] R_Player player;
         RectTransform rectTransform;
         bool playerReady;
 

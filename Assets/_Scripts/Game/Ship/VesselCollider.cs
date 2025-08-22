@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    // DEPRECATED - Use R_ImpactCollider instead.
     public interface IVesselCollider
     {
         IShip Ship { get; }

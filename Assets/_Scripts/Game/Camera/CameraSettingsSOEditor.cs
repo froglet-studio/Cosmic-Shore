@@ -16,6 +16,8 @@ namespace CosmicShore.Game.CameraSystem
         SerializedProperty nearClipProp, farClipProp;
 
         SerializedProperty followTargetPosProp, fixedOffsetPosProp, orthoSizeProp;
+        SerializedProperty enableAdaptiveZoomProp;
+        SerializedProperty adaptiveMaxDistanceProp;
 
         void OnEnable()
         {
@@ -29,9 +31,9 @@ namespace CosmicShore.Game.CameraSystem
             disableSmoothingProp   = so.FindProperty(nameof(CameraSettingsSO.disableSmoothing));
             nearClipProp           = so.FindProperty(nameof(CameraSettingsSO.nearClipPlane));
             farClipProp            = so.FindProperty(nameof(CameraSettingsSO.farClipPlane));
-            followTargetPosProp    = so.FindProperty(nameof(CameraSettingsSO.followTargetPosition));
-            fixedOffsetPosProp     = so.FindProperty(nameof(CameraSettingsSO.fixedOffsetPosition));
             orthoSizeProp          = so.FindProperty(nameof(CameraSettingsSO.orthographicSize));
+            enableAdaptiveZoomProp    = so.FindProperty(nameof(CameraSettingsSO.enableAdaptiveZoom));
+            adaptiveMaxDistanceProp   = so.FindProperty(nameof(CameraSettingsSO.adaptiveMaxDistance));
         }
 
         public override void OnInspectorGUI()
@@ -48,6 +50,19 @@ namespace CosmicShore.Game.CameraSystem
                 case CameraMode.FixedCamera:
                     EditorGUILayout.LabelField("Fixed Offset", EditorStyles.boldLabel);
                     EditorGUILayout.PropertyField(followOffsetProp, new GUIContent("Offset X/Y/Z"));
+                    EditorGUILayout.Space();
+                    // green header
+                    GUI.color = Color.green;
+                    EditorGUILayout.LabelField("Adaptive Zoom", EditorStyles.boldLabel);
+                    GUI.color = Color.white;
+
+                    EditorGUILayout.PropertyField(enableAdaptiveZoomProp, new GUIContent("Enable Adaptive Zoom"));
+
+                    if (settings.enableAdaptiveZoom)
+                    {
+                        EditorGUILayout.PropertyField(adaptiveMaxDistanceProp, new GUIContent("Max Zoom-Out Distance"));
+                    }
+                    EditorGUILayout.Space();
                     break;
 
                 case CameraMode.DynamicCamera:
@@ -60,16 +75,6 @@ namespace CosmicShore.Game.CameraSystem
                     EditorGUILayout.PropertyField(followSmoothTimeProp, new GUIContent("Follow Smooth Time"));
                     EditorGUILayout.PropertyField(rotationSmoothTimeProp, new GUIContent("Rotation Smooth Time"));
                     EditorGUILayout.PropertyField(disableSmoothingProp,  new GUIContent("Disable Smoothing"));
-                    break;
-
-                case CameraMode.FollowTarget:
-                    EditorGUILayout.LabelField("Follow-Target Mode", EditorStyles.boldLabel);
-                    EditorGUILayout.PropertyField(followTargetPosProp, new GUIContent("Target Position"));
-                    break;
-
-                case CameraMode.FixedOffset:
-                    EditorGUILayout.LabelField("Fixed-Offset Mode", EditorStyles.boldLabel);
-                    EditorGUILayout.PropertyField(fixedOffsetPosProp, new GUIContent("World Offset"));
                     break;
 
                 case CameraMode.Orthographic:

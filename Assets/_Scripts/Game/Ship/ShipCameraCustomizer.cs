@@ -1,6 +1,8 @@
 using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
+using CosmicShore.Utilities;
+
 
 namespace CosmicShore
 {
@@ -10,41 +12,29 @@ namespace CosmicShore
     /// </summary>
     public class ShipCameraCustomizer : ElementalShipComponent, ICameraConfigurator
     {
-        public Transform FollowTarget;
-
         [Header("Per-Ship Camera Settings")]
         [SerializeField] private CameraSettingsSO settings;
+        
+        [SerializeField] ScriptableEventTransform OnInitializePlayerCamera;
 
-        private IShip             ship;
-        private CameraManager     cameraManager;
-        private ICameraController cameraCtrl;
+        private IShip _ship;
+        private ICameraController _cameraCtrl;
 
         /// <summary>
         /// Must be called when this ship becomes active (spawned/selected).
         /// </summary>
         public void Initialize(IShip ship)
         {
-            this.ship = ship;
-            cameraManager = CameraManager.Instance;
-            cameraManager.Initialize(ship.ShipStatus);
-
-            cameraCtrl = cameraManager.GetActiveController();
-            if (cameraCtrl == null)
-            {
-                Debug.LogWarning("[ShipCameraCustomizer] No ICameraController available.");
-                return;
-            }
-            if (settings == null)
-            {
-                Debug.LogWarning("[ShipCameraCustomizer] CameraSettingsSO is not assigned.");
-                return;
-            }
-            
-            cameraCtrl.ApplySettings(settings);
-            ApplyControlOverrides();
+            _ship = ship;
+            OnInitializePlayerCamera.Raise(_ship.ShipStatus.FollowTarget);
         }
 
-        public void Configure(ICameraController controller) { }
+        public void Configure(ICameraController controller)
+        {
+            _cameraCtrl = controller;
+            controller.ApplySettings(settings);
+            ApplyControlOverrides();
+        }
 
         private void ApplyControlOverrides()
         {
@@ -52,32 +42,20 @@ namespace CosmicShore
 
             if (flags.HasFlag(CameraMode.DynamicCamera))
             {
-                cameraCtrl.SetCameraDistance(settings.dynamicMinDistance);
+                _cameraCtrl.SetCameraDistance(settings.dynamicMinDistance);
             }
             else
             {
-                if (cameraCtrl is CustomCameraController cccFixed)
+                if (_cameraCtrl is CustomCameraController cccFixed)
                 {
                     cccFixed.SetFollowOffset(settings.followOffset);
                 }
             }
-
-            if (flags.HasFlag(CameraMode.FixedOffset))
-            {
-                if (cameraCtrl is CustomCameraController cccFO)
-                {
-                    cccFO.SetFollowOffset(settings.fixedOffsetPosition);
-                }
-            }
             
-            if (flags.HasFlag(CameraMode.FollowTarget))
-            {
-                ship.Transform.position = settings.followTargetPosition;
-            }
-            cameraCtrl.SetFollowTarget(ship.Transform);
+            _cameraCtrl.SetFollowTarget(_ship.Transform);
 
             if (flags.HasFlag(CameraMode.Orthographic) &&
-                cameraCtrl is CustomCameraController cccOrtho)
+                _cameraCtrl is CustomCameraController cccOrtho)
             {
                 cccOrtho.SetOrthographic(true, settings.orthographicSize);
                 Debug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");

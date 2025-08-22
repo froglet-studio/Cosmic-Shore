@@ -37,7 +37,7 @@ public class GrowTrailAction : GrowActionBase
         return "None";
     }
 
-    protected override IEnumerator GrowCoroutine()
+    protected override IEnumerator GrowCoroutine(bool growing)
     {
         while (growing && ShouldContinueScaling(true))
         {
@@ -55,13 +55,13 @@ public class GrowTrailAction : GrowActionBase
         switch (scalingDimension)
         {
             case "X":
-                return isGrowing ? spawner.XScaler < maxSize.Value : spawner.XScaler > minSize;
+                return isGrowing ? spawner.XScaler < maxSize.Value : spawner.XScaler > MinSize;
             case "Y":
-                return isGrowing ? spawner.YScaler < maxSize.Value : spawner.YScaler > minSize;
+                return isGrowing ? spawner.YScaler < maxSize.Value : spawner.YScaler > MinSize;
             case "Z":
-                return isGrowing ? spawner.ZScaler < maxSize.Value : spawner.ZScaler > minSize;
+                return isGrowing ? spawner.ZScaler < maxSize.Value : spawner.ZScaler > MinSize;
             case "Gap":
-                return isGrowing ? spawner.Gap > minSize : spawner.Gap < maxSize.Value;
+                return isGrowing ? spawner.Gap > MinSize : spawner.Gap < maxSize.Value;
         }
         return false;
     }

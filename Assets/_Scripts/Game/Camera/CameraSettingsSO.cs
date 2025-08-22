@@ -4,17 +4,12 @@ namespace CosmicShore.Game.CameraSystem
 {
     public enum CameraMode
     {
-        FixedCamera,     // “Static” offset (X,Y,Z)
-        DynamicCamera,   // Zoomable between min/max distances
-        FollowTarget,    // Reposition ship, then follow
-        FixedOffset,     // Lock world-space offset
-        Orthographic     // Orthographic projection
+        FixedCamera, 
+        DynamicCamera,   
+        Orthographic    
     }
 
-    [CreateAssetMenu(
-        fileName = "CameraSettings",
-        menuName = "CosmicShore/Camera/CameraSettingsSO",
-        order = 30)]
+    [CreateAssetMenu(fileName = "CameraSettings", menuName = "CosmicShore/Camera/CameraSettingsSO", order = 30)]
     public class CameraSettingsSO : ScriptableObject
     {
         [Tooltip("Set the type of camera. Use Fixed Camera for no smoothening or dampening features, use dynamic if you want them!")]
@@ -37,8 +32,12 @@ namespace CosmicShore.Game.CameraSystem
         public float nearClipPlane = 0.3f;
         public float farClipPlane  = 1000f;
 
-        public Vector3 followTargetPosition = Vector3.zero;   // Used only in FollowTarget mode
-        public Vector3 fixedOffsetPosition  = Vector3.zero;   // Used only in FixedOffset mode
+        [Tooltip("Enable smooth zoom-out on button hold")]
+        public bool enableAdaptiveZoom;
+
+        [Tooltip("Maximum extra distance (behind target) when Adaptive Zoom is enabled")]
+        public float adaptiveMaxDistance;
+        
         public float   orthographicSize      = 5f;            // Used only in Orthographic mode
     }
 }

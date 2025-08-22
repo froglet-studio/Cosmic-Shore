@@ -22,23 +22,16 @@ namespace CosmicShore.Core
     {
         [SerializeField]
         List<GameObject> EndOfRoundStatContainers;
-        [SerializeField]
-        public bool nodeGame = false; // currently unused
-
+        
         [Header("Event Channels")]
         [SerializeField]
-        protected TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
+        protected ScriptableEventTrailBlockEventData _onTrailBlockCreatedEventChannel;
         [SerializeField]
-        protected TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
+        protected ScriptableEventTrailBlockEventData _onTrailBlockDestroyedEventChannel;
         [SerializeField]
-        protected TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+        protected ScriptableEventTrailBlockEventData _onTrailBlockRestoredEventChannel;
         
-        [SerializeField] 
-        ScriptableEventNoParam _onPlayGame;
         
-        [SerializeField]
-        ScriptableEventNoParam _onGameOver;
-
         // Stats dictionaries
         public Dictionary<Teams, IRoundStats> TeamStats = new();
         public Dictionary<string, IRoundStats> PlayerStats = new();
@@ -52,20 +45,23 @@ namespace CosmicShore.Core
 
         protected virtual void OnEnable()
         {
-            _onPlayGame.OnRaised += ResetStats;
-            _onGameOver.OnRaised += OutputRoundStats;
-            _onTrailBlockCreatedEventChannel.OnEventRaised += OnBlockCreated;
-            _onTrailBlockDestroyedEventChannel.OnEventRaised += OnBlockDestroyed;
-            _onTrailBlockRestoredEventChannel.OnEventRaised += OnBlockRestored;
+            // TODO: Need to find out from where to raise events in order to reset stats or output round stats.
+            /*_onPlayGame.OnRaised += ResetStats;
+            _onGameOver.OnRaised += OutputRoundStats;*/
+            
+            _onTrailBlockCreatedEventChannel.OnRaised += OnBlockCreated;
+            _onTrailBlockDestroyedEventChannel.OnRaised += OnBlockDestroyed;
+            _onTrailBlockRestoredEventChannel.OnRaised += OnBlockRestored;
         }
 
         protected virtual void OnDisable()
         {
-            _onPlayGame.OnRaised -= ResetStats;
-            _onGameOver.OnRaised -= OutputRoundStats;
-            _onTrailBlockCreatedEventChannel.OnEventRaised -= OnBlockCreated;
-            _onTrailBlockDestroyedEventChannel.OnEventRaised -= OnBlockDestroyed;
-            _onTrailBlockRestoredEventChannel.OnEventRaised -= OnBlockRestored;
+            /*_onPlayGame.OnRaised -= ResetStats;
+            _onGameOver.OnRaised -= OutputRoundStats;*/
+            
+            _onTrailBlockCreatedEventChannel.OnRaised -= OnBlockCreated;
+            _onTrailBlockDestroyedEventChannel.OnRaised -= OnBlockDestroyed;
+            _onTrailBlockRestoredEventChannel.OnRaised -= OnBlockRestored;
         }
 
         public void LifeformCreated(string nodeID)

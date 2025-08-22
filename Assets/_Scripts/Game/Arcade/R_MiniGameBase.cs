@@ -53,10 +53,10 @@ namespace CosmicShore.Game.Arcade
 
         void Start()
         {
+            PauseSystem.TogglePauseGame(false);
             _miniGameData.Value.PlayerOrigins =  _playerOrigins;
             _miniGameData.Value.GameMode = gameMode;
             _miniGameData.InvokeInitialize();
-            InitializeGame();
         }
         
         protected virtual void Update() {
@@ -79,6 +79,31 @@ namespace CosmicShore.Game.Arcade
             _onToggleReadyButton.Raise(false);
             countdownTimer.BeginCountdown(OnCountdownComplete);   
         } 
+
+        protected abstract void OnStartNewGame();
+        
+        void OnCountdownComplete() => StartCoroutine(StartNewGameCoroutine());
+
+        IEnumerator StartNewGameCoroutine()
+        {
+            yield return new WaitForSeconds(WAIT_FOR_SECONDS_BEFORE_INITIALIZE); 
+            
+            PauseSystem.TogglePauseGame(false);
+            roundsPlayed = 0;
+            turnsTakenThisRound = 0;
+            gameRunning = true;
+            OnStartNewGame();
+            
+            monitorController.ResumeAll();
+            
+            foreach (var player in _miniGameData.Value.Players)
+                player.ToggleStationaryMode(false);
+
+            var activePlayer = _miniGameData.Value.ActivePlayer;
+            scoreTracker.StartTurn(activePlayer.PlayerName, activePlayer.Team);
+            
+            _miniGameData.InvokeStartMiniGame();
+        }
         
         protected virtual void SetupNewTurn()
         {
@@ -94,40 +119,6 @@ namespace CosmicShore.Game.Arcade
             else
                 StartCoroutine(StartCountdownTimerCoroutine());
         }
-
-        protected abstract void OnMiniGameReady();
-        
-        void EndTurn() => StartCoroutine(EndTurnCoroutine());
-
-        void OnCountdownComplete()
-        {
-            monitorController.ResumeAll();
-            IPlayer activePlayer = _miniGameData.Value.ActivePlayer;
-            if (activePlayer is null)
-                return;
-            _miniGameData.Value.PlayActivePlayer();
-            scoreTracker.StartTurn(activePlayer.PlayerName, activePlayer.Team);
-        }
-        
-        void InitializeGame() => StartCoroutine(StartNewGameCoroutine());
-
-        IEnumerator StartNewGameCoroutine()
-        {
-            yield return new WaitForSeconds(WAIT_FOR_SECONDS_BEFORE_INITIALIZE); 
-            
-            PauseSystem.TogglePauseGame(false);
-            roundsPlayed = 0;
-            turnsTakenThisRound = 0;
-            gameRunning = true;
-            _miniGameData.InvokeStartMiniGame();
-            OnMiniGameReady();
-            StartNewRound();
-        }
-
-        void StartNewRound() {
-            turnsTakenThisRound = 0;
-            SetupNewTurn();
-        }
         
         
         IEnumerator StartCountdownTimerCoroutine()
@@ -135,6 +126,8 @@ namespace CosmicShore.Game.Arcade
             yield return new WaitForSecondsRealtime(WAIT_FOR_SECONDS_ON_SETUP_TURN);
             OnReadyClicked();
         }
+        
+        void EndTurn() => StartCoroutine(EndTurnCoroutine());
         
         IEnumerator EndTurnCoroutine(){
             monitorController.PauseAll();
@@ -158,8 +151,11 @@ namespace CosmicShore.Game.Arcade
             roundsPlayed++;
             if (roundsPlayed >= numberOfRounds || _miniGameData.Value.RemainingPlayers.Count <= 0) 
                 EndGame();
-            else 
-                StartNewRound();
+            else
+            {
+                turnsTakenThisRound = 0;
+                SetupNewTurn();
+            }
         }
 
         void EndGame()

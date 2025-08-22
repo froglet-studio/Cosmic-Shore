@@ -3,96 +3,88 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utilities;
-using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 
 public class CameraManager : Singleton<CameraManager>
 {
-    [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
-    
-    [SerializeField] 
-    ScriptableEventNoParam _onReturnToMainMenu;
-    
-    [SerializeField] 
-    ScriptableEventNoParam _onPlayGame;
-        
     [SerializeField]
-    ScriptableEventNoParam _onGameOver;
+    SceneNameListSO _sceneNameList;
+    
+    [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+    [SerializeField] private ScriptableEventNoParam _onReturnToMainMenu;
+    [SerializeField] private ScriptableEventTransform _onInitializePlayerCamera;
+    
+    // TODO - Need to have a game over event, to activate the end camera
+    // += SetEndCameraActive
+    // [SerializeField] private ScriptableEventNoParam _onGameOver;
 
-    private ICameraController playerCamera;
-    private ICameraController deathCamera;
-    [SerializeField] CustomCameraController endCamera; // this can be as is if only one
-
-    private ICameraController activeController;
-
+    private ICameraController _playerCamera;
+    private ICameraController _deathCamera;
+    private ICameraController _activeController;
+    
+    [SerializeField] private CustomCameraController endCamera; 
     [SerializeField] private CinemachineCamera mainMenuCamera;
-    [SerializeField] Transform endCameraFollowTarget;
-    [SerializeField] Transform endCameraLookAtTarget;
+    [SerializeField] private Transform endCameraFollowTarget;
+    [SerializeField] private Transform endCameraLookAtTarget;
+    [SerializeField] private float startTransitionDistance = 40f;
+    
+    private Transform _playerFollowTarget;
+    private const int ActivePriority = 10;
 
-    Transform playerFollowTarget;
-    readonly int activePriority = 10;
-    readonly int inactivePriority = 1;
+    public Transform PlayerFollowTarget
+    {
+        get => _playerFollowTarget;
+        set => _playerFollowTarget = value;
+    }
 
-    [HideInInspector] public bool FollowOverride = false;
-    [HideInInspector] public bool FixedFollow = false;
-
-    [HideInInspector] public float CloseCamDistance;
-    [HideInInspector] public float FarCamDistance;
-
-    [SerializeField] float startTransitionDistance = 40f;
-
-    private Camera vCam;
-    private IShipStatus shipStatus;
-
-    public bool FreezeRuntimeOffset { get; set; } = false;
+    private Camera _vCam;
+    private IShipStatus _shipStatus;
 
     public override void Awake()
     {
         base.Awake();
-
-        // Find or assign ICameraController references
-        playerCamera = GetOrFindCameraController("CM PlayerCam");
-        deathCamera = GetOrFindCameraController("CM DeathCam");
-        endCamera = endCamera ?? GetOrFindCameraController("CM EndCam") as CustomCameraController;
+        _playerCamera = GetOrFindCameraController("CM PlayerCam");
+        _deathCamera = GetOrFindCameraController("CM DeathCam");
+        endCamera = GetOrFindCameraController("CM EndCam") as CustomCameraController;
     }
     
     private void OnEnable()
     {
         _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
-        _onPlayGame.OnRaised += SetupGamePlayCameras;
-        _onGameOver.OnRaised += SetEndCameraActive;
+        _onInitializePlayerCamera.OnRaised += SetupGamePlayCameras;
     }
 
     void OnDisable()
     {
         _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
-        _onPlayGame.OnRaised -= SetupGamePlayCameras;
-        _onGameOver.OnRaised -= SetEndCameraActive;
-
-        // Restore original offset when disabled
-        // RestoreOriginalOffset();
+        _onInitializePlayerCamera.OnRaised -= SetupGamePlayCameras;
     }
 
     void Start()
     {
-        vCam = (playerCamera as CustomCameraController)?.Camera;
-        OnEnteredMainMenu();
+        _vCam = (_playerCamera as CustomCameraController)?.Camera;
+        InitializeSceneCamera();
     }
 
-    // TODO - Remove this later, not needed
-    public void Initialize(IShipStatus shipStatus) =>  this.shipStatus = shipStatus;
-    
-    // void EnsureController(ref CustomCameraController controller, string name)
+    private void InitializeSceneCamera()
+    {
+        var activeScene = SceneManager.GetActiveScene().name;
+
+        if (activeScene == _sceneNameList.MainMenuScene)
+        {
+            OnEnteredMainMenu();
+        }
+    }
     
     private ICameraController GetOrFindCameraController(string name)
     {
         Transform t = transform.Find(name);
         if (t)
         {
-            // use GetOrAdd extension
             var ctrl = t.GetComponent<ICameraController>();
             if (ctrl == null)
             {
@@ -104,9 +96,7 @@ public class CameraManager : Singleton<CameraManager>
         return null;
     }
 
-    public Transform GetCloseCamera() => (playerCamera as CustomCameraController)?.transform;
-
-    public Vector3 CurrentOffset => (playerCamera as CustomCameraController)?.GetFollowOffset() ?? Vector3.zero;
+    public Transform GetCloseCamera() => (_playerCamera as CustomCameraController)?.transform;
     
     void OnEnteredMainMenu()
     {
@@ -114,51 +104,42 @@ public class CameraManager : Singleton<CameraManager>
         _themeManagerData.SetBackgroundColor(Camera.main);
     }
 
-    public void SetupGamePlayCameras()
+    public void SetupGamePlayCameras(Transform followTarget)
     {
-        playerFollowTarget = FollowOverride ? shipStatus.ShipCameraCustomizer.FollowTarget : shipStatus.Transform;
-        SetupGamePlayCameras(playerFollowTarget);
-    }
-
-    public void SetupGamePlayCameras(Transform _transform)
-    {
-        playerFollowTarget = _transform;
-        playerCamera?.SetFollowTarget(playerFollowTarget);
-        deathCamera?.SetFollowTarget(playerFollowTarget);
+        if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
+        
+        _playerFollowTarget = followTarget;
+        _playerCamera?.SetFollowTarget(_playerFollowTarget);
+        _deathCamera?.SetFollowTarget(_playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
-
+        
         SetCloseCameraActive();
 
-        var shipGO = playerFollowTarget.gameObject;
+        var shipGO = _playerFollowTarget.gameObject;
         var shipCustomizer = shipGO.GetComponent<ShipCameraCustomizer>();
-        if (shipCustomizer != null)
-            shipCustomizer.Initialize(shipGO.GetComponent<IShip>());
+        shipCustomizer.Configure(_playerCamera);
     }
 
     public void SetMainMenuCameraActive()
     {
-        // 1. Set Cinemachine main menu camera to active/priority
         if (mainMenuCamera != null)
         {
-            mainMenuCamera.Priority = activePriority;
+            mainMenuCamera.Priority = ActivePriority;
             mainMenuCamera.gameObject.SetActive(true);
         }
         else
         {
             Debug.LogWarning("[CameraManager] Main menu camera is not assigned!");
         }
-
-        // 2. Deactivate all gameplay cameras
-        if (playerCamera is CustomCameraController pcc)
+        
+        if (_playerCamera is CustomCameraController pcc)
             pcc.Deactivate();
-        if (deathCamera is CustomCameraController dcc)
+        if (_deathCamera is CustomCameraController dcc)
             dcc.Deactivate();
         if (endCamera != null)
             endCamera.Deactivate();
 
-        activeController = null;
-
-        // 3. If you had LookAt logic for a crystal, restore it here:
+        _activeController = null;
         Invoke("LookAtCrystal", 1f);
     }
 
@@ -169,44 +150,32 @@ public class CameraManager : Singleton<CameraManager>
     }
 
 
-    public void SetCloseCameraActive() => SetActiveCamera(playerCamera);
+    public void SetCloseCameraActive() => SetActiveCamera(_playerCamera);
 
-    public void SetDeathCameraActive() => SetActiveCamera(deathCamera);
+    public void SetDeathCameraActive() => SetActiveCamera(_deathCamera);
 
     public void SetEndCameraActive() => SetActiveCamera(endCamera);
 
     void SetActiveCamera(ICameraController controller)
     {
-        if (playerCamera != null) playerCamera.Deactivate();
-        if (deathCamera != null) deathCamera.Deactivate();
-        if (endCamera != null) endCamera.Deactivate();
+            if (_playerCamera != null) _playerCamera.Deactivate();
+            if (_deathCamera != null) _deathCamera.Deactivate();
+            if (endCamera != null) endCamera.Deactivate();
+
 
         controller?.Activate();
-        activeController = controller;
+        _activeController = controller;
+        mainMenuCamera.gameObject.SetActive(false);
     }
 
-    public ICameraController GetActiveController() => activeController;
+    public ICameraController GetActiveController() => _activeController;
 
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
-        if (playerCamera == null) return;
-        float close = CloseCamDistance > 0 ? CloseCamDistance : 10f;
-        float far = FarCamDistance > 0 ? FarCamDistance : 40f;
-        float distance = Mathf.Lerp(close, far, normalizedDistance);
-        playerCamera.SetCameraDistance(distance);
-    }
-
-    public void ZoomCloseCameraOut(float growthRate)
-    {
-        if (playerCamera == null) return;
-        float start = playerCamera.GetCameraDistance();
-        playerCamera.LerpCameraDistance(start, FarCamDistance, growthRate);
-    }
-
-    public void ResetCloseCameraToNeutral(float shrinkRate)
-    {
-        if (playerCamera == null) return;
-        float start = playerCamera.GetCameraDistance();
-        playerCamera.LerpCameraDistance(start, CloseCamDistance, shrinkRate);
+        if (_playerCamera == null) return;
+        // float close = CloseCamDistance > 0 ? CloseCamDistance : 10f;
+        // float far = FarCamDistance > 0 ? FarCamDistance : 40f;
+        // float distance = Mathf.Lerp(close, far, normalizedDistance);
+        // _playerCamera.SetCameraDistance(distance);
     }
 }

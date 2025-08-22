@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 1158389878633052016}
   - component: {fileID: 7530736874585816541}
   - component: {fileID: 4173946516839143748}
+  - component: {fileID: 5577395274875715967}
+  - component: {fileID: -8960277768126443594}
   m_Layer: 10
   m_Name: AOESlowExplosion
   m_TagString: Untagged
@@ -48,20 +50,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3aee2172b77b5524797b5b5f0a9d1efe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 50
-  MaxScale: 200
   ExplosionDuration: 3
   ExplosionDelay: 0.2
-  shipImpactEffects: 0400000001000000
-  _shipImpactEffects:
-  - {fileID: 11400000, guid: 7a5c6ccc0c9cabaebdb76fa302d64fd6, type: 2}
-  - {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f, type: 2}
+  _shipImpactEffects: []
   affectSelf: 0
   destructive: 0
   devastating: 0
   shielding: 0
-  Team: 0
-  AnonymousExplosion: 0
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -144,7 +139,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2728798890556433942}
   serializedVersion: 4
-  m_Mass: 0.0000001
+  m_Mass: 1
   m_Drag: 0
   m_AngularDrag: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -159,7 +154,37 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
+--- !u!114 &5577395274875715967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosion: {fileID: 5915562654621825366}
+  explosionShipEffectsSO:
+  - {fileID: 11400000, guid: 035ba5d46da4a0342969fad5f39f060a, type: 2}
+  - {fileID: 11400000, guid: e4e63a66eb9954744b4650934a1a1084, type: 2}
+  explosionPrismEffectsSO: []
+--- !u!114 &-8960277768126443594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 5577395274875715967}

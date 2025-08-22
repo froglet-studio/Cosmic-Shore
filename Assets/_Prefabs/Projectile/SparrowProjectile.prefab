@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 4704425947628343467}
   - component: {fileID: 7669076058770026044}
   - component: {fileID: 7632677803272750685}
+  - component: {fileID: 4476692679679402743}
+  - component: {fileID: 6501871947578768307}
   m_Layer: 12
   m_Name: SparrowProjectile
   m_TagString: Projectile
@@ -150,16 +152,50 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Velocity: {x: 0, y: 0, z: 0}
-  Team: 0
-  ImpactOnEnd: 0
   Inertia: 1
   InitialScale: {x: 0, y: 0, z: 0}
+  projectileImpactor: {fileID: 4476692679679402743}
   trailBlockImpactEffects: 03000000
+  _trailBlockImpactEffects: []
   shipImpactEffects: 020000000300000001000000
+  _shipImpactEffects: []
   crystalImpactEffects: 
+  _crystalImpactEffects: []
   endEffects: 
+  _endEffects: []
   ProjectileTime: 0
   spike: 0
   growthRate: 1
   friendlyFire: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &4476692679679402743
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7877928849292311340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  projectile: {fileID: 7632677803272750685}
+  projectileShipEffectsSO: []
+  projectilePrismEffectsSO:
+  - {fileID: 11400000, guid: 2564c4fefc3011b43a28e573899e7889, type: 2}
+  projectileFakeCrystalEffectsSO: []
+  projectileEndEffectsSO: []
+--- !u!114 &6501871947578768307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7877928849292311340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 4476692679679402743}

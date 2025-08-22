@@ -11,6 +11,10 @@ namespace CosmicShore.Game.CameraSystem
 
         void SetCameraDistance(float distance);
         float GetCameraDistance();
-        void LerpCameraDistance(float start, float end, float duration);
+        float NeutralOffsetZ { get; }
+        float ZoomSmoothTime { get; }
+        bool AdaptiveZoomEnabled { get; }
+    
+        // void LerpCameraDistance(float start, float end, float duration);
     }
 }

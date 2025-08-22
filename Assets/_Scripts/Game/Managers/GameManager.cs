@@ -20,16 +20,6 @@ namespace CosmicShore.Core
 
         [SerializeField]
         ScriptableEventNoParam _onStartSceneTransition;
-        
-        [SerializeField] 
-        ScriptableEventNoParam _onPlayGame;
-        
-        [SerializeField]
-        ScriptableEventNoParam _onGameOver;
-
-        public void StartGame() => _onPlayGame.Raise();
-
-        public void EndGame() => _onGameOver.Raise();
 
         public void RestartGame()
         {

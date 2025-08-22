@@ -11,9 +11,6 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IShipStatus))]
     public class R_ShipController : R_ShipBase
     {
-
-        [SerializeField] List<ImpactProperties> impactProperties;
-
         readonly NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
@@ -87,7 +84,6 @@ namespace CosmicShore.Game
         {
             ShipStatus.Player = player;
             ShipStatus.ActionHandler.Initialize(ShipStatus);
-            ShipStatus.ImpactHandler.Initialize(ShipStatus);
             ShipStatus.Customization.Initialize(ShipStatus);
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(ShipStatus);
@@ -108,7 +104,7 @@ namespace CosmicShore.Game
                     ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
-                    onBottomEdgeButtonsEnabled.RaiseEvent(true);
+                    onBottomEdgeButtonsEnabled.Raise(true);
                 }
 
                 ShipStatus.ShipTransformer.enabled = IsOwner;
@@ -123,15 +119,17 @@ namespace CosmicShore.Game
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
                 ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
-                onBottomEdgeButtonsEnabled.RaiseEvent(true);
-                ShipStatus.ShipCameraCustomizer.Initialize(this);
-                ShipStatus.TrailSpawner.Initialize(ShipStatus);                
+                ShipStatus.TrailSpawner.Initialize(ShipStatus);  
+                onBottomEdgeButtonsEnabled.Raise(true);
             }
 
             // TODO - Currently AIPilot's update should run only after SingleStickShipTransformer
             // sets SingleStickControls to true/false. Try finding a solution to remove this
             // sequential dependency.
             ShipStatus.AIPilot.Initialize(enableAIPilot, this);
+            
+            // if enable AI Pilot,
+            if (!enableAIPilot) ShipStatus.ShipCameraCustomizer.Initialize(this);
 
             InvokeShipInitializedEvent();
         }
