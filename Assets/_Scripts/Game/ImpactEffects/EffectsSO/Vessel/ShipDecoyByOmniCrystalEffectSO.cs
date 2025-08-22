@@ -8,26 +8,23 @@ namespace CosmicShore.Game
     public class ShipDecoyByOmniCrystalEffectSO : ImpactEffectSO<ShipImpactor, OmniCrystalImpactor>
     {
         [SerializeField] private float debounceSeconds = 0.15f;
-        [SerializeField] private bool verbose = false;
-        [SerializeField] private GameObject fakeCrystalPrefab;
+        [SerializeField] private GameObject minePrefab;
 
-        private static readonly Dictionary<Crystal, float> _nextAllowedAt = new();
+        private static readonly Dictionary<Crystal, float> NextAllowedAt = new();
 
         protected override void ExecuteTyped(ShipImpactor shipImpactor, OmniCrystalImpactor impactee)
         {
             var crystal = impactee.Crystal;
             if (!crystal) return;
 
-            crystal.IsDecoyCrystal = true;
-            if (_nextAllowedAt.TryGetValue(crystal, out var t) && Time.time < t) return;
-            _nextAllowedAt[crystal] = Time.time + debounceSeconds;
+            if (NextAllowedAt.TryGetValue(crystal, out var t) && Time.time < t) return;
+            NextAllowedAt[crystal] = Time.time + debounceSeconds;
             
             var models = crystal.CrystalModels;
             if (models != null)
-                foreach (var m in models.Where(m => m?.model)) m.model.SetActive(false);
-
-            // Robust world spawn position (collider / renderer center)
-            var spawnPosition = crystal.transform.localPosition;
+                foreach (var m in models.Where(m => m?.model)) m?.model.SetActive(false);
+            
+            Vector3 spawnPosition = crystal.transform.localPosition;
             
             if (crystal.TryGetComponent<SphereCollider>(out var sphere))
                 spawnPosition = sphere.bounds.center;
@@ -38,23 +35,14 @@ namespace CosmicShore.Game
                 var r = crystal.GetComponentInChildren<Renderer>();
                 if (r) spawnPosition = r.bounds.center;
             }
-
             var spawnRotation = crystal.transform.rotation;
-
-            if (fakeCrystalPrefab)
+            
+            if (minePrefab != null)
             {
-                var fake = Instantiate(fakeCrystalPrefab, spawnPosition, spawnRotation);
-                fake.transform.SetParent(null, true);
-
-                if (fake.TryGetComponent<FakeCrystal>(out var fc))
-                    fc.OwnTeam = crystal.OwnTeam;
-
-                if (verbose) Debug.Log($"[Decoy] Spawned FakeCrystal @ {spawnPosition}");
+                var mine = Instantiate(minePrefab, spawnPosition, spawnRotation);
+                mine.transform.SetParent(null, true);
             }
-            else if (verbose)
-            {
-                Debug.LogWarning("[Decoy] No FakeCrystalPrefab set on Crystal.");
-            }
+
             crystal.CrystalRespawn();
         }
     }

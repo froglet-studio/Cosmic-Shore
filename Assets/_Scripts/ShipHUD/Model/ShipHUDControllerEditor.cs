@@ -10,6 +10,7 @@ namespace CosmicShore.Game
         // Props
         SerializedProperty _shipTypeProp;
         SerializedProperty _profileProp;
+        SerializedProperty _sceneNameListSO;
 
         SerializedProperty _refs;
         // Colors
@@ -21,6 +22,7 @@ namespace CosmicShore.Game
             _shipTypeProp = serializedObject.FindProperty("shipType");
             _profileProp  = serializedObject.FindProperty("profile");
             _refs  = serializedObject.FindProperty("refs");
+            _sceneNameListSO = serializedObject.FindProperty("sceneNameListSO");
         }
 
         public override void OnInspectorGUI()
@@ -32,6 +34,7 @@ namespace CosmicShore.Game
             EditorGUILayout.PropertyField(_shipTypeProp, new GUIContent("Ship Type"));
             EditorGUILayout.PropertyField(_refs,  new GUIContent("Ship HUD Reference"));
             EditorGUILayout.PropertyField(_profileProp,  new GUIContent("HUD Profile (ShipHUDProfileSO)"));
+            EditorGUILayout.PropertyField(_sceneNameListSO,  new GUIContent("Scene Name List SO"));
 
             // Profile preview (read-only) to avoid diving into the asset each time
             if (_profileProp.objectReferenceValue is ShipHUDProfileSO profile)
@@ -65,7 +68,7 @@ namespace CosmicShore.Game
 
                     GUILayout.BeginHorizontal();
                     if (GUILayout.Button("Initialize HUD"))
-                        ctrl.InitializeShipHUD((ShipClassType)_shipTypeProp.intValue);
+                        ctrl.InitializeShipHUD();
 
                     if (GUILayout.Button("Dispose HUD"))
                         ctrl.DisposeHUD();

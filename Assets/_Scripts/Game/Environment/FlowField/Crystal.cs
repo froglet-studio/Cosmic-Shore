@@ -37,13 +37,11 @@ namespace CosmicShore.Game
         [SerializeField] private Collider collider;
 
         #endregion
-
+        
         public List<CrystalModelData> CrystalModels => crystalModels;
         
         Material tempMaterial;
         Vector3 origin = Vector3.zero;
-
-        public bool IsDecoyCrystal { get; set; }
 
         protected virtual void Start()
         {
@@ -144,7 +142,7 @@ namespace CosmicShore.Game
         {
             collider.enabled = false;
             
-            for (int i = 0; i < crystalModels.Count; i++)
+            for (var i = 0; i < crystalModels.Count; i++)
             {
                 var modelData = crystalModels[i];
                 var model = modelData.model;

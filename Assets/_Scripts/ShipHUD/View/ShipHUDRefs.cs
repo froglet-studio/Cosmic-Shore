@@ -14,9 +14,8 @@ namespace CosmicShore.Game
 
         [Header("Sparrow")]
         public OverheatingAction overheating;
-        public FullAutoAction fullAuto;
         public FireGunAction fireGun;
-        public ToggleStationaryModeAction stationary;
+
 
         // add more when you need them
     }

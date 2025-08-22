@@ -48,9 +48,6 @@ namespace CosmicShore.Game
                 case ElementalCrystalImpactor elementalCrystalImpactor:
                     ExecuteEffect(impactee, shipElementalCrystalEffects);
                     break;
-                case FakeCrystalImpactor fakeCrystalImpactor:
-                    ExecuteEffect(impactee, shipFakeCrystalEffects);
-                    break;
             }
         }
 

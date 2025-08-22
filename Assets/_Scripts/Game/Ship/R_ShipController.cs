@@ -101,7 +101,7 @@ namespace CosmicShore.Game
                     if (!ShipStatus.FollowTarget) 
                         ShipStatus.FollowTarget = transform;
 
-                    ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
+                    ShipStatus.ShipHUDController.InitializeShipHUD();
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
                     onBottomEdgeButtonsEnabled.Raise(true);
@@ -118,7 +118,7 @@ namespace CosmicShore.Game
 
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
-                ShipStatus.ShipHUDController.InitializeShipHUD(ShipStatus.ShipType);
+                ShipStatus.ShipHUDController.InitializeShipHUD();
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);  
                 onBottomEdgeButtonsEnabled.Raise(true);
             }

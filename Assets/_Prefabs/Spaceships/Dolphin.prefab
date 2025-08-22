@@ -2654,6 +2654,7 @@ MonoBehaviour:
   shipType: 2
   profile: {fileID: 11400000, guid: fe90c3d45f3cf0f488b0accecbd94201, type: 2}
   refs: {fileID: 2208631719963443964}
+  sceneNameListSO: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0

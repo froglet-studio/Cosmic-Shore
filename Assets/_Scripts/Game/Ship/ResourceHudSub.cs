@@ -28,10 +28,6 @@ public class ResourceHudSub : HudSubscriptionSO
 
         _resource = _rs.Resources[resourceIndex];
 
-        // Push initial value
-        if (animate) Effects.AnimateRefill(meterIndex, 0.05f, _resource.CurrentAmount);
-        else         Effects.SetMeter(meterIndex, _resource.CurrentAmount);
-
         // Cache a delegate of the correct type so we can unsubscribe later
         _onChange = OnResourceChanged;
         _resource.OnResourceChange += _onChange;
@@ -39,9 +35,7 @@ public class ResourceHudSub : HudSubscriptionSO
 
     private void OnResourceChanged(float value)
     {
-        if (Effects == null) return;
-        if (animate) Effects.AnimateRefill(meterIndex, seconds, value);  // animates from current -> value
-        else         Effects.SetMeter(meterIndex, value);
+
     }
 
     protected override void OnDisableSubscriptions()

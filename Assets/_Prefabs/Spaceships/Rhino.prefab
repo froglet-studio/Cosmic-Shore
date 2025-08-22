@@ -1659,7 +1659,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Resources:
   - Name: Boost
-    Display: {fileID: 8046339643264751189}
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
@@ -1790,14 +1789,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shipType: 3
-  chargeBoostAction: {fileID: 0}
-  boostAction: {fileID: 0}
-  seedAssemblerAction: {fileID: 0}
-  overheatingAction: {fileID: 0}
-  fullAutoAction: {fileID: 0}
-  fireGunAction: {fileID: 0}
-  stationaryModeAction: {fileID: 0}
-  verboseHUDLogs: 1
+  profile: {fileID: 0}
+  refs: {fileID: 0}
+  sceneNameListSO: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12649,18 +12643,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 6846281411462810275}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &8046339643264751189 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3506254541000121590, guid: 2656b477a4af7304180e65f2848a84b3,
-    type: 3}
-  m_PrefabInstance: {fileID: 6846281411462810275}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &8469593379654306638
 PrefabInstance:
   m_ObjectHideFlags: 0

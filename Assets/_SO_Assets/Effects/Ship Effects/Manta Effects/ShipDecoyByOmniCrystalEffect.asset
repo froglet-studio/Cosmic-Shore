@@ -13,6 +13,5 @@ MonoBehaviour:
   m_Name: ShipDecoyByOmniCrystalEffect
   m_EditorClassIdentifier: 
   debounceSeconds: 5
-  verbose: 1
-  fakeCrystalPrefab: {fileID: 6588436222817790470, guid: f7e728a0fa445ed41bc8c1c565fa3f21,
+  minePrefab: {fileID: 6588436222817790470, guid: ba602a7220947a44cb8b707a65b14fb6,
     type: 3}

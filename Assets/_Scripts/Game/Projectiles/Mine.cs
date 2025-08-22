@@ -4,35 +4,43 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    [System.Serializable]
+    public class MineModelData
+    {
+        public GameObject model;
+        public Material defaultMaterial;
+        public Material explodingMaterial;
+        public Material inactiveMaterial;
+    }
+    
     public class Mine : MonoBehaviour
     {
-        [SerializeField] private Material blueCrystalMaterial;
-        [SerializeField] public CrystalProperties crystalProperties;
+        [SerializeField] private Material blueMineMaterial;
         [SerializeField] private float explodeAfterSeconds = 20f;
-        [SerializeField] private bool verbose = true;
-        [SerializeField] protected List<CrystalModelData> crystalModels;
+        [SerializeField] protected List<MineModelData> mineModels;
         [SerializeField] private Collider collider;
-        [SerializeField] protected GameObject SpentCrystalPrefab;
+        [SerializeField] protected GameObject SpentMinePrefab;
 
         public bool isplayer;
 
         private bool _explosionNullified;
         private Coroutine _explodeRoutine;
         Material _tempMaterial;
+        private Vector3 _velocity;
 
         private void Start()
         {
-            if (isplayer && blueCrystalMaterial != null)
+            if (isplayer && blueMineMaterial != null)
             {
                 var r = GetComponentInChildren<MeshRenderer>();
-                if (r != null) r.material = blueCrystalMaterial;
+                if (r != null) r.material = blueMineMaterial;
             }
 
             if (_explodeRoutine != null) StopCoroutine(_explodeRoutine);
             _explodeRoutine = StartCoroutine(ExplodeCountdown());
         }
 
-        public void NullifyDelayedExplosion(IShipStatus shipStatus)
+        public void NullifyDelayedExplosion(Vector3 velocity)
         {
             _explosionNullified = true;
             if (_explodeRoutine != null)
@@ -40,8 +48,7 @@ namespace CosmicShore.Game
                 StopCoroutine(_explodeRoutine);
                 _explodeRoutine = null;
             }
-            Explode(shipStatus);
-            if (verbose) Debug.Log("[Mine] Delayed explosion nullified.");
+            Explode(velocity);
         }
 
         private IEnumerator ExplodeCountdown()
@@ -55,49 +62,32 @@ namespace CosmicShore.Game
             }
 
             if (_explosionNullified) yield break;
-
-            if (verbose) Debug.Log("[Mine] Delayed explosion triggered (log only).");
+            
+            Explode(Vector3.one);
             _explodeRoutine = null;
         }
 
-        // public override void ExecuteCommonVesselImpact(IShip ship)
-        // {
-        //     // TODO: use a different material if the fake crystal is on your team
-        //     if (ship.ShipStatus.Team == OwnTeam)
-        //         return;
-        //
-        //     // TODO - Handled from R_CrystalImpactor.cs
-        //     // PerformCrystalImpactEffects(crystalProperties, shipStatus.Ship);
-        //     
-        //     Explode(ship);
-        //     PlayExplosionAudio();
-        //     cell.TryRemoveItem(this);
-        //     Destroy(gameObject);
-        // }
-
-        private void Explode(IShipStatus shipStatus)
+        private void Explode(Vector3 velocity)
         {
             collider.enabled = false;
-
-            foreach (var modelData in crystalModels)
+            foreach (var modelData in mineModels)
             {
-                var model = modelData.model;
-
                 _tempMaterial = new Material(modelData.explodingMaterial);
-                var spentCrystal = Instantiate(SpentCrystalPrefab);
+                var spentCrystal = Instantiate(SpentMinePrefab);
                 spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
                 spentCrystal.GetComponent<Renderer>().material = _tempMaterial;
                 spentCrystal.transform.localScale = transform.lossyScale;
 
-                if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
-                {
-                    var spentAnimator = spentCrystal.GetComponent<SpaceCrystalAnimator>();
-                    var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
-                    spentAnimator.timer = thisAnimator.timer;
-                }
-                
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, _tempMaterial, shipStatus.Player.PlayerName);
+                spentCrystal.GetComponent<Impact>()?.HandleImpact(velocity, _tempMaterial, "");
             }
+            // Invoke(nameof(DestroyMine));
+            DestroyMine();
+         }
+
+        private void DestroyMine()
+        {
+            Debug.Log("Mine Exploding");
+            Destroy(gameObject);
         }
     }
 }

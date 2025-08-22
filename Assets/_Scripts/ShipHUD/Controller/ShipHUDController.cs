@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using CosmicShore.Utilities;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,6 +12,7 @@ namespace CosmicShore.Game
         [SerializeField] private ShipClassType shipType;
         [SerializeField] private ShipHUDProfileSO profile;
         [SerializeField] private ShipHUDRefs refs;
+        [SerializeField] private SceneNameListSO sceneNameListSO;
         private IShip _ship;
         
         private IShipStatus _status;
@@ -22,24 +25,23 @@ namespace CosmicShore.Game
             _ship = GetComponent<IShip>();
             _status = _ship.ShipStatus;
         }
-
-        private void OnEnable()  => InitializeShipHUD(shipType);
-        private void OnDisable() => DisposeHUD();
-
-        public void InitializeShipHUD(ShipClassType type)
+        
+        private void Start()
         {
-            if (_status == null || _status.AutoPilotEnabled) return;
-            if (SceneManager.GetActiveScene().name == "Menu_Main") return;
+            InitializeShipHUD();
+        }
 
-            var view = _status.ShipHUDContainer.InitializeView(this, type);
-            if (view == null) { Debug.LogError($"[ShipHUDController] HUD init failed for {type}"); return; }
+        public void InitializeShipHUD()
+        {
+            if (SceneManager.GetActiveScene().name == sceneNameListSO.MainMenuScene) return;
+
+            var view = _status.ShipHUDContainer.InitializeView(this, _status);
+            if (view == null) return;
 
             _status.ShipHUDView = view;
             _view = view;
 
-            // Effects from view (ShipHUDView exposes IHUDEffects via IHasEffects)
             var effects = (_view is IHasEffects hasFx) ? hasFx.Effects : null;
-
             if (profile?.subscriptions == null || profile.subscriptions.Length == 0)
             {
                 Debug.LogWarning("[ShipHUDController] No subscriptions in profile."); return;

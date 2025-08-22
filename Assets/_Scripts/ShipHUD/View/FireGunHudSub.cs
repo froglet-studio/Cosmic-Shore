@@ -38,11 +38,10 @@ public class FireGunHudSub : HudSubscriptionSO
 
     private void Push()
     {
-        float norm = capacity <= 0 ? 0f : (float)_current / capacity; // 0→0.0, 1→0.5, 2→1.0
-        Effects.SetMeter(meterIndex, norm); // R_ResourceDisplay SpriteSequence picks sprite 0/1/2 accordingly
+        float norm = capacity <= 0 ? 0f : (float)_current / capacity; 
+        Effects.SetMeter(meterIndex, norm);
     }
 
-    // Optional helper you can call from a reload sub/action later:
     public void SetMissiles(int count)
     {
         _current = Mathf.Clamp(count, 0, capacity);

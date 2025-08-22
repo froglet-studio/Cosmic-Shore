@@ -139,56 +139,6 @@ Transform:
   - {fileID: 8786154189335303190}
   m_Father: {fileID: 2206581757034755619}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 100}
---- !u!1 &477942985372925436
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 808689176682098569}
-  - component: {fileID: 867704553499413969}
-  m_Layer: 0
-  m_Name: DropDecoyAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &808689176682098569
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 477942985372925436}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 8075578658670966254}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &867704553499413969
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 477942985372925436}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b5e32b0be2767fc45a0f5d685b466496, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  decoysPerFullAmmo: 3
-  dropForwardDistance: 40
-  dropRadiusMinRange: 40
-  dropRadiusMaxRange: 60
-  decoy: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21, type: 3}
-  resourceIndex: 0
 --- !u!1 &521423433274224661
 GameObject:
   m_ObjectHideFlags: 0
@@ -2245,10 +2195,7 @@ MonoBehaviour:
   raycastWidth: 2
   ram: 0
   drift: 0
-  abilities:
-  - Ability: {fileID: 867704553499413969}
-    Duration: 0
-    Cooldown: 10.2
+  abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
 --- !u!114 &6293426128044408357
 MonoBehaviour:
@@ -2348,6 +2295,7 @@ MonoBehaviour:
   shipType: 1
   profile: {fileID: 11400000, guid: bca2116c248e0f841b7c909679cd3ad5, type: 2}
   refs: {fileID: 3067597436117647303}
+  sceneNameListSO: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
 --- !u!114 &7318663848403301360
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2376,9 +2324,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _inputEventShipActions:
-  - InputEvent: 8
-    ShipActions:
-    - {fileID: 867704553499413969}
   - InputEvent: 1
     ShipActions:
     - {fileID: 3735459123231730468}
@@ -2460,9 +2405,7 @@ MonoBehaviour:
   consumeBoost: {fileID: 0}
   seedAssembler: {fileID: 0}
   overheating: {fileID: 0}
-  fullAuto: {fileID: 0}
   fireGun: {fileID: 0}
-  stationary: {fileID: 0}
 --- !u!1 &6427700898264204751
 GameObject:
   m_ObjectHideFlags: 0
@@ -3128,7 +3071,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 808689176682098569}
   - {fileID: 3287008858132207781}
   - {fileID: 3399742941216083705}
   - {fileID: 1505909475942438160}

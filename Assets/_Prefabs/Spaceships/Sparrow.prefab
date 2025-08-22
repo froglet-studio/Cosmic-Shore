@@ -1245,6 +1245,7 @@ MonoBehaviour:
   shipType: 11
   profile: {fileID: 11400000, guid: b610b722b2b32fe4eb840d4bf31ea5a6, type: 2}
   refs: {fileID: 318043552416527108}
+  sceneNameListSO: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1333,9 +1334,7 @@ MonoBehaviour:
   consumeBoost: {fileID: 0}
   seedAssembler: {fileID: 0}
   overheating: {fileID: 6237859807132148374}
-  fullAuto: {fileID: 1865457525660812358}
   fireGun: {fileID: 8671196826403818986}
-  stationary: {fileID: 9020752958040124948}
 --- !u!1 &6746362012311477801
 GameObject:
   m_ObjectHideFlags: 0
@@ -2830,7 +2829,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   index: 0
-  mode: 2
+  mode: 1
   verbose: 0
   fillImage: {fileID: 0}
   segments: []
@@ -2904,8 +2903,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   meters:
   - {fileID: 3790378915927334862}
-  toggles: []
+  - {fileID: 2148752661218281056}
+  toggles:
+  - key: 
+    target: {fileID: 0}
   animators: []
+  texts: []
 --- !u!1001 &8546359282292252367
 PrefabInstance:
   m_ObjectHideFlags: 0

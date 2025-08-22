@@ -60,10 +60,6 @@ namespace CosmicShore.Game
                         break;
                     ExecuteEffect(impactee, projectilePrismEffects);
                     break;
-                
-                case FakeCrystalImpactor fakeCrystalImpactor:
-                    ExecuteEffect(impactee, projectileFakeCrystalEffects);
-                    break;
             }
         }
 

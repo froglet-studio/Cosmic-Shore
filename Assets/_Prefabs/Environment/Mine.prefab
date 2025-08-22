@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 205044722219253190}
   - component: {fileID: 4507537437489056185}
   - component: {fileID: 6081314713389102077}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: TrucatedOctahedron
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -126,12 +126,11 @@ GameObject:
   - component: {fileID: 6588436222817790493}
   - component: {fileID: 6588436222817790466}
   - component: {fileID: 6588436222817790464}
-  - component: {fileID: 8379901470580388096}
   - component: {fileID: 9089214139604449257}
   - component: {fileID: 6588436222817790494}
   - component: {fileID: 8698266874642915508}
-  - component: {fileID: 1449448462253048144}
-  m_Layer: 9
+  - component: {fileID: 2630622662732962588}
+  m_Layer: 18
   m_Name: Mine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -183,40 +182,6 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1.2
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &8379901470580388096
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6588436222817790470}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f51359bd0adb81043be71930dab2cd22, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  OwnTeam: -1
-  ItemType: 1
-  crystalProperties:
-    crystal: {fileID: 8379901470580388096}
-    fuelAmount: 0
-    scoreAmount: 0
-    tailLengthIncreaseAmount: 0
-    speedBuffAmount: 0
-    Element: 0
-    crystalValue: 0
-  sphereRadius: 170
-  SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
-    type: 3}
-  crystalModels: []
-  allowVesselImpactEffect: 1
-  allowRespawnOnImpact: 0
-  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  collider: {fileID: 0}
-  blueCrystalMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
-  explodeAfterSeconds: 20
-  verbose: 1
-  isplayer: 0
 --- !u!114 &9089214139604449257
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -229,20 +194,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5365486ed3114d43a051f2f000337380, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blueCrystalMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
-  crystalProperties:
-    crystal: {fileID: 0}
-    fuelAmount: 0
-    scoreAmount: 0
-    tailLengthIncreaseAmount: 0
-    speedBuffAmount: 0
-    Element: 0
-    crystalValue: 0
+  blueMineMaterial: {fileID: 2100000, guid: 650830ed7524d074991cd928a5356f37, type: 2}
   explodeAfterSeconds: 20
-  verbose: 1
-  crystalModels: []
-  collider: {fileID: 0}
-  SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
+  mineModels:
+  - model: {fileID: 4604809919382375336, guid: fced5b15da3ad1d41b4e3b7385609e37, type: 3}
+    defaultMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+    inactiveMaterial: {fileID: 2100000, guid: 650830ed7524d074991cd928a5356f37, type: 2}
+  collider: {fileID: 6588436222817790464}
+  SpentMinePrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
   isplayer: 0
 --- !u!82 &6588436222817790494
@@ -355,8 +315,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  impactorObject: {fileID: 1449448462253048144}
---- !u!114 &1449448462253048144
+  impactorObject: {fileID: 2630622662732962588}
+--- !u!114 &2630622662732962588
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -368,5 +328,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7db2db30ad014f4097e37b5287e22649, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Mine: {fileID: 9089214139604449257}
   mineShipEffectsSO: []
-  mineProjectileEffectsSO: []
+  explosionEffectsSO: []
+  mineProjectileEffectsSO:
+  - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}

@@ -29,9 +29,13 @@ namespace CosmicShore.Game
             // TODO - Add Event channels here rather than calling singletons directly.
             if (StatsManager.Instance)
                 StatsManager.Instance.CrystalCollected(shipStatus.Ship, crystal.crystalProperties);
-            
-            crystal.Explode(shipStatus);
-            crystal.PlayExplosionAudio();
+
+            if (shipStatus.ShipType != ShipClassType.Manta)
+            {
+                crystal.Explode(shipStatus);
+                crystal.PlayExplosionAudio();
+            }
+
             crystal.CrystalRespawn();
         }
     }

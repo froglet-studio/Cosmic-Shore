@@ -17,13 +17,19 @@ namespace CosmicShore.Game
 
         IShipHUDView _activeHUDView;
 
-        public IShipHUDView InitializeView(IShipHUDController controller, ShipClassType type)
+        public IShipHUDView InitializeView(IShipHUDController controller, IShipStatus shipStatus)
         {
             foreach (Transform content in contentTransform.GetComponentInChildren<Transform>())
             {
                 if (content == null) continue;
+                if (shipStatus.AutoPilotEnabled)
+                {
+                    content.gameObject.SetActive(false);
+                    return null;
+                }
+                
                 content.gameObject.SetActive(true);
-                content.gameObject.TryGetComponent<IShipHUDView>(out _activeHUDView);
+                content.gameObject.TryGetComponent(out _activeHUDView);
                 return _activeHUDView;
             }
 
