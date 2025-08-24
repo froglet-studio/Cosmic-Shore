@@ -41,7 +41,7 @@ namespace CosmicShore.Game
             get
             {
                 if (Player != null)
-                    return Player.PlayerName;
+                    return Player.Name;
 
                 Debug.LogWarning("Player is null, returning empty string for PlayerName.");
                 return "No-name";

@@ -26,13 +26,14 @@ namespace CosmicShore.Game.Arcade
         int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * _miniGameData.Value.SelectedIntensity : baseNumberOfSegments;
         int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / _miniGameData.Value.SelectedIntensity : baseStraightLineLength;
         Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * _miniGameData.Value.SelectedIntensity : crystalStartPosition;
-
-        protected override void OnStartNewGame() 
+        
+        protected override void StartNewGame()
         {
             segmentSpawner.Seed = Random.Range(int.MinValue,int.MaxValue);
             
-            if (_miniGameData.Value.SelectedShipClass.Value == ShipClassType.Rhino) 
-                scoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
+            // Scoring mode should never be dependent on Vessel Class.
+            /*if (_miniGameData.Value.SelectedShipClass.Value == ShipClassType.Rhino) 
+                scoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;*/
 
             if (helix)
             {
@@ -44,11 +45,16 @@ namespace CosmicShore.Game.Arcade
             
             if (gameMode == GameModes.Freestyle) 
                 FTUEEventManager.RaiseGameModeStarted(GameModes.Freestyle);
+            
+            base.StartNewGame();
         }
 
-        protected override void SetupNewTurn() {
+        protected override void SetupNewTurn() 
+        {
+            if(resetEnvironmentOnEachTurn) 
+                ResetEnvironment();
+            
             base.SetupNewTurn();
-            if(resetEnvironmentOnEachTurn) ResetEnvironment();
         }
 
         void ResetEnvironment() {

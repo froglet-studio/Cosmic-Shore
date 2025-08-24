@@ -192,7 +192,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         #region Mini Game Events
 
-        void LogEventMiniGameStart(MiniGameData data)
+        void LogEventMiniGameStart(MiniGameDataSO data)
         {
             if (!_analyticsEnabled) return;
             
@@ -225,7 +225,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             
         }
         
-        void LogEventMiniGameEnd(MiniGameData data)
+        void LogEventMiniGameEnd(MiniGameDataSO data)
         {
             if (!_analyticsEnabled) return;
             

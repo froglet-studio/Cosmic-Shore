@@ -29,7 +29,7 @@ namespace CosmicShore.Game.Arcade
 
             if (!gameRunning) return;
 
-            foreach (var turnMonitor in TurnMonitors)
+            /*foreach (var turnMonitor in TurnMonitors)
             {
                 if (turnMonitor.CheckForEndOfTurn())
                 {
@@ -40,7 +40,7 @@ namespace CosmicShore.Game.Arcade
                     EndTurn();
                     return;
                 }
-            }
+            }*/
         }
 
         protected override void SetupTurn()

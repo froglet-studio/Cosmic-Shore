@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Game.Arcade;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.SOAP;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,11 +30,14 @@ namespace CosmicShore
         [SerializeField] List<TMP_Text> PlayerNameTextFields;
         [SerializeField] List<TMP_Text> PlayerScoreTextFields;
 
-        ScoreTracker scoreTracker;
+        // TODO - Use MiniGameDataVariable instead
+        // ScoreTracker scoreTracker;
+        [SerializeField]
+        MiniGameDataSO miniGameData; 
 
         void Awake()
         {
-            scoreTracker = FindAnyObjectByType<ScoreTracker>();
+            // scoreTracker = FindAnyObjectByType<ScoreTracker>();
             MultiplayerView.gameObject.SetActive(false);
             SingleplayerView.gameObject.SetActive(false);
         }
@@ -41,7 +45,8 @@ namespace CosmicShore
         public void ShowMultiplayerView()
         {
             // Set banner for winning player
-            var winningTeam = scoreTracker.GetWinningTeam();
+            // TODO - Take winner data from MiniGameDataSO
+            var winningTeam = Teams.Jade; // miniGameData.GetWinnerScoreData().Team;
 
             switch (winningTeam)
             {
@@ -66,18 +71,14 @@ namespace CosmicShore
             }
 
             // Populate scores
-            var playerScores = scoreTracker.playerScores.ToList();
-            if (scoreTracker.GolfRules)
-                playerScores.Sort((score1, score2) => score1.Value.CompareTo(score2.Value));
-            else
-                playerScores.Sort((score1, score2) => score2.Value.CompareTo(score1.Value));
+            var playerScores = miniGameData.GetSortedRoundStatsList();
 
             // Populate rows with player scores
             for (var i=0; i<playerScores.Count; i++)
             {
                 var playerScore = playerScores[i];
-                PlayerNameTextFields[i].text = playerScore.Key;
-                PlayerScoreTextFields[i].text = ((int) playerScore.Value).ToString();
+                PlayerNameTextFields[i].text = playerScore.Name;
+                PlayerScoreTextFields[i].text = ((int) playerScore.Score).ToString();
             }
 
             // Hide unused rows
@@ -102,7 +103,7 @@ namespace CosmicShore
                 BannerText.text = "RUN RESULTS";
 
             // Populate this run's score
-            var playerScore = Mathf.Max(scoreTracker.playerScores.First().Value, 0);
+            var playerScore = Mathf.Max(miniGameData.RoundStatsList[0].Score, 0);
             SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
 
             // TODO: pull actual high score

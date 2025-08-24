@@ -9,11 +9,11 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(NetcodeHooks))]
     public class NetworkStatsManager : StatsManager
     {
-        [SerializeField] 
+        /*[SerializeField] 
         ScriptableEventNoParam _onPlayGame;
         
         [SerializeField]
-        ScriptableEventNoParam _onGameOver;
+        ScriptableEventNoParam _onGameOver;*/
         
         NetcodeHooks _netcodeHooks;
 
@@ -25,8 +25,8 @@ namespace CosmicShore.Game
 
         protected override void OnEnable()
         {
-            _onPlayGame.OnRaised += ResetStats;
-            _onGameOver.OnRaised += OutputRoundStats;
+            // _onPlayGame.OnRaised += ResetStats;
+            // _onGameOver.OnRaised += OutputRoundStats;
 
 
             _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
@@ -35,8 +35,8 @@ namespace CosmicShore.Game
 
         protected override void OnDisable()
         {
-            _onPlayGame.OnRaised -= ResetStats;
-            _onGameOver.OnRaised -= OutputRoundStats;
+            // _onPlayGame.OnRaised -= ResetStats;
+            // _onGameOver.OnRaised -= OutputRoundStats;
 
             _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
             _netcodeHooks.OnNetworkDespawnHook -= OnNetworkDespawn;
@@ -62,7 +62,7 @@ namespace CosmicShore.Game
             }
         }
 
-        protected override IRoundStats GetRoundStats(Teams team)
+        public override IRoundStats GetOrCreateRoundStats(Teams team)
         {
             var player = NetworkPlayerClientCache.GetPlayerByTeam(team);
             if (player == null)

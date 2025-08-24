@@ -161,7 +161,7 @@ namespace CosmicShore.Game
                     var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                     spentAnimator.timer = thisAnimator.timer;
                 }
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, shipStatus.Player.PlayerName);
+                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, shipStatus.Player.Name);
             }
         }
 

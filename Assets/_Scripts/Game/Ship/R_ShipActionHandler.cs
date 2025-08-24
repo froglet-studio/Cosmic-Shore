@@ -61,7 +61,7 @@ namespace CosmicShore.Game
                 return;
             
             if (StatsManager.Instance != null)
-                StatsManager.Instance.AbilityActivated(_shipStatus.Team, _shipStatus.Player.PlayerName, controlType,
+                StatsManager.Instance.AbilityActivated(_shipStatus.Team, _shipStatus.Player.Name, controlType,
                     Time.time - _inputAbilityStartTimes[controlType]);
 
             ShipHelper.StopShipControllerActions(controlType, _shipControlActions);

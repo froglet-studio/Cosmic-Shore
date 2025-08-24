@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.SOAP;
 using UnityEngine;
 
@@ -5,8 +6,13 @@ namespace CosmicShore.Game
 {
     public class MiniGamePlayerSpawnerAdapter : MonoBehaviour
     {
-        [SerializeField] MiniGameDataVariable _miniGameData;
-
+        [SerializeField] MiniGameDataSO _miniGameData;
+        
+        /// <summary>
+        /// Can be a normal stats manager or network stats manager.
+        /// </summary>
+        [SerializeField] StatsManager _statsManager;
+        
         [SerializeField] PlayerSpawner _playerSpawner;
 
         private void OnEnable()
@@ -23,6 +29,8 @@ namespace CosmicShore.Game
         {
             InstantiateAndInitializePlayer();
             InstantiateAndInitializeAI();
+            
+            _miniGameData.InvokeAllPlayersSpawned();
         }
 
         void InstantiateAndInitializeAI()
@@ -35,24 +43,18 @@ namespace CosmicShore.Game
                     continue;
                 
                 IPlayer spawnerAI = _playerSpawner.SpawnPlayerAndShip(data);
-                _miniGameData.Value.AddPlayer(spawnerAI);
-                spawnerAI.ToggleStationaryMode(true);
+                _miniGameData.AddPlayer(spawnerAI, _statsManager.GetOrCreateRoundStats(data.Team));
             }
         }
         
         void InstantiateAndInitializePlayer()
         {
-            IPlayer activePlayer = _miniGameData.Value.ActivePlayer;
-            
-            if (activePlayer != null)
-                return;
-
             // TODO - Selected Player Count will be needed in multiplayer.
             // int noOfPlayersToSpawn = _miniGameData.Value.SelectedPlayerCount.Value;
             
             IPlayer.InitializeData data = new()
             {
-                ShipClass = _miniGameData.Value.SelectedShipClass.Value,
+                ShipClass = _miniGameData.SelectedShipClass.Value,
                 Team = Teams.Jade,  // Defaulted to Jade for now!
                 PlayerName =  "HumanJade",  // Defaulted - later need to fetch player name from -> "PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],"
                 PlayerUUID = "HumanJade1",
@@ -61,8 +63,7 @@ namespace CosmicShore.Game
             };
             
             IPlayer spawnerPlayer = _playerSpawner.SpawnPlayerAndShip(data);
-            _miniGameData.Value.AddPlayer(spawnerPlayer);
-            spawnerPlayer.ToggleStationaryMode(true);
+            _miniGameData.AddPlayer(spawnerPlayer, _statsManager.GetOrCreateRoundStats(data.Team));
         }
     }
 }

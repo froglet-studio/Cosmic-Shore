@@ -7,16 +7,19 @@ namespace CosmicShore.Game.Arcade
     public class VolumeCreatedTurnMonitor : TurnMonitor
     {
         [SerializeField] float Amount;
-        [SerializeField] MiniGame Game;
+        
+        // Use MiniGameData for player infos.
+        // [SerializeField] MiniGame Game;
+        
         [SerializeField] bool hostileVolume;
         Core.IRoundStats volumeStat;
         Teams team;
         float volumeUnitConverstion = 145.65f;
 
-        private void Start()
+        /*private void Start()
         {
             StartCoroutine(WaitForTeam());
-        }
+        }*/
 
         private IEnumerator WaitForTeam()
         {
@@ -33,14 +36,13 @@ namespace CosmicShore.Game.Arcade
 
         public override bool CheckForEndOfTurn()
         {
-            if (paused) return false;
-
             return StatsManager.Instance.TeamStats[team].VolumeCreated > Amount;
         }
-
-        public override void NewTurn(string playerName)
+        
+        protected override void StartTurn()
         {
-            StatsManager.Instance.ResetStats();
+            // StatsManager.Instance.ResetStats();
+            StartCoroutine(WaitForTeam());
         }
 
         protected override void RestrictedUpdate()

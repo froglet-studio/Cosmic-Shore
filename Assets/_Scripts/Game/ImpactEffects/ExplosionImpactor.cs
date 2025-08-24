@@ -65,7 +65,7 @@ namespace CosmicShore.Game
             else
             {
                 var shipStatus = Explosion.Ship.ShipStatus;
-                prism.Damage(impactVector, shipStatus.Team, shipStatus.Player.PlayerName, devastating);
+                prism.Damage(impactVector, shipStatus.Team, shipStatus.Player.Name, devastating);
             }
         }
     }

@@ -25,7 +25,6 @@ MonoBehaviour:
     SelectedIntensity: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69,
       type: 2}
     HighScore: 0
-    RemainingPlayers: 
     PlayerOrigins: []
   _debugLogEnabled: 0
   _saved: 0
@@ -35,6 +34,5 @@ MonoBehaviour:
     SelectedPlayerCount: {fileID: 0}
     SelectedIntensity: {fileID: 0}
     HighScore: 0
-    RemainingPlayers: 
     PlayerOrigins: []
   _resetOn: 1

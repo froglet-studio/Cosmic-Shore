@@ -125,7 +125,7 @@ namespace CosmicShore.Game
         public void ExecuteImpactOnShip(IShip ship)
         {
             if (StatsManager.Instance != null)
-                StatsManager.Instance.SkimmerShipCollision(ShipStatus.Ship, ship);
+                StatsManager.Instance.ExecuteSkimmerShipCollision(ShipStatus.Ship, ship);
         }
 
         public void ExecuteImpactOnPrism(TrailBlock trailBlock)

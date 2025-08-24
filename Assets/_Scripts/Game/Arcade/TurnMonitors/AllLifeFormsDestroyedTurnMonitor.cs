@@ -5,24 +5,22 @@ namespace CosmicShore.Game.Arcade
 {
     public class AllLifeFormsDestroyedTurnMonitor : TurnMonitor
     {
-        string nodeID;
+        string cellID;
 
         private void Awake()
         {
-            eliminatesPlayer = true; // This monitor eliminates players when they destroy all life forms
+            // eliminatesPlayer = true; // This monitor eliminates players when they destroy all life forms
         }
 
         private void Start()
         {
-            if (CellControlManager.Instance != null) nodeID = CellControlManager.Instance.GetNearestCell(Vector3.zero).ID;
+            if (CellControlManager.Instance != null) cellID = CellControlManager.Instance.GetNearestCell(Vector3.zero).ID;
         }
 
         public override bool CheckForEndOfTurn()
         {
-            if (paused) return false;
-
             // Check if any life forms exist in the current node
-            if (StatsManager.Instance.CellStats[nodeID].LifeFormsInNode > 0)
+            if (StatsManager.Instance.CellStats[cellID].LifeFormsInNode > 0)
             {
                 return false;
             }
@@ -31,16 +29,14 @@ namespace CosmicShore.Game.Arcade
             return true;
         }
 
-        public override void NewTurn(string playerName)
+        protected override void StartTurn()
         {
-            StatsManager.Instance.ResetStats();
+            // StatsManager.Instance.ResetStats();
         }
 
         protected override void RestrictedUpdate()
         {
-            if (paused) return;
-
-            string message = (StatsManager.Instance.CellStats[nodeID].LifeFormsInNode).ToString();
+            string message = (StatsManager.Instance.CellStats[cellID].LifeFormsInNode).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }
     }

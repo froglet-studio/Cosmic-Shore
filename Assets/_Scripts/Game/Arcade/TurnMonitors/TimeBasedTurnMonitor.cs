@@ -7,24 +7,16 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float duration;
         float elapsedTime;
 
-        public override bool CheckForEndOfTurn()
-        {
-            if (paused) return false;
-            return elapsedTime > duration;
-        }
-
-        public override void NewTurn(string playerName)
-        {
-            elapsedTime = 0;
-        }
+        public override bool CheckForEndOfTurn() => elapsedTime >= duration;
+        
+        protected override void StartTurn() => elapsedTime = 0;
 
         protected override void RestrictedUpdate()
         {
-            if (paused) return;
-
+            base.RestrictedUpdate();
             elapsedTime += Time.deltaTime;
             var message = ((int)duration - (int)elapsedTime).ToString();
-            onUpdateTurnMonitorDisplay.Raise(message);
+            onUpdateTurnMonitorDisplay?.Raise(message);
         }
     }
 }

@@ -2,6 +2,9 @@
 {
     public interface IRoundStats
     {
+        string Name { get; set; }
+        Teams Team { get; set; }
+        float Score { get; set; }
         int BlocksCreated { get; set; }
         int BlocksDestroyed { get; set; }
         int BlocksRestored { get; set; }

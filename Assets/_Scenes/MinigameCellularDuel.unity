@@ -829,8 +829,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1527998410}
   - component: {fileID: 1527998411}
-  - component: {fileID: 1527998409}
   - component: {fileID: 1527998408}
+  - component: {fileID: 1527998409}
   - component: {fileID: 1527998413}
   - component: {fileID: 1527998414}
   m_Layer: 0
@@ -853,12 +853,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActivePlayerScoreDisplay: {fileID: 0}
-  initialScore: 0
-  ScoringMode: 6
   GolfRules: 0
-  AdditionalScoringModes: []
+  scoringConfigs:
+  - Mode: 6
+    Multiplier: 1
   GameCanvas: {fileID: 0}
-  ScoreMultiplier: 1
 --- !u!114 &1527998409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -872,7 +871,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _updateInterval: 1
-  eliminatesPlayer: 0
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   duration: 120
@@ -904,7 +902,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameMode: 8
-  numberOfRounds: 2147483647
+  numberOfRounds: 1
+  numberOfTurnsPerRound: 1
   monitorController: {fileID: 1527998413}
   scoreTracker: {fileID: 1527998408}
   countdownTimer: {fileID: 69216807}
@@ -925,7 +924,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d1250cee23043d4affa7a4a1e734646, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  monitors: []
+  monitors:
+  - {fileID: 1527998409}
 --- !u!114 &1527998414
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,9 +1,39 @@
-﻿using Unity.Netcode;
+﻿using Unity.Collections;
+using Unity.Netcode;
 
 namespace CosmicShore.Core
 {
     public class NetworkRoundStats : NetworkBehaviour, IRoundStats
     {
+        private readonly NetworkVariable<FixedString64Bytes> n_Name = new(
+            readPerm: NetworkVariableReadPermission.Everyone,
+            writePerm: NetworkVariableWritePermission.Server);
+        public string Name
+        {
+            get => n_Name.Value.ToString();
+            set => n_Name.Value = value;
+        }
+        
+        private readonly NetworkVariable<Teams> n_Team = new(
+            readPerm: NetworkVariableReadPermission.Everyone,
+            writePerm: NetworkVariableWritePermission.Server);
+
+        public Teams Team
+        {
+            get => n_Team.Value;
+            set => n_Team.Value = value;
+        }
+        
+        private readonly NetworkVariable<float> n_Score = new(
+            readPerm: NetworkVariableReadPermission.Everyone,
+            writePerm: NetworkVariableWritePermission.Server);
+
+        public float Score
+        {
+            get => n_Score.Value;
+            set => n_Score.Value = value;
+        }
+        
         private readonly NetworkVariable<int> n_BlocksCreated = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);

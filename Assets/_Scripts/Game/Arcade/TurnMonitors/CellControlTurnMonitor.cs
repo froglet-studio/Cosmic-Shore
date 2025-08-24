@@ -7,40 +7,32 @@ namespace CosmicShore
     public class CellControlTurnMonitor : TurnMonitor
     {
         [SerializeField] private Cell monitoredNode;
-        private MiniGame game;
+        // private MiniGame game;
+        // Can't use Minigame, use the MiniGameData instead for knowing about playing players.
 
         private Teams playerTeam;
 
-        private void Start()
+        /*private void Start()
         {
             game = GetComponent<MiniGame>();    
             if (game != null && game.ActivePlayer != null)
             {
                 playerTeam = game.ActivePlayer.Team;
             }
-        }
+        }*/
 
         public override bool CheckForEndOfTurn()
         {
-            if (paused) return false;
-
-            if (monitoredNode.ControllingTeam != playerTeam)
-            {
-                return true;
-            }
-
-            return false;
+            return monitoredNode.ControllingTeam != playerTeam;
         }
 
-        public override void NewTurn(string playerName)
+        protected override void StartTurn()
         {
-            if (game != null && game.ActivePlayer != null)
+            /*if (game != null && game.ActivePlayer != null)
             {
                 playerTeam = game.ActivePlayer.Team;
-            }
+            }*/
         }
-
-        protected override void RestrictedUpdate() { }
     }
     
 }
