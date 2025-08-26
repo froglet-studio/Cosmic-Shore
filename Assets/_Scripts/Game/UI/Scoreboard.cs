@@ -71,7 +71,7 @@ namespace CosmicShore
             }
 
             // Populate scores
-            var playerScores = miniGameData.GetSortedRoundStatsList();
+            var playerScores = miniGameData.RoundStatsList;
 
             // Populate rows with player scores
             for (var i=0; i<playerScores.Count; i++)

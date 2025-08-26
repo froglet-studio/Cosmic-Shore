@@ -6,11 +6,10 @@ namespace CosmicShore
 {
     public class CellControlTurnMonitor : TurnMonitor
     {
-        [SerializeField] private Cell monitoredNode;
+        // [SerializeField] private Cell monitoredNode;
         // private MiniGame game;
         // Can't use Minigame, use the MiniGameData instead for knowing about playing players.
-
-        private Teams playerTeam;
+        // private Teams playerTeam;
 
         /*private void Start()
         {
@@ -23,7 +22,8 @@ namespace CosmicShore
 
         public override bool CheckForEndOfTurn()
         {
-            return monitoredNode.ControllingTeam != playerTeam;
+            // return monitoredNode.ControllingTeam() != playerTeam;
+            return miniGameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item1 == miniGameData.ActivePlayer.Team;
         }
 
         protected override void StartTurn()

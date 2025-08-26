@@ -37,6 +37,17 @@ namespace CosmicShore.SOAP
             OnInitialize?.Invoke();
         }
 
+        public (Teams, float) GetControllingTeamStatsBasedOnVolumeRemaining()
+        {
+            var sortedList = GetSortedListInDecendingOrderBasedOnVolumeRemaining();
+            return  (sortedList[0].Team, sortedList[0].VolumeRemaining);
+        }
+
+        public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>
+            RoundStatsList
+                .OrderByDescending(r => r.VolumeRemaining)
+                .ToList();
+
         public bool TryGetActivePlayerStats(out IPlayer player, out IRoundStats roundStats)
         {
             player = null;
@@ -61,6 +72,17 @@ namespace CosmicShore.SOAP
             return true;
         }
 
+        public bool TryGetTeamRemainingVolume(Teams team, out float volume)
+        {
+            volume = 0f;
+            foreach (var roundStats in RoundStatsList.Where(roundStats => roundStats.Team == team))
+            {
+                volume = roundStats.VolumeRemaining;
+                return true;
+            }
+            return false;
+        }
+        
         public bool TryGetRoundStats(Teams team, out IRoundStats roundStats)
         {
             roundStats = null;

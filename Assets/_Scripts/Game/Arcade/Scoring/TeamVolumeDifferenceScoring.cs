@@ -13,6 +13,21 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         public override void CalculateScore()
         {
+            var sorted = miniGameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
+            if (sorted == null || sorted.Count == 0) return;
+
+            // last element (descending list) has the smallest volume
+            float minVol = sorted[^1].VolumeRemaining;
+
+            foreach (var ps in miniGameData.RoundStatsList)
+            {
+                float rel = Mathf.Max(0f, ps.VolumeRemaining - minVol); // relative to last place
+                ps.Score += rel * scoreMultiplier;                      // accumulate like before
+            }
+        }
+        
+        /*public override void CalculateScore()
+        {
             float Vol(Teams t) => miniGameData.TryGetRoundStats(t, out var s) ? s.VolumeRemaining : 0f;
 
             var teamVolumes = new[]
@@ -29,15 +44,7 @@ namespace CosmicShore.Game.Arcade.Scoring
 
             var maxVol = sorted.First().Volume;
             var minVol = sorted.Last().Volume;
-
-            // DEBUG: show volumes, sorted order, and min/max
-            /*Debug.Log($"[ScoreDebug] Volumes: " +
-                      string.Join(", ", teamVolumes.Select(tv => $"{tv.Team}={tv.Volume:F2}")));
-            Debug.Log($"[ScoreDebug] Sorted (desc): " +
-                      string.Join(" > ", sorted.Select(tv => $"{tv.Team}({tv.Volume:F2})")));
-            Debug.Log($"[ScoreDebug] min={minVol:F2}, max={maxVol:F2}, range={maxVol - minVol:F2}, multiplier={ScoreMultiplier}");*/
-
-            // For quick lookup
+            
             var volumeByTeam = teamVolumes.ToDictionary(t => t.Team, t => t.Volume);
 
             foreach (var ps in miniGameData.RoundStatsList)
@@ -45,19 +52,16 @@ namespace CosmicShore.Game.Arcade.Scoring
                 if (!volumeByTeam.TryGetValue(ps.Team, out var v))
                 {
                     ps.Score = 0f;
-                    // Debug.Log($"[ScoreDebug] {ps.Name} ({ps.Team}) missing volume → Score=0");
                     continue;
                 }
 
                 var diff = v - minVol;          // relative to last place
                 var rel  = Mathf.Max(0f, diff); // clamp negatives to 0
                 ps.Score += rel * scoreMultiplier;
-
-                // Debug.Log($"[ScoreDebug] {ps.Name} ({ps.Team}): v={v:F2}, diff={diff:F2}, rel={rel:F2} → Score={ps.Score:F2}");
             }
         }
 
-        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
+        public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {
             var teamStats = StatsManager.Instance.TeamStats;
             var greenVolume = teamStats.TryGetValue(Teams.Jade, out var greenStats) ? greenStats.VolumeRemaining : 0f;

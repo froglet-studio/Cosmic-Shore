@@ -307,7 +307,7 @@ namespace CosmicShore.Game.Arcade
 
             if (IsDailyChallenge)
             {
-                LeaderboardManager.Instance.ReportDailyChallengeStatistic(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/, ScoreTracker.GolfRules);
+                // LeaderboardManager.Instance.ReportDailyChallengeStatistic(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/, ScoreTracker.GolfRules);
                 DailyChallengeSystem.Instance.ReportScore(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/);
 
                 // TODO: P1 Hide play again button, or map it to use another ticket
@@ -371,10 +371,13 @@ namespace CosmicShore.Game.Arcade
             else if (IsTraining)
             {
                 TrainingGameProgressSystem.GetGameProgress(gameMode);
-                TrainingGameProgressSystem.ReportProgress(Core.Arcade.Instance.TrainingGames.Games.First(x => x.Game.Mode == gameMode), IntensityLevel, 0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/);
+                TrainingGameProgressSystem.ReportProgress(
+                    Core.Arcade.Instance.TrainingGames.Games.First(x => x.Game.Mode == gameMode), IntensityLevel,
+                    0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/);
             }
             else
-                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, 0/*(int)ScoreTracker.GetWinnerScoreData().Score*/, ScoreTracker.GolfRules);
+                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel,
+                    0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/, false);// ScoreTracker.GolfRules);
 
             UserActionSystem.Instance.CompleteAction(new UserAction(
                     UserActionType.PlayGame,

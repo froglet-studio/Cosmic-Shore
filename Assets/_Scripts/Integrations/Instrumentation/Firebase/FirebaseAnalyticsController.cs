@@ -236,7 +236,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
                 new Parameter(FirebaseAnalytics.ParameterCharacter, data.SelectedShipClass.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterQuantity, data.SelectedPlayerCount),
                 new Parameter(FirebaseAnalytics.ParameterIndex, data.SelectedIntensity),
-                new Parameter(FirebaseAnalytics.ParameterScore, data.HighScore)
+                new Parameter(FirebaseAnalytics.ParameterScore, 0) // data.HighScore)   // Get HighScore from MiniGameDataSO
             };
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);

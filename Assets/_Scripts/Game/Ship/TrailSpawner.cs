@@ -72,6 +72,7 @@ namespace CosmicShore.Game
         public float MinWaveLength => minWavelength;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
         public float TrailZScale => trailBlock.transform.localScale.z;
+        public event Action<TrailBlock> OnBlockSpawned;
 
         private void Awake()
         {
@@ -266,6 +267,7 @@ namespace CosmicShore.Game
 
             // event
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
+            OnBlockSpawned?.Invoke(block);
         }
 
         public List<TrailBlock> GetLastTwoBlocks()
