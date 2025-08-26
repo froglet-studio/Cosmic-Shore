@@ -659,7 +659,7 @@ SphereCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
@@ -2172,7 +2172,7 @@ GameObject:
   - component: {fileID: 4457554990057362122}
   - component: {fileID: 8881942963724457318}
   m_Layer: 0
-  m_Name: Action
+  m_Name: CloakAction
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2205,14 +2205,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4f432f279944f128b97db362e5a9a96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cooldownSeconds: 2.5
-  freezeGrowthDuringCooldown: 1
-  makeBlocksTransparentDuringCooldown: 1
+  cooldownSeconds: 20
   skinnedMeshRenderer: {fileID: 4172724446676456733}
   assemblerTypeSource: {fileID: 1077471832166960232}
   assemblerDepth: 50
-  seedStagingMaterial: {fileID: 0}
-  seedFinalMaterial: {fileID: 0}
   requireExistingTrailBlock: 1
 --- !u!1 &6553637767954968870
 GameObject:

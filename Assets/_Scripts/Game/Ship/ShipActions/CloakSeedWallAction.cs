@@ -1,82 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections;
 using System.Reflection;
-using System.Threading;
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CosmicShore
 {
-    /// <summary>
-    /// Single-class workflow:
-    /// • On press: ship turns transparent for <cooldown>.
-    /// • During cooldown: NEW trail blocks are frozen (no growth) and optionally transparent.
-    /// • A seed wall is planted on the latest trail block with a "staging" look.
-    /// • When cooldown ends: ship returns to normal, blocks resume growth/appearance, seed swaps to final look and starts bonding.
-    /// 
-    /// Zero modifications to TrailBlock or TrailSpawner required.
-    /// Uses reflection to reach BlockScaleAnimator.GrowthRate.
-    /// </summary>
     public class CloakSeedWallAction : ShipAction
     {
         #region Config
-        [Header("Cooldown / Flow")]
-        [Tooltip("How long the ship stays transparent and trail blocks are suppressed.")]
-        [SerializeField] private float cooldownSeconds = 2.5f;
+        [Header("Cooldown")]
+        [SerializeField] private float cooldownSeconds = 20f; // you said 20
 
-        [Tooltip("If true, block growth is frozen during cooldown by setting GrowthRate = 0 via reflection.")]
-        [SerializeField] private bool freezeGrowthDuringCooldown = true;
-
-        [Tooltip("If true, newly spawned blocks are made transparent during cooldown.")]
-        [SerializeField] private bool makeBlocksTransparentDuringCooldown = true;
-
-        [Header("Ship Visuals")]
+        [Header("Ship Visibility")]
+        [SerializeField] private bool hideShipDuringCooldown = true;
         [SerializeField] private SkinnedMeshRenderer skinnedMeshRenderer;
 
         [Header("Seed Wall")]
-        [Tooltip("Provide a GameObject that has the desired Assembler component (e.g., WallAssembler). Only the TYPE is used.")]
-        [SerializeField] private Assembler assemblerTypeSource;   // we add a component of this exact type to the seed block
+        [SerializeField] private Assembler assemblerTypeSource;
         [SerializeField] private int assemblerDepth = 50;
 
-        [Header("Seed Wall Looks")]
-        [Tooltip("Material while cooldown is active (staging).")]
-        [SerializeField] private Material seedStagingMaterial;
-        [Tooltip("Material after cooldown ends (final).")]
-        [SerializeField] private Material seedFinalMaterial;
-
         [Header("Safety")]
-        [Tooltip("If true, do nothing if no trail block exists yet when pressed.")]
         [SerializeField] private bool requireExistingTrailBlock = true;
         #endregion
 
         #region State
         private TrailSpawner _spawner;
-        private CancellationTokenSource _cts;
-        private bool _running;
+        private Coroutine _runRoutine;
 
-        // Counting new blocks without events
-        private int _startCountTrail;
-        private int _startCountTrail2;
+        private Assembler  _seedAssembler;
+        private TrailBlock _seedBlock;
 
-        // Access to internal Trail2
-        private static FieldInfo _trail2Field;
+        private float _cooldownEndTime;
 
-        // Reflection to reach BlockScaleAnimator.GrowthRate
-        private static Type _blockScaleAnimatorType;
-        private static PropertyInfo _growthRateProp;
-
-        // Per-block original GrowthRate cache
-        private readonly Dictionary<TrailBlock, float> _savedGrowth = new();
-
-        // Tracked blocks affected during cooldown (for restore)
-        private readonly HashSet<TrailBlock> _affectedBlocks = new();
-
-        // Seed refs
-        private Assembler _seedAssembler;
-        private Renderer  _seedRenderer;
-        private Material  _seedOriginalMaterialInstance; // in case you want to restore original (we finalize instead)
+        private static readonly int ID_Color     = Shader.PropertyToID("_Color");
+        private static readonly int ID_BaseColor = Shader.PropertyToID("_BaseColor");
+        private static readonly int ID_Color1    = Shader.PropertyToID("Color1");
+        private static readonly int ID_Color2    = Shader.PropertyToID("Color2");
+        private static readonly int ID_ColorMult = Shader.PropertyToID("ColorMultiplier");
         #endregion
 
         #region Lifecycle
@@ -84,235 +46,215 @@ namespace CosmicShore
         {
             base.Initialize(ship);
             _spawner = Ship?.ShipStatus?.TrailSpawner;
-
-            // Cache reflection handles
-            _trail2Field ??= typeof(TrailSpawner).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            if (_blockScaleAnimatorType == null)
+            if (_spawner != null)
             {
-                // BlockScaleAnimator is on TrailBlock via [RequireComponent]
-                _blockScaleAnimatorType = Type.GetType("CosmicShore.Core.BlockScaleAnimator, Assembly-CSharp");
-                if (_blockScaleAnimatorType != null)
-                    _growthRateProp = _blockScaleAnimatorType.GetProperty("GrowthRate", BindingFlags.Instance | BindingFlags.Public);
+                // subscribe once; handler checks remaining cooldown each spawn
+                _spawner.OnBlockSpawned += HandleBlockSpawned;
+                Debug.Log("[CloakSeedWallAction] Subscribed to TrailSpawner.OnBlockSpawned");
             }
+            else
+            {
+                Debug.LogWarning("[CloakSeedWallAction] No TrailSpawner found on ShipStatus during Initialize");
+            }
+        }
+
+        // If you ever need to unhook (not required now, but safe):
+        private void OnDestroy()
+        {
+            if (_spawner != null)
+                _spawner.OnBlockSpawned -= HandleBlockSpawned;
         }
 
         public override void StartAction()
         {
-            if (_running) return;
-            _running = true;
-            _cts?.Cancel();
-            _cts = new CancellationTokenSource();
-            _ = RunAsync(_cts.Token);
+            if (_runRoutine != null) return;
+
+            if (_spawner == null)
+            {
+                Debug.LogWarning("[CloakSeedWallAction] No TrailSpawner found on ShipStatus.");
+                return;
+            }
+            if (assemblerTypeSource == null)
+            {
+                Debug.LogWarning("[CloakSeedWallAction] assemblerTypeSource not assigned.");
+                return;
+            }
+
+            var latest = GetLatestBlock();
+            if (latest == null && requireExistingTrailBlock)
+            {
+                Debug.LogWarning("[CloakSeedWallAction] No trail block found to plant seed on.");
+                return;
+            }
+
+            Debug.Log("[CloakSeedWallAction] Starting action...");
+            _runRoutine = StartCoroutine(Run(latest));
         }
 
         public override void StopAction()
         {
-            if (!_running) return;
-            _cts?.Cancel();
-            _running = false;
-            // best-effort cleanup
-            SetShipTransparent(false);
-            RestoreAllBlocks();
-            FinalizeSeed(startBonding: false); // normalize appearance at least
+            // per your request: leave commented out
+            // if (_runRoutine != null) { StopCoroutine(_runRoutine); _runRoutine = null; }
+            // (no restore needed per latest ask)
         }
         #endregion
 
-        #region Main Flow
-        private async UniTaskVoid RunAsync(CancellationToken ct)
+        #region Flow
+        private IEnumerator Run(TrailBlock latestBlock)
         {
-            // 1) Ship → transparent
-            SetShipTransparent(true);
+            Debug.Log("[CloakSeedWallAction] Run() started");
 
-            // 2) Snapshot baseline counts for NEW block detection
-            _startCountTrail = _spawner.Trail.TrailList.Count;
-            var trail2 = GetTrail2();
-            _startCountTrail2 = trail2?.TrailList.Count ?? 0;
-
-            // 3) Plant seed on the latest existing block (if any)
-            PlantSeedOnLatestBlock();
-
-            // 4) Watch for NEW blocks during cooldown and suppress them
-            var watchTask = WatchBlocksDuringCooldown(ct);
-
-            // 5) Wait cooldown
-            try
+            // Seed wall: attach assembler and start bonding immediately
+            _seedBlock = latestBlock ?? GetLatestBlock();
+            if (_seedBlock != null)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(Mathf.Max(0.05f, cooldownSeconds)), cancellationToken: ct);
-            }
-            catch (OperationCanceledException) { /* noop */ }
-
-            // 6) Restore everything
-            SetShipTransparent(false);
-            RestoreAllBlocks();
-            FinalizeSeed(startBonding: true);
-
-            _running = false;
-        }
-        #endregion
-
-        #region Ship Transparency
-        private void SetShipTransparent(bool transparent)
-        {
-            if (skinnedMeshRenderer == null) return;
-            foreach (var m in skinnedMeshRenderer.materials)
-            {
-                m.color = new Color(m.color.r, m.color.g, m.color.b, transparent ? 1f : 0f);
-            }
-                
-        }
-        #endregion
-
-        #region Seed Wall
-        private void PlantSeedOnLatestBlock()
-        {
-            var latest = GetLatestBlock();
-            if (latest == null) return;
-
-            var assemblerType = assemblerTypeSource.GetType();
-            _seedAssembler = latest.GetComponent(assemblerType) as Assembler;
-            if (_seedAssembler == null)
-                _seedAssembler = latest.gameObject.AddComponent(assemblerType) as Assembler;
-
-            _seedAssembler.Depth = assemblerDepth;
-
-            // Staging look
-            _seedRenderer = latest.GetComponent<Renderer>();
-            if (_seedRenderer == null) _seedRenderer = latest.GetComponentInChildren<Renderer>();
-            if (_seedRenderer != null && seedStagingMaterial != null)
-            {
-                _seedOriginalMaterialInstance = _seedRenderer.material; // instance
-                _seedRenderer.material = new Material(seedStagingMaterial);
-            }
-        }
-
-        private void FinalizeSeed(bool startBonding)
-        {
-            if (_seedRenderer != null && seedFinalMaterial != null)
-            {
-                _seedRenderer.material = new Material(seedFinalMaterial);
-            }
-            // (Optional) else: keep whatever it had
-
-            if (startBonding)
-                _seedAssembler?.SeedBonding();
-        }
-        #endregion
-
-        #region New Block Watching & Suppression
-        private async UniTaskVoid WatchBlocksDuringCooldown(CancellationToken ct)
-        {
-            var trail2 = GetTrail2();
-
-            while (!ct.IsCancellationRequested)
-            {
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-
-                // trail A (primary)
-                var listA = _spawner.Trail.TrailList;
-                for (int i = _startCountTrail; i < listA.Count; i++)
-                    SuppressBlock(listA[i]);
-                _startCountTrail = listA.Count;
-
-                // trail B (gap mode)
-                if (trail2 != null)
+                var assemblerType = assemblerTypeSource.GetType();
+                _seedAssembler = _seedBlock.GetComponent(assemblerType) as Assembler;
+                if (_seedAssembler == null)
                 {
-                    var listB = trail2.TrailList;
-                    for (int i = _startCountTrail2; i < listB.Count; i++)
-                        SuppressBlock(listB[i]);
-                    _startCountTrail2 = listB.Count;
+                    _seedAssembler = _seedBlock.gameObject.AddComponent(assemblerType) as Assembler;
+                    Debug.Log("[CloakSeedWallAction] Added assembler of type " + assemblerType.Name);
                 }
+                _seedAssembler.Depth = assemblerDepth;
+                Debug.Log("[CloakSeedWallAction] Calling SeedBonding() immediately...");
+                _seedAssembler.SeedBonding();
             }
-        }
+            else
+            {
+                Debug.LogWarning("[CloakSeedWallAction] No seed block found at Run()");
+            }
 
-        private void SuppressBlock(TrailBlock block)
+            // Hide ship (optional)
+            if (hideShipDuringCooldown)
+            {
+                Debug.Log("[CloakSeedWallAction] Hiding ship visuals");
+                SetShipVisible(false);
+            }
+
+            // Mark cooldown window
+            float wait = Mathf.Max(0.01f, cooldownSeconds);
+            _cooldownEndTime = Time.time + wait;
+            Debug.Log($"[CloakSeedWallAction] Cooldown window opened for {wait:0.00}s");
+
+            // Simply wait the duration; OnBlockSpawned will extend each new block's waitTime
+            float t = 0f;
+            while (t < wait)
+            {
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            // Cooldown ends
+            Debug.Log("[CloakSeedWallAction] Cooldown ended");
+            if (hideShipDuringCooldown) SetShipVisible(true);
+
+            _runRoutine = null;
+            Debug.Log("[CloakSeedWallAction] Run() finished");
+        }
+        #endregion
+
+        #region Spawner hook
+        private void HandleBlockSpawned(TrailBlock block)
         {
+            // Called immediately when TrailSpawner instantiates/configures a TrailBlock
             if (block == null) return;
 
-            // Freeze growth via reflection into BlockScaleAnimator.GrowthRate
-            if (freezeGrowthDuringCooldown)
+            // If we are inside the cooldown window, ensure this block won't show/grow until it ends
+            float remaining = _cooldownEndTime - Time.time;
+            if (remaining > 0f)
             {
-                var scale = block.GetComponent(_blockScaleAnimatorType);
-                if (scale != null && _growthRateProp != null)
+                // Bump block.waitTime so its Start() coroutine yields long enough
+                float original = block.waitTime;
+                float target   = Mathf.Max(original, remaining);
+                if (!Mathf.Approximately(original, target))
                 {
-                    try
-                    {
-                        float current = (float)_growthRateProp.GetValue(scale);
-                        if (!_savedGrowth.ContainsKey(block))
-                            _savedGrowth[block] = current;
-
-                        // set to zero to stop growth
-                        _growthRateProp.SetValue(scale, 0f);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogWarning($"CloakSeedWallAction: Could not set GrowthRate via reflection. {e.Message}");
-                    }
+                    block.waitTime = target;
+                    Debug.Log($"[CloakSeedWallAction] Extended block.waitTime from {original:0.00} → {target:0.00} (remaining {remaining:0.00}s) on {block.name}");
                 }
-            }
+                else
+                {
+                    Debug.Log($"[CloakSeedWallAction] Block already has sufficient waitTime ({original:0.00}s) on {block.name}");
+                }
 
-            // Make transparent (optional)
-            if (makeBlocksTransparentDuringCooldown)
+                // Optional: make sure it stays invisible even if a renderer slips through early
+                // (Shouldn’t be necessary because TrailBlock enables renderer only after waitTime)
                 block.SetTransparency(true);
-
-            _affectedBlocks.Add(block);
-        }
-
-        private void RestoreAllBlocks()
-        {
-            foreach (var block in _affectedBlocks)
-            {
-                if (block == null) continue;
-
-                // restore transparency
-                if (makeBlocksTransparentDuringCooldown)
-                    block.SetTransparency(false);
-
-                // restore growth rate
-                if (freezeGrowthDuringCooldown)
-                {
-                    var scale = block.GetComponent(_blockScaleAnimatorType);
-                    if (scale != null && _growthRateProp != null)
-                    {
-                        try
-                        {
-                            if (_savedGrowth.TryGetValue(block, out float prev))
-                                _growthRateProp.SetValue(scale, Mathf.Max(prev, 0.0001f));
-                            else
-                                _growthRateProp.SetValue(scale, 0.01f); // fallback gentle growth
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogWarning($"CloakSeedWallAction: Could not restore GrowthRate. {e.Message}");
-                        }
-                    }
-
-                    // nudge size recompute
-                    block.ChangeSize();
-                }
             }
-
-            _affectedBlocks.Clear();
-            _savedGrowth.Clear();
         }
         #endregion
 
-        #region Utilities
-        private Trail GetTrail2()
-        {
-            return _trail2Field?.GetValue(_spawner) as Trail;
-        }
+        #region Helpers
+        private void SetShipVisible(bool visible)
+{
+    if (skinnedMeshRenderer == null)
+    {
+        Debug.Log("[CloakSeedWallAction] SMR is null; cannot toggle visibility");
+        return;
+    }
+
+    var mats = skinnedMeshRenderer.materials;
+    bool anyOpaque = false;
+    for (int i = 0; i < mats.Length; i++)
+    {
+        var m = mats[i];
+        if (m == null) continue;
+
+        // Shader Graph generated property for URP surface type:
+        // 0 = Opaque, 1 = Transparent (when exposed). If not present, fall back to RenderType tag.
+        bool isOpaque = true;
+        if (m.HasProperty("_Surface"))
+            isOpaque = Mathf.Approximately(m.GetFloat("_Surface"), 0f);
+        else
+            isOpaque = m.GetTag("RenderType", false, "Opaque") == "Opaque";
+
+        if (isOpaque) anyOpaque = true;
+    }
+
+    if (anyOpaque)
+    {
+        // Some materials are opaque → alpha fading won’t work → just toggle the renderer.
+        skinnedMeshRenderer.enabled = visible;
+        Debug.Log($"[CloakSeedWallAction] SMR.enabled = {visible} (one or more materials are Opaque)");
+        return;
+    }
+
+    // If ALL materials are transparent-capable, alpha fade them (your BlueBaseShipMaterial).
+    float alpha = visible ? 1f : 0f;
+    bool touched = false;
+    foreach (var m in mats)
+    {
+        if (m == null) continue;
+
+        if (m.HasProperty("_BaseColor"))
+        { var c = m.GetColor("_BaseColor"); c.a = alpha; m.SetColor("_BaseColor", c); touched = true; continue; }
+
+        if (m.HasProperty("_Color"))
+        { var c = m.GetColor("_Color"); c.a = alpha; m.SetColor("_Color", c); touched = true; continue; }
+
+        bool g = false;
+        if (m.HasProperty("Color1")) { var c1 = m.GetColor("Color1"); c1.a = alpha; m.SetColor("Color1", c1); g = true; }
+        if (m.HasProperty("Color2")) { var c2 = m.GetColor("Color2"); c2.a = alpha; m.SetColor("Color2", c2); g = true; }
+        if (g) { touched = true; continue; }
+
+        if (m.HasProperty("ColorMultiplier")) { m.SetFloat("ColorMultiplier", alpha); touched = true; continue; }
+    }
+
+    if (!touched)
+    {
+        // Safety fallback
+        skinnedMeshRenderer.enabled = visible;
+        Debug.Log($"[CloakSeedWallAction] Fallback SMR.enabled = {visible} (no fade properties found)");
+    }
+}
 
         private TrailBlock GetLatestBlock()
         {
-            // prefer primary trail’s latest
-            if (_spawner.Trail.TrailList.Count > 0)
-                return _spawner.Trail.TrailList[^1];
+            var listA = _spawner.Trail?.TrailList;
+            if (listA != null && listA.Count > 0) return listA[^1];
 
-            // else consider Trail2
-            var trail2 = GetTrail2();
-            if (trail2 != null && trail2.TrailList.Count > 0)
-                return trail2.TrailList[^1];
+            var trail2Field = typeof(TrailSpawner).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
+            var trail2 = trail2Field?.GetValue(_spawner) as Trail;
+            if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
             return null;
         }
