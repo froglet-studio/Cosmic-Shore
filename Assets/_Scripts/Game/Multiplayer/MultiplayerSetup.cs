@@ -11,7 +11,9 @@ using UnityEngine.SceneManagement;
 using CosmicShore.Utilities;
 using CosmicShore.Game;
 using CosmicShore.Game.Arcade;
+#if !LINUX_BUILD
 using Mono.Cecil;
+#endif
 using CosmicShore.Utility.ClassExtensions;
 
 

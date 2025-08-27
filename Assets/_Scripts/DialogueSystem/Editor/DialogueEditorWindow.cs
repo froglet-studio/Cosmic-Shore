@@ -1,3 +1,4 @@
+#if !LINUX_BUILD
 using CosmicShore.DialogueSystem.Models;
 using System;
 using System.Collections.Generic;
@@ -456,7 +457,7 @@ namespace CosmicShore.DialogueSystem.Editor
 
 
         // -------------------------------------------------------------------
-        // Right Panel: Always-visible preview of the set’s portraits and line text
+        // Right Panel: Always-visible preview of the setï¿½s portraits and line text
         // -------------------------------------------------------------------
         private void DrawRightPanel()
         {
@@ -565,7 +566,7 @@ namespace CosmicShore.DialogueSystem.Editor
                 // 3) Get that line
                 DialogueLine line = selectedSet.lines[idx];
 
-                // 4) Heading: use the line’s speakerName (or setId if you prefer)
+                // 4) Heading: use the lineï¿½s speakerName (or setId if you prefer)
                 EditorGUILayout.LabelField(line.speakerName + ":", titleStyle);
 
                 GUILayout.Space(8);
@@ -659,3 +660,4 @@ namespace CosmicShore.DialogueSystem.Editor
 
     }
 }
+#endif
