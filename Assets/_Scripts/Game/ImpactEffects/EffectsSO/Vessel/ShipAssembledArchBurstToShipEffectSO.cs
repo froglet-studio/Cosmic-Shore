@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipAssembledArchBurstToShipEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAssembledArchBurstToShipEffectSO")]
-    public class ShipAssembledArchBurstToShipEffectSO : ImpactEffectSO<ShipImpactor, ShipImpactor>
+    public class ShipAssembledArchBurstToShipEffectSO : ShipShipEffectSO
     {
         #region Config Values
 
@@ -48,7 +48,7 @@ namespace CosmicShore.Game
 
         #endregion
 
-        protected override void ExecuteTyped(ShipImpactor impactor, ShipImpactor impactee)
+        public override void Execute(ShipImpactor impactor, ShipImpactor impactee)
         {
             if (rodPrefab == null) return;
             var targetShip = impactee.Ship;

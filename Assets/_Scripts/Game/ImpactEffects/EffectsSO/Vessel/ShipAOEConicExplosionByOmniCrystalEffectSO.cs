@@ -9,11 +9,11 @@ namespace CosmicShore
     /// Orientation faces from the crystal toward the impacting ship.
     /// </summary>
     [CreateAssetMenu(fileName = "ShipAOEConicExplosionByOmniCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAOEConicExplosionByOmniCrystalEffectSO")] 
-    public class ShipAOEConicExplosionByOmniCrystalEffectSO : ImpactEffectSO<ShipImpactor, OmniCrystalImpactor>
+    public class ShipAOEConicExplosionByOmniCrystalEffectSO : ShipOmniCrystalEffectSO
     {
         [SerializeField] private GameObject _aoeConicExplosion;
 
-        protected override void ExecuteTyped(ShipImpactor shipImpactor, OmniCrystalImpactor impactee)
+        public override void Execute(ShipImpactor shipImpactor, OmniCrystalImpactor impactee)
         {
             var crystal = impactee.Crystal;
             var targetTransform = crystal.transform;

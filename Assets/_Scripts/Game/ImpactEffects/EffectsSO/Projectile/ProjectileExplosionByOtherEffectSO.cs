@@ -4,13 +4,13 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ProjectileExplosionByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Projectile/ProjectileExplosionByOtherEffectSO")]
-    public class ProjectileExplosionByOtherEffectSO : ImpactEffectSO<ProjectileImpactor, ImpactorBase>
+    public class ProjectileExplosionByOtherEffectSO : ProjectileOtherEffectSO
     {
         [SerializeField] AOEExplosion[] aoePrefabs;
         [SerializeField] float minExplosionScale;
         [SerializeField] float maxExplosionScale;
         
-        protected override void ExecuteTyped(ProjectileImpactor impactor, ImpactorBase impactee)
+        public override void Execute(ProjectileImpactor impactor, ImpactorBase impactee)
         {
             var projectile =  impactor.Projectile;
             var shipStatus =  projectile.ShipStatus;

@@ -6,7 +6,7 @@ namespace CosmicShore.Game
 {
     // TODO - Separate Damage Effect and Explode Effect by asking Garrett
     [CreateAssetMenu(fileName = "ShipExplodePrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipExplodePrismEffectSO")]
-    public class ShipExplodePrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
+    public class ShipExplodePrismEffectSO : ShipPrismEffectSO
     {
         [SerializeField]
         float _inertia;
@@ -23,7 +23,7 @@ namespace CosmicShore.Game
         [SerializeField]
         float _charge;
         
-        protected override void ExecuteTyped(ShipImpactor shipImpactor, PrismImpactor prismImpactee)
+        public override void Execute(ShipImpactor shipImpactor, PrismImpactor prismImpactee)
         {
             var shipStatus = shipImpactor.Ship.ShipStatus;
             Transform shipTransform = shipStatus.ShipTransform;

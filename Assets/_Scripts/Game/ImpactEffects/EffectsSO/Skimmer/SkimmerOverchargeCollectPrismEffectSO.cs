@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "SkimmerOverchargeCollectPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer/SkimmerOverchargeCollectPrismEffectSO")] 
-    public class SkimmerOverchargeCollectPrismEffectSO : ImpactEffectSO<SkimmerImpactor, PrismImpactor>
+    public class SkimmerOverchargeCollectPrismEffectSO : SkimmerPrismEffectSO
     {
         [Header("Overcharge Settings")]
         [SerializeField] private int   maxBlockHits     = 30;
@@ -20,7 +20,7 @@ namespace CosmicShore.Game
         private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers = new();
         IShipStatus _status;
         
-        protected override void ExecuteTyped(SkimmerImpactor impactor, PrismImpactor prismImpactee)
+        public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             _status = impactor.Skimmer.ShipStatus;
             if (prismImpactee.Prism.Team == Teams.Jade) return;

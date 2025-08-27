@@ -1,4 +1,4 @@
-namespace CosmicShore.Game
+/*namespace CosmicShore.Game
 {
     /// <summary>
     /// This interface must be implemented by all impact effects.
@@ -9,4 +9,4 @@ namespace CosmicShore.Game
     {
         void Execute(IImpactor impactor, IImpactor impactee);
     }
-}
+}*/

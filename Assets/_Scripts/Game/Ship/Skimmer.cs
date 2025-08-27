@@ -9,7 +9,7 @@ namespace CosmicShore.Game
 {
     public class Skimmer : ElementalShipComponent
     {
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        //[SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _blockStayEffects;
         [SerializeField] float vaccumAmount = 80f;
         [SerializeField] bool vacuumCrystal = true;

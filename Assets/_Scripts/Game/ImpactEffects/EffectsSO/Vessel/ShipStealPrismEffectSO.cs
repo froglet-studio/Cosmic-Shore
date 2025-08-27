@@ -4,9 +4,13 @@ namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipStealPrismEffect", 
         menuName = "ScriptableObjects/Impact Effects/Vessel/ShipStealPrismEffectSO")]
-    public class ShipStealPrismEffectSO : StealPrismEffectBaseSO<ShipImpactor>
+    public class ShipStealPrismEffectSO : ShipPrismEffectSO
     {
-        protected override IShipStatus GetShipStatus(ShipImpactor impactor)
-            => impactor.Ship?.ShipStatus;
+        
+        public override void Execute(ShipImpactor impactor, PrismImpactor prismImpactee)
+        {
+            var status = impactor.Ship.ShipStatus;
+            Steal(prismImpactee, status);
+        }
     }
 }

@@ -7,50 +7,61 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(TrailBlock))]
     public class PrismImpactor : ImpactorBase
     {
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] prismShipEffectsSO;
+        // [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        // ScriptableObject[] prismShipEffectsSO;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] prismProjectileEffectsSO;
+        PrismShipEffectsSO[] prismShipEffects;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] prismSkimmerEffectsSO;
+        PrismProjectileEffectsSO[] prismProjectileEffects;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] prismExplosionEffectsSO;
+        PrismSkimmerEffectsSO[] prismSkimmerEffects;
         
-        IImpactEffect[] prismShipEffects;
-        IImpactEffect[] prismProjectileEffects;
-        IImpactEffect[] prismSkimmerEffects;
-        IImpactEffect[] prismExplosionEffects;
+        PrismExplosionEffectsSO[] prismExplosionEffects;
+        
+       
         
         public TrailBlock Prism;
 
         void Awake()
         {
             Prism ??= GetComponent<TrailBlock>();
-            
-            prismShipEffects = Array.ConvertAll(prismShipEffectsSO, so => so as IImpactEffect);
-            prismProjectileEffects = Array.ConvertAll(prismProjectileEffectsSO, so => so as IImpactEffect);
-            prismSkimmerEffects = Array.ConvertAll(prismSkimmerEffectsSO, so => so as IImpactEffect);
-            prismExplosionEffects = Array.ConvertAll(prismExplosionEffectsSO, so => so as IImpactEffect);
         }
         
         protected override void AcceptImpactee(IImpactor impactee)
         {    
             switch (impactee)
             {
-                case ShipImpactor shipImpactor:
-                    ExecuteEffect(impactee, prismShipEffects);
+                case ShipImpactor shipImpactee:
+                    // ExecuteEffect(impactee, prismShipEffects);
+                    if(!DoesEffectExist(prismShipEffects)) return;
+                    foreach (var effect in prismShipEffects)
+                    {
+                        effect.Execute(this, shipImpactee);
+                    }
                     break;
-                case ProjectileImpactor projectileImpactor:
-                    ExecuteEffect(impactee, prismProjectileEffects);
+                case ProjectileImpactor projectileImpactee:
+                    // ExecuteEffect(impactee, prismProjectileEffects);
+                    if(!DoesEffectExist(prismProjectileEffects)) return;
+                    foreach (var effect in prismProjectileEffects)
+                    {
+                        effect.Execute(this, projectileImpactee);
+                    }
                     break;
-                case SkimmerImpactor skimmerImpactor:
-                    ExecuteEffect(impactee, prismSkimmerEffects);
+                case SkimmerImpactor skimmerImpactee:
+                    // ExecuteEffect(impactee, prismSkimmerEffects);
+                    if(!DoesEffectExist(prismSkimmerEffects)) return;
+                    foreach (var effect in prismSkimmerEffects)
+                    {
+                        effect.Execute(this, skimmerImpactee);
+                    }
                     break;
-                case ExplosionImpactor explosionImpactor:
-                    ExecuteEffect(impactee, prismExplosionEffects);
+                case ExplosionImpactor explosionImpactee:
+                    // ExecuteEffect(impactee, prismExplosionEffects);
+                    if(!DoesEffectExist(prismExplosionEffects)) return;
+                    foreach (var effect in prismExplosionEffects)
+                    {
+                        effect.Execute(this, explosionImpactee);
+                    }
                     break;
             }
         }

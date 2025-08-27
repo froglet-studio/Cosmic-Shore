@@ -7,33 +7,22 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(Projectile))]
     public class ProjectileImpactor : ImpactorBase
     {
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] projectileShipEffectsSO;
+        // [SerializeField, RequireInterface(typeof(IImpactEffect))]
+        // ScriptableObject[] projectileShipEffectsSO;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] projectilePrismEffectsSO;
+        ProjectileShipEffectSO[] projectileShipEffects;
+        ProjectilePrismEffectSO[]  projectilePrismEffects; 
+        ProjectileMineEffectSO[] projectileMineEffects;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] projectileFakeCrystalEffectsSO;
-        
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] projectileEndEffectsSO;
+        ProjectileEndEffectSO[] projectileEndEffects;
 
         public Projectile Projectile;
-
-        IImpactEffect[] projectileShipEffects;
-        IImpactEffect[] projectilePrismEffects;
-        IImpactEffect[] projectileFakeCrystalEffects;
-        IImpactEffect[] projectileEndEffects;
+        
 
         private void Awake()
         { 
             Projectile ??= GetComponent<Projectile>();
             
-            projectileShipEffects = Array.ConvertAll(projectileShipEffectsSO, so => so as IImpactEffect);
-            projectilePrismEffects = Array.ConvertAll(projectilePrismEffectsSO,  so => so as IImpactEffect);
-            projectileFakeCrystalEffects = Array.ConvertAll(projectileFakeCrystalEffectsSO, so => so as IImpactEffect);
-            projectileEndEffects = Array.ConvertAll(projectileEndEffectsSO, so  => so as IImpactEffect);
         }
 
         public void ExecuteEndEffects()
@@ -49,16 +38,26 @@ namespace CosmicShore.Game
         {    
             switch (impactee)
             {
-                case ShipImpactor shipImpactor:
-                    if (Projectile.DisallowImpactOnVessel(shipImpactor.Ship.ShipStatus.Team))
+                case ShipImpactor shipImpactee:
+                    if (Projectile.DisallowImpactOnVessel(shipImpactee.Ship.ShipStatus.Team))
                         break;
-                    ExecuteEffect(impactee, projectileShipEffects);
+                    // ExecuteEffect(impactee, projectileShipEffects);
+                    if(!DoesEffectExist(projectileShipEffects)) return;
+                    foreach (var effect in projectileShipEffects)
+                    {
+                        effect.Execute(this, shipImpactee);
+                    }
                     break;
                 
-                case PrismImpactor prismImpactor:
-                    if (Projectile.DisallowImpactOnPrism(prismImpactor.Prism.Team))
+                case PrismImpactor prismImpactee:
+                    if (Projectile.DisallowImpactOnPrism(prismImpactee.Prism.Team))
                         break;
-                    ExecuteEffect(impactee, projectilePrismEffects);
+                    // ExecuteEffect(impactee, projectilePrismEffects);
+                    if(!DoesEffectExist(projectilePrismEffects)) return;
+                    foreach (var effect in projectilePrismEffects)
+                    {
+                        effect.Execute(this, prismImpactee);
+                    }
                     break;
             }
         }

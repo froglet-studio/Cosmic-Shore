@@ -7,11 +7,9 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(AOEExplosion))]
     public class ExplosionImpactor : ImpactorBase
     {
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] explosionShipEffectsSO;
+        ExplosionShipEffectSO[] explosionShipEffects;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] explosionPrismEffectsSO;
+        ExplosionPrismEffectSO[] explosionPrismEffects;
         
         [SerializeField] bool affectSelf = false;
         [SerializeField] bool destructive = true;
@@ -20,10 +18,6 @@ namespace CosmicShore.Game
 
         AOEExplosion explosion;
         public AOEExplosion Explosion => explosion ??= GetComponent<AOEExplosion>();
-        
-        IImpactEffect[] explosionShipEffects;
-        IImpactEffect[] explosionPrismEffects;
-        
         
         protected override void AcceptImpactee(IImpactor impactee)
         {    
@@ -34,12 +28,22 @@ namespace CosmicShore.Game
                 case ShipImpactor shipImpactee:
                     if (shipImpactee.Ship.ShipStatus.Team == Explosion.Team && !affectSelf)
                         break;
-                    ExecuteEffect(shipImpactee, explosionShipEffects);
+                    // ExecuteEffect(shipImpactee, explosionShipEffects);
+                    if(!DoesEffectExist(explosionShipEffects)) return;
+                    foreach (var effect in explosionShipEffects)
+                    {
+                        effect.Execute(this, shipImpactee);
+                    }
                     break;
                 
                 case PrismImpactor prismImpactee:
                     ExecuteCommonPrismCommands(prismImpactee.Prism, impactVector);
-                    ExecuteEffect(prismImpactee, explosionPrismEffects);
+                    // ExecuteEffect(prismImpactee, explosionPrismEffects);
+                    if(!DoesEffectExist(explosionPrismEffects)) return;
+                    foreach (var effect in explosionPrismEffects)
+                    {
+                        effect.Execute(this, prismImpactee);
+                    }
                     break;
             }
         }

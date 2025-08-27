@@ -4,9 +4,15 @@ namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ProjectileDamagePrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Projectile/ProjectileDamagePrismEffectSO")]
-    public class ProjectileDamagePrismEffectSO : DamagePrismEffectBase<ProjectileImpactor>
+    public class ProjectileDamagePrismEffectSO : ProjectilePrismEffectSO
     {
-        protected override IShipStatus GetAttackerStatus(ProjectileImpactor impactor)
-            => impactor.Projectile?.ShipStatus;
+        [SerializeField] float inertia = 70f;   // global scalar you can tune per effect
+        [SerializeField] private Vector3 overrideCourse;
+        [SerializeField] private float overrideSpeed;
+        public override void Execute(ProjectileImpactor impactor, PrismImpactor prismImpactee)
+        {
+            var status = impactor.Projectile.ShipStatus;
+            Damage(status, prismImpactee, inertia, overrideCourse, overrideSpeed);
+        }
     }
 }

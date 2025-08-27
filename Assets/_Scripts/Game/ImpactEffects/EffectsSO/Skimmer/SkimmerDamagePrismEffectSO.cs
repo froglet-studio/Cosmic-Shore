@@ -4,9 +4,17 @@ namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "SkimmerDamagePrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Skimmer/SkimmerDamagePrismEffectSO")]
-    public class SkimmerDamagePrismEffectSO : DamagePrismEffectBase<SkimmerImpactor>
+    public class SkimmerDamagePrismEffectSO : SkimmerPrismEffectSO
     {
-        protected override IShipStatus GetAttackerStatus(SkimmerImpactor impactor)
-            => impactor.Skimmer?.ShipStatus;
+        [SerializeField] float inertia = 70f;   // global scalar you can tune per effect
+        [SerializeField] private Vector3 overrideCourse;
+        [SerializeField] private float overrideSpeed;
+    
+        public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
+        {
+            var status = impactor.Skimmer.ShipStatus;
+            Damage(status, prismImpactee, inertia, overrideCourse, overrideSpeed);
+        }
     }
 }
+

@@ -5,13 +5,13 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipFXPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipFXPrismEffectSO")]
-    public class ShipFXPrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
+    public class ShipFXPrismEffectSO : ShipPrismEffectSO
     {
         [SerializeField] private float particleDurationAtSpeedOne = 300f;
 
         private IShipStatus _shipStatus;
         
-        protected override void ExecuteTyped(ShipImpactor impactor, PrismImpactor prismImpactee)
+        public override void Execute(ShipImpactor impactor, PrismImpactor prismImpactee)
         {
             var shipStatus = impactor.Ship.ShipStatus;
             var trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;

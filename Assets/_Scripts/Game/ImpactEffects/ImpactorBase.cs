@@ -9,16 +9,18 @@ namespace CosmicShore.Game
         
         protected abstract void AcceptImpactee(IImpactor impactee);
 
-        protected void ExecuteEffect(IImpactor impactee, IImpactEffect[] effects)
+        protected void ExecuteEffect(IImpactor impactee, ImpactEffectSO[] effects)
         {
             if (effects == null || effects.Length == 0)
                 return;
             
-            foreach (var effect in effects)
+            /*foreach (var effect in effects)
             {
                 effect.Execute(this, impactee);
-            }
+            }*/
         }
+
+        protected bool DoesEffectExist(ImpactEffectSO[] effects) => effects is { Length: > 0 };
         
         void OnTriggerEnter(Collider other)
         {

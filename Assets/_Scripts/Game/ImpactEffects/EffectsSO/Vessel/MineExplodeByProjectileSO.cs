@@ -3,9 +3,9 @@
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "MineExplodeByProjectile", menuName = "ScriptableObjects/Impact Effects/Mine/MineExplodeByProjectileSO")]
-    public class MineExplodeByProjectileSO : ImpactEffectSO<MineImpactor, ProjectileImpactor>
+    public class MineExplodeByProjectileSO : MineProjectileEffectSO
     {
-        protected override void ExecuteTyped(MineImpactor mineImpactor, ProjectileImpactor projectileImpactee)
+        public override void Execute(MineImpactor mineImpactor, ProjectileImpactor projectileImpactee)
         {
             var mine = mineImpactor.Mine; 
             if (mine == null) return;

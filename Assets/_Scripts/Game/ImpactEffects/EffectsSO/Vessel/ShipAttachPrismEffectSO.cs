@@ -4,9 +4,9 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipAttachPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAttachPrismEffectSO")]
-    public class ShipAttachPrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
+    public class ShipAttachPrismEffectSO : ShipPrismEffectSO
     {
-        protected override void ExecuteTyped(ShipImpactor shipImpactor, PrismImpactor prismImpactee)
+        public override void Execute(ShipImpactor shipImpactor, PrismImpactor prismImpactee)
         {
             IShipStatus shipStatus = shipImpactor.Ship.ShipStatus;
             TrailBlockProperties trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;

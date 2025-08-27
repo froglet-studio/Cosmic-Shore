@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipExplosionByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipExplosionByOtherEffectSO")]
-    public class ShipExplosionByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
+    public class ShipExplosionByOtherEffectSO : ShipOtherEffectSO
     {
         [SerializeField]
         AOEExplosion _prefabGO;
@@ -21,7 +21,7 @@ namespace CosmicShore.Game
         [SerializeField]
         Material _aoeExplosionMaterial;
         
-        protected override void ExecuteTyped(ShipImpactor shipImpactor, ImpactorBase impactee)
+        public override void Execute(ShipImpactor shipImpactor, ImpactorBase impactee)
         {
             IShipStatus shipStatus = shipImpactor.Ship.ShipStatus;
             Transform shipTransform = shipStatus.ShipTransform;

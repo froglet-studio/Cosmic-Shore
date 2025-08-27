@@ -3,12 +3,12 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipSpinByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipSpinByOtherEffectSO")]
-    public class ShipSpinByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
+    public class ShipSpinByOtherEffectSO : ShipOtherEffectSO
     {
         [SerializeField]
         float spinSpeed;
         
-        protected override void ExecuteTyped(ShipImpactor impactor, ImpactorBase impactee)
+        public override void Execute(ShipImpactor impactor, ImpactorBase impactee)
         {
             Vector3 impactVector = (impactee.Transform.position - impactor.Transform.position).normalized;
             
@@ -21,3 +21,4 @@ namespace CosmicShore.Game
         }
     }
 }
+

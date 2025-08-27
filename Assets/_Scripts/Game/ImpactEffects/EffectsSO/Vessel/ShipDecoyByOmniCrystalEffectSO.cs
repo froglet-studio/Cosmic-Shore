@@ -5,14 +5,14 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipDecoyByOmniCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipDecoyByOmniCrystalEffectSO")]
-    public class ShipDecoyByOmniCrystalEffectSO : ImpactEffectSO<ShipImpactor, OmniCrystalImpactor>
+    public class ShipDecoyByOmniCrystalEffectSO : ShipCrystalEffectSO
     {
         [SerializeField] private float debounceSeconds = 0.15f;
         [SerializeField] private GameObject minePrefab;
 
         private static readonly Dictionary<Crystal, float> NextAllowedAt = new();
 
-        protected override void ExecuteTyped(ShipImpactor shipImpactor, OmniCrystalImpactor impactee)
+        public override void Execute(ShipImpactor shipImpactor, CrystalImpactor impactee)
         {
             var crystal = impactee.Crystal;
             if (!crystal) return;

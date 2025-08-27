@@ -8,24 +8,13 @@ namespace CosmicShore.Game
     {
         public Mine Mine;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] mineShipEffectsSO;
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] explosionEffectsSO;
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] mineProjectileEffectsSO;
-        
-        IImpactEffect[] mineShipEffects;
-        IImpactEffect[] mineProjectileEffects;
-        IImpactEffect[] explosionEffects;
+        MineShipEffectSO[] mineShipEffects;
+        MineExplosionEffectSO[] mineExplosionEffects;
+        MineProjectileEffectSO[] mineProjectileEffects;
         
         protected virtual void Awake()
         {
             Mine ??= GetComponent<Mine>();
-            mineShipEffects = Array.ConvertAll(mineShipEffectsSO, so => so as IImpactEffect);
-            mineProjectileEffects = Array.ConvertAll(mineProjectileEffectsSO, so => so as IImpactEffect);
-            explosionEffects = Array.ConvertAll(explosionEffectsSO, so => so as IImpactEffect);
-            
         }
         
         private void Reset()
@@ -37,14 +26,29 @@ namespace CosmicShore.Game
         {
             switch (impactee)
             {
-                case ShipImpactor shipImpactor:
-                    ExecuteEffect(impactee, mineShipEffects);
+                case ShipImpactor shipImpactee:
+                    // ExecuteEffect(impactee, mineShipEffects);
+                    if(!DoesEffectExist(mineShipEffects)) return;
+                    foreach (var effect in mineShipEffects)
+                    {
+                        effect.Execute(this, shipImpactee);
+                    }
                     break;
-                case ProjectileImpactor projectileImpactor:
-                    ExecuteEffect(impactee, mineProjectileEffects);
+                case ProjectileImpactor projectileImpactee:
+                    // ExecuteEffect(impactee, mineProjectileEffects);
+                    if(!DoesEffectExist(mineProjectileEffects)) return;
+                    foreach (var effect in mineProjectileEffects)
+                    {
+                        effect.Execute(this, projectileImpactee);
+                    }
                     break;
-                case ExplosionImpactor explosionImpactor:
-                    ExecuteEffect(impactee, explosionEffects);
+                case ExplosionImpactor explosionImpactee:
+                    // ExecuteEffect(impactee, mineExplosionEffects);
+                    if(!DoesEffectExist(mineExplosionEffects)) return;
+                    foreach (var effect in mineExplosionEffects)
+                    {
+                        effect.Execute(this, explosionImpactee);
+                    }
                     break;
             }
         }

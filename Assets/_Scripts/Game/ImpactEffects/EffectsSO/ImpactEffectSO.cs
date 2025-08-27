@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     /// Works with base/derived/interface types for both impactor & impactee.
     /// Each impact effect assets can be added to only the monobehaviour component of TImpactor.
     /// </summary>
-    public abstract class ImpactEffectSO<TImpactor, TImpactee> : ScriptableObject, IImpactEffect
+    /*public abstract class ImpactEffectSO<TImpactor, TImpactee> : ScriptableObject, IImpactEffect
         where TImpactor : class, IImpactor
         where TImpactee : class, IImpactor
     {
@@ -49,5 +49,10 @@ namespace CosmicShore.Game
         }
 
         protected abstract void ExecuteTyped(TImpactor impactor, TImpactee impactee);
+
+    }*/
+
+    public abstract class ImpactEffectSO : ScriptableObject
+    {
     }
 }

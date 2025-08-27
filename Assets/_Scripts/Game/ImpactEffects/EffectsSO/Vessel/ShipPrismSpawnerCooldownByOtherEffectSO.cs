@@ -3,12 +3,12 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipPrismSpawnerCooldownByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipPrismSpawnerCooldownByOtherEffectSO")]
-    public class ShipPrismSpawnerCooldownByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
+    public class ShipPrismSpawnerCooldownByOtherEffectSO : ShipOtherEffectSO
     {
         [SerializeField]
         float _coolDownDuration = 10f;
 
-        protected override void ExecuteTyped(ShipImpactor impactor, ImpactorBase impactee)
+        public override void Execute(ShipImpactor impactor, ImpactorBase impactee)
         {
             var shipStatus = impactor.Ship.ShipStatus;
             shipStatus.TrailSpawner.PauseTrailSpawner();

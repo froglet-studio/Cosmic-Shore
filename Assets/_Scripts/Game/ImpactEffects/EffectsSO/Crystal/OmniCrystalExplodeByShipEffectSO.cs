@@ -4,9 +4,9 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "OmniCrystalExplodeByShipEffect", menuName = "ScriptableObjects/Impact Effects/Crystal/OmniCrystalExplodeByShipEffectSO")]
-    public class OmniCrystalExplodeByShipEffectSO : ImpactEffectSO<OmniCrystalImpactor, ShipImpactor>
+    public class OmniCrystalExplodeByShipEffectSO : OmniCrystalShipEffectSO
     {
-        protected override void ExecuteTyped(OmniCrystalImpactor crystalImpactor, ShipImpactor shipImpactee)
+        public override void Execute(OmniCrystalImpactor crystalImpactor, ShipImpactor shipImpactee)
         {
             var shipStatus = shipImpactee.Ship.ShipStatus;
             var crystal = crystalImpactor.Crystal;

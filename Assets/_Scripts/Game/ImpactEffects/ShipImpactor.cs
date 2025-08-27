@@ -6,47 +6,48 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IShip))]
     public class ShipImpactor : ImpactorBase
     {
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] shipPrismEffectsSO;
+        ShipPrismEffectSO[] shipPrismEffects;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] shipOmniCrystalEffectsSO;
+        ShipCrystalEffectSO[] shipOmniCrystalEffects;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] shipElementalCrystalEffectsSO;
+        ShipCrystalEffectSO[] shipElementalCrystalEffects;
         
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] shipFakeCrystalEffectsSO;
+        ShipCrystalEffectSO[] shipFakeCrystalEffects;
         
-        IImpactEffect[] shipPrismEffects;
-        IImpactEffect[] shipOmniCrystalEffects;
-        IImpactEffect[] shipElementalCrystalEffects;
-        IImpactEffect[] shipFakeCrystalEffects;
-        
-        public IShip Ship;
+        public IShip Ship { get; private set; }
         
         private void Awake()
         {
             Ship ??= GetComponent<IShip>();
-            
-            shipPrismEffects = Array.ConvertAll(shipPrismEffectsSO, so => (IImpactEffect)so);
-            shipOmniCrystalEffects = Array.ConvertAll(shipOmniCrystalEffectsSO, so => (IImpactEffect)so);
-            shipElementalCrystalEffects = Array.ConvertAll(shipElementalCrystalEffectsSO, so => (IImpactEffect)so);
-            shipFakeCrystalEffects = Array.ConvertAll(shipFakeCrystalEffectsSO, so => (IImpactEffect)so);
         }
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
             switch (impactee)
             {
-                case PrismImpactor prismImpactor:
-                    ExecuteEffect(impactee, shipPrismEffects);
+                case PrismImpactor prismImpactee:
+                   // ExecuteEffect(impactee, shipPrismEffects);
+                   if(!DoesEffectExist(shipPrismEffects)) return;
+                   foreach (var effect in shipPrismEffects)
+                   {
+                       effect.Execute(this, prismImpactee);
+                   }
+                   break;
+                case OmniCrystalImpactor omniCrystalImpactee:
+                    //ExecuteEffect(impactee, shipOmniCrystalEffects);
+                    if(!DoesEffectExist(shipOmniCrystalEffects)) return;
+                    foreach (var effect in shipOmniCrystalEffects)
+                    {
+                        effect.Execute(this, omniCrystalImpactee);
+                    }
                     break;
-                case OmniCrystalImpactor omniCrystalImpactor:
-                    ExecuteEffect(impactee, shipOmniCrystalEffects);
-                    break;
-                case ElementalCrystalImpactor elementalCrystalImpactor:
-                    ExecuteEffect(impactee, shipElementalCrystalEffects);
+                case ElementalCrystalImpactor elementalCrystalImpactee:
+                    //ExecuteEffect(impactee, shipElementalCrystalEffects);
+                    if(!DoesEffectExist(shipElementalCrystalEffects)) return;
+                    foreach (var effect in shipElementalCrystalEffects)
+                    {
+                        effect.Execute(this, elementalCrystalImpactee);
+                    }
                     break;
             }
         }

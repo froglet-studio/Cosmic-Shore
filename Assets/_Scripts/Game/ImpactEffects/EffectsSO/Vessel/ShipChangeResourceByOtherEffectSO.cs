@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipChangeResourceByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipChangeResourceByOtherEffectSO")]
-    public class ShipChangeResourceByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
+    public class ShipChangeResourceByOtherEffectSO : ShipOtherEffectSO
     {
         [SerializeField]
         int _resourceIndex;
@@ -11,7 +11,7 @@ namespace CosmicShore.Game
         [SerializeField]
         float _resourceAmount;
         
-        protected override void ExecuteTyped(ShipImpactor shipImpactor, ImpactorBase impactee)
+        public override void Execute(ShipImpactor shipImpactor, ImpactorBase impactee)
         {
             shipImpactor.Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(_resourceIndex, _resourceAmount);
         }

@@ -17,34 +17,6 @@ namespace CosmicShore.Game.Projectiles
 
         public float Charge { get; private set; }
         
-        #region Deprecated
-        // Has been moved to ProjectileImpactor
-        [SerializeField] 
-        protected List<TrailBlockImpactEffects> trailBlockImpactEffects;
-
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        protected List<ScriptableObject> _trailBlockImpactEffects;
-
-
-        [SerializeField] List<ShipImpactEffects> shipImpactEffects;
-
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        protected List<ScriptableObject> _shipImpactEffects;
-
-
-        [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
-
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        protected List<ScriptableObject> _crystalImpactEffects;
-
-
-        [SerializeField] 
-        protected List<TrailBlockImpactEffects> endEffects;
-
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        protected List<ScriptableObject> _endEffects;
-
-        #endregion
 
         public float ProjectileTime;
 

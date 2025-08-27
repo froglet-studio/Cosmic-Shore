@@ -5,15 +5,12 @@ namespace CosmicShore.Game
 {
     public class OmniCrystalImpactor : CrystalImpactor
     {
-        [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        ScriptableObject[] omniCrystalShipEffectsSO;
+        OmniCrystalExplodeByShipEffectSO[] omniCrystalShipEffects;
 
-        private IImpactEffect[] omniCrystalShipEffects;
 
         protected virtual void Awake()
         {
             base.Awake();
-            omniCrystalShipEffects = Array.ConvertAll(omniCrystalShipEffectsSO, so => so as IImpactEffect);
         }
 
         protected override void AcceptImpactee(IImpactor impactee)
@@ -22,7 +19,12 @@ namespace CosmicShore.Game
             {
                 case ShipImpactor shipImpactee:
                 {
-                    ExecuteEffect(shipImpactee, omniCrystalShipEffects);
+                    // ExecuteEffect(shipImpactee, omniCrystalShipEffects);
+                    if(!DoesEffectExist(omniCrystalShipEffects)) return;
+                    foreach (var effect in omniCrystalShipEffects)
+                    {
+                        effect.Execute(this, shipImpactee);
+                    }
                     break;
                 }
             }
