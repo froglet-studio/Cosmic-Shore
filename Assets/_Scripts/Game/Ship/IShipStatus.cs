@@ -80,6 +80,8 @@ namespace CosmicShore.Game
         // R_ShipImpactHandler ImpactHandler { get; }
         
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
+        bool IsOwner { get; }  
+        void SetIsOwnerForControllerOnly(bool value);
 
         void ResetValues();
     }

@@ -1,26 +1,47 @@
 using System;
-using CosmicShore.Core;
+using CosmicShore;
+using CosmicShore.Game;
 using UnityEngine;
 
 public class ToggleStationaryModeAction : ShipAction
 {
+    private enum Mode { Sparrow, Serpent }
+
+    [Header("Mode")]
+    [SerializeField] private Mode mode;
+
+    [Header("Seed (Serpent mode)")]
+    [SerializeField] private SeedAssemblerAction seedAssembler;
+
     public event Action<bool> OnStationaryToggled;
-    
+
+    public override void Initialize(IShip ship)
+    {
+        base.Initialize(ship);
+
+        if (seedAssembler != null)
+            seedAssembler.Initialize(Ship);
+    }
+
     public override void StartAction()
     {
         ShipStatus.IsStationary = !ShipStatus.IsStationary;
-        bool isOn = ShipStatus.IsStationary;
+        var isOn = ShipStatus.IsStationary;
 
         if (isOn)
             Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
         else
             Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
 
-        OnStationaryToggled?.Invoke(isOn);  
+        OnStationaryToggled?.Invoke(isOn);
+
+        if (mode != Mode.Serpent || !isOn || seedAssembler == null) return;
+        seedAssembler.StartSeed();
+        seedAssembler.StopSeed();
     }
 
     public override void StopAction()
     {
-        
+
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Reflection;
-using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
@@ -10,75 +9,79 @@ namespace CosmicShore
     public class CloakSeedWallAction : ShipAction
     {
         #region Config
-        [Header("Cooldown")]
-        [SerializeField] private float cooldownSeconds = 20f; // you said 20
 
-        [Header("Ship Visibility")]
-        [SerializeField] private bool hideShipDuringCooldown = true;
+        [Header("Cooldown")] [SerializeField] private float cooldownSeconds = 20f;
+
+        [Header("Ship Visibility")] [SerializeField]
+        private bool hideShipDuringCooldown = true;
+
         [SerializeField] private SkinnedMeshRenderer skinnedMeshRenderer;
 
-        [Header("Seed Wall")]
-        [SerializeField] private Assembler assemblerTypeSource;
+        [Header("Local vs Remote Visibility")]
+        [Tooltip("Alpha seen by the LOCAL player while cloaked.")]
+        [SerializeField, Range(0f, 1f)]
+        private float localCloakAlpha = 0.2f; // 20%
+
+        [Tooltip("If TRUE, non-local ships will be 0% while cloaked.")] [SerializeField]
+        private bool remoteFullInvisible = true;
+
+        [Header("Ship Fade")] [SerializeField] private float fadeOutSeconds = 0.25f;
+        [SerializeField] private float fadeInSeconds = 0.25f;
+
+        [Tooltip("If any sub-material is Opaque AND target alpha is 0, disable SMR during cloak.")] [SerializeField]
+        private bool hardToggleIfAnyOpaqueAtZero = true;
+
+        [Header("Seed Wall")] [SerializeField] private Assembler assemblerTypeSource;
         [SerializeField] private int assemblerDepth = 50;
 
-        [Header("Safety")]
-        [SerializeField] private bool requireExistingTrailBlock = true;
+        [Header("Ghost Ship")]
+        [Tooltip("Seconds to keep the ghost. Default ties to cooldown; 0 = same as cooldown.")]
+        [SerializeField]
+        private float ghostLifetime = 0f;
+
+        [Tooltip("Extra scale on the ghost, 1 = same size.")] [SerializeField]
+        private float ghostScaleMultiplier = 1f;
+
+        [Tooltip("Optional material override for ghost (else copies your SMR shared materials).")] [SerializeField]
+        private Material ghostMaterialOverride;
+
+        [Header("Safety")] [SerializeField] private bool requireExistingTrailBlock = true;
+
         #endregion
 
         #region State
         private TrailSpawner _spawner;
         private Coroutine _runRoutine;
 
-        private Assembler  _seedAssembler;
+        private Assembler _seedAssembler;
         private TrailBlock _seedBlock;
 
-        private float _cooldownEndTime;
+        private GameObject _ghostGo;
+        private bool _rendererWasHardDisabled = false;
+        private bool _cloakActive = false;
+        private float _cooldownEndTime = 0f;
 
-        private static readonly int ID_Color     = Shader.PropertyToID("_Color");
-        private static readonly int ID_BaseColor = Shader.PropertyToID("_BaseColor");
-        private static readonly int ID_Color1    = Shader.PropertyToID("Color1");
-        private static readonly int ID_Color2    = Shader.PropertyToID("Color2");
-        private static readonly int ID_ColorMult = Shader.PropertyToID("ColorMultiplier");
+        private static readonly int IDColor = Shader.PropertyToID("_Color");
+        private static readonly int IDBaseColor = Shader.PropertyToID("_BaseColor");
+        private static readonly int IDColor1 = Shader.PropertyToID("Color1");
+        private static readonly int IDColor2 = Shader.PropertyToID("Color2");
+        private static readonly int IDColorMult = Shader.PropertyToID("ColorMultiplier");
+
         #endregion
 
         #region Lifecycle
+
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
             _spawner = Ship?.ShipStatus?.TrailSpawner;
-            if (_spawner != null)
-            {
-                // subscribe once; handler checks remaining cooldown each spawn
-                _spawner.OnBlockSpawned += HandleBlockSpawned;
-                Debug.Log("[CloakSeedWallAction] Subscribed to TrailSpawner.OnBlockSpawned");
-            }
-            else
-            {
-                Debug.LogWarning("[CloakSeedWallAction] No TrailSpawner found on ShipStatus during Initialize");
-            }
-        }
-
-        // If you ever need to unhook (not required now, but safe):
-        private void OnDestroy()
-        {
-            if (_spawner != null)
-                _spawner.OnBlockSpawned -= HandleBlockSpawned;
+            _spawner.OnBlockSpawned += HandleBlockSpawned;
+            Debug.Log("[CloakSeedWallAction] Initialized with TrailSpawner: " + _spawner);
         }
 
         public override void StartAction()
         {
             if (_runRoutine != null) return;
-
-            if (_spawner == null)
-            {
-                Debug.LogWarning("[CloakSeedWallAction] No TrailSpawner found on ShipStatus.");
-                return;
-            }
-            if (assemblerTypeSource == null)
-            {
-                Debug.LogWarning("[CloakSeedWallAction] assemblerTypeSource not assigned.");
-                return;
-            }
 
             var latest = GetLatestBlock();
             if (latest == null && requireExistingTrailBlock)
@@ -91,20 +94,14 @@ namespace CosmicShore
             _runRoutine = StartCoroutine(Run(latest));
         }
 
-        public override void StopAction()
-        {
-            // per your request: leave commented out
-            // if (_runRoutine != null) { StopCoroutine(_runRoutine); _runRoutine = null; }
-            // (no restore needed per latest ask)
-        }
+        public override void StopAction() { }
+
         #endregion
 
         #region Flow
+        
         private IEnumerator Run(TrailBlock latestBlock)
         {
-            Debug.Log("[CloakSeedWallAction] Run() started");
-
-            // Seed wall: attach assembler and start bonding immediately
             _seedBlock = latestBlock ?? GetLatestBlock();
             if (_seedBlock != null)
             {
@@ -113,139 +110,284 @@ namespace CosmicShore
                 if (_seedAssembler == null)
                 {
                     _seedAssembler = _seedBlock.gameObject.AddComponent(assemblerType) as Assembler;
-                    Debug.Log("[CloakSeedWallAction] Added assembler of type " + assemblerType.Name);
                 }
-                _seedAssembler.Depth = assemblerDepth;
-                Debug.Log("[CloakSeedWallAction] Calling SeedBonding() immediately...");
-                _seedAssembler.SeedBonding();
-            }
-            else
-            {
-                Debug.LogWarning("[CloakSeedWallAction] No seed block found at Run()");
+
+                if (_seedAssembler != null)
+                {
+                    _seedAssembler.Depth = assemblerDepth;
+                    _seedAssembler.SeedBonding();
+                }
             }
 
-            // Hide ship (optional)
+            if (_seedBlock != null && skinnedMeshRenderer != null)
+            {
+                CreateGhostAt(_seedBlock.transform.position, _seedBlock.transform.rotation);
+            }
+            
             if (hideShipDuringCooldown)
             {
-                Debug.Log("[CloakSeedWallAction] Hiding ship visuals");
-                SetShipVisible(false);
+                yield return StartCoroutine(FadeShipOut());
             }
-
-            // Mark cooldown window
-            float wait = Mathf.Max(0.01f, cooldownSeconds);
+            
+            var wait = Mathf.Max(0.01f, cooldownSeconds);
+            _cloakActive = true;
             _cooldownEndTime = Time.time + wait;
-            Debug.Log($"[CloakSeedWallAction] Cooldown window opened for {wait:0.00}s");
 
-            // Simply wait the duration; OnBlockSpawned will extend each new block's waitTime
-            float t = 0f;
+            var t = 0f;
             while (t < wait)
             {
                 t += Time.deltaTime;
                 yield return null;
             }
 
-            // Cooldown ends
-            Debug.Log("[CloakSeedWallAction] Cooldown ended");
-            if (hideShipDuringCooldown) SetShipVisible(true);
+            _cloakActive = false;
 
+            if (hideShipDuringCooldown)
+            {
+                yield return StartCoroutine(FadeShipIn());
+            }
+            
+            if (_seedBlock != null)
+            {
+                _seedBlock.ActivateSuperShield();
+            }
+
+            if (_ghostGo != null) Destroy(_ghostGo);
             _runRoutine = null;
-            Debug.Log("[CloakSeedWallAction] Run() finished");
         }
+
         #endregion
 
-        #region Spawner hook
         private void HandleBlockSpawned(TrailBlock block)
         {
-            // Called immediately when TrailSpawner instantiates/configures a TrailBlock
-            if (block == null) return;
+            if (!_cloakActive || block == null) return;
 
-            // If we are inside the cooldown window, ensure this block won't show/grow until it ends
-            float remaining = _cooldownEndTime - Time.time;
-            if (remaining > 0f)
+            var remaining = _cooldownEndTime - Time.time;
+            if (remaining <= 0f) return;
+
+            var original = block.waitTime;
+            var target = Mathf.Max(original, remaining);
+
+            if (!Mathf.Approximately(original, target))
             {
-                // Bump block.waitTime so its Start() coroutine yields long enough
-                float original = block.waitTime;
-                float target   = Mathf.Max(original, remaining);
-                if (!Mathf.Approximately(original, target))
-                {
-                    block.waitTime = target;
-                    Debug.Log($"[CloakSeedWallAction] Extended block.waitTime from {original:0.00} → {target:0.00} (remaining {remaining:0.00}s) on {block.name}");
-                }
-                else
-                {
-                    Debug.Log($"[CloakSeedWallAction] Block already has sufficient waitTime ({original:0.00}s) on {block.name}");
-                }
-
-                // Optional: make sure it stays invisible even if a renderer slips through early
-                // (Shouldn’t be necessary because TrailBlock enables renderer only after waitTime)
-                block.SetTransparency(true);
+                block.waitTime = target;
+                Debug.Log($"[CloakSeedWallAction] Extended waitTime {original:0.00} → {target:0.00} (remaining {remaining:0.00}s) on {block.name}");
             }
+            else
+            {
+                Debug.Log(
+                    $"[CloakSeedWallAction] Block already has sufficient waitTime ({original:0.00}s) on {block.name}");
+            }
+
+            // keep visuals hidden just in case
+            block.SetTransparency(true);
+            var r = block.GetComponentInChildren<Renderer>(true);
+            if (r != null) r.enabled = false;
         }
+
+        #region Ghost ship
+
+        private void CreateGhostAt(Vector3 seedPos, Quaternion seedRot)
+        {
+            if (skinnedMeshRenderer == null) return;
+            
+            var baked = new Mesh();
+#if UNITY_2020_2_OR_NEWER
+            skinnedMeshRenderer.BakeMesh(baked, true);
+#else
+    skinnedMeshRenderer.BakeMesh(baked);
+#endif
+
+            _ghostGo = new GameObject("ShipGhost");
+            var mf = _ghostGo.AddComponent<MeshFilter>();
+            var mr = _ghostGo.AddComponent<MeshRenderer>();
+            mf.sharedMesh = baked;
+            
+            if (ghostMaterialOverride != null)
+            {
+                mr.material = new Material(ghostMaterialOverride);
+            }
+            else
+            {
+                var liveMats = skinnedMeshRenderer.materials;
+                var ghostMats = new Material[liveMats.Length];
+                for (int i = 0; i < liveMats.Length; i++)
+                    ghostMats[i] = new Material(liveMats[i]);
+                mr.materials = ghostMats;
+                
+                foreach (var t in mr.materials)
+                    SetMaterialAlpha(t, 1f);
+            }
+
+            var shipTf = (Ship != null ? Ship.Transform : skinnedMeshRenderer.transform);
+            var fwd = shipTf.forward;
+            var up = shipTf.up;
+            _ghostGo.transform.SetPositionAndRotation(seedPos, Quaternion.LookRotation(fwd, up));
+            
+            _ghostGo.transform.localScale = Vector3.one;
+            if (Mathf.Abs(ghostScaleMultiplier - 1f) > 0.0001f)
+                _ghostGo.transform.localScale *= ghostScaleMultiplier;
+
+            float life = ghostLifetime > 0f ? ghostLifetime : cooldownSeconds;
+            if (life > 0f) StartCoroutine(DestroyAfter(_ghostGo, life));
+
+            Debug.Log("[CloakSeedWallAction] Spawned ShipGhost (independent materials, alpha=1)");
+        }
+        
+        private IEnumerator DestroyAfter(GameObject go, float seconds)
+        {
+            yield return new WaitForSeconds(seconds);
+            if (go != null) Destroy(go);
+        }
+
         #endregion
 
-        #region Helpers
-        private void SetShipVisible(bool visible)
-{
-    if (skinnedMeshRenderer == null)
-    {
-        Debug.Log("[CloakSeedWallAction] SMR is null; cannot toggle visibility");
-        return;
-    }
+        #region Ship fade
 
-    var mats = skinnedMeshRenderer.materials;
-    bool anyOpaque = false;
-    for (int i = 0; i < mats.Length; i++)
-    {
-        var m = mats[i];
-        if (m == null) continue;
+        private IEnumerator FadeShipOut()
+        {
+            if (!hideShipDuringCooldown || skinnedMeshRenderer == null) yield break;
 
-        // Shader Graph generated property for URP surface type:
-        // 0 = Opaque, 1 = Transparent (when exposed). If not present, fall back to RenderType tag.
-        bool isOpaque = true;
-        if (m.HasProperty("_Surface"))
-            isOpaque = Mathf.Approximately(m.GetFloat("_Surface"), 0f);
-        else
-            isOpaque = m.GetTag("RenderType", false, "Opaque") == "Opaque";
+            // decide target alpha: local vs remote
+            float targetAlpha = IsLocalPlayerShip() ? localCloakAlpha : (remoteFullInvisible ? 0f : localCloakAlpha);
 
-        if (isOpaque) anyOpaque = true;
-    }
+            var mats = skinnedMeshRenderer.materials; // instances
+            bool anyAlphaCapable = false;
+            bool anyOpaque = false;
 
-    if (anyOpaque)
-    {
-        // Some materials are opaque → alpha fading won’t work → just toggle the renderer.
-        skinnedMeshRenderer.enabled = visible;
-        Debug.Log($"[CloakSeedWallAction] SMR.enabled = {visible} (one or more materials are Opaque)");
-        return;
-    }
+            foreach (var m in mats)
+            {
+                if (m == null) continue;
+                if (MaterialSupportsAlpha(m)) anyAlphaCapable = true;
+                if (m.GetTag("RenderType", false, "Opaque") == "Opaque") anyOpaque = true;
+            }
 
-    // If ALL materials are transparent-capable, alpha fade them (your BlueBaseShipMaterial).
-    float alpha = visible ? 1f : 0f;
-    bool touched = false;
-    foreach (var m in mats)
-    {
-        if (m == null) continue;
+            if (anyAlphaCapable)
+                yield return StartCoroutine(FadeAlpha(mats, 1f, targetAlpha, Mathf.Max(0.01f, fadeOutSeconds)));
 
-        if (m.HasProperty("_BaseColor"))
-        { var c = m.GetColor("_BaseColor"); c.a = alpha; m.SetColor("_BaseColor", c); touched = true; continue; }
+            // If we want 0% and some mats are opaque → hard toggle to fully hide for that viewer
+            if (Mathf.Approximately(targetAlpha, 0f) && anyOpaque && hardToggleIfAnyOpaqueAtZero)
+            {
+                skinnedMeshRenderer.enabled = false;
+                _rendererWasHardDisabled = true;
+                Debug.Log("[CloakSeedWallAction] Hard-disabled SMR due to opaque mats & target 0%");
+            }
+        }
 
-        if (m.HasProperty("_Color"))
-        { var c = m.GetColor("_Color"); c.a = alpha; m.SetColor("_Color", c); touched = true; continue; }
+        private IEnumerator FadeShipIn()
+        {
+            if (!hideShipDuringCooldown || skinnedMeshRenderer == null) yield break;
 
-        bool g = false;
-        if (m.HasProperty("Color1")) { var c1 = m.GetColor("Color1"); c1.a = alpha; m.SetColor("Color1", c1); g = true; }
-        if (m.HasProperty("Color2")) { var c2 = m.GetColor("Color2"); c2.a = alpha; m.SetColor("Color2", c2); g = true; }
-        if (g) { touched = true; continue; }
+            var mats = skinnedMeshRenderer.materials;
 
-        if (m.HasProperty("ColorMultiplier")) { m.SetFloat("ColorMultiplier", alpha); touched = true; continue; }
-    }
+            if (_rendererWasHardDisabled)
+            {
+                skinnedMeshRenderer.enabled = true;
+                _rendererWasHardDisabled = false;
+            }
 
-    if (!touched)
-    {
-        // Safety fallback
-        skinnedMeshRenderer.enabled = visible;
-        Debug.Log($"[CloakSeedWallAction] Fallback SMR.enabled = {visible} (no fade properties found)");
-    }
-}
+            // restore to 1
+            bool anyAlphaCapable = false;
+            foreach (var m in mats)
+                if (m && MaterialSupportsAlpha(m))
+                {
+                    anyAlphaCapable = true;
+                    break;
+                }
+
+            if (anyAlphaCapable)
+                yield return StartCoroutine(FadeAlpha(mats, GetCurrentAlpha(mats, 1f), 1f,
+                    Mathf.Max(0.01f, fadeInSeconds)));
+        }
+
+        private float GetCurrentAlpha(Material[] mats, float defaultAlpha)
+        {
+            foreach (var m in mats)
+            {
+                if (m == null) continue;
+                if (m.HasProperty(IDBaseColor)) return m.GetColor(IDBaseColor).a;
+                if (m.HasProperty(IDColor)) return m.GetColor(IDColor).a;
+                if (m.HasProperty(IDColor1)) return m.GetColor(IDColor1).a;
+                if (m.HasProperty(IDColor2)) return m.GetColor(IDColor2).a;
+                if (m.HasProperty(IDColorMult)) return m.GetFloat(IDColorMult);
+            }
+
+            return defaultAlpha;
+        }
+
+        private IEnumerator FadeAlpha(Material[] mats, float from, float to, float duration)
+        {
+            float t = 0f;
+            while (t < duration)
+            {
+                float a = Mathf.Lerp(from, to, t / duration);
+                foreach (var m in mats)
+                    if (m != null)
+                        SetMaterialAlpha(m, a);
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            foreach (var m in mats)
+                if (m != null)
+                    SetMaterialAlpha(m, to);
+        }
+
+        private bool MaterialSupportsAlpha(Material m)
+        {
+            return m.HasProperty(IDBaseColor) || m.HasProperty(IDColor)
+                                               || m.HasProperty(IDColor1) || m.HasProperty(IDColor2)
+                                               || m.HasProperty(IDColorMult);
+        }
+
+        private void SetMaterialAlpha(Material m, float alpha)
+        {
+            if (m.HasProperty(IDBaseColor))
+            {
+                var c = m.GetColor(IDBaseColor);
+                c.a = alpha;
+                m.SetColor(IDBaseColor, c);
+                return;
+            }
+
+            if (m.HasProperty(IDColor))
+            {
+                var c = m.GetColor(IDColor);
+                c.a = alpha;
+                m.SetColor(IDColor, c);
+                return;
+            }
+
+            bool g = false;
+            if (m.HasProperty(IDColor1))
+            {
+                var c1 = m.GetColor(IDColor1);
+                c1.a = alpha;
+                m.SetColor(IDColor1, c1);
+                g = true;
+            }
+
+            if (m.HasProperty(IDColor2))
+            {
+                var c2 = m.GetColor(IDColor2);
+                c2.a = alpha;
+                m.SetColor(IDColor2, c2);
+                g = true;
+            }
+
+            if (g) return;
+
+            if (m.HasProperty(IDColorMult)) m.SetFloat(IDColorMult, alpha);
+        }
+
+        private bool IsLocalPlayerShip()
+        {
+            return Ship != null && Ship.ShipStatus.IsOwner;
+        }
+
+        #endregion
+
+        #region Utils
 
         private TrailBlock GetLatestBlock()
         {
@@ -258,6 +400,7 @@ namespace CosmicShore
 
             return null;
         }
+
         #endregion
     }
 }
