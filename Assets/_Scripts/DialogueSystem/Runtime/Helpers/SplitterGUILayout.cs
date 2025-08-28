@@ -1,3 +1,4 @@
+#if !LINUX_BUILD
 using UnityEngine;
 using UnityEditor;
 
@@ -52,3 +53,4 @@ public static class SplitterGUILayout
         return pos;
     }
 }
+#endif

@@ -229,8 +229,13 @@ namespace CosmicShore.Game
         
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
-
-
+        public bool IsOwner { get; private set; }
+        public void SetIsOwnerForControllerOnly(bool value) => __SetIsOwner(value);
+        void __SetIsOwner(bool value) 
+        {
+            if (IsOwner != value) return;
+            IsOwner = value;
+        }
         public void ResetValues()
         {
             Boosting = false;

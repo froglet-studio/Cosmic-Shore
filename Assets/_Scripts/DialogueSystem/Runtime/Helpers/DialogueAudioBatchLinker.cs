@@ -1,3 +1,4 @@
+#if !LINUX_BUILD
 using UnityEngine;
 using CosmicShore.DialogueSystem.Models;
 using UnityEditor;
@@ -23,3 +24,4 @@ namespace CosmicShore.DialogueSystem.Editor
         }
     }
 }
+#endif

@@ -28,6 +28,7 @@ namespace CosmicShore.Game
                 n_Course.OnValueChanged += OnCourseChanged;
                 n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
             }
+            RefreshOwnershipFlag();
         }
 
         void OnDisable()
@@ -41,6 +42,7 @@ namespace CosmicShore.Game
                 n_Course.OnValueChanged -= OnCourseChanged;
                 n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
             }
+            RefreshOwnershipFlag();
         }
 
         public override void OnNetworkSpawn()
@@ -48,6 +50,8 @@ namespace CosmicShore.Game
             isMultiplayerMode = true;
             
             if (!isMultiplayerMode) return;
+            RefreshOwnershipFlag();
+            
             if (!IsOwner)
             {
                 n_Speed.OnValueChanged += OnSpeedChanged;
@@ -67,6 +71,7 @@ namespace CosmicShore.Game
             }
             
             isMultiplayerMode = false;
+            RefreshOwnershipFlag();
         }
 
         void Update()
@@ -93,7 +98,8 @@ namespace CosmicShore.Game
 
             if (ShipStatus.FarFieldSkimmer) 
                 ShipStatus.FarFieldSkimmer.Initialize(ShipStatus);
-
+            
+            RefreshOwnershipFlag();
             if (isMultiplayerMode)
             {
                 if (IsOwner)
@@ -122,7 +128,6 @@ namespace CosmicShore.Game
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);  
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
-
             // TODO - Currently AIPilot's update should run only after SingleStickShipTransformer
             // sets SingleStickControls to true/false. Try finding a solution to remove this
             // sequential dependency.
@@ -222,5 +227,12 @@ namespace CosmicShore.Game
 
         public void FlipShipUpsideDown() => ShipStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
         public void FlipShipRightsideUp() => ShipStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
+        
+        // helper
+        void RefreshOwnershipFlag()
+        {
+            var value = !isMultiplayerMode || IsOwner;
+            if (ShipStatus is ShipStatus concrete) concrete.SetIsOwnerForControllerOnly(value);
+        }
     }
 }

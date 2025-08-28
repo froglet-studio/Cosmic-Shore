@@ -2205,10 +2205,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4f432f279944f128b97db362e5a9a96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cooldownSeconds: 20
+  cooldownSeconds: 10
+  hideShipDuringCooldown: 1
   skinnedMeshRenderer: {fileID: 4172724446676456733}
+  localCloakAlpha: 0.4
+  remoteFullInvisible: 1
+  fadeOutSeconds: 0.25
+  fadeInSeconds: 0.25
+  hardToggleIfAnyOpaqueAtZero: 1
   assemblerTypeSource: {fileID: 1077471832166960232}
   assemblerDepth: 50
+  ghostLifetime: 0
+  ghostScaleMultiplier: 1
+  ghostMaterialOverride: {fileID: 0}
   requireExistingTrailBlock: 1
 --- !u!1 &6553637767954968870
 GameObject:
@@ -2305,14 +2314,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ownPullSpeed: 40
+  opponentPullSpeed: 10
+  ownRotateSpeed: 60
+  opponentRotateSpeed: 20
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
   TopIsBonded: 0
   RightIsBonded: 0
   BottomIsBonded: 0
   LeftIsBonded: 0
-  colliderTheshold: 25
-  radius: 40
+  colliderTheshold: 35
+  radius: 50
 --- !u!1 &6740300659898847770
 GameObject:
   m_ObjectHideFlags: 0
@@ -2408,6 +2421,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e07a4637d02c4644bb1faaa7ceb15e69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mode: 1
+  seedAssembler: {fileID: 3362399389898013871}
 --- !u!1 &7252911972358299472
 GameObject:
   m_ObjectHideFlags: 0
