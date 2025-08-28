@@ -20,15 +20,14 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private static Action _dependencyResolved;
         
-        [SerializeField] ScriptableEventMiniGameData _onStartMiniGame;
-        [SerializeField] ScriptableEventMiniGameData _onEndMiniGame;
+        [SerializeField]
+        MiniGameDataSO _miniGameData;
         
         #region Firebase Analytics Controller Initialization and Enabling
 
         private void OnEnable()
         {
-            _onStartMiniGame.OnRaised += LogEventMiniGameStart;
-            _onEndMiniGame.OnRaised +=  LogEventMiniGameEnd;
+            // TODO - Subscribe to OnMiniGameStart and OnMiniGameEnd To LogEvent
         }
 
         private void Start()
@@ -40,8 +39,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private void OnDisable()
         {
-            _onStartMiniGame.OnRaised -= LogEventMiniGameStart;
-            _onEndMiniGame.OnRaised -=  LogEventMiniGameEnd;
+            // TODO - Unsubscribe from OnMiniGameStart and OnMiniGameEnd To LogEvent
+            
             _dependencyResolved -= InitializeFirebaseAnalytics;
             if(UserActionSystem.Instance) UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
         }

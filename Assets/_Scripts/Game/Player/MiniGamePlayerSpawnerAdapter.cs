@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Core;
 using CosmicShore.SOAP;
 using UnityEngine;
@@ -8,21 +9,23 @@ namespace CosmicShore.Game
     {
         [SerializeField] MiniGameDataSO _miniGameData;
         
-        /// <summary>
-        /// Can be a normal stats manager or network stats manager.
-        /// </summary>
-        [SerializeField] StatsManager _statsManager;
-        
         [SerializeField] PlayerSpawner _playerSpawner;
+        
+        [SerializeField] bool _spawnAIAtStart;
 
         private void OnEnable()
         {
-            _miniGameData.OnInitialize += OnInitializeMiniGame;
+            _miniGameData.OnMiniGameInitialize += OnInitializeMiniGame;
+        }
+
+        private void Start()
+        {
+            InstantiateAndInitializeAI();
         }
 
         private void OnDisable()
         { 
-            _miniGameData.OnInitialize -= OnInitializeMiniGame;
+            _miniGameData.OnMiniGameInitialize -= OnInitializeMiniGame;
         }
 
         private void OnInitializeMiniGame()
@@ -43,7 +46,7 @@ namespace CosmicShore.Game
                     continue;
                 
                 IPlayer spawnerAI = _playerSpawner.SpawnPlayerAndShip(data);
-                _miniGameData.AddPlayer(spawnerAI, _statsManager.GetOrCreateRoundStats(data.Team));
+                _miniGameData.AddPlayer(spawnerAI);
             }
         }
         
@@ -63,7 +66,7 @@ namespace CosmicShore.Game
             };
             
             IPlayer spawnerPlayer = _playerSpawner.SpawnPlayerAndShip(data);
-            _miniGameData.AddPlayer(spawnerPlayer, _statsManager.GetOrCreateRoundStats(data.Team));
+            _miniGameData.AddPlayer(spawnerPlayer);
         }
     }
 }

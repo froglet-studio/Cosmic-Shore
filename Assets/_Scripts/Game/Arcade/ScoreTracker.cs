@@ -24,6 +24,18 @@ namespace CosmicShore.Game.Arcade
         [HideInInspector] public GameCanvas GameCanvas;
 
         BaseScoring[] scoringArray;
+
+        void OnEnable()
+        {
+            miniGameData.OnMiniGameInitialize += InitializeScoringMode;
+            miniGameData.OnMiniGameEnd += CalculateWinner;
+        }
+
+        void OnDisable()
+        {
+            miniGameData.OnMiniGameInitialize -= InitializeScoringMode;
+            miniGameData.OnMiniGameEnd -= CalculateWinner;
+        }
         
         
         public void CalculateWinner()

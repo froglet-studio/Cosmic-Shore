@@ -47,13 +47,14 @@ MonoBehaviour:
   ID: Cell1
   Crystal: {fileID: 0}
   CellTypes:
-  - {fileID: 11400000, guid: 5ce96f4772e6a7941ab472e13d16a96f, type: 2}
-  FloraTypeCount: 2
+  - {fileID: 11400000, guid: 36999bb97c4204943bec39ef90cf958c, type: 2}
+  FloraTypeCount: 3
   spawnJade: 1
-  FaunaTypeCount: 2
-  floraSpawnVolumeCeiling: 12000
+  FaunaTypeCount: 3
+  floraSpawnVolumeCeiling: 4000
   initialFaunaSpawnWaitTime: 1
   faunaSpawnVolumeThreshold: 10000
   baseFaunaSpawnTime: 300
   hasRandomFloraAndFauna: 0
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

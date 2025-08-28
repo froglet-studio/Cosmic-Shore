@@ -19,12 +19,10 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] protected int numberOfTurnsPerRound = 1;
         
         [Header("Scene References")]
-        [SerializeField] protected TurnMonitorController monitorController;
-        [SerializeField] protected ScoreTracker scoreTracker;
         [SerializeField] CountdownTimer countdownTimer;
         
         [SerializeField] 
-        protected MiniGameDataSO _miniGameData;
+        protected MiniGameDataSO miniGameData;
         
         [SerializeField] 
         protected ScriptableEventBool _onToggleReadyButton;
@@ -35,38 +33,23 @@ namespace CosmicShore.Game.Arcade
         // Gameplay state
         protected int turnsTakenThisRound;
         protected int roundsPlayed;
-        protected bool gameRunning;
         
-        protected virtual void OnEnable() 
+        protected virtual void OnEnable()
         {
-            PauseSystem.TogglePauseGame(false);
-            
-            /*PauseSystem.OnGamePaused  += OnGamePaused;
-            PauseSystem.OnGameResumed += OnGameResumed;*/
+            miniGameData.OnMiniGameEndConditionsMet += EndTurn;
         }
 
         private void Start()
         {
-            _miniGameData.PlayerOrigins =  _playerOrigins;
-            _miniGameData.GameMode = gameMode;
-            _miniGameData.InvokeInitialize();
-            scoreTracker.InitializeScoringMode();
-        }
-
-        protected virtual void Update() {
-            if(!gameRunning) 
-                return;
-            
-            if (monitorController.CheckEndOfTurn()) 
-                EndTurn();
+            miniGameData.PlayerOrigins =  _playerOrigins;
+            miniGameData.GameMode = gameMode;
+            miniGameData.InvokeMiniGameinitialize();
         }
 
         protected virtual void OnDisable() 
         {
-            /*PauseSystem.OnGamePaused  -= OnGamePaused;
-            PauseSystem.OnGameResumed -= OnGameResumed;*/
+            miniGameData.OnMiniGameEndConditionsMet -= EndTurn;
         }
-
 
         public void OnReadyClicked()
         {
@@ -78,10 +61,8 @@ namespace CosmicShore.Game.Arcade
         {
             roundsPlayed = 0;
             turnsTakenThisRound = 0;
-            gameRunning = true;
-            
-            monitorController.StartMonitors();
-            _miniGameData.ActivateAllPlayers();
+
+            miniGameData.InvokeMiniGameStart();
         }
         
         protected virtual void SetupNewTurn()
@@ -107,8 +88,7 @@ namespace CosmicShore.Game.Arcade
         
         void EndTurn()
         {
-            monitorController.PauseMonitors();
-            
+            miniGameData.InvokeMiniGameTurnEnd();   
             turnsTakenThisRound++;
 
             if(turnsTakenThisRound >= numberOfTurnsPerRound)
@@ -130,9 +110,7 @@ namespace CosmicShore.Game.Arcade
 
         void EndGame()
         {
-            gameRunning = false; 
-            monitorController.StopMonitors();
-            scoreTracker.CalculateWinner();
+            miniGameData.InvokeMiniGameEnd();
             PauseSystem.TogglePauseGame(true);
         }
         

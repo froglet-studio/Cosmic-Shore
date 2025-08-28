@@ -285,12 +285,6 @@ namespace CosmicShore.Game
             return teamVolumes[team];
         }
 
-        public Teams ControllingTeam()
-        {
-            var sortedList = miniGameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
-            return sortedList[0].Team;
-        }
-
         /*public Teams ControllingTeam
         {
             /// TODO: replace this with below. This is a temporary fix to the issue of a single node not being able to accurately determine team volume

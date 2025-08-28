@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.App.Systems;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using Obvious.Soap;
@@ -15,8 +16,15 @@ namespace CosmicShore.SOAP
     [CreateAssetMenu(fileName = "scriptable_variable_" + nameof(MiniGameDataSO), menuName = "ScriptableObjects/DataContainers/"+ nameof(MiniGameDataSO))]
     public class MiniGameDataSO : ScriptableObject
     {
-        public event Action OnInitialize;
+        // TODO - need two more events OnMiniGameStart and OnMiniGameEnd
+        
+        public event Action OnMiniGameInitialize;
         public event Action OnAllPlayersSpawned;
+        public event Action OnMiniGameStart;
+        public event Action OnMiniGameEndConditionsMet;
+        public event Action OnMiniGameTurnEnd;
+        public event Action OnMiniGameEnd;
+        public event Action OnWinnerCalculated;
         
         public GameModes GameMode;
         public ShipClassTypeVariable SelectedShipClass;
@@ -31,11 +39,32 @@ namespace CosmicShore.SOAP
         public List<IRoundStats> RoundStatsList = new ();
         public float TurnStartTime;
 
-        public void InvokeInitialize()
+        public bool IsRunning { get; private set; }
+
+        public void InvokeMiniGameinitialize()
         {
-            TurnStartTime = Time.time;
-            OnInitialize?.Invoke();
+            PauseSystem.TogglePauseGame(false);
+            OnMiniGameInitialize?.Invoke();
         }
+
+        public void InvokeMiniGameStart()
+        {
+            IsRunning = true;
+            TurnStartTime = Time.time;
+            ActivateAllPlayers();
+            OnMiniGameStart?.Invoke();
+        }
+        public void InvokeMiniGameTurnConditionsMet() => OnMiniGameEndConditionsMet?.Invoke();
+
+        public void InvokeMiniGameTurnEnd()
+        {
+            IsRunning = false;
+            OnMiniGameTurnEnd?.Invoke();
+        }
+
+        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
+        
+        public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
 
         public (Teams, float) GetControllingTeamStatsBasedOnVolumeRemaining()
         {
@@ -130,7 +159,7 @@ namespace CosmicShore.SOAP
             TurnStartTime = 0f;
         }
         
-        public void AddPlayer(IPlayer p, IRoundStats  stats)
+        public void AddPlayer(IPlayer p)
         {
             if (Players.Any(player => player.Name == p.Name))
                 return;
@@ -139,9 +168,12 @@ namespace CosmicShore.SOAP
                 return;
             
             Players.Add(p);
-            stats.Name = p.Name;
-            stats.Team = p.Team;
-            RoundStatsList.Add(stats);
+            var roundStats = new RoundStats()       // For Networking, we need NetworkRoundStats
+            {
+                Name = p.Name,
+                Team = p.Team,
+            };
+            RoundStatsList.Add(roundStats);
             
             p.ToggleStationaryMode(true);
             
