@@ -2205,10 +2205,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4f432f279944f128b97db362e5a9a96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cooldownSeconds: 10
+  cooldownSeconds: 15
   hideShipDuringCooldown: 1
   skinnedMeshRenderer: {fileID: 4172724446676456733}
-  localCloakAlpha: 0.4
+  localCloakAlpha: 0.131
   remoteFullInvisible: 1
   fadeOutSeconds: 0.25
   fadeInSeconds: 0.25
@@ -2314,10 +2314,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ownPullSpeed: 40
-  opponentPullSpeed: 10
-  ownRotateSpeed: 60
-  opponentRotateSpeed: 20
+  ownPullSpeed: 100
+  opponentPullSpeed: 20
+  ownRotateSpeed: 150
+  opponentRotateSpeed: 30
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
   TopIsBonded: 0
