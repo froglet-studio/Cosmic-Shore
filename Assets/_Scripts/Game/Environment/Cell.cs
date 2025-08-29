@@ -13,7 +13,7 @@ namespace CosmicShore.Game
 {
     public class Cell : MonoBehaviour
     {
-        [SerializeField] public string ID;
+        [SerializeField] public int ID;
 
         [SerializeField] Crystal Crystal;
 

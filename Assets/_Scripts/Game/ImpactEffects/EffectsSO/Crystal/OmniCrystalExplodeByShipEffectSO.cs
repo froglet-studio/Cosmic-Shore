@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Core;
+using CosmicShore.Utilities;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -6,6 +7,9 @@ namespace CosmicShore.Game
     [CreateAssetMenu(fileName = "OmniCrystalExplodeByShipEffect", menuName = "ScriptableObjects/Impact Effects/Crystal/OmniCrystalExplodeByShipEffectSO")]
     public class OmniCrystalExplodeByShipEffectSO : ImpactEffectSO<OmniCrystalImpactor, ShipImpactor>
     {
+        [SerializeField]
+        ScriptableEventCrystalStats OnCrystalCollected;
+        
         protected override void ExecuteTyped(OmniCrystalImpactor crystalImpactor, ShipImpactor shipImpactee)
         {
             var shipStatus = shipImpactee.Ship.ShipStatus;
@@ -27,8 +31,16 @@ namespace CosmicShore.Game
 //             }
 
             // TODO - Add Event channels here rather than calling singletons directly.
-            if (StatsManager.Instance)
-                StatsManager.Instance.CrystalCollected(shipStatus.Ship, crystal.crystalProperties);
+            OnCrystalCollected?.Raise(
+                new CrystalStats()
+                {
+                    PlayerName = shipStatus.PlayerName,
+                    Element =  crystal.crystalProperties.Element,
+                    Value =  crystal.crystalProperties.crystalValue,
+                }
+            );
+            /*if (StatsManager.Instance)
+                StatsManager.Instance.CrystalCollected(shipStatus.Ship, crystal.crystalProperties);*/
 
             if (shipStatus.ShipType != ShipClassType.Manta)
             {

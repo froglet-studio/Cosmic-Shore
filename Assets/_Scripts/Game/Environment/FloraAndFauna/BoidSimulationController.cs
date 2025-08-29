@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 using System.Collections;
 using CosmicShore.Game;
+using CosmicShore.SOAP;
 
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
 public struct Entity
@@ -23,6 +24,9 @@ public struct Entity
 
 public class BoidSImulationController : MonoBehaviour
 {
+    [SerializeField]
+    MiniGameDataSO miniGameData;
+    
     public ComputeShader boidSimulationShader;
     public TrailBlock boidPrefab;
     public int numberOfBoids = 100;
@@ -181,7 +185,7 @@ public class BoidSImulationController : MonoBehaviour
 
     private Vector4 CalculateTeamWeights()
     {
-        Vector4 teamVolumes = StatsManager.Instance.GetTeamVolumes();
+        Vector4 teamVolumes = miniGameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
         float totalVolume = teamVolumes.x + teamVolumes.y + teamVolumes.z + teamVolumes.w;
         return new Vector4(
             totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero

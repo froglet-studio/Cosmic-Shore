@@ -73,7 +73,7 @@ namespace CosmicShore.Core
         private readonly NetworkVariable<int> n_BlocksRemaining = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
-        public int BlocksRemaining
+        public int PrismsRemaining
         {
             get => n_BlocksRemaining.Value;
             set => n_BlocksRemaining.Value = value;
@@ -82,7 +82,7 @@ namespace CosmicShore.Core
         private readonly NetworkVariable<int> n_FriendlyBlocksDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
-        public int FriendlyBlocksDestroyed
+        public int FriendlyPrismsDestroyed
         {
             get => n_FriendlyBlocksDestroyed.Value;
             set => n_FriendlyBlocksDestroyed.Value = value;
@@ -91,7 +91,7 @@ namespace CosmicShore.Core
         private readonly NetworkVariable<int> n_HostileBlocksDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
-        public int HostileBlocksDestroyed
+        public int HostilePrismsDestroyed
         {
             get => n_HostileBlocksDestroyed.Value;
             set => n_HostileBlocksDestroyed.Value = value;

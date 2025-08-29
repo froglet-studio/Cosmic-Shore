@@ -1,10 +1,14 @@
 using UnityEngine;
 using System;
+using CosmicShore.Utilities;
 
 namespace CosmicShore.Core
 {
     public class BlockScaleAnimator : MonoBehaviour
     {
+        [SerializeField]
+        ScriptableEventPrismStats onPrismVolumeModified;
+        
         [Header("Scale Constraints")]
         [SerializeField] private Vector3 minScale = new Vector3(0.5f, 0.5f, 0.5f);
         [SerializeField] private Vector3 maxScale = new Vector3(10f, 10f, 10f);
@@ -138,10 +142,17 @@ namespace CosmicShore.Core
             OnScaleComplete = () =>
             {
                 var deltaVolume = UpdateVolume();
-                if (StatsManager.Instance != null)
+                onPrismVolumeModified.Raise(
+                    new PrismStats
+                    {
+                        Volume = deltaVolume,
+                        OtherPlayerName = trailBlock.PlayerName,
+                    });
+                
+                /*if (StatsManager.Instance != null)
                 {
-                    StatsManager.Instance.BlockVolumeModified(deltaVolume, trailBlock.TrailBlockProperties);
-                }
+                    StatsManager.Instance.PrismVolumeModified(deltaVolume, trailBlock.TrailBlockProperties);
+                }*/
 
                 CheckScaleBounds();
             };

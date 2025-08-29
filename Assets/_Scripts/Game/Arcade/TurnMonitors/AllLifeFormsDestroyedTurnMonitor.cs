@@ -5,7 +5,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class AllLifeFormsDestroyedTurnMonitor : TurnMonitor
     {
-        string cellID;
+        int cellID;
 
         private void Awake()
         {
@@ -20,13 +20,8 @@ namespace CosmicShore.Game.Arcade
         public override bool CheckForEndOfTurn()
         {
             // Check if any life forms exist in the current node
-            if (StatsManager.Instance.CellStats[cellID].LifeFormsInNode > 0)
-            {
-                return false;
-            }
-
+            return miniGameData.CellStatsList[cellID].LifeFormsInCell <= 0;
             // If we get here, all life forms have been destroyed
-            return true;
         }
 
         protected override void StartTurn()
@@ -36,7 +31,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void RestrictedUpdate()
         {
-            string message = (StatsManager.Instance.CellStats[cellID].LifeFormsInNode).ToString();
+            string message = (miniGameData.CellStatsList[cellID].LifeFormsInCell).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }
     }

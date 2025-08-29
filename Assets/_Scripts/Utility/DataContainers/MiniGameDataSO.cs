@@ -37,11 +37,13 @@ namespace CosmicShore.SOAP
         int activePlayerId = 0;
         
         public List<IRoundStats> RoundStatsList = new ();
+        public Dictionary<int, CellStats> CellStatsList = new();
+        
         public float TurnStartTime;
 
         public bool IsRunning { get; private set; }
 
-        public void InvokeMiniGameinitialize()
+        public void InvokeMiniGameInitialize()
         {
             PauseSystem.TogglePauseGame(false);
             OnMiniGameInitialize?.Invoke();
@@ -82,13 +84,7 @@ namespace CosmicShore.SOAP
             player = null;
             roundStats = null;
 
-            if (Players == null || Players.Count == 0)
-            {
-                Debug.LogError("This should never happen!");
-                return false;
-            }
-
-            if (RoundStatsList == null || RoundStatsList.Count == 0)
+            if (Players == null || Players.Count == 0 || RoundStatsList == null || RoundStatsList.Count == 0)
             {
                 Debug.LogError("This should never happen!");
                 return false;
@@ -116,10 +112,8 @@ namespace CosmicShore.SOAP
         {
             roundStats = null;
             
-            foreach (var score in RoundStatsList)
+            foreach (var score in RoundStatsList.Where(score => score.Team == team))
             {
-                if (score.Team != team)
-                    continue;
                 roundStats = score;
                 return true;
             }
@@ -132,10 +126,8 @@ namespace CosmicShore.SOAP
         {
             roundStats = null;
             
-            foreach (var score in RoundStatsList)
+            foreach (var score in RoundStatsList.Where(score => score.Name == playerName))
             {
-                if (score.Name != playerName)
-                    continue;
                 roundStats = score;
                 return true;
             }
@@ -143,20 +135,16 @@ namespace CosmicShore.SOAP
             Debug.LogError("This should never happen! Every Score data need to have a local player!");
             return false;
         }
-
-        public void ResetData()
+        
+        public float GetTotalVolume() => RoundStatsList.Sum(stats => stats.VolumeRemaining);
+        
+        public Vector4 GetTeamVolumes()
         {
-            GameMode = GameModes.Random;
-            Players.Clear();
-            RoundStatsList.Clear();
-            // RemainingPlayers.Clear();
-            PlayerOrigins = Array.Empty<Transform>();
-            activePlayerId = 0;
-            GameMode = GameModes.Random;
-            SelectedShipClass.Value = ShipClassType.Random;
-            SelectedPlayerCount.Value = 1;
-            SelectedIntensity.Value = 1;
-            TurnStartTime = 0f;
+            var greenVolume = TryGetRoundStats(Teams.Jade, out var gStats) ? gStats.VolumeRemaining : 0f;
+            var redVolume = TryGetRoundStats(Teams.Ruby, out var rStats) ? rStats.VolumeRemaining : 0f;
+            var blueVolume = TryGetRoundStats(Teams.Blue, out var bStats) ? bStats.VolumeRemaining : 0f;
+            var goldVolume = TryGetRoundStats(Teams.Gold, out var yStats) ? yStats.VolumeRemaining : 0f;
+            return new Vector4(greenVolume, redVolume, blueVolume, goldVolume);
         }
         
         public void AddPlayer(IPlayer p)
@@ -203,6 +191,21 @@ namespace CosmicShore.SOAP
         }
         
         public void InvokeAllPlayersSpawned() => OnAllPlayersSpawned?.Invoke();
+        
+        public void ResetData()
+        {
+            GameMode = GameModes.Random;
+            Players.Clear();
+            RoundStatsList.Clear();
+            // RemainingPlayers.Clear();
+            PlayerOrigins = Array.Empty<Transform>();
+            activePlayerId = 0;
+            GameMode = GameModes.Random;
+            SelectedShipClass.Value = ShipClassType.Random;
+            SelectedPlayerCount.Value = 1;
+            SelectedIntensity.Value = 1;
+            TurnStartTime = 0f;
+        }
         
         // TODO - Need to rewrite the following method.
         /*

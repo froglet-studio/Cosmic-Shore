@@ -3,12 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     public class Skimmer : ElementalShipComponent
     {
+        [SerializeField]
+        ScriptableEventString onSkimmerShipImpact;
+        
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         List<ScriptableObject> _blockStayEffects;
         [SerializeField] float vaccumAmount = 80f;
@@ -124,8 +128,9 @@ namespace CosmicShore.Game
 
         public void ExecuteImpactOnShip(IShip ship)
         {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.ExecuteSkimmerShipCollision(ShipStatus.Ship, ship);
+            onSkimmerShipImpact.Raise(ShipStatus.PlayerName);
+            /*if (StatsManager.Instance != null)
+                StatsManager.Instance.ExecuteSkimmerShipCollision(ShipStatus.Ship, ship);*/
         }
 
         public void ExecuteImpactOnPrism(TrailBlock trailBlock)

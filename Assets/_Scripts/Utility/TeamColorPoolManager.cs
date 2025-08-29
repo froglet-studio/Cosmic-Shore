@@ -7,12 +7,11 @@ namespace CosmicShore.Game
 {
     public class TeamColorPoolManager : PoolManagerBase
     {
-
         private const string FossilTag = "FossilPrism";
 
 
         [Header("Event Channels")]
-        [SerializeField] TrailBlockEventChannelWithReturnSO _onFlockSpawnedEventChannel;
+        [SerializeField] PrismEventChannelWithReturnSO _onFlockSpawnedEventChannel;
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
@@ -27,10 +26,10 @@ namespace CosmicShore.Game
             _onFlockSpawnedEventChannel.OnEventReturn -= OnFlockSpawnedEventRaised;
         }
 
-        private TrailBlockReturnEventData OnFlockSpawnedEventRaised(TrailBlockEventData data)
+        private PrismReturnEventData OnFlockSpawnedEventRaised(PrismEventData data)
         {
             var spawnedObject = SpawnFromTeamPool(data.OwnTeam, data.Position, data.Rotation);
-            return new TrailBlockReturnEventData
+            return new PrismReturnEventData
             {
                 SpawnedObject = spawnedObject
             };
@@ -41,13 +40,13 @@ namespace CosmicShore.Game
             GameObject obj = base.CreatePoolObject(prefab);
 
             // Set the material based on the pool's tag
-            var renderer = obj.GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                Teams team = GetTeamFromTag(prefab.tag);
-                Material teamMaterial = new Material(_themeManagerData.GetTeamExplodingBlockMaterial(team));
-                renderer.material = teamMaterial;
-            }
+            var r = obj.GetComponent<Renderer>();
+            if (!r) 
+                return obj;
+            
+            Teams team = GetTeamFromTag(prefab.tag);
+            Material teamMaterial = new Material(_themeManagerData.GetTeamExplodingBlockMaterial(team));
+            r.material = teamMaterial;
 
             return obj;
         }

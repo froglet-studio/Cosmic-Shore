@@ -43,7 +43,7 @@ namespace CosmicShore.Game.Arcade
         {
             miniGameData.PlayerOrigins =  _playerOrigins;
             miniGameData.GameMode = gameMode;
-            miniGameData.InvokeMiniGameinitialize();
+            miniGameData.InvokeMiniGameInitialize();
         }
 
         protected virtual void OnDisable() 

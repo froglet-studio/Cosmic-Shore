@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using CosmicShore.Game;
+using CosmicShore.Utilities;
 
 namespace CosmicShore.Core
 {
@@ -8,6 +9,8 @@ namespace CosmicShore.Core
     {
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+
+        [SerializeField] private ScriptableEventPrismStats onPrismStolen;
 
         private TrailBlock trailBlock;
         private MaterialPropertyAnimator materialAnimator;
@@ -67,30 +70,38 @@ namespace CosmicShore.Core
 
         public void Steal(string playerName, Teams newTeam, bool superSteal)
         {
-            if (Team != newTeam)
+            if (Team == newTeam) 
+                return;
+            
+            if (!superSteal && (trailBlock.TrailBlockProperties.IsShielded || trailBlock.TrailBlockProperties.IsSuperShielded))
             {
-                if (!superSteal && (trailBlock.TrailBlockProperties.IsShielded || trailBlock.TrailBlockProperties.IsSuperShielded))
-                {
-                    trailBlock.DeactivateShields();
-                    return;
-                }
-
-                playerName = playerName != null ? playerName : "No name";
-
-                // TODO - Raise events about steal.
-                if (StatsManager.Instance != null)
-                {
-                    StatsManager.Instance.BlockStolen(newTeam, playerName, trailBlock.TrailBlockProperties);
-                }
-
-                if (CellControlManager.Instance != null)
-                {
-                    CellControlManager.Instance.StealBlock(newTeam, trailBlock.TrailBlockProperties);
-                }
-
-                ChangeTeam(newTeam);
-                // trailBlock.Player = player;
+                trailBlock.DeactivateShields();
+                return;
             }
+
+            playerName ??= "No name";
+
+            // TODO - Raise events about steal.
+                
+            onPrismStolen.Raise(
+                new PrismStats
+                {
+                    PlayerName = playerName,
+                    Volume = trailBlock.Volume,
+                    OtherPlayerName = trailBlock.PlayerName
+                });
+            /*if (StatsManager.Instance != null)
+                {
+                    StatsManager.Instance.PrismStolen(newTeam, playerName, trailBlock.TrailBlockProperties);
+                }*/
+
+            if (CellControlManager.Instance)
+            {
+                CellControlManager.Instance.StealBlock(newTeam, trailBlock.TrailBlockProperties);
+            }
+
+            ChangeTeam(newTeam);
+            // trailBlock.Player = player;
         }
 
         private void HandleTeamChange(Teams oldTeam, Teams newTeam)

@@ -30,7 +30,6 @@ namespace CosmicShore.Game
 
 
             _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
-            _netcodeHooks.OnNetworkDespawnHook += OnNetworkDespawn;
         }
 
         protected override void OnDisable()
@@ -39,43 +38,28 @@ namespace CosmicShore.Game
             // _onGameOver.OnRaised -= OutputRoundStats;
 
             _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
-            _netcodeHooks.OnNetworkDespawnHook -= OnNetworkDespawn;
         }
 
         private void OnNetworkSpawn()
         {
-            if (_netcodeHooks.IsServer)
-            {
-                _onTrailBlockCreatedEventChannel.OnRaised += OnBlockCreated;
-                _onTrailBlockDestroyedEventChannel.OnRaised += OnBlockDestroyed;
-                _onTrailBlockRestoredEventChannel.OnRaised += OnBlockRestored;
-            }
-        }
-
-        private void OnNetworkDespawn()
-        {
-            if (_netcodeHooks.IsServer)
-            {
-                _onTrailBlockCreatedEventChannel.OnRaised -= OnBlockCreated;
-                _onTrailBlockDestroyedEventChannel.OnRaised -= OnBlockDestroyed;
-                _onTrailBlockRestoredEventChannel.OnRaised -= OnBlockRestored;
-            }
+            if (!_netcodeHooks.IsServer)
+                allowRecord = false;
         }
 
         public override IRoundStats GetOrCreateRoundStats(Teams team)
         {
             var player = NetworkPlayerClientCache.GetPlayerByTeam(team);
-            if (player == null)
+            if (!player)
             {
                 Debug.LogError($"NetworkStatsManager: No player found for team {team}.");
                 return null;
             }
-            if (!player.gameObject.TryGetComponent(out NetworkRoundStats roundStats))
-            {
-                Debug.LogError($"NetworkStatsManager: No NetworkRoundStats found for player on team {team}.");
-                return null;
-            }
-            return roundStats;
+
+            if (player.gameObject.TryGetComponent(out NetworkRoundStats roundStats)) 
+                return roundStats;
+            
+            Debug.LogError($"NetworkStatsManager: No NetworkRoundStats found for player on team {team}.");
+            return null;
         }
     }
 }

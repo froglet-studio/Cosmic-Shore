@@ -22,6 +22,9 @@ namespace CosmicShore.Game
         [SerializeField]
         ScriptableEventInputEvents _onButtonReleased;
         
+        [SerializeField]
+        ScriptableEventAbilityStats onAbilityExecuted;
+        
         readonly Dictionary<InputEvents, List<ShipAction>> _shipControlActions = new();
         readonly Dictionary<ResourceEvents, List<ShipAction>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
@@ -60,9 +63,16 @@ namespace CosmicShore.Game
             if (!HasAction(controlType))
                 return;
             
-            if (StatsManager.Instance != null)
+            onAbilityExecuted.Raise(new AbilityStats
+            {
+                PlayerName = _shipStatus.PlayerName,
+                ControlType = controlType,
+                Duration = Time.time - _inputAbilityStartTimes[controlType]
+            });
+            
+            /*if (StatsManager.Instance != null)
                 StatsManager.Instance.AbilityActivated(_shipStatus.Team, _shipStatus.Player.Name, controlType,
-                    Time.time - _inputAbilityStartTimes[controlType]);
+                    Time.time - _inputAbilityStartTimes[controlType]);*/
 
             ShipHelper.StopShipControllerActions(controlType, _shipControlActions);
         }

@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Game;
+using Obvious.Soap;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -24,6 +25,12 @@ namespace CosmicShore
         bool mature = false;
         bool dying = false;
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
+        
+        [SerializeField]
+        ScriptableEventInt onLifeFormCreated;
+        
+        [SerializeField]
+        ScriptableEventInt onLifeFormDestroyed;
 
         public virtual void Initialize(Cell cell)
         {
@@ -31,7 +38,8 @@ namespace CosmicShore
             crystal = GetComponentInChildren<Crystal>();
             
             this.cell = cell;
-            StatsManager.Instance.LifeformCreated(cell.ID);
+            // StatsManager.Instance.LifeformCreated(cell.ID);
+            onLifeFormCreated?.Raise(cell.ID);
         }
 
         public virtual void AddHealthBlock(HealthBlock healthBlock)
@@ -85,13 +93,14 @@ namespace CosmicShore
         protected virtual void Die()
         {
             crystal.ActivateCrystal();
-            StatsManager.Instance.LifeformDestroyed(cell.ID);
             foreach (HealthBlock healthBlock in healthBlocks.ToArray())
             {
                 healthBlock.Damage(Random.onUnitSphere, Teams.None, "Guy Fawkes", true);
             }
             StopAllCoroutines();
             StartCoroutine(DieCoroutine());
+            // StatsManager.Instance.LifeformDestroyed(cell.ID);
+            onLifeFormDestroyed.Raise(cell.ID);
         }
 
         private IEnumerator DieCoroutine()
