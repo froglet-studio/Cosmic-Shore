@@ -1296,8 +1296,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b418899d51c04d9ea0bb2f928046963e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 945887367}
+  _spawnAIAtStart: 0
 --- !u!1 &1192541910
 GameObject:
   m_ObjectHideFlags: 0

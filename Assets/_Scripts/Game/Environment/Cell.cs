@@ -76,8 +76,18 @@ namespace CosmicShore.Game
                 //volumeGrids.Add(t, new BlockVolumeDensityGrid(t));
             }
         }
-        
-        void Start()
+
+        private void OnEnable()
+        {
+            miniGameData.OnAllPlayersSpawned += Initialize;
+        }
+
+        private void OnDisable()
+        {
+            miniGameData.OnAllPlayersSpawned -= Initialize;
+        }
+
+        private void Initialize()
         {
             normalizeWeights();
 
@@ -105,7 +115,6 @@ namespace CosmicShore.Game
             TryInitializeAndAdd(Crystal);
             Crystal.gameObject.SetActive(true);
         }
-
 
         void AssignCellType() 
         {

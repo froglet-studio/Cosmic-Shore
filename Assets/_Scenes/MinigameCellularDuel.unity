@@ -133,6 +133,12 @@ PrefabInstance:
       propertyPath: countdownDisplay
       value: 
       objectReference: {fileID: 69216808}
+    - target: {fileID: 5428165463410687127, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: miniGameData
+      value: 
+      objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
+        type: 2}
     - target: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Name
@@ -852,8 +858,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a8eb12f3db145b49948825ed7a796cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ActivePlayerScoreDisplay: {fileID: 0}
-  GolfRules: 0
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  golfRules: 0
   scoringConfigs:
   - Mode: 6
     Multiplier: 1
@@ -871,6 +877,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _updateInterval: 1
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   duration: 120
@@ -904,10 +911,8 @@ MonoBehaviour:
   gameMode: 8
   numberOfRounds: 1
   numberOfTurnsPerRound: 1
-  monitorController: {fileID: 1527998413}
-  scoreTracker: {fileID: 1527998408}
   countdownTimer: {fileID: 69216807}
-  _miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   _playerOrigins:
@@ -924,6 +929,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d1250cee23043d4affa7a4a1e734646, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   monitors:
   - {fileID: 1527998409}
 --- !u!114 &1527998414
@@ -938,8 +944,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b418899d51c04d9ea0bb2f928046963e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 1870184177}
+  _spawnAIAtStart: 0
 --- !u!1001 &1666789273
 PrefabInstance:
   m_ObjectHideFlags: 0

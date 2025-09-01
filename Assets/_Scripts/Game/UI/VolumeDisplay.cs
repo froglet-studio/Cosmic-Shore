@@ -1,5 +1,4 @@
-using System.Linq;
-using CosmicShore.Core;
+using System;
 using CosmicShore.SOAP;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,13 +10,13 @@ namespace CosmicShore.Game.UI
     {
         [SerializeField]
         MiniGameDataSO miniGameData; 
-        
-        public float Color1Radius = 0.5f;
-        public float Color2Radius = 0.5f;
-        public float Color3Radius = 0.5f;
-        [SerializeField] float upperBound = 300000;
 
+        [SerializeField] float upperBound = 300000;
+        
+        Vector4 colorRadii;
         Material material;
+        
+        bool allowUpdate;
 
         void Awake()
         {
@@ -26,20 +25,32 @@ namespace CosmicShore.Game.UI
             imageComponent.material = material;
         }
 
+        private void OnEnable()
+        {
+            miniGameData.OnMiniGameStart += UpdateUI;
+            miniGameData.OnMiniGameTurnEnd += UpdateUI;
+        }
+
+        private void OnDisable()
+        {
+            miniGameData.OnMiniGameStart -= UpdateUI;
+            miniGameData.OnMiniGameTurnEnd -= UpdateUI;
+        }
+
         void Update()
         {
-            // Use MiniGameData to get data about Volume Remaining.
-            var roundStats = miniGameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
-
-            float Vol(Teams t) => roundStats.FirstOrDefault(rs => rs.Team == t)?.VolumeRemaining ?? 0f;
-
-            float greenVolume = Vol(Teams.Jade);
-            float redVolume   = Vol(Teams.Ruby);
-            float goldVolume  = Vol(Teams.Gold);
-
-            AdjustRadii(greenVolume / upperBound, redVolume / upperBound, goldVolume / upperBound);
-
-
+            if (!allowUpdate)
+                return;
+            
+            var teamVolumes = miniGameData.GetTeamVolumes();
+            colorRadii = new Vector4(
+                teamVolumes.x / upperBound, 
+                teamVolumes.y / upperBound, 
+                teamVolumes.z / upperBound,
+                teamVolumes.w / upperBound);
+            
+            UpdateUI();
+            
             /*if (StatsManager.Instance != null)
             {
                 var teamStats = StatsManager.Instance.TeamStats;
@@ -50,23 +61,24 @@ namespace CosmicShore.Game.UI
             }*/
         }
 
-        public void UpdateUI()
+        void UpdateUI()
         {
-            if (material)
-            {
-                material.SetFloat("_Radius1", Color1Radius);
-                material.SetFloat("_Radius2", Color2Radius);
-                material.SetFloat("_Radius3", Color3Radius);
-            }
+            if (!material) return;
+            material.SetFloat("_Radius1", colorRadii.x);
+            material.SetFloat("_Radius2", colorRadii.y);
+            material.SetFloat("_Radius3", colorRadii.w);
+            
+            /*material.SetFloat("_Radius1", Color1Radius);
+            material.SetFloat("_Radius2", Color2Radius);
+            material.SetFloat("_Radius3", Color3Radius);*/
         }
 
         // Call this function to update the radii dynamically
-        public void AdjustRadii(float r1, float r2, float r3)
+        /*void AdjustRadii(float r1, float r2, float r3)
         {
             Color1Radius = r1;
             Color2Radius = r2;
             Color3Radius = r3;
-            UpdateUI();
-        }
+        }*/
     }
 }
