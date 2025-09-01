@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Linq;
 using System.Reflection;
 using CosmicShore.Core;
 using CosmicShore.Game;
@@ -50,6 +51,7 @@ namespace CosmicShore
         #endregion
 
         #region State
+
         private TrailSpawner _spawner;
         private Coroutine _runRoutine;
 
@@ -57,10 +59,14 @@ namespace CosmicShore
         private TrailBlock _seedBlock;
 
         private GameObject _ghostGo;
-        private bool _rendererWasHardDisabled = false;
-        private bool _cloakActive = false;
-        private float _cooldownEndTime = 0f;
-
+        private bool _rendererWasHardDisabled;
+        private bool _cloakActive;
+        private float _cooldownEndTime;
+        
+        private Coroutine _ghostRotRoutine;
+        private Vector3 _ghostAnchorPos;
+        private Transform _followTf;
+        
         private static readonly int IDColor = Shader.PropertyToID("_Color");
         private static readonly int IDBaseColor = Shader.PropertyToID("_BaseColor");
         private static readonly int IDColor1 = Shader.PropertyToID("Color1");
@@ -94,12 +100,14 @@ namespace CosmicShore
             _runRoutine = StartCoroutine(Run(latest));
         }
 
-        public override void StopAction() { }
+        public override void StopAction()
+        {
+        }
 
         #endregion
 
         #region Flow
-        
+
         private IEnumerator Run(TrailBlock latestBlock)
         {
             _seedBlock = latestBlock ?? GetLatestBlock();
@@ -123,12 +131,12 @@ namespace CosmicShore
             {
                 CreateGhostAt(_seedBlock.transform.position, _seedBlock.transform.rotation);
             }
-            
+
             if (hideShipDuringCooldown)
             {
                 yield return StartCoroutine(FadeShipOut());
             }
-            
+
             var wait = Mathf.Max(0.01f, cooldownSeconds);
             _cloakActive = true;
             _cooldownEndTime = Time.time + wait;
@@ -146,17 +154,16 @@ namespace CosmicShore
             {
                 yield return StartCoroutine(FadeShipIn());
             }
-            
+
             if (_seedBlock != null)
             {
                 _seedBlock.ActivateSuperShield();
             }
-
+            
+            if (_ghostRotRoutine != null) { StopCoroutine(_ghostRotRoutine); _ghostRotRoutine = null; }
             if (_ghostGo != null) Destroy(_ghostGo);
             _runRoutine = null;
         }
-
-        #endregion
 
         private void HandleBlockSpawned(TrailBlock block)
         {
@@ -171,7 +178,8 @@ namespace CosmicShore
             if (!Mathf.Approximately(original, target))
             {
                 block.waitTime = target;
-                Debug.Log($"[CloakSeedWallAction] Extended waitTime {original:0.00} → {target:0.00} (remaining {remaining:0.00}s) on {block.name}");
+                Debug.Log(
+                    $"[CloakSeedWallAction] Extended waitTime {original:0.00} → {target:0.00} (remaining {remaining:0.00}s) on {block.name}");
             }
             else
             {
@@ -179,60 +187,81 @@ namespace CosmicShore
                     $"[CloakSeedWallAction] Block already has sufficient waitTime ({original:0.00}s) on {block.name}");
             }
 
-            // keep visuals hidden just in case
             block.SetTransparency(true);
             var r = block.GetComponentInChildren<Renderer>(true);
             if (r != null) r.enabled = false;
         }
+
+        #endregion
 
         #region Ghost ship
 
         private void CreateGhostAt(Vector3 seedPos, Quaternion seedRot)
         {
             if (skinnedMeshRenderer == null) return;
-            
+
             var baked = new Mesh();
-#if UNITY_2020_2_OR_NEWER
-            skinnedMeshRenderer.BakeMesh(baked, true);
-#else
-    skinnedMeshRenderer.BakeMesh(baked);
-#endif
+            
+            skinnedMeshRenderer.BakeMesh(baked, true); // include scale
 
             _ghostGo = new GameObject("ShipGhost");
             var mf = _ghostGo.AddComponent<MeshFilter>();
             var mr = _ghostGo.AddComponent<MeshRenderer>();
             mf.sharedMesh = baked;
-            
+
+            // make independent material instances so live-ship fade never affects ghost
             if (ghostMaterialOverride != null)
             {
                 mr.material = new Material(ghostMaterialOverride);
             }
             else
             {
-                var liveMats = skinnedMeshRenderer.materials;
-                var ghostMats = new Material[liveMats.Length];
-                for (int i = 0; i < liveMats.Length; i++)
-                    ghostMats[i] = new Material(liveMats[i]);
-                mr.materials = ghostMats;
-                
-                foreach (var t in mr.materials)
-                    SetMaterialAlpha(t, 1f);
+                var live = skinnedMeshRenderer.materials;
+                var ghost = new Material[live.Length];
+                for (int i = 0; i < live.Length; i++) ghost[i] = new Material(live[i]);
+                mr.materials = ghost;
+                for (int i = 0; i < mr.materials.Length; i++) SetMaterialAlpha(mr.materials[i], 1f);
             }
 
-            var shipTf = (Ship != null ? Ship.Transform : skinnedMeshRenderer.transform);
-            var fwd = shipTf.forward;
-            var up = shipTf.up;
-            _ghostGo.transform.SetPositionAndRotation(seedPos, Quaternion.LookRotation(fwd, up));
-            
+            // anchor at seed position (no movement); rotation will follow chosen transform each frame
+            _ghostAnchorPos = seedPos;
+            _followTf = GetShipFollowTransform();
+
+            // initial orientation
+            var initialRot = _followTf != null ? _followTf.rotation : seedRot;
+            _ghostGo.transform.SetPositionAndRotation(_ghostAnchorPos, initialRot);
+
+            // do NOT rescale (BakeMesh(true) already applied world scale)
             _ghostGo.transform.localScale = Vector3.one;
             if (Mathf.Abs(ghostScaleMultiplier - 1f) > 0.0001f)
                 _ghostGo.transform.localScale *= ghostScaleMultiplier;
 
+            // start rotation-follow
+            if (_ghostRotRoutine != null) StopCoroutine(_ghostRotRoutine);
+            _ghostRotRoutine = StartCoroutine(GhostFollowRotation());
+
             float life = ghostLifetime > 0f ? ghostLifetime : cooldownSeconds;
             if (life > 0f) StartCoroutine(DestroyAfter(_ghostGo, life));
 
-            Debug.Log("[CloakSeedWallAction] Spawned ShipGhost (independent materials, alpha=1)");
+            Debug.Log($"[CloakSeedWallAction] Ghost anchored at seed. Following rotation of: {(_followTf ? _followTf.name : "NONE")}");
         }
+
+
+        private IEnumerator GhostFollowRotation()
+        {
+            while (_ghostGo != null)
+            {
+                // lock position
+                _ghostGo.transform.position = _ghostAnchorPos;
+
+                // mirror rotation from the authoritative transform
+                if (_followTf != null)
+                    _ghostGo.transform.rotation = _followTf.rotation;
+
+                yield return null;
+            }
+        }
+
         
         private IEnumerator DestroyAfter(GameObject go, float seconds)
         {
@@ -248,12 +277,11 @@ namespace CosmicShore
         {
             if (!hideShipDuringCooldown || skinnedMeshRenderer == null) yield break;
 
-            // decide target alpha: local vs remote
-            float targetAlpha = IsLocalPlayerShip() ? localCloakAlpha : (remoteFullInvisible ? 0f : localCloakAlpha);
+            var targetAlpha = IsLocalPlayerShip() ? localCloakAlpha : remoteFullInvisible ? 0f : localCloakAlpha;
 
-            var mats = skinnedMeshRenderer.materials; // instances
-            bool anyAlphaCapable = false;
-            bool anyOpaque = false;
+            var mats = skinnedMeshRenderer.materials;
+            var anyAlphaCapable = false;
+            var anyOpaque = false;
 
             foreach (var m in mats)
             {
@@ -263,15 +291,11 @@ namespace CosmicShore
             }
 
             if (anyAlphaCapable)
-                yield return StartCoroutine(FadeAlpha(mats, 1f, targetAlpha, Mathf.Max(0.01f, fadeOutSeconds)));
+                yield return StartCoroutine(FadeAlpha(mats, 1f, localCloakAlpha, Mathf.Max(0.01f, fadeOutSeconds)));
 
-            // If we want 0% and some mats are opaque → hard toggle to fully hide for that viewer
-            if (Mathf.Approximately(targetAlpha, 0f) && anyOpaque && hardToggleIfAnyOpaqueAtZero)
-            {
-                skinnedMeshRenderer.enabled = false;
-                _rendererWasHardDisabled = true;
-                Debug.Log("[CloakSeedWallAction] Hard-disabled SMR due to opaque mats & target 0%");
-            }
+            if (!Mathf.Approximately(targetAlpha, 0f) || !anyOpaque || !hardToggleIfAnyOpaqueAtZero) yield break;
+            skinnedMeshRenderer.enabled = false;
+            _rendererWasHardDisabled = true;
         }
 
         private IEnumerator FadeShipIn()
@@ -287,13 +311,7 @@ namespace CosmicShore
             }
 
             // restore to 1
-            bool anyAlphaCapable = false;
-            foreach (var m in mats)
-                if (m && MaterialSupportsAlpha(m))
-                {
-                    anyAlphaCapable = true;
-                    break;
-                }
+            var anyAlphaCapable = mats.Any(m => m && MaterialSupportsAlpha(m));
 
             if (anyAlphaCapable)
                 yield return StartCoroutine(FadeAlpha(mats, GetCurrentAlpha(mats, 1f), 1f,
@@ -315,12 +333,12 @@ namespace CosmicShore
             return defaultAlpha;
         }
 
-        private IEnumerator FadeAlpha(Material[] mats, float from, float to, float duration)
+        private static IEnumerator FadeAlpha(Material[] mats, float from, float to, float duration)
         {
-            float t = 0f;
+            var t = 0f;
             while (t < duration)
             {
-                float a = Mathf.Lerp(from, to, t / duration);
+                var a = Mathf.Lerp(from, to, t / duration);
                 foreach (var m in mats)
                     if (m != null)
                         SetMaterialAlpha(m, a);
@@ -333,14 +351,14 @@ namespace CosmicShore
                     SetMaterialAlpha(m, to);
         }
 
-        private bool MaterialSupportsAlpha(Material m)
+        private static bool MaterialSupportsAlpha(Material m)
         {
             return m.HasProperty(IDBaseColor) || m.HasProperty(IDColor)
-                                               || m.HasProperty(IDColor1) || m.HasProperty(IDColor2)
-                                               || m.HasProperty(IDColorMult);
+                                              || m.HasProperty(IDColor1) || m.HasProperty(IDColor2)
+                                              || m.HasProperty(IDColorMult);
         }
 
-        private void SetMaterialAlpha(Material m, float alpha)
+        private static void SetMaterialAlpha(Material m, float alpha)
         {
             if (m.HasProperty(IDBaseColor))
             {
@@ -358,7 +376,7 @@ namespace CosmicShore
                 return;
             }
 
-            bool g = false;
+            var g = false;
             if (m.HasProperty(IDColor1))
             {
                 var c1 = m.GetColor(IDColor1);
@@ -400,6 +418,15 @@ namespace CosmicShore
 
             return null;
         }
+        
+        private Transform GetShipFollowTransform()
+        {
+            var statusTf = Ship?.ShipStatus?.ShipTransform;
+            if (statusTf != null) return statusTf;
+
+            return null;
+        }
+
 
         #endregion
     }
