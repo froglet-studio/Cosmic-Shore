@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 7041824371073105239}
   - component: {fileID: 2853121182355459875}
   m_Layer: 0
-  m_Name: TrailBlockManagers
+  m_Name: PrismManagers
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

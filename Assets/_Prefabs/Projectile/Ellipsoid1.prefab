@@ -181,6 +181,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &7565649048046393825
@@ -196,6 +198,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5351369201898612738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -390,6 +393,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &7748918433617709286
@@ -405,6 +410,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7629313708332664581
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -599,6 +605,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1563367541199732918
@@ -614,6 +622,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7854252421054361401
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -808,6 +817,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4749566506593546004
@@ -823,6 +834,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &689635703090951892
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1017,6 +1029,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &58271103214413105
@@ -1032,6 +1046,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &4589494019969393738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1226,6 +1241,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8421464371504742439
@@ -1241,6 +1258,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1441438643753211366
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1435,6 +1453,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &6866708148463187494
@@ -1450,6 +1470,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8080990232627467690
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1644,6 +1665,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8864231538627366385
@@ -1659,6 +1682,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7551897220813796983
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1853,6 +1877,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &2864782716844004528
@@ -1868,6 +1894,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1645147284327913796
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2062,6 +2089,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &7317709465121596482
@@ -2077,6 +2106,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2106134148647651254
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2271,6 +2301,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &7729327525853577698
@@ -2286,6 +2318,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7308414650656897493
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2480,6 +2513,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4921103856205243116
@@ -2495,6 +2530,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &3967348669563360997
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2689,6 +2725,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8386556422974179353
@@ -2704,6 +2742,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &3883482079765505701
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3019,6 +3058,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4556713127741767804
@@ -3034,6 +3075,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1360514274086371735
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3228,6 +3270,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &581433622424497346
@@ -3243,6 +3287,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2720458530238817755
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3437,6 +3482,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &484220942227280664
@@ -3452,6 +3499,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &4448073472478386477
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3646,6 +3694,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &37572924224816312
@@ -3661,6 +3711,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &3096991772152777867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3855,6 +3906,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &398763913595165786
@@ -3870,6 +3923,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6097532752498686431
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4064,6 +4118,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &702536387508860233
@@ -4079,6 +4135,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &9146916470297565871
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4273,6 +4330,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8213543850034525476
@@ -4288,6 +4347,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5947736765247923920
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4482,6 +4542,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8548644504133236627
@@ -4497,6 +4559,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1813857250767434878
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4691,6 +4754,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &3719192992161107857
@@ -4706,6 +4771,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &3758516443920017162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4900,6 +4966,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1289117705254867418
@@ -4915,6 +4983,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &9101691105045162956
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5109,6 +5178,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5077719564855503447
@@ -5124,6 +5195,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5134011164216029167
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5318,6 +5390,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &3361654586905669455
@@ -5333,6 +5407,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8037678246446350444
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5527,6 +5602,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5974769120305914978
@@ -5542,6 +5619,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &833335930734133729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5736,6 +5814,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &2605879546768253556
@@ -5751,6 +5831,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2382280654997135744
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5945,6 +6026,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8966570892086990275
@@ -5960,6 +6043,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5535714969540053833
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6154,6 +6238,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &6212672466576127698
@@ -6169,6 +6255,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5614614388670362034
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6363,6 +6450,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5613479203850801972
@@ -6378,6 +6467,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5732134421993486936
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6572,6 +6662,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &6122351133096333249
@@ -6587,6 +6679,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5705584581881906952
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6781,6 +6874,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4554122078072100567
@@ -6796,6 +6891,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8983989601424915274
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6990,6 +7086,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8188964335622455943
@@ -7005,6 +7103,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1711900936277237983
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7199,6 +7298,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &3149460619165750619
@@ -7214,6 +7315,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8501788097759222867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7408,6 +7510,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4120770466863877675
@@ -7423,6 +7527,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5786135015969489061
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7617,6 +7722,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5280093508873483910
@@ -7632,6 +7739,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2316148036696929412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7826,6 +7934,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &232366543939287829
@@ -7841,6 +7951,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &936654419349680722
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8035,6 +8146,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5103483577586938659
@@ -8050,6 +8163,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &9138662375292838226
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8244,6 +8358,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8261607408446018623
@@ -8259,6 +8375,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5762738638351532718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8453,6 +8570,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1154862821152552046
@@ -8468,6 +8587,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7104963839785030896
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8662,6 +8782,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &9168763342963664023
@@ -8677,6 +8799,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8885490669418366272
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8871,6 +8994,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4159357195010157513
@@ -8886,6 +9011,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2811856004662188168
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9080,6 +9206,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &2693956753045790387
@@ -9095,6 +9223,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7473798814858375036
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9289,6 +9418,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &2085475507995384466
@@ -9304,6 +9435,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5044501068119064764
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9498,6 +9630,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &957261488951806800
@@ -9513,6 +9647,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6407062807062295762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9707,6 +9842,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &954832358366733730
@@ -9722,6 +9859,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1752496634538019110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9916,6 +10054,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1104281491258782796
@@ -9931,6 +10071,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1384635427294706049
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10125,6 +10266,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1110616677109235208
@@ -10140,6 +10283,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2178934610781304067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10334,6 +10478,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1639473010509178589
@@ -10349,6 +10495,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6080706277611857852
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10543,6 +10690,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5403638101859996265
@@ -10558,6 +10707,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6256637016230068937
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10752,6 +10902,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &7289825310964372170
@@ -10767,6 +10919,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2906789254178664710
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10961,6 +11114,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8314435506374709230
@@ -10976,6 +11131,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5391863162499885910
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11170,6 +11326,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4136334204575751659
@@ -11185,6 +11343,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5001787926550612546
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11379,6 +11538,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &7271202184825856838
@@ -11394,6 +11555,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8670362441509019573
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11588,6 +11750,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &3400293064259036620
@@ -11603,6 +11767,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2424104486284796459
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11797,6 +11962,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &614570315400318973
@@ -11812,6 +11979,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &3437690587993824401
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12006,6 +12174,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &2797318392913201345
@@ -12021,6 +12191,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2239503955457881161
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12215,6 +12386,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &7724864681834560487
@@ -12230,6 +12403,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1275686495904085636
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12424,6 +12598,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &3664932633904502031
@@ -12439,6 +12615,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5206997477441124491
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12633,6 +12810,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5511399992133615240
@@ -12648,6 +12827,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6293606261580488993
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12842,6 +13022,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &6986214515407857368
@@ -12857,6 +13039,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &4639322499134200783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13051,6 +13234,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8620646881935253625
@@ -13066,6 +13251,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8324262570036282611
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13260,6 +13446,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &6266635048198393489
@@ -13275,6 +13463,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8750695669978002998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13469,6 +13658,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &837926972796504815
@@ -13484,6 +13675,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7375727543138207314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13678,6 +13870,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &132369227828898553
@@ -13693,6 +13887,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1713659878975402324
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13887,6 +14082,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &2454962111366068044
@@ -13902,6 +14099,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6990050338513517320
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14096,6 +14294,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1442755213359102657
@@ -14111,6 +14311,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &288519181571554856
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14305,6 +14506,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &6755847695025266280
@@ -14320,6 +14523,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &4490993616762451791
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14514,6 +14718,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5690962934892116647
@@ -14529,6 +14735,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7139751789277840038
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14723,6 +14930,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1533994213631311320
@@ -14738,6 +14947,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7681801889206889136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14932,6 +15142,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1815325657215902747
@@ -14947,6 +15159,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1207916575402082781
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15141,6 +15354,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &383254992727469808
@@ -15156,6 +15371,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6794219958326823799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15350,6 +15566,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5730563727243266008
@@ -15365,6 +15583,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1555517331171502484
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15559,6 +15778,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &459256828185765927
@@ -15574,6 +15795,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2690741078323474250
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15768,6 +15990,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &1031212629690612231
@@ -15783,6 +16007,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6543900688967213570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15977,6 +16202,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8468655307575238348
@@ -15992,6 +16219,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6520950877665300239
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16186,6 +16414,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &7262114800947522966
@@ -16201,6 +16431,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6773633501828112116
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16395,6 +16626,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &6881969842789664995
@@ -16410,6 +16643,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &25163981693862450
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16604,6 +16838,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &3461478637575481324
@@ -16619,6 +16855,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &8506891171894308954
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16813,6 +17050,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &2190158621668452255
@@ -16828,6 +17067,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &1145972696974746617
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17022,6 +17262,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4501981971791288455
@@ -17037,6 +17279,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2975815751635169590
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17231,6 +17474,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &6711583969188962034
@@ -17246,6 +17491,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6601948754465298271
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17440,6 +17686,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &225054180466750788
@@ -17455,6 +17703,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2007469132490535903
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17649,6 +17898,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4767076047384512415
@@ -17664,6 +17915,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &7480746330409737180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17858,6 +18110,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &4912914592640488181
@@ -17873,6 +18127,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &745384896956068196
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18067,6 +18322,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &3180499580521528834
@@ -18082,6 +18339,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &2677593524925664874
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18276,6 +18534,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5437885145597237234
@@ -18291,6 +18551,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6998424911084850328
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18485,6 +18746,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &8924033542955874880
@@ -18500,6 +18763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &6442454121552403828
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18694,6 +18958,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &5690402266310851489
@@ -18709,6 +18975,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &9223066825202980988
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18903,6 +19170,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &2180422882601575580
@@ -18918,6 +19187,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &4262812725372735810
 MonoBehaviour:
   m_ObjectHideFlags: 0

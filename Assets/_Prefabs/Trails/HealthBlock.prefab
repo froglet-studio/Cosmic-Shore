@@ -185,6 +185,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &3650897936652181197
@@ -200,6 +202,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &976040136872667664
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -229,6 +232,7 @@ MonoBehaviour:
   prismProjectileEffectsSO: []
   prismSkimmerEffectsSO: []
   prismExplosionEffectsSO: []
+  Prism: {fileID: 6313579230210663873}
 --- !u!114 &8800830759169867029
 MonoBehaviour:
   m_ObjectHideFlags: 0

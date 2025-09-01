@@ -15,6 +15,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1565772295433765400, guid: c1f494543c951b54f9d9e15318de9a4a,
         type: 3}
+      propertyPath: onPrismStolen
+      value: 
+      objectReference: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42,
+        type: 2}
+    - target: {fileID: 1565772295433765400, guid: c1f494543c951b54f9d9e15318de9a4a,
+        type: 3}
       propertyPath: _themeManagerData
       value: 
       objectReference: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628,
@@ -25,6 +31,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628,
         type: 2}
+    - target: {fileID: 4175780676369548694, guid: c1f494543c951b54f9d9e15318de9a4a,
+        type: 3}
+      propertyPath: Prism
+      value: 
+      objectReference: {fileID: 646114064177515315}
     - target: {fileID: 8028424163657488521, guid: c1f494543c951b54f9d9e15318de9a4a,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -144,6 +155,12 @@ PrefabInstance:
       propertyPath: maxScale.x
       value: 20
       objectReference: {fileID: 0}
+    - target: {fileID: 9136404974445910110, guid: c1f494543c951b54f9d9e15318de9a4a,
+        type: 3}
+      propertyPath: onPrismVolumeModified
+      value: 
+      objectReference: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+        type: 2}
     m_RemovedComponents:
     - {fileID: 4980530451716370270, guid: c1f494543c951b54f9d9e15318de9a4a, type: 3}
     - {fileID: 6767780146751856348, guid: c1f494543c951b54f9d9e15318de9a4a, type: 3}
@@ -151,3 +168,15 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c1f494543c951b54f9d9e15318de9a4a, type: 3}
+--- !u!114 &646114064177515315 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8110546509497104660, guid: c1f494543c951b54f9d9e15318de9a4a,
+    type: 3}
+  m_PrefabInstance: {fileID: 8680976651757335079}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f76793d2a031124f900d060d1bbb2bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
