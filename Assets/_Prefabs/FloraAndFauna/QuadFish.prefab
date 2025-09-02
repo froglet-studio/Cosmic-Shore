@@ -43,13 +43,14 @@ Animation:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6455206541193087406}
   m_Enabled: 1
-  serializedVersion: 3
+  serializedVersion: 4
   m_Animation: {fileID: 7400000, guid: b7f376d6832cae44c81e0327ca7d2291, type: 2}
   m_Animations:
   - {fileID: 7400000, guid: b7f376d6832cae44c81e0327ca7d2291, type: 2}
   m_WrapMode: 0
   m_PlayAutomatically: 1
   m_AnimatePhysics: 0
+  m_UpdateMode: 0
   m_CullingType: 0
 --- !u!114 &4652232322436628206
 MonoBehaviour:
@@ -67,15 +68,17 @@ MonoBehaviour:
   spindle: {fileID: 7947330458120288988}
   healthBlocksForMaturity: 1
   minHealthBlocks: 0
+  shieldPeriod: 0
   Team: 0
-  aggression: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   Population: {fileID: 0}
   detectionRadius: 100
   separationRadius: 4
   consumeRadius: 40
   behaviorUpdateRate: 1
   separationWeight: 2
-  cohesionWeight: 1
   goalWeight: 1.5
   minSpeed: 3
   maxSpeed: 6
@@ -143,6 +146,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:

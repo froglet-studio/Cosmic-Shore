@@ -27,14 +27,24 @@ namespace CosmicShore.Game.UI
 
         private void OnEnable()
         {
-            miniGameData.OnMiniGameStart += UpdateUI;
-            miniGameData.OnMiniGameTurnEnd += UpdateUI;
+            miniGameData.OnMiniGameStart += OnMiniGameStart;
+            miniGameData.OnMiniGameTurnEnd += OnMiniGameTurnEnd;
         }
 
         private void OnDisable()
         {
-            miniGameData.OnMiniGameStart -= UpdateUI;
-            miniGameData.OnMiniGameTurnEnd -= UpdateUI;
+            miniGameData.OnMiniGameStart -= OnMiniGameStart;
+            miniGameData.OnMiniGameTurnEnd -= OnMiniGameTurnEnd;
+        }
+
+        void OnMiniGameStart()
+        {
+            allowUpdate = true;
+        }
+        
+        void OnMiniGameTurnEnd()
+        {
+            allowUpdate = false;
         }
 
         void Update()

@@ -44,6 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e7235857f3b55a4cb6116d4d07bb544, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   Team: 0
   goalUpdateInterval: 5
   Goal: {x: 0, y: 0, z: 0}

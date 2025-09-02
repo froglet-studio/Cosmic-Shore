@@ -44,6 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86d5ae3a13a97e34c8b793386d8b4f37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   Team: 2
   goalUpdateInterval: 5
   Goal: {x: 0, y: 0, z: 0}
@@ -52,3 +53,4 @@ MonoBehaviour:
   spawnCount: 10
   spawnRadius: 10
   formationSpread: 50
+  PhaseIncrease: 0

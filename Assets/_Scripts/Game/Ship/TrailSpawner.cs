@@ -223,9 +223,9 @@ namespace CosmicShore.Game
         }
 
         /// <summary>Creates a block at offset.</summary>
-        void CreateBlock(float halfGap, Trail trail)
+        void CreateBlock(float halfGap, Trail prisms)
         {
-            var block = Instantiate(trailBlock);
+            var prism = Instantiate(trailBlock);
             EnsureContainer();
 
             // scale
@@ -235,39 +235,42 @@ namespace CosmicShore.Game
                 baseScale.y * YScaler,
                 baseScale.z * ZScaler
             );
-            block.TargetScale = scale;
+            prism.TargetScale = scale;
 
             // position & rotation
             float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
             Vector3 pos = transform.position - _shipStatus.Course * offset + _shipStatus.ShipTransform.right * xShift;
-            block.transform.SetPositionAndRotation(pos, _shipStatus.blockRotation);
-            block.transform.parent = TrailContainer.transform;
+            prism.transform.SetPositionAndRotation(pos, _shipStatus.blockRotation);
+            prism.transform.parent = TrailContainer.transform;
 
             // owner & player
             bool charm = isCharmed && tempShip != null;
             string creatorId = charm ? _shipStatus.Player.PlayerUUID : ownerId;
             if (string.IsNullOrEmpty(creatorId))
                 creatorId = _shipStatus.Player?.PlayerUUID ?? string.Empty;
-            block.ownerID = creatorId;
-            block.PlayerName = charm ? _shipStatus.PlayerName : _shipStatus.Team.ToString();
-            block.ChangeTeam(charm ? _shipStatus.Team : _shipStatus.Team);
+            prism.ownerID = creatorId;
+
+            prism.PlayerName = _shipStatus.PlayerName;
+            prism.ChangeTeam(_shipStatus.Team);
+            // prism.PlayerName = charm ? _shipStatus.PlayerName : _shipStatus.Team.ToString();
+            // prism.ChangeTeam(charm ? _shipStatus.Team : _shipStatus.Team);
 
             // waitTime
-            block.waitTime = waitTillOutsideSkimmer
+            prism.waitTime = waitTillOutsideSkimmer
                 ? (skimmer.transform.localScale.z + TrailZScale) / _shipStatus.Speed
                 : waitTime;
 
             // shield
             if (shielded)
-                block.TrailBlockProperties.IsShielded = true;
+                prism.TrailBlockProperties.IsShielded = true;
 
             // add to trail
-            trail.Add(block);
-            block.TrailBlockProperties.Index = (ushort)trail.TrailList.IndexOf(block);
+            prisms.Add(prism);
+            prism.TrailBlockProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
 
             // event
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
-            OnBlockSpawned?.Invoke(block);
+            OnBlockSpawned?.Invoke(prism);
         }
 
         public List<TrailBlock> GetLastTwoBlocks()

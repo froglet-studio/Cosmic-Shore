@@ -24,6 +24,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 626468446044937596}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -32,7 +33,6 @@ Transform:
   - {fileID: 1320197459599123497}
   - {fileID: 4468149749567221702}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8747353401585326389
 MonoBehaviour:
@@ -49,16 +49,22 @@ MonoBehaviour:
   healthBlock: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
     type: 3}
   spindle: {fileID: 7687128997384954202}
+  healthBlocksForMaturity: 1
   minHealthBlocks: 0
+  shieldPeriod: 0
   Team: 0
-  aggression: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   Population: {fileID: 0}
-  scale: 1
+  IsHead: 0
+  IsTail: 0
 --- !u!1001 &5277263623395839540
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 286674666516350918}
     m_Modifications:
     - target: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
@@ -137,6 +143,9 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cccc6ba7985893f43841fccfbb53dc71, type: 3}
 --- !u!4 &1320197459599123497 stripped
 Transform:
@@ -149,6 +158,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 286674666516350918}
     m_Modifications:
     - target: {fileID: 402074254422556026, guid: 07cab42ac02ab5347af628f4004f86a9,
@@ -257,6 +267,9 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8747353401585326389}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 07cab42ac02ab5347af628f4004f86a9, type: 3}
 --- !u!4 &4468149749567221702 stripped
 Transform:

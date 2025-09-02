@@ -48,9 +48,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   healthBlock: {fileID: 5961168600923722988}
   spindle: {fileID: 2552934351062831229}
+  healthBlocksForMaturity: 1
   minHealthBlocks: 0
+  shieldPeriod: 0
   Team: 3
-  aggression: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   Population: {fileID: 0}
   cohesionRadius: 20
   behaviorUpdateRate: 3
@@ -188,12 +192,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8807592997804812840, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[0]
+      propertyPath: 'm_BlendShapeWeights.Array.data[0]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8807592997804812840, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[1]
+      propertyPath: 'm_BlendShapeWeights.Array.data[1]'
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
@@ -216,42 +220,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5494491424606190975}
     m_Modifications:
-    - target: {fileID: 1297303983159372242, guid: 32182c0d19e344b4c9a9b332052037e6,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 0.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 1297303983159372242, guid: 32182c0d19e344b4c9a9b332052037e6,
-        type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 1297303983159372242, guid: 32182c0d19e344b4c9a9b332052037e6,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3
-      objectReference: {fileID: 0}
     - target: {fileID: 1764503489717778941, guid: 32182c0d19e344b4c9a9b332052037e6,
         type: 3}
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5945480239701989318}
-    - target: {fileID: 1764503489717778941, guid: 32182c0d19e344b4c9a9b332052037e6,
-        type: 3}
-      propertyPath: ParticleEffect
-      value: 
-      objectReference: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
-        type: 3}
-    - target: {fileID: 4055802238885949714, guid: 32182c0d19e344b4c9a9b332052037e6,
-        type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
-    - target: {fileID: 4897651091342273877, guid: 32182c0d19e344b4c9a9b332052037e6,
-        type: 3}
-      propertyPath: m_RootOrder
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4897651091342273877, guid: 32182c0d19e344b4c9a9b332052037e6,
         type: 3}
       propertyPath: m_LocalPosition.x

@@ -20,7 +20,7 @@ namespace CosmicShore.Game
             }
         }
         
-        void OnTriggerEnter(Collider other)
+        protected virtual void OnTriggerEnter(Collider other)
         {
             if (!other.TryGetComponent(out IImpactCollider impacteeCollider))
                 return;
