@@ -27,7 +27,7 @@ namespace CosmicShore.Core
             set
             {
                 currentAmount = Mathf.Clamp01(value);
-                OnResourceChange?.Invoke(currentAmount);   // <— notify listeners (HUD sub)
+                OnResourceChange?.Invoke(currentAmount);  
             }
         }
     }

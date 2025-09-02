@@ -1889,13 +1889,12 @@ GameObject:
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 3882236086036410899}
-  - component: {fileID: 6762570635876708206}
   - component: {fileID: 7318663848403301360}
   - component: {fileID: 9172589084772723142}
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 538077361211256076}
-  - component: {fileID: 3067597436117647303}
+  - component: {fileID: 6733957700513663958}
   m_Layer: 0
   m_Name: Manta
   m_TagString: Player_Ship
@@ -2075,7 +2074,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 7318663848403301360}
-  _shipHUDController: {fileID: 6762570635876708206}
+  _shipHUDController: {fileID: 6733957700513663958}
+  _shipHUDView: {fileID: 2835891913121360755}
   shipHUDContainer: {fileID: 1760960822626701101}
   boostMultiplier: 4
   _name: Manta
@@ -2280,22 +2280,6 @@ MonoBehaviour:
   settings: {fileID: 11400000, guid: 6901057300956f848b42019141377602, type: 2}
   OnInitializePlayerCamera: {fileID: 11400000, guid: dfc4b3d01080dac408975d4a25c6c1ea,
     type: 2}
---- !u!114 &6762570635876708206
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shipType: 1
-  profile: {fileID: 11400000, guid: bca2116c248e0f841b7c909679cd3ad5, type: 2}
-  refs: {fileID: 3067597436117647303}
-  sceneNameListSO: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
 --- !u!114 &7318663848403301360
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2389,7 +2373,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ff89ef91b7f55d44d95e4f57a70eef64, type: 2}
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
---- !u!114 &3067597436117647303
+--- !u!114 &6733957700513663958
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2398,14 +2382,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 6417075533431866457}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 821427f0df9d40fe8197352f2ad737c4, type: 3}
+  m_Script: {fileID: 11500000, guid: 1079422f73b5424b97437619fdccad2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chargeBoost: {fileID: 0}
-  consumeBoost: {fileID: 0}
-  seedAssembler: {fileID: 0}
-  overheating: {fileID: 0}
-  fireGun: {fileID: 0}
+  view: {fileID: 2835891913121360755}
+  overchargeSO: {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
+  skimmer: {fileID: 8469300474470268824}
 --- !u!1 &6427700898264204751
 GameObject:
   m_ObjectHideFlags: 0
@@ -3420,11 +3402,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1014949525158390853, guid: ce0291905886e0b45b571bb9c51c0d19,
         type: 3}
-      propertyPath: effectsBehaviour
-      value: 
-      objectReference: {fileID: 2660498371953141487}
-    - target: {fileID: 1014949525158390853, guid: ce0291905886e0b45b571bb9c51c0d19,
-        type: 3}
       propertyPath: sparrowExhaustBarrage
       value: 
       objectReference: {fileID: 0}
@@ -3596,14 +3573,15 @@ PrefabInstance:
     - target: {fileID: 7886290077738051211, guid: ce0291905886e0b45b571bb9c51c0d19,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8479033811678456409, guid: ce0291905886e0b45b571bb9c51c0d19,
         type: 3}
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1014949525158390853, guid: ce0291905886e0b45b571bb9c51c0d19, type: 3}
     m_RemovedGameObjects:
     - {fileID: 675996288523263003, guid: ce0291905886e0b45b571bb9c51c0d19, type: 3}
     - {fileID: 5771303120416088672, guid: ce0291905886e0b45b571bb9c51c0d19, type: 3}
@@ -3620,7 +3598,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7886290077738051211, guid: ce0291905886e0b45b571bb9c51c0d19,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2660498371953141487}
+      addedObject: {fileID: 2835891913121360755}
   m_SourcePrefab: {fileID: 100100000, guid: ce0291905886e0b45b571bb9c51c0d19, type: 3}
 --- !u!224 &1018278068738739671 stripped
 RectTransform:
@@ -3634,7 +3612,7 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1707226688230850385}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &2660498371953141487
+--- !u!114 &2835891913121360755
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3643,15 +3621,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 8845336482132744666}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 78265ba243654364c8c43d02d238c393, type: 3}
+  m_Script: {fileID: 11500000, guid: 248f3b9a9b6641c6872bd31ed92edef9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meters: []
-  toggles: []
-  animators: []
-  texts:
-  - key: OverchargeText
-    text: {fileID: 1233584866538271001}
+  highlights: []
+  countText: {fileID: 1233584866538271001}
 --- !u!1001 &4619950853104356685
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3936,7 +3910,7 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 7883774110713613109, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
-      insertIndex: 0
+      insertIndex: -1
       addedObject: {fileID: 1018278068738739671}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 522a0b0de3eb7b64d8c6e0e35377de5f, type: 3}

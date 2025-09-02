@@ -6,71 +6,58 @@ using UnityEngine;
 public class ChargeBoostAction : ShipAction
 {
     [Header("Charge Boost Settings")]
-    [SerializeField] float maxBoostMultiplier = 2f;
+    [SerializeField] float maxBoostMultiplier   = 3f;   // stronger top-end boost
+    [SerializeField] float maxNormalizedCharge  = 5f;   // capacity in 'units'
 
-    [SerializeField] float chargePerSecond    = 0.5f;   // slower charge (was 0.33 per 0.1s ~= 3.3/s)
-    [SerializeField] float dischargePerSecond = 2.5f;   // similar to your 0.25 per 0.1s ~= 2.5/s
+    [Header("Timing (seconds)")]
+    [SerializeField] float chargeTimeToFull     = 2.0f;
+    [SerializeField] float dischargeTimeToEmpty = 2.5f;
 
-    [SerializeField] float tickSeconds = 0.1f;
+    [Tooltip("Tick cadence for UI/physics updates")]
+    [SerializeField] float tickSeconds = 0.05f;
 
-    [Tooltip("Resource slot used for the charged-boost meter")]
+    [Header("Resource slot holding the charged units (0..maxNormalizedCharge)")]
     [SerializeField] int boostBoostResourceIndex = 0;
 
-    [Tooltip("Maximum charge units. Treat this as capacity (not strictly 0..1).")]
-    [SerializeField] float maxNormalizedCharge = 5f;
-
     [Header("Optional Safety")]
-    [Tooltip("After discharge ends, prevent immediate re-charge until this time has passed.")]
     [SerializeField] float rechargeCooldownSeconds = 0f;
 
     [Header("Debug")]
-    [SerializeField] bool verbose = true;
+    [SerializeField] bool verbose = false;
 
-    private bool _charging;
-    private float _cooldownUntilUtc; 
+    private bool  _charging;
+    private float _cooldownUntilUtc;
 
-    public event Action<float> OnChargeStarted,OnChargeProgress,OnDischargeStarted,OnDischargeProgress;
-    public event Action OnChargeEnded;
-    public event Action OnDischargeEnded;
+    public event Action<float> OnChargeStarted, OnChargeProgress, OnDischargeStarted, OnDischargeProgress;
+    public event Action OnChargeEnded, OnDischargeEnded;
 
     public float MaxChargeUnits => maxNormalizedCharge;
 
-    
-    // private void OnEnable()
-    // {
-    //     // Cache the IShipStatus found up the parent chain (your ships already have this)
-    //     if (bus != null && Ship.ShipStatus != null)
-    //         bus.Register(Ship.ShipStatus, this);
-    // }
-    //
-    // private void OnDisable()
-    // {
-    //     if (bus != null && Ship.ShipStatus != null)
-    //         bus.Unregister(Ship.ShipStatus, this);
-    // }
-    
+    float ChargePerSecond    => (chargeTimeToFull     > 0f) ? (maxNormalizedCharge / chargeTimeToFull)     : maxNormalizedCharge;
+    float DischargePerSecond => (dischargeTimeToEmpty > 0f) ? (maxNormalizedCharge / dischargeTimeToEmpty) : maxNormalizedCharge;
+
     public override void StartAction()
     {
         if (Time.unscaledTime < _cooldownUntilUtc)
         {
-            Log($"[StartAction] in cooldown ({_cooldownUntilUtc - Time.unscaledTime:F2}s left) — ignoring.");
+            Log($"[StartAction] cooldown {_cooldownUntilUtc - Time.unscaledTime:F2}s");
             return;
         }
+
         StopAllCoroutines();
 
-        if (ResourceSystem == null)
+        if (!ResourceSystem)
         {
-            Log("[StartAction] ResourceSystem is NULL — cannot charge.");
+            Log("[StartAction] ResourceSystem NULL");
             return;
         }
 
         _charging = true;
-        var start = GetNorm();
+
+        // preview multiplier (optional), but ship speed shouldn’t use it yet
+        var start = GetUnits();
         ShipStatus.ChargedBoostDischarging = false;
         ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(start);
-
-        Log($"[StartAction] begin charge | idx={boostBoostResourceIndex} start={start:F3} " +
-            $"maxMult={maxBoostMultiplier:F2} perSec={chargePerSecond:F3} tick={tickSeconds:F3}");
 
         OnChargeStarted?.Invoke(start);
         StartCoroutine(ChargeRoutine());
@@ -81,115 +68,99 @@ public class ChargeBoostAction : ShipAction
         StopAllCoroutines();
         _charging = false;
 
-        if (ResourceSystem == null)
+        if (!ResourceSystem)
         {
-            Log("[StopAction] ResourceSystem is NULL — cannot discharge.");
+            Log("[StopAction] ResourceSystem NULL");
             return;
         }
 
-        var start = GetNorm();
+        var start = GetUnits();
         ShipStatus.ChargedBoostDischarging = true;
 
-        Log($"[StopAction] begin discharge | idx={boostBoostResourceIndex} start={start:F3} " +
-            $"perSec={dischargePerSecond:F3} tick={tickSeconds:F3}");
-
         OnDischargeStarted?.Invoke(start);
-        StartCoroutine(DischargeRoutine()); 
-
+        StartCoroutine(DischargeRoutine());
     }
 
-    private IEnumerator ChargeRoutine()
+    IEnumerator ChargeRoutine()
     {
-        float perTick = chargePerSecond * tickSeconds;
+        float perTick = ChargePerSecond * tickSeconds;
 
         while (_charging)
         {
-            float before = GetNorm();
-            AddNorm(+perTick);
-            float v = GetNorm();
+            float before = GetUnits();
+            AddUnits(+perTick);
+            float v = GetUnits();
 
+            // preview value (UI can also use events)
             ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(v);
-            LogTick($"[ChargeTick] {before:F3} -> {v:F3} | mult={ShipStatus.ChargedBoostCharge:F3}");
             OnChargeProgress?.Invoke(v);
 
-            if (Mathf.Approximately(v, maxNormalizedCharge) || v >= maxNormalizedCharge)
-            {
-                Log($"[ChargeTick] reached full ({maxNormalizedCharge:F2}) — stopping charge.");
-                break;
-            }
+            if (v >= maxNormalizedCharge - 1e-4f) break;
 
             yield return new WaitForSeconds(tickSeconds);
         }
 
         _charging = false;
-        ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(maxNormalizedCharge); // set to true max
+
+        // snap to full for determinism
+        SetUnits(maxNormalizedCharge);
+        ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(maxNormalizedCharge);
         OnChargeEnded?.Invoke();
-        Log("[ChargeEnd] ended | mult set to max.");
     }
 
-    private IEnumerator DischargeRoutine()
+    IEnumerator DischargeRoutine()
     {
-        float perTick = dischargePerSecond * tickSeconds;
+        float perTick = DischargePerSecond * tickSeconds;
 
-        while (GetNorm() > 0f)
+        // IMPORTANT: actually apply boost to ship movement while discharging
+        while (GetUnits() > 0f)
         {
-            float before = GetNorm();
-            AddNorm(-perTick);
-            float v = GetNorm();
+            float v = GetUnits();
+            // Ship code should already multiply movement/thrust by BoostMultiplier.
+            Ship.ShipStatus.BoostMultiplier = BoostMultiplierFrom(v);
+            ShipStatus.Boosting = true;
 
-            ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(v);
-            LogTick($"[DischargeTick] {before:F3} -> {v:F3} | mult={ShipStatus.ChargedBoostCharge:F3}");
             OnDischargeProgress?.Invoke(v);
+
+            // drain after we reported the current value (so UI shows full before first decrement)
+            AddUnits(-perTick);
 
             yield return new WaitForSeconds(tickSeconds);
         }
 
-        ShipStatus.ChargedBoostCharge     = 1f;
+        // fully ended
+        SetUnits(0f);
+        Ship.ShipStatus.BoostMultiplier = 1f;
         ShipStatus.ChargedBoostDischarging = false;
+        ShipStatus.Boosting = false;
 
-        if (ResourceSystem)
-            ResourceSystem.Resources[boostBoostResourceIndex].CurrentAmount = 0f;
-
-        // Start cooldown window to make re-charge only happen on an intentional next press
         if (rechargeCooldownSeconds > 0f)
             _cooldownUntilUtc = Time.unscaledTime + rechargeCooldownSeconds;
 
         OnDischargeEnded?.Invoke();
-        Log("[DischargeEnd] ended | mult reset to 1.0 and resource to 0.");
     }
 
-    // ----- helpers -----
-    private float GetNorm()
+    // ----- units helpers -----
+    float GetUnits()
     {
         if (!ResourceSystem) return 0f;
         return Mathf.Clamp(ResourceSystem.Resources[boostBoostResourceIndex].CurrentAmount, 0f, maxNormalizedCharge);
     }
 
-    private void AddNorm(float delta)
+    void SetUnits(float value)
     {
         if (!ResourceSystem) return;
-
-        var r = ResourceSystem.Resources[boostBoostResourceIndex];
-        float before = r.CurrentAmount;
-        r.CurrentAmount = Mathf.Clamp(before + delta, 0f, maxNormalizedCharge);
-
-        if (Mathf.Approximately(before, r.CurrentAmount) &&
-            ((delta > 0f && before >= maxNormalizedCharge) || (delta < 0f && before <= 0f)))
-        {
-            LogTick($"[AddNorm] clamp hit at {(delta > 0 ? maxNormalizedCharge.ToString("F2") : "0.0")} (no change).");
-        }
+        ResourceSystem.Resources[boostBoostResourceIndex].CurrentAmount = Mathf.Clamp(value, 0f, maxNormalizedCharge);
     }
 
-    // Normalize to 0..1 before mapping to multiplier (fixes scaling when maxNormalizedCharge != 1)
-    private float BoostMultiplierFrom(float rawUnits)
+    void AddUnits(float delta) => SetUnits(GetUnits() + delta);
+
+    float BoostMultiplierFrom(float rawUnits)
     {
         float t = (maxNormalizedCharge > 0f) ? Mathf.Clamp01(rawUnits / maxNormalizedCharge) : 0f;
         return 1f + (maxBoostMultiplier - 1f) * t;
     }
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
-    private void Log(string msg) { if (verbose) Debug.Log($"[ChargeBoostAction] {msg}", this); }
-
-    [System.Diagnostics.Conditional("UNITY_EDITOR")]
-    private void LogTick(string msg) { if (verbose) Debug.Log($"[ChargeBoostAction] {msg}", this); }
+    void Log(string msg) { if (verbose) Debug.Log($"[ChargeBoostAction] {msg}", this); }
 }

@@ -107,7 +107,10 @@ namespace CosmicShore.Game
                     if (!ShipStatus.FollowTarget) 
                         ShipStatus.FollowTarget = transform;
 
-                    ShipStatus.ShipHUDController.InitializeShipHUD();
+                    if(!enableAIPilot)
+                        ShipStatus.ShipHUDController.Initialize(ShipStatus, ShipStatus.ShipHudView);
+                    // ShipStatus.ShipHUDContainer.InitializeView(ShipStatus, ShipStatus.ShipType);
+                    
                     ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
                     onBottomEdgeButtonsEnabled.Raise(true);
@@ -124,7 +127,10 @@ namespace CosmicShore.Game
 
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
-                ShipStatus.ShipHUDController.InitializeShipHUD();
+                // ShipStatus.ShipHUDContainer.InitializeView(ShipStatus, ShipStatus.ShipType);
+                if(!enableAIPilot)
+                    ShipStatus.ShipHUDController.Initialize(ShipStatus, ShipStatus.ShipHudView);
+                
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);  
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
@@ -234,5 +240,6 @@ namespace CosmicShore.Game
             var value = !isMultiplayerMode || IsOwner;
             if (ShipStatus is ShipStatus concrete) concrete.SetIsOwnerForControllerOnly(value);
         }
+
     }
 }

@@ -16,4 +16,3 @@ MonoBehaviour:
   cooldownDuration: 5
   verbose: 1
   overchargedMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
-  textKey: OverchargeText

@@ -75,7 +75,8 @@ namespace CosmicShore.Game
         IShipHUDController ShipHUDController { get; }
         R_ShipCustomization Customization { get; }
         R_ShipActionHandler ActionHandler { get; }
-        
+
+        R_ShipHUDView ShipHudView { get; set; }
         // Deprecated  - Use R_ShipImpactor instead
         // R_ShipImpactHandler ImpactHandler { get; }
         

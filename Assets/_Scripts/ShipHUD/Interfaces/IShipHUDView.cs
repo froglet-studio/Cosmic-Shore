@@ -6,10 +6,7 @@ namespace CosmicShore.Game
 {
     public interface IShipHUDView
     {
-        // Called right after spawn to set up logic/event hooks
-        void Initialize(IShipHUDController controller);
-        Transform GetSilhouetteContainer();
-        Transform GetTrailContainer();
+
         /// <summary>
         /// Called by the HUD controller when the player presses a button.
         /// </summary>
