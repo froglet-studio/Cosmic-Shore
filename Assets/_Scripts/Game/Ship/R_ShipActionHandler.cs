@@ -26,6 +26,9 @@ namespace CosmicShore.Game
         readonly Dictionary<ResourceEvents, List<ShipAction>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
+        
+        public event Action<InputEvents> OnInputEventStarted;
+        public event Action<InputEvents> OnInputEventStopped;
 
         IShipStatus _shipStatus;
 
@@ -53,6 +56,7 @@ namespace CosmicShore.Game
             if (!HasAction(controlType))
                 return;
             ShipHelper.PerformShipControllerActions(controlType, _inputAbilityStartTimes, _shipControlActions);
+            OnInputEventStarted?.Invoke(controlType);
         }
 
         public void StopShipControllerActions(InputEvents controlType)
@@ -65,6 +69,7 @@ namespace CosmicShore.Game
                     Time.time - _inputAbilityStartTimes[controlType]);
 
             ShipHelper.StopShipControllerActions(controlType, _shipControlActions);
+            OnInputEventStopped?.Invoke(controlType);
         }
 
         public bool HasAction(InputEvents inputEvent) => _shipControlActions.ContainsKey(inputEvent);

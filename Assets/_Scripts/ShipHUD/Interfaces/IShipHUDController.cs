@@ -2,7 +2,6 @@ namespace CosmicShore.Game
 {
     public interface IShipHUDController
     {
-        void InitializeShipHUD();
-        void OnButtonPressed(int buttonNumber);
+        void Initialize(IShipStatus status, R_ShipHUDView view);
     }
 }

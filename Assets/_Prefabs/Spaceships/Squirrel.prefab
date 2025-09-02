@@ -260,8 +260,8 @@ GameObject:
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 2800655758706162833}
-  - component: {fileID: 1034995971344431689}
   - component: {fileID: 2643412773408452782}
+  - component: {fileID: 7874551534278607383}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -447,7 +447,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 3202054749536864766}
-  _shipHUDController: {fileID: 1034995971344431689}
+  _shipHUDController: {fileID: 7874551534278607383}
+  _shipHUDView: {fileID: 8405677031294957519}
   shipHUDContainer: {fileID: 4040093138880822241}
   boostMultiplier: 4
   _name: Squirrel
@@ -528,7 +529,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Resources:
   - Name: Energy
-    Display: {fileID: 580590976633935425}
     initialResourceGainRate: 0
     resourceGainRate: -0.015
     maxAmount: 1
@@ -706,27 +706,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &1034995971344431689
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shipType: 6
-  chargeBoostAction: {fileID: 0}
-  boostAction: {fileID: 0}
-  seedAssemblerAction: {fileID: 0}
-  overheatingAction: {fileID: 0}
-  fullAutoAction: {fileID: 0}
-  fireGunAction: {fileID: 0}
-  stationaryModeAction: {fileID: 0}
-  verboseHUDLogs: 1
 --- !u!114 &2643412773408452782
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -743,6 +722,18 @@ MonoBehaviour:
   shipOmniCrystalEffectsSO: []
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
+--- !u!114 &7874551534278607383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2134c837bdb00594d80fc211aa9d0c12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1071,29 +1062,41 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 9110034328396654553, guid: c1572db06ad4244469ad3f25d86940b8, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2092273636776193303, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8405677031294957519}
   m_SourcePrefab: {fileID: 100100000, guid: c1572db06ad4244469ad3f25d86940b8, type: 3}
---- !u!114 &580590976633935425 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5733074636676865771, guid: c1572db06ad4244469ad3f25d86940b8,
-    type: 3}
-  m_PrefabInstance: {fileID: 5152493367006660778}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!224 &3344272964263981488 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7631468186400504090, guid: c1572db06ad4244469ad3f25d86940b8,
     type: 3}
   m_PrefabInstance: {fileID: 5152493367006660778}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &6523581306461791677 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2092273636776193303, guid: c1572db06ad4244469ad3f25d86940b8,
+    type: 3}
+  m_PrefabInstance: {fileID: 5152493367006660778}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8405677031294957519
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6523581306461791677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f5e4a52c454e0c4398be29c296def5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  highlights: []
 --- !u!1001 &5313661885591395716
 PrefabInstance:
   m_ObjectHideFlags: 0

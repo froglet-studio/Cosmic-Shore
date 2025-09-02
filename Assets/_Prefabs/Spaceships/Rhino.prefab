@@ -1374,11 +1374,11 @@ GameObject:
   - component: {fileID: 4344415799986800916}
   - component: {fileID: 4796952059166273496}
   - component: {fileID: 3953285837003103147}
-  - component: {fileID: 8125833072914905471}
   - component: {fileID: 9172589084772723142}
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 3485795873575935315}
+  - component: {fileID: 5246214946899911775}
   m_Layer: 0
   m_Name: Rhino
   m_TagString: Player_Ship
@@ -1578,7 +1578,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 8374620423313890364}
-  _shipHUDController: {fileID: 8125833072914905471}
+  _shipHUDController: {fileID: 5246214946899911775}
+  _shipHUDView: {fileID: 4174450472495819857}
   shipHUDContainer: {fileID: 4561198729942457598}
   boostMultiplier: 4
   _name: Rhino
@@ -1776,22 +1777,6 @@ MonoBehaviour:
   settings: {fileID: 11400000, guid: 6f9693afb46548dd83870cfb0b1ce939, type: 2}
   OnInitializePlayerCamera: {fileID: 11400000, guid: dfc4b3d01080dac408975d4a25c6c1ea,
     type: 2}
---- !u!114 &8125833072914905471
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 633d659ba779dbb4d851dc4f4e5686c5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shipType: 3
-  profile: {fileID: 0}
-  refs: {fileID: 0}
-  sceneNameListSO: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1862,6 +1847,18 @@ MonoBehaviour:
   shipOmniCrystalEffectsSO: []
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
+--- !u!114 &5246214946899911775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2134c837bdb00594d80fc211aa9d0c12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6936285373394276089
 GameObject:
   m_ObjectHideFlags: 0
@@ -12632,10 +12629,15 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8949815125855823894, guid: 2656b477a4af7304180e65f2848a84b3, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2256384011482571480, guid: 2656b477a4af7304180e65f2848a84b3,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4174450472495819857}
   m_SourcePrefab: {fileID: 100100000, guid: 2656b477a4af7304180e65f2848a84b3, type: 3}
 --- !u!224 &3797657973119974518 stripped
 RectTransform:
@@ -12643,6 +12645,25 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 6846281411462810275}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &4634953772157888635 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2256384011482571480, guid: 2656b477a4af7304180e65f2848a84b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 6846281411462810275}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4174450472495819857
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4634953772157888635}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f5e4a52c454e0c4398be29c296def5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  highlights: []
 --- !u!1001 &8469593379654306638
 PrefabInstance:
   m_ObjectHideFlags: 0

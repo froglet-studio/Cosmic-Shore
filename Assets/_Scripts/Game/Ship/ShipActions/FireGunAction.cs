@@ -19,6 +19,16 @@ public class FireGunAction : ShipAction
     public ElementalFloat ProjectileTime = new ElementalFloat(3f);
 
     [SerializeField] int ammoIndex = 0;
+    
+    public float Ammo01
+    {
+        get
+        {
+            var r = ResourceSystem.Resources[ammoIndex];
+            if (r == null || r.MaxAmount <= 0f) return 0f;
+            return Mathf.Clamp01(r.CurrentAmount / r.MaxAmount);
+        }
+    }
 
     public override void Initialize(IShip ship)
     {
