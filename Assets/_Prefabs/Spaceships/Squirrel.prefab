@@ -454,7 +454,7 @@ MonoBehaviour:
   _name: Squirrel
   _shipType: 6
   _nearFieldSkimmer: {fileID: 708149374973573223}
-  _farFieldSkimmer: {fileID: 0}
+  _farFieldSkimmer: {fileID: 708149374973573223}
   orientationHandle: {fileID: 1878660672777590133}
 --- !u!114 &7686683633640807837
 MonoBehaviour:
@@ -666,6 +666,7 @@ MonoBehaviour:
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
+  onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1400,6 +1401,12 @@ PrefabInstance:
       propertyPath: markerContainer
       value: 
       objectReference: {fileID: 5379190369891893479}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: onSkimmerShipImpact
+      value: 
+      objectReference: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
+        type: 2}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: NotifyNearbyBlockCount

@@ -2322,6 +2322,7 @@ MonoBehaviour:
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
+  onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3736,6 +3737,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: onSkimmerShipImpact
+      value: 
+      objectReference: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
+        type: 2}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: NotifyNearbyBlockCount
       value: 1
       objectReference: {fileID: 0}
@@ -4067,6 +4074,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: onSkimmerShipImpact
+      value: 
+      objectReference: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
+        type: 2}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: blockImpactEffects.Array.size
       value: 3
       objectReference: {fileID: 0}
@@ -4148,6 +4161,7 @@ MonoBehaviour:
   skimmerPrismEffectsSO:
   - {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
   skimmerElementalCrystalEffectsSO: []
+  skimmerPrismStayEffectsSO: []
   skimmer: {fileID: 874579554510349383}
 --- !u!114 &2722643089655899311
 MonoBehaviour:

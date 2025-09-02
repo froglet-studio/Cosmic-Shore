@@ -2491,6 +2491,7 @@ MonoBehaviour:
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
+  onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
 --- !u!114 &3912812256159064475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2557,7 +2558,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a295644207f14186b2ff576845c4842a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  view: {fileID: 0}
+  view: {fileID: 117603555638778835}
   chargeBoostAction: {fileID: 1252251899575284067}
 --- !u!1 &7285420413364848933
 GameObject:
@@ -3499,6 +3500,12 @@ PrefabInstance:
       propertyPath: MultiSkimMultiplier
       value: 0.0003
       objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: onSkimmerShipImpact
+      value: 
+      objectReference: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
+        type: 2}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: blockStayEffects.Array.size

@@ -751,13 +751,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _blockStayEffects: []
+  onSkimmerShipImpact: {fileID: 0}
   vaccumAmount: 50
   vacuumCrystal: 1
-  particleDurationAtSpeedOne: 300
   affectSelf: 0
-  chargeAmount: 0
-  MultiSkimMultiplier: 0
+  particleDurationAtSpeedOne: 300
   visible: 0
   Scale:
     Enabled: 0
@@ -765,12 +763,11 @@ MonoBehaviour:
     Min: 10
     Max: 30
     element: 1
-  activelySkimmingBlockCount: 0
+  markerContainer: {fileID: 0}
+  markerDistance: 70
   AOEPrefab: {fileID: 0}
   AOEPeriod: 0
   lineMaterial: {fileID: 0}
-  markerContainer: {fileID: 0}
-  markerDistance: 70
   resourceIndex: 0
 --- !u!1 &3062687464665182224
 GameObject:
@@ -2386,6 +2383,7 @@ MonoBehaviour:
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
+  onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0

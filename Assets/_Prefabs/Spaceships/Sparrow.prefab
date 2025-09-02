@@ -1093,13 +1093,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _blockStayEffects: []
+  onSkimmerShipImpact: {fileID: 0}
   vaccumAmount: 50
   vacuumCrystal: 1
-  particleDurationAtSpeedOne: 300
   affectSelf: 1
-  chargeAmount: 0
-  MultiSkimMultiplier: 0
+  particleDurationAtSpeedOne: 300
   visible: 0
   Scale:
     Enabled: 0
@@ -1107,12 +1105,11 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  activelySkimmingBlockCount: 0
+  markerContainer: {fileID: 0}
+  markerDistance: 70
   AOEPrefab: {fileID: 0}
   AOEPeriod: 0
   lineMaterial: {fileID: 0}
-  markerContainer: {fileID: 0}
-  markerDistance: 70
   resourceIndex: 0
 --- !u!1 &5978549935140177486
 GameObject:
@@ -1396,7 +1393,6 @@ GameObject:
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 1372953349734463519}
-  - component: {fileID: 318043552416527108}
   - component: {fileID: 1002316194365813701}
   m_Layer: 0
   m_Name: Sparrow
@@ -1830,6 +1826,7 @@ MonoBehaviour:
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
+  onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1874,23 +1871,6 @@ MonoBehaviour:
   shipOmniCrystalEffectsSO: []
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
---- !u!114 &318043552416527108
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 821427f0df9d40fe8197352f2ad737c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  chargeBoost: {fileID: 0}
-  consumeBoost: {fileID: 0}
-  seedAssembler: {fileID: 0}
-  overheating: {fileID: 6237859807132148374}
-  fireGun: {fileID: 8671196826403818986}
 --- !u!114 &1002316194365813701
 MonoBehaviour:
   m_ObjectHideFlags: 0

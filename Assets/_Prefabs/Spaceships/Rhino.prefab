@@ -1799,6 +1799,7 @@ MonoBehaviour:
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
+  onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11849,6 +11850,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: onSkimmerShipImpact
+      value: 
+      objectReference: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
+        type: 2}
     - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: _shipImpactEffects.Array.size
