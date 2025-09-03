@@ -35,11 +35,11 @@ namespace CosmicShore.Game.Arcade
             StatsManager.Instance.ResetStats();
         }*/
         
-        protected override void StartTurn()
+        /*public override void StartMonitor()
         {
             // Get PlayerName from MiniGameData
             // currentPlayerName = playerName;
             // StatsManager.Instance.ResetStats();
-        }
+        }*/
     }
 }

@@ -21,13 +21,19 @@ namespace CosmicShore.Game.Arcade
             return true;        // TEMP
         }
 
-        protected override void StartTurn()
+        public override void StartMonitor()
         {
             // StatsManager.Instance.ResetStats();
             // TODO: perhaps coerce stats manager to create an entry for the player here
+            UpdateUI();
         }
 
         protected override void RestrictedUpdate()
+        {
+            UpdateUI();
+        }
+
+        void UpdateUI()
         {
             var message = ""; //TEMP - ((int)((hostileShip.Ship.Transform.position - Game.ActivePlayer.Ship.Transform.position).magnitude/10f)).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);

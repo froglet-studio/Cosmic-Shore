@@ -8,13 +8,23 @@ namespace CosmicShore.Game.Arcade
         float elapsedTime;
 
         public override bool CheckForEndOfTurn() => elapsedTime >= duration;
-        
-        protected override void StartTurn() => elapsedTime = 0;
 
+        public override void StartMonitor()
+        {
+            elapsedTime = 0;
+            UpdateTimerUI();
+            base.StartMonitor();
+        }
+        
         protected override void RestrictedUpdate()
         {
             base.RestrictedUpdate();
-            elapsedTime += Time.deltaTime;
+            elapsedTime += _updateInterval;
+            UpdateTimerUI();
+        }
+
+        void UpdateTimerUI()
+        {
             var message = ((int)duration - (int)elapsedTime).ToString();
             onUpdateTurnMonitorDisplay?.Raise(message);
         }

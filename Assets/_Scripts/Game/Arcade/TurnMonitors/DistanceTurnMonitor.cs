@@ -16,13 +16,22 @@ namespace CosmicShore
 
         public override bool CheckForEndOfTurn() => distanceTraveled > distance;
 
-        protected override void StartTurn() => distanceTraveled = 0;
+        public override void StartMonitor()
+        {
+            distanceTraveled = 0;
+            UpdateUI();
+            base.StartMonitor();
+        }
 
         protected override void RestrictedUpdate()
         { 
             float speed = 0f; // game.ActivePlayer.Ship.ShipStatus.Speed;
             distanceTraveled += speed * Time.deltaTime;
+            UpdateUI();
+        }
 
+        void UpdateUI()
+        {
             string message = ((int)(distance - distanceTraveled)).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }

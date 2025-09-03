@@ -26,13 +26,14 @@ namespace CosmicShore
             return miniGameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item1 == miniGameData.ActivePlayer.Team;
         }
 
-        protected override void StartTurn()
+        /*public override void StartMonitor()
         {
-            /*if (game != null && game.ActivePlayer != null)
+            if (game != null && game.ActivePlayer != null)
             {
                 playerTeam = game.ActivePlayer.Team;
-            }*/
-        }
+            }
+            base.StartMonitor();
+        }*/
     }
     
 }

@@ -10,7 +10,7 @@ namespace CosmicShore.Game.Arcade
     public abstract class TurnMonitor : MonoBehaviour
     {
         [Header("Timing")]
-        [SerializeField] float _updateInterval = 1f;
+        [SerializeField] protected float _updateInterval = 1f;
         
         [SerializeField]
         protected MiniGameDataSO miniGameData;
@@ -26,15 +26,13 @@ namespace CosmicShore.Game.Arcade
         // ---- Public API ---------------------------------------------------
 
         /// <summary>Starts the turn monitor loop (no-op if already running).</summary>
-        public void StartMonitor()
+        public virtual void StartMonitor()
         {
             if (isRunning) return;
 
             _cts = new CancellationTokenSource();
             isRunning = true;
             isPaused = false;
-
-            StartTurn(); // hook for subclasses
             _ = RunLoopAsync(_cts.Token);
         }
 
@@ -44,12 +42,12 @@ namespace CosmicShore.Game.Arcade
                 return;
             
             // End-of-turn check
-            if (CheckForEndOfTurn())
-            {
-                RestrictedUpdate();
-                OnTurnEnded();
-                Pause(); // exits loop on next iteration
-            }
+            if (!CheckForEndOfTurn()) 
+                return;
+            
+            RestrictedUpdate();
+            OnTurnEnded();
+            Pause(); // exits loop on next iteration
         }
 
         /// <summary>Stops the monitor loop (safe to call multiple times).</summary>
@@ -89,9 +87,6 @@ namespace CosmicShore.Game.Arcade
         /// <summary>Return true when the turn should end.</summary>
         public abstract bool CheckForEndOfTurn();
 
-        /// <summary>Called once when the monitor starts (before the loop runs).</summary>
-        protected virtual void StartTurn() { }
-
         /// <summary>Called periodically according to UpdateInterval (while not paused).</summary>
         protected virtual void RestrictedUpdate() {}
 
@@ -122,10 +117,11 @@ namespace CosmicShore.Game.Arcade
                     
                     // Wait for next tick (game-time)
                     if (_updateInterval > 0f)
-                        await UniTask.Delay(TimeSpan.FromSeconds(_updateInterval),
+                        await UniTask.WaitForSeconds(_updateInterval, cancellationToken: token);
+                        /*await UniTask.Delay(TimeSpan.FromSeconds(_updateInterval),
                                             DelayType.DeltaTime,
                                             PlayerLoopTiming.Update,
-                                            token);
+                                            token);*/
                     else
                         await UniTask.Yield(PlayerLoopTiming.Update, token);
                 }

@@ -24,12 +24,18 @@ namespace CosmicShore.Game.Arcade
             // If we get here, all life forms have been destroyed
         }
 
-        protected override void StartTurn()
+        public override void StartMonitor()
         {
             // StatsManager.Instance.ResetStats();
+            UpdateUI();
         }
 
         protected override void RestrictedUpdate()
+        {
+            UpdateUI();
+        }
+
+        void UpdateUI()
         {
             string message = (miniGameData.CellStatsList[cellID].LifeFormsInCell).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);

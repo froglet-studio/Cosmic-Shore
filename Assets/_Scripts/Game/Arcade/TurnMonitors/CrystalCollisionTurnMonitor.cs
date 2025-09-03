@@ -17,10 +17,10 @@ namespace CosmicShore.Game.Arcade
             return roundStats.OmniCrystalsCollected >= CrystalCollisions;
         }
 
-        protected override void StartTurn()
+        /*public override void StartMonitor()
         {
             // TODO: perhaps coerce stats manager to create an entry for the player here
-        }
+        }*/
 
         protected override void RestrictedUpdate() { }
     }

@@ -133,6 +133,11 @@ PrefabInstance:
       propertyPath: countdownDisplay
       value: 
       objectReference: {fileID: 69216808}
+    - target: {fileID: 588662797208155882, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5428165463410687127, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: miniGameData
