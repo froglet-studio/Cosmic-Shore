@@ -50,14 +50,14 @@ namespace CosmicShore.Core
         }
 
         // TODO - Store in data container. Remove the method
-        /// <summary>
+        /*/// <summary>
         /// Intensity Level is defined by Arcade Games, Difficulty Level is defined by Missions
         /// </summary>
         /// <param name="level">Range from 1-4</param>
         public void SetAiIntensityLevel(int level)
         {
-            // _aiSkillLevel = level;
-        }
+            _aiSkillLevel = level;
+        }*/
 
         /// <summary>
         /// This method is used when ship is loaded for multiplayer gameplay

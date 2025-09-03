@@ -88,7 +88,7 @@ GameObject:
   - component: {fileID: 6236172666001697307}
   - component: {fileID: 6236172666001697305}
   - component: {fileID: 2061170156}
-  - component: {fileID: 2972057117746913167}
+  - component: {fileID: 2950460755507317265}
   m_Layer: 5
   m_Name: SceneTransitionModal
   m_TagString: Untagged
@@ -171,7 +171,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f929a623d95fcf945a1af5a5314e8e57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2972057117746913167
+  _animator: {fileID: 6236172666001697305}
+--- !u!114 &2950460755507317265
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -180,21 +181,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 6236172666001697303}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d93ba61543949824db31c7cb89b4f009, type: 3}
+  m_Script: {fileID: 11500000, guid: e64750262007f204b879cd45e18965e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _binding: 0
   _disableAfterSubscribing: 0
   _eventResponses:
   - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: d0647730cca39114980951ca62c870da, type: 2}
-    Response:
+    _scriptableEvent: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
+    _response:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 2061170156}
           m_TargetAssemblyTypeName: CosmicShore.Game.SceneTransitionModal, Assembly-CSharp
-          m_MethodName: StartTransition
-          m_Mode: 1
+          m_MethodName: TransitionDoor
+          m_Mode: 0
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
             m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

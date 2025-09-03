@@ -24545,7 +24545,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 756088747}
-    PlayerPrefab: {fileID: 3140527607295334043, guid: 8ec8b9532656a124b82366e530b00890,
+    PlayerPrefab: {fileID: 2151207714166088056, guid: 0a8653be5d331c5449d3130cef596493,
       type: 3}
     Prefabs:
       NetworkPrefabsLists:
@@ -25616,6 +25616,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f7df5bea58cb22468273de1a9facada, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  allGames: {fileID: 11400000, guid: 295aa0134b55e474d9aceca4bbb5b444, type: 2}
   GameSelectionContainer: {fileID: 283141851}
   HighScoresContainer: {fileID: 1358711680}
   ShipClassSelection: {fileID: 8022145649317117787}
@@ -29722,7 +29723,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   navGroup: {fileID: 546521020}
-  shipClassTypeVariable: {fileID: 0}
+  shipClassTypeVariable: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
+    type: 2}
   ProfileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   HighScoresContainer: {fileID: 753299098}
   LeaderboardEntries: []
@@ -30557,8 +30559,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  OnArcadeMultiplayerModeSelected: {fileID: 11400000, guid: 9801fa687d6262444af227b07632b51b,
-    type: 2}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!4 &921810067
 Transform:
   m_ObjectHideFlags: 0
@@ -92606,6 +92607,12 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2052326737652235165, guid: 05a0a8954cada1a4eab8ad2dbc328131,
         type: 3}
+      propertyPath: miniGameData
+      value: 
+      objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
+        type: 2}
+    - target: {fileID: 2052326737652235165, guid: 05a0a8954cada1a4eab8ad2dbc328131,
+        type: 3}
       propertyPath: _multiplayerSetup
       value: 
       objectReference: {fileID: 921810066}
@@ -93276,11 +93283,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4983872992474410972}
     m_Modifications:
-    - target: {fileID: 2061170156, guid: 37c5e5722efdd184bbb0e51f04fb4e91, type: 3}
-      propertyPath: _onStartSceneTransition
-      value: 
-      objectReference: {fileID: 11400000, guid: d0647730cca39114980951ca62c870da,
-        type: 2}
     - target: {fileID: 6236172666001697302, guid: 37c5e5722efdd184bbb0e51f04fb4e91,
         type: 3}
       propertyPath: m_Pivot.x

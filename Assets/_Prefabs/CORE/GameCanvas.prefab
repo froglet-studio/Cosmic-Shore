@@ -954,7 +954,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MiniGameHUD: {fileID: 5497835174634480091}
   ShipButtonPanel: {fileID: 0}
-  EndGameScreen: {fileID: 5054612726784394718}
   AwardsContainer: {fileID: 4566195767566059467}
   XPEarnedImage: {fileID: 3866780025457559134}
   XPEarnedText: {fileID: 989699083735429856}
@@ -979,6 +978,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad1572ebe0d06f143bbc8789e520819f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  gameOverPanel: {fileID: 5054612726784394719}
   BannerImage: {fileID: 5054612726745043333}
   BannerText: {fileID: 5054612727513607398}
   SinglePlayerBannerColor: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
@@ -997,7 +998,6 @@ MonoBehaviour:
   - {fileID: 5054612726481563683}
   - {fileID: 5054612727224070607}
   - {fileID: 5054612727045552994}
-  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &5497835174820813627
 GameObject:
   m_ObjectHideFlags: 0
@@ -1513,12 +1513,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &5054612726784394718 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 750320515651948985, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 5497835172897772647}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &5054612726784394719 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 750320515651948984, guid: 494deef066b46a24a9b5226c4203833c,

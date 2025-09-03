@@ -14,6 +14,9 @@ namespace CosmicShore.App.UI.Screens
     [RequireComponent(typeof(MenuAudio))]
     public class LeaderboardsMenu : MonoBehaviour
     {
+        [SerializeField] 
+        SO_GameList allGames;
+        
         List<LeaderboardManager.LeaderboardEntry> LeaderboardEntriesV2;
 
         [SerializeField] Transform GameSelectionContainer;
@@ -30,7 +33,7 @@ namespace CosmicShore.App.UI.Screens
         {
             // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
             // Copy the game list, but skip Freestyle -- IMPORTANT to copy the list so we don't modify the SO
-            foreach (var game in GameManager.Instance.AllGames.Games)
+            foreach (var game in allGames.Games)
                 if (game.Mode != GameModes.Freestyle && game.Mode != GameModes.Elimination)
                     LeaderboardEligibleGames.Add(game);
 

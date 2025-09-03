@@ -47,10 +47,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _sceneNames: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
   AllGames: {fileID: 11400000, guid: 23306534ee610414c99a9b7bf3d92995, type: 2}
-  _onStartSceneTransition: {fileID: 11400000, guid: d0647730cca39114980951ca62c870da,
-    type: 2}
-  _onPlayGame: {fileID: 11400000, guid: eb5e153898e484447b1b63bc08e1b3ed, type: 2}
-  _onGameOver: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b, type: 2}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _onSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
 --- !u!114 &4761739581411579618
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86,23 +84,6 @@ MonoBehaviour:
         - m_Target: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
           m_TargetAssemblyTypeName: CosmicShore.SOAP.MiniGameDataVariable, Assembly-CSharp
           m_MethodName: ResetPlayerData
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: 04fc0013446508e43a3c85b1dbd45eb8, type: 2}
-    Response:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 5036209225001289746}
-          m_TargetAssemblyTypeName: CosmicShore.Core.GameManager, Assembly-CSharp
-          m_MethodName: EndGame
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}

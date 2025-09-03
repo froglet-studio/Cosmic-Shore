@@ -4,6 +4,8 @@ using System.Linq;
 using CosmicShore.App.Systems;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Models.Enums;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -11,7 +13,7 @@ namespace CosmicShore.SOAP
 {
     /// <summary>
     /// Every MiniGame in the project should use the same asset of this SO.
-    /// It connects MiniGameBase with StatsManager, TurnMonitor and others.
+    /// It connects MiniGameBase with GameManager, StatsManager, TurnMonitor, Aracade, MultiplayerSetup and others.
     /// </summary>
     [CreateAssetMenu(
         fileName = "scriptable_variable_" + nameof(MiniGameDataSO),
@@ -19,6 +21,7 @@ namespace CosmicShore.SOAP
     public class MiniGameDataSO : ScriptableObject
     {
         // Events
+        public event Action OnLaunchGame;
         public event Action OnMiniGameInitialize;
         public event Action OnAllPlayersSpawned;
         public event Action OnMiniGameStart;
@@ -26,29 +29,39 @@ namespace CosmicShore.SOAP
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
 
-        // Config / State
-        public GameModes GameMode;
+        
+        // Local player config / state
         public ShipClassTypeVariable SelectedShipClass;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
-
+        public SO_Captain PlayerCaptain;
+        public ResourceCollection ResourceCollection;
+        
+        
+        // Game Config / State
+        public string SceneName;
+        public GameModes GameMode;
+        public bool IsDailyChallenge;
+        public bool IsTraining;
+        public bool IsMission;
+        public bool IsMultiplayerMode;
         public List<IPlayer> Players = new();
         public Transform[] PlayerOrigins;
-
         public List<IRoundStats> RoundStatsList = new();
         public Dictionary<int, CellStats> CellStatsList = new();
-
         public float TurnStartTime;
         public bool IsRunning { get; private set; }
+        
 
         int _activePlayerId;
-
         public IPlayer ActivePlayer =>
             (_activePlayerId >= 0 && _activePlayerId < Players.Count) ? Players[_activePlayerId] : null;
 
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
 
+        public void InvokeGameLaunch() => OnLaunchGame?.Invoke();
+        
         public void InvokeMiniGameInitialize()
         {
             PauseSystem.TogglePauseGame(false);
