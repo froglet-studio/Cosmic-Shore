@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Arcade
         
         protected virtual void OnEnable()
         {
-            miniGameData.OnMiniGameEndConditionsMet += EndTurn;
+            miniGameData.OnMiniGameTurnEnd += EndTurn;
         }
 
         private void Start()
@@ -48,7 +48,7 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnDisable() 
         {
-            miniGameData.OnMiniGameEndConditionsMet -= EndTurn;
+            miniGameData.OnMiniGameTurnEnd -= EndTurn;
         }
 
         public void OnReadyClicked()
@@ -88,7 +88,7 @@ namespace CosmicShore.Game.Arcade
         
         void EndTurn()
         {
-            miniGameData.InvokeMiniGameTurnEnd();   
+            // miniGameData.InvokeMiniGameTurnEnd();   
             turnsTakenThisRound++;
 
             if(turnsTakenThisRound >= numberOfTurnsPerRound)
@@ -111,7 +111,6 @@ namespace CosmicShore.Game.Arcade
         void EndGame()
         {
             miniGameData.InvokeMiniGameEnd();
-            PauseSystem.TogglePauseGame(true);
         }
         
         // These should go to events.

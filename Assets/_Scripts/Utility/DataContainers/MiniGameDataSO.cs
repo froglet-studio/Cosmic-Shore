@@ -22,7 +22,6 @@ namespace CosmicShore.SOAP
         public event Action OnMiniGameInitialize;
         public event Action OnAllPlayersSpawned;
         public event Action OnMiniGameStart;
-        public event Action OnMiniGameEndConditionsMet;
         public event Action OnMiniGameTurnEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
@@ -72,15 +71,13 @@ namespace CosmicShore.SOAP
             OnMiniGameStart?.Invoke();
         }
 
-        public void InvokeMiniGameTurnConditionsMet() => OnMiniGameEndConditionsMet?.Invoke();
+        public void InvokeMiniGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
 
-        public void InvokeMiniGameTurnEnd()
+        public void InvokeMiniGameEnd()
         {
-            IsRunning = false;
-            OnMiniGameTurnEnd?.Invoke();
+            PauseSystem.TogglePauseGame(true);
+            OnMiniGameEnd?.Invoke();
         }
-
-        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
         public void InvokeAllPlayersSpawned() => OnAllPlayersSpawned?.Invoke();
 
@@ -109,26 +106,15 @@ namespace CosmicShore.SOAP
 
             return top is null ? (Teams.Jade, 0f) : (top.Team, top.VolumeRemaining);
         }
-
-        // Keep existing (misspelled) method to avoid breaking callers
+        
         public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>
             RoundStatsList.OrderByDescending(r => r.VolumeRemaining).ToList();
-
-        // Correctly spelled alias (use this in new code)
-        public List<IRoundStats> GetSortedListInDescendingOrderBasedOnVolumeRemaining() =>
-            GetSortedListInDecendingOrderBasedOnVolumeRemaining();
 
         public bool TryGetActivePlayerStats(out IPlayer player, out IRoundStats roundStats)
         {
             player = ActivePlayer;
             roundStats = player != null ? FindByName(player.Name) : null;
             return player != null && roundStats != null;
-        }
-
-        public bool TryGetTeamRemainingVolume(Teams team, out float volume)
-        {
-            volume = VolumeOf(team);
-            return FindByTeam(team) != null;
         }
 
         public bool TryGetRoundStats(Teams team, out IRoundStats roundStats)
@@ -154,6 +140,28 @@ namespace CosmicShore.SOAP
             return new Vector4(jade, ruby, blue, gold);
         }
 
+        public bool IsLocalPlayerWinner(out IRoundStats roundStats, out bool won)
+        {
+            roundStats = null;
+            won = false;
+            if (RoundStatsList is null || RoundStatsList.Count == 0)
+            {
+                Debug.LogError("No round stats found to calculate winner!");
+                return false;
+            }
+
+            if (!TryGetActivePlayerStats(out IPlayer _, out roundStats))
+            {
+                Debug.LogError("No round stats of active player found!");
+                return false;   
+            }
+
+            if (roundStats.Name == RoundStatsList[0].Name)
+                won = true;
+
+            return true;
+        }
+
         // -----------------------------------------------------------------------------------------
         // Mutation
 
@@ -177,9 +185,29 @@ namespace CosmicShore.SOAP
             // Keep players stationary until game starts
             p.ToggleStationaryMode(true);
         }
-
-        public void ActivateAllPlayers()  => SetPlayersActive(active: true);
-        public void DeactivateAllPlayers() => SetPlayersActive(active: false);
+        
+        public void ResetPlayerScores()
+        {
+            if (RoundStatsList is null || RoundStatsList.Count == 0)
+            {
+                Debug.LogError("This should never happen!");
+                return;
+            }
+            
+            for (int i = 0, count = RoundStatsList.Count; i < count ; i++)
+            {
+                var roundStats = RoundStatsList[i];
+                roundStats.Score = 0;
+            }
+        }
+        
+        public void SortRoundStats(bool golfRules)
+        {
+            if (golfRules)
+                RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
+            else
+                RoundStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+        }
 
         // -----------------------------------------------------------------------------------------
         // Helpers (private)

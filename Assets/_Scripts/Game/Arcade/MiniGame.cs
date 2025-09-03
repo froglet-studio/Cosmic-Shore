@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SO_Captain DefaultPlayerCaptain;
 
         protected Button ReadyButton;
-        protected GameObject EndGameScreen;
+        // protected GameObject EndGameScreen;
         protected MiniGameHUD HUD;
         protected List<IPlayer> Players = new();
         protected CountdownTimer countdownTimer;
@@ -85,11 +85,11 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void Awake()
         {
-            EndGameScreen = GameCanvas.EndGameScreen;
+            // EndGameScreen = GameCanvas.EndGameScreen;
             HUD = GameCanvas.MiniGameHUD;
             ReadyButton = HUD.View.ReadyButton;
             countdownTimer = HUD.View.CountdownTimer;
-            ScoreTracker.GameCanvas = GameCanvas;
+            // ScoreTracker.GameCanvas = GameCanvas;
 
             /*foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
@@ -227,7 +227,7 @@ namespace CosmicShore.Game.Arcade
         {
             gameRunning = true;
             Debug.Log($"MiniGame.StartGame, ... {Time.time}");
-            EndGameScreen.SetActive(false);
+            // EndGameScreen.SetActive(false);
             RoundsPlayedThisGame = 0;
             OnMiniGameStart?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
             StartRound();
@@ -302,8 +302,10 @@ namespace CosmicShore.Game.Arcade
             Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
             // Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinnerScoreData().Name} ");
 
-            foreach (var player in Players)
-                Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.Name)} ");
+            
+            // TODO - In MiniGameBase, use MiniGameData to get scores
+            /*foreach (var player in Players)
+                Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.Name)} ");*/
 
             if (IsDailyChallenge)
             {
@@ -387,12 +389,13 @@ namespace CosmicShore.Game.Arcade
             CameraManager.Instance.SetEndCameraActive();
             PauseSystem.TogglePauseGame(true);
             gameRunning = false;
-            EndGameScreen.SetActive(true);
+            // EndGameScreen.SetActive(true);
 
-            if (NumberOfPlayers > 1)
+            // TODO - Scoreboard uses MiniGameData's events.
+            /*if (NumberOfPlayers > 1)
                 GameCanvas.scoreboard.ShowMultiplayerView();
             else
-                GameCanvas.scoreboard.ShowSinglePlayerView();
+                GameCanvas.scoreboard.ShowSinglePlayerView();*/
 
             OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel,
                 0); //(int)ScoreTracker.GetWinnerScoreData().Score);

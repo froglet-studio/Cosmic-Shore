@@ -20,8 +20,6 @@ namespace CosmicShore.Game.Arcade
         
         [FormerlySerializedAs("ScoringConfigs")] 
         [SerializeField] ScoringConfig[] scoringConfigs;
-        
-        [HideInInspector] public GameCanvas GameCanvas;
 
         BaseScoring[] scoringArray;
 
@@ -38,12 +36,13 @@ namespace CosmicShore.Game.Arcade
         }
         
         
-        public void CalculateWinner()
+        void CalculateWinner()
         {
-            ResetPlayerScores();
+            miniGameData.ResetPlayerScores();
             CalculateScores();
-            SortRoundStats();
-            
+            miniGameData.SortRoundStats(golfRules);
+            miniGameData.InvokeWinnerCalculated();
+
             /* StatsManager.Instance.ResetStats();
 
             var playerScores = scoreData.RoundStatsList;
@@ -52,17 +51,15 @@ namespace CosmicShore.Game.Arcade
                 StatsManager.Instance.AddPlayer(score.Team, score.Name);*/
         }
 
-        
-
-        public int GetScore(string playerName)
+        /*public int GetScore(string playerName)
         {
             if (!miniGameData.TryGetRoundStats(playerName, out var playerScore))
                 return 0;
 
             return (int)playerScore.Score;
-        }
+        }*/
         
-        public void InitializeScoringMode()
+        void InitializeScoringMode()
         {
             if (scoringConfigs == null || scoringConfigs.Length == 0)
             {
@@ -76,14 +73,6 @@ namespace CosmicShore.Game.Arcade
             {
                 scoringArray[i] = CreateScoring(scoringConfigs[i].Mode, scoringConfigs[i].Multiplier);
             }
-        }
-        
-        void SortRoundStats()
-        {
-            if (golfRules)
-                miniGameData.RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
-            else
-                miniGameData.RoundStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
         }
         
         BaseScoring CreateScoring(ScoringModes mode, float multiplier)
@@ -116,23 +105,6 @@ namespace CosmicShore.Game.Arcade
 
             foreach (var scoring in scoringArray)
                 scoring.CalculateScore();
-        }
-
-        void ResetPlayerScores()
-        {
-            var roundStatsList = miniGameData.RoundStatsList;
-
-            if (roundStatsList is null || roundStatsList.Count == 0)
-            {
-                Debug.LogError("This should never happen!");
-                return;
-            }
-            
-            for (int i = 0, count = roundStatsList.Count; i < count ; i++)
-            {
-                var roundStats = miniGameData.RoundStatsList[i];
-                roundStats.Score = 0;
-            }
         }
     }
     
