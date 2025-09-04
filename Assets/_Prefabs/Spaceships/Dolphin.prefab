@@ -1750,6 +1750,7 @@ GameObject:
   - component: {fileID: 8811211212952759695}
   - component: {fileID: 5275720543297412030}
   - component: {fileID: 1357285662326594398}
+  - component: {fileID: 8634500813627268672}
   m_Layer: 8
   m_Name: bottomNose
   m_TagString: Untagged
@@ -1847,6 +1848,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.21989307, y: 0.37101936, z: 1.9950358}
   m_Center: {x: 0, y: -0.23528895, z: 1.5462286}
+--- !u!114 &8634500813627268672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6551725075664534191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 6556690844172358248}
 --- !u!1 &6807910618444506966
 GameObject:
   m_ObjectHideFlags: 0
@@ -2543,7 +2557,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shipPrismEffectsSO:
   - {fileID: 11400000, guid: 89f84fbba3cfe336d229d942c07fd521, type: 2}
-  shipOmniCrystalEffectsSO: []
+  shipOmniCrystalEffectsSO:
+  - {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f, type: 2}
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
 --- !u!114 &2145686236205056283
@@ -3478,7 +3493,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Value
-      value: 30
+      value: 21.35
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
