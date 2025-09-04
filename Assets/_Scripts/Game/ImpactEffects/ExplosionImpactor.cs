@@ -60,7 +60,7 @@ namespace CosmicShore.Game
                 return;
             }
             
-            if (Explosion.AnonymousExplosion)
+            if (Explosion.AnonymousExplosion) // Ship Status will be null here
                 prism.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
             else
             {
