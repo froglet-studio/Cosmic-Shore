@@ -10,6 +10,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 988338ad26d138d4bad865024ec86c7d, type: 3}
-  m_Name: ShipHapticsByOtherEffect Fake Crystal Collision
+  m_Name: ShipHapticsByOtherEffect Mine Collision
   m_EditorClassIdentifier: 
   _hapticType: 5
