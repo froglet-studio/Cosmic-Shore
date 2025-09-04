@@ -9,49 +9,66 @@ namespace CosmicShore.Game
         public struct HUDPrefabVariant
         {
             public ShipClassType shipType;
-            public GameObject prefab;
+            public R_ShipHUDView prefab;
         }
 
+        [Header("Prefabs & Mount")]
         [SerializeField] HUDPrefabVariant[] hudVariants;
         [SerializeField] RectTransform contentTransform;
 
+        R_ShipHUDView   _activeInstance;
         IShipHUDView _activeHUDView;
 
-        public IShipHUDView InitializeView(IShipHUDController controller, IShipStatus shipStatus)
+        public void InitializeView(IShipStatus shipStatus, ShipClassType shipClass)
         {
-            foreach (Transform content in contentTransform.GetComponentInChildren<Transform>())
+            if (shipStatus == null || contentTransform == null) return;
+
+            if (shipStatus.AutoPilotEnabled)
             {
-                if (content == null) continue;
-                if (shipStatus.AutoPilotEnabled)
-                {
-                    content.gameObject.SetActive(false);
-                    return null;
-                }
-                
-                content.gameObject.SetActive(true);
-                content.gameObject.TryGetComponent(out _activeHUDView);
-                return _activeHUDView;
+                TearDownActive();
+                return;
             }
 
-            return null;
-            //
-            // var entry = hudVariants.FirstOrDefault(v => v.shipType == type);
-            // if (entry.prefab == null)
-            // {
-            //     Debug.LogWarning($"[ShipHUDContainer] No prefab assigned for {type}");
-            //     return null;
-            // }
-            //
-            // var go = Instantiate(entry.prefab, contentTransform);
-            // go.name = $"{type}HUD";
-            //
-            // if (!go.TryGetComponent(out _activeHUDView))
-            // {
-            //     Debug.LogError($"[ShipHUDContainer] Prefab {go.name} has no IShipHUDView!");
-            //     return null;
-            // }
-            //
-            // _activeHUDView.Initialize(controller);
+            var variant = hudVariants.FirstOrDefault(v => v.shipType == shipClass);
+            if (variant.prefab == null)
+            {
+                Debug.LogWarning($"[ShipHUDContainer] No HUD prefab for {shipClass}");
+                TearDownActive();
+                return;
+            }
+            TearDownActive();
+
+            _activeInstance = Instantiate(variant.prefab, contentTransform);
+            _activeInstance.gameObject.SetActive(true);
+
+            _activeHUDView = _activeInstance;
+            if (_activeHUDView == null)
+            {
+                Debug.LogWarning($"[ShipHUDContainer] Spawned HUD for {shipClass} has no IShipHUDView.");
+                return;
+            }
+            shipStatus.ShipHudView = _activeHUDView as R_ShipHUDView;
+            
+            var controller = shipStatus.ShipHUDController;
+            var baseView = _activeHUDView as R_ShipHUDView;
+            if (baseView == null)
+                Debug.LogWarning($"[ShipHUDContainer] IShipHUDView is not an R_ShipHUDView; controllers may expect that type.");
+
+            controller.Initialize(shipStatus, baseView);
+           
         }
+
+        private void TearDownActive()
+        {
+            if (_activeInstance != null)
+            {
+                Destroy(_activeInstance);
+                _activeInstance = null;
+            }
+            _activeHUDView = null;
+        }
+
+        /// <summary>Returns the currently active HUD view (if any).</summary>
+        public IShipHUDView GetActiveView() => _activeHUDView;
     }
 }

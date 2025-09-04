@@ -8,27 +8,30 @@ namespace CosmicShore
     public class DistanceTurnMonitor : TurnMonitor
     {
         [SerializeField] float distance;
-        [SerializeField] MiniGame game;
+        
+        // Use MiniGameData instead to get player infos.
+        // [SerializeField] MiniGame game;
+        
         float distanceTraveled;
 
-        public override bool CheckForEndOfTurn()
-        {
-            if (paused) return false;
+        public override bool CheckForEndOfTurn() => distanceTraveled > distance;
 
-            return distanceTraveled > distance;
-        }
-
-        public override void NewTurn(string playerName)
+        public override void StartMonitor()
         {
             distanceTraveled = 0;
+            UpdateUI();
+            base.StartMonitor();
         }
 
         protected override void RestrictedUpdate()
         { 
-            if (paused) return;
-            float speed = game.ActivePlayer.Ship.ShipStatus.Speed;
+            float speed = 0f; // game.ActivePlayer.Ship.ShipStatus.Speed;
             distanceTraveled += speed * Time.deltaTime;
+            UpdateUI();
+        }
 
+        void UpdateUI()
+        {
             string message = ((int)(distance - distanceTraveled)).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }

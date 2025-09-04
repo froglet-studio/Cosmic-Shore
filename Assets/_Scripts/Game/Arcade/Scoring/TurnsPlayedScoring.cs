@@ -1,12 +1,20 @@
+using CosmicShore.SOAP;
+
 namespace CosmicShore.Game.Arcade.Scoring
 {
-    public class TurnsPlayedScoring : BaseScoringMode
+    /// <summary>
+    /// Reminder - player elimination is a bad game mechanic. Redesign the game to not use this.
+    /// </summary>
+    public class TurnsPlayedScoring : BaseScoring
     {
-        private int turnsPlayed;
+        public TurnsPlayedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
-        public TurnsPlayedScoring(float scoreNormalizationQuotient) : base(scoreNormalizationQuotient) { }
-
-        public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
+        public override void CalculateScore()
+        {
+            
+        }
+        
+        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {
             return turnsPlayed;
         }
@@ -15,6 +23,6 @@ namespace CosmicShore.Game.Arcade.Scoring
         {
             turnsPlayed++;
             return turnsPlayed;
-        }
+        }*/
     }
 }

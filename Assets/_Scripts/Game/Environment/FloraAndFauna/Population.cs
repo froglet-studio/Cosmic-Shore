@@ -1,12 +1,16 @@
 using CosmicShore.Core;
 using System.Collections;
 using CosmicShore.Game;
+using CosmicShore.SOAP;
 using UnityEngine;
 
 namespace CosmicShore
 {
     public abstract class Population : MonoBehaviour, ITeamAssignable
     {
+        [SerializeField]
+        MiniGameDataSO miniGameData;
+        
         public Teams Team;
         [SerializeField] float goalUpdateInterval = 5f;
         public Vector3 Goal;
@@ -22,8 +26,8 @@ namespace CosmicShore
 
         void CalculateTeamWeights()
         {
-            Vector4 teamVolumes = StatsManager.Instance.GetTeamVolumes();
-            float totalVolume = teamVolumes.x + teamVolumes.y + teamVolumes.z + teamVolumes.w;
+            Vector4 teamVolumes = miniGameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
+            float totalVolume = miniGameData.GetTotalVolume();
 
             //Weights = new List<float>
             //{

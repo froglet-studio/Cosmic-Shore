@@ -20,7 +20,7 @@ namespace CosmicShore.Game
 
         public ShipClassType ShipClass { get; private set; } // => InitializeData.ShipClass;   
         public Teams Team { get; private set; } // => InitializeData.Team;
-        public string PlayerName { get; private set; } // => InitializeData.PlayerName;
+        public string Name { get; private set; } // => InitializeData.PlayerName;
         public string PlayerUUID { get; private set; } // => InitializeData.PlayerUUID;
         public IShip Ship { get; private set; }
         public bool IsActive { get; private set; }
@@ -40,7 +40,7 @@ namespace CosmicShore.Game
             InitializeData = data;
             ShipClass = InitializeData.ShipClass;
             Team = InitializeData.Team;
-            PlayerName = InitializeData.PlayerName;
+            Name = InitializeData.PlayerName;
             PlayerUUID = InitializeData.PlayerUUID;
             Ship = ship;
             InputController.Initialize(Ship);
@@ -52,8 +52,8 @@ namespace CosmicShore.Game
         {
             NppList.Add(this);
             gameObject.name = "Player_" + OwnerClientId;
-            PlayerName = AuthenticationService.Instance.PlayerName;
-            PlayerUUID = PlayerName;
+            Name = AuthenticationService.Instance.PlayerName;
+            PlayerUUID = Name;
             InputController.enabled = IsOwner;
 
             NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
@@ -75,12 +75,15 @@ namespace CosmicShore.Game
         public void ToggleAutoPilotMode(bool toggle)
         {
             Ship.ToggleAutoPilot(toggle);
-            InputController.SetPaused(toggle);   
+            InputController.Pause(toggle);   
         }
 
         public void ToggleStationaryMode(bool toggle) =>
             Ship.ShipStatus.IsStationary = toggle;
-        
+
+        public void ToggleInputStatus(bool toggle) =>
+            InputController.Pause(toggle);
+
         private void OnNetDefaultShipTypeValueChanged(ShipClassType previousValue, ShipClassType newValue) =>
             ShipClass = newValue;
 

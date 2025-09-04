@@ -1,13 +1,23 @@
-using CosmicShore.Core;
-using UnityEngine;
+using CosmicShore.SOAP;
 
 namespace CosmicShore.Game.Arcade.Scoring
 {
-    public class VolumeCreatedScoring : BaseScoringMode
+    public class VolumeCreatedScoring : BaseScoring
     {
-        public VolumeCreatedScoring(float scoreNormalizationQuotient) : base(scoreNormalizationQuotient) { }
+        public VolumeCreatedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
-        public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
+        public override void CalculateScore()
+        {
+            foreach (var playerScore in miniGameData.RoundStatsList)
+            {
+                if (!miniGameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                playerScore.Score += roundStats.VolumeCreated * scoreMultiplier;
+            }
+        }
+
+        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {
             if (StatsManager.Instance.PlayerStats.TryGetValue(playerName, out var roundStats))
                 return currentScore + roundStats.VolumeCreated * ScoreMultiplier;
@@ -16,9 +26,10 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         public override float EndTurnScore(string playerName, float currentScore, float turnStartTime)
         {
-            var score = CalculateScore(playerName, currentScore, turnStartTime);
+            // var score = CalculateScore(playerName, currentScore, turnStartTime);
+            var score = CalculateScore(playerName, currentScore);
             StatsManager.Instance.ResetStats();
             return score;
-        }
+        }*/
     }
 }

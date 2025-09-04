@@ -12,10 +12,10 @@ namespace CosmicShore.Game.UI
         [Header("HUD and Controls")]
         [SerializeField] public MiniGameHUD MiniGameHUD;
         [SerializeField] public ShipButtonPanel ShipButtonPanel;
-        [SerializeField] public GameObject EndGameScreen;
+        // [SerializeField] public GameObject EndGameScreen;
 
-        [Header("Scoring UI")]
-        [SerializeField] public Scoreboard scoreboard;
+        /*[Header("Scoring UI")]
+        [SerializeField] public Scoreboard scoreboard;*/
 
         [Header("Goodies and Awards")]
         [SerializeField] public GameObject AwardsContainer;

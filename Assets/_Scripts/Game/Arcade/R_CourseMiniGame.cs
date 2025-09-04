@@ -23,20 +23,21 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float helixIntensityScaling = 1.3f;
         
 
-        int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * _miniGameData.Value.SelectedIntensity : baseNumberOfSegments;
-        int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / _miniGameData.Value.SelectedIntensity : baseStraightLineLength;
-        Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * _miniGameData.Value.SelectedIntensity : crystalStartPosition;
-
-        protected override void OnStartNewGame() 
+        int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * miniGameData.SelectedIntensity : baseNumberOfSegments;
+        int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / miniGameData.SelectedIntensity : baseStraightLineLength;
+        Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * miniGameData.SelectedIntensity : crystalStartPosition;
+        
+        protected override void StartNewGame()
         {
             segmentSpawner.Seed = Random.Range(int.MinValue,int.MaxValue);
             
-            if (_miniGameData.Value.SelectedShipClass.Value == ShipClassType.Rhino) 
-                scoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
+            // Scoring mode should never be dependent on Vessel Class.
+            /*if (_miniGameData.Value.SelectedShipClass.Value == ShipClassType.Rhino) 
+                scoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;*/
 
             if (helix)
             {
-                helix.firstOrderRadius = helix.secondOrderRadius = _miniGameData.Value.SelectedIntensity.Value / helixIntensityScaling;
+                helix.firstOrderRadius = helix.secondOrderRadius = miniGameData.SelectedIntensity.Value / helixIntensityScaling;
             }
             
             if (resetEnvironmentOnEachTurn) 
@@ -44,11 +45,16 @@ namespace CosmicShore.Game.Arcade
             
             if (gameMode == GameModes.Freestyle) 
                 FTUEEventManager.RaiseGameModeStarted(GameModes.Freestyle);
+            
+            base.StartNewGame();
         }
 
-        protected override void SetupNewTurn() {
+        protected override void SetupNewTurn() 
+        {
+            if(resetEnvironmentOnEachTurn) 
+                ResetEnvironment();
+            
             base.SetupNewTurn();
-            if(resetEnvironmentOnEachTurn) ResetEnvironment();
         }
 
         void ResetEnvironment() {

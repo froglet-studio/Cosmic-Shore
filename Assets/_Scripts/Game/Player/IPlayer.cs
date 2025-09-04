@@ -10,7 +10,7 @@ namespace CosmicShore.Game
     {
         ShipClassType ShipClass { get; }
         Teams Team { get; }
-        string PlayerName { get; }
+        string Name { get; }
         string PlayerUUID { get; }
         IShip Ship { get; }
         InputController InputController { get; }
@@ -23,6 +23,7 @@ namespace CosmicShore.Game
         void ToggleGameObject(bool toggle);
         void ToggleAutoPilotMode(bool toggle);
         void ToggleStationaryMode(bool toggle);
+        void ToggleInputStatus(bool toggle);
 
         [System.Serializable]
         public class InitializeData

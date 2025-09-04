@@ -25,7 +25,7 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] protected GameModes gameMode;
         [SerializeField] protected int NumberOfRounds = int.MaxValue;
-        [SerializeField] protected List<TurnMonitor> TurnMonitors;
+        // [SerializeField] protected List<TurnMonitor> TurnMonitors;
         [SerializeField] protected ScoreTracker ScoreTracker;
         [SerializeField] GameCanvas GameCanvas;
         [SerializeField] GameObject playerPrefab;
@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SO_Captain DefaultPlayerCaptain;
 
         protected Button ReadyButton;
-        protected GameObject EndGameScreen;
+        // protected GameObject EndGameScreen;
         protected MiniGameHUD HUD;
         protected List<IPlayer> Players = new();
         protected CountdownTimer countdownTimer;
@@ -85,11 +85,11 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void Awake()
         {
-            EndGameScreen = GameCanvas.EndGameScreen;
+            // EndGameScreen = GameCanvas.EndGameScreen;
             HUD = GameCanvas.MiniGameHUD;
             ReadyButton = HUD.View.ReadyButton;
             countdownTimer = HUD.View.CountdownTimer;
-            ScoreTracker.GameCanvas = GameCanvas;
+            // ScoreTracker.GameCanvas = GameCanvas;
 
             /*foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
@@ -180,14 +180,14 @@ namespace CosmicShore.Game.Arcade
             if (!gameRunning)
                 return;
 
-            foreach (var turnMonitor in TurnMonitors)
+            /*foreach (var turnMonitor in TurnMonitors)
             {
                 if (turnMonitor.CheckForEndOfTurn())
                 {
                     EndTurn();
                     return;
                 }
-            }
+            }*/
         }
 
         public IPlayer InstantiateAndInitializePlayer()
@@ -227,7 +227,7 @@ namespace CosmicShore.Game.Arcade
         {
             gameRunning = true;
             Debug.Log($"MiniGame.StartGame, ... {Time.time}");
-            EndGameScreen.SetActive(false);
+            // EndGameScreen.SetActive(false);
             RoundsPlayedThisGame = 0;
             OnMiniGameStart?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
             StartRound();
@@ -242,10 +242,10 @@ namespace CosmicShore.Game.Arcade
 
         protected void StartTurn()
         {
-            foreach (var turnMonitor in TurnMonitors)
-                turnMonitor.ResumeTurn();
+            /*foreach (var turnMonitor in TurnMonitors)
+                turnMonitor.ResumeTurn();*/
 
-            ScoreTracker.StartTurn(Players[activePlayerId].PlayerName, Players[activePlayerId].Team);
+            // ScoreTracker.StartTracking(Players[activePlayerId].PlayerName, Players[activePlayerId].Team);
 
             Debug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
             
@@ -265,8 +265,8 @@ namespace CosmicShore.Game.Arcade
 
         IEnumerator EndTurnCoroutine()
         {
-            foreach (var turnMonitor in TurnMonitors)
-                turnMonitor.PauseTurn();
+            /*foreach (var turnMonitor in TurnMonitors)
+                turnMonitor.PauseTurn();*/
             ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
 
@@ -274,7 +274,7 @@ namespace CosmicShore.Game.Arcade
 
             TurnsTakenThisRound++;
 
-            ScoreTracker.EndTurn();
+            // ScoreTracker.EndTurn();
             Debug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound}, ... {Time.time}");
 
             if (TurnsTakenThisRound >= RemainingPlayers.Count)
@@ -300,15 +300,17 @@ namespace CosmicShore.Game.Arcade
         void EndGame()
         {
             Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
-            Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinner()} ");
+            // Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinnerScoreData().Name} ");
 
-            foreach (var player in Players)
-                Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
+            
+            // TODO - In MiniGameBase, use MiniGameData to get scores
+            /*foreach (var player in Players)
+                Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.Name)} ");*/
 
             if (IsDailyChallenge)
             {
-                LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
-                DailyChallengeSystem.Instance.ReportScore(ScoreTracker.GetHighScore());
+                // LeaderboardManager.Instance.ReportDailyChallengeStatistic(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/, ScoreTracker.GolfRules);
+                DailyChallengeSystem.Instance.ReportScore(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/);
 
                 // TODO: P1 Hide play again button, or map it to use another ticket
 
@@ -317,25 +319,25 @@ namespace CosmicShore.Game.Arcade
             {
                 GameCanvas.AwardsContainer.SetActive(true);
                 // Award Crystals
-                Debug.Log($"Mission EndGame - Award Mission Crystals -  score:{ScoreTracker.GetHighScore()}");
+                Debug.Log($"Mission EndGame - Award Mission Crystals -  score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}");
                 Debug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
                 int crystalsEarned = 0;
                 switch (PlayerCaptain.PrimaryElement)
                 {
                     case Element.Charge:
-                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue * 100);
+                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue * 100);
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Charge);
                         break;
                     case Element.Mass:
-                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100);
+                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100);
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Mass);
                         break;
                     case Element.Space:
-                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100);
+                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100);
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Space);
                         break;
                     case Element.Time:
-                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100);
+                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100);
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
                         break;
                 }
@@ -344,7 +346,7 @@ namespace CosmicShore.Game.Arcade
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
 
                 // Award XP
-                Debug.Log($"Mission EndGame - Award Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
+                Debug.Log($"Mission EndGame - Award Mission XP -  score:{0/*(int)ScoreTracker.GetWinnerScoreData().Score*/}, element:{PlayerCaptain.PrimaryElement}");
                 XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
                 GameCanvas.XPEarnedText.text = "10";
 
@@ -371,27 +373,32 @@ namespace CosmicShore.Game.Arcade
             else if (IsTraining)
             {
                 TrainingGameProgressSystem.GetGameProgress(gameMode);
-                TrainingGameProgressSystem.ReportProgress(Core.Arcade.Instance.TrainingGames.Games.First(x => x.Game.Mode == gameMode), IntensityLevel, ScoreTracker.GetHighScore());
+                /*TrainingGameProgressSystem.ReportProgress(
+                    Core.Arcade.Instance.TrainingGames.Games.First(x => x.Game.Mode == gameMode), IntensityLevel,
+                    0 (int)ScoreTracker.GetWinnerScoreData().Score);*/
             }
             else
-                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
+                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel,
+                    0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/, false);// ScoreTracker.GolfRules);
 
             UserActionSystem.Instance.CompleteAction(new UserAction(
                     UserActionType.PlayGame,
-                    ScoreTracker.GetHighScore(),
+                    0,// (int)ScoreTracker.GetWinnerScoreData().Score,
                     UserAction.GetGameplayUserActionLabel(gameMode, PlayerShipType, IntensityLevel)));
 
             CameraManager.Instance.SetEndCameraActive();
             PauseSystem.TogglePauseGame(true);
             gameRunning = false;
-            EndGameScreen.SetActive(true);
+            // EndGameScreen.SetActive(true);
 
-            if (NumberOfPlayers > 1)
+            // TODO - Scoreboard uses MiniGameData's events.
+            /*if (NumberOfPlayers > 1)
                 GameCanvas.scoreboard.ShowMultiplayerView();
             else
-                GameCanvas.scoreboard.ShowSinglePlayerView();
+                GameCanvas.scoreboard.ShowSinglePlayerView();*/
 
-            OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
+            OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel,
+                0); //(int)ScoreTracker.GetWinnerScoreData().Score);
         }
 
         List<int> EliminatedPlayers = new();
@@ -419,11 +426,11 @@ namespace CosmicShore.Game.Arcade
             ReadyNextPlayer();
 
             // Wait for player ready before activating turn monitor (only really relevant for time based monitor)
-            foreach (var turnMonitor in TurnMonitors)
+            /*foreach (var turnMonitor in TurnMonitors)
             {
                 turnMonitor.NewTurn(Players[activePlayerId].PlayerName);
                 turnMonitor.PauseTurn();
-            }
+            }*/
 
             ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
             ActivePlayer.InputController.InputStatus.Paused = true;

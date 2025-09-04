@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.SOAP;
 using Obvious.Soap;
+using Unity.Services.Matchmaker.Models;
 using Random = UnityEngine.Random;
 
 
@@ -11,7 +13,7 @@ namespace CosmicShore.Game
 {
     public class Cell : MonoBehaviour
     {
-        [SerializeField] public string ID;
+        [SerializeField] public int ID;
 
         [SerializeField] Crystal Crystal;
 
@@ -45,6 +47,9 @@ namespace CosmicShore.Game
 
         [SerializeField]
         ScriptableEventNoParam OnCellItemsUpdated;
+        
+        [SerializeField]
+        MiniGameDataSO miniGameData;
 
         public Dictionary<Teams, BlockCountDensityGrid> countGrids = new Dictionary<Teams, BlockCountDensityGrid>();
         public Dictionary<Teams, BlockVolumeDensityGrid> volumeGrids = new Dictionary<Teams, BlockVolumeDensityGrid>();
@@ -71,8 +76,18 @@ namespace CosmicShore.Game
                 //volumeGrids.Add(t, new BlockVolumeDensityGrid(t));
             }
         }
-        
-        void Start()
+
+        private void OnEnable()
+        {
+            miniGameData.OnAllPlayersSpawned += Initialize;
+        }
+
+        private void OnDisable()
+        {
+            miniGameData.OnAllPlayersSpawned -= Initialize;
+        }
+
+        private void Initialize()
         {
             normalizeWeights();
 
@@ -100,7 +115,6 @@ namespace CosmicShore.Game
             TryInitializeAndAdd(Crystal);
             Crystal.gameObject.SetActive(true);
         }
-
 
         void AssignCellType() 
         {
@@ -280,12 +294,15 @@ namespace CosmicShore.Game
             return teamVolumes[team];
         }
 
-        public Teams ControllingTeam
+        /*public Teams ControllingTeam
         {
             /// TODO: replace this with below. This is a temporary fix to the issue of a single node not being able to accurately determine team volume
 
             get
             {
+                if (!miniGameData.TryGetTeamRemainingVolume(Teams.Jade, out float greenVolume))
+                    return
+
                 var greenVolume =
                     StatsManager.Instance is not null && StatsManager.Instance.TeamStats.ContainsKey(Teams.Jade)
                         ? StatsManager.Instance.TeamStats[Teams.Jade].VolumeRemaining
@@ -307,7 +324,7 @@ namespace CosmicShore.Game
                 else
                     return Teams.None;
             }
-        }
+        }*/
 
         IEnumerator SpawnFlora(FloraConfiguration floraConfiguration, bool spawnJade = true)
         {
@@ -319,7 +336,7 @@ namespace CosmicShore.Game
             }
             while (true)
             {
-                var controllingVolume = GetTeamVolume(ControllingTeam);
+                var controllingVolume = miniGameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item2; // GetTeamVolume(ControllingTeam);
                 if (controllingVolume < floraSpawnVolumeCeiling)
                 {
                     var newFlora = Instantiate(floraConfiguration.Flora, transform.position, Quaternion.identity);
@@ -342,12 +359,13 @@ namespace CosmicShore.Game
             yield return new WaitForSeconds(initialFaunaSpawnWaitTime);
             while (true)
             {
-                var controllingVolume = GetTeamVolume(ControllingTeam);
+                var controllingTeamStat = miniGameData.GetControllingTeamStatsBasedOnVolumeRemaining();
+                var controllingVolume = controllingTeamStat.Item2; // GetTeamVolume(ControllingTeam);
                 var period = baseFaunaSpawnTime * faunaSpawnVolumeThreshold / controllingVolume; //TODO: use this to adjust spawn rate
                 if (controllingVolume > faunaSpawnVolumeThreshold)
                 {
                     var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
-                    newPopulation.Team = ControllingTeam;
+                    newPopulation.Team = controllingTeamStat.Item1; // ControllingTeam;
                     newPopulation.Goal = Crystal.transform.position;
                     yield return new WaitForSeconds(baseFaunaSpawnTime);
                 }

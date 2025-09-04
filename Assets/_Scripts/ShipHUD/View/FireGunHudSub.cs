@@ -12,6 +12,7 @@ public class FireGunHudSub : HudSubscriptionSO
     private System.Action _onGunFired;
     private int _current;
 
+    
     protected override void OnEnableSubscriptions()
     {
         _action = Refs ? Refs.fireGun : null;

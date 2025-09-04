@@ -37,13 +37,13 @@ namespace CosmicShore.Core
         [Header("Event Channels")]
         
         // [SerializeField] TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
-        [SerializeField] ScriptableEventTrailBlockEventData _onTrailBlockCreatedEventChannel;
+        [SerializeField] ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
         // [SerializeField] TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
-        [SerializeField] ScriptableEventTrailBlockEventData _onTrailBlockDestroyedEventChannel;
+        [SerializeField] ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
         // [SerializeField] TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
-        [SerializeField] ScriptableEventTrailBlockEventData _onTrailBlockRestoredEventChannel;
+        [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
         
-        [SerializeField] TrailBlockEventChannelWithReturnSO _onFlockSpawnedEventChannel;
+        [SerializeField] PrismEventChannelWithReturnSO _onFlockSpawnedEventChannel;
 
         public Teams Team
         {
@@ -176,11 +176,12 @@ namespace CosmicShore.Core
             /*if (StatsManager.Instance != null)
                 StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);*/
 
-            _onTrailBlockCreatedEventChannel.Raise(new TrailBlockEventData
+            _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
-                OwnTeam = Team,
+                // OwnTeam = Team,
                 PlayerName = PlayerName,
-                TrailBlockProperties = TrailBlockProperties
+                Volume = TrailBlockProperties.volume,
+                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
             });
 
             if (CellControlManager.Instance is not null)
@@ -234,17 +235,17 @@ namespace CosmicShore.Core
             TrailBlockProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
 
             // var explodingBlock = FossilBlockPool.SpawnFromTeamPool(Team, transform.position, transform.rotation);
-            var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new TrailBlockEventData
+            var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
             {
                 OwnTeam = Team,
-                PlayerTeam = team,
-                PlayerName = playerName,
+                // PlayerTeam = team,
+                // PlayerName = playerName,
                 Position = transform.position,
                 Rotation = transform.rotation,
             });
             GameObject explodingBlock = returnData.SpawnedObject;
 
-            if (explodingBlock == null)
+            if (!explodingBlock)
             {
                 Debug.LogError("Failed to spawn exploding block. Check if the pool is initialized and has available objects.");
                 return;
@@ -261,11 +262,12 @@ namespace CosmicShore.Core
             /*if (StatsManager.Instance != null)
                 StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);*/
 
-            _onTrailBlockDestroyedEventChannel.Raise(new TrailBlockEventData
+            _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
-                OwnTeam = team,
-                PlayerName = playerName,
-                TrailBlockProperties = TrailBlockProperties,
+                // OwnTeam = Team,
+                PlayerName = PlayerName,
+                Volume = TrailBlockProperties.volume,
+                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
             });
 
             if (CellControlManager.Instance != null)
@@ -305,11 +307,12 @@ namespace CosmicShore.Core
                 /*if (StatsManager.Instance != null)
                     StatsManager.Instance.BlockRestored(Team, PlayerName, TrailBlockProperties);*/
 
-                _onTrailBlockRestoredEventChannel.Raise(new TrailBlockEventData
+                _onTrailBlockRestoredEventChannel.Raise(new PrismStats
                 {
-                    OwnTeam = Team,
+                    // OwnTeam = Team,
                     PlayerName = PlayerName,
-                    TrailBlockProperties = TrailBlockProperties
+                    Volume = TrailBlockProperties.volume,
+                    OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
                 });
 
                 if (CellControlManager.Instance != null)

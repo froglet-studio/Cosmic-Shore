@@ -11,6 +11,7 @@ using UnityEngine.SceneManagement;
 using CosmicShore.Utilities;
 using CosmicShore.Game;
 using CosmicShore.Game.Arcade;
+using CosmicShore.SOAP;
 #if !LINUX_BUILD
 using Mono.Cecil;
 #endif
@@ -24,7 +25,10 @@ namespace CosmicShore.Game
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
 
         // [SerializeField] ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
-        [SerializeField] ScriptableEventArcadeData OnArcadeMultiplayerModeSelected;
+        // [SerializeField] ScriptableEventArcadeData OnArcadeMultiplayerModeSelected;
+        
+        [SerializeField]
+        MiniGameDataSO miniGameData;
 
         string _multiplayerSceneName;
         int _maxPlayerPerSession;
@@ -72,15 +76,36 @@ namespace CosmicShore.Game
             NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
 
-            OnArcadeMultiplayerModeSelected.OnRaised += OnMultiplayModeSelected;
+            // OnArcadeMultiplayerModeSelected.OnRaised += OnMultiplayModeSelected;
+            miniGameData.OnLaunchGame += OnLaunchGame;
         }
 
         async void Start()
         {
-            // 1) Initialize UGS and sign-in
-            await UnityServices.InitializeAsync();
-            if (!AuthenticationService.Instance.IsSignedIn)
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            try
+            {
+                // 1) Initialize UGS and sign-in
+                await UnityServices.InitializeAsync();
+                if (!AuthenticationService.Instance.IsSignedIn)
+                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            }
+            catch (AuthenticationException ex)
+            {
+                Debug.LogError($"UGS sign-in failed ({ex.ErrorCode}): {ex.Message}");
+                Debug.LogException(ex); // stack trace
+                // TODO: fall back to offline mode / disable online-only features
+            }
+            catch (RequestFailedException ex)
+            {
+                Debug.LogError($"UGS init/request failed ({ex.ErrorCode}): {ex.Message}");
+                Debug.LogException(ex);
+                // TODO: show retry UI, backoff, etc.
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Unexpected error during UGS init/sign-in: {ex.Message}");
+                Debug.LogException(ex);
+            }
         }
 
         private void OnDisable()
@@ -91,11 +116,17 @@ namespace CosmicShore.Game
                 NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
             }
 
-            OnArcadeMultiplayerModeSelected.OnRaised -= OnMultiplayModeSelected;
+            // OnArcadeMultiplayerModeSelected.OnRaised -= OnMultiplayModeSelected;
+            miniGameData.OnLaunchGame -= OnLaunchGame;
         }
 
-        private void OnMultiplayModeSelected(ArcadeData data) => 
-            ExecuteMultiplayerSetup(data.SceneName, data.MaxPlayers);
+        private void OnLaunchGame()
+        {
+            if (!miniGameData.IsMultiplayerMode)
+                return;
+            
+            ExecuteMultiplayerSetup(miniGameData.SceneName, miniGameData.SelectedPlayerCount);
+        }
 
         public async void ExecuteMultiplayerSetup(string multiplayerSceneName, int maxPlayersPerSession)
         {

@@ -52,6 +52,9 @@ MonoBehaviour:
   minHealthBlocks: 5
   shieldPeriod: 1
   Team: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   leafSize: {x: 9, y: 3.4, z: 1.5}
   growPeriod: 1
   PlantPeriod: 30

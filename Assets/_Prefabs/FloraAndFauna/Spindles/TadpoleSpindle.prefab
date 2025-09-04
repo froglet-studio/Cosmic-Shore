@@ -13,6 +13,10 @@ GameObject:
   - component: {fileID: 4055802238885949714}
   - component: {fileID: 516044589407691252}
   - component: {fileID: 1764503489717778941}
+  - component: {fileID: 520716064556743480}
+  - component: {fileID: 5294544041139789144}
+  - component: {fileID: 1725768667685633054}
+  - component: {fileID: 2196697198332678755}
   m_Layer: 11
   m_Name: BoidBlock
   m_TagString: Fauna
@@ -60,10 +64,13 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 7e148d5b33e1c0045973b65f2685fc63, type: 2}
+  - {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -126,27 +133,87 @@ MonoBehaviour:
     speedDebuffAmount: 0
     trailBlock: {fileID: 1764503489717778941}
     Index: 0
-    Shielded: 0
+    IsShielded: 0
     IsSuperShielded: 0
     IsDangerous: 0
+    IsTransparent: 0
     TimeCreated: 0
-  ParticleEffect: {fileID: 3706253519474275301, guid: 6aaf9420b35a6e3478427ed26cd04487,
+  ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
-  minScale: {x: 0.5, y: 0.5, z: 0.5}
-  MaxScale: {x: 10, y: 10, z: 10}
-  TargetScale: {x: 0.6, y: 0.6, z: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
+  growthRate: 0.01
   waitTime: 0.6
   destroyed: 0
   devastated: 0
-  ID: 
-  Index: 0
-  warp: 0
   IsSmallest: 0
   IsLargest: 0
-  ownerId: 
-  Player: {fileID: 0}
+  ownerID: 
+  _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
+    type: 2}
+  _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
+    type: 2}
+  _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: b5c1a6869a63cbf469f649a5c0b811fc,
+    type: 2}
+  _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+    type: 2}
   LifeForm: {fileID: 0}
+  spindle: {fileID: 7614264898891808108}
+--- !u!114 &520716064556743480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 744194691747103861}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a3a471efe0048544a8f217c88db4843, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &5294544041139789144
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 744194691747103861}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
+  minScale: {x: 0.5, y: 0.5, z: 0.5}
+  maxScale: {x: 10, y: 10, z: 10}
+--- !u!114 &1725768667685633054
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 744194691747103861}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 525c14f44c20af64dabc635a990a0f73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
+--- !u!114 &2196697198332678755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 744194691747103861}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bc84df2cc31ac046a258d2e1ee38753, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!1 &5753173635696888826
 GameObject:
   m_ObjectHideFlags: 0
@@ -193,9 +260,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 2951455408622453098}
+  parentSpindle: {fileID: 0}
   LifeForm: {fileID: 0}
+  retainSpindle: 0
 --- !u!1 &7561298438515828241
 GameObject:
   m_ObjectHideFlags: 0
@@ -254,6 +322,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:

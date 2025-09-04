@@ -5204,6 +5204,12 @@ PrefabInstance:
       objectReference: {fileID: 1559828715}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: miniGameData
+      value: 
+      objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: CellTypes.Array.size
       value: 4
       objectReference: {fileID: 0}
@@ -9822,6 +9828,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
+      propertyPath: _items.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
+      propertyPath: '_items.Array.data[3]'
+      value: 
+      objectReference: {fileID: 302356026468653293, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+    - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
+      propertyPath: '_items.Array.data[4]'
+      value: 
+      objectReference: {fileID: 4853709196820857184, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+    - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
+      propertyPath: '_items.Array.data[5]'
+      value: 
+      objectReference: {fileID: 8350600879602490808, guid: 7fec532a729a8b648a8de2399d1b918a,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -24520,7 +24545,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 756088747}
-    PlayerPrefab: {fileID: 3140527607295334043, guid: 8ec8b9532656a124b82366e530b00890,
+    PlayerPrefab: {fileID: 2151207714166088056, guid: 0a8653be5d331c5449d3130cef596493,
       type: 3}
     Prefabs:
       NetworkPrefabsLists:
@@ -25591,6 +25616,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f7df5bea58cb22468273de1a9facada, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  allGames: {fileID: 11400000, guid: 295aa0134b55e474d9aceca4bbb5b444, type: 2}
   GameSelectionContainer: {fileID: 283141851}
   HighScoresContainer: {fileID: 1358711680}
   ShipClassSelection: {fileID: 8022145649317117787}
@@ -29697,7 +29723,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   navGroup: {fileID: 546521020}
-  shipClassTypeVariable: {fileID: 0}
+  shipClassTypeVariable: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
+    type: 2}
   ProfileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   HighScoresContainer: {fileID: 753299098}
   LeaderboardEntries: []
@@ -30532,8 +30559,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  OnArcadeMultiplayerModeSelected: {fileID: 11400000, guid: 9801fa687d6262444af227b07632b51b,
-    type: 2}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!4 &921810067
 Transform:
   m_ObjectHideFlags: 0
@@ -41586,7 +41612,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cells:
   - {fileID: 1422060011}
-  _onGameOver: {fileID: 11400000, guid: 44479e5adc9df4d40a433487d1b53b6b, type: 2}
 --- !u!1 &1245639255
 GameObject:
   m_ObjectHideFlags: 0
@@ -80334,6 +80359,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
         type: 3}
+      propertyPath: _initializeDatas.Array.data[0].ShipClass
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
+        type: 3}
       propertyPath: _initializeDatas.Array.data[0].AllowSpawning
       value: 1
       objectReference: {fileID: 0}
@@ -80355,8 +80385,44 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2996404617579086751}
   m_SourcePrefab: {fileID: 100100000, guid: a51d3a28670d8e64fbdb568abd6769e2, type: 3}
+--- !u!1 &2996404617579086750 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 2996404617579086749}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2996404617579086751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2996404617579086750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d73c34105d7d4efab70dcea51ce9cede, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _playerSpawner: {fileID: 2996404617579086752}
+--- !u!114 &2996404617579086752 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 2996404617579086749}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2996404617579086750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f25773e3ee4abc86fa268757d3f4ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &3016169605549964998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91649,7 +91715,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: 349.6599}
+  m_AnchoredPosition: {x: -32, y: 187.00002}
   m_SizeDelta: {x: 64, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &5840560526580898137
@@ -92541,6 +92607,12 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2052326737652235165, guid: 05a0a8954cada1a4eab8ad2dbc328131,
         type: 3}
+      propertyPath: miniGameData
+      value: 
+      objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
+        type: 2}
+    - target: {fileID: 2052326737652235165, guid: 05a0a8954cada1a4eab8ad2dbc328131,
+        type: 3}
       propertyPath: _multiplayerSetup
       value: 
       objectReference: {fileID: 921810066}
@@ -93211,11 +93283,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4983872992474410972}
     m_Modifications:
-    - target: {fileID: 2061170156, guid: 37c5e5722efdd184bbb0e51f04fb4e91, type: 3}
-      propertyPath: _onStartSceneTransition
-      value: 
-      objectReference: {fileID: 11400000, guid: d0647730cca39114980951ca62c870da,
-        type: 2}
     - target: {fileID: 6236172666001697302, guid: 37c5e5722efdd184bbb0e51f04fb4e91,
         type: 3}
       propertyPath: m_Pivot.x

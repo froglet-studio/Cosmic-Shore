@@ -2,13 +2,16 @@
 {
     public interface IRoundStats
     {
+        string Name { get; set; }
+        Teams Team { get; set; }
+        float Score { get; set; }
         int BlocksCreated { get; set; }
         int BlocksDestroyed { get; set; }
         int BlocksRestored { get; set; }
         int BlocksStolen { get; set; }
-        int BlocksRemaining { get; set; }
-        int FriendlyBlocksDestroyed { get; set; }
-        int HostileBlocksDestroyed { get; set; }
+        int PrismsRemaining { get; set; }
+        int FriendlyPrismsDestroyed { get; set; }
+        int HostilePrismsDestroyed { get; set; }
         float VolumeCreated { get; set; }
         float VolumeDestroyed { get; set; }
         float VolumeRestored { get; set; }

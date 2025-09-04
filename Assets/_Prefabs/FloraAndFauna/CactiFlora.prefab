@@ -50,11 +50,15 @@ MonoBehaviour:
   spindle: {fileID: 5157459880619768690, guid: f7ec1bbfe690a184b935434a6e0dcb7a, type: 3}
   healthBlocksForMaturity: 10
   minHealthBlocks: 5
+  shieldPeriod: 0
   Team: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
+  leafSize: {x: 5, y: 5, z: 3}
   growPeriod: 2
   PlantPeriod: 6
   stunDuration: 1
-  leafSize: {x: 5, y: 5, z: 3}
   growthChance: 0.5
   minBranchAngle: 85
   maxBranchAngle: 95
@@ -62,14 +66,13 @@ MonoBehaviour:
   maxBranches: 9
   minTrunks: 1
   maxTrunks: 1
-  minBranchLengthMultiplier: 4
   maxBranchLengthMultiplier: 5
   maxDepth: 100
   maxTotalSpawnedObjects: 5000
   leafChance: -2
   leafChanceIncrement: 0.02
   isCrystaltropic: 0
-  SecondarySpawn: {fileID: 0}
+  SecondarySpawn: {fileID: 7514956980722975813}
   hasPlantedSecondary: 0
   plantAroundCrystal: 1
   branchingScaleFactor: 14

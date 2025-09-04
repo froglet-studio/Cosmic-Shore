@@ -152,7 +152,7 @@ namespace CosmicShore.Game.IO
             currentStrategy?.SetPortrait(portrait);
         }
 
-        public void SetPaused(bool paused)
+        public void Pause(bool paused)
         {
             InputStatus.Paused = paused;
             if (paused)

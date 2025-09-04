@@ -1,22 +1,29 @@
+using CosmicShore.SOAP;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Scoring
 {
-    public class TimePlayedScoring : BaseScoringMode
+    public class TimePlayedScoring : BaseScoring
     {
+        public TimePlayedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
-        public TimePlayedScoring(float scoreNormalizationQuotient)
-            : base(scoreNormalizationQuotient) { }
-
-
-        public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
+        public override void CalculateScore()
         {
-            return currentScore + (Time.time - turnStartTime) * ScoreMultiplier;
+            foreach (var playerScore in miniGameData.RoundStatsList)
+            {
+                playerScore.Score += (Time.time - miniGameData.TurnStartTime) * scoreMultiplier;
+            }
+        }
+        
+
+        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
+        {
+            return currentScore + (Time.time - turnStartTime) * scoreMultiplier;
         }
 
         public override float EndTurnScore(string playerName, float currentScore, float turnStartTime)
         {
             return CalculateScore(playerName, currentScore, turnStartTime);
-        }
+        }*/
     }
 }

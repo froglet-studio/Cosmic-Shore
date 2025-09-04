@@ -64,12 +64,12 @@ namespace CosmicShore.Game
                 return;
             }
             
-            if (Explosion.AnonymousExplosion)
+            if (Explosion.AnonymousExplosion) // Ship Status will be null here
                 prism.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
             else
             {
                 var shipStatus = Explosion.Ship.ShipStatus;
-                prism.Damage(impactVector, shipStatus.Team, shipStatus.Player.PlayerName, devastating);
+                prism.Damage(impactVector, shipStatus.Team, shipStatus.Player.Name, devastating);
             }
         }
     }

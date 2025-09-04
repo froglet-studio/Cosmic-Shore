@@ -1,9 +1,39 @@
-﻿using Unity.Netcode;
+﻿using Unity.Collections;
+using Unity.Netcode;
 
 namespace CosmicShore.Core
 {
     public class NetworkRoundStats : NetworkBehaviour, IRoundStats
     {
+        private readonly NetworkVariable<FixedString64Bytes> n_Name = new(
+            readPerm: NetworkVariableReadPermission.Everyone,
+            writePerm: NetworkVariableWritePermission.Server);
+        public string Name
+        {
+            get => n_Name.Value.ToString();
+            set => n_Name.Value = value;
+        }
+        
+        private readonly NetworkVariable<Teams> n_Team = new(
+            readPerm: NetworkVariableReadPermission.Everyone,
+            writePerm: NetworkVariableWritePermission.Server);
+
+        public Teams Team
+        {
+            get => n_Team.Value;
+            set => n_Team.Value = value;
+        }
+        
+        private readonly NetworkVariable<float> n_Score = new(
+            readPerm: NetworkVariableReadPermission.Everyone,
+            writePerm: NetworkVariableWritePermission.Server);
+
+        public float Score
+        {
+            get => n_Score.Value;
+            set => n_Score.Value = value;
+        }
+        
         private readonly NetworkVariable<int> n_BlocksCreated = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
@@ -43,7 +73,7 @@ namespace CosmicShore.Core
         private readonly NetworkVariable<int> n_BlocksRemaining = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
-        public int BlocksRemaining
+        public int PrismsRemaining
         {
             get => n_BlocksRemaining.Value;
             set => n_BlocksRemaining.Value = value;
@@ -52,7 +82,7 @@ namespace CosmicShore.Core
         private readonly NetworkVariable<int> n_FriendlyBlocksDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
-        public int FriendlyBlocksDestroyed
+        public int FriendlyPrismsDestroyed
         {
             get => n_FriendlyBlocksDestroyed.Value;
             set => n_FriendlyBlocksDestroyed.Value = value;
@@ -61,7 +91,7 @@ namespace CosmicShore.Core
         private readonly NetworkVariable<int> n_HostileBlocksDestroyed = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
-        public int HostileBlocksDestroyed
+        public int HostilePrismsDestroyed
         {
             get => n_HostileBlocksDestroyed.Value;
             set => n_HostileBlocksDestroyed.Value = value;

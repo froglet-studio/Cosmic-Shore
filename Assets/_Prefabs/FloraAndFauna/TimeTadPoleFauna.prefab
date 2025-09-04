@@ -48,9 +48,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   healthBlock: {fileID: 6449687985229987934}
   spindle: {fileID: 2906631601259955407}
+  healthBlocksForMaturity: 1
   minHealthBlocks: 0
+  shieldPeriod: 0
   Team: 3
-  aggression: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   Population: {fileID: 0}
   cohesionRadius: 20
   behaviorUpdateRate: 3
@@ -218,7 +222,7 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 4055802238885949714, guid: 32182c0d19e344b4c9a9b332052037e6,
         type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
     - target: {fileID: 4897651091342273877, guid: 32182c0d19e344b4c9a9b332052037e6,

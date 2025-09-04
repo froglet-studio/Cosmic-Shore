@@ -14,7 +14,7 @@ public class StartFromAnyScene : MonoBehaviour
 
     void Awake()
     {
-        if (MainMenuSingletonPersistents != null && GameManager.Instance == null)
+        if (MainMenuSingletonPersistents != null) // && GameManager.Instance == null)
         {
             foreach (var go in MainMenuSingletonPersistents)
                 Instantiate(go);

@@ -1,33 +1,35 @@
-// SkimmerOverchargeCollectPrismEffectSO.cs  (minimal diff)
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "SkimmerOverchargeCollectPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer/SkimmerOverchargeCollectPrismEffectSO")] 
-    public class SkimmerOverchargeCollectPrismEffectSO : SkimmerPrismEffectSO
+    [CreateAssetMenu(fileName = "SkimmerOverchargeCollectPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer/SkimmerOverchargeCollectPrismEffectSO")]
+    public class SkimmerOverchargeCollectPrismEffectSO : ImpactEffectSO<SkimmerImpactor, PrismImpactor>
     {
         [Header("Overcharge Settings")]
         [SerializeField] private int   maxBlockHits     = 30;
         [SerializeField] private float cooldownDuration = 5f;
-        [SerializeField] private bool  verbose;  
+        [SerializeField] private bool  verbose;
         [SerializeField] private Material overchargedMaterial;
 
-        [Header("HUD")]
-        [SerializeField] private string textKey = "SkimmerOverchargeText"; 
+        public int MaxBlockHits => maxBlockHits;
+        
+        public event Action<SkimmerImpactor,int,int> OnCountChanged;   
+        public event Action<SkimmerImpactor,float>   OnCooldownStarted; 
+        public event Action<SkimmerImpactor>         OnOvercharge;     
 
         private static readonly Dictionary<SkimmerImpactor, HashSet<PrismImpactor>> hitsBySkimmer = new();
         private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers = new();
-        IShipStatus _status;
-        
-        public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
+
+        protected override void ExecuteTyped(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            _status = impactor.Skimmer.ShipStatus;
             if (prismImpactee.Prism.Team == Teams.Jade) return;
 
+            // cooldown gate
             if (cooldownTimers.TryGetValue(impactor, out var cooldownEnd) && Time.time < cooldownEnd)
             {
-                SetHudText(impactor, $"0/{maxBlockHits}");
                 if (verbose) Debug.Log("[SkimmerOvercharge] Still on cooldown.", impactor);
                 return;
             }
@@ -38,36 +40,32 @@ namespace CosmicShore.Game
                 hitsBySkimmer[impactor] = hitSet;
             }
 
+            // skip duplicates
             if (!hitSet.Add(prismImpactee)) return;
 
-            var rend = prismImpactee.GetComponent<Renderer>();
-            if (rend != null && overchargedMaterial != null) rend.material = overchargedMaterial;
+            // visual: mark prism overcharged
+            var rend = prismImpactee ? prismImpactee.GetComponent<Renderer>() : null;
+            if (rend && overchargedMaterial) rend.material = overchargedMaterial;
 
             var count = hitSet.Count;
-            SetHudText(impactor, $"{count}/{maxBlockHits}");
+            OnCountChanged?.Invoke(impactor, count, maxBlockHits);   // <— notify HUD
 
             if (count < maxBlockHits) return;
 
             // threshold reached
             TriggerOvercharge(impactor, hitSet);
+
             hitSet.Clear();
-            SetHudText(impactor, $"{maxBlockHits}/{maxBlockHits}");
-            SetHudText(impactor, $"0/{maxBlockHits}"); // immediate reset
             cooldownTimers[impactor] = Time.time + cooldownDuration;
+            OnCooldownStarted?.Invoke(impactor, cooldownDuration);
         }
 
         private void TriggerOvercharge(SkimmerImpactor impactor, HashSet<PrismImpactor> hitSet)
         {
             foreach (var prism in hitSet) prism.gameObject.SetActive(false);
+            OnOvercharge?.Invoke(impactor);
             if (verbose) Debug.Log($"[SkimmerOvercharge] Overcharge triggered! ({hitSet.Count})", impactor);
-        }
-
-        private void SetHudText(SkimmerImpactor impactor, string value)
-        {
-            if (_status?.ShipHUDView is ShipHUDView view)
-            {
-                view.Effects?.SetText(textKey, value);
-            }
         }
     }
 }
+

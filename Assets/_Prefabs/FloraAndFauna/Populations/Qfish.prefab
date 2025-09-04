@@ -46,15 +46,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   healthBlock: {fileID: 0}
   spindle: {fileID: 0}
+  healthBlocksForMaturity: 1
   minHealthBlocks: 0
+  shieldPeriod: 0
   Team: 0
-  aggression: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   Population: {fileID: 0}
-  cohesionRadius: 8
+  detectionRadius: 100
   separationRadius: 4
+  consumeRadius: 40
   behaviorUpdateRate: 1
   separationWeight: 2
-  cohesionWeight: 1
   goalWeight: 1.5
   minSpeed: 3
   maxSpeed: 6
+  Phase: 0

@@ -138,6 +138,9 @@ MonoBehaviour:
   minHealthBlocks: 0
   shieldPeriod: 0
   Team: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   Population: {fileID: 0}
   cohesionRadius: 20
   behaviorUpdateRate: 3
@@ -336,6 +339,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f40239b343f8a524193537146572fa48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
+    type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
 --- !u!114 &718063118004970353
@@ -351,6 +356,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  onPrismStolen: {fileID: 11400000, guid: f8ae8679547e63f4da4147cfc7c44d42, type: 2}
 --- !u!114 &5819415726148988801
 MonoBehaviour:
   m_ObjectHideFlags: 0

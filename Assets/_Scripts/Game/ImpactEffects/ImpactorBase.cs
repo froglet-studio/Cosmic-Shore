@@ -22,7 +22,7 @@ namespace CosmicShore.Game
 
         protected bool DoesEffectExist(ImpactEffectSO[] effects) => effects is { Length: > 0 };
         
-        void OnTriggerEnter(Collider other)
+        protected virtual void OnTriggerEnter(Collider other)
         {
             if (!other.TryGetComponent(out IImpactCollider impacteeCollider))
                 return;

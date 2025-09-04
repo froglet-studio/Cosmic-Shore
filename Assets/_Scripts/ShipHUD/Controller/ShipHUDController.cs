@@ -31,15 +31,20 @@ namespace CosmicShore.Game
             InitializeShipHUD();
         }
 
+        public void Initialize(IShipStatus status, R_ShipHUDView view)
+        {
+          
+        }
+
         public void InitializeShipHUD()
         {
             if (SceneManager.GetActiveScene().name == sceneNameListSO.MainMenuScene) return;
 
-            var view = _status.ShipHUDContainer.InitializeView(this, _status);
-            if (view == null) return;
-
-            _status.ShipHUDView = view;
-            _view = view;
+            // var view = _status.ShipHUDContainer.InitializeView(this, _status);
+            // if (view == null) return;
+            //
+            // _status.ShipHUDView = view;
+            // _view = view;
 
             var effects = (_view is IHasEffects hasFx) ? hasFx.Effects : null;
             if (profile?.subscriptions == null || profile.subscriptions.Length == 0)

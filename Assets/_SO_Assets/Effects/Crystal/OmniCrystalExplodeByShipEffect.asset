@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 806bba74ee3d4fbfb01a9abcbb420ea9, type: 3}
   m_Name: OmniCrystalExplodeByShipEffect
   m_EditorClassIdentifier: 
+  OnCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c, type: 2}

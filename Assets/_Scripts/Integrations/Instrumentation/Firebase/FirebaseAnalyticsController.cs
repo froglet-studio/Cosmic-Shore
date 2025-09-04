@@ -20,15 +20,14 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private static Action _dependencyResolved;
         
-        [SerializeField] ScriptableEventMiniGameData _onStartMiniGame;
-        [SerializeField] ScriptableEventMiniGameData _onEndMiniGame;
+        [SerializeField]
+        MiniGameDataSO _miniGameData;
         
         #region Firebase Analytics Controller Initialization and Enabling
 
         private void OnEnable()
         {
-            _onStartMiniGame.OnRaised += LogEventMiniGameStart;
-            _onEndMiniGame.OnRaised +=  LogEventMiniGameEnd;
+            // TODO - Subscribe to OnMiniGameStart and OnMiniGameEnd To LogEvent
         }
 
         private void Start()
@@ -40,8 +39,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private void OnDisable()
         {
-            _onStartMiniGame.OnRaised -= LogEventMiniGameStart;
-            _onEndMiniGame.OnRaised -=  LogEventMiniGameEnd;
+            // TODO - Unsubscribe from OnMiniGameStart and OnMiniGameEnd To LogEvent
+            
             _dependencyResolved -= InitializeFirebaseAnalytics;
             if(UserActionSystem.Instance) UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
         }
@@ -192,7 +191,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         #region Mini Game Events
 
-        void LogEventMiniGameStart(MiniGameData data)
+        void LogEventMiniGameStart(MiniGameDataSO data)
         {
             if (!_analyticsEnabled) return;
             
@@ -225,7 +224,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             
         }
         
-        void LogEventMiniGameEnd(MiniGameData data)
+        void LogEventMiniGameEnd(MiniGameDataSO data)
         {
             if (!_analyticsEnabled) return;
             
@@ -236,7 +235,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
                 new Parameter(FirebaseAnalytics.ParameterCharacter, data.SelectedShipClass.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterQuantity, data.SelectedPlayerCount),
                 new Parameter(FirebaseAnalytics.ParameterIndex, data.SelectedIntensity),
-                new Parameter(FirebaseAnalytics.ParameterScore, data.HighScore)
+                new Parameter(FirebaseAnalytics.ParameterScore, 0) // data.HighScore)   // Get HighScore from MiniGameDataSO
             };
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);

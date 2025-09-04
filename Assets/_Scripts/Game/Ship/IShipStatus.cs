@@ -41,7 +41,7 @@ namespace CosmicShore.Game
             get
             {
                 if (Player != null)
-                    return Player.PlayerName;
+                    return Player.Name;
 
                 Debug.LogWarning("Player is null, returning empty string for PlayerName.");
                 return "No-name";
@@ -75,7 +75,8 @@ namespace CosmicShore.Game
         IShipHUDController ShipHUDController { get; }
         R_ShipCustomization Customization { get; }
         R_ShipActionHandler ActionHandler { get; }
-        
+
+        R_ShipHUDView ShipHudView { get; set; }
         // Deprecated  - Use R_ShipImpactor instead
         // R_ShipImpactHandler ImpactHandler { get; }
         

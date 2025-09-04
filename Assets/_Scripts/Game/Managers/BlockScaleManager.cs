@@ -101,18 +101,17 @@ namespace CosmicShore.Core
                     bool contains = activeAnimators.Contains(block);
                 }
 
-                if (block.OnScaleComplete != null)
+                if (block.OnScaleComplete == null) 
+                    continue;
+                try
                 {
-                    try
-                    {
-                        block.OnScaleComplete.Invoke();
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogError($"Error in scale completion callback: {e.Message}");
-                    }
-                    block.OnScaleComplete = null;
+                    block.OnScaleComplete.Invoke();
                 }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"Error in scale completion callback: {e.Message}");
+                }
+                block.OnScaleComplete = null;
             }
 
             // Validate all remaining active animators are actually scaling

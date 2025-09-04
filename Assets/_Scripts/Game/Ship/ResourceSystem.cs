@@ -11,7 +11,7 @@ namespace CosmicShore.Core
     public class ResourceSystem : ElementalShipComponent
     {
         [SerializeField] public List<Resource> Resources;
-
+        public event Action<int, float, float> OnResourceChanged; 
         public static readonly float OneFuelUnit = 1 / 10f;
 
         private void Awake()
@@ -22,11 +22,14 @@ namespace CosmicShore.Core
 
         IEnumerator Start()
         {
-            // Push initial values so any HUD subs pick them up immediately
-            foreach (var r in Resources)
+            for (int i = 0; i < Resources.Count; i++)
+            {
+                var r = Resources[i];
                 r.CurrentAmount = r.InitialAmount;
-
-            // Elemental events (unchanged)
+                EmitResourceChanged(i);  
+            }
+            
+            // Elemental events
             OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(ChargeLevel * MaxLevel));
             OnElementLevelChange?.Invoke(Element.Mass,   Mathf.FloorToInt(MassLevel * MaxLevel));
             OnElementLevelChange?.Invoke(Element.Space,  Mathf.FloorToInt(SpaceLevel * MaxLevel));
@@ -39,9 +42,14 @@ namespace CosmicShore.Core
         {
             while (true)
             {
-                foreach (var r in Resources)
-                    r.CurrentAmount = Mathf.Clamp(r.CurrentAmount + r.resourceGainRate, 0, r.MaxAmount);
-
+                for (int i = 0; i < Resources.Count; i++)
+                {
+                    var r = Resources[i];
+                    float prev = r.CurrentAmount;
+                    r.CurrentAmount = Mathf.Clamp(prev + r.resourceGainRate, 0, r.MaxAmount);
+                    if (!Mathf.Approximately(prev, r.CurrentAmount))
+                        EmitResourceChanged(i);
+                }
                 yield return new WaitForSeconds(1);
             }
         }
@@ -64,20 +72,29 @@ namespace CosmicShore.Core
 
         public void Reset()
         {
-            foreach (var r in Resources)
+            for (int i = 0; i < Resources.Count; i++)
+            {
+                var r = Resources[i];
                 r.CurrentAmount = r.InitialAmount;
+                EmitResourceChanged(i);
+            }
         }
 
         public void ResetResource(int index)
         {
             Resources[index].CurrentAmount = Resources[index].InitialAmount;
+            EmitResourceChanged(index);   
         }
 
         public void ChangeResourceAmount(int index, float amount)
         {
             var r = Resources[index];
-            r.CurrentAmount = Mathf.Clamp(r.CurrentAmount + amount, 0, r.MaxAmount);
+            float prev = r.CurrentAmount;
+            r.CurrentAmount = Mathf.Clamp(prev + amount, 0, r.MaxAmount);
+            if (!Mathf.Approximately(prev, r.CurrentAmount))
+                EmitResourceChanged(index);
         }
+
 
         /********************************/
         /*  ELEMENTAL LEVELS STUFF HERE */
@@ -122,5 +139,14 @@ namespace CosmicShore.Core
             OnElementLevelChange?.Invoke(element, Mathf.FloorToInt(ElementalLevels[element] * MaxLevel));
             return Mathf.FloorToInt(ElementalLevels[element] * MaxLevel) - Mathf.FloorToInt(previous * MaxLevel) >= 1;
         }
+        
+        void EmitResourceChanged(int index)
+        {
+            if ((uint)index >= (uint)Resources.Count) return;
+            var r = Resources[index];
+            OnResourceChanged?.Invoke(index, r.CurrentAmount, r.MaxAmount);
+        }
+
+
     }
 }

@@ -75,7 +75,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             CatalogManager.OnInventoryChange -= LoadCaptainsData;
         }
 
-        public void LoadCaptainsData()
+        void LoadCaptainsData()
         {
             captainData = new CaptainData();
             foreach (var so_Captain in AllCaptains.CaptainList)

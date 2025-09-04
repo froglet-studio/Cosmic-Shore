@@ -3,142 +3,134 @@ using CosmicShore.Game.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using UnityEngine;
-using System.Collections;
 using CosmicShore.Core;
+using CosmicShore.SOAP;
+using UnityEngine.Serialization;
+
 
 namespace CosmicShore.Game.Arcade
 {
-    [System.Serializable]
-    public struct AdditionalScoringConfig
-    {
-        public ScoringModes Mode;
-        public float Multiplier;
-    }
-
     public class ScoreTracker : MonoBehaviour
     {
-        [HideInInspector] public TMP_Text ActivePlayerScoreDisplay;
-        [SerializeField] int initialScore = 0;
-        [SerializeField] public ScoringModes ScoringMode;
-        [SerializeField] public bool GolfRules;  // For primary scoring mode
-        [SerializeField] private AdditionalScoringConfig[] AdditionalScoringModes;
-        [HideInInspector] public GameCanvas GameCanvas;
-
-        [Header("Optional Configuration")]
-        [SerializeField] float ScoreMultiplier = 1f; //0.00686f for volume
-
-        public Dictionary<string, float> playerScores { get; } = new();
-        public Dictionary<string, Teams> playerTeams { get; } = new();
+        [SerializeField]
+        MiniGameDataSO miniGameData;
         
-        string currentPlayerName;
-        float turnStartTime;
-        BaseScoringMode scoringMode;
+        [SerializeField] bool golfRules;  // For primary scoring mode
+        
+        [FormerlySerializedAs("ScoringConfigs")] 
+        [SerializeField] ScoringConfig[] scoringConfigs;
 
-        void Start()
+        BaseScoring[] scoringArray;
+
+        void OnEnable()
         {
-            if (GameCanvas != null && GameCanvas.MiniGameHUD != null)
-                ActivePlayerScoreDisplay = GameCanvas.MiniGameHUD.View.ScoreDisplay;
-            else
-                Debug.LogWarning("GameCanvas or MiniGameHUD is not assigned!");
-
-            InitializeScoringMode();
-            StartCoroutine(UpdateScoreDisplayCoroutine());
+            miniGameData.OnMiniGameInitialize += InitializeScoringMode;
+            miniGameData.OnMiniGameEnd += CalculateWinner;
         }
 
-        private BaseScoringMode CreateScoringMode(ScoringModes mode, float multiplier)
+        void OnDisable()
         {
-            BaseScoringMode newMode = mode switch
-            {
-                ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(multiplier),
-                ScoringModes.VolumeCreated => new VolumeCreatedScoring(multiplier),
-                ScoringModes.TimePlayed => new TimePlayedScoring(multiplier),
-                ScoringModes.TurnsPlayed => new TurnsPlayedScoring(multiplier),
-                ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(multiplier, false),
-                ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(multiplier, true),
-                ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(multiplier),
-                ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.All, multiplier),
-                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.Omni, multiplier),
-                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.Elemental, multiplier),
-                ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.Elemental, multiplier, true),
-                _ => throw new ArgumentException($"Unknown scoring mode: {mode}")
-            };
-            return newMode;
+            miniGameData.OnMiniGameInitialize -= InitializeScoringMode;
+            miniGameData.OnMiniGameEnd -= CalculateWinner;
+        }
+        
+        
+        void CalculateWinner()
+        {
+            miniGameData.ResetPlayerScores();
+            CalculateScores();
+            miniGameData.SortRoundStats(golfRules);
+            miniGameData.InvokeWinnerCalculated();
+
+            /* StatsManager.Instance.ResetStats();
+
+            var playerScores = scoreData.RoundStatsList;
+            // Add all the players back into the reset stats dictionary so the score will update at the start of the player's turn
+            foreach (var score in playerScores)
+                StatsManager.Instance.AddPlayer(score.Team, score.Name);*/
         }
 
-        private void InitializeScoringMode()
+        /*public int GetScore(string playerName)
         {
-            if (AdditionalScoringModes == null || AdditionalScoringModes.Length == 0)
+            if (!miniGameData.TryGetRoundStats(playerName, out var playerScore))
+                return 0;
+
+            return (int)playerScore.Score;
+        }*/
+        
+        void InitializeScoringMode()
+        {
+            if (scoringConfigs == null || scoringConfigs.Length == 0)
             {
-                scoringMode = CreateScoringMode(ScoringMode, ScoreMultiplier);
+                Debug.LogError("No Scoring Configs were provided.");
                 return;
             }
 
-            var compositeScoringMode = new CompositeScoringMode(new[] { CreateScoringMode(ScoringMode, ScoreMultiplier) });
-            
-            foreach (var config in AdditionalScoringModes)
+            int arrayLength = scoringConfigs.Length;
+            scoringArray = new BaseScoring[arrayLength];
+            for (int i = 0; i < arrayLength; i++)
             {
-                compositeScoringMode.AddScoringMode(CreateScoringMode(config.Mode, config.Multiplier));
+                scoringArray[i] = CreateScoring(scoringConfigs[i].Mode, scoringConfigs[i].Multiplier);
             }
-
-            scoringMode = compositeScoringMode;
         }
-
-        public virtual void StartTurn(string playerName, Teams playerTeam)
+        
+        BaseScoring CreateScoring(ScoringModes mode, float multiplier)
         {
-            if (playerScores.TryAdd(playerName, 0))
+            BaseScoring newScoring = mode switch
             {
-                playerTeams.Add(playerName, playerTeam);
-            }
-
-            currentPlayerName = playerName;
-            turnStartTime = Time.time;
+                ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(miniGameData, multiplier),
+                ScoringModes.VolumeCreated => new VolumeCreatedScoring(miniGameData, multiplier),
+                ScoringModes.TimePlayed => new TimePlayedScoring(miniGameData, multiplier),
+                ScoringModes.TurnsPlayed => new TurnsPlayedScoring(miniGameData, multiplier),
+                ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(miniGameData, multiplier),
+                ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(miniGameData, multiplier, true),
+                ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(miniGameData, multiplier),
+                ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(miniGameData, multiplier),
+                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(miniGameData, multiplier, CrystalsCollectedScoring.CrystalType.Omni),
+                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(miniGameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental),
+                ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(miniGameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental, true),
+                _ => throw new ArgumentException($"Unknown scoring mode: {mode}")
+            };
+            return newScoring;
         }
 
-        IEnumerator UpdateScoreDisplayCoroutine()
+        void CalculateScores()
+        {
+            if (miniGameData.RoundStatsList.Count == 0)
+            {
+                Debug.LogError("This should never happen!");
+                return;
+            }
+
+            foreach (var scoring in scoringArray)
+                scoring.CalculateScore();
+        }
+    }
+    
+    [System.Serializable]
+    public struct ScoringConfig
+    {
+        public ScoringModes Mode;
+        public float Multiplier; //0.00686f for volume
+    }
+}
+
+        // TODO - scoring.CalculateScore need to be done when scoring is needed, rather than running on update for more realtime sync.
+        /*IEnumerator UpdateScoreDisplayCoroutine()
         {
             while (true)
             {
-                if (turnStartTime == 0 || ActivePlayerScoreDisplay == null || scoringMode == null) { }
+                if (turnStartTime == 0 || ActivePlayerScoreDisplay == null || scoring == null) { }
                 else
                 {
-                    var score = scoringMode.CalculateScore(currentPlayerName, playerScores[currentPlayerName], turnStartTime) + initialScore;
+                    var score = scoring.CalculateScore(currentPlayerName, playerScores[currentPlayerName], turnStartTime) + initialScore;
                     ActivePlayerScoreDisplay.text = ((int)score).ToString();
                 }
                 yield return new WaitForSeconds(0.5f);
             }
         }
-       
-        public virtual void EndTurn()
-        {
-            if (scoringMode == null)
-                return;
-
-            playerScores[currentPlayerName] = scoringMode.EndTurnScore(currentPlayerName, playerScores[currentPlayerName], turnStartTime) + initialScore;
-
-            foreach (var playerTeam in playerTeams) // Add all the players back into the reset stats dictionary so the score will update at the start of the player's turn
-                StatsManager.Instance.AddPlayer(playerTeam.Value, playerTeam.Key);
-        }
-
-        public List<int> GetScores()
-        {
-            return playerScores.Values.Select(score => (int)score).ToList();
-        }
-
-        public virtual string GetWinner()
-        {
-            return GolfRules
-                ? playerScores.Aggregate((minPlayer, nextPlayer) => nextPlayer.Value < minPlayer.Value ? nextPlayer : minPlayer).Key
-                : playerScores.Aggregate((maxPlayer, nextPlayer) => nextPlayer.Value > maxPlayer.Value ? nextPlayer : maxPlayer).Key;
-        }
-
-        public virtual Teams GetWinningTeam()
-        {
-            var winner = GetWinner();
-            return playerTeams[winner];
-        }
-
+        
         public virtual int GetHighScore()
         {
             bool minTie;
@@ -161,10 +153,80 @@ namespace CosmicShore.Game.Arcade
 
             return GolfRules ? (int)minScore : (int)maxScore;
         }
-
-        public virtual int GetScore(string playerName)
+        
+        public virtual string GetWinner()
         {
-            return (int)playerScores[playerName];
+            
         }
-    }
-}
+
+        public virtual Teams GetWinningTeam()
+        {
+            var winner = GetWinner();
+            return playerTeams[winner];
+        }
+        
+        public virtual string GetWinner()
+        {
+            return GolfRules
+                ? playerScores.Aggregate((minPlayer, nextPlayer) => nextPlayer.Value < minPlayer.Value ? nextPlayer : minPlayer).Key
+                : playerScores.Aggregate((maxPlayer, nextPlayer) => nextPlayer.Value > maxPlayer.Value ? nextPlayer : maxPlayer).Key;
+        }
+            
+        void Start()
+        {
+            if (GameCanvas != null && GameCanvas.MiniGameHUD != null)
+                ActivePlayerScoreDisplay = GameCanvas.MiniGameHUD.View.ScoreDisplay;
+            else
+                Debug.LogWarning("GameCanvas or MiniGameHUD is not assigned!");* /
+
+            InitializeScoringMode();
+            StartCoroutine(UpdateScoreDisplayCoroutine());
+        }
+         
+         private void InitializeScoringMode()
+        {
+            if (AdditionalScoringModes == null || AdditionalScoringModes.Length == 0)
+            {
+                scoring = CreateScoringMode(ScoringMode, ScoreMultiplier);
+                return;
+            }
+
+            var compositeScoringMode = new CompositeScoring(new[] { CreateScoringMode(ScoringMode, ScoreMultiplier) });
+            
+            foreach (var config in AdditionalScoringModes)
+            {
+                compositeScoringMode.AddScoringMode(CreateScoringMode(config.Mode, config.Multiplier));
+            }
+
+            scoring = compositeScoringMode;
+        }
+        
+        public virtual void StartTurn(string playerName, Teams playerTeam)
+        {
+            if (playerScores.TryAdd(playerName, 0))
+            {
+                playerTeams.Add(playerName, playerTeam);
+            }
+
+            currentPlayerName = playerName;
+            turnStartTime = Time.time;
+        }
+        
+        public virtual void EndTurn()
+        {
+            if (scoring == null)
+                return;
+
+            // playerScores[currentPlayerName] = scoring.EndTurnScore(currentPlayerName, playerScores[currentPlayerName], turnStartTime) + initialScore;
+            playerScores[currentPlayerName] = scoring.EndTurnScore(currentPlayerName, playerScores[currentPlayerName]);
+
+            foreach (var playerTeam in playerTeams) // Add all the players back into the reset stats dictionary so the score will update at the start of the player's turn
+                StatsManager.Instance.AddPlayer(playerTeam.Value, playerTeam.Key);
+        }
+        
+        public List<int> GetScores()
+        {
+            return playerScores.Values.Select(score => (int)score).ToList();
+        }
+        
+        }*/

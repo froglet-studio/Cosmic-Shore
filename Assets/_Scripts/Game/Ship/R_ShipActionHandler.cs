@@ -22,10 +22,16 @@ namespace CosmicShore.Game
         [SerializeField]
         ScriptableEventInputEvents _onButtonReleased;
         
+        [SerializeField]
+        ScriptableEventAbilityStats onAbilityExecuted;
+        
         readonly Dictionary<InputEvents, List<ShipAction>> _shipControlActions = new();
         readonly Dictionary<ResourceEvents, List<ShipAction>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
+        
+        public event Action<InputEvents> OnInputEventStarted;
+        public event Action<InputEvents> OnInputEventStopped;
 
         IShipStatus _shipStatus;
 
@@ -53,6 +59,7 @@ namespace CosmicShore.Game
             if (!HasAction(controlType))
                 return;
             ShipHelper.PerformShipControllerActions(controlType, _inputAbilityStartTimes, _shipControlActions);
+            OnInputEventStarted?.Invoke(controlType);
         }
 
         public void StopShipControllerActions(InputEvents controlType)
@@ -60,11 +67,19 @@ namespace CosmicShore.Game
             if (!HasAction(controlType))
                 return;
             
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.AbilityActivated(_shipStatus.Team, _shipStatus.Player.PlayerName, controlType,
-                    Time.time - _inputAbilityStartTimes[controlType]);
+            onAbilityExecuted.Raise(new AbilityStats
+            {
+                PlayerName = _shipStatus.PlayerName,
+                ControlType = controlType,
+                Duration = Time.time - _inputAbilityStartTimes[controlType]
+            });
+            
+            /*if (StatsManager.Instance != null)
+                StatsManager.Instance.AbilityActivated(_shipStatus.Team, _shipStatus.Player.Name, controlType,
+                    Time.time - _inputAbilityStartTimes[controlType]);*/
 
             ShipHelper.StopShipControllerActions(controlType, _shipControlActions);
+            OnInputEventStopped?.Invoke(controlType);
         }
 
         public bool HasAction(InputEvents inputEvent) => _shipControlActions.ContainsKey(inputEvent);

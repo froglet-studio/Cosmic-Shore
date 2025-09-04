@@ -3,13 +3,16 @@ namespace CosmicShore.Core
     [System.Serializable]
     public class RoundStats : IRoundStats
     {
+        public string Name { get; set; }
+        public Teams Team { get; set; }
+        public float Score { get; set; }
         public int BlocksCreated { get; set; }
         public int BlocksDestroyed { get; set; }
         public int BlocksRestored { get; set; }
         public int BlocksStolen { get; set; }
-        public int BlocksRemaining { get; set; }
-        public int FriendlyBlocksDestroyed { get; set; }
-        public int HostileBlocksDestroyed { get; set; }
+        public int PrismsRemaining { get; set; }
+        public int FriendlyPrismsDestroyed { get; set; }
+        public int HostilePrismsDestroyed { get; set; }
         public float VolumeCreated { get; set; }
         public float VolumeDestroyed { get; set; }
         public float VolumeRestored { get; set; }
@@ -39,9 +42,9 @@ namespace CosmicShore.Core
             BlocksDestroyed = 0;
             BlocksRestored = 0;
             BlocksStolen = 0;
-            BlocksRemaining = 0;
-            FriendlyBlocksDestroyed = 0;
-            HostileBlocksDestroyed = 0;
+            PrismsRemaining = 0;
+            FriendlyPrismsDestroyed = 0;
+            HostilePrismsDestroyed = 0;
             VolumeCreated = 0;
             VolumeDestroyed = 0;
             VolumeRestored = 0;

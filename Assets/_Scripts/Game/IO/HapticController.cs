@@ -15,7 +15,7 @@ namespace CosmicShore.Game.IO
         BlockCollision = 2,
         ShipCollision = 3,
         CrystalCollision = 4,
-        FakeCrystalCollision = 5,
+        MineCollision = 5,
     }
 
     public class HapticController : MonoBehaviour
@@ -73,7 +73,7 @@ namespace CosmicShore.Game.IO
                     return HapticPatterns.PresetType.HeavyImpact;
                 case HapticType.CrystalCollision:
                     return HapticPatterns.PresetType.MediumImpact;
-                case HapticType.FakeCrystalCollision:
+                case HapticType.MineCollision:
                     return HapticPatterns.PresetType.HeavyImpact;
                 case HapticType.None:
                     return HapticPatterns.PresetType.None;

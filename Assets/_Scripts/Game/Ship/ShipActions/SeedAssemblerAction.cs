@@ -12,30 +12,36 @@ namespace CosmicShore
         public event Action OnAssembleStarted;
         public event Action OnAssembleCompleted;
         
-        float enhancementsPerFullAmmo = 4;
-        TrailSpawner spawner;
-        [SerializeField] Assembler assembler;
+        public event Action OnSeedStarted;    // fire when we begin placing
+        public event Action OnSeedCompleted; 
+        
+        [Header("Placement")]
+        [SerializeField] Assembler assemblerPrefab;
         [SerializeField] int depth = 50;
 
-        [SerializeField] int resourceIndex = 0;
-        Assembler currentAssembler;
-        private IShip ship;
-
-
+        [Header("Resource")]
+        [Tooltip("Which Resource index funds Seed Walls")]
+        [SerializeField] int shieldResourceIndex = 0;
+        [Tooltip("How many walls per full resource bar (e.g., 4)")]
+        [SerializeField] float wallsPerFullResource = 4f;
+        
+        TrailSpawner _spawner;
+        Assembler _activeAssembler;
+        
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
-            spawner = Ship.ShipStatus.TrailSpawner;
+            _spawner = Ship.ShipStatus.TrailSpawner;
         }
 
         public override void StartAction()
         {
-           
+           StartSeed();
         }
 
         public override void StopAction() 
         {
- 
+            StopSeed();
         }
 
         //void CopyComponentValues(Assembler sourceComp, Assembler targetComp)
@@ -52,30 +58,47 @@ namespace CosmicShore
         
         public void StartSeed()
         {
-            float ammoRequiredPerUse = ResourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
+            var rs = ResourceSystem;
+            if (rs == null) return;
+            if (shieldResourceIndex < 0 || shieldResourceIndex >= rs.Resources.Count) return;
 
-            if (ResourceSystem.Resources[resourceIndex].CurrentAmount >= ammoRequiredPerUse)
+            var res = rs.Resources[shieldResourceIndex];
+            if (wallsPerFullResource <= 0f || res.MaxAmount <= 0f) return;
+
+            // Spend a single "wall chunk" from the resource bar (e.g., 1/4th of max)
+            float cost = res.MaxAmount / wallsPerFullResource;
+            if (res.CurrentAmount < cost) return;
+
+            rs.ChangeResourceAmount(shieldResourceIndex, -cost); // will emit OnResourceChanged
+
+            OnSeedStarted?.Invoke();
+
+            // Attach a runtime Assembler on the latest trail block
+            var trailBlockGO = _spawner?.Trail?.TrailList?.LastOrDefault()?.gameObject;
+            if (trailBlockGO == null || assemblerPrefab == null) return;
+
+            var newAsm = trailBlockGO.AddComponent(assemblerPrefab.GetType()) as Assembler;
+            if (newAsm != null)
             {
-                ResourceSystem.ChangeResourceAmount(resourceIndex, -ammoRequiredPerUse);
-                OnAssembleStarted?.Invoke();   
-                var trailBlock = spawner.Trail.TrailList.Last().gameObject;
-                
-                var newAssembler = trailBlock.AddComponent(assembler.GetType()) as Assembler;
-                newAssembler.Depth = depth;
-                currentAssembler = newAssembler;
+                newAsm.Depth = depth;
+                _activeAssembler = newAsm;
             }
         }
 
         public void StopSeed()
         {
-            if (currentAssembler == null) return;
-            var seed = currentAssembler.GetComponent<TrailBlock>();
-            seed.ActivateSuperShield();
-            seed.transform.localScale *= 2f;
-            currentAssembler.SeedBonding();
-            
-            currentAssembler = null;
-            OnAssembleStarted?.Invoke();  
+            if (_activeAssembler == null) return;
+
+            var seed = _activeAssembler.GetComponent<TrailBlock>();
+            if (seed != null)
+            {
+                seed.ActivateSuperShield();
+                seed.transform.localScale *= 2f;
+            }
+            _activeAssembler.SeedBonding();
+            _activeAssembler = null;
+
+            OnSeedCompleted?.Invoke();
         }
     }
 }

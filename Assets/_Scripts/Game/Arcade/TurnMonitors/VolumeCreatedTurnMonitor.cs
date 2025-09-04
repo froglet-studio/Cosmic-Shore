@@ -1,24 +1,26 @@
 using UnityEngine;
-using System.Collections;
-using CosmicShore.Core;
+using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
     public class VolumeCreatedTurnMonitor : TurnMonitor
     {
-        [SerializeField] float Amount;
-        [SerializeField] MiniGame Game;
-        [SerializeField] bool hostileVolume;
-        Core.IRoundStats volumeStat;
+        [SerializeField] float amount;
+        
+        // Use MiniGameData for player infos.
+        // [SerializeField] MiniGame Game;
+        
+        // [SerializeField] bool hostileVolume;
+        // Core.IRoundStats volumeStat;
         Teams team;
         float volumeUnitConverstion = 145.65f;
 
-        private void Start()
+        /*private void Start()
         {
             StartCoroutine(WaitForTeam());
-        }
+        }*/
 
-        private IEnumerator WaitForTeam()
+        /*private IEnumerator WaitForTeam()
         {
             team = hostileVolume ? Teams.Ruby : Teams.Jade;
 
@@ -29,27 +31,30 @@ namespace CosmicShore.Game.Arcade
 
             volumeStat = StatsManager.Instance.TeamStats[team];
             // Any additional logic once the red team is available
-        }
+        }*/
 
         public override bool CheckForEndOfTurn()
         {
-            if (paused) return false;
-
-            return StatsManager.Instance.TeamStats[team].VolumeCreated > Amount;
+            return miniGameData.RoundStatsList.Any(roundStats => roundStats.VolumeCreated > amount);
+            // return StatsManager.Instance.TeamStats[team].VolumeCreated > Amount;
         }
-
-        public override void NewTurn(string playerName)
+        
+        /*protected override void StartTurn()
         {
-            StatsManager.Instance.ResetStats();
-        }
+            // StatsManager.Instance.ResetStats();
+            StartCoroutine(WaitForTeam());
+        }*/
 
         protected override void RestrictedUpdate()
         {
-            if (StatsManager.Instance.TeamStats.ContainsKey(team))
+            /*if (StatsManager.Instance.TeamStats.ContainsKey(team))
             {
                 string message = ((int)((Amount - StatsManager.Instance.TeamStats[team].VolumeCreated) / volumeUnitConverstion)).ToString();
                 onUpdateTurnMonitorDisplay.Raise(message);
-            }
+            }*/
+
+            string message = ((int)((amount - miniGameData.RoundStatsList[0].VolumeCreated) / volumeUnitConverstion)).ToString();
+            onUpdateTurnMonitorDisplay.Raise(message);
         }
     }
 }

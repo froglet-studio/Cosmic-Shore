@@ -1,5 +1,7 @@
+using System;
 using CosmicShore.Utilities;
 using System.Collections;
+using CosmicShore.SOAP;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -8,37 +10,46 @@ using UnityEngine.SceneManagement;
 namespace CosmicShore.Core
 {
     [DefaultExecutionOrder(0)]
-    public class GameManager : Singleton<GameManager>
+    public class GameManager : MonoBehaviour
     {
-        const float WAIT_FOR_SECONDS_BEFORE_RETURN_TO_MAIN_MENU = .5f;
+        const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = .5f;
 
         [SerializeField]
         SceneNameListSO _sceneNames;
         
         [SerializeField] 
-        public SO_GameList AllGames;
+        SO_GameList AllGames;
+        
+        [SerializeField]
+        MiniGameDataSO miniGameData;
 
         [SerializeField]
-        ScriptableEventNoParam _onStartSceneTransition;
+        ScriptableEventBool _onSceneTransition;
 
-        public void RestartGame()
+        private void OnEnable()
         {
-            // Debug.Log("GameManager.RestartGame");
-
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            // PauseSystem.TogglePauseGame(true);
+            miniGameData.OnLaunchGame += LaunchGame;
         }
 
-        public void ReturnToMainMenu() => StartCoroutine(ReturnToMainMenuCoroutine());
+        private void Start() => _onSceneTransition.Raise(true);
 
-        IEnumerator ReturnToMainMenuCoroutine()
+        private void OnDisable()
         {
-            _onStartSceneTransition.Raise();
+            miniGameData.OnLaunchGame -= LaunchGame;
+        }
+
+        public void RestartGame() => StartCoroutine(StartSceneRoutine(SceneManager.GetActiveScene().name));
+
+        public void ReturnToMainMenu() => StartCoroutine(StartSceneRoutine(_sceneNames.MainMenuScene));
+
+        void LaunchGame() => StartCoroutine(StartSceneRoutine(miniGameData.SceneName));
+        
+        IEnumerator StartSceneRoutine(string sceneName)
+        {
+            _onSceneTransition.Raise(false);
             
-            yield return new WaitForSecondsRealtime(WAIT_FOR_SECONDS_BEFORE_RETURN_TO_MAIN_MENU);
-            
-            SceneManager.LoadScene(_sceneNames.MainMenuScene);
-            // PauseSystem.TogglePauseGame(false);
+            yield return new WaitForSecondsRealtime(WAIT_FOR_SECONDS_BEFORE_SCENELOAD);
+            SceneManager.LoadScene(sceneName);
         }
     }
 }

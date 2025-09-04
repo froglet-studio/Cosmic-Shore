@@ -4,10 +4,11 @@ using System.Collections;
 using CosmicShore.Core;
 using CosmicShore.Game;
 
-public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the name
+public class OverheatingAction : ShipAction 
 {
     public event Action OnHeatBuildStarted;
     public event Action OnOverheated;
+    public event Action OnHeatDecayStarted;  
     public event Action OnHeatDecayCompleted;
     
     [SerializeField] ShipAction wrappedAction;
@@ -19,6 +20,18 @@ public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the
     Resource heatResource;
     bool isOverheating = false;
     public int HeatResourceIndex => heatResourceIndex;
+    
+    public float Heat01
+    {
+        get
+        {
+            if (heatResource == null || heatResource.MaxAmount <= 0f) return 0f;
+            return Mathf.Clamp01(heatResource.CurrentAmount / heatResource.MaxAmount);
+        }
+    }
+
+    public bool IsOverheating => isOverheating;
+
 
     public override void Initialize(IShip ship)
     {
@@ -43,6 +56,7 @@ public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the
         {
             StopAllCoroutines();
             wrappedAction.StopAction();
+            OnHeatDecayStarted?.Invoke();
             StartCoroutine(DecayHeatCoroutine());
         }
     }
@@ -66,6 +80,7 @@ public class OverheatingAction : ShipAction //TODO: Rename to add wrapper in the
 
         isOverheating = false;
         ShipStatus.Overheating = false;
+        OnHeatDecayStarted?.Invoke();
         StartCoroutine(DecayHeatCoroutine());
     }
 

@@ -107,14 +107,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 307700638446573194}
-    - targetCorrespondingSourceObject: {fileID: 5776304996075792891, guid: 1488a2ac58b2b4c43b14f84206bd9195,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6767780146751856348}
-    - targetCorrespondingSourceObject: {fileID: 5776304996075792891, guid: 1488a2ac58b2b4c43b14f84206bd9195,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 4980530451716370270}
   m_SourcePrefab: {fileID: 100100000, guid: 1488a2ac58b2b4c43b14f84206bd9195, type: 3}
 --- !u!1 &8591085806180840750 stripped
 GameObject:
@@ -144,32 +136,3 @@ MonoBehaviour:
   separationDistance: 3
   colliderTheshold: 1
   radius: 90
---- !u!114 &6767780146751856348
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8591085806180840750}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a83a5b15530145f2b806342c2109654e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  prismShipEffectsSO: []
-  prismProjectileEffectsSO: []
-  prismSkimmerEffectsSO: []
-  prismExplosionEffectsSO: []
---- !u!114 &4980530451716370270
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8591085806180840750}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  impactorObject: {fileID: 6767780146751856348}
