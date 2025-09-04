@@ -2497,7 +2497,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5928382658856804067}
-  - component: {fileID: 874579555101021527}
   - component: {fileID: 6441696348568773771}
   - component: {fileID: 975128113266807093}
   - component: {fileID: 874579555101021522}
@@ -2511,7 +2510,6 @@ GameObject:
   - component: {fileID: 8233249704035529933}
   - component: {fileID: 3734859533843191741}
   - component: {fileID: 9172589084772723142}
-  - component: {fileID: 3885827911418556293}
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
   m_Layer: 0
@@ -2538,77 +2536,6 @@ Transform:
   - {fileID: 4369262321157730261}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &874579555101021527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  impactProperties: []
-  _name: Urchin
-  _shipType: 4
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  OrientationHandle: {fileID: 1878660672777590133}
-  shipGeometries:
-  - {fileID: 7952856352645082721}
-  - {fileID: 3346710912297126955}
-  - {fileID: 5974519446299279401}
-  - {fileID: 1391143112467529732}
-  - {fileID: 523466651206528138}
-  - {fileID: 3009779053630328212}
-  - {fileID: 4844350427054688013}
-  - {fileID: 1671648275901660347}
-  - {fileID: 5416580408982783631}
-  - {fileID: 3693387800081780145}
-  - {fileID: 4981221834739771465}
-  - {fileID: 3973492122190050347}
-  - {fileID: 7835283986601519113}
-  shipHUD: {fileID: 0}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  crystalImpactEffects: 0b0000000d000000
-  minExplosionScale: 50
-  maxExplosionScale: 500
-  trailBlockImpactEffects: 0000000009000000
-  blockChargeChange: 0
-  boostMultiplier: 2
-  bottomEdgeButtons: 0
-  Inertia: 70
-  inputEventShipActions:
-  - InputEvent: 2
-    ShipActions:
-    - {fileID: 1126185006839345975}
-    - {fileID: 7338352758135203095}
-  - InputEvent: 1
-    ShipActions:
-    - {fileID: 6274364622300635993}
-    - {fileID: 1210579706855675657}
-  resourceEventClassActions:
-  - ResourceEvent: 0
-    ClassActions:
-    - {fileID: 2464282780648543733}
-  - ResourceEvent: 1
-    ClassActions:
-    - {fileID: 7925097207517337182}
-  ElementStats: []
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
-    type: 2}
-  OnButton1Pressed: {fileID: 0}
-  OnButton1Released: {fileID: 0}
-  OnButton2Pressed: {fileID: 0}
-  OnButton2Released: {fileID: 0}
-  OnButton3Pressed: {fileID: 0}
-  OnButton3Released: {fileID: 0}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2623,6 +2550,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 0}
   _shipHUDController: {fileID: 0}
+  _shipHUDView: {fileID: 0}
   shipHUDContainer: {fileID: 0}
   boostMultiplier: 4
   _name: 
@@ -2732,7 +2660,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkillLevel: 0
+  skillLevel: 1
   defaultThrottleHigh: 0.6
   defaultThrottleLow: 0.6
   defaultAggressivenessHigh: 0.035
@@ -2743,24 +2671,12 @@ MonoBehaviour:
   avoidanceLow: 2.5
   aggressivenessIncreaseHigh: 0.001
   aggressivenessIncreaseLow: 0.001
-  throttle: 0
-  aggressiveness: 0.1
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  X: 0
-  Y: 0
   raycastHeight: 2
   raycastWidth: 2
-  LookingAtCrystal: 0
   ram: 0
   drift: 0
-  SingleStickControls: 0
   abilities: []
-  CrystalPosition: {x: 0, y: 0, z: 0}
-  TargetPosition: {x: 0, y: 0, z: 0}
-  flowFieldData: {fileID: 0}
+  OnCellItemsUpdated: {fileID: 0}
 --- !u!114 &4005043449782909879
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2867,17 +2783,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ControlOverrides: 0300000004000000
-  closeCamDistance: -3
-  farCamDistance:
-    Enabled: 0
-    Value: 0
-    Min: 0
-    Max: 0
-    element: 0
-  FollowTarget: {fileID: 0}
-  FollowTargetPosition: {x: 0, y: 0, z: 0}
-  isOrthographic: 0
+  settings: {fileID: 0}
+  OnInitializePlayerCamera: {fileID: 0}
 --- !u!114 &3734859533843191741
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2894,7 +2801,6 @@ MonoBehaviour:
   trailSpawner: {fileID: 0}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
-  OnSilhouetteInitialized: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
@@ -2913,26 +2819,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _inputEventShipActions: []
   _resourceEventClassActions: []
-  OnButton1Pressed: {fileID: 0}
-  OnButton1Released: {fileID: 0}
-  OnButton2Pressed: {fileID: 0}
-  OnButton2Released: {fileID: 0}
-  OnButton3Pressed: {fileID: 0}
-  OnButton3Released: {fileID: 0}
---- !u!114 &3885827911418556293
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7c950cbe6934cc49b4940a883bc0c44, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _crystalImpactEffects: []
-  _trailBlockImpactEffects: []
+  _onButtonPressed: {fileID: 0}
+  _onButtonReleased: {fileID: 0}
+  onAbilityExecuted: {fileID: 0}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3997,11 +3886,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
-      propertyPath: ship
-      value: 
-      objectReference: {fileID: 874579555101021527}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: fuelAmount

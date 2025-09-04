@@ -3327,6 +3327,9 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 6343053822927212243, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
     - {fileID: 7711881818567443323, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
+    - {fileID: 5173253375023543192, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
+    - {fileID: 1267909104523122353, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
+    - {fileID: 2624193244562230860, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 8972058528766975416, guid: f0a24806a0485254389f97d4c93f7615,
@@ -3354,10 +3357,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8556911474882623255}
-    - targetCorrespondingSourceObject: {fileID: 7814404623844553509, guid: f0a24806a0485254389f97d4c93f7615,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2148752661218281056}
   m_SourcePrefab: {fileID: 100100000, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
 --- !u!224 &1439023714599163829 stripped
 RectTransform:
@@ -3395,38 +3394,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &4253397709390736014 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7814404623844553509, guid: f0a24806a0485254389f97d4c93f7615,
-    type: 3}
-  m_PrefabInstance: {fileID: 6302028140178659755}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2148752661218281056
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4253397709390736014}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 094d1d1f538f4cfe952081221263c19f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  index: 0
-  mode: 1
-  verbose: 0
-  fillImage: {fileID: 0}
-  segments: []
-  changeColorOnFull: 0
-  normalColor: {r: 1, g: 1, b: 1, a: 1}
-  fullColor: {r: 1, g: 0, b: 0, a: 1}
-  spriteTarget: {fileID: 5693775718004023071}
-  sprites:
-  - {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2, type: 3}
-  - {fileID: 21300000, guid: 8306bc28766790c4e95529f8ed9ca0cb, type: 3}
-  - {fileID: 21300000, guid: dcdff3c20c9ecde42aaf995f157e2007, type: 3}
-  stepObjects: []
 --- !u!224 &4433503220909704850 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7706708466194374457, guid: f0a24806a0485254389f97d4c93f7615,
