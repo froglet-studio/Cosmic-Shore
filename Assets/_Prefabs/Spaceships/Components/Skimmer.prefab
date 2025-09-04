@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 9103907316180665772}
   - component: {fileID: 7751815150560592194}
   - component: {fileID: 7751815150560592197}
+  - component: {fileID: 7603142481619829103}
+  - component: {fileID: 546241298706549007}
   m_Layer: 7
   m_Name: Skimmer
   m_TagString: Untagged
@@ -27,13 +29,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4816621673548213744}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 15, y: 15, z: 15}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1450745283046351104
 MeshFilter:
@@ -51,9 +53,17 @@ SphereCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4816621673548213744}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 1
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &7751815150560592194
@@ -63,10 +73,21 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4816621673548213744}
-  serializedVersion: 2
+  serializedVersion: 4
   m_Mass: 1
   m_Drag: 0
   m_AngularDrag: 0.08
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 0
@@ -84,5 +105,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 0}
-  fuelAmount: 0.05
+  onSkimmerShipImpact: {fileID: 0}
+  vaccumAmount: 80
+  vacuumCrystal: 1
+  affectSelf: 1
+  particleDurationAtSpeedOne: 300
+  visible: 0
+  Scale:
+    Enabled: 0
+    Value: 1
+    Min: 0
+    Max: 0
+    element: 0
+  markerContainer: {fileID: 0}
+  markerDistance: 70
+  AOEPrefab: {fileID: 0}
+  AOEPeriod: 0
+  lineMaterial: {fileID: 0}
+  resourceIndex: 0
+--- !u!114 &7603142481619829103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4816621673548213744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1731f6481c2493aa107099246bb1af8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skimmerShipEffectsSO: []
+  skimmerPrismEffectsSO: []
+  skimmerElementalCrystalEffectsSO: []
+  skimmerPrismStayEffectsSO: []
+  skimmer: {fileID: 7751815150560592197}
+--- !u!114 &546241298706549007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4816621673548213744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 7603142481619829103}
