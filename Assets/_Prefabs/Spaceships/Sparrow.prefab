@@ -1868,7 +1868,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shipPrismEffectsSO:
   - {fileID: 11400000, guid: 64fd01dd11aab6f47b08ff3b6bdaec2b, type: 2}
-  shipOmniCrystalEffectsSO: []
+  shipOmniCrystalEffectsSO:
+  - {fileID: 11400000, guid: 18231621c8a7c904aad94b41ef59623e, type: 2}
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
 --- !u!114 &1002316194365813701

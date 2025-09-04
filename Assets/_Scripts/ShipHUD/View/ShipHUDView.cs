@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class R_ShipHUDView : MonoBehaviour, IShipHUDView
+    public class ShipHUDView : MonoBehaviour, IShipHUDView
     {
         [Serializable]
         public struct HighlightBinding
@@ -16,12 +16,5 @@ namespace CosmicShore.Game
         
         [Header("Button highlights")]
         public List<HighlightBinding> highlights = new();
-        public void OnInputPressed(int buttonNumber)
-        {
-        }
-
-        public void OnInputReleased(int buttonNumber)
-        {
-        }
     }
 }

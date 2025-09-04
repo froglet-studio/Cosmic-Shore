@@ -2,7 +2,7 @@
 
 namespace CosmicShore.Game
 { 
-    public class MantaShipHUDController : R_ShipHUDController
+    public class MantaShipHUDController : ShipHUDController
     {
         [Header("View")]
         [SerializeField] private MantaShipHUDView view;
@@ -15,7 +15,7 @@ namespace CosmicShore.Game
 
         private int _max = 1;
 
-        public override void Initialize(IShipStatus shipStatus, R_ShipHUDView baseView)
+        public override void Initialize(IShipStatus shipStatus, ShipHUDView baseView)
         {
             base.Initialize(shipStatus, baseView);
             view = view != null ? view : baseView as MantaShipHUDView;

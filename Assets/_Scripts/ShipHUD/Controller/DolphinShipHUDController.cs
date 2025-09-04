@@ -2,7 +2,7 @@
 
 namespace CosmicShore.Game
 {
-    public class DolphinShipHUDController : R_ShipHUDController
+    public class DolphinShipHUDController : ShipHUDController
     {
         [Header("View")]
         [SerializeField] private DolphinShipHUDView view;
@@ -13,7 +13,7 @@ namespace CosmicShore.Game
         private float _maxUnits = 1f;
         private int   _stepsMinusOne = 0;
 
-        public override void Initialize(IShipStatus shipStatus, R_ShipHUDView baseView)
+        public override void Initialize(IShipStatus shipStatus, ShipHUDView baseView)
         {
             base.Initialize(shipStatus, baseView);
             view = view != null ? view : baseView as DolphinShipHUDView;

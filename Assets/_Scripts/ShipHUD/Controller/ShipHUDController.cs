@@ -1,14 +1,13 @@
-using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class R_ShipHUDController : MonoBehaviour, IShipHUDController
+    public class ShipHUDController : MonoBehaviour, IShipHUDController
     {
         private R_ShipActionHandler _actions;
-        private R_ShipHUDView _view;
+        private ShipHUDView _view;
 
-        public virtual void Initialize(IShipStatus shipStatus, R_ShipHUDView view)
+        public virtual void Initialize(IShipStatus shipStatus, ShipHUDView view)
         {
             if (shipStatus.AutoPilotEnabled)
             {
@@ -24,19 +23,6 @@ namespace CosmicShore.Game
             _actions.OnInputEventStopped += HandleStop;
 
         }
-
-        public void InitializeShipHUD()
-        {
-        }
-
-        public void OnButtonPressed(int buttonNumber)
-        {
-        }
-
-        public void OnButtonReleased(int buttonNumber)
-        {
-        }
-
         private void OnDestroy()
         {
             if (_actions == null) return;

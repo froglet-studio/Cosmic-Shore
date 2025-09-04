@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class MantaShipHUDView : R_ShipHUDView
+    public class MantaShipHUDView : ShipHUDView
     {
         [Header("Simple counter")]
         public TMP_Text countText;   

@@ -9,14 +9,14 @@ namespace CosmicShore.Game
         public struct HUDPrefabVariant
         {
             public ShipClassType shipType;
-            public R_ShipHUDView prefab;
+            public ShipHUDView prefab;
         }
 
         [Header("Prefabs & Mount")]
         [SerializeField] HUDPrefabVariant[] hudVariants;
         [SerializeField] RectTransform contentTransform;
 
-        R_ShipHUDView   _activeInstance;
+        ShipHUDView   _activeInstance;
         IShipHUDView _activeHUDView;
 
         public void InitializeView(IShipStatus shipStatus, ShipClassType shipClass)
@@ -47,10 +47,10 @@ namespace CosmicShore.Game
                 Debug.LogWarning($"[ShipHUDContainer] Spawned HUD for {shipClass} has no IShipHUDView.");
                 return;
             }
-            shipStatus.ShipHudView = _activeHUDView as R_ShipHUDView;
+            shipStatus.ShipHudView = _activeHUDView as ShipHUDView;
             
             var controller = shipStatus.ShipHUDController;
-            var baseView = _activeHUDView as R_ShipHUDView;
+            var baseView = _activeHUDView as ShipHUDView;
             if (baseView == null)
                 Debug.LogWarning($"[ShipHUDContainer] IShipHUDView is not an R_ShipHUDView; controllers may expect that type.");
 

@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class SerpentShipHUDView : R_ShipHUDView
+    public class SerpentShipHUDView : ShipHUDView
     {
         [Header("SEED WALL")] 
         public Sprite[] shieldIconsByCount;
