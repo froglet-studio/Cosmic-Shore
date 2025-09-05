@@ -36,12 +36,12 @@ namespace CosmicShore
 
         public override void StartAction()
         {
-           StartSeed();
+           //StartSeed();
         }
 
         public override void StopAction() 
         {
-            StopSeed();
+            //StopSeed();
         }
 
         //void CopyComponentValues(Assembler sourceComp, Assembler targetComp)
@@ -88,16 +88,16 @@ namespace CosmicShore
         public void StopSeed()
         {
             if (_activeAssembler == null) return;
-
+            _activeAssembler.StopBonding();
             var seed = _activeAssembler.GetComponent<TrailBlock>();
             if (seed != null)
             {
                 seed.ActivateSuperShield();
                 seed.transform.localScale *= 2f;
             }
+            
             _activeAssembler.SeedBonding();
             _activeAssembler = null;
-
             OnSeedCompleted?.Invoke();
         }
     }
