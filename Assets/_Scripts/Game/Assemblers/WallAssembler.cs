@@ -537,6 +537,20 @@ namespace CosmicShore
             CalculateGlobalBondSites();
         }
 
+        public override void StopBonding()
+        {
+
+            if (updateTopMate != null) { StopCoroutine(updateTopMate); updateTopMate = null; }
+            if (updateBottomMate != null) { StopCoroutine(updateBottomMate); updateBottomMate = null; }
+
+            ClearMateList();
+            TopMate = default;
+            BottomMate = default;
+            RightMate = null;
+            LeftMate  = null;
+
+            Debug.Log("WallAssembler stopped bonding");
+        }
 
         public void StopAssembly()
         {

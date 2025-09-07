@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class SerpentShipHUDController : R_ShipHUDController
+    public class SerpentShipHUDController : ShipHUDController
     {
         [Header("View")]
         [SerializeField] private SerpentShipHUDView view;
@@ -26,7 +26,7 @@ namespace CosmicShore.Game
 
         private Coroutine[] _pipAnim;
 
-        public override void Initialize(IShipStatus shipStatus, R_ShipHUDView baseView)
+        public override void Initialize(IShipStatus shipStatus, ShipHUDView baseView)
         {
             base.Initialize(shipStatus, baseView);
             _status = shipStatus;

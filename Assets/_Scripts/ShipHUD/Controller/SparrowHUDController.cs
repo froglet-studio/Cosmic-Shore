@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class SparrowHUDController : R_ShipHUDController
+    public class SparrowHUDController : ShipHUDController
     {
         [Header("View binding")]
         [SerializeField] private SparrowHUDView view;
@@ -24,7 +24,7 @@ namespace CosmicShore.Game
         Coroutine _heatFillLoop;
         Coroutine _drainLoop;
 
-        public override void Initialize(IShipStatus shipStatus, R_ShipHUDView baseView)
+        public override void Initialize(IShipStatus shipStatus, ShipHUDView baseView)
         {
             base.Initialize(shipStatus, baseView);
             view = view != null ? view : baseView as SparrowHUDView;

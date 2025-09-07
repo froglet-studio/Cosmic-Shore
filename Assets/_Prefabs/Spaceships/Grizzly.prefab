@@ -870,6 +870,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bcad7c60729ab5e4c982cb5c4df26ab2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mode: 0
+  seedAssembler: {fileID: 0}
   resourceIndex: 0
 --- !u!1 &5121483745170456138
 GameObject:
@@ -1155,7 +1157,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5928382658856804067}
-  - component: {fileID: 874579555101021527}
   - component: {fileID: 6441696348568773771}
   - component: {fileID: -3607265076877978738}
   - component: {fileID: 874579555101021522}
@@ -1166,7 +1167,6 @@ GameObject:
   - component: {fileID: 9211163736777992379}
   - component: {fileID: 3734859533843191741}
   - component: {fileID: 9172589084772723142}
-  - component: {fileID: 3885827911418556293}
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
   m_Layer: 0
@@ -1194,65 +1194,6 @@ Transform:
   - {fileID: 3480115844721855881}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &874579555101021527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  impactProperties: []
-  _name: Grizzly
-  _shipType: 5
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  OrientationHandle: {fileID: 1878660672777590133}
-  shipGeometries:
-  - {fileID: 3193920657457234309}
-  - {fileID: 3280377671054936772}
-  - {fileID: 5121483745170456138}
-  - {fileID: 5469308656037274025}
-  - {fileID: 7699084221746907587}
-  - {fileID: 7868440465732788152}
-  - {fileID: 1652545777288694586}
-  shipHUD: {fileID: 0}
-  AOEPrefab: {fileID: 0}
-  farFieldSkimmer: {fileID: 0}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  crystalImpactEffects: 0b0000000d000000
-  minExplosionScale: 50
-  maxExplosionScale: 500
-  trailBlockImpactEffects: 00000000030000000f000000
-  blockChargeChange: 0
-  boostMultiplier: 2
-  bottomEdgeButtons: 0
-  Inertia: 70
-  inputEventShipActions:
-  - InputEvent: 6
-    ShipActions:
-    - {fileID: 1635180674948911687}
-  - InputEvent: 7
-    ShipActions:
-    - {fileID: 8019026085058197081}
-  - InputEvent: 8
-    ShipActions:
-    - {fileID: 7682765118055047933}
-  resourceEventClassActions: []
-  ElementStats: []
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
-    type: 2}
-  OnButton1Pressed: {fileID: 0}
-  OnButton1Released: {fileID: 0}
-  OnButton2Pressed: {fileID: 0}
-  OnButton2Released: {fileID: 0}
-  OnButton3Pressed: {fileID: 0}
-  OnButton3Released: {fileID: 0}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1267,6 +1208,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 0}
   _shipHUDController: {fileID: 0}
+  _shipHUDView: {fileID: 0}
   shipHUDContainer: {fileID: 0}
   boostMultiplier: 4
   _name: 
@@ -1366,7 +1308,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkillLevel: 0
+  skillLevel: 1
   defaultThrottleHigh: 0.6
   defaultThrottleLow: 0.6
   defaultAggressivenessHigh: 0.035
@@ -1377,24 +1319,12 @@ MonoBehaviour:
   avoidanceLow: 2.5
   aggressivenessIncreaseHigh: 0.001
   aggressivenessIncreaseLow: 0.001
-  throttle: 0
-  aggressiveness: 0.1
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  X: 0
-  Y: 0
   raycastHeight: 2
   raycastWidth: 2
-  LookingAtCrystal: 0
   ram: 0
   drift: 0
-  SingleStickControls: 0
   abilities: []
-  CrystalPosition: {x: 0, y: 0, z: 0}
-  TargetPosition: {x: 0, y: 0, z: 0}
-  flowFieldData: {fileID: 0}
+  OnCellItemsUpdated: {fileID: 0}
 --- !u!114 &7279892912462638078
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1447,17 +1377,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ControlOverrides: 03000000
-  closeCamDistance: -13
-  farCamDistance:
-    Enabled: 0
-    Value: 0
-    Min: 0
-    Max: 0
-    element: 0
-  FollowTarget: {fileID: 0}
-  FollowTargetPosition: {x: 0, y: 0, z: 0}
-  isOrthographic: 0
+  settings: {fileID: 0}
+  OnInitializePlayerCamera: {fileID: 0}
 --- !u!114 &3734859533843191741
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1474,7 +1395,6 @@ MonoBehaviour:
   trailSpawner: {fileID: 0}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
-  OnSilhouetteInitialized: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
@@ -1493,26 +1413,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _inputEventShipActions: []
   _resourceEventClassActions: []
-  OnButton1Pressed: {fileID: 0}
-  OnButton1Released: {fileID: 0}
-  OnButton2Pressed: {fileID: 0}
-  OnButton2Released: {fileID: 0}
-  OnButton3Pressed: {fileID: 0}
-  OnButton3Released: {fileID: 0}
---- !u!114 &3885827911418556293
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7c950cbe6934cc49b4940a883bc0c44, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _crystalImpactEffects: []
-  _trailBlockImpactEffects: []
+  _onButtonPressed: {fileID: 0}
+  _onButtonReleased: {fileID: 0}
+  onAbilityExecuted: {fileID: 0}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1932,11 +1835,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
-      propertyPath: ship
-      value: 
-      objectReference: {fileID: 874579555101021527}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: affectSelf

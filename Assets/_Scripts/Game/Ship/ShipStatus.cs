@@ -48,8 +48,8 @@ namespace CosmicShore.Game
         MonoBehaviour _shipHUDController;
         public IShipHUDController ShipHUDController => _shipHUDController as IShipHUDController;
         
-        [SerializeField] R_ShipHUDView _shipHUDView;
-        public R_ShipHUDView ShipHudView
+        [SerializeField] ShipHUDView _shipHUDView;
+        public ShipHUDView ShipHudView
         {
             get => _shipHUDView;
             set => _shipHUDView = value;

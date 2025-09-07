@@ -35,9 +35,13 @@ public class ToggleStationaryModeAction : ShipAction
 
         OnStationaryToggled?.Invoke(isOn);
 
-        if (mode != Mode.Serpent || !isOn || seedAssembler == null) return;
-        seedAssembler.StartSeed();
-        seedAssembler.StopSeed();
+        if (mode != Mode.Serpent || seedAssembler == null) return;
+        
+        if (isOn) 
+            seedAssembler.StopSeed();
+        else
+            seedAssembler.StartSeed();
+       
     }
 
     public override void StopAction()
