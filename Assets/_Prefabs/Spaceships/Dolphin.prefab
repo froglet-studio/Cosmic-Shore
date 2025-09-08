@@ -1730,8 +1730,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83c4d9a1b2407d4790cb6b65a698b7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxBoostMultiplier: 6
-  maxNormalizedCharge: 5
+  maxBoostMultiplier: 4
+  maxNormalizedCharge: 3
   chargeTimeToFull: 2
   dischargeTimeToEmpty: 2.5
   tickSeconds: 0.2
@@ -2542,7 +2542,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shipPrismEffectsSO:
   - {fileID: 11400000, guid: 89f84fbba3cfe336d229d942c07fd521, type: 2}
-  shipOmniCrystalEffectsSO: []
+  shipOmniCrystalEffectsSO:
+  - {fileID: 11400000, guid: 5c791a92410df1b46adb8f46e3ba9e1a, type: 2}
   shipElementalCrystalEffectsSO: []
   shipFakeCrystalEffectsSO: []
 --- !u!114 &2145686236205056283

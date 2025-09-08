@@ -2257,7 +2257,7 @@ MonoBehaviour:
   ram: 0
   drift: 0
   abilities:
-  - Ability: {fileID: 3362399389898013871}
+  - Ability: {fileID: 0}
     Duration: 0
     Cooldown: 8.1
   - Ability: {fileID: 1711179162404155137}
@@ -2373,9 +2373,6 @@ MonoBehaviour:
   - InputEvent: 7
     ShipActions:
     - {fileID: 3832452389775923288}
-  - InputEvent: 8
-    ShipActions:
-    - {fileID: 3362399389898013871}
   - InputEvent: 1
     ShipActions:
     - {fileID: 8881942963724457318}
@@ -2622,12 +2619,17 @@ MonoBehaviour:
   fadeOutSeconds: 0.25
   fadeInSeconds: 0.25
   hardToggleIfAnyOpaqueAtZero: 1
-  assemblerTypeSource: {fileID: 1077471832166960232}
-  assemblerDepth: 50
+  seedAssemblerAction: {fileID: 3362399389898013871}
+  requireExistingTrailBlock: 1
   ghostLifetime: 0
   ghostScaleMultiplier: 1
   ghostMaterialOverride: {fileID: 0}
-  requireExistingTrailBlock: 1
+  ghostEulerOffset: {x: 0, y: 0, z: 0}
+  ghostIdleMotion: 1
+  ghostBobAmplitude: 0.15
+  ghostBobSpeed: 1.2
+  ghostYawSpeed: 10
+  modelRoot: {fileID: 6722969896632727780}
 --- !u!1 &6553637767954968870
 GameObject:
   m_ObjectHideFlags: 0
@@ -2723,9 +2725,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ownPullSpeed: 100
+  ownPullSpeed: 200
   opponentPullSpeed: 20
-  ownRotateSpeed: 150
+  ownRotateSpeed: 250
   opponentRotateSpeed: 30
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
@@ -3676,8 +3678,6 @@ MonoBehaviour:
   - input: 6
     image: {fileID: 8484929212193490670}
   - input: 7
-    image: {fileID: 1878764765906130497}
-  - input: 8
     image: {fileID: 3512818663123036916}
   silhouetteContainer: {fileID: 5982939433017233667}
   trailDisplayContainer: {fileID: 6462089279346268830}
@@ -3692,7 +3692,6 @@ MonoBehaviour:
   jawResourceIndex: -1
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  trailBlockPrefab: {fileID: 0}
   worldToUIScale: 2
   imageScale: 0.02
   swingBlocks: 0
