@@ -4,11 +4,11 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipMissileRechargeByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipMissileRechargeByCrystalEffectSO")]
-    public class ShipMissileRechargeByCrystalEffectSO : ImpactEffectSO<ShipImpactor, CrystalImpactor>
+    public class ShipMissileRechargeByCrystalEffectSO : ShipCrystalEffectSO
     {
         [SerializeField] private int resourceIndex = 0;
         
-        protected override void ExecuteTyped(ShipImpactor shipImpactor, CrystalImpactor crystalImpactee)
+        public override void Execute(ShipImpactor shipImpactor, CrystalImpactor crystalImpactee)
         {
             var shipStatus = shipImpactor.Ship.ShipStatus;
             var resourceSystem = shipImpactor.GetComponent<ResourceSystem>();

@@ -10,7 +10,7 @@ namespace CosmicShore.Game
         public override void Execute(ShipImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = impactor.Ship.ShipStatus;
-            Steal(prismImpactee, status);
+            PrismEffectHelper.Steal(prismImpactee, status);
         }
     }
 }

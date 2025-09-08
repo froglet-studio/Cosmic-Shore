@@ -8,8 +8,8 @@ namespace CosmicShore.Game
     {
         public Mine Mine;
         
-        MineShipEffectSO[] mineShipEffects;
-        MineExplosionEffectSO[] mineExplosionEffects;
+        ShipMineEffectSO[] mineShipEffects;
+        ExplosionMineEffectSO[] mineExplosionEffects;
         MineProjectileEffectSO[] mineProjectileEffects;
         
         protected virtual void Awake()
@@ -31,7 +31,7 @@ namespace CosmicShore.Game
                     if(!DoesEffectExist(mineShipEffects)) return;
                     foreach (var effect in mineShipEffects)
                     {
-                        effect.Execute(this, shipImpactee);
+                        effect.Execute(shipImpactee, this);
                     }
                     break;
                 case ProjectileImpactor projectileImpactee:
@@ -47,7 +47,7 @@ namespace CosmicShore.Game
                     if(!DoesEffectExist(mineExplosionEffects)) return;
                     foreach (var effect in mineExplosionEffects)
                     {
-                        effect.Execute(this, explosionImpactee);
+                        effect.Execute(explosionImpactee, this);
                     }
                     break;
             }

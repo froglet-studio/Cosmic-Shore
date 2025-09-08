@@ -9,7 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 268c1d27ad33f87479a6986948cb6d76, type: 3}
-  m_Name: ShipFeelDangerByPrismEffect
+  m_Script: {fileID: 11500000, guid: 0e4265017a1544d99ac6e05a754d0cc9, type: 3}
+  m_Name: ShipDamagePrismEffect
   m_EditorClassIdentifier: 
-  duration: 1
+  inertia: 70
+  overrideCourse: {x: 0, y: 0, z: 0}
+  useOverrideCourse: 0
+  overrideSpeed: 0
+  useOverrideSpeed: 0

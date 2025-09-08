@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(AOEExplosion))]
     public class ExplosionImpactor : ImpactorBase
     {
-        ExplosionShipEffectSO[] explosionShipEffects;
+        ShipExplosionEffectSO[] shipAOEEffects;
         
         ExplosionPrismEffectSO[] explosionPrismEffects;
         
@@ -29,10 +29,10 @@ namespace CosmicShore.Game
                     if (shipImpactee.Ship.ShipStatus.Team == Explosion.Team && !affectSelf)
                         break;
                     // ExecuteEffect(shipImpactee, explosionShipEffects);
-                    if(!DoesEffectExist(explosionShipEffects)) return;
-                    foreach (var effect in explosionShipEffects)
+                    if(!DoesEffectExist(shipAOEEffects)) return;
+                    foreach (var effect in shipAOEEffects)
                     {
-                        effect.Execute(this, shipImpactee);
+                        effect.Execute(shipImpactee, this);
                     }
                     break;
                 

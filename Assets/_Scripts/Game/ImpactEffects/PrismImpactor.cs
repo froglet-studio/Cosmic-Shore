@@ -7,17 +7,13 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(TrailBlock))]
     public class PrismImpactor : ImpactorBase
     {
-        // [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        // ScriptableObject[] prismShipEffectsSO;
+        ShipPrismEffectsSO[] prismShipEffects;
         
-        PrismShipEffectsSO[] prismShipEffects;
+        ProjectilePrismEffectSO[] prismProjectileEffects;
         
-        PrismProjectileEffectsSO[] prismProjectileEffects;
+        SkimmerPrismEffectSO[] prismSkimmerEffects;
         
-        PrismSkimmerEffectsSO[] prismSkimmerEffects;
-        
-        PrismExplosionEffectsSO[] prismExplosionEffects;
-        
+        ExplosionPrismEffectSO[] prismExplosionEffects;
        
         
         public TrailBlock Prism;
@@ -36,7 +32,7 @@ namespace CosmicShore.Game
                     if(!DoesEffectExist(prismShipEffects)) return;
                     foreach (var effect in prismShipEffects)
                     {
-                        effect.Execute(this, shipImpactee);
+                        effect.Execute(shipImpactee,this);
                     }
                     break;
                 case ProjectileImpactor projectileImpactee:
@@ -44,7 +40,7 @@ namespace CosmicShore.Game
                     if(!DoesEffectExist(prismProjectileEffects)) return;
                     foreach (var effect in prismProjectileEffects)
                     {
-                        effect.Execute(this, projectileImpactee);
+                        effect.Execute(projectileImpactee,this);
                     }
                     break;
                 case SkimmerImpactor skimmerImpactee:
@@ -52,7 +48,7 @@ namespace CosmicShore.Game
                     if(!DoesEffectExist(prismSkimmerEffects)) return;
                     foreach (var effect in prismSkimmerEffects)
                     {
-                        effect.Execute(this, skimmerImpactee);
+                        effect.Execute(skimmerImpactee,this);
                     }
                     break;
                 case ExplosionImpactor explosionImpactee:
@@ -60,13 +56,13 @@ namespace CosmicShore.Game
                     if(!DoesEffectExist(prismExplosionEffects)) return;
                     foreach (var effect in prismExplosionEffects)
                     {
-                        effect.Execute(this, explosionImpactee);
+                        effect.Execute(explosionImpactee,this);
                     }
                     break;
             }
         }
 
-        private void Reset()
+        private void OnValidate()
         {
             Prism ??= GetComponent<TrailBlock>();
         }

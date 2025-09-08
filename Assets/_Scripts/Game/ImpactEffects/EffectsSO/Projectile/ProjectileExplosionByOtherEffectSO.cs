@@ -4,15 +4,15 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ProjectileExplosionByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Projectile/ProjectileExplosionByOtherEffectSO")]
-    public class ProjectileExplosionByOtherEffectSO : ProjectileOtherEffectSO
+    public abstract class ProjectileExplosionByOtherEffectSO : ImpactEffectSO
     {
         [SerializeField] AOEExplosion[] aoePrefabs;
         [SerializeField] float minExplosionScale;
         [SerializeField] float maxExplosionScale;
         
-        public override void Execute(ProjectileImpactor impactor, ImpactorBase impactee)
+        public void Execute(ProjectileImpactor impactor, ImpactorBase impactee)
         {
-            var projectile =  impactor.Projectile;
+            /*
             var shipStatus =  projectile.ShipStatus;
             
             foreach (var AOE in aoePrefabs)
@@ -29,8 +29,14 @@ namespace CosmicShore.Game
                     SpawnRotation = projectile.transform.rotation
                 });
                 spawnedExplosion.Detonate();
-            }
-
+            }*/
+            
+            ExplosionHelper.CreateExplosion(
+                aoePrefabs,
+                impactor,
+                minExplosionScale,
+                maxExplosionScale);
+            var projectile =  impactor.Projectile;
             projectile.ReturnToPool();
         }
     }

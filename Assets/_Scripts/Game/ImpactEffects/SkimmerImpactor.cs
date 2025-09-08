@@ -8,35 +8,21 @@ namespace CosmicShore.Game
     public class SkimmerImpactor : ImpactorBase
     {
         [Header("Effect lists")]
-        [SerializeField, RequireInterface(typeof(IImpactEffect))] ScriptableObject[] skimmerShipEffectsSO;
-        [SerializeField, RequireInterface(typeof(IImpactEffect))] ScriptableObject[] skimmerPrismEffectsSO;
-        [SerializeField, RequireInterface(typeof(IImpactEffect))] ScriptableObject[] skimmerElementalCrystalEffectsSO;
+        [SerializeField] SkimmerShipEffectsSO[] skimmerShipEffectsSO;
+        [SerializeField] SkimmerPrismEffectSO[] skimmerPrismEffectsSO;
+        [SerializeField] ElementalCrystalSkimmerEffectSO[] skimmerElementalCrystalEffectsSO;
 
         [Header("Block-Stay effects (tick while skimming)")]
-        [SerializeField, RequireInterface(typeof(IImpactEffect))] ScriptableObject[] skimmerPrismStayEffectsSO;
+        [SerializeField] SkimmerPrismEffectSO[] skimmerPrismStayEffectsSO;
 
         [Header("Refs")]
         [SerializeField] private Skimmer skimmer;
         public Skimmer Skimmer => skimmer;
 
-        // cached effects
-        IImpactEffect[] skimmerShipEffects;
-        IImpactEffect[] skimmerPrismEffects;
-        IImpactEffect[] skimmerElementalCrystalEffects;
-        IImpactEffect[] skimmerPrismStayEffects;
-
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
-        public int ActivelySkimmingBlockCount { get; private set; }
-        public float CombinedWeight { get; private set; }   // exposed for effects that need it
-
-        void Awake()
-        {
-            skimmerShipEffects             = Array.ConvertAll(skimmerShipEffectsSO,            so => so as IImpactEffect);
-            skimmerPrismEffects            = Array.ConvertAll(skimmerPrismEffectsSO,           so => so as IImpactEffect);
-            skimmerElementalCrystalEffects = Array.ConvertAll(skimmerElementalCrystalEffectsSO,so => so as IImpactEffect);
-            skimmerPrismStayEffects        = Array.ConvertAll(skimmerPrismStayEffectsSO,       so => so as IImpactEffect);
-        }
+        private int ActivelySkimmingBlockCount;
+        private float CombinedWeight;  // exposed for effects that need it
 
         // ------------------------------------------------------------------
         // Trigger callbacks moved here
@@ -53,14 +39,15 @@ namespace CosmicShore.Game
             }
 
             // TrailBlock: compute combined weight & run stay effects
-            if (!other.TryGetComponent<TrailBlock>(out var trailBlock)) return;
-            if (!skimmer.AffectSelf && trailBlock.Team == skimmer.ShipStatus.Team) return;
+            if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
+            var prism = prismImpactor.Prism;
+            if (!skimmer.AffectSelf && prism.Team == skimmer.ShipStatus.Team) return;
 
             // ensure we started skimming
-            StartSkimIfNeeded(trailBlock.ownerID);
+            StartSkimIfNeeded(prism.ownerID);
 
             // choose “mature & nearest” block per your old logic
-            if (Time.time - trailBlock.TrailBlockProperties.TimeCreated <= 4f) return;
+            if (Time.time - prism.TrailBlockProperties.TimeCreated <= 4f) return;
 
             // distance from skimmer to this block
             float sqrDistance = (skimmer.transform.position - other.transform.position).sqrMagnitude;
@@ -71,28 +58,29 @@ namespace CosmicShore.Game
             float sigma = (sqrSweetSpot) / 2.355f; // since FWHM = sqrSweetSpot
 
             float distanceWeight  = Skimmer.ComputeGaussian(sqrDistance, sqrSweetSpot, sigma);
-            float directionWeight = Vector3.Dot(skimmer.ShipStatus.Transform.forward, trailBlock.transform.forward);
+            float directionWeight = Vector3.Dot(skimmer.ShipStatus.Transform.forward, prism.transform.forward);
 
             CombinedWeight = distanceWeight * Mathf.Abs(directionWeight);
 
             // tick stay effects (centralized)
-            ExecuteBlockStayEffects(CombinedWeight);
+            ExecuteBlockStayEffects(CombinedWeight, prismImpactor);
         }
 
         void OnTriggerExit(Collider other)
         {
             if (skimmer?.ShipStatus == null) return;
 
-            if (!other.TryGetComponent<TrailBlock>(out var trailBlock)) return;
-            if (!skimmer.AffectSelf && trailBlock.Team == skimmer.ShipStatus.Team) return;
+            if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
+            var prism = prismImpactor.Prism;
+            if (!skimmer.AffectSelf && prism.Team == skimmer.ShipStatus.Team) return;
 
-            if (!_skimStartTimes.ContainsKey(trailBlock.ownerID)) return;
+            if (!_skimStartTimes.ContainsKey(prism.ownerID)) return;
 
-            _skimStartTimes.Remove(trailBlock.ownerID);
+            _skimStartTimes.Remove(prism.ownerID);
             ActivelySkimmingBlockCount = Mathf.Max(0, ActivelySkimmingBlockCount - 1);
 
             if (ActivelySkimmingBlockCount < 1)
-                ExecuteBlockStayEffects(0f); // stop effects when no longer skimming anything
+                ExecuteBlockStayEffects(0f, prismImpactor); // stop effects when no longer skimming anything
         }
 
         // ------------------------------------------------------------------
@@ -102,7 +90,7 @@ namespace CosmicShore.Game
             switch (impactee)
             {
                 case ShipImpactor shipImpactor:
-                    ExecuteEffect(impactee, skimmerShipEffects);
+                    ExecuteEffect(impactee, skimmerShipEffectsSO);
                     skimmer.ExecuteImpactOnShip(shipImpactor.Ship);       // secondary call
                     break;
 
@@ -110,7 +98,7 @@ namespace CosmicShore.Game
 
                     var prism = prismImpactor.Prism;
                     
-                    ExecuteEffect(prismImpactor, skimmerPrismEffects);
+                    ExecuteEffect(prismImpactor, skimmerPrismEffectsSO);
                     skimmer.ExecuteImpactOnPrism(prism);    // secondary call (booster viz, etc.)
                     
                     if (!skimmer.AffectSelf && prism.Team == skimmer.ShipStatus.Team)
@@ -120,7 +108,7 @@ namespace CosmicShore.Game
                     break;
 
                 case ElementalCrystalImpactor elementalCrystalImpactor:
-                    ExecuteEffect(elementalCrystalImpactor, skimmerElementalCrystalEffects);
+                    ExecuteEffect(elementalCrystalImpactor, skimmerElementalCrystalEffectsSO);
                     break;
             }
         }
@@ -128,16 +116,16 @@ namespace CosmicShore.Game
         // ------------------------------------------------------------------
         // Internals
 
-        void ExecuteBlockStayEffects(float combinedWeight)
+        void ExecuteBlockStayEffects(float combinedWeight, PrismImpactor prismImpactor)
         {
             CombinedWeight = combinedWeight;
 
-            if (skimmerPrismStayEffects == null || skimmerPrismStayEffects.Length == 0)
+            if (skimmerPrismStayEffectsSO == null || skimmerPrismStayEffectsSO.Length == 0)
                 return;
 
             // Run as self-effects. Effects can cast `impactor` to SkimmerImpactor and read `CombinedWeight`.
-            for (int i = 0; i < skimmerPrismStayEffects.Length; i++)
-                skimmerPrismStayEffects[i]?.Execute(this, this);
+            foreach (var t in skimmerPrismStayEffectsSO)
+                t?.Execute(this, prismImpactor);
         }
 
         void StartSkimIfNeeded(string ownerId)

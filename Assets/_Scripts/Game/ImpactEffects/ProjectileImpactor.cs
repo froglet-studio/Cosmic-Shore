@@ -10,7 +10,7 @@ namespace CosmicShore.Game
         // [SerializeField, RequireInterface(typeof(IImpactEffect))]
         // ScriptableObject[] projectileShipEffectsSO;
         
-        ProjectileShipEffectSO[] projectileShipEffects;
+        ShipProjectileEffectSO[] projectileShipEffects;
         ProjectilePrismEffectSO[]  projectilePrismEffects; 
         ProjectileMineEffectSO[] projectileMineEffects;
         
@@ -45,7 +45,7 @@ namespace CosmicShore.Game
                     if(!DoesEffectExist(projectileShipEffects)) return;
                     foreach (var effect in projectileShipEffects)
                     {
-                        effect.Execute(this, shipImpactee);
+                        effect.Execute(shipImpactee,this);
                     }
                     break;
                 
@@ -62,7 +62,7 @@ namespace CosmicShore.Game
             }
         }
 
-        private void Reset()
+        private void OnValidate()
         { 
             Projectile ??= GetComponent<Projectile>();
         }

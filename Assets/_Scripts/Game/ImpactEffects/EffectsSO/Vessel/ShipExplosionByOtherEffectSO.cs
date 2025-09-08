@@ -4,13 +4,10 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ShipExplosionByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipExplosionByOtherEffectSO")]
-    public class ShipExplosionByOtherEffectSO : ShipOtherEffectSO
+    public abstract class ShipExplosionByOtherEffectSO : ImpactEffectSO
     {
         [SerializeField]
-        AOEExplosion _prefabGO;
-
-        [SerializeField]
-        int _ammoResourceIndex;
+        AOEExplosion[] _aoePrefabs;
 
         [SerializeField]
         float _minExplosionScale;
@@ -19,9 +16,12 @@ namespace CosmicShore.Game
         float _maxExplosionScale;
 
         [SerializeField]
+        int _resourceIndex;
+
+        [SerializeField]
         Material _aoeExplosionMaterial;
         
-        public override void Execute(ShipImpactor shipImpactor, ImpactorBase impactee)
+        /*public override void Execute(ShipImpactor shipImpactor, ImpactorBase impactee)
         {
             IShipStatus shipStatus = shipImpactor.Ship.ShipStatus;
             Transform shipTransform = shipStatus.ShipTransform;
@@ -32,8 +32,8 @@ namespace CosmicShore.Game
                 Ship = shipStatus.Ship,
                 OverrideMaterial = _aoeExplosionMaterial,
 
-                MaxScale = shipStatus.ResourceSystem.Resources.Count > _ammoResourceIndex
-                    ? Mathf.Lerp(_minExplosionScale, _maxExplosionScale, shipStatus.ResourceSystem.Resources[_ammoResourceIndex].CurrentAmount)
+                MaxScale = shipStatus.ResourceSystem.Resources.Count > _resourceIndex
+                    ? Mathf.Lerp(_minExplosionScale, _maxExplosionScale, shipStatus.ResourceSystem.Resources[_resourceIndex].CurrentAmount)
                     : _maxExplosionScale,
 
                 AnnonymousExplosion = true,
@@ -42,6 +42,17 @@ namespace CosmicShore.Game
             });
             
             aoeExplosion.Detonate();
+        }*/
+
+        public void Execute(ShipImpactor impactor, ImpactorBase impactee)
+        {
+            ExplosionHelper.CreateExplosion(
+                _aoePrefabs,
+                impactor,
+                _minExplosionScale,
+                _maxExplosionScale,
+                _aoeExplosionMaterial,
+                _resourceIndex);
         }
     }
 }

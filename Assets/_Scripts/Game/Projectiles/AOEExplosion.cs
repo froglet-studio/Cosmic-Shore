@@ -11,10 +11,10 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
 
-        [SerializeField] private bool affectSelf = false;
+        /*[SerializeField] private bool affectSelf = false;
         [SerializeField] private bool destructive = true;
         [SerializeField] private bool devastating = false;
-        [SerializeField] bool shielding = false;
+        [SerializeField] bool shielding = false;*/
 
         protected Vector3 MaxScaleVector;
         protected float Inertia = 70;
