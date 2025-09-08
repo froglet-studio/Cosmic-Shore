@@ -56,7 +56,7 @@ namespace CosmicShore.Game
             ShipStatus.ShipMaterial = material;
 
         public void SetBlockSilhouettePrefab(GameObject prefab) =>
-            ShipStatus.Silhouette.SetBlockPrefab(prefab);
+            ShipStatus.ShipHUDController.SetBlockPrefab(prefab);
 
         public void SetAOEExplosionMaterial(Material material) =>
             ShipStatus.AOEExplosionMaterial = material;

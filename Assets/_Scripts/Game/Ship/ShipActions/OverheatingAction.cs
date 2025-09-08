@@ -19,7 +19,6 @@ public class OverheatingAction : ShipAction
 
     Resource heatResource;
     bool isOverheating = false;
-    public int HeatResourceIndex => heatResourceIndex;
     
     public float Heat01
     {
@@ -31,8 +30,7 @@ public class OverheatingAction : ShipAction
     }
 
     public bool IsOverheating => isOverheating;
-
-
+    
     public override void Initialize(IShip ship)
     {
         base.Initialize(ship);

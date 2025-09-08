@@ -17,8 +17,11 @@ namespace CosmicShore.Game
         {
             base.Initialize(shipStatus, baseView);
             view = view != null ? view : baseView as DolphinShipHUDView;
-            
-            if(view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
+
+            if (view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
+
+            if (view == null || view.chargeSteps == null || view.chargeSteps.Count == 0)
+                return;
 
             _stepsMinusOne = Mathf.Max(0, view.chargeSteps.Count - 1);
 
@@ -26,40 +29,27 @@ namespace CosmicShore.Game
             {
                 _maxUnits = Mathf.Max(0.0001f, chargeBoostAction.MaxChargeUnits);
 
-                chargeBoostAction.OnChargeStarted      += u => SetFromUnits(u, true);
-                chargeBoostAction.OnChargeProgress     += u => SetFromUnits(u, true);
-                chargeBoostAction.OnChargeEnded        += () => SetSpriteIndex(_stepsMinusOne); // full
+                chargeBoostAction.OnChargeStarted     += u => SetFromUnits(u);
+                chargeBoostAction.OnChargeProgress    += u => SetFromUnits(u);
+                chargeBoostAction.OnChargeEnded       += () => SetSpriteIndex(_stepsMinusOne); 
 
-                chargeBoostAction.OnDischargeStarted   += u => SetFromUnits(u, false);
-                chargeBoostAction.OnDischargeProgress  += u => SetFromUnits(u, false);
-                chargeBoostAction.OnDischargeEnded     += () => SetSpriteIndex(0);              // empty
+                chargeBoostAction.OnDischargeStarted  += u => SetFromUnits(u);
+                chargeBoostAction.OnDischargeProgress += u => SetFromUnits(u);
+                chargeBoostAction.OnDischargeEnded    += () => SetSpriteIndex(0);        
             }
 
             // start empty
             SetSpriteIndex(0);
         }
 
-        void SetFromUnits(float units, bool charging)
+        void SetFromUnits(float units)
         {
             if (view == null || view.chargeSteps == null || view.chargeSteps.Count == 0) return;
 
             float u = Mathf.Clamp(units, 0f, _maxUnits);
-            float t = u / _maxUnits; // 0..1
+            float t =  _maxUnits > 0f  ? u / _maxUnits : 0f; 
 
-            int n = view.chargeSteps.Count;
-            int idx;
-
-            if (charging)
-            {
-                // ceil to climb confidently toward the end
-                idx = Mathf.Clamp(Mathf.CeilToInt(t * n) - 1, 0, n - 1);
-            }
-            else
-            {
-                // floor to descend cleanly without skipping zero
-                idx = Mathf.Clamp(Mathf.FloorToInt(t * n), 0, n - 1);
-            }
-
+            int idx = Mathf.Clamp(Mathf.RoundToInt(t * _stepsMinusOne), 0, _stepsMinusOne);
             SetSpriteIndex(idx);
         }
 
