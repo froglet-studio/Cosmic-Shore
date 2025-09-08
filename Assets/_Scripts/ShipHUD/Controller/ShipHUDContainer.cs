@@ -41,7 +41,7 @@ namespace CosmicShore.Game
             _activeInstance = Instantiate(variant.prefab, contentTransform);
             _activeInstance.gameObject.SetActive(true);
 
-            _activeHUDView = _activeInstance;
+            // _activeHUDView = _activeInstance;
             if (_activeHUDView == null)
             {
                 Debug.LogWarning($"[ShipHUDContainer] Spawned HUD for {shipClass} has no IShipHUDView.");

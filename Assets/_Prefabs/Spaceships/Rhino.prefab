@@ -1249,14 +1249,14 @@ Transform:
   m_GameObject: {fileID: 5963157597082914949}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.00024414062, z: 0}
-  m_LocalScale: {x: 1.0000002, y: 1.0000002, z: 1}
+  m_LocalPosition: {x: -960, y: -540.00024, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1129412824632300420}
   - {fileID: 4066846260958079694}
   - {fileID: 5095493929504694925}
-  m_Father: {fileID: 5928382658856804067}
+  m_Father: {fileID: 3797657973119974518}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6396006928947136031
 GameObject:
@@ -1402,7 +1402,6 @@ Transform:
   - {fileID: 3930926120077726301}
   - {fileID: 5169072473205323491}
   - {fileID: 320384695113571315}
-  - {fileID: 6767753844588534082}
   - {fileID: 5527904696694540031}
   - {fileID: 4386940859292047187}
   - {fileID: 2884778154090512500}
@@ -1746,7 +1745,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
@@ -1860,6 +1859,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2134c837bdb00594d80fc211aa9d0c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  jawResourceIndex: 0
 --- !u!1 &6936285373394276089
 GameObject:
   m_ObjectHideFlags: 0
@@ -12534,7 +12534,7 @@ PrefabInstance:
     - target: {fileID: 2256384011482571480, guid: 2656b477a4af7304180e65f2848a84b3,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7760015956468250325, guid: 2656b477a4af7304180e65f2848a84b3,
         type: 3}
@@ -12640,13 +12640,29 @@ PrefabInstance:
     - {fileID: 8949815125855823894, guid: 2656b477a4af7304180e65f2848a84b3, type: 3}
     - {fileID: 3506254541000121590, guid: 2656b477a4af7304180e65f2848a84b3, type: 3}
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 7760015956468250325, guid: 2656b477a4af7304180e65f2848a84b3,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6767753844588534082}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2256384011482571480, guid: 2656b477a4af7304180e65f2848a84b3,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 4174450472495819857}
   m_SourcePrefab: {fileID: 100100000, guid: 2656b477a4af7304180e65f2848a84b3, type: 3}
+--- !u!224 &465566354238419221 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6446030448150248374, guid: 2656b477a4af7304180e65f2848a84b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 6846281411462810275}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &3168995979416070291 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 8428602865201029680, guid: 2656b477a4af7304180e65f2848a84b3,
+    type: 3}
+  m_PrefabInstance: {fileID: 6846281411462810275}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &3797657973119974518 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7760015956468250325, guid: 2656b477a4af7304180e65f2848a84b3,
@@ -12672,6 +12688,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   highlights: []
+  silhouetteContainer: {fileID: 3168995979416070291}
+  trailDisplayContainer: {fileID: 465566354238419221}
+  silhouetteParts:
+  - {fileID: 6936285373394276089}
+  - {fileID: 2343904303954125754}
+  - {fileID: 1562349306234984412}
+  topJaw: {fileID: 0}
+  bottomJaw: {fileID: 0}
+  jawResourceIndex: -1
+  trailSpawner: {fileID: 874579555101021522}
+  driftTrailAction: {fileID: 0}
+  trailBlockPrefab: {fileID: 0}
+  worldToUIScale: 6
+  imageScale: 0.08
+  swingBlocks: 1
 --- !u!1001 &8469593379654306638
 PrefabInstance:
   m_ObjectHideFlags: 0

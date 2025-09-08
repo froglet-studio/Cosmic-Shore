@@ -40,10 +40,10 @@ namespace CosmicShore.Game
                 
             IPlayer player = (IPlayer)Instantiate(_playerPrefab);
             _shipSpawner.SpawnShip(data.ShipClass, out IShip ship);
-            ship = Hangar.Instance.SetShipProperties(ship, data.Team, !data.EnableAIPilot);
             player.Initialize(data, ship);
             ship.Initialize(player, data.EnableAIPilot);
             player.ToggleAutoPilotMode(data.EnableAIPilot);
+            ship = Hangar.Instance.SetShipProperties(ship, data.Team, !data.EnableAIPilot);
             return player;
         }
     }

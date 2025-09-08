@@ -50,10 +50,9 @@ namespace CosmicShore
             if (trailSpawner) trailSpawner.OnBlockCreated -= HandleBlockCreation;
         }
 
-        // TODO - Call this method from Ship
         public void Initialize(IShip ship)
         {
-            this._ship = ship;
+            _ship = ship;
 
             // TODO - Remove GameCanvas dependency
             /*if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled && _ship.ShipStatus.Player.GameCanvas != null)

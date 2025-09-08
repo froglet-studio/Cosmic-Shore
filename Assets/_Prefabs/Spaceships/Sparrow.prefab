@@ -390,8 +390,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 555723467741174050}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -838, y: 309, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -400,7 +400,7 @@ Transform:
   - {fileID: 3904058688752575905}
   - {fileID: 7163260497757303709}
   - {fileID: 1196906404847648467}
-  m_Father: {fileID: 5928382658856804067}
+  m_Father: {fileID: 3167836512011551763}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1221810765880443511
 GameObject:
@@ -1416,7 +1416,6 @@ Transform:
   m_Children:
   - {fileID: 3397189760217659071}
   - {fileID: 8075578658670966254}
-  - {fileID: 4894037493201937865}
   - {fileID: 3967031065131343057}
   - {fileID: 7674566939765739280}
   - {fileID: 2056944189029331406}
@@ -1884,6 +1883,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1938f2b097540e7abd1e4210d446545, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  jawResourceIndex: 0
   view: {fileID: 8556911474882623255}
   fireGunAction: {fileID: 8671196826403818986}
   overheatingAction: {fileID: 6237859807132148374}
@@ -3337,6 +3337,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 4596543103165563004}
+    - targetCorrespondingSourceObject: {fileID: 8972058528766975416, guid: f0a24806a0485254389f97d4c93f7615,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4894037493201937865}
     - targetCorrespondingSourceObject: {fileID: 4939671735136325150, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
       insertIndex: 1
@@ -3359,6 +3363,12 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 8556911474882623255}
   m_SourcePrefab: {fileID: 100100000, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
+--- !u!224 &984136479509543851 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6547415674517856768, guid: f0a24806a0485254389f97d4c93f7615,
+    type: 3}
+  m_PrefabInstance: {fileID: 6302028140178659755}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &1439023714599163829 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4939671735136325150, guid: f0a24806a0485254389f97d4c93f7615,
@@ -3395,6 +3405,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!224 &3548792572514497487 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7370867837584812644, guid: f0a24806a0485254389f97d4c93f7615,
+    type: 3}
+  m_PrefabInstance: {fileID: 6302028140178659755}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &4433503220909704850 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7706708466194374457, guid: f0a24806a0485254389f97d4c93f7615,
@@ -3440,6 +3456,23 @@ MonoBehaviour:
     image: {fileID: 1501352032668899679}
   - input: 6
     image: {fileID: 6366083956812878776}
+  silhouetteContainer: {fileID: 3548792572514497487}
+  trailDisplayContainer: {fileID: 984136479509543851}
+  silhouetteParts:
+  - {fileID: 322268676704545573}
+  - {fileID: 8777980414596646480}
+  - {fileID: 4010301292554909138}
+  - {fileID: 4125835721608554647}
+  - {fileID: 5978549935140177486}
+  topJaw: {fileID: 0}
+  bottomJaw: {fileID: 0}
+  jawResourceIndex: -1
+  trailSpawner: {fileID: 874579555101021522}
+  driftTrailAction: {fileID: 0}
+  trailBlockPrefab: {fileID: 0}
+  worldToUIScale: 8
+  imageScale: 0.08
+  swingBlocks: 0
   missileIcons:
   - {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2, type: 3}
   - {fileID: 21300000, guid: 8306bc28766790c4e95529f8ed9ca0cb, type: 3}
