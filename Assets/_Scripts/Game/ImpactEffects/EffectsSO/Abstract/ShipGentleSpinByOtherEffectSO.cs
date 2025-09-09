@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     {
         [SerializeField, Range(0f, 180f)] float angleDegrees = 45f; // set in Inspector
 
-        public void Execute(ShipImpactor impactor, ImpactorBase impactee)
+        public void Execute(VesselImpactor impactor, ImpactorBase impactee)
         {
             var shipStatus = impactor.Ship.ShipStatus;
             var transform  = shipStatus.Transform;

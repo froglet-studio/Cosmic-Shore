@@ -7,7 +7,7 @@ namespace CosmicShore.Game
 {
     public class OmniCrystalImpactor : CrystalImpactor
     {
-        ShipOmniCrystalEffectSO[] omniCrystalShipEffects;
+        VesselCrystalEffectSO[] omniCrystalShipEffects;
 
         [SerializeField]
         ScriptableEventCrystalStats OnCrystalCollected;
@@ -21,7 +21,7 @@ namespace CosmicShore.Game
         {
             switch (impactee)
             {
-                case ShipImpactor shipImpactee:
+                case VesselImpactor shipImpactee:
                 {
                     ExecuteEffect(shipImpactee);
                     
@@ -35,9 +35,9 @@ namespace CosmicShore.Game
             }
         }
         
-        void ExecuteEffect(ShipImpactor shipImpactee)
+        void ExecuteEffect(VesselImpactor vesselImpactee)
         {
-            var shipStatus = shipImpactee.Ship.ShipStatus;
+            var shipStatus = vesselImpactee.Ship.ShipStatus;
 
             if (!Crystal.CanBeCollected(shipStatus.Team))
                 return;

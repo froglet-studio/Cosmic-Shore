@@ -1865,12 +1865,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipPrismEffectsSO:
-  - {fileID: 11400000, guid: 64fd01dd11aab6f47b08ff3b6bdaec2b, type: 2}
-  shipOmniCrystalEffectsSO:
-  - {fileID: 11400000, guid: 18231621c8a7c904aad94b41ef59623e, type: 2}
-  shipElementalCrystalEffectsSO: []
-  shipFakeCrystalEffectsSO: []
+  vesselPrismEffects:
+  - {fileID: 11400000, guid: ac862d73e3ada036cb8a50fe6bb55e81, type: 2}
+  - {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20, type: 2}
+  vesselOmniCrystalEffects:
+  - {fileID: 11400000, guid: dcf9d69a52b65c1438af3861b7c89e07, type: 2}
+  - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
 --- !u!114 &1002316194365813701
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3469,7 +3469,6 @@ MonoBehaviour:
   jawResourceIndex: -1
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  trailBlockPrefab: {fileID: 0}
   worldToUIScale: 8
   imageScale: 0.08
   swingBlocks: 0

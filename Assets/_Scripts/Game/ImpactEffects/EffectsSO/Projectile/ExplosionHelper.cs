@@ -10,11 +10,11 @@ namespace CosmicShore.Game
 
         public static void CreateExplosion(
             AOEExplosion[] aoePrefabs,
-            ShipImpactor impactor,
+            VesselImpactor impactor,
             float minExplosionScale,
             float maxExplosionScale,
             Material overrideMaterial,
-            int ammoResourceIndex)
+            int resourceIndex)
         {
             if (impactor?.Ship?.ShipStatus == null) return;
 
@@ -24,7 +24,7 @@ namespace CosmicShore.Game
             {
                 OwnTeam            = ss.Team,
                 Ship               = ss.Ship,
-                MaxScale           = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, ammoResourceIndex),
+                MaxScale           = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex),
                 OverrideMaterial   = overrideMaterial ? overrideMaterial : ss.AOEExplosionMaterial,
                 AnnonymousExplosion = false,
                 SpawnPosition      = ss.ShipTransform.position,

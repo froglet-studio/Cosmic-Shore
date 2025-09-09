@@ -12,7 +12,7 @@ namespace CosmicShore.Game.IO
     {
         None = 0,
         ButtonPress = 1,
-        BlockCollision = 2,
+        PrismCollision = 2,
         ShipCollision = 3,
         CrystalCollision = 4,
         MineCollision = 5,
@@ -67,7 +67,7 @@ namespace CosmicShore.Game.IO
             {
                 case HapticType.ButtonPress:
                     return HapticPatterns.PresetType.LightImpact;
-                case HapticType.BlockCollision:
+                case HapticType.PrismCollision:
                     return HapticPatterns.PresetType.Success;
                 case HapticType.ShipCollision:
                     return HapticPatterns.PresetType.HeavyImpact;

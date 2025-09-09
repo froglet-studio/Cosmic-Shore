@@ -48,7 +48,7 @@ namespace CosmicShore.Game
 
         #endregion
 
-        public override void Execute(ShipImpactor impactor, ShipImpactor impactee)
+        public override void Execute(VesselImpactor impactor, VesselImpactor impactee)
         {
             if (rodPrefab == null) return;
             var targetShip = impactee.Ship;

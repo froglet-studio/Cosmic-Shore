@@ -27,7 +27,7 @@ namespace CosmicShore.Game
         {    
             switch (impactee)
             {
-                case ShipImpactor shipImpactee:
+                case VesselImpactor shipImpactee:
                     // ExecuteEffect(impactee, prismShipEffects);
                     if(!DoesEffectExist(prismShipEffects)) return;
                     foreach (var effect in prismShipEffects)

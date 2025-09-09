@@ -89,7 +89,7 @@ namespace CosmicShore.Game
         {
             switch (impactee)
             {
-                case ShipImpactor shipImpactor:
+                case VesselImpactor shipImpactor:
                     ExecuteEffect(impactee, skimmerShipEffectsSO);
                     skimmer.ExecuteImpactOnShip(shipImpactor.Ship);       // secondary call
                     break;

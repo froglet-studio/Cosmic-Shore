@@ -8,7 +8,7 @@ namespace CosmicShore.Game
         [SerializeField]
         float spinSpeed;
         
-        public virtual void Execute(ShipImpactor impactor, ImpactorBase impactee)
+        public virtual void Execute(VesselImpactor impactor, ImpactorBase impactee)
         {
             Vector3 impactVector = (impactee.Transform.position - impactor.Transform.position).normalized;
             

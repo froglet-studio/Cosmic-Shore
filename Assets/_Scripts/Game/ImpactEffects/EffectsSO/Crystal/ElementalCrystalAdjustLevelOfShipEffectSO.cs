@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     {
         [SerializeField] int LevelAdjustment;
 
-        public override void Execute(ElementalCrystalImpactor impactor, ShipImpactor impactee)
+        public override void Execute(ElementalCrystalImpactor impactor, VesselImpactor impactee)
         {
             impactee.Ship.ShipStatus.ResourceSystem.AdjustLevel(impactor.Crystal.crystalProperties.Element, LevelAdjustment);
         }

@@ -2419,11 +2419,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipPrismEffectsSO:
-  - {fileID: 11400000, guid: 2684c642742bad2489f1f038b6416a47, type: 2}
-  shipOmniCrystalEffectsSO: []
-  shipElementalCrystalEffectsSO: []
-  shipFakeCrystalEffectsSO: []
+  shipPrismEffects:
+  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
+  - {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20, type: 2}
+  - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
+  shipOmniCrystalEffects:
+  - {fileID: 11400000, guid: cc08abc02226e2848ba08fab18880d4b, type: 2}
+  - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
 --- !u!114 &9121591686382397393
 MonoBehaviour:
   m_ObjectHideFlags: 0

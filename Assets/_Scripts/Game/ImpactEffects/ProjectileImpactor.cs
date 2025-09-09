@@ -38,7 +38,7 @@ namespace CosmicShore.Game
         {    
             switch (impactee)
             {
-                case ShipImpactor shipImpactee:
+                case VesselImpactor shipImpactee:
                     if (Projectile.DisallowImpactOnVessel(shipImpactee.Ship.ShipStatus.Team))
                         break;
                     // ExecuteEffect(impactee, projectileShipEffects);

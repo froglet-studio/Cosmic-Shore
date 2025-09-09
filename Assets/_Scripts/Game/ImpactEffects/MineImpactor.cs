@@ -8,7 +8,7 @@ namespace CosmicShore.Game
     {
         public Mine Mine;
         
-        ShipMineEffectSO[] mineShipEffects;
+        VesselMineEffectSO[] mineShipEffects;
         ExplosionMineEffectSO[] mineExplosionEffects;
         MineProjectileEffectSO[] mineProjectileEffects;
         
@@ -26,7 +26,7 @@ namespace CosmicShore.Game
         {
             switch (impactee)
             {
-                case ShipImpactor shipImpactee:
+                case VesselImpactor shipImpactee:
                     // ExecuteEffect(impactee, mineShipEffects);
                     if(!DoesEffectExist(mineShipEffects)) return;
                     foreach (var effect in mineShipEffects)

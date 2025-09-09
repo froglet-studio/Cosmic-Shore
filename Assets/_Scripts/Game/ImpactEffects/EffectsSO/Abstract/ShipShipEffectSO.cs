@@ -2,6 +2,6 @@
 {
     public abstract class ShipShipEffectSO : ImpactEffectSO
     {
-        public abstract void Execute(ShipImpactor impactor, ShipImpactor impactee);
+        public abstract void Execute(VesselImpactor impactor, VesselImpactor impactee);
     }
 }

@@ -25,7 +25,7 @@ namespace CosmicShore.Game
             
             switch (impactee)
             {
-                case ShipImpactor shipImpactee:
+                case VesselImpactor shipImpactee:
                     if (shipImpactee.Ship.ShipStatus.Team == Explosion.Team && !affectSelf)
                         break;
                     // ExecuteEffect(shipImpactee, explosionShipEffects);

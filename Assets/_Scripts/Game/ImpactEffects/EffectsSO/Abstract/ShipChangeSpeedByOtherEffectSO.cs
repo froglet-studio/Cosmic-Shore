@@ -8,7 +8,7 @@ namespace CosmicShore.Game
         [SerializeField] float _amount = .1f;
         [SerializeField] int _duration = 3;
 
-        public void Execute(ShipImpactor impactor, ImpactorBase impactee)
+        public void Execute(VesselImpactor impactor, ImpactorBase impactee)
         {
             impactor.Ship.ShipStatus.ShipTransformer.ModifyThrottle(_amount, _duration);
         }

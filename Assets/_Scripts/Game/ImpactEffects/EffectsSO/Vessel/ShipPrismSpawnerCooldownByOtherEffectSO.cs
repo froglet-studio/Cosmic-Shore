@@ -8,7 +8,7 @@ namespace CosmicShore.Game
         [SerializeField]
         float _coolDownDuration = 10f;
 
-        public void Execute(ShipImpactor impactor, ImpactorBase impactee)
+        public void Execute(VesselImpactor impactor, ImpactorBase impactee)
         {
             var shipStatus = impactor.Ship.ShipStatus;
             shipStatus.TrailSpawner.PauseTrailSpawner();
