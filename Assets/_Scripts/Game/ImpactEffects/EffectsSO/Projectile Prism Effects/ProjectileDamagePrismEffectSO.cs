@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "ProjectileDamagePrismEffect",
-        menuName = "ScriptableObjects/Impact Effects/Projectile/ProjectileDamagePrismEffectSO")]
+        menuName = "ScriptableObjects/Impact Effects/Projectile - Prism/ProjectileDamagePrismEffectSO")]
     public class ProjectileDamagePrismEffectSO : ProjectilePrismEffectSO
     {
         [SerializeField] float inertia = 70f;   // global scalar you can tune per effect

@@ -1,9 +1,8 @@
-using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipChangeSpeedByPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipChangeSpeedByPrismEffect")]
+    [CreateAssetMenu(fileName = "VesselChangeSpeedByPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselChangeSpeedByPrismEffectSO")]
     public class VesselChangeSpeedByPrismEffectSO : VesselPrismEffectSO
     {
         [SerializeField] private float speedModifierDuration;

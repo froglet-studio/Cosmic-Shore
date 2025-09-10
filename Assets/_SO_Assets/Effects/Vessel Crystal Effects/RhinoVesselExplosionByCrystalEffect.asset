@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a148940713548a4b5905021dc45785b, type: 3}
+  m_Name: RhinoVesselExplosionByCrystalEffect
+  m_EditorClassIdentifier: 
+  _aoePrefabs:
+  - {fileID: 5915562654621825366, guid: d568a14301490e54280955b50673f884, type: 3}
+  _minExplosionScale: 50
+  _maxExplosionScale: 400
+  _resourceIndex: 0
+  _aoeExplosionMaterial: {fileID: 0}

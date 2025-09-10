@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "VesselPrismSpawnerCooldownBySkimmerEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/VesselPrismSpawnerCooldownBySkimmerEffectSO")]
+    [CreateAssetMenu(fileName = "VesselPrismSpawnerCooldownBySkimmerEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselPrismSpawnerCooldownBySkimmerEffectSO")]
     public class VesselPrismSpawnerCooldownBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
         [SerializeField]

@@ -2,7 +2,7 @@
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "VesselCrystalAdjustLevelOfEffect", menuName = "ScriptableObjects/Impact Effects/Crystal/VesselAdjustLevelByCrystalEffectSO")]
+    [CreateAssetMenu(fileName = "VesselAdjustLevelByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselAdjustLevelByCrystalEffectSO")]
     public class VesselAdjustLevelByCrystalEffectSO : VesselCrystalEffectSO
     {
         [SerializeField] int LevelAdjustment;

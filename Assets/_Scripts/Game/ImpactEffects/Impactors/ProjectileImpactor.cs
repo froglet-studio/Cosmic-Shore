@@ -1,4 +1,3 @@
-using System;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
@@ -16,7 +15,7 @@ namespace CosmicShore.Game
         
         ProjectileEndEffectSO[] projectileEndEffects;
 
-        public Projectile Projectile;
+        public Projectile Projectile { get; private set; }
         
 
         private void Awake()
@@ -60,6 +59,7 @@ namespace CosmicShore.Game
                     }
                     break;
             }
+            Projectile.ReturnToPool();
         }
 
         private void OnValidate()

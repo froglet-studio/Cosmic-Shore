@@ -3,18 +3,34 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ProjectileExplosionByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Projectile/ProjectileExplosionByCrystalEffectSO")]
-    public abstract class ProjectileExplosionByCrystalEffectSO : ProjectileCrystalEffectSO
+    [CreateAssetMenu(fileName = "ProjectileExplosionByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Projectile - Crystal/ProjectileExplosionByCrystalEffectSO")]
+    public class ProjectileExplosionByCrystalEffectSO : ProjectileCrystalEffectSO
     {
         [SerializeField] AOEExplosion[] aoePrefabs;
         [SerializeField] float minExplosionScale;
         [SerializeField] float maxExplosionScale;
         
-        public void Execute(ProjectileImpactor impactor, ImpactorBase impactee)
+        
+
+        public override void Execute(ProjectileImpactor impactor, CrystalImpactor crystalImpactee)
         {
-            /*
+            ExplosionHelper.CreateExplosion(
+                aoePrefabs,
+                impactor,
+                minExplosionScale,
+                maxExplosionScale);
+        }
+    }
+}
+
+
+/*
+ // Remove later
+ public void Execute(ProjectileImpactor impactor, ImpactorBase impactee)
+        {
+
             var shipStatus =  projectile.ShipStatus;
-            
+
             foreach (var AOE in aoePrefabs)
             {
                 var spawnedExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
@@ -29,15 +45,5 @@ namespace CosmicShore.Game
                     SpawnRotation = projectile.transform.rotation
                 });
                 spawnedExplosion.Detonate();
-            }*/
-            
-            ExplosionHelper.CreateExplosion(
-                aoePrefabs,
-                impactor,
-                minExplosionScale,
-                maxExplosionScale);
-            var projectile =  impactor.Projectile;
-            projectile.ReturnToPool();
         }
-    }
-}
+}*/

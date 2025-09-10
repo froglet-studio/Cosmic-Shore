@@ -2,8 +2,8 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipFXPrismEffect",
-        menuName = "ScriptableObjects/Impact Effects/Vessel/VesselFXPrismEffectSO")]
+    [CreateAssetMenu(fileName = "VesselFXPrismEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselFXPrismEffectSO")]
     public class VesselFXPrismEffectSO : VesselPrismEffectSO
     {
         [SerializeField] private float particleDurationAtSpeedOne = 300f;

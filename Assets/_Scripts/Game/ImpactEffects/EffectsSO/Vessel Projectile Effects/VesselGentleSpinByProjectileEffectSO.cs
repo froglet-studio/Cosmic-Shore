@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "VesselGentleSpinByProjectileEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/VesselGentleSpinByProjectileEffectSO")]
+    [CreateAssetMenu(fileName = "VesselGentleSpinByProjectileEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Projectile/VesselGentleSpinByProjectileEffectSO")]
     public class VesselGentleSpinByProjectileEffectSO : VesselProjectileEffectSO
     {
         [SerializeField, Range(0f, 180f)] float angleDegrees = 45f; // set in Inspector

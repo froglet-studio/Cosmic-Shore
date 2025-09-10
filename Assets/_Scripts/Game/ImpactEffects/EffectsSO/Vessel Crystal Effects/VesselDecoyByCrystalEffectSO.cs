@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "VesselDecoyByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/VesselDecoyByCrystalEffectSO")]
+    [CreateAssetMenu(fileName = "VesselDecoyByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselDecoyByCrystalEffectSO")]
     public class VesselDecoyByCrystalEffectSO : VesselCrystalEffectSO
     {
         [SerializeField] private float debounceSeconds = 0.15f;

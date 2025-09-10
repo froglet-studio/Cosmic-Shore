@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "VesselExplosionByOmniCrystal", menuName = "ScriptableObjects/Impact Effects/Vessel/VesselExplosionByCrystalEffectSO")]
+    [CreateAssetMenu(fileName = "VesselExplosionByOmniCrystal", menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselExplosionByCrystalEffectSO")]
     public class VesselExplosionByCrystalEffectSO : VesselCrystalEffectSO
     {
         [SerializeField]

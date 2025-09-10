@@ -4,7 +4,7 @@ namespace CosmicShore.Game
 {
     [CreateAssetMenu(
         fileName = "VesselChangeResourceByPrismEffect",
-        menuName = "ScriptableObjects/Impact Effects/Vessel/VesselChangeResourceByPrismEffectSO")]
+        menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselChangeResourceByPrismEffectSO")]
     public class VesselChangeResourceByPrismEffectSO : VesselPrismEffectSO
     {
         [SerializeField] ResourceChangeSpec _change;

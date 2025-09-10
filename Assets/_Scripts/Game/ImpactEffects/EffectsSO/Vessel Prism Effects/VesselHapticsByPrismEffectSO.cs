@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName = "VesselHapticsByPrismEffect",
-        menuName = "ScriptableObjects/Impact Effects/Vessel/VesselHapticsByPrismEffectSO")]
+        menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselHapticsByPrismEffectSO")]
     public class VesselHapticsByPrismEffectSO : VesselPrismEffectSO
     {
         [SerializeField] HapticSpec _haptic;

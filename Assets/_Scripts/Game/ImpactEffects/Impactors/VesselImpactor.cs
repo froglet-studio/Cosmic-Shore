@@ -10,8 +10,8 @@ namespace CosmicShore.Game
         [FormerlySerializedAs("shipPrismEffects")] [SerializeField]
         VesselPrismEffectSO[] vesselPrismEffects;
         
-        [FormerlySerializedAs("shipOmniCrystalEffects")] [SerializeField]
-        VesselCrystalEffectSO[] vesselOmniCrystalEffects;
+        [FormerlySerializedAs("vesselOmniCrystalEffects")] [FormerlySerializedAs("shipOmniCrystalEffects")] [SerializeField]
+        VesselCrystalEffectSO[] vesselCrystalEffects;
         
         public IShip Ship { get; private set; }
         
@@ -33,9 +33,9 @@ namespace CosmicShore.Game
                    }
                    break;
                 case OmniCrystalImpactor omniCrystalImpactee:
-                    //ExecuteEffect(impactee, vesselOmniCrystalEffects);
-                    if(!DoesEffectExist(vesselOmniCrystalEffects)) return;
-                    foreach (var effect in vesselOmniCrystalEffects)
+                    //ExecuteEffect(impactee, vesselCrystalEffects);
+                    if(!DoesEffectExist(vesselCrystalEffects)) return;
+                    foreach (var effect in vesselCrystalEffects)
                     {
                         effect.Execute(this, omniCrystalImpactee);
                     }
