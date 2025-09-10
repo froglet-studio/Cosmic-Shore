@@ -11850,6 +11850,57 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: shipSkimmerEffectsSO.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: skimmerPrismEffectsSO.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: vesselSkimmerEffectsSO.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: 'shipSkimmerEffectsSO.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: f5275e751ae94f74e9e9142acdae6b9f,
+        type: 2}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: 'skimmerPrismEffectsSO.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: dcce08b9351b97c4eb275508001a5b8e,
+        type: 2}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: 'skimmerPrismEffectsSO.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: a70647f138323c14392e84920a1a44f2,
+        type: 2}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: 'skimmerPrismEffectsSO.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 66f1edf31a7db6e4d971af7586eedf8f,
+        type: 2}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: 'vesselSkimmerEffectsSO.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: f5275e751ae94f74e9e9142acdae6b9f,
+        type: 2}
+    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: 'vesselSkimmerEffectsSO.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 02cd4a20ea91bbc4591c9ccbf9db91af,
+        type: 2}
     - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: onSkimmerShipImpact
