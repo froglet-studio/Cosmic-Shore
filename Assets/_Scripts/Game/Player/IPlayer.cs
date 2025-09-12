@@ -33,6 +33,7 @@ namespace CosmicShore.Game
         /// If true -> pause input status. false -> unpause otherwise.
         /// </summary>
         void ToggleInputStatus(bool toggle);
+        void Destroy();
 
         [System.Serializable]
         public class InitializeData

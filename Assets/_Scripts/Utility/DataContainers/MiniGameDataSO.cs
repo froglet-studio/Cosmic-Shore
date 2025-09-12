@@ -76,6 +76,21 @@ namespace CosmicShore.SOAP
             OnMiniGameInitialize?.Invoke();
         }
 
+        public void SetupForMultiplayer()
+        {
+            foreach (var player in Players)
+            {
+                player.Ship.Destroy();
+            }
+            
+            for (int i = Players.Count - 1; i >= 0; i--)
+            {
+                Players[i].Destroy();
+            }
+            
+            Players.Clear();
+        }
+
         public void InvokeMiniGameStart()
         {
             IsRunning = true;

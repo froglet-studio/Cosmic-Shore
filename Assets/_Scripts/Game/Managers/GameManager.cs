@@ -42,7 +42,13 @@ namespace CosmicShore.Core
 
         public void ReturnToMainMenu() => StartCoroutine(StartSceneRoutine(_sceneNames.MainMenuScene));
 
-        void LaunchGame() => StartCoroutine(StartSceneRoutine(miniGameData.SceneName));
+        void LaunchGame()
+        {
+            if (miniGameData.IsMultiplayerMode)
+                return;
+            
+            StartCoroutine(StartSceneRoutine(miniGameData.SceneName));   
+        }
         
         IEnumerator StartSceneRoutine(string sceneName)
         {

@@ -101,5 +101,10 @@ namespace CosmicShore.Game
             else
                 ShipStatus.AIPilot.StopAIPilot();
         }
+
+        public void Destroy()
+        {
+            Destroy(gameObject);
+        }
     }
 }

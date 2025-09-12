@@ -40,5 +40,7 @@ namespace CosmicShore.Game
         void PerformButtonActions(int buttonNumber);
         void OnButtonPressed(int buttonNumber);
         void ToggleAutoPilot(bool toggle);
+
+        void Destroy();
     }
 }

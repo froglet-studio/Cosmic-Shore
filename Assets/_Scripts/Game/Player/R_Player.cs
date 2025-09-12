@@ -12,7 +12,7 @@ namespace CosmicShore.Game
 {
     public class R_Player : NetworkBehaviour, IPlayer
     { 
-        public static List<IPlayer> NppList { get; private set; } = new();
+        public static List<IPlayer> NppList { get; } = new();
 
         // Declare the NetworkVariable without initializing its value.
         public NetworkVariable<ShipClassType> NetDefaultShipType = new(ShipClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -92,6 +92,8 @@ namespace CosmicShore.Game
 
         public void ToggleInputStatus(bool toggle) =>
             InputController.Pause(toggle);
+        
+        public void Destroy() => Destroy(gameObject);
 
         private void OnNetDefaultShipTypeValueChanged(ShipClassType previousValue, ShipClassType newValue) =>
             ShipClass = newValue;

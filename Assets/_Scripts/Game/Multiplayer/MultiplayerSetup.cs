@@ -38,25 +38,19 @@ namespace CosmicShore.Game
         {
             get
             {
-                if (_activeSession == null)
-                {
-                    Debug.LogError("[MultiplayerSetup] No active session found");
-                    return null;
-                }
-                return _activeSession;
+                if (_activeSession != null) 
+                    return _activeSession;
+                
+                Debug.LogError("[MultiplayerSetup] No active session found");
+                return null;
             }
 
-            set
+            private set
             {
                 _activeSession = value;
-                if (_activeSession != null)
-                {
-                    Debug.Log($"[MultiplayerSetup] Active session set to {_activeSession.Id}");
-                }
-                else
-                {
-                    Debug.Log("[MultiplayerSetup] Active session cleared");
-                }
+                Debug.Log(_activeSession != null
+                    ? $"[MultiplayerSetup] Active session set to {_activeSession.Id}"
+                    : "[MultiplayerSetup] Active session cleared");
             }
         }
 
@@ -125,6 +119,8 @@ namespace CosmicShore.Game
             if (!miniGameData.IsMultiplayerMode)
                 return;
             
+            miniGameData.SetupForMultiplayer();
+            
             ExecuteMultiplayerSetup(miniGameData.SceneName, miniGameData.SelectedPlayerCount.Value);
         }
 
@@ -184,6 +180,8 @@ namespace CosmicShore.Game
 
             ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
             Debug.Log($"[MultiplayerSetup] Created session {ActiveSession.Id}, Join Code: {ActiveSession.Code}");
+            
+            NetworkManager.Singleton.SceneManager.LoadScene(_multiplayerSceneName, LoadSceneMode.Single);
         }
 
         async UniTask JoinSessionAsClientById(string sessionId)
@@ -270,8 +268,8 @@ namespace CosmicShore.Game
                 if (player != null)
                 {
                     if (player.IsOwner)
-                    { 
-                        player.NetDefaultShipType.Value = MiniGame.PlayerShipType;
+                    {
+                        player.NetDefaultShipType.Value = miniGameData.SelectedShipClass.Value;
                     }
 
                     if (IsServer)
@@ -281,10 +279,10 @@ namespace CosmicShore.Game
                 }
             }
 
-            if (clientId == NetworkManager.ServerClientId)
+            /*if (clientId == NetworkManager.ServerClientId)
             {
                 NetworkManager.Singleton.SceneManager.LoadScene(_multiplayerSceneName, LoadSceneMode.Single);
-            }
+            }*/
         }
     }
 

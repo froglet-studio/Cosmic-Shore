@@ -30593,7 +30593,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 0
-  ActiveSceneSynchronization: 0
+  ActiveSceneSynchronization: 1
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
@@ -80417,7 +80417,7 @@ MonoBehaviour:
     PlayerName: Hostile1
     PlayerUUID: 
     EnableAIPilot: 1
-    AllowSpawning: 1
+    AllowSpawning: 0
   - ShipClass: 11
     Team: 2
     PlayerName: Hostile2

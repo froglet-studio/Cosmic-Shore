@@ -48,7 +48,7 @@ public class ZoomOutAction : ShipAction
 
     private void LateUpdate()
     {
-        if (Ship.ShipStatus.AutoPilotEnabled) return;
+        if (Ship == null || Ship.ShipStatus.AutoPilotEnabled) return;
         _controller ??= CameraManager.Instance.GetActiveController();
         if (_scaleSource == null || _controller == null) return;
         

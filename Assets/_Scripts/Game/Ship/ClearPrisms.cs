@@ -56,7 +56,12 @@ namespace CosmicShore
 
         void Update()
         {
-            if (mainCamera == null || _ship.ShipStatus.AutoPilotEnabled) return;
+            // NOT GOOD WAY TO DO THIS. STOP RUNNING UPDATE BEFORE CHANGING FROM MAIN_MENU TO MULTIPLAYER FREESTYLE SCENE
+            if (!mainCamera || 
+                _ship == null || 
+                _ship.ShipStatus == null ||
+                !_ship.ShipStatus.AIPilot ||
+                _ship.ShipStatus.AutoPilotEnabled) return;
 
             Vector3 cameraPosition = mainCamera.position;
             Vector3 shipPosition = _ship.Transform.position;
