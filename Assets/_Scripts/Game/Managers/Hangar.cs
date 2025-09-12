@@ -9,19 +9,22 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
+    /// <summary>
+    /// DEPRECATED - Try remove all dependencies to this script
+    /// </summary>
     public class Hangar : Singleton<Hangar>
     {
         const string SELECTED_SHIP_KEY = "SelectedShip";
 
         // HashSet has only one same value in one set
         // TODO: move to cell
-        [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new();
+        // [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new();
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
         // TODO - Store in separate data container
-        public ShipClassType ChoosenClassType;
+        // public ShipClassType ChoosenClassType;
 
         /// <summary>
         /// This is the ship that is currently selected in the hangar by local owner client.
@@ -33,15 +36,15 @@ namespace CosmicShore.Core
         public override void Awake()
         {
             base.Awake();
-            ChoosenClassType = (ShipClassType)PlayerPrefs.GetInt(SELECTED_SHIP_KEY);
+            // ChoosenClassType = (ShipClassType)PlayerPrefs.GetInt(SELECTED_SHIP_KEY);
         }
 
         // TODO - Store in separate data container
-        public void SetPlayerShip(int shipType)
+        /*public void SetPlayerShip(int shipType)
         {
             ChoosenClassType = (ShipClassType)shipType;
             PlayerPrefs.SetInt(SELECTED_SHIP_KEY, shipType);
-        }
+        }*/
 
         // TODO - Store in data container. Remove the method
         public void SetPlayerCaptain(Captain captain)
@@ -58,11 +61,8 @@ namespace CosmicShore.Core
         {
             _aiSkillLevel = level;
         }*/
-
-        /// <summary>
-        /// This method is used when ship is loaded for multiplayer gameplay
-        /// </summary>
-        public IShip SetShipProperties(IShip ship, Teams team, bool isOwner, SO_Captain so_captain = null)
+        
+        /*public IShip SetShipProperties(IShip ship, Teams team, bool isOwner, SO_Captain so_captain = null)
         {
             // TODO - Get Captains from data containers
             /*if (so_captain == null && CaptainManager.Instance != null)
@@ -75,7 +75,7 @@ namespace CosmicShore.Core
                     ship.AssignCaptain(so_captain);
                     ship.SetResourceLevels(captain.ResourceLevels);
                 }
-            }*/
+            }#1#
 
             var materialSet = _themeManagerData.TeamMaterialSets[team];
             ship.SetShipMaterial(materialSet.ShipMaterial);
@@ -87,6 +87,6 @@ namespace CosmicShore.Core
             if (isOwner)
                 LocalPlayerShip = ship;
             return ship;
-        }
+        }*/
     }
 }

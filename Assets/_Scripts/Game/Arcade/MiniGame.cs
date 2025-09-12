@@ -87,7 +87,7 @@ namespace CosmicShore.Game.Arcade
         {
             // EndGameScreen = GameCanvas.EndGameScreen;
             HUD = GameCanvas.MiniGameHUD;
-            ReadyButton = HUD.View.ReadyButton;
+            // ReadyButton = HUD.View.ReadyButton;
             countdownTimer = HUD.View.CountdownTimer;
             // ScoreTracker.GameCanvas = GameCanvas;
 

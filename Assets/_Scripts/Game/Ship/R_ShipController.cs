@@ -106,13 +106,13 @@ namespace CosmicShore.Game
                 {
                     if (!ShipStatus.FollowTarget) 
                         ShipStatus.FollowTarget = transform;
-
-                    if(!enableAIPilot)
-                        ShipStatus.ShipHUDController.Initialize(ShipStatus, ShipStatus.ShipHudView);
+                    
                     // ShipStatus.ShipHUDContainer.InitializeView(ShipStatus, ShipStatus.ShipType);
                     
-                    ShipStatus.ShipCameraCustomizer.Initialize(this);
                     ShipStatus.ShipTransformer.Initialize(this);
+                    ShipStatus.ShipHUDController.Initialize(ShipStatus, ShipStatus.ShipHudView);
+                    ShipStatus.ShipCameraCustomizer.Initialize(this);
+                    
                     onBottomEdgeButtonsEnabled.Raise(true);
                 }
 
@@ -127,9 +127,12 @@ namespace CosmicShore.Game
 
                 ShipStatus.Silhouette.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
-                // ShipStatus.ShipHUDContainer.InitializeView(ShipStatus, ShipStatus.ShipType);
-                if(!enableAIPilot)
+                
+                if (!enableAIPilot)
+                {
                     ShipStatus.ShipHUDController.Initialize(ShipStatus, ShipStatus.ShipHudView);
+                    ShipStatus.ShipCameraCustomizer.Initialize(this);
+                }
                 
                 ShipStatus.TrailSpawner.Initialize(ShipStatus);  
                 onBottomEdgeButtonsEnabled.Raise(true);
@@ -140,7 +143,7 @@ namespace CosmicShore.Game
             ShipStatus.AIPilot.Initialize(enableAIPilot, this);
             
             // if enable AI Pilot,
-            if (!enableAIPilot) ShipStatus.ShipCameraCustomizer.Initialize(this);
+            // if (!enableAIPilot) ShipStatus.ShipCameraCustomizer.Initialize(this);
 
             InvokeShipInitializedEvent();
         }

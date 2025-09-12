@@ -49,6 +49,7 @@ namespace CosmicShore.SOAP
         public Transform[] PlayerOrigins;
         public List<IRoundStats> RoundStatsList = new();
         public Dictionary<int, CellStats> CellStatsList = new();
+        public HashSet<Transform> SlowedShipTransforms = new();
         public float TurnStartTime;
         public bool IsRunning { get; private set; }
         

@@ -125,16 +125,16 @@ namespace CosmicShore.Game
             if (!miniGameData.IsMultiplayerMode)
                 return;
             
-            ExecuteMultiplayerSetup(miniGameData.SceneName, miniGameData.SelectedPlayerCount);
+            ExecuteMultiplayerSetup(miniGameData.SceneName, miniGameData.SelectedPlayerCount.Value);
         }
 
-        public async void ExecuteMultiplayerSetup(string multiplayerSceneName, int maxPlayersPerSession)
+        async void ExecuteMultiplayerSetup(string multiplayerSceneName, int maxPlayersPerSession)
         {
-            _multiplayerSceneName = multiplayerSceneName;
-            _maxPlayerPerSession = maxPlayersPerSession;
-
             try
             {
+                _multiplayerSceneName = multiplayerSceneName;
+                _maxPlayerPerSession = maxPlayersPerSession;
+                    
                 var sessions = await QuerrySessions();
 
                 if (sessions != null && sessions.Any())

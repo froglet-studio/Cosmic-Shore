@@ -16,13 +16,13 @@ namespace CosmicShore.Game.UI
             dropdown = GetComponent<TMP_Dropdown>();
 
             // TODO - Get from separate data container. Don't access Hanger directly.
-            dropdown.value = (int)Hangar.Instance.ChoosenClassType;
+            // dropdown.value = (int)Hangar.Instance.ChoosenClassType;
         }
 
         // TODO - Store in separate data container. Don't access Hanger directly.
         public void HangarSetPlayerShip(int shipClassType)
         {
-            Hangar.Instance.SetPlayerShip(shipClassType);
+            // Hangar.Instance.SetPlayerShip(shipClassType);
         }
     }
 }

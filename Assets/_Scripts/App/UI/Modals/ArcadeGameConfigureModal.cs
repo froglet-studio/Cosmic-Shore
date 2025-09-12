@@ -128,7 +128,7 @@ namespace CosmicShore.App.UI.Modals
             ArcadeExploreView.SelectShip(ship);
         }
 
-        public void SetPlayerCount(int playerCount)
+        void SetPlayerCount(int playerCount)
         {
             foreach (var button in PlayerCountButtons)
                 button.SetSelected(button.Count == playerCount);;

@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
+using CosmicShore.SOAP;
 using UnityEngine;
 
 namespace CosmicShore
@@ -7,6 +8,9 @@ namespace CosmicShore
     [RequireComponent(typeof(IShipStatus))]
     public class SlowShipViewer : MonoBehaviour
     {
+        [SerializeField]
+        MiniGameDataSO miniGameData;
+        
         [SerializeField] Material trailViewerMaterial;
 
         LineRenderer lineRenderer;
@@ -31,7 +35,7 @@ namespace CosmicShore
             // if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Ship.ShipStatus == shipStatus)
             {
                 var distance = float.PositiveInfinity;
-                foreach (var shipTransform in Hangar.Instance.SlowedShipTransforms)
+                foreach (var shipTransform in miniGameData.SlowedShipTransforms)
                 {
                     if (shipTransform == transform) continue;
                     float tempDistance;     

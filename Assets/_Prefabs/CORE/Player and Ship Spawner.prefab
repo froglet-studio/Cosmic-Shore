@@ -45,21 +45,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05f25773e3ee4abc86fa268757d3f4ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   _initializeDatas:
-  - ShipType: 1
-    Team: 1
+  - ShipClass: 1
+    Team: 2
     PlayerName: Hostile1
     PlayerUUID: 
     EnableAIPilot: 1
-  - ShipType: 11
+    AllowSpawning: 1
+  - ShipClass: 11
     Team: 2
     PlayerName: Hostile2
     PlayerUUID: 
     EnableAIPilot: 1
+    AllowSpawning: 0
   _playerPrefab: {fileID: 6488187154916088370, guid: 0a8653be5d331c5449d3130cef596493,
     type: 3}
   _shipSpawner: {fileID: 8975221766650826670}
-  _spawnAtStart: 1
+  _spawnAtStart: 0
 --- !u!114 &8975221766650826670
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -184,7 +184,8 @@ namespace CosmicShore.Core
                 OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
             });
 
-            if (CellControlManager.Instance is not null)
+            // TODO - Use Event Channel
+            if (CellControlManager.Instance)
             {
                 CellControlManager.Instance.AddBlock(Team, TrailBlockProperties);
                 

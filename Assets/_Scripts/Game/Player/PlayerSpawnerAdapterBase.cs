@@ -9,23 +9,23 @@ namespace CosmicShore.Game
         [SerializeField] protected MiniGameDataSO _gameData;
         [SerializeField] protected PlayerSpawner _playerSpawner;
 
+        [SerializeField] 
+        protected IPlayer.InitializeData[] _initializeDatas;
+        
         private void OnApplicationQuit()
         {
             _gameData.ResetData();
         }
 
-        /// <summary>Runs when you want to kick off spawning for this context.</summary>
-        protected abstract void InitializeGame();
-
         /// <summary>Spawn all AI entries allowed by the spawner and add them to game data.</summary>
         protected void SpawnAndAddAIPlayers()
         {
-            if (_playerSpawner?.InitializeDatas == null) return;
+            if (_initializeDatas == null) return;
 
-            var initializeDataCount = _playerSpawner.InitializeDatas.Length;
+            var initializeDataCount = _initializeDatas.Length;
             for (int i = 0; i < initializeDataCount; i++)
             {
-                var data = _playerSpawner.InitializeDatas[i];
+                var data = _initializeDatas[i];
                 if (!data.AllowSpawning) continue;
 
                 var player = _playerSpawner.SpawnPlayerAndShip(data);

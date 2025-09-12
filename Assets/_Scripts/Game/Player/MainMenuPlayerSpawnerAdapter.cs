@@ -6,7 +6,7 @@ namespace CosmicShore.Game
     {
         private void Start() => InitializeGame();
 
-        protected override void InitializeGame()
+        void InitializeGame()
         {
             SpawnAndAddAIPlayers();
             RaiseAllPlayersSpawned();

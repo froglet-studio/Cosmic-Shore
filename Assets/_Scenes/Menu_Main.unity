@@ -9830,17 +9830,17 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
       propertyPath: _items.Array.size
-      value: 6
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
       propertyPath: '_items.Array.data[3]'
       value: 
-      objectReference: {fileID: 302356026468653293, guid: fdbd97f79a7aec14f8fadd5589780a74,
+      objectReference: {fileID: 4853709196820857184, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
     - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
       propertyPath: '_items.Array.data[4]'
       value: 
-      objectReference: {fileID: 4853709196820857184, guid: ba70c0f3eb077d44b8a538982d02dadc,
+      objectReference: {fileID: 8350600879602490808, guid: 7fec532a729a8b648a8de2399d1b918a,
         type: 3}
     - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
       propertyPath: '_items.Array.data[5]'
@@ -73374,7 +73374,7 @@ MonoBehaviour:
   RespectInventoryForGameSelection: 0
   _selectedShipClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
-  _selectedPlayerCount: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69,
+  _selectedPlayerCount: {fileID: 11400000, guid: 15256dcf0be30b4489190913d1f305db,
     type: 2}
   _selectedIntensity: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
 --- !u!224 &175867981159570580
@@ -80411,6 +80411,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 2996404617579086752}
+  _initializeDatas:
+  - ShipClass: 2
+    Team: 2
+    PlayerName: Hostile1
+    PlayerUUID: 
+    EnableAIPilot: 1
+    AllowSpawning: 1
+  - ShipClass: 11
+    Team: 2
+    PlayerName: Hostile2
+    PlayerUUID: 
+    EnableAIPilot: 0
+    AllowSpawning: 0
 --- !u!114 &2996404617579086752 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,

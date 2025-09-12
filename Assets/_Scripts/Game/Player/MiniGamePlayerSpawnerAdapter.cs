@@ -23,7 +23,7 @@ namespace CosmicShore.Game
             _gameData.OnMiniGameInitialize -= InitializeGame;
         }
 
-        protected override void InitializeGame()
+        void InitializeGame()
         {
             SpawnAndAddHumanPlayer();
             SpawnAndAddAIPlayers();

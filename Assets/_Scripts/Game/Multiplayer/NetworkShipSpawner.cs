@@ -2,27 +2,33 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Soap;
 using Unity.Multiplayer.Samples.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game
 {
+    /// <summary>
+    /// Player prefab is spawned automatically in network, hence we are
+    /// spawning the network vessels and hooking it with network players.
+    /// </summary>
     [RequireComponent(typeof(NetcodeHooks))]
     public class NetworkShipSpawner : MonoBehaviour
     {
-        [SerializeField]
-        ClientGameplayState _clientGameplayState;
+        [FormerlySerializedAs("_clientGameplayState")] [SerializeField]
+        ClientPlayerSpawner clientPlayerSpawner;
 
         [SerializeField]
         [Tooltip("A collection of locations for spawning players")]
         Transform[] _playerSpawnPoints;
 
-        [SerializeField]
-        NetworkObject[] _shipPrefabs;
+        [SerializeField] 
+        ShipPrefabContainer shipPrefabContainer;
 
         [SerializeField]
         string _mainMenuSceneName = "Menu_Main";
@@ -89,7 +95,7 @@ namespace CosmicShore.Game
                 await UniTask.Delay(3000);
 
                 // For late joins, wait a bit and then initialize the client gameplay state.
-                _clientGameplayState.InitializeAndSetupPlayer_ClientRpc();
+                clientPlayerSpawner.InitializeAndSetupPlayer_ClientRpc();
 
                 if (MultiplayerSetup.Instance.ActiveSession.AvailableSlots == 0)
                 {
@@ -101,18 +107,18 @@ namespace CosmicShore.Game
         void OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
         {
             Debug.Log($"OnLoadEventCompleted: sceneName = {sceneName}, loadSceneMode = {loadSceneMode}");
-            if (!InitialSpawnDone && loadSceneMode == LoadSceneMode.Single)
+            if (InitialSpawnDone || loadSceneMode != LoadSceneMode.Single) 
+                return;
+            
+            InitialSpawnDone = true;
+            foreach (var clientPair in NetworkManager.Singleton.ConnectedClients)
             {
-                InitialSpawnDone = true;
-                foreach (var clientPair in NetworkManager.Singleton.ConnectedClients)
-                {
-                    Debug.Log($"Spawning player and ship for client {clientPair.Key}.");
-                    SpawnShipForClient(clientPair.Key, false);
-                }
-
-                Debug.Log("Calling InitializeAndSetupPlayer_ClientRpc for all clients.");
-                _clientGameplayState.InitializeAndSetupPlayer_ClientRpc();
+                Debug.Log($"Spawning player and ship for client {clientPair.Key}.");
+                SpawnShipForClient(clientPair.Key, false);
             }
+
+            Debug.Log("Calling InitializeAndSetupPlayer_ClientRpc for all clients.");
+            clientPlayerSpawner.InitializeAndSetupPlayer_ClientRpc();
         }
 
         void OnClientDisconnect(ulong clientId)
@@ -145,18 +151,20 @@ namespace CosmicShore.Game
                 return;
             }
 
-            Teams team = networkPlayer.NetTeam.Value;
+            // Teams team = networkPlayer.NetTeam.Value;
             ShipClassType shipTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
 
-            NetworkObject prefab = GetPrefab(shipTypeToSpawn);
-            if (prefab == null)
+            if (!shipPrefabContainer.TryGetShipPrefab(shipTypeToSpawn, out Transform shipPrefabTransform))
+                return;
+
+            if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
             {
                 Debug.LogError($"SpawnPlayerAndShipForClient: No matching ship prefab found for ship type {shipTypeToSpawn} for client {clientId}.");
                 return;
             }
 
             // Instantiate and spawn the ship.
-            NetworkObject networkShip = Instantiate(prefab);
+            NetworkObject networkShip = Instantiate(shipNetworkObject);
             Assert.IsTrue(networkShip != null, $"Matching ship network object for client {clientId} not found!");
             networkShip.SpawnWithOwnership(clientId, true);
             Debug.Log($"Spawned ship for client {clientId} using ship type {shipTypeToSpawn}.");
@@ -197,24 +205,6 @@ namespace CosmicShore.Game
             _playerSpawnPointsList.RemoveAt(index);
 
             return spawnPoint;
-        }
-
-        /// <summary>
-        /// Retrieves the ship prefab corresponding to the specified ship type.
-        /// </summary>
-        /// <param name="shipTypeToSpawn">The ShipTypes to look for.</param>
-        /// <returns>The matching NetworkObject prefab or null if not found.</returns>
-        NetworkObject GetPrefab(ShipClassType shipTypeToSpawn)
-        {
-            if (_shipPrefabs == null || _shipPrefabs.Length == 0)
-            {
-                Debug.LogError("ShipPrefabs array is not set or empty.");
-                return null;
-            }
-
-            return _shipPrefabs.FirstOrDefault(
-                prefab => prefab.TryGetComponent(out IShip networkShip) && 
-                networkShip.ShipStatus.ShipType == shipTypeToSpawn);
         }
     }
 }

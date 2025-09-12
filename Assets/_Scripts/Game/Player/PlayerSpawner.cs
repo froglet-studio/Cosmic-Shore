@@ -6,32 +6,14 @@ namespace CosmicShore.Game
 {
     public class PlayerSpawner : MonoBehaviour
     {
-        [SerializeField] 
-        IPlayer.InitializeData[] _initializeDatas;
-
-        public IPlayer.InitializeData[] InitializeDatas => _initializeDatas;
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
         
         [SerializeField, RequireInterface((typeof(IPlayer)))]
         Object _playerPrefab;
 
         [SerializeField] 
         ShipSpawner _shipSpawner;
-
-        [SerializeField, Tooltip("If true, the player-ships inside the initialize datas marked with allow spawning will spawn when the start method gets invoked.")]
-        bool _spawnAtStart;
-
-        private void Start()
-        {
-            if (_spawnAtStart)
-                SpawnDefaultPlayersAndShips();
-        }
-
-        [ContextMenu(("Spawn all Players and Ships"))]
-        public void SpawnDefaultPlayersAndShips()
-        {
-            foreach (IPlayer.InitializeData data in _initializeDatas)
-                SpawnPlayerAndShip(data);
-        }
+        
 
         public IPlayer SpawnPlayerAndShip(IPlayer.InitializeData data)
         {
@@ -43,7 +25,7 @@ namespace CosmicShore.Game
             player.Initialize(data, ship);
             ship.Initialize(player, data.EnableAIPilot);
             player.ToggleAutoPilotMode(data.EnableAIPilot);
-            ship = Hangar.Instance.SetShipProperties(ship, data.Team, !data.EnableAIPilot);
+            PlayerVesselInitializeHelper.SetShipProperties(_themeManagerData, ship);
             return player;
         }
     }

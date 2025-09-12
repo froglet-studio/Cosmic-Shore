@@ -12,7 +12,7 @@ namespace CosmicShore.Game
 {
     public class R_Player : NetworkBehaviour, IPlayer
     { 
-        public static List<R_Player> NppList { get; private set; } = new();
+        public static List<IPlayer> NppList { get; private set; } = new();
 
         // Declare the NetworkVariable without initializing its value.
         public NetworkVariable<ShipClassType> NetDefaultShipType = new(ShipClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -24,6 +24,7 @@ namespace CosmicShore.Game
         public string PlayerUUID { get; private set; } // => InitializeData.PlayerUUID;
         public IShip Ship { get; private set; }
         public bool IsActive { get; private set; }
+        public bool IsAIModeActivated { get; private set; }
 
         readonly InputController _inputController;
         public InputController InputController =>
@@ -45,8 +46,15 @@ namespace CosmicShore.Game
             Ship = ship;
             InputController.Initialize(Ship);
         }
-        
-        public void InitializeShip(IShip ship) => Ship = ship;
+
+        /// <summary>
+        /// TODO -> A temp way to initialize in multiplayer, try for better approach.
+        /// </summary>
+        public void InitializeForClient(IShip ship)
+        {
+            Ship = ship;
+            InputController.Initialize(Ship);
+        }
         
         public override void OnNetworkSpawn()
         {
@@ -76,6 +84,7 @@ namespace CosmicShore.Game
         {
             Ship.ToggleAutoPilot(toggle);
             InputController.Pause(toggle);   
+            IsAIModeActivated = toggle;
         }
 
         public void ToggleStationaryMode(bool toggle) =>

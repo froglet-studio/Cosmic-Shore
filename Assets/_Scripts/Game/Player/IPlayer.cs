@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.IO;
+﻿using System.Collections.Generic;
+using CosmicShore.Game.IO;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -8,6 +9,7 @@ namespace CosmicShore.Game
 {
     public interface IPlayer : ITransform
     {
+        public static List<IPlayer> NppList { get; }
         ShipClassType ShipClass { get; }
         Teams Team { get; }
         string Name { get; }
@@ -17,12 +19,19 @@ namespace CosmicShore.Game
         IInputStatus InputStatus { get; }
 
         bool IsActive { get; }
+        bool IsAIModeActivated { get; }
 
         void Initialize(InitializeData data, IShip ship);
         void ToggleActive(bool active);
         void ToggleGameObject(bool toggle);
         void ToggleAutoPilotMode(bool toggle);
+        /// <summary>
+        /// If true -> stationary mode is activated. false -> deactivated
+        /// </summary>
         void ToggleStationaryMode(bool toggle);
+        /// <summary>
+        /// If true -> pause input status. false -> unpause otherwise.
+        /// </summary>
         void ToggleInputStatus(bool toggle);
 
         [System.Serializable]

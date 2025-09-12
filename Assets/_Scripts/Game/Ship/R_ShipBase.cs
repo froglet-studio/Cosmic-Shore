@@ -11,6 +11,9 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    /// <summary>
+    /// TODO - Merge to R_ShipController.
+    /// </summary>
     [RequireComponent(typeof(IShipStatus))]
     public abstract class R_ShipBase : NetworkBehaviour, IShip
     {
