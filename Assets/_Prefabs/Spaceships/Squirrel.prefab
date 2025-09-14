@@ -718,13 +718,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismEffects:
-  - {fileID: 11400000, guid: 975067fa2a3b229a073258f6687cd539, type: 2}
-  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
-  - {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20, type: 2}
-  vesselCrystalEffects:
-  - {fileID: 11400000, guid: 384844202f49d274185594aa5a884572, type: 2}
-  - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c65db9958c064485be49a2183f263,
+    type: 2}
 --- !u!114 &7874551534278607383
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1290,6 +1285,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: align skimmer
       objectReference: {fileID: 0}
+    - target: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_RootOrder
@@ -1373,6 +1373,12 @@ PrefabInstance:
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: ae5fbd6bb4e31d345bcaa605742e56fb,
+        type: 2}
+    - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: 'skimmerPrismStayEffectsSO.Array.data[1]'
       value: 
       objectReference: {fileID: 11400000, guid: ae5fbd6bb4e31d345bcaa605742e56fb,
         type: 2}

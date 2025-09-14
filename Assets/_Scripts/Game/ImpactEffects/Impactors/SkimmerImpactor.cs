@@ -10,10 +10,11 @@ namespace CosmicShore.Game
     {
         [FormerlySerializedAs("shipSkimmerEffectsSO")]
         [Header("Effect lists")]
-        [SerializeField] VesselSkimmerEffectsSO[] vesselSkimmerEffectsSO;
-        [SerializeField] SkimmerPrismEffectSO[] skimmerPrismEffectsSO;
-        [SerializeField] SkimmerCrystalEffectSO[] skimmerCrystalEffectsSO;
+        // [SerializeField] VesselSkimmerEffectsSO[] vesselSkimmerEffectsSO;
+        // [SerializeField] SkimmerPrismEffectSO[] skimmerPrismEffectsSO;
+        // [SerializeField] SkimmerCrystalEffectSO[] skimmerCrystalEffectsSO;
 
+        [SerializeField] private SkimmerImpactorDataContainerSO skimmerImpactorDataContainer;
         [Header("Block-Stay effects (tick while skimming)")]
         [SerializeField] SkimmerPrismEffectSO[] skimmerPrismStayEffectsSO;
 
@@ -92,15 +93,24 @@ namespace CosmicShore.Game
             switch (impactee)
             {
                 case VesselImpactor shipImpactor:
-                    ExecuteEffect(impactee, vesselSkimmerEffectsSO);
+                    // ExecuteEffect(impactee, vesselSkimmerEffectsSO);
+                    if(!DoesEffectExist(skimmerImpactorDataContainer.VesselSkimmerEffects)) return;
+                    foreach (var effect in skimmerImpactorDataContainer.VesselSkimmerEffects)
+                    {
+                        effect.Execute(shipImpactor, this);
+                    }
                     skimmer.ExecuteImpactOnShip(shipImpactor.Ship);       // secondary call
                     break;
 
                 case PrismImpactor prismImpactor:
 
                     var prism = prismImpactor.Prism;
-                    
-                    ExecuteEffect(prismImpactor, skimmerPrismEffectsSO);
+                    if(!DoesEffectExist(skimmerImpactorDataContainer.SkimmerPrismEffects)) return;
+                    foreach (var effect in skimmerImpactorDataContainer.SkimmerPrismEffects)
+                    {
+                        effect.Execute(this, prismImpactor);
+                    }
+                    // ExecuteEffect(prismImpactor, skimmerPrismEffectsSO);
                     skimmer.ExecuteImpactOnPrism(prism);    // secondary call (booster viz, etc.)
                     
                     if (!skimmer.AffectSelf && prism.Team == skimmer.ShipStatus.Team)
@@ -110,7 +120,7 @@ namespace CosmicShore.Game
                     break;
 
                 case ElementalCrystalImpactor elementalCrystalImpactor:
-                    ExecuteEffect(elementalCrystalImpactor, skimmerCrystalEffectsSO);
+                    ExecuteEffect(elementalCrystalImpactor, skimmerImpactorDataContainer.SkimmerCrystalEffects);
                     break;
             }
         }

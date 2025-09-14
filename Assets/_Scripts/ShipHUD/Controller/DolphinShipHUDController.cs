@@ -29,11 +29,11 @@ namespace CosmicShore.Game
             {
                 _maxUnits = Mathf.Max(0.0001f, chargeBoostAction.MaxChargeUnits);
 
-                chargeBoostAction.OnChargeStarted     += u => SetFromUnits(u);
-                chargeBoostAction.OnChargeProgress    += u => SetFromUnits(u);
+                chargeBoostAction.OnChargeStarted     += SetFromUnits;
+                chargeBoostAction.OnChargeProgress    += SetFromUnits;
                 chargeBoostAction.OnChargeEnded       += () => SetSpriteIndex(_stepsMinusOne); 
 
-                chargeBoostAction.OnDischargeStarted  += u => SetFromUnits(u);
+                chargeBoostAction.OnDischargeStarted  += SetFromUnits;
                 chargeBoostAction.OnDischargeProgress += u => SetFromUnits(u);
                 chargeBoostAction.OnDischargeEnded    += () => SetSpriteIndex(0);        
             }

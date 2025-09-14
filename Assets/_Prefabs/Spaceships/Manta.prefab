@@ -2367,14 +2367,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismEffects:
-  - {fileID: 11400000, guid: 78b37cebc40f2b7458b5958004216de5, type: 2}
-  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
-  - {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20, type: 2}
-  vesselOmniCrystalEffects:
-  - {fileID: 11400000, guid: 9b358aeb5b64e324c944c6bb77bb7fa8, type: 2}
-  - {fileID: 11400000, guid: 9e42aec8bd1b90c4c8f115039bcd1716, type: 2}
-  - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: fed903592808c9b49b28dc65e94825fc,
+    type: 2}
 --- !u!114 &6733957700513663958
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3674,6 +3668,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: BlockProximitySkimmer
       objectReference: {fileID: 0}
+    - target: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_RootOrder
@@ -3981,6 +3980,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 3397189760217659071}
     m_Modifications:
+    - target: {fileID: 546241298706549007, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: impactorObject
+      value: 
+      objectReference: {fileID: 8469300474470268824}
     - target: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_Name
@@ -4142,7 +4146,9 @@ PrefabInstance:
       propertyPath: 'trailBlockImpactEffects.Array.data[1]'
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
+    - {fileID: 546241298706549007, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -4191,13 +4197,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1731f6481c2493aa107099246bb1af8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skimmerShipEffectsSO: []
-  skimmerPrismEffectsSO:
-  - {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
-  - {fileID: 11400000, guid: 211cf3f57a286e7499d5cf6237c3768d, type: 2}
-  - {fileID: 11400000, guid: dcce08b9351b97c4eb275508001a5b8e, type: 2}
-  - {fileID: 11400000, guid: a4bf7b501d430854f88502f183aa990c, type: 2}
-  skimmerElementalCrystalEffectsSO: []
+  skimmerImpactorDataContainer: {fileID: 11400000, guid: 911a107d002544e47bc70cef1714a1a6,
+    type: 2}
   skimmerPrismStayEffectsSO: []
   skimmer: {fileID: 874579554510349383}
 --- !u!114 &2722643089655899311

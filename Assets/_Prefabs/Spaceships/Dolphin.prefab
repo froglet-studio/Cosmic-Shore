@@ -2540,16 +2540,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismEffects:
-  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
-  - {fileID: 11400000, guid: f64dc3a063825374387ffbce03d4a06a, type: 2}
-  - {fileID: 11400000, guid: ac862d73e3ada036cb8a50fe6bb55e81, type: 2}
-  - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
-  - {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20, type: 2}
-  vesselOmniCrystalEffects:
-  - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
-  - {fileID: 11400000, guid: 4392889d8d23e384ebeb710b68640072, type: 2}
-  - {fileID: 11400000, guid: 8fdf52ab1fa182748bd5f3a54a309d64, type: 2}
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: 6935af56b01b7664f8fd9e6ced0f2a87,
+    type: 2}
 --- !u!114 &2145686236205056283
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3460,6 +3452,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: skimmerImpactorDataContainer
+      value: 
+      objectReference: {fileID: 11400000, guid: 8ddd0b92fac415d408d83527e9d93d9a,
+        type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: skimmerPrismEffectsSO.Array.size
