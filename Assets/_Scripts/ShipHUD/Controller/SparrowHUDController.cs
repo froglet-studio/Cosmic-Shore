@@ -154,7 +154,7 @@ namespace CosmicShore.Game
         private void Update()
         {
             if (!view) return;
-            if (fireGunExecutor && fireGunExecutor.IsInitialized)
+            if (fireGunExecutor)
                 PaintMissilesFromAmmo01(fireGunExecutor.Ammo01);
         }
 

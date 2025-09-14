@@ -7,25 +7,25 @@ public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
     public delegate void ChangeDriftAltitude(float dotproduct);
     public event ChangeDriftAltitude OnChangeDriftAltitude;
 
-    IShip _ship;
-    IShipStatus _status;
+    IVessel _ship;
+    IVesselStatus _status;
     TrailSpawner _trailSpawner;
     Coroutine _loop;
 
-    public override void Initialize(IShipStatus shipStatus)
+    public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
-        _ship = shipStatus.Ship;
+        _ship = shipStatus.Vessel;
         _trailSpawner = _status.TrailSpawner;
     }
 
-    public void Begin(DriftTrailActionSO so, IShip ship, IShipStatus status)
+    public void Begin(DriftTrailActionSO so, IVessel ship, IVesselStatus status)
     {
         if (_loop != null) return;
         _loop = StartCoroutine(UpdateDotProductCoroutine());
     }
 
-    public void End(DriftTrailActionSO so, IShip ship, IShipStatus status)
+    public void End(DriftTrailActionSO so, IVessel ship, IVesselStatus status)
     {
         if (_loop != null) { StopCoroutine(_loop); _loop = null; }
         _trailSpawner?.SetDotProduct(1f);

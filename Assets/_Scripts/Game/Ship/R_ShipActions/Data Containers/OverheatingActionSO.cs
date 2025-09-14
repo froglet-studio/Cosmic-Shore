@@ -19,7 +19,7 @@ public class OverheatingActionSO : ShipActionSO
     public ElementalFloat HeatDecayRate => heatDecayRate;
     public float OverheatDuration => overheatDuration;
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel ship)
     {
         base.Initialize(ship);
         wrappedAction?.Initialize(ship);

@@ -5,7 +5,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "BoostAction", menuName = "CosmicShore/Actions/Boost")]
 public class BoostActionSO : ShipActionSO
 {
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel ship)
     {
         base.Initialize(ship);
     }

@@ -71,8 +71,8 @@ namespace CosmicShore.Game
         bool Turret { get; set; }
         TrailSpawner TrailSpawner { get; }
         ShipHUDContainer ShipHUDContainer { get; }
-        IShipHUDView ShipHUDView { get; set; }
-        IShipHUDController ShipHUDController { get; }
+        IVesselHUDView ShipHUDView { get; set; }
+        IVesselHUDController ShipHUDController { get; }
         R_ShipCustomization Customization { get; }
         R_ShipActionHandler ActionHandler { get; }
 

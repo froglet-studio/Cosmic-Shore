@@ -18,7 +18,7 @@ namespace CosmicShore.Game
         [SerializeField] RectTransform contentTransform;
 
         ShipHUDView   _activeInstance;
-        IShipHUDView _activeHUDView;
+        IVesselHUDView _activeHUDView;
 
         public void InitializeView(IVesselStatus vesselStatus, VesselClassType vesselClass)
         {
@@ -45,7 +45,7 @@ namespace CosmicShore.Game
             // _activeHUDView = _activeInstance;
             if (_activeHUDView == null)
             {
-                Debug.LogWarning($"[ShipHUDContainer] Spawned HUD for {vesselClass} has no IShipHUDView.");
+                Debug.LogWarning($"[ShipHUDContainer] Spawned HUD for {vesselClass} has no IVesselHUDView.");
                 return;
             }
             vesselStatus.ShipHudView = _activeHUDView as ShipHUDView;
@@ -53,7 +53,7 @@ namespace CosmicShore.Game
             var controller = vesselStatus.ShipHUDController;
             var baseView = _activeHUDView as ShipHUDView;
             if (baseView == null)
-                Debug.LogWarning($"[ShipHUDContainer] IShipHUDView is not an R_ShipHUDView; controllers may expect that type.");
+                Debug.LogWarning($"[ShipHUDContainer] IVesselHUDView is not an R_ShipHUDView; controllers may expect that type.");
 
             controller.Initialize(vesselStatus, baseView);
            
@@ -70,6 +70,6 @@ namespace CosmicShore.Game
         }
 
         /// <summary>Returns the currently active HUD view (if any).</summary>
-        public IShipHUDView GetActiveView() => _activeHUDView;
+        public IVesselHUDView GetActiveView() => _activeHUDView;
     }
 }

@@ -3,5 +3,5 @@ using UnityEngine;
 
 public abstract class ShipActionExecutorBase : MonoBehaviour
 {
-    public virtual void Initialize(IShipStatus shipStatus) { }
+    public virtual void Initialize(IVesselStatus shipStatus) { }
 }

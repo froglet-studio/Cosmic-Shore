@@ -11,7 +11,7 @@ public class ActionExecutorRegistry : MonoBehaviour
 
     readonly Dictionary<Type, ShipActionExecutorBase> _byType = new();
 
-    public void InitializeAll(IShipStatus status)
+    public void InitializeAll(IVesselStatus status)
     {
         _byType.Clear();
         foreach (var exec in _executors.Where(exec => exec))

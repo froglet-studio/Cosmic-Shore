@@ -7,19 +7,19 @@ public class DriftActionSO : ShipActionSO
 
     public override void StartAction(ActionExecutorRegistry execs)
     {
-        var t = Ship.ShipStatus.ShipTransformer;
+        var t = Ship.VesselStatus.VesselTransformer;
         t.PitchScaler *= Mult;
         t.YawScaler   *= Mult;
         t.RollScaler  *= Mult;
-        Ship.ShipStatus.Drifting = true;
+        Ship.VesselStatus.Drifting = true;
     }
 
     public override void StopAction(ActionExecutorRegistry execs)
     {
-        var t = Ship.ShipStatus.ShipTransformer;
+        var t = Ship.VesselStatus.VesselTransformer;
         t.PitchScaler /= Mult;
         t.YawScaler   /= Mult;
         t.RollScaler  /= Mult;
-        Ship.ShipStatus.Drifting = false;
+        Ship.VesselStatus.Drifting = false;
     }
 }

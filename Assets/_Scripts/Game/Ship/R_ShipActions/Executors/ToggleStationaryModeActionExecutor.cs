@@ -8,19 +8,19 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
     [SerializeField] private SeedAssemblerConfigurator seedAssembler;
     [SerializeField] private TrailSpawner trailSpawner;
 
-    IShip _ship;
-    IShipStatus _status;
+    IVessel _ship;
+    IVesselStatus _status;
 
-    public override void Initialize(IShipStatus shipStatus)
+    public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
-        _ship = shipStatus.Ship;
+        _ship = shipStatus.Vessel;
 
         if (seedAssembler != null)
             seedAssembler.Initialize(_ship);
     }
 
-    public void Toggle(ToggleStationaryModeActionSO so, IShip ship, IShipStatus status)
+    public void Toggle(ToggleStationaryModeActionSO so, IVessel ship, IVesselStatus status)
     {
         status.IsStationary = !status.IsStationary;
         bool isOn = status.IsStationary;

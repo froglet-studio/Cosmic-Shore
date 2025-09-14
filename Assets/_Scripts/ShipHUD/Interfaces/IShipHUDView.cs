@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public interface IShipHUDView
+    public interface IVesselHUDView
     {
     }
 }

@@ -8,7 +8,7 @@ public static class ElementalFloatBinder
     static readonly BindingFlags BF = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     static readonly System.Collections.Generic.Dictionary<Type, FieldInfo[]> Cache = new();
 
-    public static void BindAndClone(object target, IShip ship, string prefix)
+    public static void BindAndClone(object target, IVessel ship, string prefix)
     {
         if (target == null || ship == null) return;
         var t = target.GetType();

@@ -5,11 +5,11 @@ using CosmicShore.Game;
 
 public abstract class ShipActionSO : ScriptableObject
 {
-    public IShip Ship { get; private set; }
-    protected IShipStatus ShipStatus => Ship?.ShipStatus;
+    public IVessel Ship { get; private set; }
+    protected IVesselStatus ShipStatus => Ship?.VesselStatus;
     protected ResourceSystem ResourceSystem => ShipStatus?.ResourceSystem;
     
-    public virtual void Initialize(IShip ship)
+    public virtual void Initialize(IVessel ship)
     {
         Ship = ship;
         ElementalFloatBinder.BindAndClone(this, ship, GetType().Name);

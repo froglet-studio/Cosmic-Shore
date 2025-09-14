@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class ShipHUDController : MonoBehaviour, IShipHUDController
+    public class ShipHUDController : MonoBehaviour, IVesselHUDController
     {
         private R_ShipActionHandler _actions;
         private ShipHUDView _view;

@@ -12,11 +12,11 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     [SerializeField] Transform[] muzzles;
     [SerializeField] PoolManager projectilePool; // if your Gun needs it
 
-    IShipStatus _status;
+    IVesselStatus _status;
     ResourceSystem _resources;
     Coroutine _loop;
 
-    public override void Initialize(IShipStatus shipStatus)
+    public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
         _resources = shipStatus.ResourceSystem;

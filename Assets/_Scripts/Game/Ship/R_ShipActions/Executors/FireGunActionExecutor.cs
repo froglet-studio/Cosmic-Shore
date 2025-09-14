@@ -12,7 +12,7 @@ public  class FireGunActionExecutor : ShipActionExecutorBase
     [SerializeField] Gun gun;
     [SerializeField] Transform projectileContainer;
 
-    IShipStatus _status;
+    IVesselStatus _status;
     ResourceSystem _resources;
     FireGunActionSO _soRef;
     public float Ammo01
@@ -33,7 +33,7 @@ public  class FireGunActionExecutor : ShipActionExecutorBase
     }
 
 
-    public override void Initialize(IShipStatus shipStatus)
+    public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
         _resources = shipStatus.ResourceSystem;
@@ -46,7 +46,7 @@ public  class FireGunActionExecutor : ShipActionExecutorBase
 
     }
 
-    public void Fire(FireGunActionSO so, IShipStatus status)
+    public void Fire(FireGunActionSO so, IVesselStatus status)
     {
         if (_resources.Resources[so.AmmoIndex].CurrentAmount < so.AmmoCost)
             return;

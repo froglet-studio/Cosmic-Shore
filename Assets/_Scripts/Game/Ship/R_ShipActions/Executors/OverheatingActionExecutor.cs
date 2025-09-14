@@ -11,7 +11,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     public event Action OnHeatDecayStarted;
     public event Action OnHeatDecayCompleted;
 
-    IShipStatus _status;
+    IVesselStatus _status;
     ResourceSystem _resources;
     Resource _heatResource;
     ActionExecutorRegistry _registry;
@@ -19,7 +19,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     Coroutine _heatRoutine;
     bool _isOverheating;
 
-    public override void Initialize(IShipStatus shipStatus)
+    public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
         _resources = shipStatus.ResourceSystem;
@@ -31,7 +31,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
 
     public bool IsOverheating => _isOverheating;
 
-    public void StartOverheat(OverheatingActionSO so, IShipStatus status, ActionExecutorRegistry registry)
+    public void StartOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
     {
         _registry = registry;
         if (_isOverheating) return;
@@ -44,7 +44,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
         _heatRoutine = StartCoroutine(BuildHeatRoutine(so));
     }
 
-    public void StopOverheat(OverheatingActionSO so, IShipStatus status, ActionExecutorRegistry registry)
+    public void StopOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
     {
         _registry = registry;
         if (_isOverheating) return;

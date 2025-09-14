@@ -8,12 +8,12 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
 
     bool _redirectActive;
 
-    public override void Initialize(IShipStatus shipStatus)
+    public override void Initialize(IVesselStatus shipStatus)
     {
         // no special init needed; bus is scene ref
     }
 
-    public void Toggle(ShardToggleActionSO so, IShip ship, IShipStatus status)
+    public void Toggle(ShardToggleActionSO so, IVessel ship, IVesselStatus status)
     {
         if (shardFieldBus == null)
         {

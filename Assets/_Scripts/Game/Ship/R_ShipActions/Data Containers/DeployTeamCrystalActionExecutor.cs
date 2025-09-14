@@ -13,16 +13,16 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
     Coroutine _followRoutine;
     float _lastUseTime = -Mathf.Infinity;
 
-    IShip _ship;
-    IShipStatus _status;
+    IVessel _ship;
+    IVesselStatus _status;
 
-    public override void Initialize(IShipStatus shipStatus)
+    public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
-        _ship = shipStatus.Ship;
+        _ship = shipStatus.Vessel;
     }
 
-    public void Begin(DeployTeamCrystalActionSO so, IShip ship, IShipStatus status)
+    public void Begin(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
     {
         if (Time.time - _lastUseTime < so.Cooldown)
         {
@@ -40,7 +40,7 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
         _followRoutine = StartCoroutine(FollowShip(so, ship));
     }
 
-    public void Commit(DeployTeamCrystalActionSO so, IShip ship, IShipStatus status)
+    public void Commit(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
     {
         if (_ghostCrystal == null) return;
 
@@ -53,7 +53,7 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
         Debug.Log($"[DeployTeamCrystal] Crystal deployed. Cooldown started ({so.Cooldown}s)");
     }
 
-    Vector3 GetSpawnPoint(DeployTeamCrystalActionSO so, IShip ship, IShipStatus status)
+    Vector3 GetSpawnPoint(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
     {
         Vector3 pos = ship.Transform.position + ship.Transform.forward * so.ForwardOffset;
 
@@ -66,7 +66,7 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
         return pos;
     }
 
-    IEnumerator FollowShip(DeployTeamCrystalActionSO so, IShip ship)
+    IEnumerator FollowShip(DeployTeamCrystalActionSO so, IVessel ship)
     {
         while (_ghostCrystal != null)
         {
@@ -91,7 +91,7 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
         }
     }
 
-    void ActivateCrystal(Crystal cr, IShipStatus status)
+    void ActivateCrystal(Crystal cr, IVesselStatus status)
     {
         cr.OwnTeam = status.Team;
         foreach (var col in cr.GetComponentsInChildren<Collider>(true)) col.enabled = true;
