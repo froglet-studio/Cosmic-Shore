@@ -10,7 +10,7 @@ namespace CosmicShore.Game
 
         public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
         {
-            var shipStatus = impactor?.Ship?.ShipStatus;
+            var shipStatus = impactor?.Vessel?.VesselStatus;
             if (shipStatus == null) return;
 
             var t = shipStatus.ShipTransform;
