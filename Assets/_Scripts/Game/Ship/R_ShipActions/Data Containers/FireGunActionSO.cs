@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "FireGunAction", menuName = "CosmicShore/Actions/Fire Gun")]
+[CreateAssetMenu(fileName = "FireGunAction", menuName = "ScriptableObjects/Vessel Actions/Fire Gun")]
 public class FireGunActionSO : ShipActionSO
 {
     [Header("Config")]

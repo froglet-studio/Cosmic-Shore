@@ -55,7 +55,6 @@ public class ChargeBoostAction : ShipAction
 
         _charging = true;
 
-        // preview multiplier (optional), but ship speed shouldn’t use it yet
         var start = GetUnits();
         ShipStatus.ChargedBoostDischarging = false;
         ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(start);
@@ -92,7 +91,6 @@ public class ChargeBoostAction : ShipAction
             AddUnits(+perTick);
             float v = GetUnits();
 
-            // preview value (UI can also use events)
             ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(v);
             OnChargeProgress?.Invoke(v);
 
@@ -103,7 +101,6 @@ public class ChargeBoostAction : ShipAction
 
         _charging = false;
 
-        // snap to full for determinism
         SetUnits(maxNormalizedCharge);
         ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(maxNormalizedCharge);
         OnChargeEnded?.Invoke();

@@ -2,7 +2,7 @@
 using CosmicShore.Game;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "BoostAction", menuName = "CosmicShore/Actions/Boost")]
+[CreateAssetMenu(fileName = "BoostAction", menuName = "ScriptableObjects/Vessel Actions/Boost")]
 public class BoostActionSO : ShipActionSO
 {
     public override void Initialize(IShip ship)

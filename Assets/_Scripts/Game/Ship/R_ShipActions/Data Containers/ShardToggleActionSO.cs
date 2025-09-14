@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "ShardToggleAction", menuName = "CosmicShore/Actions/Shard Toggle")]
+[CreateAssetMenu(fileName = "ShardToggleAction", menuName = "ScriptableObjects/Vessel Actions/Shard Toggle")]
 public class ShardToggleActionSO : ShipActionSO
 {
     [Header("Mass Centroids Settings")]

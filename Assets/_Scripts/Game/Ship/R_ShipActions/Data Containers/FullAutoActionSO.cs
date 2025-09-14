@@ -1,8 +1,7 @@
-﻿// FullAutoActionSO.cs
-using CosmicShore.Game.Projectiles;
+﻿using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
-[CreateAssetMenu(fileName="FullAutoAction", menuName="CosmicShore/Actions/Full Auto")]
+[CreateAssetMenu(fileName="FullAutoAction", menuName="ScriptableObjects/Vessel Actions/Full Auto")]
 public class FullAutoActionSO : ShipActionSO
 {
     [Header("Config")]
