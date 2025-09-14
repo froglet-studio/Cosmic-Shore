@@ -25,7 +25,11 @@ namespace CosmicShore.Game
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            if (prismImpactee.Prism.Team == Teams.Jade) return;
+            if (prismImpactee.Prism.Team == Teams.Jade)
+            {
+                prismImpactee.Prism.DeactivateShields();
+                return;
+            }
 
             // cooldown gate
             if (cooldownTimers.TryGetValue(impactor, out var cooldownEnd) && Time.time < cooldownEnd)

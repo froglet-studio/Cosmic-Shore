@@ -9,6 +9,7 @@ namespace CosmicShore.Game
         [SerializeField] float inertia = 70f;   // global scalar you can tune per effect
         [SerializeField] private Vector3 overrideCourse;
         [SerializeField] private float overrideSpeed;
+        
         public override void Execute(ProjectileImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = impactor.Projectile.VesselStatus;

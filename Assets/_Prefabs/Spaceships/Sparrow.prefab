@@ -1865,12 +1865,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismEffects:
-  - {fileID: 11400000, guid: ac862d73e3ada036cb8a50fe6bb55e81, type: 2}
-  - {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20, type: 2}
-  vesselOmniCrystalEffects:
-  - {fileID: 11400000, guid: dcf9d69a52b65c1438af3861b7c89e07, type: 2}
-  - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: bd2b4a654fb302e47a23cf303280df2d,
+    type: 2}
 --- !u!114 &1002316194365813701
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1986,7 +1982,7 @@ MonoBehaviour:
   - prefab: {fileID: 7877928849292311340, guid: 1bdcea9e9329dd141af7ab874a4d31a2,
       type: 3}
     size: 25
-  - prefab: {fileID: 7877928849292311340, guid: d4ba20cadabe24e498199529c9df5c45,
+  - prefab: {fileID: 7877928849292311340, guid: 1bdcea9e9329dd141af7ab874a4d31a2,
       type: 3}
     size: 25
 --- !u!1 &7576075976379099439
@@ -3193,7 +3189,7 @@ PrefabInstance:
     - target: {fileID: 604172407275932085, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2624193244562230860, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}

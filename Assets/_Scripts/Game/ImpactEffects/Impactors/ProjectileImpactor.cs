@@ -8,12 +8,16 @@ namespace CosmicShore.Game
     {
         // [SerializeField, RequireInterface(typeof(IImpactEffect))]
         // ScriptableObject[] projectileShipEffectsSO;
-        
+        [SerializeField]
         VesselProjectileEffectSO[] projectileShipEffects;
+        [SerializeField]
         ProjectilePrismEffectSO[]  projectilePrismEffects; 
+        [SerializeField]
         ProjectileMineEffectSO[] projectileMineEffects;
-        
+        [SerializeField]
         ProjectileEndEffectSO[] projectileEndEffects;
+
+        [SerializeField] private ProjectileImpactorDataContainerSO projectileImpactorDataContainer;
 
         public Projectile Projectile { get; private set; }
         
@@ -41,8 +45,8 @@ namespace CosmicShore.Game
                     if (Projectile.DisallowImpactOnVessel(shipImpactee.Vessel.VesselStatus.Team))
                         break;
                     // ExecuteEffect(impactee, projectileShipEffects);
-                    if(!DoesEffectExist(projectileShipEffects)) return;
-                    foreach (var effect in projectileShipEffects)
+                    if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileShipEffects)) return;
+                    foreach (var effect in projectileImpactorDataContainer.ProjectileShipEffects)
                     {
                         effect.Execute(shipImpactee,this);
                     }
@@ -52,10 +56,19 @@ namespace CosmicShore.Game
                     if (Projectile.DisallowImpactOnPrism(prismImpactee.Prism.Team))
                         break;
                     // ExecuteEffect(impactee, projectilePrismEffects);
-                    if(!DoesEffectExist(projectilePrismEffects)) return;
-                    foreach (var effect in projectilePrismEffects)
+                    if(!DoesEffectExist(projectileImpactorDataContainer.ProjectilePrismEffects)) return;
+                    foreach (var effect in projectileImpactorDataContainer.ProjectilePrismEffects)
                     {
                         effect.Execute(this, prismImpactee);
+                    }
+                    break;
+                case MineImpactor mineImpactee:
+        
+                    // ExecuteEffect(impactee, projectilePrismEffects);
+                    if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileMineEffect)) return;
+                    foreach (var effect in projectileImpactorDataContainer.ProjectileMineEffect)
+                    {
+                        effect.Execute(this, mineImpactee);
                     }
                     break;
             }

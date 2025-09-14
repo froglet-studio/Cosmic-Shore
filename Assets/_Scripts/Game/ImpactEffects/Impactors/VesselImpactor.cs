@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -7,11 +6,13 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IVessel))]
     public class VesselImpactor : ImpactorBase
     {
-        [FormerlySerializedAs("shipPrismEffects")] [SerializeField]
-        VesselPrismEffectSO[] vesselPrismEffects;
-        
-        [FormerlySerializedAs("vesselOmniCrystalEffects")] [FormerlySerializedAs("shipOmniCrystalEffects")] [SerializeField]
-        VesselCrystalEffectSO[] vesselCrystalEffects;
+        // [FormerlySerializedAs("shipPrismEffects")] [SerializeField]
+        // VesselPrismEffectSO[] vesselPrismEffects;
+        //
+        // [FormerlySerializedAs("vesselOmniCrystalEffects")] [FormerlySerializedAs("shipOmniCrystalEffects")] [SerializeField]
+        // VesselCrystalEffectSO[] vesselCrystalEffects;
+
+        [SerializeField] VesselImpactorDataContainerSO vesselImpactorDataContainerSO;
         
         public IVessel Vessel { get; private set; }
         
@@ -26,16 +27,16 @@ namespace CosmicShore.Game
             {
                 case PrismImpactor prismImpactee:
                    // ExecuteEffect(impactee, vesselPrismEffects);
-                   if(!DoesEffectExist(vesselPrismEffects)) return;
-                   foreach (var effect in vesselPrismEffects)
+                   if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
+                   foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
                    {
                        effect.Execute(this, prismImpactee);
                    }
                    break;
                 case OmniCrystalImpactor omniCrystalImpactee:
                     //ExecuteEffect(impactee, vesselCrystalEffects);
-                    if(!DoesEffectExist(vesselCrystalEffects)) return;
-                    foreach (var effect in vesselCrystalEffects)
+                    if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
+                    foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
                     {
                         effect.Execute(this, omniCrystalImpactee);
                     }

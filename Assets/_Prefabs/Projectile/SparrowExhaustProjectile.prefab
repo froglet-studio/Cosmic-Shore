@@ -154,14 +154,6 @@ MonoBehaviour:
   Velocity: {x: 0, y: 0, z: 0}
   InitialScale: {x: 0, y: 0, z: 0}
   projectileImpactor: {fileID: 92107181723261972}
-  trailBlockImpactEffects: 
-  _trailBlockImpactEffects: []
-  shipImpactEffects: 
-  _shipImpactEffects: []
-  crystalImpactEffects: 
-  _crystalImpactEffects: []
-  endEffects: 
-  _endEffects: []
   ProjectileTime: 0
   spike: 0
   growthRate: 1
@@ -179,14 +171,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectileShipEffectsSO:
-  - {fileID: 11400000, guid: d193028d71934664f819e86ecadbfb7e, type: 2}
-  - {fileID: 11400000, guid: afd81f4d056931a47a8fc5c5df243996, type: 2}
-  - {fileID: 11400000, guid: 4b6149c739dec7941b21f05fb8b0f6c4, type: 2}
-  projectilePrismEffectsSO:
+  projectileShipEffects:
+  - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
+  projectilePrismEffects:
   - {fileID: 11400000, guid: 2564c4fefc3011b43a28e573899e7889, type: 2}
-  projectileFakeCrystalEffectsSO: []
-  projectileEndEffectsSO: []
+  projectileMineEffects:
+  - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}
+  projectileEndEffects: []
 --- !u!114 &7261593271093439913
 MonoBehaviour:
   m_ObjectHideFlags: 0
