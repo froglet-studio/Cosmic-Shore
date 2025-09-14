@@ -9,9 +9,9 @@ namespace CosmicShore.Game
         [Header("View binding")]
         [SerializeField] private SparrowHUDView view;
 
-        [Header("Actions")]
-        [SerializeField] private FireGunAction fireGunAction;
-        [SerializeField] private OverheatingAction overheatingAction;
+        [Header("Executors")]
+        [SerializeField] private FireGunActionExecutor fireGunExecutor;
+        [SerializeField] private OverheatingActionExecutor overheatingExecutor;
 
         [Header("Colors")]
         [SerializeField] private Color boostNormalColor;
@@ -28,27 +28,29 @@ namespace CosmicShore.Game
         {
             base.Initialize(shipStatus, baseView);
             view = view != null ? view : baseView as SparrowHUDView;
-            
-            if(view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
 
-            if (overheatingAction != null)
+            if (view != null && !view.isActiveAndEnabled) 
+                view.gameObject.SetActive(true);
+
+            if (overheatingExecutor != null)
             {
-                overheatingAction.OnHeatBuildStarted += OnHeatBuildStarted;
-                overheatingAction.OnOverheated += OnOverheated;
-                overheatingAction.OnHeatDecayStarted += OnHeatDecayStarted;
-                overheatingAction.OnHeatDecayCompleted += OnHeatDecayCompleted;
+                overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
+                overheatingExecutor.OnOverheated         += OnOverheated;
+                overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
+                overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
+
+                ApplyBoostVisual(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
             }
-            ApplyBoostVisual(overheatingAction ? overheatingAction.Heat01 : 0f, overheated: overheatingAction && overheatingAction.IsOverheating);
         }
 
         private void OnDestroy()
         {
-            if (overheatingAction != null)
+            if (overheatingExecutor != null)
             {
-                overheatingAction.OnHeatBuildStarted   -= OnHeatBuildStarted;
-                overheatingAction.OnOverheated         -= OnOverheated;
-                overheatingAction.OnHeatDecayStarted   -= OnHeatDecayStarted;
-                overheatingAction.OnHeatDecayCompleted -= OnHeatDecayCompleted;
+                overheatingExecutor.OnHeatBuildStarted   -= OnHeatBuildStarted;
+                overheatingExecutor.OnOverheated         -= OnOverheated;
+                overheatingExecutor.OnHeatDecayStarted   -= OnHeatDecayStarted;
+                overheatingExecutor.OnHeatDecayCompleted -= OnHeatDecayCompleted;
             }
             StopHeatFillLoop();
             StopDrainLoop();
@@ -98,15 +100,15 @@ namespace CosmicShore.Game
         IEnumerator HeatFillRoutine()
         {
             var img = view?.boostFill;
-            if (img == null || overheatingAction == null) yield break;
+            if (img == null || overheatingExecutor == null) yield break;
 
             while (true)
             {
-                float heat = Mathf.Clamp01(overheatingAction.Heat01);
-                bool  hot  = overheatingAction.IsOverheating;
+                float heat = Mathf.Clamp01(overheatingExecutor.Heat01);
+                bool  hot  = overheatingExecutor.IsOverheating;
 
                 ApplyBoostVisual(heat, hot);
-                yield return new WaitForSeconds(0.05f); 
+                yield return new WaitForSeconds(0.05f);
             }
         }
 
@@ -134,7 +136,7 @@ namespace CosmicShore.Game
             {
                 float next = Mathf.MoveTowards(img.fillAmount, 0f, drainSpeed * Time.deltaTime);
                 ApplyBoostVisual(next, overheated: false);
-                yield return null; 
+                yield return null;
             }
             ApplyBoostVisual(0f, overheated: false);
         }
@@ -148,12 +150,12 @@ namespace CosmicShore.Game
                 ? overheatingColor
                 : Mathf.Approximately(shown01, 1f) ? boostFullColor : boostNormalColor;
         }
-        
+
         private void Update()
         {
             if (view == null) return;
-            if (fireGunAction != null)
-                PaintMissilesFromAmmo01(fireGunAction.Ammo01);
+            if (fireGunExecutor != null)
+                PaintMissilesFromAmmo01(fireGunExecutor.Ammo01);
         }
 
         private void PaintMissilesFromAmmo01(float ammo01)
