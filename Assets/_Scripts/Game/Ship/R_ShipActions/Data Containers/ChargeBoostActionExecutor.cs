@@ -14,19 +14,19 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
     public event Action<float> OnDischargeProgress;
     public event Action OnDischargeEnded;
 
-    IShipStatus _status;
+    IVesselStatus _status;
     ResourceSystem _resources;
     Coroutine _loop;
     bool _charging;
     float _cooldownUntilUtc;
 
-    public override void Initialize(IShipStatus shipStatus)
+    public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
         _resources = shipStatus.ResourceSystem;
     }
     
-    public void BeginCharge(ChargeBoostActionSO so, IShipStatus status)
+    public void BeginCharge(ChargeBoostActionSO so, IVesselStatus status)
     {
         if (Time.unscaledTime < _cooldownUntilUtc)
         {
@@ -47,7 +47,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         _loop = StartCoroutine(ChargeRoutine(so));
     }
 
-    public void BeginDischarge(ChargeBoostActionSO so, IShipStatus status)
+    public void BeginDischarge(ChargeBoostActionSO so, IVesselStatus status)
     {
         StopRunning();
         _charging = false;
