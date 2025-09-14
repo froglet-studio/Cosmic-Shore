@@ -1,0 +1,25 @@
+﻿using UnityEngine;
+
+[CreateAssetMenu(fileName = "DriftAction", menuName = "CosmicShore/Actions/Drift")]
+public class DriftActionSO : ShipActionSO
+{
+    const float Mult = 1.5f;
+
+    public override void StartAction(ActionExecutorRegistry execs)
+    {
+        var t = Ship.ShipStatus.ShipTransformer;
+        t.PitchScaler *= Mult;
+        t.YawScaler   *= Mult;
+        t.RollScaler  *= Mult;
+        Ship.ShipStatus.Drifting = true;
+    }
+
+    public override void StopAction(ActionExecutorRegistry execs)
+    {
+        var t = Ship.ShipStatus.ShipTransformer;
+        t.PitchScaler /= Mult;
+        t.YawScaler   /= Mult;
+        t.RollScaler  /= Mult;
+        Ship.ShipStatus.Drifting = false;
+    }
+}

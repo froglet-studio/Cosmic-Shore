@@ -12,7 +12,7 @@ namespace CosmicShore.Game
     {
         public static void InitializeShipControlActions(IVesselStatus vesselStatus,
             List<InputEventShipActionMapping> inputEventShipActions,
-            Dictionary<InputEvents, List<ShipAction>> shipControlActions)
+            Dictionary<InputEvents, List<ShipActionSO>> shipControlActions)
         {
             foreach (var inputEventShipAction in inputEventShipActions)
                 if (!shipControlActions.ContainsKey(inputEventShipAction.InputEvent))
@@ -26,7 +26,7 @@ namespace CosmicShore.Game
 
         public static void InitializeClassResourceActions(IVesselStatus vesselStatus,
             List<ResourceEventShipActionMapping> resourceEventShipActionMappings,
-            Dictionary<ResourceEvents, List<ShipAction>> classResourceActions)
+            Dictionary<ResourceEvents, List<ShipActionSO>> classResourceActions)
         {
             foreach (var resourceEventClassAction in resourceEventShipActionMappings)
                 if (!classResourceActions.ContainsKey(resourceEventClassAction.ResourceEvent))

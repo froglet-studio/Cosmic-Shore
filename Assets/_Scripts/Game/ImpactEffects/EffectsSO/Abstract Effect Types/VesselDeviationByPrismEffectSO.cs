@@ -13,6 +13,8 @@ namespace CosmicShore.Game
             var shipStatus = impactor?.Vessel?.VesselStatus;
             if (shipStatus == null) return;
 
+            if(shipStatus.IsStationary) return;
+            
             var t = shipStatus.ShipTransform;
             if (t == null) return;
 

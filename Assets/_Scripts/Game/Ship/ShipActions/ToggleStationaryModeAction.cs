@@ -52,9 +52,7 @@ public class ToggleStationaryModeAction : ShipAction
             else      Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
         }
     }
-
-
-
+    
     public override void StopAction()
     {
 
