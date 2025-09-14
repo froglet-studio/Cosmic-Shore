@@ -23,11 +23,11 @@ namespace CosmicShore.App.UI.Views
         {
             for (var i = 0; i < ShipSelectionGrid.childCount; i++)
             {
-                if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i}");
+                if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Vessel Select List: {i}");
                 var shipSelectionRow = ShipSelectionGrid.transform.GetChild(i);
                 for (var j = 0; j < shipSelectionRow.transform.childCount; j++)
                 {
-                    if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
+                    if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Vessel Select List: {i},{j}");
                     var selectionIndex = (i * 3) + j;
 
                     // TODO: convert this to take a CaptainCard prefab and instantiate one rather than using the placeholder objects
@@ -36,7 +36,7 @@ namespace CosmicShore.App.UI.Views
                     {
                         var ship = Models[selectionIndex] as SO_Ship;
 
-                        if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
+                        if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Vessel Select List: {ship.Name}");
 
                         shipSelection.SetActive(true);
                         if (SelectedModel as SO_Ship == ship)

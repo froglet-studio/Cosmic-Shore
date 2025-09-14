@@ -14,11 +14,11 @@ namespace CosmicShore.Game.Animation
         [SerializeField] protected float lerpAmount = 2f;
         [SerializeField] protected float smallLerpAmount = .7f;
 
-        protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
-        protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
+        protected List<Transform> Transforms = new(); // TODO: use this to populate the vessel geometries on vessel.cs
+        protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the vessel geometries on vessel.cs
 
         protected IInputStatus _inputStatus;
-        protected IShipStatus _shipStatus;
+        protected IVesselStatus VesselStatus;
 
 
         bool _isInitialized;
@@ -29,15 +29,15 @@ namespace CosmicShore.Game.Animation
                 return;
 
             if (_inputStatus.Idle) Idle();
-            else if (_shipStatus.SingleStickControls) PerformShipPuppetry(_inputStatus.EasedLeftJoystickPosition.y, _inputStatus.EasedLeftJoystickPosition.x, 0, 0);
+            else if (VesselStatus.SingleStickControls) PerformShipPuppetry(_inputStatus.EasedLeftJoystickPosition.y, _inputStatus.EasedLeftJoystickPosition.x, 0, 0);
             else PerformShipPuppetry(_inputStatus.YSum, _inputStatus.XSum, _inputStatus.YDiff, _inputStatus.XDiff);
         }
 
-        public virtual void Initialize(IShipStatus shipStatus)
+        public virtual void Initialize(IVesselStatus vesselStatus)
         {
-            _shipStatus = shipStatus;
-            _inputStatus = shipStatus.InputStatus;
-            _shipStatus.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
+            VesselStatus = vesselStatus;
+            _inputStatus = vesselStatus.InputStatus;
+            VesselStatus.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
 
             AssignTransforms();
 
@@ -45,7 +45,7 @@ namespace CosmicShore.Game.Animation
         }
         protected abstract void AssignTransforms();
 
-        // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
+        // Vessel animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
         protected abstract void PerformShipPuppetry(float Pitch, float Yaw, float Roll, float Throttle);
         protected virtual void Idle()
         {

@@ -12,17 +12,17 @@ public class ApplyRotationAction : ShipAction
     {
         if (pitch)
         {
-            Ship.ShipStatus.ShipTransformer.ApplyRotation(rotationAmount, Ship.Transform.right);
+            Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.right);
         }
         
         if (yaw)
         {
-            Ship.ShipStatus.ShipTransformer.ApplyRotation(rotationAmount, Ship.Transform.up);
+            Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.up);
         }
         
         if (roll)
         {
-            Ship.ShipStatus.ShipTransformer.ApplyRotation(rotationAmount, Ship.Transform.forward);
+            Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.forward);
         }
     }
 

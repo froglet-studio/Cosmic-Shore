@@ -13,18 +13,18 @@ public class ToggleStationaryModeAction : ShipAction
     [SerializeField] private SeedAssemblerConfigurator seedAssembler;
     
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
+        base.Initialize(vessel);
 
         if (seedAssembler != null)
-            seedAssembler.Initialize(Ship);
+            seedAssembler.Initialize(Vessel);
     }
 
     public override void StartAction()
     {
-        ShipStatus.IsStationary = !ShipStatus.IsStationary;
-        var isOn = ShipStatus.IsStationary;
+        VesselStatus.IsStationary = !VesselStatus.IsStationary;
+        var isOn = VesselStatus.IsStationary;
 
         if (mode == Mode.Serpent && seedAssembler != null)
         {
@@ -32,24 +32,24 @@ public class ToggleStationaryModeAction : ShipAction
             {
                 if (seedAssembler.StartSeed())
                 {
-                    Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+                    Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
                     seedAssembler.BeginBonding();
                 }
                 else
                 {
-                    Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+                    Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
                 }
             }
             else
             {
-                Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
+                Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
                 seedAssembler.StopSeedCompletely(); 
             }
         }
         else
         {
-            if (isOn) Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
-            else      Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
+            if (isOn) Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            else      Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
         }
     }
 

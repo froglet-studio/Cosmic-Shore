@@ -5,13 +5,13 @@ namespace CosmicShore.Game.Arcade
 {
     public class BotDuelMiniGame : MiniGame 
     {
-        [SerializeField] R_Player hostilePilot;
+        [SerializeField] Player hostilePilot;
         protected override void Start()
         {
             base.Start();
 
-            // TODO - set the hostile pilot's ship and AI skill level based on the intensity level
-            // hostilePilot.Ship.ShipStatus.AIPilot.SkillLevel = .4f + IntensityLevel*.15f;
+            // TODO - set the hostile pilot's vessel and AI skill level based on the intensity level
+            // hostilePilot.Vessel.VesselStatus.AIPilot.SkillLevel = .4f + IntensityLevel*.15f;
         }
     }
 }

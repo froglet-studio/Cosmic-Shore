@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// Utility component for applying ship specific customisation such as
+    /// Utility component for applying vessel specific customisation such as
     /// materials and cosmetic settings.
     /// </summary>
     public class R_ShipCustomization : MonoBehaviour
@@ -12,36 +12,36 @@ namespace CosmicShore.Game
         [SerializeField]
         List<GameObject> _shipGeometries;
 
-        IShipStatus _shipStatus;
+        IVesselStatus vesselStatus;
 
-        public void Initialize(IShipStatus shipStatus)
+        public void Initialize(IVesselStatus vesselStatus)
         {
-            if (!TryPassNullChecks(shipStatus))
+            if (!TryPassNullChecks(vesselStatus))
                 return;
 
-            _shipStatus = shipStatus;
+            this.vesselStatus = vesselStatus;
 
-            if (_shipStatus.ShipGeometries == null || _shipStatus.ShipGeometries.Count == 0)
-                _shipStatus.ShipGeometries = _shipGeometries;
+            if (this.vesselStatus.ShipGeometries == null || this.vesselStatus.ShipGeometries.Count == 0)
+                this.vesselStatus.ShipGeometries = _shipGeometries;
             else
-                _shipStatus.ShipGeometries.AddRange(_shipGeometries);
+                this.vesselStatus.ShipGeometries.AddRange(_shipGeometries);
 
-            ApplyShipMaterial(_shipStatus.ShipMaterial);
+            ApplyShipMaterial(this.vesselStatus.ShipMaterial);
         }
 
         void ApplyShipMaterial(Material material) =>
             ShipHelper.ApplyShipMaterial(material, _shipGeometries);
 
-        bool TryPassNullChecks(IShipStatus shipStatus)
+        bool TryPassNullChecks(IVesselStatus vesselStatus)
         {
-            if (shipStatus == null)
+            if (vesselStatus == null)
             {
-                Debug.LogError("ShipStatus is null. Cannot initialize R_ShipCustomization.");
+                Debug.LogError("VesselStatus is null. Cannot initialize R_ShipCustomization.");
                 return false;
             }
             if (_shipGeometries == null || _shipGeometries.Count == 0)
             {
-                Debug.LogError("Ship geometries are not set. Cannot apply ship material.");
+                Debug.LogError("Vessel geometries are not set. Cannot apply vessel material.");
                 return false;
             }
             return true;

@@ -10,7 +10,7 @@ namespace CosmicShore.Game
 
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor crystalImpactee)
         {
-            vesselImpactor.Ship.ShipStatus.ShipTransformer.ModifyThrottle(crystalImpactee.Crystal.crystalProperties.speedBuffAmount, _speedModifierDuration);
+            vesselImpactor.Vessel.VesselStatus.VesselTransformer.ModifyThrottle(crystalImpactee.Crystal.crystalProperties.speedBuffAmount, _speedModifierDuration);
         }
     }
 }

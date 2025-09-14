@@ -3,24 +3,19 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class SingleStickShipTransformer : ShipTransformer
+    public class SingleStickVesselTransformer : VesselTransformer
     {
         Quaternion additionalRotation = Quaternion.identity;
         GameObject courseObject;
         Transform courseTransform;
 
-        protected override void Start()
+        public override void Initialize(IVessel vessel)
         {
-            base.Start();
-
             courseObject = new GameObject("CourseObject");
             courseTransform = courseObject.transform;
-        }
-
-        public override void Initialize(IShip ship)
-        {
-            base.Initialize(ship);
-            Ship.ShipStatus.SingleStickControls = true;
+            Vessel.VesselStatus.SingleStickControls = true;
+            
+            base.Initialize(vessel);
         }
 
         protected override void Pitch() // These need to not use *= because quaternions are not commutative
@@ -52,17 +47,17 @@ namespace CosmicShore.Game
 
             transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation, LERP_AMOUNT * Time.deltaTime);
             courseTransform = transform;
-            shipStatus.Course = courseTransform.forward;
+            VesselStatus.Course = courseTransform.forward;
         }
 
         protected override void MoveShip()
         {
             float boostAmount = 1f;
-            if (shipStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
-                boostAmount = Ship.ShipStatus.BoostMultiplier;
+            if (VesselStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the vessel data still thinks we are boosting
+                boostAmount = Vessel.VesselStatus.BoostMultiplier;
 
-            if (shipStatus.ChargedBoostDischarging)
-                boostAmount *= shipStatus.ChargedBoostCharge;
+            if (VesselStatus.ChargedBoostDischarging)
+                boostAmount *= VesselStatus.ChargedBoostCharge;
 
             speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
 
@@ -71,9 +66,9 @@ namespace CosmicShore.Game
             if (toggleManualThrottle)
                 speed = Mathf.Lerp(0, speed, InputStatus.Throttle);
 
-            shipStatus.Speed = speed;
+            VesselStatus.Speed = speed;
 
-            transform.position += (speed * shipStatus.Course + velocityShift) * Time.deltaTime;
+            transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;
         }
     }
 }

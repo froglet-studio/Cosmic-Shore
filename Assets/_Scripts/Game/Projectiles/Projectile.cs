@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected PoolManager _poolManager;
         public Teams OwnTeam { get; private set; }
-        public IShipStatus ShipStatus { get; private set; }
+        public IVesselStatus VesselStatus { get; private set; }
 
         private void Awake()
         {  
@@ -53,16 +53,16 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        public virtual void Initialize(PoolManager poolManager, Teams ownTeam, IShipStatus shipStatus, float charge) // Later remove [float charge] from here.
+        public virtual void Initialize(PoolManager poolManager, Teams ownTeam, IVesselStatus vesselStatus, float charge) // Later remove [float charge] from here.
         {
             OwnTeam = ownTeam;
-            ShipStatus = shipStatus;
+            VesselStatus = vesselStatus;
             _poolManager = poolManager;
             Charge = charge;
             
-            if (TryGetComponent(out Gun gun) && ShipStatus != null)
+            if (TryGetComponent(out Gun gun) && VesselStatus != null)
             {
-                gun.Initialize(ShipStatus);
+                gun.Initialize(VesselStatus);
             }
         }
 
@@ -86,12 +86,12 @@ namespace CosmicShore.Game.Projectiles
 
                 // if (!_piercePrism) ExecuteStopEffect();
             }
-            if (other.TryGetComponent<IShipStatus>(out var shipStatus))
+            if (other.TryGetComponent<IVesselStatus>(out var vesselStatus))
             {
-                if (shipStatus.Team == OwnTeam)
+                if (vesselStatus.Team == OwnTeam)
                     return;
 
-                PerformShipImpactEffects(shipStatus);
+                PerformShipImpactEffects(vesselStatus);
 
                 // if (!_pierceShip) ExecuteStopEffect();
             }
@@ -105,10 +105,10 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, ShipStatus.Team, ShipStatus.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, VesselStatus.Team, VesselStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, OwnTeam);
+                        trailBlockProperties.trailBlock.Steal(VesselStatus.PlayerName, OwnTeam);
                         break;
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
@@ -134,7 +134,7 @@ namespace CosmicShore.Game.Projectiles
                 if (effect is null)
                     continue;
 
-                effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero), trailBlockProperties); // TODO : impacted vector is not correct here.
+                effect.Execute(new ImpactEffectData(VesselStatus, null, Vector3.zero), trailBlockProperties); // TODO : impacted vector is not correct here.
             }
         }*/
 
@@ -164,35 +164,35 @@ namespace CosmicShore.Game.Projectiles
                 if (effect is null)
                     continue;
 
-                effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
+                effect.Execute(new ImpactEffectData(VesselStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
             }
         }*/
 
         // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        /*protected virtual void PerformShipImpactEffects(IShipStatus shipStatus)
+        /*protected virtual void PerformShipImpactEffects(IVesselStatus vesselStatus)
         {
             foreach (ShipImpactEffects effect in shipImpactEffects)
             {
                 switch (effect)
                 {
                     case ShipImpactEffects.TrailSpawnerCooldown:
-                        shipStatus.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
-                        shipStatus.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
+                        vesselStatus.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+                        vesselStatus.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
                     case ShipImpactEffects.PlayHaptics:
-                        if (!shipStatus.Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
+                        if (!vesselStatus.Vessel.VesselStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.SpinAround:
-                        shipStatus.Ship.Transform.localRotation = Quaternion.LookRotation(Velocity);
+                        vesselStatus.Vessel.Transform.localRotation = Quaternion.LookRotation(Velocity);
                         break;
                     case ShipImpactEffects.Knockback:
-                        shipStatus.Ship.ShipStatus.ShipTransformer.ModifyVelocity(Velocity * 100,2);
+                        vesselStatus.Vessel.VesselStatus.VesselTransformer.ModifyVelocity(Velocity * 100,2);
                         break;
                     case ShipImpactEffects.Stun:
-                        shipStatus.Ship.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 10);
+                        vesselStatus.Vessel.VesselStatus.VesselTransformer.ModifyThrottle(.1f, 10);
                         break;
                     case ShipImpactEffects.Charm:
-                        shipStatus.Ship.ShipStatus.TrailSpawner.Charm(ShipStatus, 7);
+                        vesselStatus.Vessel.VesselStatus.TrailSpawner.Charm(VesselStatus, 7);
                         break;
                 }
             }
@@ -202,7 +202,7 @@ namespace CosmicShore.Game.Projectiles
                 if (effect is null)
                     continue;
 
-                effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
+                effect.Execute(new ImpactEffectData(VesselStatus, null, Vector3.zero)); // TODO : impacted vector is not correct here.
             }
         }*/
 
@@ -214,11 +214,11 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case CrystalImpactEffects.PlayHaptics:
-                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
+                        if (!VesselStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
                         break;
                     //case CrystalImpactEffects.AreaOfEffectExplosion:
                     //    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                    //    AOEExplosion.Ship = this;
+                    //    AOEExplosion.Vessel = this;
                     //    AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                     //    AOEExplosion.MaxScale = Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
                     //    break;
@@ -226,7 +226,7 @@ namespace CosmicShore.Game.Projectiles
                         crystalProperties.crystal.Steal(OwnTeam, 7f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
-                        ShipStatus.ResourceSystem.ChangeResourceAmount(0, ShipStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
+                        VesselStatus.ResourceSystem.ChangeResourceAmount(0, VesselStatus.ResourceSystem.Resources[0].MaxAmount); // Move to single system
                         break;
                 }
             }
@@ -236,7 +236,7 @@ namespace CosmicShore.Game.Projectiles
                 if (effect is null)
                     continue;
 
-                effect.Execute(new ImpactEffectData(ShipStatus, null, Vector3.zero), crystalProperties); // TODO : impacted vector is not correct here.
+                effect.Execute(new ImpactEffectData(VesselStatus, null, Vector3.zero), crystalProperties); // TODO : impacted vector is not correct here.
             }
         }*/
 

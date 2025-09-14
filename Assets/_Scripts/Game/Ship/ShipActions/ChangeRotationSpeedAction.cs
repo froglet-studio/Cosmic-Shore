@@ -10,15 +10,15 @@ public class ChangeRotationSpeedAction : ShipAction
 
     public override void StartAction()
     {
-        if (pitch) Ship.ShipStatus.ShipTransformer.PitchScaler *= rotationSpeedMultiplier;
-        if (yaw) Ship.ShipStatus.ShipTransformer.YawScaler *= rotationSpeedMultiplier;
-        if (roll) Ship.ShipStatus.ShipTransformer.RollScaler *= rotationSpeedMultiplier;
+        if (pitch) Vessel.VesselStatus.VesselTransformer.PitchScaler *= rotationSpeedMultiplier;
+        if (yaw) Vessel.VesselStatus.VesselTransformer.YawScaler *= rotationSpeedMultiplier;
+        if (roll) Vessel.VesselStatus.VesselTransformer.RollScaler *= rotationSpeedMultiplier;
     }
 
     public override void StopAction()
     {
-        if (pitch) Ship.ShipStatus.ShipTransformer.PitchScaler /= rotationSpeedMultiplier;
-        if (yaw) Ship.ShipStatus.ShipTransformer.YawScaler /= rotationSpeedMultiplier;
-        if (roll) Ship.ShipStatus.ShipTransformer.RollScaler /= rotationSpeedMultiplier;
+        if (pitch) Vessel.VesselStatus.VesselTransformer.PitchScaler /= rotationSpeedMultiplier;
+        if (yaw) Vessel.VesselStatus.VesselTransformer.YawScaler /= rotationSpeedMultiplier;
+        if (roll) Vessel.VesselStatus.VesselTransformer.RollScaler /= rotationSpeedMultiplier;
     }
 }

@@ -26,29 +26,34 @@ public class ZoomOutAction : ShipAction
     
     public override void StartAction()
     {
-        if (!Ship.ShipStatus.AutoPilotEnabled)
+        if (!Vessel.VesselStatus.AutoPilotEnabled)
         {
         }
     }
     
     public override void StopAction()
     {
-        if (!Ship.ShipStatus.AutoPilotEnabled)
+        if (!Vessel.VesselStatus.AutoPilotEnabled)
         {
 
         }
     }
 
-    public void Initialise(IScaleProvider provider)
+    public void AddProvider(IScaleProvider provider)
     {
-        if (Ship.ShipStatus.AutoPilotEnabled) return;
+        // if (Vessel.VesselStatus.AutoPilotEnabled) return;
         _scaleSource = provider;
-        Debug.Log("Initialized Zoom Out Action"); 
+        // Debug.Log("Initialized Zoom Out Action"); 
     }
 
     private void LateUpdate()
     {
-        if (Ship == null || Ship.ShipStatus.AutoPilotEnabled) return;
+        if (!IsInitialized)
+            return;
+        
+        if (Vessel.VesselStatus.AutoPilotEnabled) 
+            return;
+        
         _controller ??= CameraManager.Instance.GetActiveController();
         if (_scaleSource == null || _controller == null) return;
         

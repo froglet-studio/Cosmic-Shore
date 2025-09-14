@@ -34,11 +34,11 @@ public class ConsumeBoostAction : ShipAction
     float   activeStacks;        // track stacked boosts to unwind properly
     Coroutine currentBoost;      // last boost coroutine
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
-        Ship.ShipStatus.BoostMultiplier = 1f;
-        ShipStatus.Boosting = false;
+        base.Initialize(vessel);
+        Vessel.VesselStatus.BoostMultiplier = 1f;
+        VesselStatus.Boosting = false;
 
         available = Mathf.Clamp(maxCharges, 0, 4);
         reloading = false;
@@ -54,7 +54,7 @@ public class ConsumeBoostAction : ShipAction
         // optional resource gate
         if (resourceCost > 0f)
         {
-            var rs = Ship.ShipStatus.ResourceSystem as ResourceSystem;
+            var rs = Vessel.VesselStatus.ResourceSystem as ResourceSystem;
             if (rs == null || resourceIndex < 0 || resourceIndex >= rs.Resources.Count) return;
             var res = rs.Resources[resourceIndex];
             if (res.CurrentAmount < resourceCost) return;
@@ -82,13 +82,13 @@ public class ConsumeBoostAction : ShipAction
         if (currentBoost != null) { StopCoroutine(currentBoost); currentBoost = null; }
         if (activeStacks > 0)
         {
-            Ship.ShipStatus.BoostMultiplier -= activeStacks * boostMultiplier.Value;
+            Vessel.VesselStatus.BoostMultiplier -= activeStacks * boostMultiplier.Value;
             activeStacks = 0;
         }
-        if (Ship.ShipStatus.BoostMultiplier <= 1f)
+        if (Vessel.VesselStatus.BoostMultiplier <= 1f)
         {
-            Ship.ShipStatus.BoostMultiplier = 1f;
-            ShipStatus.Boosting = false;
+            Vessel.VesselStatus.BoostMultiplier = 1f;
+            VesselStatus.Boosting = false;
             OnBoostEnded?.Invoke(); // legacy
         }
     }
@@ -97,18 +97,18 @@ public class ConsumeBoostAction : ShipAction
     {
         float mult = boostMultiplier.Value;
         activeStacks += 1f;
-        ShipStatus.Boosting = true;
-        Ship.ShipStatus.BoostMultiplier += mult;
+        VesselStatus.Boosting = true;
+        Vessel.VesselStatus.BoostMultiplier += mult;
 
         yield return new WaitForSeconds(boostDuration);
 
-        Ship.ShipStatus.BoostMultiplier -= mult;
+        Vessel.VesselStatus.BoostMultiplier -= mult;
         activeStacks = Mathf.Max(0f, activeStacks - 1f);
 
-        if (Ship.ShipStatus.BoostMultiplier <= 1f)
+        if (Vessel.VesselStatus.BoostMultiplier <= 1f)
         {
-            Ship.ShipStatus.BoostMultiplier = 1f;
-            ShipStatus.Boosting = false;
+            Vessel.VesselStatus.BoostMultiplier = 1f;
+            VesselStatus.Boosting = false;
             OnBoostEnded?.Invoke(); // legacy
         }
 

@@ -1,8 +1,8 @@
 using UnityEngine;
 using Obvious.Soap;
 
-[CreateAssetMenu(fileName = "scriptable_event_" + nameof(ShipClassType), menuName = "Soap/ScriptableEvents/"+ nameof(ShipClassType))]
-public class ScriptableEventShipClassType : ScriptableEvent<ShipClassType>
+[CreateAssetMenu(fileName = "scriptable_event_" + nameof(VesselClassType), menuName = "Soap/ScriptableEvents/"+ nameof(VesselClassType))]
+public class ScriptableEventShipClassType : ScriptableEvent<VesselClassType>
 {
     
 }

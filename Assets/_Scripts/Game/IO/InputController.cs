@@ -21,11 +21,13 @@ namespace CosmicShore.Game.IO
         public IInputStatus InputStatus { get; private set; }
 
         [SerializeField] public bool Portrait;
-        IShip _ship;
+        IVessel vessel;
 
         private IInputStrategy currentStrategy;
         private GamepadInputStrategy gamepadStrategy;
         private DeviceOrientationHandler orientationHandler;
+
+        private bool isInitialized;
 
         private void Awake()
         {
@@ -33,15 +35,18 @@ namespace CosmicShore.Game.IO
             InputStatus.InputController = this;
         }
 
-        private void OnEnable()
+        private void RegisterToEvents()
         {
             GameSetting.OnChangeInvertYEnabledStatus += OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus += OnToggleInvertThrottle;
             EnhancedTouchSupport.Enable();
         }
 
-        private void OnDisable()
+        private void OnDestroy()
         {
+            if (!isInitialized)
+                return;
+            
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus -= OnToggleInvertThrottle;
             EnhancedTouchSupport.Disable();
@@ -49,6 +54,9 @@ namespace CosmicShore.Game.IO
 
         private void Update()
         {
+            if (!isInitialized)
+                return;
+            
             // Toggle the fullscreen state if the Escape key was pressed this frame on windows
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -69,12 +77,18 @@ namespace CosmicShore.Game.IO
             orientationHandler.Update();
         }
 
-        public void Initialize(IShip ship)
+        // public void Initialize(IVessel vessel, bool isOwner = true)
+        public void Initialize()
         {
-            _ship = ship;
+            RegisterToEvents();
+            
             InitializeStrategies();
             SetInitialStrategy();
-            InitializeOrientation();
+            
+            // TODO - Try remove IVessel reference from the method below.
+            // InitializeOrientation();
+
+            isInitialized = true;
         }
 
         private void SetInitialStrategy()
@@ -96,20 +110,23 @@ namespace CosmicShore.Game.IO
             gamepadStrategy = new GamepadInputStrategy();
             orientationHandler = new DeviceOrientationHandler();
 
-            //touchStrategy.Initialize(ship);
-            //keyboardMouseStrategy.Initialize(ship);
+            //touchStrategy.Initialize(vessel);
+            //keyboardMouseStrategy.Initialize(vessel);
             gamepadStrategy.Initialize(InputStatus);
-            orientationHandler.Initialize(_ship, this);
+            orientationHandler.Initialize(InputStatus, this);
         }
 
+        // TODO - Try remove IVessel reference from the method below
+        
+        /*
         private void InitializeOrientation()
         {
             if (Portrait)
             {
-                _ship.SetShipUp(90);
+                vessel.SetShipUp(90);
             }
             IInputStatus.CurrentOrientation = Screen.orientation;
-        }
+        }*/
 
         private void UpdateInputStrategy()
         {

@@ -31,10 +31,10 @@ public class OverheatingAction : ShipAction
 
     public bool IsOverheating => isOverheating;
     
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
-        wrappedAction.Initialize(ship);
+        base.Initialize(vessel);
+        wrappedAction.Initialize(vessel);
         heatResource = ResourceSystem.Resources[heatResourceIndex];
     }
 
@@ -70,14 +70,14 @@ public class OverheatingAction : ShipAction
 
         isOverheating = true;
         OnOverheated?.Invoke();  
-        ShipStatus.Overheating = true;
+        VesselStatus.Overheating = true;
         heatResource.CurrentAmount = heatResource.MaxAmount;
         wrappedAction.StopAction();
 
         yield return new WaitForSeconds(overheatDuration);
 
         isOverheating = false;
-        ShipStatus.Overheating = false;
+        VesselStatus.Overheating = false;
         OnHeatDecayStarted?.Invoke();
         StartCoroutine(DecayHeatCoroutine());
     }

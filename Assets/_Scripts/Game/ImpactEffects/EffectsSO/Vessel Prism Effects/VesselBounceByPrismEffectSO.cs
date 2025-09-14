@@ -8,16 +8,16 @@ namespace CosmicShore.Game
     {
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
-            IShipStatus shipStatus = vesselImpactor.Ship.ShipStatus;
+            IVesselStatus vesselStatus = vesselImpactor.Vessel.VesselStatus;
             TrailBlockProperties trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;
-            Transform shipTransform = shipStatus.ShipTransform;
+            Transform shipTransform = vesselStatus.ShipTransform;
 
             var cross = Vector3.Cross(shipTransform.forward, trailBlockProperties.trailBlock.transform.forward);
             var normal = Quaternion.AngleAxis(90, cross) * trailBlockProperties.trailBlock.transform.forward;
             var reflectForward = Vector3.Reflect(shipTransform.forward, normal);
             var reflectUp = Vector3.Reflect(shipTransform.up, normal);
-            shipStatus.ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
-            shipStatus.ShipTransformer.ModifyVelocity((shipTransform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5,
+            vesselStatus.VesselTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
+            vesselStatus.VesselTransformer.ModifyVelocity((shipTransform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5,
                 Time.deltaTime * 15);
         }
     }

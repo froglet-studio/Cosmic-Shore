@@ -27,12 +27,12 @@ namespace CosmicShore
         {
             if (other.gameObject.IsLayer("Ships"))
             {
-                if (!other.TryGetComponent(out IShipStatus shipStatus))
+                if (!other.TryGetComponent(out IVesselStatus shipStatus))
                     return;
 
-                shipStatus.ShipTransformer.ModifyVelocity(transform.parent.forward * Displacement, Duration);
+                shipStatus.VesselTransformer.ModifyVelocity(transform.parent.forward * Displacement, Duration);
 
-                if (shipStatus.ShipType == ShipClassType.Squirrel)
+                if (shipStatus.VesselType == VesselClassType.Squirrel)
                 {
                     shipStatus.ResourceSystem.ChangeResourceAmount(energyResourceIndex, energyAmount);
                     foreach (var prism in Prisms)

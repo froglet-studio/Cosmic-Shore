@@ -21,15 +21,15 @@ namespace CosmicShore.Game
         [SerializeField] private Color pipConsuming = new Color(0.3f, 1f, 0.3f);
         [SerializeField] private Color pipEmpty     = new Color(1f, 1f, 1f, 0.25f);
 
-        private IShipStatus _status;
+        private IVesselStatus _status;
         private ResourceSystem _rs;
 
         private Coroutine[] _pipAnim;
 
-        public override void Initialize(IShipStatus shipStatus, ShipHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus, ShipHUDView baseView)
         {
-            base.Initialize(shipStatus, baseView);
-            _status = shipStatus;
+            base.Initialize(vesselStatus, baseView);
+            _status = vesselStatus;
             view = view != null ? view : baseView as SerpentShipHUDView;
             if(view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
             // shields: subscribe to resource change

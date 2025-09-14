@@ -14,7 +14,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] float Scaler = 3f; //scale to max radius
 
         [SerializeField] Sprite ActivePerimeterImage;
-        [SerializeField] R_Player player;
+        [SerializeField] Player player;
         public float alpha = 0f;        
         
         Image image;
@@ -59,12 +59,12 @@ namespace CosmicShore.Game.UI
         IEnumerator InitializeCoroutine()
         {
             // TODO - Can't have ActivePlayer as static
-            /*yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
-            bool isActive = Gamepad.current == null && !Player.ActivePlayer.Ship.ShipStatus.CommandStickControls && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls);
-            if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
+            /*yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Vessel != null && Player.ActivePlayer.Vessel.VesselStatus.InputController != null);
+            bool isActive = Gamepad.current == null && !Player.ActivePlayer.Vessel.VesselStatus.CommandStickControls && (LeftThumb || !Player.ActivePlayer.Vessel.VesselStatus.SingleStickControls);
+            if (!Player.ActivePlayer.Vessel.VesselStatus.AutoPilotEnabled)
             {
                 gameObject.SetActive(isActive);
-                _inputController = Player.ActivePlayer.Ship.ShipStatus.InputController;
+                _inputController = Player.ActivePlayer.Vessel.VesselStatus.InputController;
                 initialized = isActive;
             }    */
             // TEMP Suspended
@@ -77,7 +77,7 @@ namespace CosmicShore.Game.UI
             if(!imageEnabled) { return; }
 
             // TODO - Can't have ActivePlayer as static
-            // if (initialized && !Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
+            // if (initialized && !Player.ActivePlayer.Vessel.VesselStatus.AutoPilotEnabled)
             if (true) // TEMP  
             {
                 if (Input.touches.Length == 0)

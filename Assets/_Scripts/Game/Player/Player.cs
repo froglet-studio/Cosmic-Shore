@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Generic;
-using CosmicShore.Core;
 using CosmicShore.Game.IO;
-using CosmicShore.Soap;
 using CosmicShore.Utility.ClassExtensions;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -10,19 +7,19 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class R_Player : NetworkBehaviour, IPlayer
+    public class Player : NetworkBehaviour, IPlayer
     { 
         public static List<IPlayer> NppList { get; } = new();
 
         // Declare the NetworkVariable without initializing its value.
-        public NetworkVariable<ShipClassType> NetDefaultShipType = new(ShipClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<VesselClassType> NetDefaultShipType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Teams> NetTeam = new();
 
-        public ShipClassType ShipClass { get; private set; } // => InitializeData.ShipClass;   
+        public VesselClassType VesselClass { get; private set; } // => InitializeData.ShipClass;   
         public Teams Team { get; private set; } // => InitializeData.Team;
         public string Name { get; private set; } // => InitializeData.PlayerName;
         public string PlayerUUID { get; private set; } // => InitializeData.PlayerUUID;
-        public IShip Ship { get; private set; }
+        public IVessel Vessel { get; private set; }
         public bool IsActive { get; private set; }
         public bool IsAIModeActivated { get; private set; }
 
@@ -36,24 +33,23 @@ namespace CosmicShore.Game
         IPlayer.InitializeData InitializeData;
         
 
-        public void Initialize(IPlayer.InitializeData data, IShip ship)
+        public void InitializeForSinglePlayerMode(IPlayer.InitializeData data, IVessel vessel)
         {
             InitializeData = data;
-            ShipClass = InitializeData.ShipClass;
+            VesselClass = InitializeData.vesselClass;
             Team = InitializeData.Team;
             Name = InitializeData.PlayerName;
             PlayerUUID = InitializeData.PlayerUUID;
-            Ship = ship;
-            InputController.Initialize(Ship);
+            InputController.Initialize();
+            Vessel = vessel;
         }
 
         /// <summary>
         /// TODO -> A temp way to initialize in multiplayer, try for better approach.
         /// </summary>
-        public void InitializeForClient(IShip ship)
+        public void InitializeForMultiplayerMode(IVessel vessel)
         {
-            Ship = ship;
-            InputController.Initialize(Ship);
+            Vessel = vessel;
         }
         
         public override void OnNetworkSpawn()
@@ -62,7 +58,8 @@ namespace CosmicShore.Game
             gameObject.name = "Player_" + OwnerClientId;
             Name = AuthenticationService.Instance.PlayerName;
             PlayerUUID = Name;
-            InputController.enabled = IsOwner;
+            if (IsOwner)
+                InputController.Initialize();
 
             NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
             NetTeam.OnValueChanged += OnNetTeamValueChanged;
@@ -82,21 +79,21 @@ namespace CosmicShore.Game
 
         public void ToggleAutoPilotMode(bool toggle)
         {
-            Ship.ToggleAutoPilot(toggle);
+            Vessel.ToggleAutoPilot(toggle);
             InputController.Pause(toggle);   
             IsAIModeActivated = toggle;
         }
 
         public void ToggleStationaryMode(bool toggle) =>
-            Ship.ShipStatus.IsStationary = toggle;
+            Vessel.VesselStatus.IsStationary = toggle;
 
         public void ToggleInputStatus(bool toggle) =>
             InputController.Pause(toggle);
         
         public void Destroy() => Destroy(gameObject);
 
-        private void OnNetDefaultShipTypeValueChanged(ShipClassType previousValue, ShipClassType newValue) =>
-            ShipClass = newValue;
+        private void OnNetDefaultShipTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>
+            VesselClass = newValue;
 
         private void OnNetTeamValueChanged(Teams previousValue, Teams newValue) =>
             Team = newValue;

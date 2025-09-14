@@ -80,7 +80,7 @@ namespace CosmicShore.SOAP
         {
             foreach (var player in Players)
             {
-                player.Ship.Destroy();
+                player.Vessel.Destroy();
             }
             
             for (int i = Players.Count - 1; i >= 0; i--)
@@ -118,7 +118,7 @@ namespace CosmicShore.SOAP
             PlayerOrigins = Array.Empty<Transform>();
             _activePlayerId = 0;
 
-            SelectedShipClass.Value = ShipClassType.Random;
+            SelectedShipClass.Value = VesselClassType.Random;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             TurnStartTime = 0f;
@@ -254,13 +254,13 @@ namespace CosmicShore.SOAP
         {
             foreach (var player in Players)
             {
-                if (player?.Ship?.ShipStatus == null) continue;
+                if (player?.Vessel?.VesselStatus == null) continue;
 
                 if (active)
                 {
-                    // Reset ship state when activating for a new run
-                    player.Ship.ShipStatus.ResourceSystem.Reset();
-                    player.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();
+                    // Reset vessel state when activating for a new run
+                    player.Vessel.VesselStatus.ResourceSystem.Reset();
+                    player.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
                 }
 
                 // Stationary/input flags invert relative to "active"
@@ -286,13 +286,13 @@ namespace CosmicShore.SOAP
             
             localPlayer.Transform.SetPositionAndRotation(activePlayerOrigin.position, activePlayerOrigin.rotation);
             localPlayer.InputController.InputStatus.Paused = true;
-            localPlayer.Ship.Teleport(activePlayerOrigin);
-            localPlayer.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();
-            // ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
-            localPlayer.Ship.ShipStatus.ResourceSystem.Reset();
-            // ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
+            localPlayer.Vessel.Teleport(activePlayerOrigin);
+            localPlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
+            // ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            localPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
+            // ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);
 
-            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
+            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Vessel.VesselStatus.CameraFollowTarget);
             
             foreach (var player in Players)
             {
@@ -309,15 +309,15 @@ namespace CosmicShore.SOAP
         {
             LocalPlayer.ToggleStationaryMode(false);
             LocalPlayer.InputController.InputStatus.Paused = false;
-            // ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
+            // ActivePlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
         }
 
 
         public void SetupForNextTurn()
         {
             LocalPlayer.InputController.InputStatus.Paused = false;
-            LocalPlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
-            LocalPlayer.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+            LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
+            LocalPlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
         }
 
         public void EliminateActive()

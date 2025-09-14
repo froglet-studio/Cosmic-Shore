@@ -34,11 +34,11 @@ public class PlayFabProductGenerator : EditorWindow
     
     void OnGUI()
     {
-        GUILayout.Label("Generate Products from Ship", EditorStyles.boldLabel);
-        selectedShip = (SO_Ship)EditorGUILayout.ObjectField("Ship ScriptableObject", selectedShip, typeof(SO_Ship), false);
+        GUILayout.Label("Generate Products from Vessel", EditorStyles.boldLabel);
+        selectedShip = (SO_Ship)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Ship), false);
 
         EditorGUI.BeginDisabledGroup(isProcessing);
-        if (GUILayout.Button("Generate Products from Ship"))
+        if (GUILayout.Button("Generate Products from Vessel"))
         {
             if (selectedShip != null)
             {
@@ -46,7 +46,7 @@ public class PlayFabProductGenerator : EditorWindow
             }
             else
             {
-                Debug.LogError("No Ship ScriptableObject selected!");
+                Debug.LogError("No Vessel ScriptableObject selected!");
             }
         }
         EditorGUI.EndDisabledGroup();
@@ -71,10 +71,10 @@ public class PlayFabProductGenerator : EditorWindow
     */
 
     /*
-    private async void GenerateProductsFromShip(SO_Ship ship)
+    private async void GenerateProductsFromShip(SO_Ship vessel)
     {
         isProcessing = true;
-        foreach (var captain in ship.Captains)
+        foreach (var captain in vessel.Captains)
         {
             await GenerateProductsFromCaptain(captain);
         }
@@ -94,10 +94,10 @@ public class PlayFabProductGenerator : EditorWindow
         }
 
         // Generate product for the captain
-        string itemId = string.Format("{0}{1}Captain", captain.PrimaryElement, captain.Ship.Class );//captain.Name.Replace(" ", "_").ToLower(); // TODO: replace 
+        string itemId = string.Format("{0}{1}Captain", captain.PrimaryElement, captain.Vessel.Class );//captain.Name.Replace(" ", "_").ToLower(); // TODO: replace 
         List<string> tags = new()
         {
-            captain.Ship.Class.ToString(),
+            captain.Vessel.Class.ToString(),
             captain.PrimaryElement.ToString()
         };
 
@@ -127,7 +127,7 @@ public class PlayFabProductGenerator : EditorWindow
         {
             tags.Add(string.Format("UpgradeLevel_{0}", i + 1));
 
-            string upgradeItemId = string.Format("{0}{1}Level{2}Upgrade", captain.PrimaryElement, captain.Ship.Class, i + 1);
+            string upgradeItemId = string.Format("{0}{1}Level{2}Upgrade", captain.PrimaryElement, captain.Vessel.Class, i + 1);
             bool upgradeExists = await CheckIfItemExists(upgradeItemId);
             if (!upgradeExists)
             {

@@ -19,7 +19,7 @@ namespace CosmicShore.Game
         [SerializeField] private LayerMask rayMask = ~0;
         [SerializeField] private float fallbackForward = 60f;
 
-        [Header("Surface Patch (Ship-local)")]
+        [Header("Surface Patch (Vessel-local)")]
         [Tooltip("Total lateral width (Right axis).")]
         [SerializeField] private float width = 80f;
         [Tooltip("Total height (Up axis).")]
@@ -70,8 +70,8 @@ namespace CosmicShore.Game
             _rng = new System.Random(s);
             _perlinBase = (float)_rng.NextDouble() * 1000f;
 
-            // Local ship frame & ray
-            Transform t = Ship.Transform;
+            // Local vessel frame & ray
+            Transform t = Vessel.Transform;
             Vector3 origin = t.position;
             Vector3 fwd = t.forward;
             Vector3 up = t.up;

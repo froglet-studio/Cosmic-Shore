@@ -5,11 +5,11 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.Video;
 
-[CreateAssetMenu(fileName = "New Ship", menuName = "CosmicShore/Ship/Ship", order = 1)]
+[CreateAssetMenu(fileName = "New Vessel", menuName = "CosmicShore/Vessel/Vessel", order = 1)]
 [System.Serializable]
 public class SO_Ship : ScriptableObject
 {
-    [SerializeField] public ShipClassType Class;
+    [SerializeField] public VesselClassType Class;
     [SerializeField] public string Name;
     [SerializeField] public string Description;
     [FormerlySerializedAs("SelectedIcon")]
@@ -32,7 +32,7 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public GameplayParameter gameplayParameter3 = new GameplayParameter("Solo", "Social", .5f);
 
     /// <summary>
-    /// A flag indicating whether the Ship Class is locked. Ship Class is locked if it is not owned by the player (in the player's inventory).
+    /// A flag indicating whether the Vessel Class is locked. Vessel Class is locked if it is not owned by the player (in the player's inventory).
     /// </summary>
     public bool IsLocked
     {

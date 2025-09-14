@@ -37,7 +37,7 @@ namespace CosmicShore.App.Systems
         DateTime ChallengeDate = DateTime.MinValue;
         
         /// <summary>
-        /// Ship's initial resource values to pass to arcade
+        /// Vessel's initial resource values to pass to arcade
         /// </summary>
         ResourceCollection ShipResources;
 

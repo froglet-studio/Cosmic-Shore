@@ -63,9 +63,9 @@ namespace CosmicShore.Game.AI
             TopLeft,
         };
 
-        IShip _ship;
-        IShipStatus _shipStatus => _ship.ShipStatus;
-        IInputStatus _inputStatus => _shipStatus.InputStatus;
+        IVessel vessel;
+        IVesselStatus VesselStatus => vessel.VesselStatus;
+        IInputStatus _inputStatus => VesselStatus.InputStatus;
 
         float _lastPitchTarget;
         float _lastYawTarget;
@@ -131,7 +131,7 @@ namespace CosmicShore.Game.AI
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
-                    (item.ItemType != ItemType.Debuff || item.OwnTeam == _shipStatus.Team)) continue;
+                    (item.ItemType != ItemType.Debuff || item.OwnTeam == VesselStatus.Team)) continue;
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (sqDistance < (MinDistance * MinDistance))
                 {
@@ -143,9 +143,9 @@ namespace CosmicShore.Game.AI
             _targetPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
         }
 
-        public void Initialize(bool enableAutoPilot, IShip ship)
+        public void Initialize(bool enableAutoPilot, IVessel vessel)
         {
-            _ship = ship;
+            this.vessel = vessel;
 
             // Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
 
@@ -190,21 +190,21 @@ namespace CosmicShore.Game.AI
             if (!AutoPilotEnabled)
                 return;
 
-            if (_shipStatus is null || _shipStatus.IsStationary)
+            if (VesselStatus is null || VesselStatus.IsStationary)
                 return;
 
             _distance = _targetPosition - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
-            LookingAtCrystal = Vector3.Dot(desiredDirection, _shipStatus.Course) >= .9f;
-            if (LookingAtCrystal && drift && !_shipStatus.Drifting)
+            LookingAtCrystal = Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
+            if (LookingAtCrystal && drift && !VesselStatus.Drifting)
             {
-                _shipStatus.Course = desiredDirection;
-                _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                VesselStatus.Course = desiredDirection;
+                vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
                 desiredDirection *= -1;
             }
-            else if (LookingAtCrystal && _shipStatus.Drifting) desiredDirection *= -1;
-            else if (_shipStatus.Drifting) _ship.StopShipControllerActions(InputEvents.LeftStickAction);
+            else if (LookingAtCrystal && VesselStatus.Drifting) desiredDirection *= -1;
+            else if (VesselStatus.Drifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
             if (_distance.magnitude < float.Epsilon) // Avoid division by zero
@@ -219,7 +219,7 @@ namespace CosmicShore.Game.AI
             aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
             float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
-            if (_shipStatus.SingleStickControls)
+            if (VesselStatus.SingleStickControls)
             {
                 float x = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
                 float y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
@@ -308,10 +308,10 @@ namespace CosmicShore.Game.AI
             {
                 if (activeCell != null &&
                     // TODO - Commented out as aggressive
-                    // aggressiveShips.Contains(_ship.ShipStatus.ShipType) &&
+                    // aggressiveShips.Contains(vessel.VesselStatus.ShipType) &&
                     activeCell.ControllingTeam != Teams.None)
                 {
-                    if ((_shipStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
+                    if ((VesselStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
                     {
                         _targetPosition = _crystalPosition;
                     }

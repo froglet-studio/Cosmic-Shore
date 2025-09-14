@@ -14,6 +14,7 @@ using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.App.Systems.Xp;
 using System.Linq;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game.Arcade
@@ -32,7 +33,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] GameObject PlayerOrigin;
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
-        [SerializeField] ShipClassType DefaultPlayerShipType = ShipClassType.Dolphin;
+        [FormerlySerializedAs("DefaultPlayerShipType")] [SerializeField] VesselClassType defaultPlayerVesselType = VesselClassType.Dolphin;
         [SerializeField] SO_Captain DefaultPlayerCaptain;
 
         protected Button ReadyButton;
@@ -50,15 +51,15 @@ namespace CosmicShore.Game.Arcade
         public static bool IsDailyChallenge = false;
         public static bool IsMission = false;
         public static bool IsTraining = false;
-        static ShipClassType playerShipType = ShipClassType.Dolphin;
+        static VesselClassType _playerVesselType = VesselClassType.Dolphin;
         static bool playerShipTypeInitialized;
 
-        public static ShipClassType PlayerShipType
+        public static VesselClassType PlayerVesselType
         {
-            get => playerShipType;
+            get => _playerVesselType;
             set
             {
-                playerShipType = value;
+                _playerVesselType = value;
                 playerShipTypeInitialized = true;
             }
         }
@@ -78,9 +79,9 @@ namespace CosmicShore.Game.Arcade
         public IPlayer ActivePlayer { get; protected set; }
 
         // Firebase analytics events
-        public delegate void MiniGameStart(GameModes mode, ShipClassType ship, int playerCount, int intensity);
+        public delegate void MiniGameStart(GameModes mode, VesselClassType vessel, int playerCount, int intensity);
         public static event MiniGameStart OnMiniGameStart;
-        public delegate void MiniGameEnd(GameModes mode, ShipClassType ship, int playerCount, int intensity, int highScore);
+        public delegate void MiniGameEnd(GameModes mode, VesselClassType vessel, int playerCount, int intensity, int highScore);
         public static event MiniGameEnd OnMiniGameEnd;
 
         protected virtual void Awake()
@@ -207,7 +208,7 @@ namespace CosmicShore.Game.Arcade
                 Players.Add(player);
                 IPlayer.InitializeData data = new()
                 {
-                    ShipClass = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType,
+                    vesselClass = playerShipTypeInitialized ? PlayerVesselType : defaultPlayerVesselType,
                     Team = PlayerTeams[i],
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
                     PlayerUUID = PlayerNames[i]
@@ -229,7 +230,7 @@ namespace CosmicShore.Game.Arcade
             Debug.Log($"MiniGame.StartGame, ... {Time.time}");
             // EndGameScreen.SetActive(false);
             RoundsPlayedThisGame = 0;
-            OnMiniGameStart?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
+            OnMiniGameStart?.Invoke(gameMode, PlayerVesselType, NumberOfPlayers, IntensityLevel);
             StartRound();
         }
 
@@ -251,11 +252,11 @@ namespace CosmicShore.Game.Arcade
             
             ActivePlayer.InputController.InputStatus.Paused = false;
 
-            if (EnableTrails)
+            /*if (EnableTrails)
             {
-                ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
-                ActivePlayer.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
-            }
+                ActivePlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
+                ActivePlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+            }*/
         }
 
         protected virtual void EndTurn()
@@ -268,7 +269,7 @@ namespace CosmicShore.Game.Arcade
             /*foreach (var turnMonitor in TurnMonitors)
                 turnMonitor.PauseTurn();*/
             ActivePlayer.InputController.InputStatus.Paused = true;
-            ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
 
             yield return new WaitForSeconds(EndOfTurnDelay);
 
@@ -378,13 +379,13 @@ namespace CosmicShore.Game.Arcade
                     0 (int)ScoreTracker.GetWinnerScoreData().Score);*/
             }
             else
-                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel,
+                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerVesselType, IntensityLevel,
                     0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/, false);// ScoreTracker.GolfRules);
 
             UserActionSystem.Instance.CompleteAction(new UserAction(
                     UserActionType.PlayGame,
                     0,// (int)ScoreTracker.GetWinnerScoreData().Score,
-                    UserAction.GetGameplayUserActionLabel(gameMode, PlayerShipType, IntensityLevel)));
+                    UserAction.GetGameplayUserActionLabel(gameMode, PlayerVesselType, IntensityLevel)));
 
             CameraManager.Instance.SetEndCameraActive();
             PauseSystem.TogglePauseGame(true);
@@ -397,7 +398,7 @@ namespace CosmicShore.Game.Arcade
             else
                 GameCanvas.scoreboard.ShowSinglePlayerView();*/
 
-            OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel,
+            OnMiniGameEnd?.Invoke(gameMode, PlayerVesselType, NumberOfPlayers, IntensityLevel,
                 0); //(int)ScoreTracker.GetWinnerScoreData().Score);
         }
 
@@ -434,13 +435,13 @@ namespace CosmicShore.Game.Arcade
 
             ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
             ActivePlayer.InputController.InputStatus.Paused = true;
-            ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
-            ActivePlayer.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();
-            ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
-            ActivePlayer.Ship.ShipStatus.ResourceSystem.Reset();
-            ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
+            ActivePlayer.Vessel.Teleport(PlayerOrigin.transform);
+            ActivePlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
+            ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.ResourceSystem.Reset();
+            ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);
 
-            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
+            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Vessel.VesselStatus.CameraFollowTarget);
 
             // For single player games, don't require the extra button press
             if (Players.Count > 1)
@@ -496,7 +497,7 @@ namespace CosmicShore.Game.Arcade
             if (!gameRunning || ActivePlayer == null) return;
 
             // hand control to the AI
-            R_Player activePlayer = ((R_Player)ActivePlayer);
+            Player activePlayer = ((Player)ActivePlayer);
 
             // TODO -  Should not directly call StartAutoPilot, use event
             // activePlayer.StartAutoPilot();
@@ -507,7 +508,7 @@ namespace CosmicShore.Game.Arcade
             if (!gameRunning || ActivePlayer == null) return;
 
             // give control back to the player
-            R_Player activePlayer = ((R_Player)ActivePlayer);
+            Player activePlayer = ((Player)ActivePlayer);
 
             // TODO -  Should not directly call StartAutoPilot, use event
             // activePlayer.StopAutoPilot();

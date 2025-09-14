@@ -3,7 +3,7 @@
 
 // TODO - Add namespace
 [System.Serializable]
-public enum ShipClassType
+public enum VesselClassType
 {
     Any = -1,
     Random = 0,

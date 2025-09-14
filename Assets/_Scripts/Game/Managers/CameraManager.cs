@@ -42,7 +42,7 @@ public class CameraManager : Singleton<CameraManager>
     }
 
     private Camera _vCam;
-    private IShipStatus _shipStatus;
+    private IVesselStatus vesselStatus;
 
     public override void Awake()
     {

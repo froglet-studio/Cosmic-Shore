@@ -139,7 +139,7 @@ namespace CosmicShore.Core
             {
                 // If the trail is looping, connect the tail block's index to current index
                 if (isLoop) index += maxRange;
-                // If the trail is not looping, change ship direction and reset index to start
+                // If the trail is not looping, change vessel direction and reset index to start
                 else
                 {
                     incrementor *= -1;

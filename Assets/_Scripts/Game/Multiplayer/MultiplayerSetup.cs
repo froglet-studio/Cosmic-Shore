@@ -264,7 +264,7 @@ namespace CosmicShore.Game
             NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
             if (playerNetObj != null)
             {
-                R_Player player = playerNetObj.GetComponent<R_Player>();
+                Player player = playerNetObj.GetComponent<Player>();
                 if (player != null)
                 {
                     if (player.IsOwner)

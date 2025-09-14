@@ -48,17 +48,17 @@ namespace CosmicShore.Game
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
         }
 
-//         public virtual void ExecuteCommonVesselImpact(IShip ship)
+//         public virtual void ExecuteCommonVesselImpact(IVessel vessel)
 //         {
-//             if (OwnTeam != Teams.None && OwnTeam != ship.ShipStatus.Team)
+//             if (OwnTeam != Teams.None && OwnTeam != vessel.VesselStatus.Team)
 //                 return;
 //
 //             if (allowVesselImpactEffect)
 //             {
 //                 // TODO - This class should not modify AIPilot's properties directly.
-//                 /*if (ship.ShipStatus.AIPilot != null)
+//                 /*if (vessel.VesselStatus.AIPilot != null)
 //                 {
-//                     AIPilot aiPilot = ship.ShipStatus.AIPilot;
+//                     AIPilot aiPilot = vessel.VesselStatus.AIPilot;
 //
 //                     aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
 //                     aiPilot.throttle = aiPilot.defaultThrottle;
@@ -67,12 +67,12 @@ namespace CosmicShore.Game
 //
 //             // TODO - Add Event channels here rather than calling singletons directly.
 //             if (StatsManager.Instance != null)
-//                 StatsManager.Instance.CrystalCollected(ship, crystalProperties);
+//                 StatsManager.Instance.CrystalCollected(vessel, crystalProperties);
 //
 //             // TODO - Handled from R_CrystalImpactor.cs
-//             // PerformCrystalImpactEffects(crystalProperties, ship);
-//             // TODO : Pass only ship status
-//             Explode(ship);
+//             // PerformCrystalImpactEffects(crystalProperties, vessel);
+//             // TODO : Pass only vessel status
+//             Explode(vessel);
 //             PlayExplosionAudio();
 //             CrystalRespawn();
 //         }
@@ -138,7 +138,7 @@ namespace CosmicShore.Game
             transform.localScale = targetScaleVector;
         }
 
-        public void Explode(IShipStatus shipStatus)
+        public void Explode(IVesselStatus vesselStatus)
         {
             collider.enabled = false;
             
@@ -161,7 +161,7 @@ namespace CosmicShore.Game
                     var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                     spentAnimator.timer = thisAnimator.timer;
                 }
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, shipStatus.Player.Name);
+                spentCrystal.GetComponent<Impact>()?.HandleImpact(vesselStatus.Course * vesselStatus.Speed, tempMaterial, vesselStatus.Player.Name);
             }
         }
 

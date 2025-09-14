@@ -34,17 +34,17 @@ namespace CosmicShore.Game
         
         /*public override void Execute(VesselImpactor shipImpactor, ImpactorBase impactee)
         {
-            IShipStatus shipStatus = shipImpactor.Ship.ShipStatus;
-            Transform shipTransform = shipStatus.ShipTransform;
+            IVesselStatus vesselStatus = shipImpactor.Vessel.VesselStatus;
+            Transform shipTransform = vesselStatus.ShipTransform;
             var aoeExplosion = Instantiate(_prefabGO).GetComponent<AOEExplosion>();
             aoeExplosion.Initialize(new AOEExplosion.InitializeStruct
             {
-                OwnTeam = shipStatus.Team,
-                Ship = shipStatus.Ship,
+                OwnTeam = vesselStatus.Team,
+                Vessel = vesselStatus.Vessel,
                 OverrideMaterial = _aoeExplosionMaterial,
 
-                MaxScale = shipStatus.ResourceSystem.Resources.Count > _resourceIndex
-                    ? Mathf.Lerp(_minExplosionScale, _maxExplosionScale, shipStatus.ResourceSystem.Resources[_resourceIndex].CurrentAmount)
+                MaxScale = vesselStatus.ResourceSystem.Resources.Count > _resourceIndex
+                    ? Mathf.Lerp(_minExplosionScale, _maxExplosionScale, vesselStatus.ResourceSystem.Resources[_resourceIndex].CurrentAmount)
                     : _maxExplosionScale,
 
                 AnnonymousExplosion = true,

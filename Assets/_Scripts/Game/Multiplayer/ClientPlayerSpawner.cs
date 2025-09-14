@@ -15,17 +15,17 @@ namespace CosmicShore.Game
         [ClientRpc]
         internal void InitializeAndSetupPlayer_ClientRpc(ClientRpcParams clientRpcParams = default)
         {
-            foreach (R_Player networkPlayer in R_Player.NppList)
+            foreach (Player networkPlayer in Player.NppList)
             {
                 var networkShip = NetworkShipClientCache.GetInstanceByClientId(networkPlayer.OwnerClientId);
-                Assert.IsTrue(networkShip, $"Network ship not found for client {networkPlayer.OwnerClientId}!");
+                Assert.IsTrue(networkShip, $"Network vessel not found for client {networkPlayer.OwnerClientId}!");
 
-                networkPlayer.InitializeForClient(networkShip);
+                networkPlayer.InitializeForMultiplayerMode(networkShip);
                 networkShip.Initialize(networkPlayer, false);
                 PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
                 
-                networkPlayer.Ship.ShipStatus.ResourceSystem.Reset();
-                networkPlayer.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();
+                networkPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
+                networkPlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
 
                 bool toggle = !networkPlayer.IsOwner;
                 networkPlayer.ToggleStationaryMode(toggle);

@@ -9,7 +9,7 @@ namespace CosmicShore.Game.Arcade
         
         // Use MiniGameData for player info.
         // [SerializeField] MiniGame Game;
-        // [SerializeField] R_Player hostileShip;
+        // [SerializeField] Player hostileShip;
 
         public override bool CheckForEndOfTurn()
         {
@@ -35,7 +35,7 @@ namespace CosmicShore.Game.Arcade
 
         void UpdateUI()
         {
-            var message = ""; //TEMP - ((int)((hostileShip.Ship.Transform.position - Game.ActivePlayer.Ship.Transform.position).magnitude/10f)).ToString();
+            var message = ""; //TEMP - ((int)((hostileShip.Vessel.Transform.position - Game.ActivePlayer.Vessel.Transform.position).magnitude/10f)).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }
     }

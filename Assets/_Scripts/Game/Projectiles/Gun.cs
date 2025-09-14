@@ -17,7 +17,7 @@ namespace CosmicShore.Game.Projectiles
         float _firePeriod = .2f;
 
         Teams _team;
-        IShipStatus _shipStatus;
+        IVesselStatus vesselStatus;
 
         bool _onCooldown = false;
         float _sideLength = 2;
@@ -28,10 +28,10 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField]
         PoolManager _poolManager;
 
-        public void Initialize(IShipStatus shipStatus)
+        public void Initialize(IVesselStatus vesselStatus)
         {          
-            _shipStatus = shipStatus;
-            _team = _shipStatus.Team;
+            this.vesselStatus = vesselStatus;
+            _team = this.vesselStatus.Team;
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,
@@ -119,9 +119,9 @@ namespace CosmicShore.Game.Projectiles
         void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity,
             float projectileScale, Vector3 offset, Vector3 normalizedVelocity, float projectileTime = 3, float charge = 0, int energy = 0)
         {
-            if (_shipStatus == null)
+            if (vesselStatus == null)
             {
-                Debug.LogError("Gun.FireProjectile - ShipStatus is null. Cannot fire projectile.");
+                Debug.LogError("Gun.FireProjectile - VesselStatus is null. Cannot fire projectile.");
                 return;
             }
 
@@ -152,7 +152,7 @@ namespace CosmicShore.Game.Projectiles
                 Debug.LogError("Gun.FireProjectile - Failed to spawn projectile from pool. Try increasing pool size!");
                 return;
             }
-            _projectile.Initialize(_poolManager, _team, _shipStatus, charge);
+            _projectile.Initialize(_poolManager, _team, vesselStatus, charge);
             _projectile.transform.localScale = projectileScale * _projectile.InitialScale;
             _projectile.transform.parent = containerTransform;
             _projectile.Velocity = normalizedVelocity * speed + inheritedVelocity;

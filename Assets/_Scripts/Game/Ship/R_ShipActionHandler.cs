@@ -9,7 +9,7 @@ namespace CosmicShore.Game
 {
     /// <summary>
     /// Component responsible for mapping input and resource events to
-    /// ship actions.  This logic previously lived inside the Ship classes.
+    /// vessel actions.  This logic previously lived inside the Vessel classes.
     /// </summary>
     public class R_ShipActionHandler : MonoBehaviour
     {
@@ -33,25 +33,27 @@ namespace CosmicShore.Game
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
 
-        IShipStatus _shipStatus;
+        IVesselStatus vesselStatus;
 
-        public void SubscribeEvents()
+        void SubscribeEvents()
         {
             _onButtonPressed.OnRaised += PerformShipControllerActions;
             _onButtonReleased.OnRaised += StopShipControllerActions;
         }
 
-        public void UnsubscribeEvents()
+        void OnDestroy()
         {
             _onButtonPressed.OnRaised -= PerformShipControllerActions;
             _onButtonReleased.OnRaised -= StopShipControllerActions;
         }
 
-        public void Initialize(IShipStatus shipStatus)
+        public void Initialize(IVesselStatus vesselStatus)
         {
-            _shipStatus = shipStatus;
-            ShipHelper.InitializeShipControlActions(shipStatus, _inputEventShipActions, _shipControlActions);
-            ShipHelper.InitializeClassResourceActions(shipStatus, _resourceEventClassActions, _classResourceActions);
+            this.vesselStatus = vesselStatus;
+            ShipHelper.InitializeShipControlActions(vesselStatus, _inputEventShipActions, _shipControlActions);
+            ShipHelper.InitializeClassResourceActions(vesselStatus, _resourceEventClassActions, _classResourceActions);
+
+            SubscribeEvents();
         }
 
         public void PerformShipControllerActions(InputEvents controlType)
@@ -69,13 +71,13 @@ namespace CosmicShore.Game
             
             onAbilityExecuted.Raise(new AbilityStats
             {
-                PlayerName = _shipStatus.PlayerName,
+                PlayerName = vesselStatus.PlayerName,
                 ControlType = controlType,
                 Duration = Time.time - _inputAbilityStartTimes[controlType]
             });
             
             /*if (StatsManager.Instance != null)
-                StatsManager.Instance.AbilityActivated(_shipStatus.Team, _shipStatus.Player.Name, controlType,
+                StatsManager.Instance.AbilityActivated(VesselStatus.Team, VesselStatus.Player.Name, controlType,
                     Time.time - _inputAbilityStartTimes[controlType]);*/
 
             ShipHelper.StopShipControllerActions(controlType, _shipControlActions);

@@ -37,7 +37,7 @@ namespace CosmicShore
         private GameObject[,] blockPool;
         private int poolSize;
 
-        IShip _ship;
+        IVessel vessel;
 
         Transform _silhouetteContainer;
         Transform _trailDisplayContainer;
@@ -46,20 +46,20 @@ namespace CosmicShore
         private void OnDisable()
         {
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude -= calculateDriftAngle;
-            if (topJaw) _ship.ShipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
+            if (topJaw) vessel.VesselStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
             if (trailSpawner) trailSpawner.OnBlockCreated -= HandleBlockCreation;
         }
 
-        public void Initialize(IShip ship)
+        public void Initialize(IVessel vessel)
         {
-            _ship = ship;
+            this.vessel = vessel;
 
             // TODO - Remove GameCanvas dependency
-            /*if (!_ship.ShipStatus.AIPilot.AutoPilotEnabled && _ship.ShipStatus.Player.GameCanvas != null)
+            /*if (!vessel.VesselStatus.AIPilot.AutoPilotEnabled && vessel.VesselStatus.Player.GameCanvas != null)
             {
-                hud = _ship.ShipStatus.Player.GameCanvas.MiniGameHUD;
-                silhouetteContainer = hud.SetSilhouetteActive(!ship.ShipStatus.AIPilot.AutoPilotEnabled && ship.ShipStatus.Player.IsActive);
-                trailDisplayContainer = hud.SetTrailDisplayActive(!ship.ShipStatus.AIPilot.AutoPilotEnabled).transform;
+                hud = vessel.VesselStatus.Player.GameCanvas.MiniGameHUD;
+                silhouetteContainer = hud.SetSilhouetteActive(!vessel.VesselStatus.AIPilot.AutoPilotEnabled && vessel.VesselStatus.Player.IsActive);
+                trailDisplayContainer = hud.SetTrailDisplayActive(!vessel.VesselStatus.AIPilot.AutoPilotEnabled).transform;
                 foreach (var part in silhouetteParts)
                 {
                     part.transform.SetParent(silhouetteContainer.transform, false);
@@ -67,18 +67,18 @@ namespace CosmicShore
                 }
             }*/
 
-            // if (!_ship.ShipStatus.AutoPilotEnabled)
+            // if (!vessel.VesselStatus.AutoPilotEnabled)
             // {
             //     OnSilhouetteInitialized.Raise(new SilhouetteData()
             //     {
             //         Sender = this,
-            //         IsSilhouetteActive = !ship.ShipStatus.AutoPilotEnabled && ship.ShipStatus.Player.IsActive,
-            //         IsTrailDisplayActive = !ship.ShipStatus.AutoPilotEnabled,
+            //         IsSilhouetteActive = !vessel.VesselStatus.AutoPilotEnabled && vessel.VesselStatus.Player.IsActive,
+            //         IsTrailDisplayActive = !vessel.VesselStatus.AutoPilotEnabled,
             //         Silhouettes = silhouetteParts
             //     });
             // }
 
-            if (topJaw) _ship.ShipStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+            if (topJaw) this.vessel.VesselStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;
             if (trailSpawner) trailSpawner.OnBlockCreated += HandleBlockCreation;
         }
@@ -98,7 +98,7 @@ namespace CosmicShore
 
         private void calculateDriftAngle(float dotProduct)
         {
-            foreach (var part in silhouetteParts) { part.gameObject.SetActive(!_ship.ShipStatus.AutoPilotEnabled && _ship.ShipStatus.Player.IsActive); } // TODO: why?
+            foreach (var part in silhouetteParts) { part.gameObject.SetActive(!vessel.VesselStatus.AutoPilotEnabled && vessel.VesselStatus.Player.IsActive); } // TODO: why?
 
             // TODO - SilhouetteContainer should be set by the HUD that is listening to our initialize event.
             if (_silhouetteContainer != null)
@@ -121,7 +121,7 @@ namespace CosmicShore
 
         private void HandleBlockCreation(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
-            if (!_ship.ShipStatus.AutoPilotEnabled)
+            if (!vessel.VesselStatus.AutoPilotEnabled)
             {
                 if (poolSize < 1)
                 {
@@ -172,7 +172,7 @@ namespace CosmicShore
             if (_trailDisplayContainer == null)
                 return;
 
-            if (!_ship.ShipStatus.AutoPilotEnabled)
+            if (!vessel.VesselStatus.AutoPilotEnabled)
             {
                 for (int j = 0; j < 2; j++)
                 {

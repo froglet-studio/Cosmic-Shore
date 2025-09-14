@@ -7,17 +7,18 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Utilities;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game
 {
     /// <remarks>
     /// Keep this class as monobehaviour, 
-    /// as the network ship status needs to be a network behaviour
+    /// as the network vessel status needs to be a network behaviour
     /// </remarks>
     [RequireComponent(typeof(TrailSpawner))]
     [RequireComponent(typeof(ResourceSystem))]
-    [RequireComponent(typeof(ShipTransformer))]
+    [RequireComponent(typeof(VesselTransformer))]
     [RequireComponent(typeof(AIPilot))]
     [RequireComponent(typeof(Silhouette))]
     [RequireComponent(typeof(ShipCameraCustomizer))]
@@ -26,20 +27,20 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(R_ShipCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
-    public class ShipStatus : MonoBehaviour, IShipStatus
+    public class VesselStatus : MonoBehaviour, IVesselStatus
     {
-        public event Action<IShipStatus> OnShipInitialized;
+        public event Action<IVesselStatus> OnShipInitialized;
         
-        [SerializeField, RequireInterface(typeof(IShip))]
+        [SerializeField, RequireInterface(typeof(IVessel))]
         UnityEngine.Object _shipInstance;
-        public IShip Ship
+        public IVessel Vessel
         {
             get
             {
                 if (_shipInstance is not null) 
-                    return _shipInstance as IShip;
+                    return _shipInstance as IVessel;
                 
-                Debug.LogError("ShipInstance is not referenced in inspector of Ship Prefab!");
+                Debug.LogError("ShipInstance is not referenced in inspector of Vessel Prefab!");
                 return null;
             }
         }
@@ -67,15 +68,15 @@ namespace CosmicShore.Game
             set => boostMultiplier = value;
         }
 
-        [Header("Ship Meta")]
+        [Header("Vessel Meta")]
         [SerializeField] protected string _name;
         public string Name => _name;
 
-        [SerializeField] protected ShipClassType _shipType;
-        public ShipClassType ShipType => _shipType;
+        [FormerlySerializedAs("_shipType")] [SerializeField] protected VesselClassType vesselType;
+        public VesselClassType VesselType => vesselType;
 
 
-        [Header("Ship Components")]
+        [Header("Vessel Components")]
         [SerializeField] protected Skimmer _nearFieldSkimmer;
         public Skimmer NearFieldSkimmer => _nearFieldSkimmer;
 
@@ -85,8 +86,8 @@ namespace CosmicShore.Game
         [SerializeField] protected GameObject orientationHandle;
         public GameObject OrientationHandle => orientationHandle;
 
-        public Transform FollowTarget { get; set; }
-        public Transform ShipTransform => Ship.Transform;
+        public Transform CameraFollowTarget { get; set; }
+        public Transform ShipTransform => Vessel.Transform;
         public IPlayer Player { get; set; }
         public IInputStatus InputStatus => Player.InputStatus;
         public Material AOEExplosionMaterial { get; set; }
@@ -166,13 +167,13 @@ namespace CosmicShore.Game
             }
         }
 
-        ShipTransformer _shipTransformer;
-        public ShipTransformer ShipTransformer
+        VesselTransformer vesselTransformer;
+        public VesselTransformer VesselTransformer
         {
             get
             {
-                _shipTransformer = _shipTransformer != null ? _shipTransformer : gameObject.GetOrAdd<ShipTransformer>();
-                return _shipTransformer;
+                vesselTransformer = vesselTransformer != null ? vesselTransformer : gameObject.GetOrAdd<VesselTransformer>();
+                return vesselTransformer;
             }
         }
 

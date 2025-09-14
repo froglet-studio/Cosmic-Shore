@@ -96,8 +96,8 @@ namespace CosmicShore.Game.Projectiles
         {
             var Block = Instantiate(trailBlock);
             Block.ChangeTeam(Team);
-            //Block.ownerId = Ship.Player.PlayerUUID;
-            //Block.PlayerName = Ship.Player.PlayerName;
+            //Block.ownerId = Vessel.Player.PlayerUUID;
+            //Block.PlayerName = Vessel.Player.PlayerName;
             Block.ownerID = "public";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             //Block.GetComponent<MeshRenderer>().material = material;

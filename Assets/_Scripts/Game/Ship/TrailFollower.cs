@@ -11,7 +11,7 @@ namespace CosmicShore.Core
         Backward = -1,
     }
 
-    [RequireComponent(typeof(IShipStatus))]
+    [RequireComponent(typeof(IVesselStatus))]
     public class TrailFollower : MonoBehaviour
     {
         int attachedBlockIndex;
@@ -32,13 +32,13 @@ namespace CosmicShore.Core
         public bool IsAttached { get { return attachedTrail != null; } }
         public TrailBlock AttachedTrailBlock { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
 
-        IShipStatus shipData;
+        IVesselStatus vesselData;
 
         void Start()
         {
-            // TODO: find a better way of setting team that doesn't assume a ship
-            shipData = GetComponent<IShipStatus>();
-            team = shipData.Team;
+            // TODO: find a better way of setting team that doesn't assume a vessel
+            vesselData = GetComponent<IVesselStatus>();
+            team = vesselData.Team;
         }
 
         public void Attach(TrailBlock trailBlock)
@@ -77,8 +77,8 @@ namespace CosmicShore.Core
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1-percentTowardNextBlock);
             var speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
             
-            speedToNextBlock *= shipData.ShipTransformer.SpeedMultiplier;
-            shipData.Speed = speedToNextBlock;
+            speedToNextBlock *= vesselData.VesselTransformer.SpeedMultiplier;
+            vesselData.Speed = speedToNextBlock;
 
             var timeToNextBlock = distanceToNextBlock / speedToNextBlock;
 
@@ -92,8 +92,8 @@ namespace CosmicShore.Core
                 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
                 speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
-                speedToNextBlock *= shipData.ShipTransformer.SpeedMultiplier;
-                shipData.Speed = speedToNextBlock;
+                speedToNextBlock *= vesselData.VesselTransformer.SpeedMultiplier;
+                vesselData.Speed = speedToNextBlock;
 
                 timeToNextBlock = distanceToNextBlock / speedToNextBlock;
             }
@@ -107,9 +107,9 @@ namespace CosmicShore.Core
             if (newAttachedBlockIndex != attachedBlockIndex) 
             {
                 attachedBlockIndex = newAttachedBlockIndex;
-                ((GunShipTransformer) shipData.ShipTransformer).FinalBlockSlideEffects(); 
+                ((GunVesselTransformer) vesselData.VesselTransformer).FinalBlockSlideEffects(); 
             }
-            shipData.Course = course;
+            vesselData.Course = course;
             
             if (outDirection != direction)
             {

@@ -20,9 +20,9 @@ public class GrowActionBase : ShipAction, IScaleProvider
 
     private ScaleDir _dir = ScaleDir.None;
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
+        base.Initialize(vessel);
         MinSize = target.transform.lossyScale.z;
     }
 

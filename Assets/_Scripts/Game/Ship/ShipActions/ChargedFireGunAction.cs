@@ -19,14 +19,14 @@ public class ChargedFireGunAction : ShipAction
 
     Coroutine gainEnergy;
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
-        //projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
+        base.Initialize(vessel);
+        //projectileContainer = new GameObject($"{vessel.Player.PlayerName}_Projectiles");
     }
     public override void StartAction()
     {
-        if (ShipStatus.LiveProjectiles) gun.StopProjectile();
+        if (VesselStatus.LiveProjectiles) gun.StopProjectile();
         else gainEnergy = StartCoroutine(GainEnergyCoroutine());
     }
 
@@ -46,10 +46,10 @@ public class ChargedFireGunAction : ShipAction
     {
         while (projectileContainer.GetComponentsInChildren<Projectile>().Length > 0)
         {
-            ShipStatus.LiveProjectiles = true;
+            VesselStatus.LiveProjectiles = true;
             yield return null;
         }
-        ShipStatus.LiveProjectiles = false;
+        VesselStatus.LiveProjectiles = false;
     }
 
     void StartCheckProjectiles()
@@ -62,7 +62,7 @@ public class ChargedFireGunAction : ShipAction
 
     public override void StopAction()
     {
-        if (ShipStatus.LiveProjectiles) gun.DetonateProjectile();
+        if (VesselStatus.LiveProjectiles) gun.DetonateProjectile();
         else 
         {
             StopCoroutine(gainEnergy);
@@ -72,11 +72,11 @@ public class ChargedFireGunAction : ShipAction
                 ResourceSystem.ChangeResourceAmount(AmmoResourceIndex, -ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
 
                 Vector3 inheritedDirection;
-                if (ShipStatus.Attached || ShipStatus.IsStationary) inheritedDirection = transform.forward;
-                else inheritedDirection = ShipStatus.Course;
+                if (VesselStatus.Attached || VesselStatus.IsStationary) inheritedDirection = transform.forward;
+                else inheritedDirection = VesselStatus.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * ShipStatus.Speed, ProjectileScale * ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount, true, float.MaxValue, ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
+                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * VesselStatus.Speed, ProjectileScale * ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount, true, float.MaxValue, ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
                 StartCheckProjectiles();
             }
 

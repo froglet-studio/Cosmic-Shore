@@ -7,11 +7,11 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public interface IShip : ITransform
+    public interface IVessel : ITransform
     {
-        event Action<IShipStatus> OnShipInitialized;
+        event Action<IVesselStatus> OnShipInitialized;
 
-        IShipStatus ShipStatus { get; }
+        IVesselStatus VesselStatus { get; }
 
         void Initialize(IPlayer player, bool enableAIPilot = false);
         void PerformShipControllerActions(InputEvents @event);
@@ -20,12 +20,7 @@ namespace CosmicShore.Game
         void SetResourceLevels(ResourceCollection resources);
         void SetShipUp(float angle);
         void DisableSkimmer();
-        
-        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        // void PerformCrystalImpactEffects(CrystalProperties crystalProperties);
-        
         void SetBoostMultiplier (float boostMultiplier);
-        void ToggleGameObject(bool toggle);
         void SetShipMaterial(Material material);
         void SetBlockSilhouettePrefab(GameObject prefab);
         void SetAOEExplosionMaterial(Material material);
@@ -33,14 +28,9 @@ namespace CosmicShore.Game
         void SetSkimmerMaterial(Material material);
         void AssignCaptain(SO_Captain captain);
         void BindElementalFloat(string name, Element element);
-        
-        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        // void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties);
-        
         void PerformButtonActions(int buttonNumber);
         void OnButtonPressed(int buttonNumber);
         void ToggleAutoPilot(bool toggle);
-
         void Destroy();
     }
 }

@@ -8,10 +8,10 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public interface IShipStatus
+    public interface IVesselStatus
     {
-        IShip Ship { get; } // FOR TEMP USE, TRY TO REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
-        Transform Transform => Ship.Transform;
+        IVessel Vessel { get; } // FOR TEMP USE, TRY TO REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
+        Transform Transform => Vessel.Transform;
         AIPilot AIPilot { get; }
         bool AutoPilotEnabled => AIPilot.AutoPilotEnabled;
         bool AlignmentEnabled { get; set; }
@@ -29,7 +29,7 @@ namespace CosmicShore.Game
         Vector3 Course { get; set; }
         bool Drifting { get; set; }
         bool ElevatedResourceGain { get; set; }
-        Transform FollowTarget { get; set; }
+        Transform CameraFollowTarget { get; set; }
         bool GunsActive { get; set; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
@@ -55,9 +55,9 @@ namespace CosmicShore.Game
         ShipCameraCustomizer ShipCameraCustomizer { get; }
         List<GameObject> ShipGeometries { get; set; }
         Transform ShipTransform { get;}
-        ShipTransformer ShipTransformer { get; }
+        VesselTransformer VesselTransformer { get; }
         string Name { get; }
-        ShipClassType ShipType { get; }
+        VesselClassType VesselType { get; }
         Skimmer NearFieldSkimmer { get; }
         Skimmer FarFieldSkimmer { get; }
         GameObject OrientationHandle { get; }

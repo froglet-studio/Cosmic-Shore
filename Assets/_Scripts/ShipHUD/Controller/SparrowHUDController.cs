@@ -24,9 +24,9 @@ namespace CosmicShore.Game
         Coroutine _heatFillLoop;
         Coroutine _drainLoop;
 
-        public override void Initialize(IShipStatus shipStatus, ShipHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus, ShipHUDView baseView)
         {
-            base.Initialize(shipStatus, baseView);
+            base.Initialize(vesselStatus, baseView);
             view = view != null ? view : baseView as SparrowHUDView;
             
             if(view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
@@ -141,7 +141,7 @@ namespace CosmicShore.Game
 
         void ApplyBoostVisual(float shown01, bool overheated)
         {
-            if (view?.boostFill == null) return;
+            if (!view?.boostFill) return;
 
             view.boostFill.fillAmount = Mathf.Clamp01(shown01);
             view.boostFill.color = overheated
@@ -151,18 +151,19 @@ namespace CosmicShore.Game
         
         private void Update()
         {
-            if (view == null) return;
-            if (fireGunAction != null)
+            if (view) return;
+            if (fireGunAction && fireGunAction.IsInitialized)
                 PaintMissilesFromAmmo01(fireGunAction.Ammo01);
         }
 
         private void PaintMissilesFromAmmo01(float ammo01)
         {
-            if (view.missileIcon == null || view.missileIcons == null || view.missileIcons.Length == 0) return;
+            if (!view.missileIcon || view.missileIcons == null || view.missileIcons.Length == 0) return;
             int maxState = view.missileIcons.Length - 1;
             int state = Mathf.Clamp(Mathf.RoundToInt(Mathf.Clamp01(ammo01) * maxState), 0, maxState);
             var sprite = view.missileIcons[state];
-            if (sprite != null) view.missileIcon.sprite = sprite;
+            if (sprite) 
+                view.missileIcon.sprite = sprite;
             view.missileIcon.enabled = true;
         }
     }

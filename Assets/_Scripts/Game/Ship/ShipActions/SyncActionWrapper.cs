@@ -29,7 +29,7 @@ namespace CosmicShore._Scripts.Game.Ship.ShipActions
                 return;
             }
 
-            syncAction.Initialise(provider);
+            syncAction.AddProvider(provider);
         }
     }
 }

@@ -10,7 +10,7 @@ namespace CosmicShore.Game
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
-            _haptic.PlayIfManual(impactor.Ship.ShipStatus);
+            _haptic.PlayIfManual(impactor.Vessel.VesselStatus);
         }
     }
 }

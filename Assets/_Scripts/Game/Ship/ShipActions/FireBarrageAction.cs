@@ -29,9 +29,9 @@ public class FireBarrageAction : ShipAction
         JsonUtility.FromJsonOverwrite(json, to);
     }
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
+        base.Initialize(vessel);
         var gunTemplate = gunContainer.GetComponent<Gun>();
         foreach (var child in gunContainer.GetComponentsInChildren<Transform>()) 
         {
@@ -41,7 +41,7 @@ public class FireBarrageAction : ShipAction
             child.LookAt(gunContainer.transform);
             child.Rotate(0, 180, 0);
         }
-        //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
+        //projectileContainer = new GameObject($"{vessel.Player.PlayerName}_BarrageProjectiles");
     }
 
     public override void StartAction()
@@ -59,11 +59,11 @@ public class FireBarrageAction : ShipAction
                 {
                     if (inherit)
                     {
-                        if (ShipStatus.Attached) inheritedVelocity = gun.transform.forward;
-                        else inheritedVelocity = ShipStatus.Course;
+                        if (VesselStatus.Attached) inheritedVelocity = gun.transform.forward;
+                        else inheritedVelocity = VesselStatus.Course;
                     }
                     else inheritedVelocity = Vector3.zero;
-                    gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
+                    gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                 }
             }
              

@@ -42,7 +42,7 @@ namespace CosmicShore
             newMiniGameName = EditorGUILayout.TextField("MiniGame Name", newMiniGameName);
             EditorGUILayout.Space();
 
-            GUILayout.Label("Ship Options", EditorStyles.centeredGreyMiniLabel);
+            GUILayout.Label("Vessel Options", EditorStyles.centeredGreyMiniLabel);
             EditorGUILayout.Space();
 
             EditorGUILayout.BeginHorizontal();

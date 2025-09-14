@@ -9,7 +9,7 @@ namespace CosmicShore.Game
 
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor crystalImpactee)
         {
-            vesselImpactor.Ship.ShipStatus.ResourceSystem.AdjustLevel(crystalImpactee.Crystal.crystalProperties.Element, LevelAdjustment);
+            vesselImpactor.Vessel.VesselStatus.ResourceSystem.AdjustLevel(crystalImpactee.Crystal.crystalProperties.Element, LevelAdjustment);
         }
     }
 }

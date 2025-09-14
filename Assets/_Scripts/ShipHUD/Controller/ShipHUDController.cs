@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     {
         private R_ShipActionHandler _actions;
         private ShipHUDView _view;
-        private IShipStatus _status;
+        private IVesselStatus _status;
         [SerializeField] private int jawResourceIndex;
 
         private float _driftDot = 0.9999f; 
@@ -18,9 +18,9 @@ namespace CosmicShore.Game
         public GameObject BlockPrefab { get; private set; }
         
 
-        public virtual void Initialize(IShipStatus shipStatus, ShipHUDView view)
+        public virtual void Initialize(IVesselStatus vesselStatus, ShipHUDView view)
         {
-            _status = shipStatus;
+            _status = vesselStatus;
             _view   = view;
 
             if (_status.AutoPilotEnabled)
@@ -29,7 +29,7 @@ namespace CosmicShore.Game
                 return;
             }
 
-            _actions = shipStatus.ActionHandler;
+            _actions = vesselStatus.ActionHandler;
             if (_actions != null)
             {
                 _actions.OnInputEventStarted += HandleStart;

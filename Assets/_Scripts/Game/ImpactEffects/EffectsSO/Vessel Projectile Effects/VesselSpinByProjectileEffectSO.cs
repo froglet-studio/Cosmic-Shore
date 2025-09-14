@@ -12,11 +12,11 @@ namespace CosmicShore.Game
         {
             Vector3 impactVector = (impactee.Transform.position - impactor.Transform.position).normalized;
             
-            var shipStatus = impactor.Ship.ShipStatus;
-            shipStatus.ShipTransformer.SpinShip(impactVector * spinSpeed);
+            var shipStatus = impactor.Vessel.VesselStatus;
+            shipStatus.VesselTransformer.SpinShip(impactVector * spinSpeed);
             
             // TODO: Implement GentleSpin from here only
-            /*shipStatus.ShipTransformer.GentleSpinShip(.5f * transform.forward + .5f * (UnityEngine.Random.value < 0.5f ? -1f : 1f) * transform.right,
+            /*vesselStatus.VesselTransformer.GentleSpinShip(.5f * transform.forward + .5f * (UnityEngine.Random.value < 0.5f ? -1f : 1f) * transform.right,
                 transform.up, 1);*/
         }
     }

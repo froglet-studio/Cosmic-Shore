@@ -19,20 +19,20 @@ namespace CosmicShore
 
         TrailSpawner _spawner;
         Assembler _activeAssembler;
-        IShipStatus _shipStatus;
+        IVesselStatus vesselStatus;
         TrailBlock _activeSeedBlock;
 
         public TrailBlock ActiveSeedBlock => _activeSeedBlock;
 
-        public void Initialize(IShip ship)
+        public void Initialize(IVessel vessel)
         {
-            _shipStatus = ship.ShipStatus;
-            _spawner    = _shipStatus.TrailSpawner;
+            vesselStatus = vessel.VesselStatus;
+            _spawner    = vesselStatus.TrailSpawner;
         }
 
         public bool StartSeed()
         {
-            var rs = _shipStatus?.ResourceSystem;
+            var rs = vesselStatus?.ResourceSystem;
             if (rs == null) return false;
             if (shieldResourceIndex < 0 || shieldResourceIndex >= rs.Resources.Count) return false;
 

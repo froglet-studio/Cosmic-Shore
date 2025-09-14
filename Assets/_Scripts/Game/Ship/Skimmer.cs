@@ -29,9 +29,8 @@ namespace CosmicShore.Game
         [SerializeField] private Material lineMaterial;
 
         [SerializeField] int resourceIndex = 0;
-
-        public IPlayer Player => ShipStatus.Player;
-        public IShipStatus ShipStatus { get; private set; }
+        
+        public IVesselStatus VesselStatus { get; private set; }
         public bool AffectSelf => affectSelf;
 
         CameraManager cameraManager;
@@ -40,50 +39,45 @@ namespace CosmicShore.Game
         float _sqrRadius;
         float _initialGap;
         float _boosterTimer;
+        
+        public bool IsInitialized { get; private set; }
 
-        void Start()
+        void Update()
         {
+            if (!IsInitialized) return;
+            ApplyScaleIfChanged();   
+        }
+
+        public void Initialize(IVesselStatus vesselStatus)
+        {
+            IsInitialized = true;
+            VesselStatus = vesselStatus;
+            
             cameraManager = CameraManager.Instance;
 
             _sweetSpot = transform.localScale.x / 4f;
             _sqrRadius = transform.localScale.x * transform.localScale.x / 4f;
 
             ApplyScaleIfChanged();
-            if (markerContainer) markerContainer.transform.parent = ShipStatus?.Player?.Transform;
-        }
-
-        void Update() => ApplyScaleIfChanged();
-
-        void ApplyScaleIfChanged()
-        {
-            if (_appliedScale == Scale.Value) return;
-            _appliedScale = Scale.Value;
-            transform.localScale = Vector3.one * _appliedScale;
-        }
-
-        public void Initialize(IShipStatus shipStatus)
-        {
-            ShipStatus = shipStatus;
-            BindElementalFloats(ShipStatus.Ship);
+            BindElementalFloats(VesselStatus.Vessel);
 
             if (visible)
-                GetComponent<MeshRenderer>().material = new Material(ShipStatus.SkimmerMaterial);
+                GetComponent<MeshRenderer>().material = new Material(VesselStatus.SkimmerMaterial);
 
-            _initialGap = ShipStatus.TrailSpawner.Gap;
-
-            if (markerContainer) markerContainer.transform.parent = ShipStatus.Player.Transform;
+            _initialGap = VesselStatus.TrailSpawner.Gap;
+            if (markerContainer) markerContainer.transform.parent = VesselStatus?.Player?.Transform;
         }
 
         // ---------------- Secondary helpers the Impactor can call ----------------
 
-        public void ExecuteImpactOnShip(IShip ship)
+        public void ExecuteImpactOnShip(IVessel vessel)
         {
-            onSkimmerShipImpact.Raise(ShipStatus.PlayerName);
+            onSkimmerShipImpact.Raise(VesselStatus.PlayerName);
         }
 
         public void ExecuteImpactOnPrism(TrailBlock trailBlock)
         {
-            if (ShipStatus is null || (!affectSelf && trailBlock.Team == ShipStatus.Team)) return;
+            if (VesselStatus is null || (!affectSelf && trailBlock.Team == VesselStatus.Team)) return;
             MakeBoosters(trailBlock);
         }
 
@@ -95,6 +89,13 @@ namespace CosmicShore.Game
                 crystal.transform.position,
                 transform.position,
                 vaccumAmount * Time.deltaTime / crystal.transform.lossyScale.x);
+        }
+        
+        void ApplyScaleIfChanged()
+        {
+            if (_appliedScale == Scale.Value) return;
+            _appliedScale = Scale.Value;
+            transform.localScale = Vector3.one * _appliedScale;
         }
 
         void MakeBoosters(TrailBlock trailBlock)
@@ -178,7 +179,7 @@ namespace CosmicShore.Game
                 shardPositions.Add(marker.transform.position);
                 marker.transform.localScale = blockTransform.localScale / 2f;
                 marker.GetComponentInChildren<NudgeShard>().Prisms =
-                    FindNextBlocks(blockTransform.GetComponent<TrailBlock>(), markerDistance * ShipStatus.ResourceSystem.Resources[0].CurrentAmount);
+                    FindNextBlocks(blockTransform.GetComponent<TrailBlock>(), markerDistance * VesselStatus.ResourceSystem.Resources[0].CurrentAmount);
 
                 markers.Add(marker);
             }

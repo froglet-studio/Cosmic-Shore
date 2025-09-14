@@ -10,12 +10,12 @@ namespace CosmicShore.Game
         
         public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
         {
-            var shipStatus = impactor.Ship.ShipStatus;
+            var shipStatus = impactor.Vessel.VesselStatus;
             var trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;
             
             if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != shipStatus.Team)
             {
-                shipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, duration);
+                shipStatus.VesselTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, duration);
             }
         }
     }

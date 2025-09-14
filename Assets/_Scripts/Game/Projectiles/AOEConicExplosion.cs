@@ -14,25 +14,25 @@ namespace CosmicShore.Game.Projectiles
             SpawnRotation = initStruct.SpawnRotation;
             
             AnonymousExplosion = initStruct.AnnonymousExplosion;
-            Ship = initStruct.Ship;
-            if (Ship == null)
+            Vessel = initStruct.Vessel;
+            if (Vessel == null)
             {
-                Debug.LogError("Ship is not initialized in AOEExplosion!");
+                Debug.LogError("Vessel is not initialized in AOEExplosion!");
                 return;
             }
 
             Team = initStruct.OwnTeam;
             if (Team == Teams.Unassigned)
-                Team = Ship.ShipStatus.Team;
+                Team = Vessel.VesselStatus.Team;
 
             MaxScale = initStruct.MaxScale;
             MaxScaleVector = new Vector3(MaxScale, MaxScale, height);
             speed = height / (ExplosionDuration * 4);
 
 
-            Material = new Material(Ship.ShipStatus.AOEConicExplosionMaterial);
+            Material = new Material(Vessel.VesselStatus.AOEConicExplosionMaterial);
             if (!Material)
-                Material = new Material(Ship.ShipStatus.AOEExplosionMaterial);
+                Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);
             
             if (!coneContainer)
                 coneContainer = new GameObject("AOEContainer");

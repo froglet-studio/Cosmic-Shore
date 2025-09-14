@@ -5,6 +5,8 @@ namespace CosmicShore.Game
 {
     public abstract class ImpactorBase : MonoBehaviour, IImpactor
     {
+        protected virtual bool isInitialized => true;
+        
         public Transform Transform => transform;
         
         protected abstract void AcceptImpactee(IImpactor impactee);
@@ -24,6 +26,9 @@ namespace CosmicShore.Game
         
         protected virtual void OnTriggerEnter(Collider other)
         {
+            if (!isInitialized)
+                return;
+            
             if (!other.TryGetComponent(out IImpactCollider impacteeCollider))
                 return;
             

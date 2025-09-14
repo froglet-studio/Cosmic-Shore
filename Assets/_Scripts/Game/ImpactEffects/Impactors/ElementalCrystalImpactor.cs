@@ -16,11 +16,6 @@ namespace CosmicShore.Game
         
         // IImpactEffect[] elementalCrystalShipEffects;
         // IImpactEffect[] elementalCrystalSkimmerEffects;
-
-        protected virtual void Awake()
-        {
-            base.Awake();
-        }
         
         protected override void AcceptImpactee(IImpactor impactee)
         {

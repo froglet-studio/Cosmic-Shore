@@ -9,13 +9,13 @@ namespace CosmicShore.Game.Projectiles
 
         protected override IEnumerator ExplodeCoroutine()
         {
-            var position = Ship.Transform.position;
-            var rotation = Ship.Transform.rotation;
-            var team = Ship.ShipStatus.Team;
+            var position = Vessel.Transform.position;
+            var rotation = Vessel.Transform.rotation;
+            var team = Vessel.VesselStatus.Team;
 
             yield return new WaitForSeconds(ExplosionDelay);
 
-            spawnable.Spawn(position, rotation, team, (int)(Ship.ShipStatus.ResourceSystem.Resources[0].CurrentAmount*10));
+            spawnable.Spawn(position, rotation, team, (int)(Vessel.VesselStatus.ResourceSystem.Resources[0].CurrentAmount*10));
 
             yield return new WaitForEndOfFrame();
         }

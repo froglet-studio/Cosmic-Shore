@@ -19,7 +19,7 @@ namespace CosmicShore
 
         private TrailSpawner spawner;
         private Assembler currentAssembler;
-        private IShip ship;
+        private IVessel vessel;
 
 
         public override void StartAction()

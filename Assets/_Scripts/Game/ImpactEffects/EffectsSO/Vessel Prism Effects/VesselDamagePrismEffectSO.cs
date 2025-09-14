@@ -13,7 +13,7 @@ namespace CosmicShore.Game
         [SerializeField] private bool useOverrideSpeed;
         public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
         {
-            var status = impactor.Ship.ShipStatus;
+            var status = impactor.Vessel.VesselStatus;
             var course = useOverrideCourse ? overrideCourse : status.Course;
             var speed = useOverrideSpeed ? overrideSpeed : status.Speed;
             PrismEffectHelper.Damage(status, prismImpactee, inertia, course, speed);

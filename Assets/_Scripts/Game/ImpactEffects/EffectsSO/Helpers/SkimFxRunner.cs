@@ -7,17 +7,17 @@ namespace CosmicShore.Game
 {
     // ------------------------------------------------------------
     // Small internal helper: spawns & updates skim FX, then cleans up.
-    // Lifetime is scaled by ship speed: progress += speed * deltaTime
+    // Lifetime is scaled by vessel speed: progress += speed * deltaTime
     // so total duration ~= particleDurationAtSpeedOne / speed.
     // ------------------------------------------------------------
     internal static class SkimFxRunner
     {
         public static async UniTaskVoid RunAsync(
-            IShipStatus shipStatus,
+            IVesselStatus vesselStatus,
             TrailBlock trailBlock,
             float particleDurationAtSpeedOne)
         {
-            if (shipStatus?.ShipTransform == null || trailBlock == null)
+            if (vesselStatus?.ShipTransform == null || trailBlock == null)
                 return;
 
             // Auto-cancel when the trailBlock is destroyed.
@@ -30,7 +30,7 @@ namespace CosmicShore.Game
 
                 while (!token.IsCancellationRequested)
                 {
-                    float speed = Mathf.Max(0f, shipStatus.Speed);
+                    float speed = Mathf.Max(0f, vesselStatus.Speed);
 
                     // If speed is ~0, just wait a frame and try again
                     if (speed <= 0.0001f)
@@ -39,11 +39,11 @@ namespace CosmicShore.Game
                         continue;
                     }
 
-                    // Position & orient the particle as a tube from ship to block
-                    Vector3 distance = trailBlock.transform.position - shipStatus.ShipTransform.position;
+                    // Position & orient the particle as a tube from vessel to block
+                    Vector3 distance = trailBlock.transform.position - vesselStatus.ShipTransform.position;
                     particle.transform.localScale = new Vector3(1f, 1f, distance.magnitude);
                     particle.transform.SetPositionAndRotation(
-                        shipStatus.ShipTransform.position,
+                        vesselStatus.ShipTransform.position,
                         Quaternion.LookRotation(distance, trailBlock.transform.up));
 
                     // Advance lifetime with speed scaling

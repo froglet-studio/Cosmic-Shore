@@ -4,7 +4,7 @@ public class StopGunsAction : ShipAction
 {
     public override void StartAction()
     {
-        ShipStatus.GunsActive = false;
+        VesselStatus.GunsActive = false;
     }
 
     public override void StopAction()

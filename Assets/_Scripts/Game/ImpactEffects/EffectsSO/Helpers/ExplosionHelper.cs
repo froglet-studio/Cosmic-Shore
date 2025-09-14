@@ -16,14 +16,14 @@ namespace CosmicShore.Game
             Material overrideMaterial,
             int resourceIndex)
         {
-            if (impactor?.Ship?.ShipStatus == null) return;
+            if (impactor?.Vessel?.VesselStatus == null) return;
 
-            var ss = impactor.Ship.ShipStatus;
+            var ss = impactor.Vessel.VesselStatus;
 
             var init = new AOEExplosion.InitializeStruct
             {
                 OwnTeam            = ss.Team,
-                Ship               = ss.Ship,
+                Vessel               = ss.Vessel,
                 MaxScale           = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex),
                 OverrideMaterial   = overrideMaterial ? overrideMaterial : ss.AOEExplosionMaterial,
                 AnnonymousExplosion = false,
@@ -43,12 +43,12 @@ namespace CosmicShore.Game
             if (impactor?.Projectile == null) return;
 
             var proj = impactor.Projectile;
-            var ss   = proj.ShipStatus;
+            var ss   = proj.VesselStatus;
 
             var init = new AOEExplosion.InitializeStruct
             {
                 OwnTeam            = ss.Team,
-                Ship               = ss.Ship,
+                Vessel               = ss.Vessel,
                 MaxScale           = Mathf.Lerp(minExplosionScale, maxExplosionScale, proj.Charge),
                 OverrideMaterial   = ss.AOEExplosionMaterial,
                 AnnonymousExplosion = false,
@@ -76,7 +76,7 @@ namespace CosmicShore.Game
             }
         }
 
-        static float ComputeScaleForShip(IShipStatus ss, float min, float max, int resourceIndex)
+        static float ComputeScaleForShip(IVesselStatus ss, float min, float max, int resourceIndex)
         {
             var resources = ss?.ResourceSystem?.Resources;
             if (resources != null &&

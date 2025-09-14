@@ -10,7 +10,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] SegmentSpawner SegmentSpawner;
 
-        public static new ShipClassType PlayerShipType = ShipClassType.Urchin;
+        public static new VesselClassType PlayerVesselType = VesselClassType.Urchin;
 
         protected override void Start()
         {
@@ -29,7 +29,7 @@ namespace CosmicShore.Game.Arcade
             SegmentSpawner.Initialize();
 
             Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
 
             FormRing();
         }

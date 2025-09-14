@@ -8,9 +8,9 @@ namespace CosmicShore
     {
         Transform mainCamera;
 
-        [SerializeField, RequireInterface(typeof(IShip))]
+        [SerializeField, RequireInterface(typeof(IVessel))]
         Object _shipMono;
-        IShip _ship => _shipMono as IShip;
+        IVessel Vessel => _shipMono as IVessel;
 
         [SerializeField] AnimationCurve scaleCurve = AnimationCurve.Linear(0, 0, 1, 1);
         [SerializeField] float capsuleRadius = 5f;
@@ -27,24 +27,24 @@ namespace CosmicShore
 
         private void OnEnable()
         {
-            if (_ship == null)
+            if (Vessel == null)
             {
-                Debug.LogError("Ship instance is not set or does not implement IShip interface.");
+                Debug.LogError("Vessel instance is not set or does not implement IVessel interface.");
                 enabled = false;
                 return;
             }
 
-            _ship.OnShipInitialized += OnShipInitialized;
+            Vessel.OnShipInitialized += VesselInitialized;
         }
 
         private void OnDisable()
         {
-            _ship.OnShipInitialized -= OnShipInitialized;
+            Vessel.OnShipInitialized -= VesselInitialized;
         }
 
-        private void OnShipInitialized(IShipStatus _)
+        private void VesselInitialized(IVesselStatus _)
         {
-            if (_ship.ShipStatus.AutoPilotEnabled) return;
+            if (Vessel.VesselStatus.AutoPilotEnabled) return;
             cameraManager = CameraManager.Instance;
             mainCamera = cameraManager.GetCloseCamera();
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
@@ -58,19 +58,19 @@ namespace CosmicShore
         {
             // NOT GOOD WAY TO DO THIS. STOP RUNNING UPDATE BEFORE CHANGING FROM MAIN_MENU TO MULTIPLAYER FREESTYLE SCENE
             if (!mainCamera || 
-                _ship == null || 
-                _ship.ShipStatus == null ||
-                !_ship.ShipStatus.AIPilot ||
-                _ship.ShipStatus.AutoPilotEnabled) return;
+                Vessel == null || 
+                Vessel.VesselStatus == null ||
+                !Vessel.VesselStatus.AIPilot ||
+                Vessel.VesselStatus.AutoPilotEnabled) return;
 
             Vector3 cameraPosition = mainCamera.position;
-            Vector3 shipPosition = _ship.Transform.position;
+            Vector3 shipPosition = Vessel.Transform.position;
 
-            // Position the capsule between the camera and the ship
+            // Position the capsule between the camera and the vessel
             transform.position = (cameraPosition + shipPosition) / 2f;
             transform.LookAt(shipPosition);
 
-            // Scale the capsule to fit between the camera and ship
+            // Scale the capsule to fit between the camera and vessel
             float distance = Vector3.Distance(cameraPosition, shipPosition);
             visibilityCapsule.height = distance;
 

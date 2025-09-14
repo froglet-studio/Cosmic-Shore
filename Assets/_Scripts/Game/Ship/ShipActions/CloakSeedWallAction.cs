@@ -12,7 +12,7 @@ namespace CosmicShore
     {
         [Header("Cooldown")] [SerializeField] private float cooldownSeconds = 20f;
 
-        [Header("Ship Visibility")] 
+        [Header("Vessel Visibility")] 
         [SerializeField] private bool hideShipDuringCooldown = true;
         [SerializeField] private SkinnedMeshRenderer skinnedMeshRenderer;
 
@@ -20,7 +20,7 @@ namespace CosmicShore
         [SerializeField, Range(0f, 1f)] private float localCloakAlpha = 0.2f;
         [SerializeField] private bool remoteFullInvisible = true;
 
-        [Header("Ship Fade")]
+        [Header("Vessel Fade")]
         [SerializeField] private float fadeOutSeconds = 0.25f;
         [SerializeField] private float fadeInSeconds  = 0.25f;
         [SerializeField] private bool hardToggleIfAnyOpaqueAtZero = true;
@@ -29,11 +29,11 @@ namespace CosmicShore
         [SerializeField] private SeedAssemblerConfigurator seedAssemblerAction;   
         [SerializeField] private bool requireExistingTrailBlock = true;
 
-        [Header("Ghost Ship")]
+        [Header("Ghost Vessel")]
         [SerializeField] private float  ghostLifetime       = 0f;  // 0 = same as cooldown
         [SerializeField] private float  ghostScaleMultiplier = 1f;
         [SerializeField] private Material ghostMaterialOverride;
-        [Tooltip("Applied after reading ship rotation; use (0,180,0) if baked mesh is flipped.")]
+        [Tooltip("Applied after reading vessel rotation; use (0,180,0) if baked mesh is flipped.")]
         [SerializeField] private Vector3 ghostEulerOffset = new Vector3(0f, 180f, 0f);
         [Tooltip("Enable subtle idle motion so the ghost feels alive.")]
         [SerializeField] private bool ghostIdleMotion = true;
@@ -62,15 +62,15 @@ namespace CosmicShore
         private static readonly int IDColor2 = Shader.PropertyToID("Color2");
         private static readonly int IDColorMult = Shader.PropertyToID("ColorMultiplier");
 
-        public override void Initialize(IShip ship)
+        public override void Initialize(IVessel vessel)
         {
-            base.Initialize(ship);
-            _spawner = Ship?.ShipStatus?.TrailSpawner;
+            base.Initialize(vessel);
+            _spawner = Vessel?.VesselStatus?.TrailSpawner;
             _spawner.OnBlockSpawned += HandleBlockSpawned;
 
             // Initialize the shared seeding action
             if (seedAssemblerAction != null)
-                seedAssemblerAction.Initialize(Ship);
+                seedAssemblerAction.Initialize(Vessel);
         }
 
         public override void StartAction()
@@ -231,7 +231,7 @@ namespace CosmicShore
             if (go != null) Destroy(go);
         }
 
-        // ---------- Ship fade (unchanged core) ----------
+        // ---------- Vessel fade (unchanged core) ----------
 
         private IEnumerator FadeShipOut()
         {
@@ -336,21 +336,21 @@ namespace CosmicShore
 
         private Transform GetShipFollowTransform()
         {
-            var statusTf = Ship?.ShipStatus?.ShipTransform;
+            var statusTf = Vessel?.VesselStatus?.ShipTransform;
             if (statusTf != null) return statusTf;
             return null;
         }
 
         private bool IsLocalPlayerShip()
         {
-            return Ship != null && Ship.ShipStatus.IsOwner;
+            return Vessel != null && Vessel.VesselStatus.IsOwner;
         }
         
         Quaternion ComputeGhostRotation()
         {
-            var shipTf   = Ship?.ShipStatus?.ShipTransform;
+            var shipTf   = Vessel?.VesselStatus?.ShipTransform;
             var shipUp   = shipTf ? shipTf.up : Vector3.up;
-            var course   = Ship?.ShipStatus?.Course ?? Vector3.zero;
+            var course   = Vessel?.VesselStatus?.Course ?? Vector3.zero;
             
             if (course.sqrMagnitude > 0.0001f)
                 return Quaternion.LookRotation(course.normalized, shipUp);

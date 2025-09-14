@@ -1,14 +1,16 @@
+using UnityEngine.Serialization;
+
 [System.Serializable]
 public struct LeaderboardEntry
 {
     public string PlayerName;
     public int Score;
-    public ShipClassType ShipType;
+    [FormerlySerializedAs("ShipType")] public VesselClassType vesselType;
 
-    public LeaderboardEntry(string playerName, int score, ShipClassType shipType)
+    public LeaderboardEntry(string playerName, int score, VesselClassType vesselType)
     {
         PlayerName = playerName;
         Score = score;
-        ShipType = shipType;
+        this.vesselType = vesselType;
     }
 }

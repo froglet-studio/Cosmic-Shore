@@ -12,21 +12,21 @@ namespace CosmicShore
     /// </summary>
     public class ShipCameraCustomizer : ElementalShipComponent, ICameraConfigurator
     {
-        [Header("Per-Ship Camera Settings")]
+        [Header("Per-Vessel Camera Settings")]
         [SerializeField] private CameraSettingsSO settings;
         
         [SerializeField] ScriptableEventTransform OnInitializePlayerCamera;
 
-        private IShip _ship;
+        private IVessel vessel;
         private ICameraController _cameraCtrl;
 
         /// <summary>
-        /// Must be called when this ship becomes active (spawned/selected).
+        /// Must be called when this vessel becomes active (spawned/selected).
         /// </summary>
-        public void Initialize(IShip ship)
+        public void Initialize(IVessel vessel)
         {
-            _ship = ship;
-            OnInitializePlayerCamera.Raise(_ship.ShipStatus.FollowTarget);
+            this.vessel = vessel;
+            OnInitializePlayerCamera.Raise(this.vessel.VesselStatus.CameraFollowTarget);
         }
 
         public void Configure(ICameraController controller)
@@ -52,7 +52,7 @@ namespace CosmicShore
                 }
             }
             
-            _cameraCtrl.SetFollowTarget(_ship.Transform);
+            _cameraCtrl.SetFollowTarget(vessel.Transform);
 
             if (flags.HasFlag(CameraMode.Orthographic) &&
                 _cameraCtrl is CustomCameraController cccOrtho)

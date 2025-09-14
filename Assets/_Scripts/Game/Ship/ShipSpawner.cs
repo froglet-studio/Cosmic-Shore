@@ -9,24 +9,24 @@ namespace CosmicShore.Game
         [SerializeField] 
         ShipPrefabContainer _shipPrefabContainer;
         
-        public bool SpawnShip(ShipClassType shipType, out IShip ship)
+        public bool SpawnShip(VesselClassType vesselType, out IVessel vessel)
         {
-            if (shipType == ShipClassType.Random)
+            if (vesselType == VesselClassType.Random)
             {
-                var values = Enum.GetValues(typeof(ShipClassType));
+                var values = Enum.GetValues(typeof(VesselClassType));
                 var random = new System.Random();
-                shipType = (ShipClassType)values.GetValue(random.Next(1, values.Length));
+                vesselType = (VesselClassType)values.GetValue(random.Next(1, values.Length));
             }
             
-            ship = null;
+            vessel = null;
             
-            if (!_shipPrefabContainer.TryGetShipPrefab(shipType, out Transform shipPrefab))
+            if (!_shipPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefab))
             {
-                Debug.LogError($"Could not find ship prefab for {shipType}");
+                Debug.LogError($"Could not find vessel prefab for {vesselType}");
                 return false;
             }
 
-            Instantiate(shipPrefab).TryGetComponent(out ship);
+            Instantiate(shipPrefab).TryGetComponent(out vessel);
             return true;
         }
     }

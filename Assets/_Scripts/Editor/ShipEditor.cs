@@ -5,13 +5,13 @@ using CosmicShore.Core;
 
 namespace CosmicShore.Editor
 {
-    /*[CustomEditor(typeof(Ship))]
+    /*[CustomEditor(typeof(Vessel))]
     public class ShipEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            var shipScript = (Ship)target;
+            var shipScript = (Vessel)target;
 
             SerializedProperty property = serializedObject.GetIterator();
 

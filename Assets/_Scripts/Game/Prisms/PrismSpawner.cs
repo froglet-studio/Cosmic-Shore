@@ -19,7 +19,7 @@ namespace CosmicShore
 
         void Awake()
         {
-            // 1) Grab the running World’s EntityManager
+            // 1) Grab the running Worldï¿½s EntityManager
             _em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             /*// 2) Convert the GameObject prefab into an Entity prefab
@@ -42,7 +42,7 @@ namespace CosmicShore
             // 3) Instantiate the prism entity
             // var prismEnt = _em.Instantiate(_prismEntityPrefab);
 
-            // 4) Copy this ship’s position into the prism’s LocalTransform
+            // 4) Copy this vesselï¿½s position into the prismï¿½s LocalTransform
             var pos = transform.position;
             // _em.SetComponentData(prismEnt, LocalTransform.FromPosition(pos));
         }

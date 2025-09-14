@@ -89,7 +89,7 @@ namespace CosmicShore.Game
 
             if (InitialSpawnDone && !NetworkShipClientCache.GetInstanceByClientId(clientId))
             {
-                Debug.Log($"Late join detected for client {clientId}. Spawning player and ship.");
+                Debug.Log($"Late join detected for client {clientId}. Spawning player and vessel.");
                 SpawnShipForClient(clientId, true);
 
                 await UniTask.Delay(3000);
@@ -113,7 +113,7 @@ namespace CosmicShore.Game
             InitialSpawnDone = true;
             foreach (var clientPair in NetworkManager.Singleton.ConnectedClients)
             {
-                Debug.Log($"Spawning player and ship for client {clientPair.Key}.");
+                Debug.Log($"Spawning player and vessel for client {clientPair.Key}.");
                 SpawnShipForClient(clientPair.Key, false);
             }
 
@@ -143,8 +143,8 @@ namespace CosmicShore.Game
                 return;
             }
 
-            // Get the ship type from the NetworkPlayer.
-            R_Player networkPlayer = playerNetworkObject.GetComponent<R_Player>();
+            // Get the vessel type from the NetworkPlayer.
+            Player networkPlayer = playerNetworkObject.GetComponent<Player>();
             if (networkPlayer == null)
             {
                 Debug.LogError($"SpawnPlayerAndShipForClient: NetworkPlayer component not found for client {clientId}.");
@@ -152,22 +152,22 @@ namespace CosmicShore.Game
             }
 
             // Teams team = networkPlayer.NetTeam.Value;
-            ShipClassType shipTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
+            VesselClassType vesselTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
 
-            if (!shipPrefabContainer.TryGetShipPrefab(shipTypeToSpawn, out Transform shipPrefabTransform))
+            if (!shipPrefabContainer.TryGetShipPrefab(vesselTypeToSpawn, out Transform shipPrefabTransform))
                 return;
 
             if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
             {
-                Debug.LogError($"SpawnPlayerAndShipForClient: No matching ship prefab found for ship type {shipTypeToSpawn} for client {clientId}.");
+                Debug.LogError($"SpawnPlayerAndShipForClient: No matching vessel prefab found for vessel type {vesselTypeToSpawn} for client {clientId}.");
                 return;
             }
 
-            // Instantiate and spawn the ship.
+            // Instantiate and spawn the vessel.
             NetworkObject networkShip = Instantiate(shipNetworkObject);
-            Assert.IsTrue(networkShip != null, $"Matching ship network object for client {clientId} not found!");
+            Assert.IsTrue(networkShip != null, $"Matching vessel network object for client {clientId} not found!");
             networkShip.SpawnWithOwnership(clientId, true);
-            Debug.Log($"Spawned ship for client {clientId} using ship type {shipTypeToSpawn}.");
+            Debug.Log($"Spawned vessel for client {clientId} using vessel type {vesselTypeToSpawn}.");
 
             Transform spawnPoint = GetRandomSpawnPoint();
             if (spawnPoint != null)

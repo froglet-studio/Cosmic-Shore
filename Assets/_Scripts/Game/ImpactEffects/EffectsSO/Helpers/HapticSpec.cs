@@ -8,7 +8,7 @@ namespace CosmicShore.Game
     {
         [SerializeField] HapticType _type;
 
-        public void PlayIfManual(IShipStatus status)
+        public void PlayIfManual(IVesselStatus status)
         {
             if (status == null) return;
             if (!status.AutoPilotEnabled)

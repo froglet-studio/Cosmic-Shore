@@ -11,7 +11,7 @@ namespace CosmicShore.Game
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            var rs = impactor.Skimmer.ShipStatus.ResourceSystem;
+            var rs = impactor.Skimmer.VesselStatus.ResourceSystem;
             _change.ApplyTo(rs, this);
         }
     }

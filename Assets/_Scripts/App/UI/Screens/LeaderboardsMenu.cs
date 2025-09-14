@@ -26,7 +26,7 @@ namespace CosmicShore.App.UI.Screens
         List<SO_ArcadeGame> LeaderboardEligibleGames = new();
         SO_ArcadeGame SelectedGame;
         GameModes SelectedGameMode = GameModes.BlockBandit;
-        ShipClassType SelectedShipType = ShipClassType.Any;
+        VesselClassType selectedVesselType = VesselClassType.Any;
 
         int _displayCount;
         void Start()
@@ -55,7 +55,7 @@ namespace CosmicShore.App.UI.Screens
         void FetchLeaderboard()
         {
             LeaderboardManager.Instance.FetchLeaderboard(
-                LeaderboardManager.Instance.GetGameplayStatKey(SelectedGameMode, SelectedShipType),
+                LeaderboardManager.Instance.GetGameplayStatKey(SelectedGameMode, selectedVesselType),
                 new() { { "Intensity", "1" } },
                 OnFetchLeaderboard);
         }
@@ -81,7 +81,7 @@ namespace CosmicShore.App.UI.Screens
         public void SelectShipType(int optionValue)
         {
             var shiptypeName = ShipClassSelection.options[optionValue].text;
-            SelectedShipType = Enum.Parse<ShipClassType>(shiptypeName);
+            selectedVesselType = Enum.Parse<VesselClassType>(shiptypeName);
 
             FetchLeaderboard();
         }
@@ -113,7 +113,7 @@ namespace CosmicShore.App.UI.Screens
             for (var i = 0; i < GameSelectionContainer.transform.childCount; i++)
                 GameSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
-            // Reactivate based on the number of games for the given ship
+            // Reactivate based on the number of games for the given vessel
             for (var i = 0; i < _displayCount; i++)
             {
                 var selectionIndex = i;

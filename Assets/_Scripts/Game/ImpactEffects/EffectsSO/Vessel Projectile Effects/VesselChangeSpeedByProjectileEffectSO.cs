@@ -10,7 +10,7 @@ namespace CosmicShore.Game
 
         public override void Execute(VesselImpactor impactor, ProjectileImpactor impactee)
         {
-            impactor.Ship.ShipStatus.ShipTransformer.ModifyThrottle(_amount, _duration);
+            impactor.Vessel.VesselStatus.VesselTransformer.ModifyThrottle(_amount, _duration);
         }
     }
 }

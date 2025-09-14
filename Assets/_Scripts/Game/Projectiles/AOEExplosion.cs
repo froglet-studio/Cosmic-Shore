@@ -25,7 +25,7 @@ namespace CosmicShore.Game.Projectiles
         // Material and Team
         public Material Material { get; protected set; }
         public Teams Team { get; protected set; }
-        public IShip Ship { get; protected set; }
+        public IVessel Vessel { get; protected set; }
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
         
@@ -35,24 +35,24 @@ namespace CosmicShore.Game.Projectiles
             SpawnRotation = initStruct.SpawnRotation;
             
             AnonymousExplosion = initStruct.AnnonymousExplosion;
-            Ship = initStruct.Ship;
-            if (Ship == null)
+            Vessel = initStruct.Vessel;
+            if (Vessel == null)
             {
-                Debug.LogError("Ship is not initialized in AOEExplosion!");
+                Debug.LogError("Vessel is not initialized in AOEExplosion!");
                 return;
             }
 
             Team = initStruct.OwnTeam;
             if (Team == Teams.Unassigned)
-                Team = Ship.ShipStatus.Team;
+                Team = Vessel.VesselStatus.Team;
 
             MaxScale = initStruct.MaxScale;
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             speed = MaxScale / ExplosionDuration;
 
-            Material = initStruct.OverrideMaterial != null ? initStruct.OverrideMaterial : Ship.ShipStatus.AOEExplosionMaterial;
+            Material = initStruct.OverrideMaterial != null ? initStruct.OverrideMaterial : Vessel.VesselStatus.AOEExplosionMaterial;
             if (Material == null)
-                Material = new Material(Ship.ShipStatus.AOEExplosionMaterial);
+                Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);
         }
 
         public void Detonate() => StartCoroutine(ExplodeCoroutine());
@@ -84,18 +84,18 @@ namespace CosmicShore.Game.Projectiles
                 if (AnonymousExplosion)
                     trailBlock.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
                 else
-                    trailBlock.Damage(impactVector, Ship.ShipStatus.Team, Ship.ShipStatus.Player.PlayerName, devastating);
+                    trailBlock.Damage(impactVector, Vessel.VesselStatus.Team, Vessel.VesselStatus.Player.PlayerName, devastating);
             }
-            else if (other.TryGetComponent<IShipStatus>(out var shipStatus))
+            else if (other.TryGetComponent<IVesselStatus>(out var vesselStatus))
             {
-                if (shipStatus.Team == Team && !affectSelf)
+                if (vesselStatus.Team == Team && !affectSelf)
                     return;
 
-                PerformShipImpactEffects(shipStatus, impactVector);
+                PerformShipImpactEffects(vesselStatus, impactVector);
             }
             else
             {
-                Debug.Log("AOEExplosion.OnTriggerEnter - not a ship or a trail block: " + other.name);
+                Debug.Log("AOEExplosion.OnTriggerEnter - not a vessel or a trail block: " + other.name);
             }
         }*/
 
@@ -120,13 +120,13 @@ namespace CosmicShore.Game.Projectiles
         }
 
         // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        /*protected virtual void PerformShipImpactEffects(IShipStatus shipStatus, Vector3 impactVector)
+        /*protected virtual void PerformShipImpactEffects(IVesselStatus vesselStatus, Vector3 impactVector)
         {
             var castedEffects = _shipImpactEffects.Cast<R_IImpactEffect>();
 
             ShipHelper.ExecuteImpactEffect(
                 castedEffects,
-                new ImpactEffectData(shipStatus, null, impactVector)
+                new ImpactEffectData(vesselStatus, null, impactVector)
             );
         }
 
@@ -141,7 +141,7 @@ namespace CosmicShore.Game.Projectiles
         {
             public Teams OwnTeam;
             public bool AnnonymousExplosion;
-            public IShip Ship;
+            public IVessel Vessel;
             public Material OverrideMaterial;
             public float MaxScale;
             public Vector3 SpawnPosition;

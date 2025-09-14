@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int initialSegments = 100;
         [SerializeField] int intensitySegments = 50;
 
-        public static new ShipClassType PlayerShipType = ShipClassType.Rhino;
+        public static new VesselClassType PlayerVesselType = VesselClassType.Rhino;
 
         protected override void Start()
         {

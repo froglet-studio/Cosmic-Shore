@@ -42,15 +42,15 @@ namespace CosmicShore.Game.Projectiles
         }
 
         // TODO - Check this out, to divide it to Initialize and Detonate methods
-        /*public override void InitializeAndDetonate(IShip ship)
+        /*public override void InitializeAndDetonate(IVessel vessel)
         {
-            base.InitializeAndDetonate(ship);
-            blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team)
-                : _themeManagerData.GetTeamBlockMaterial(Ship.ShipStatus.Team);
+            base.InitializeAndDetonate(vessel);
+            blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Vessel.VesselStatus.Team)
+                : _themeManagerData.GetTeamBlockMaterial(Vessel.VesselStatus.Team);
 
             baseBlockScale.z *= depthScale.Value;
             maxRadius *= depthScale.Value;
-            BindElementalFloats(Ship);
+            BindElementalFloats(Vessel);
         }*/
 
         protected override IEnumerator ExplodeCoroutine()
@@ -107,8 +107,8 @@ namespace CosmicShore.Game.Projectiles
         protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string blockId, Trail trail, Vector3 scale)
         {
             var block = TrailBlockBufferManager.Instance.GetBlock(Team);
-            //block.ownerID = Ship.Player.PlayerUUID;
-            block.PlayerName = Ship.ShipStatus.PlayerName;
+            //block.ownerID = Vessel.Player.PlayerUUID;
+            block.PlayerName = Vessel.VesselStatus.PlayerName;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ownerID = block.ownerID + blockId + position;

@@ -8,7 +8,7 @@ namespace CosmicShore.Game
     {
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
-            IShipStatus shipStatus = vesselImpactor.Ship.ShipStatus;
+            IVesselStatus vesselStatus = vesselImpactor.Vessel.VesselStatus;
             TrailBlockProperties trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;
             
             if (trailBlockProperties == null)
@@ -25,8 +25,8 @@ namespace CosmicShore.Game
                 return;
             }
 
-            shipStatus.Attached = true;
-            shipStatus.AttachedTrailBlock = trailBlock;
+            vesselStatus.Attached = true;
+            vesselStatus.AttachedTrailBlock = trailBlock;
         }
     }
 }

@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
-    [RequireComponent(typeof(IShip))]
+    [RequireComponent(typeof(IVessel))]
     public class VesselImpactor : ImpactorBase
     {
         [FormerlySerializedAs("shipPrismEffects")] [SerializeField]
@@ -13,11 +13,11 @@ namespace CosmicShore.Game
         [FormerlySerializedAs("vesselOmniCrystalEffects")] [FormerlySerializedAs("shipOmniCrystalEffects")] [SerializeField]
         VesselCrystalEffectSO[] vesselCrystalEffects;
         
-        public IShip Ship { get; private set; }
+        public IVessel Vessel { get; private set; }
         
         private void Awake()
         {
-            Ship ??= GetComponent<IShip>();
+            Vessel ??= GetComponent<IVessel>();
         }
 
         protected override void AcceptImpactee(IImpactor impactee)
@@ -45,7 +45,7 @@ namespace CosmicShore.Game
 
         private void Reset()
         { 
-            Ship ??= GetComponent<IShip>();
+            Vessel ??= GetComponent<IVessel>();
         }
     }
 }

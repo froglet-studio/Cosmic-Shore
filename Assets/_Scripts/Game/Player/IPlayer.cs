@@ -10,18 +10,18 @@ namespace CosmicShore.Game
     public interface IPlayer : ITransform
     {
         public static List<IPlayer> NppList { get; }
-        ShipClassType ShipClass { get; }
+        VesselClassType VesselClass { get; }
         Teams Team { get; }
         string Name { get; }
         string PlayerUUID { get; }
-        IShip Ship { get; }
+        IVessel Vessel { get; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
 
         bool IsActive { get; }
         bool IsAIModeActivated { get; }
 
-        void Initialize(InitializeData data, IShip ship);
+        void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
         void ToggleActive(bool active);
         void ToggleGameObject(bool toggle);
         void ToggleAutoPilotMode(bool toggle);
@@ -38,15 +38,15 @@ namespace CosmicShore.Game
         [System.Serializable]
         public class InitializeData
         {
-            [FormerlySerializedAs("ShipType")] public ShipClassType ShipClass;
+            [FormerlySerializedAs("ShipClass")] [FormerlySerializedAs("ShipType")] public VesselClassType vesselClass;
             public Teams Team;
             public string PlayerName;
             public string PlayerUUID;
             
-            [Tooltip("If true, the player-ship will spawn as AI")]
+            [Tooltip("If true, the player-vessel will spawn as AI")]
             public bool EnableAIPilot;
             
-            [Tooltip("If true, then only this player-ship will spawn")]
+            [Tooltip("If true, then only this player-vessel will spawn")]
             public bool AllowSpawning;
         }
     }

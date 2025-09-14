@@ -15,9 +15,9 @@ public class EnergizeAction : ShipAction
     [SerializeField] int Energy = 1;
     int defaultEnergy;
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
+        base.Initialize(vessel);
 
         var firstGun = fireActions[0];
 

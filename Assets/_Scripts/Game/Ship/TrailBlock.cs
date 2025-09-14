@@ -208,9 +208,9 @@ namespace CosmicShore.Core
             // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
             /*if (other.TryGetComponent(out IVesselCollider vesselCollider))
             {
-                var ship = vesselCollider.Ship;
-                if (!ship.ShipStatus.Attached)
-                    ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
+                var vessel = vesselCollider.Vessel;
+                if (!vessel.VesselStatus.Attached)
+                    vessel.PerformTrailBlockImpactEffects(TrailBlockProperties);
             }*/
             
             if (other.TryGetComponent(out CellItem cellItem))

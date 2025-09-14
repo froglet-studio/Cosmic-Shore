@@ -20,7 +20,8 @@ namespace CosmicShore.Game
         [Header("Refs")]
         [SerializeField] private Skimmer skimmer;
         public Skimmer Skimmer => skimmer;
-
+        protected override bool isInitialized => Skimmer.IsInitialized;
+        
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
         private int ActivelySkimmingBlockCount;
@@ -31,7 +32,8 @@ namespace CosmicShore.Game
 
         void OnTriggerStay(Collider other)
         {
-            if (skimmer?.ShipStatus == null) return;
+            if (!isInitialized)
+                return;
 
             // Crystal: vacuum (delegate to Skimmer helper so it uses its settings)
             if (other.TryGetComponent<Crystal>(out var crystal))
@@ -43,7 +45,7 @@ namespace CosmicShore.Game
             // TrailBlock: compute combined weight & run stay effects
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
-            if (!skimmer.AffectSelf && prism.Team == skimmer.ShipStatus.Team) return;
+            if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team) return;
 
             // ensure we started skimming
             StartSkimIfNeeded(prism.ownerID);
@@ -60,7 +62,7 @@ namespace CosmicShore.Game
             float sigma = (sqrSweetSpot) / 2.355f; // since FWHM = sqrSweetSpot
 
             float distanceWeight  = Skimmer.ComputeGaussian(sqrDistance, sqrSweetSpot, sigma);
-            float directionWeight = Vector3.Dot(skimmer.ShipStatus.Transform.forward, prism.transform.forward);
+            float directionWeight = Vector3.Dot(skimmer.VesselStatus.Transform.forward, prism.transform.forward);
 
             CombinedWeight = distanceWeight * Mathf.Abs(directionWeight);
 
@@ -70,11 +72,11 @@ namespace CosmicShore.Game
 
         void OnTriggerExit(Collider other)
         {
-            if (skimmer?.ShipStatus == null) return;
+            if (skimmer?.VesselStatus == null) return;
 
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
-            if (!skimmer.AffectSelf && prism.Team == skimmer.ShipStatus.Team) return;
+            if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team) return;
 
             if (!_skimStartTimes.ContainsKey(prism.ownerID)) return;
 
@@ -93,7 +95,7 @@ namespace CosmicShore.Game
             {
                 case VesselImpactor shipImpactor:
                     ExecuteEffect(impactee, vesselSkimmerEffectsSO);
-                    skimmer.ExecuteImpactOnShip(shipImpactor.Ship);       // secondary call
+                    skimmer.ExecuteImpactOnShip(shipImpactor.Vessel);       // secondary call
                     break;
 
                 case PrismImpactor prismImpactor:
@@ -103,7 +105,7 @@ namespace CosmicShore.Game
                     ExecuteEffect(prismImpactor, skimmerPrismEffectsSO);
                     skimmer.ExecuteImpactOnPrism(prism);    // secondary call (booster viz, etc.)
                     
-                    if (!skimmer.AffectSelf && prism.Team == skimmer.ShipStatus.Team)
+                    if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team)
                         return;
                     StartSkimIfNeeded(prism.ownerID);
                     

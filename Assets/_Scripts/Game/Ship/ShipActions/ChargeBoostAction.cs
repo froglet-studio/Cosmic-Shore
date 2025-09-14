@@ -55,10 +55,10 @@ public class ChargeBoostAction : ShipAction
 
         _charging = true;
 
-        // preview multiplier (optional), but ship speed shouldn’t use it yet
+        // preview multiplier (optional), but vessel speed shouldn’t use it yet
         var start = GetUnits();
-        ShipStatus.ChargedBoostDischarging = false;
-        ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(start);
+        VesselStatus.ChargedBoostDischarging = false;
+        VesselStatus.ChargedBoostCharge = BoostMultiplierFrom(start);
 
         OnChargeStarted?.Invoke(start);
         StartCoroutine(ChargeRoutine());
@@ -76,7 +76,7 @@ public class ChargeBoostAction : ShipAction
         }
 
         var start = GetUnits();
-        ShipStatus.ChargedBoostDischarging = true;
+        VesselStatus.ChargedBoostDischarging = true;
 
         OnDischargeStarted?.Invoke(start);
         StartCoroutine(DischargeRoutine());
@@ -93,7 +93,7 @@ public class ChargeBoostAction : ShipAction
             float v = GetUnits();
 
             // preview value (UI can also use events)
-            ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(v);
+            VesselStatus.ChargedBoostCharge = BoostMultiplierFrom(v);
             OnChargeProgress?.Invoke(v);
 
             if (v >= maxNormalizedCharge - 1e-4f) break;
@@ -105,7 +105,7 @@ public class ChargeBoostAction : ShipAction
 
         // snap to full for determinism
         SetUnits(maxNormalizedCharge);
-        ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(maxNormalizedCharge);
+        VesselStatus.ChargedBoostCharge = BoostMultiplierFrom(maxNormalizedCharge);
         OnChargeEnded?.Invoke();
     }
 
@@ -116,8 +116,8 @@ public class ChargeBoostAction : ShipAction
         while (GetUnits() > 0f)
         {
             float v = GetUnits();
-            Ship.ShipStatus.BoostMultiplier = BoostMultiplierFrom(v);
-            ShipStatus.Boosting = true;
+            Vessel.VesselStatus.BoostMultiplier = BoostMultiplierFrom(v);
+            VesselStatus.Boosting = true;
 
             OnDischargeProgress?.Invoke(v);
 
@@ -127,9 +127,9 @@ public class ChargeBoostAction : ShipAction
         }
 
         SetUnits(0f);
-        Ship.ShipStatus.BoostMultiplier = 1f;
-        ShipStatus.ChargedBoostDischarging = false;
-        ShipStatus.Boosting = false;
+        Vessel.VesselStatus.BoostMultiplier = 1f;
+        VesselStatus.ChargedBoostDischarging = false;
+        VesselStatus.Boosting = false;
 
         if (rechargeCooldownSeconds > 0f)
             _cooldownUntilUtc = Time.unscaledTime + rechargeCooldownSeconds;

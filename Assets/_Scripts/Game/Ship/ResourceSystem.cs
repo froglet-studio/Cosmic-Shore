@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
-    [RequireComponent(typeof(IShipStatus))]
+    [RequireComponent(typeof(IVesselStatus))]
     public class ResourceSystem : ElementalShipComponent
     {
         [SerializeField] public List<Resource> Resources;

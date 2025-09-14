@@ -9,13 +9,13 @@ namespace CosmicShore.Game
 
         public override void Execute(VesselImpactor impactor, ProjectileImpactor impactee)
         {
-            var shipStatus = impactor.Ship.ShipStatus;
+            var shipStatus = impactor.Vessel.VesselStatus;
             var transform  = shipStatus.Transform;
 
             float sign = Random.value < 0.5f ? -1f : 1f;
             Vector3 dir = Quaternion.AngleAxis(sign * angleDegrees, transform.up) * transform.forward;
 
-            shipStatus.ShipTransformer.SpinShip(dir);
+            shipStatus.VesselTransformer.SpinShip(dir);
         }
     }
 }

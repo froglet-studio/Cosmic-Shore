@@ -37,7 +37,7 @@ namespace CosmicShore.Game
         
         void ExecuteEffect(VesselImpactor vesselImpactee)
         {
-            var shipStatus = vesselImpactee.Ship.ShipStatus;
+            var shipStatus = vesselImpactee.Vessel.VesselStatus;
 
             if (!Crystal.CanBeCollected(shipStatus.Team))
                 return;
@@ -45,9 +45,9 @@ namespace CosmicShore.Game
 //             if (allowVesselImpactEffect)
 //             {
 //                 // TODO - Need to create architecture on how to handle AI based on impact effects
-//                 /*if (ship.ShipStatus.AIPilot != null)
+//                 /*if (vessel.VesselStatus.AIPilot != null)
 //                 {
-//                     AIPilot aiPilot = ship.ShipStatus.AIPilot;
+//                     AIPilot aiPilot = vessel.VesselStatus.AIPilot;
 //
 //                     aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
 //                     aiPilot.throttle = aiPilot.defaultThrottle;
@@ -64,9 +64,9 @@ namespace CosmicShore.Game
                 }
             );
             /*if (StatsManager.Instance)
-                StatsManager.Instance.CrystalCollected(shipStatus.Ship, crystal.crystalProperties);*/
+                StatsManager.Instance.CrystalCollected(vesselStatus.Vessel, crystal.crystalProperties);*/
 
-            if (shipStatus.ShipType != ShipClassType.Manta)
+            if (shipStatus.VesselType != VesselClassType.Manta)
             {
                 Crystal.Explode(shipStatus);
                 Crystal.PlayExplosionAudio();

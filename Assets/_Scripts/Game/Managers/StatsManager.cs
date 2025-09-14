@@ -109,7 +109,7 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            // var team = ship.ShipStatus.Team;
+            // var team = vessel.VesselStatus.Team;
             var playerName = crystalStats.PlayerName;
             /*if (!EnsureDictionaryEntriesExist(team, playerName)) return;
 
@@ -167,12 +167,12 @@ namespace CosmicShore.Core
             }
         }
 
-        // public void ExecuteSkimmerShipCollision(IShip skimmingShip, IShip ship)
+        // public void ExecuteSkimmerShipCollision(IVessel skimmingShip, IVessel vessel)
         public void ExecuteSkimmerShipCollision(string skimmerPlayerName)
         {
             if (!allowRecord) return;
 
-            // var team = skimmingShip.ShipStatus.Team;
+            // var team = skimmingShip.VesselStatus.Team;
 
             if (!_miniGameData.TryGetRoundStats(skimmerPlayerName, out var roundStats))
                 return;

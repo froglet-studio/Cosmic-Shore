@@ -4,11 +4,11 @@ public class ToggleAlignAction : ShipAction
 {
     public override void StartAction()
     {
-        ShipStatus.AlignmentEnabled = false;
+        VesselStatus.AlignmentEnabled = false;
     }
 
     public override void StopAction()
     {
-        ShipStatus.AlignmentEnabled = true;
+        VesselStatus.AlignmentEnabled = true;
     }
 }

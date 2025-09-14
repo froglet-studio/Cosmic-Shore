@@ -12,7 +12,7 @@ namespace CosmicShore.Game
         [Tooltip("Thin bar/rod prefab. Local Z should point along the length.")]
         [SerializeField] private GameObject rodPrefab;
 
-        [Header("Placement Ray (from IMPACTEE ship)")]
+        [Header("Placement Ray (from IMPACTEE vessel)")]
         [SerializeField] private float rayDistance = 200f;
         [SerializeField] private LayerMask rayMask = ~0;
         [SerializeField] private float fallbackForward = 60f;
@@ -51,7 +51,7 @@ namespace CosmicShore.Game
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
             if (rodPrefab == null) return;
-            var targetShip = impactee.Skimmer.ShipStatus;
+            var targetShip = impactee.Skimmer.VesselStatus;
 
             // RNG
             int s = (seed != 0) ? seed : (int)(Random.value * int.MaxValue);

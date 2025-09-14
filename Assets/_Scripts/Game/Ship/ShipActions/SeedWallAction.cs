@@ -15,10 +15,10 @@ namespace CosmicShore
         [SerializeField] int resourceIndex = 0;
         float resourceCost;
 
-        public override void Initialize(IShip ship)
+        public override void Initialize(IVessel vessel)
         {
-            base.Initialize(ship);
-            spawner = Ship.ShipStatus.TrailSpawner;
+            base.Initialize(vessel);
+            spawner = Vessel.VesselStatus.TrailSpawner;
             resourceCost = ResourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
         }
 

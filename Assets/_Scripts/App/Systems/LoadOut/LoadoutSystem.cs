@@ -33,10 +33,10 @@ namespace CosmicShore.App.Systems.Loadout
             {
                 loadouts = new List<Loadout>()
                 {
-                    new() { Intensity=1, PlayerCount=1, GameMode= GameModes.BlockBandit, ShipType= ShipClassType.Manta},
-                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, ShipType= ShipClassType.Random},
-                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, ShipType= ShipClassType.Random},
-                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, ShipType= ShipClassType.Random},
+                    new() { Intensity=1, PlayerCount=1, GameMode= GameModes.BlockBandit, VesselType= VesselClassType.Manta},
+                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, VesselType= VesselClassType.Random},
+                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, VesselType= VesselClassType.Random},
+                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, VesselType= VesselClassType.Random},
                 };
                 DataAccessor.Save(PlayerLoadoutsSaveFileName, loadouts);
             }

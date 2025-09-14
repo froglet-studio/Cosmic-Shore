@@ -227,12 +227,12 @@ namespace CosmicShore.App.UI.Views
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarScreen),
+                Debug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", nameof(HangarScreen),
                     nameof(SelectCaptain), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarScreen),
+                Debug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", nameof(HangarScreen),
                     nameof(SelectCaptain), nullReferenceException.Message);
             }
         }

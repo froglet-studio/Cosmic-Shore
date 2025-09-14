@@ -12,9 +12,9 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] float maxExplosionScale;
         public float Charge { get; private set; } = 0;
 
-        public override void Initialize(PoolManager poolManager, Teams team, IShipStatus shipStatus, float charge)
+        public override void Initialize(PoolManager poolManager, Teams team, IVesselStatus vesselStatus, float charge)
         {
-            base.Initialize(poolManager, team, shipStatus, charge);
+            base.Initialize(poolManager, team, vesselStatus, charge);
             Charge = charge;
         }
 
@@ -47,11 +47,11 @@ namespace CosmicShore.Game.Projectiles
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         Debug.Log("DeactivateTrailBlock from projectile");
-                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, ShipStatus.Team, ShipStatus.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, VesselStatus.Team, VesselStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        // trailBlockProperties.trailBlock.Steal(Ship.ShipStatus.PlayerName, Team);
-                        trailBlockProperties.trailBlock.Steal(ShipStatus.PlayerName, OwnTeam);
+                        // trailBlockProperties.trailBlock.Steal(Vessel.VesselStatus.PlayerName, Team);
+                        trailBlockProperties.trailBlock.Steal(VesselStatus.PlayerName, OwnTeam);
                         break;
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
@@ -77,9 +77,9 @@ namespace CosmicShore.Game.Projectiles
         {
             foreach (var AOE in AOEPrefabs)
             {
-                if (ShipStatus.Ship == null)
+                if (VesselStatus.Vessel == null)
                 {
-                    Debug.LogError("ShipStatus.Ship is null in ExplodableProjectile.Detonate()");
+                    Debug.LogError("VesselStatus.Vessel is null in ExplodableProjectile.Detonate()");
                     return;
                 }
 
@@ -87,9 +87,9 @@ namespace CosmicShore.Game.Projectiles
                 AOEExplosion.Initialize(new AOEExplosion.InitializeStruct
                 {
                     OwnTeam = OwnTeam,
-                    Ship = ShipStatus.Ship,
+                    Vessel = VesselStatus.Vessel,
                     MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge),
-                    OverrideMaterial = ShipStatus.Ship.ShipStatus.AOEExplosionMaterial,
+                    OverrideMaterial = VesselStatus.Vessel.VesselStatus.AOEExplosionMaterial,
                     AnnonymousExplosion = false
                 });
                 AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);

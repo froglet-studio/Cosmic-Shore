@@ -26,7 +26,7 @@ namespace CosmicShore.Game
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
-                    if (shipImpactee.Ship.ShipStatus.Team == Explosion.Team && !affectSelf)
+                    if (shipImpactee.Vessel.VesselStatus.Team == Explosion.Team && !affectSelf)
                         break;
                     // ExecuteEffect(shipImpactee, explosionShipEffects);
                     if(!DoesEffectExist(shipAOEEffects)) return;
@@ -64,11 +64,11 @@ namespace CosmicShore.Game
                 return;
             }
             
-            if (Explosion.AnonymousExplosion) // Ship Status will be null here
+            if (Explosion.AnonymousExplosion) // Vessel Status will be null here
                 prism.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
             else
             {
-                var shipStatus = Explosion.Ship.ShipStatus;
+                var shipStatus = Explosion.Vessel.VesselStatus;
                 prism.Damage(impactVector, shipStatus.Team, shipStatus.Player.Name, devastating);
             }
         }

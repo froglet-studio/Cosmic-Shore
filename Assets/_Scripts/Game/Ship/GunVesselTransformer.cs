@@ -1,8 +1,9 @@
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Game;
 using UnityEngine.InputSystem.LowLevel;
 
-public class GunShipTransformer : ShipTransformer
+public class GunVesselTransformer : VesselTransformer
 {
     BlockscapeFollower trailFollower;
     [SerializeField] float rechargeRate = .1f;
@@ -18,35 +19,42 @@ public class GunShipTransformer : ShipTransformer
     [SerializeField] int ammoIndex = 0;
 
 
-    protected override void Start()
+    public override void Initialize(IVessel vessel)
     {
-        base.Start();
+        base.Initialize(vessel);
         cameraManager = CameraManager.Instance;
         trailFollower = GetComponent<BlockscapeFollower>();
     }
 
     protected override void MoveShip()
     {
-        if (shipStatus.Attached && !attached)
+        switch (VesselStatus.Attached)
         {
-            trailFollower.Attach(shipStatus.AttachedTrailBlock);
-            if (Ship.ShipStatus.AutoPilotEnabled && cameraManager != null)
+            case true when !attached:
             {
-                cameraManager.SetNormalizedCloseCameraDistance(1);
-                Debug.Log("camera distance now set to 1");
+                trailFollower.Attach(VesselStatus.AttachedTrailBlock);
+                if (Vessel.VesselStatus.AutoPilotEnabled && cameraManager != null)
+                {
+                    cameraManager.SetNormalizedCloseCameraDistance(1);
+                    Debug.Log("camera distance now set to 1");
+                }
+
+                break;
             }
-        }
-        else if (!shipStatus.Attached && attached)
-        {
-            trailFollower.Detach();
-            if (!Ship.ShipStatus.AutoPilotEnabled && cameraManager != null)
+            case false when attached:
             {
-                cameraManager.SetNormalizedCloseCameraDistance(0);
-                Debug.Log("camera distance now set to 0");
+                trailFollower.Detach();
+                if (!Vessel.VesselStatus.AutoPilotEnabled && cameraManager != null)
+                {
+                    cameraManager.SetNormalizedCloseCameraDistance(0);
+                    Debug.Log("camera distance now set to 0");
+                }
+
+                break;
             }
         }
 
-        attached = shipStatus.Attached;
+        attached = VesselStatus.Attached;
 
         if (attached)
             Slide();
@@ -60,11 +68,11 @@ public class GunShipTransformer : ShipTransformer
         float lookThreshold = -.6f;
         float zeroPosition = .2f;
 
-        // TODO - Ship components should not be accessing InputStatus directly.
+        // TODO - Vessel components should not be accessing InputStatus directly.
         // var throttle = (InputStatus.XDiff - zeroPosition) / (1 - zeroPosition);
         var throttle = 0;
 
-        if (Vector3.Dot(transform.forward, shipStatus.Course) < lookThreshold && throttle > 0)
+        if (Vector3.Dot(transform.forward, VesselStatus.Course) < lookThreshold && throttle > 0)
             moveForward = !moveForward;
 
         trailFollower.Throttle = Mathf.Abs(throttle);
@@ -81,15 +89,15 @@ public class GunShipTransformer : ShipTransformer
 
     public void FinalBlockSlideEffects()
     {
-        shipStatus.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
+        VesselStatus.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
 
-        if (shipStatus.AttachedTrailBlock.destroyed)
-            shipStatus.AttachedTrailBlock.Restore();
+        if (VesselStatus.AttachedTrailBlock.destroyed)
+            VesselStatus.AttachedTrailBlock.Restore();
 
-        if (shipStatus.AttachedTrailBlock.Team == Ship.ShipStatus.Team)
+        if (VesselStatus.AttachedTrailBlock.Team == Vessel.VesselStatus.Team)
         {
-            shipStatus.AttachedTrailBlock.Grow(growthAmount.Value);
+            VesselStatus.AttachedTrailBlock.Grow(growthAmount.Value);
         }
-        else shipStatus.AttachedTrailBlock.Steal(Ship.ShipStatus.Player.Name, Ship.ShipStatus.Team);
+        else VesselStatus.AttachedTrailBlock.Steal(Vessel.VesselStatus.Player.Name, Vessel.VesselStatus.Team);
     }
 }

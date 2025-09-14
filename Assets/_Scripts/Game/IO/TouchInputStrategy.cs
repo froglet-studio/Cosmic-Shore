@@ -50,7 +50,7 @@ namespace CosmicShore.Game.IO
                 {
                     inputStatus.Idle = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);
-                    // _ship.PerformShipControllerActions(InputEvents.IdleAction);
+                    // vessel.PerformShipControllerActions(InputEvents.IdleAction);
                 }
             }
 
@@ -62,7 +62,7 @@ namespace CosmicShore.Game.IO
                 {
                     inputStatus.Idle = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);
-                    // _ship.StopShipControllerActions(InputEvents.IdleAction);
+                    // vessel.StopShipControllerActions(InputEvents.IdleAction);
                 }
             }
         }
@@ -101,7 +101,7 @@ namespace CosmicShore.Game.IO
         {
             var position = Touch.activeTouches[0].screenPosition;
 
-            // TODO - CommandStickControls is not needed to be inside ShipStatus
+            // TODO - CommandStickControls is not needed to be inside VesselStatus
             if (inputStatus.CommandStickControls)
             {
                 ProcessCommandStickControls(position);
@@ -130,15 +130,15 @@ namespace CosmicShore.Game.IO
                 Touch.activeTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
             {
                 inputStatus.OnButtonPressed.Raise(InputEvents.NodeTapAction);
-                // _ship.PerformShipControllerActions(InputEvents.NodeTapAction);
+                // vessel.PerformShipControllerActions(InputEvents.NodeTapAction);
             }
             
-            // TODO - Can't access IShip here, things need to be fucking separated.
-            /*else if ((tempThreeDPosition - _ship.Transform.position).sqrMagnitude < 10000 &&
+            // TODO - Can't access IVessel here, things need to be fucking separated.
+            /*else if ((tempThreeDPosition - vessel.Transform.position).sqrMagnitude < 10000 &&
                      Touch.activeTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
             {
                 inputStatus.OnButtonPressed.Raise(InputEvents.SelfTapAction);
-                // _ship.PerformShipControllerActions(InputEvents.SelfTapAction);
+                // vessel.PerformShipControllerActions(InputEvents.SelfTapAction);
             }
             else
             {
@@ -152,7 +152,7 @@ namespace CosmicShore.Game.IO
             {
                 leftStickEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-                // _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                // vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
             }
             leftJoystickValue = position;
             leftTouchIndex = 0;
@@ -167,7 +167,7 @@ namespace CosmicShore.Game.IO
             {
                 rightStickEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-                // _ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                // vessel.PerformShipControllerActions(InputEvents.RightStickAction);
             }
             rightJoystickValue = position;
             rightTouchIndex = 0;
@@ -196,13 +196,13 @@ namespace CosmicShore.Game.IO
             {
                 leftStickEffectsStarted = false;
                 inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-                // _ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                // vessel.StopShipControllerActions(InputEvents.LeftStickAction);
             }
             if (rightStickEffectsStarted)
             {
                 rightStickEffectsStarted = false;
                 inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-                // _ship.StopShipControllerActions(InputEvents.RightStickAction);
+                // vessel.StopShipControllerActions(InputEvents.RightStickAction);
             }
         }
 
@@ -234,13 +234,13 @@ namespace CosmicShore.Game.IO
             {
                 fullSpeedStraightEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.FullSpeedStraightAction);
-                // _ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
+                // vessel.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
             }
             else if (DeviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
             {
                 minimumSpeedStraightEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.MinimumSpeedStraightAction);
-                // _ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
+                // vessel.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
             else
             {
@@ -248,13 +248,13 @@ namespace CosmicShore.Game.IO
                 {
                     fullSpeedStraightEffectsStarted = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
-                    // _ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
+                    // vessel.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
                 }
                 if (minimumSpeedStraightEffectsStarted && DeviationFromMinimumSpeedStraight > threshold)
                 {
                     minimumSpeedStraightEffectsStarted = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
-                    // _ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
+                    // vessel.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
             }
         }

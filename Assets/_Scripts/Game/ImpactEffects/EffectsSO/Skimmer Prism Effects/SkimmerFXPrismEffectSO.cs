@@ -10,7 +10,7 @@ namespace CosmicShore.Game
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            var shipStatus = impactor?.Skimmer?.ShipStatus; // use the owning ship’s status
+            var shipStatus = impactor?.Skimmer?.VesselStatus; // use the owning vessel’s status
             var trailBlock = prismImpactee?.Prism?.TrailBlockProperties?.trailBlock;
             SkimFxRunner.RunAsync(shipStatus, trailBlock, particleDurationAtSpeedOne).Forget();
         }

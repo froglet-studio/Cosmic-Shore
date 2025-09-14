@@ -6,11 +6,11 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// This class helps in method execution for IShipStatus instances
+    /// This class helps in method execution for IVesselStatus instances
     /// </summary>
     public static class ShipHelper
     {
-        public static void InitializeShipControlActions(IShipStatus shipStatus,
+        public static void InitializeShipControlActions(IVesselStatus vesselStatus,
             List<InputEventShipActionMapping> inputEventShipActions,
             Dictionary<InputEvents, List<ShipAction>> shipControlActions)
         {
@@ -21,10 +21,10 @@ namespace CosmicShore.Game
                     shipControlActions[inputEventShipAction.InputEvent].AddRange(inputEventShipAction.ShipActions);
 
             foreach (var shipAction in shipControlActions.Keys.SelectMany(key => shipControlActions[key]))
-                shipAction.Initialize(shipStatus.Ship);
+                shipAction.Initialize(vesselStatus.Vessel);
         }
 
-        public static void InitializeClassResourceActions(IShipStatus shipStatus,
+        public static void InitializeClassResourceActions(IVesselStatus vesselStatus,
             List<ResourceEventShipActionMapping> resourceEventShipActionMappings,
             Dictionary<ResourceEvents, List<ShipAction>> classResourceActions)
         {
@@ -35,7 +35,7 @@ namespace CosmicShore.Game
                     classResourceActions[resourceEventClassAction.ResourceEvent].AddRange(resourceEventClassAction.ClassActions);
 
             foreach (var classAction in classResourceActions.Keys.SelectMany(key => classResourceActions[key]))
-                classAction.Initialize(shipStatus.Ship);
+                classAction.Initialize(vesselStatus.Vessel);
         }
 
         public static void Teleport(Transform shipTransform, Transform targetTransform) => shipTransform.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);

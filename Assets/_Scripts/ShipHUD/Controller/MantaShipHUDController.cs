@@ -15,9 +15,9 @@ namespace CosmicShore.Game
 
         private int _max = 1;
 
-        public override void Initialize(IShipStatus shipStatus, ShipHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus, ShipHUDView baseView)
         {
-            base.Initialize(shipStatus, baseView);
+            base.Initialize(vesselStatus, baseView);
             view = view != null ? view : baseView as MantaShipHUDView;
 
             if (overchargeSO == null || skimmer == null)
