@@ -2419,11 +2419,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipPrismEffects:
+  vesselPrismEffects:
   - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
   - {fileID: 11400000, guid: 5fdd42bc7ecaccf6f945a866337ccd20, type: 2}
   - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
-  shipOmniCrystalEffects:
+  vesselCrystalEffects:
   - {fileID: 11400000, guid: cc08abc02226e2848ba08fab18880d4b, type: 2}
   - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
 --- !u!114 &9121591686382397393
@@ -3318,6 +3318,7 @@ GameObject:
   - component: {fileID: 7800325436931231227}
   - component: {fileID: 2943419612712333960}
   - component: {fileID: 5386391956911707453}
+  - component: {fileID: 7082255767492626153}
   m_Layer: 0
   m_Name: ShipHUDContainer
   m_TagString: Untagged
@@ -3399,6 +3400,29 @@ MonoBehaviour:
     prefab: {fileID: 2092273636776193303, guid: c1572db06ad4244469ad3f25d86940b8,
       type: 3}
   contentTransform: {fileID: 7800325436931231227}
+--- !u!114 &7082255767492626153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9084521984956080798}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_UiScaleMode: 1
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 1920, y: 1080}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0
 --- !u!1001 &4033090122440962496
 PrefabInstance:
   m_ObjectHideFlags: 0
