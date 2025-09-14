@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "DeployTeamCrystalAction", menuName = "CosmicShore/Actions/Deploy Team Crystal")]
+[CreateAssetMenu(fileName = "DeployTeamCrystalAction", menuName = "ScriptableObjects/Vessel Actions/Deploy Team Crystal")]
 public class DeployTeamCrystalActionSO : ShipActionSO
 {
     [Header("Setup")]

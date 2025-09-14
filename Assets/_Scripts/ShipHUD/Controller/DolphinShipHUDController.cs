@@ -7,39 +7,56 @@ namespace CosmicShore.Game
         [Header("View")]
         [SerializeField] private DolphinShipHUDView view;
 
-        [Header("Action")]
-        [SerializeField] private ChargeBoostAction chargeBoostAction;
+        [Header("Executor (runtime)")]
+        [SerializeField] private ChargeBoostActionExecutor chargeBoostExecutor;
+
+        [SerializeField] private ChargeBoostActionSO chargeBoostActionSO;
 
         private float _maxUnits = 1f;
-        private int   _stepsMinusOne = 0;
+        private int   _stepsMinusOne;
 
         public override void Initialize(IVesselStatus vesselStatus, ShipHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
             view = view != null ? view : baseView as DolphinShipHUDView;
 
-            if (view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
+            if (view != null && !view.isActiveAndEnabled)
+                view.gameObject.SetActive(true);
 
             if (view == null || view.chargeSteps == null || view.chargeSteps.Count == 0)
                 return;
 
             _stepsMinusOne = Mathf.Max(0, view.chargeSteps.Count - 1);
 
-            if (chargeBoostAction != null)
+            if (chargeBoostExecutor != null)
             {
-                _maxUnits = Mathf.Max(0.0001f, chargeBoostAction.MaxChargeUnits);
+                _maxUnits = chargeBoostActionSO != null ? Mathf.Max(0.0001f, chargeBoostActionSO.MaxNormalizedCharge) : 1f;
 
-                chargeBoostAction.OnChargeStarted     += SetFromUnits;
-                chargeBoostAction.OnChargeProgress    += SetFromUnits;
-                chargeBoostAction.OnChargeEnded       += () => SetSpriteIndex(_stepsMinusOne); 
+                // Subscribe to executor events
+                chargeBoostExecutor.OnChargeStarted     += SetFromUnits;
+                chargeBoostExecutor.OnChargeProgress    += SetFromUnits;
+                chargeBoostExecutor.OnChargeEnded       += () => SetSpriteIndex(_stepsMinusOne);
 
-                chargeBoostAction.OnDischargeStarted  += SetFromUnits;
-                chargeBoostAction.OnDischargeProgress += u => SetFromUnits(u);
-                chargeBoostAction.OnDischargeEnded    += () => SetSpriteIndex(0);        
+                chargeBoostExecutor.OnDischargeStarted  += SetFromUnits;
+                chargeBoostExecutor.OnDischargeProgress += u => SetFromUnits(u);
+                chargeBoostExecutor.OnDischargeEnded    += () => SetSpriteIndex(0);
             }
 
             // start empty
             SetSpriteIndex(0);
+        }
+
+        private void OnDestroy()
+        {
+            if (chargeBoostExecutor == null) return;
+
+            chargeBoostExecutor.OnChargeStarted     -= SetFromUnits;
+            chargeBoostExecutor.OnChargeProgress    -= SetFromUnits;
+            chargeBoostExecutor.OnChargeEnded       -= () => SetSpriteIndex(_stepsMinusOne);
+
+            chargeBoostExecutor.OnDischargeStarted  -= SetFromUnits;
+            chargeBoostExecutor.OnDischargeProgress -= u => SetFromUnits(u);
+            chargeBoostExecutor.OnDischargeEnded    -= () => SetSpriteIndex(0);
         }
 
         void SetFromUnits(float units)
@@ -47,7 +64,7 @@ namespace CosmicShore.Game
             if (view == null || view.chargeSteps == null || view.chargeSteps.Count == 0) return;
 
             float u = Mathf.Clamp(units, 0f, _maxUnits);
-            float t =  _maxUnits > 0f  ? u / _maxUnits : 0f; 
+            float t = _maxUnits > 0f ? u / _maxUnits : 0f;
 
             int idx = Mathf.Clamp(Mathf.RoundToInt(t * _stepsMinusOne), 0, _stepsMinusOne);
             SetSpriteIndex(idx);

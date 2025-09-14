@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "ToggleStationaryModeAction", menuName = "CosmicShore/Actions/Toggle Stationary Mode")]
+[CreateAssetMenu(fileName = "ToggleStationaryModeAction", menuName = "ScriptableObjects/Vessel Actions/Toggle Stationary Mode")]
 public class ToggleStationaryModeActionSO : ShipActionSO
 {
     public enum Mode { Sparrow, Serpent }

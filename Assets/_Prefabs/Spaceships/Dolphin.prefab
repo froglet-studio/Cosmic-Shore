@@ -75,50 +75,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!1 &614549991635239556
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8849081233834349066}
-  - component: {fileID: 6485032237074888876}
-  m_Layer: 0
-  m_Name: DriftAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &8849081233834349066
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 614549991635239556}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6485032237074888876
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 614549991635239556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ce92f4b0362ed814d929538270bb526c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &771238822753962749
 GameObject:
   m_ObjectHideFlags: 0
@@ -128,6 +84,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1652470095801812404}
+  - component: {fileID: 8363998993469153081}
   m_Layer: 0
   m_Name: ChargeBoostActionExecutor
   m_TagString: Untagged
@@ -150,6 +107,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1252869930824874955}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8363998993469153081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771238822753962749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ee67b721dde40b8be686c325412c7f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &906114914286106511
 GameObject:
   m_ObjectHideFlags: 0
@@ -618,6 +587,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2053099346465173604}
+  - component: {fileID: 1396157652283013214}
   m_Layer: 0
   m_Name: DriftTrailActionExecutor
   m_TagString: Untagged
@@ -640,53 +610,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1252869930824874955}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1969940196958440183
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7183594447174095736}
-  - component: {fileID: 5489407313368403614}
-  m_Layer: 0
-  m_Name: ToggleShardAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &7183594447174095736
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1969940196958440183}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5489407313368403614
+--- !u!114 &1396157652283013214
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1969940196958440183}
+  m_GameObject: {fileID: 1401569365462504728}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a15d4ce4fd80d3a4ab78eefd082aa82f, type: 3}
+  m_Script: {fileID: 11500000, guid: 3b111e4c5e7848f7a44f9b65e597a6de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
-  team: 1
-  searchRadiusHint: 0
 --- !u!1 &2615798265241578943
 GameObject:
   m_ObjectHideFlags: 0
@@ -1424,94 +1359,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   impactorObject: {fileID: 6556690844172358248}
---- !u!1 &5142482731312262488
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 6460338477285801187}
-  - component: {fileID: 5348798502304011156}
-  m_Layer: 0
-  m_Name: DriftTrailAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &6460338477285801187
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5142482731312262488}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5348798502304011156
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5142482731312262488}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 919d0da9b89dabe43b5e92e4aaeb6525, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!1 &5312541294559647267
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 748550314388533840}
-  - component: {fileID: 548351690720485227}
-  m_Layer: 0
-  m_Name: ToggleGyroAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &748550314388533840
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5312541294559647267}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &548351690720485227
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5312541294559647267}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a95abc3c55d5424d8713733f65a5c19, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &5448093292378442595
 GameObject:
   m_ObjectHideFlags: 0
@@ -1521,6 +1368,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1252869930824874955}
+  - component: {fileID: 3941163936891360053}
   m_Layer: 0
   m_Name: ShipActions
   m_TagString: Untagged
@@ -1541,13 +1389,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4299211900478517548}
-  - {fileID: 748550314388533840}
-  - {fileID: 8849081233834349066}
-  - {fileID: 3672644827550490281}
-  - {fileID: 6460338477285801187}
-  - {fileID: 5445499212288512571}
-  - {fileID: 7183594447174095736}
   - {fileID: 586707467372153301}
   - {fileID: 1652470095801812404}
   - {fileID: 2053099346465173604}
@@ -1555,6 +1396,24 @@ Transform:
   - {fileID: 1843551402662252762}
   m_Father: {fileID: 2209447707423869789}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3941163936891360053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5448093292378442595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db6dbfb1f4d3438184815697c23aefce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _executors:
+  - {fileID: 1414355453659723829}
+  - {fileID: 8363998993469153081}
+  - {fileID: 1396157652283013214}
+  - {fileID: 3572016475912017619}
+  - {fileID: 2939051450022613431}
 --- !u!1 &5673849402713387567
 GameObject:
   m_ObjectHideFlags: 0
@@ -1797,58 +1656,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &6272202093534731195
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3672644827550490281}
-  - component: {fileID: 1252251899575284067}
-  m_Layer: 0
-  m_Name: ChargeBoostAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &3672644827550490281
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6272202093534731195}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1252251899575284067
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6272202093534731195}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d83c4d9a1b2407d4790cb6b65a698b7f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxBoostMultiplier: 4
-  maxNormalizedCharge: 3
-  chargeTimeToFull: 2
-  dischargeTimeToEmpty: 2.5
-  tickSeconds: 0.2
-  boostBoostResourceIndex: 1
-  rechargeCooldownSeconds: 1
-  verbose: 0
 --- !u!1 &6551725075664534191
 GameObject:
   m_ObjectHideFlags: 0
@@ -1967,6 +1774,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8733703129211920491}
+  - component: {fileID: 3572016475912017619}
   m_Layer: 0
   m_Name: DeployTeamCrystalActionExecutor
   m_TagString: Untagged
@@ -1989,6 +1797,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1252869930824874955}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3572016475912017619
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6602595697712787767}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5bf98bef1c4b4178bc5562c99eaf0c12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
+    type: 3}
 --- !u!1 &6636369852405642565
 GameObject:
   m_ObjectHideFlags: 0
@@ -1998,6 +1820,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1843551402662252762}
+  - component: {fileID: 2939051450022613431}
   m_Layer: 0
   m_Name: ToggleShardActionExecutor
   m_TagString: Untagged
@@ -2020,6 +1843,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1252869930824874955}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2939051450022613431
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6636369852405642565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4eb9f73e42824c678ee068be55686a7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
 --- !u!1 &6807910618444506966
 GameObject:
   m_ObjectHideFlags: 0
@@ -2241,7 +2077,6 @@ GameObject:
   - component: {fileID: 5784366292517366828}
   - component: {fileID: 6556690844172358248}
   - component: {fileID: 2145686236205056283}
-  - component: {fileID: 3864894251526447373}
   m_Layer: 0
   m_Name: Dolphin
   m_TagString: Player_Ship
@@ -2615,7 +2450,7 @@ MonoBehaviour:
   - {fileID: 3894621490537728581}
   - {fileID: 7834992998503353775}
   trailSpawner: {fileID: 509996660808769138}
-  driftTrailAction: {fileID: 5348798502304011156}
+  driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 3894621490537728581}
   bottomJaw: {fileID: 7834992998503353775}
@@ -2648,20 +2483,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _executors: {fileID: 0}
+  _executors: {fileID: 3941163936891360053}
   _inputEventShipActions:
   - InputEvent: 2
     ShipActions:
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
+    - {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
+    - {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2, type: 2}
+    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
   - InputEvent: 1
     ShipActions:
-    - {fileID: 0}
+    - {fileID: 11400000, guid: 205c7e57ccef34f4f858f04857f7c542, type: 2}
   - InputEvent: 6
     ShipActions:
-    - {fileID: 0}
+    - {fileID: 11400000, guid: a8d01c9d7c3bfb245ba8e3303bdecfc6, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
@@ -2731,20 +2565,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   jawResourceIndex: 0
   view: {fileID: 117603555638778835}
-  chargeBoostAction: {fileID: 1252251899575284067}
---- !u!114 &3864894251526447373
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7014513329719026904}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db6dbfb1f4d3438184815697c23aefce, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _executors: []
+  chargeBoostExecutor: {fileID: 8363998993469153081}
+  chargeBoostActionSO: {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2,
+    type: 2}
 --- !u!1 &7285420413364848933
 GameObject:
   m_ObjectHideFlags: 0
@@ -3119,58 +2942,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &8387946907162905678
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5445499212288512571}
-  - component: {fileID: 6216723454200668657}
-  m_Layer: 0
-  m_Name: DeployTeamCrystalAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &5445499212288512571
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8387946907162905678}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6216723454200668657
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8387946907162905678}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7bf8ac47bd45e9548a2a7e3d3d3e64f7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
-    type: 3}
-  forwardOffset: 350
-  fadeValue: 0.2
-  rayMask:
-    serializedVersion: 2
-    m_Bits: 0
-  cooldown: 30
 --- !u!1 &8435744805339403479
 GameObject:
   m_ObjectHideFlags: 0
@@ -3338,53 +3109,6 @@ Transform:
   - {fileID: 354388711694718612}
   m_Father: {fileID: 2209447707423869789}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &9153119264091638057
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4299211900478517548}
-  - component: {fileID: 3613718896845450140}
-  m_Layer: 0
-  m_Name: ZoomOutAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &4299211900478517548
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9153119264091638057}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3613718896845450140
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9153119264091638057}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e7868c3b92497748825cce03f8ce9d2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  zoomOutMultiplier: 6
-  zoomInMultiplier: 1
-  debugLogs: 0
 --- !u!1001 &452629308929476418
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4005,11 +3729,6 @@ PrefabInstance:
       propertyPath: worldToUIScale
       value: 6
       objectReference: {fileID: 0}
-    - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
-        type: 3}
-      propertyPath: driftTrailAction
-      value: 
-      objectReference: {fileID: 5348798502304011156}
     - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       propertyPath: jawResourceIndex

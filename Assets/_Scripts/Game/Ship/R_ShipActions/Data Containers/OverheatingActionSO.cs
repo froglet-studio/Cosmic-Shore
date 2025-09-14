@@ -1,7 +1,7 @@
 ﻿using CosmicShore.Game;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "OverheatingAction", menuName = "CosmicShore/Actions/Overheating")]
+[CreateAssetMenu(fileName = "OverheatingAction", menuName = "ScriptableObjects/Vessel Actions/Overheating")]
 public class OverheatingActionSO : ShipActionSO
 {
     [Header("Wrapped Action")]

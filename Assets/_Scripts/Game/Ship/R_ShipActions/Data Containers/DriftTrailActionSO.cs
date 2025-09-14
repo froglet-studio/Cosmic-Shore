@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "DriftTrailAction", menuName = "CosmicShore/Actions/Drift Trail")]
+[CreateAssetMenu(fileName = "DriftTrailAction", menuName = "ScriptableObjects/Vessel Actions/Drift Trail")]
 public class DriftTrailActionSO : ShipActionSO
 {
     public override void StartAction(ActionExecutorRegistry execs)

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "DriftAction", menuName = "CosmicShore/Actions/Drift")]
+[CreateAssetMenu(fileName = "DriftAction", menuName = "ScriptableObjects/Vessel Actions/Drift")]
 public class DriftActionSO : ShipActionSO
 {
     const float Mult = 1.5f;
