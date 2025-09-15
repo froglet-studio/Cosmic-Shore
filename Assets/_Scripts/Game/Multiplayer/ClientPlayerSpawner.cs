@@ -23,9 +23,6 @@ namespace CosmicShore.Game
                 networkPlayer.InitializeForMultiplayerMode(networkShip);
                 networkShip.Initialize(networkPlayer, false);
                 PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
-                
-                networkPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
-                networkPlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
 
                 bool toggle = !networkPlayer.IsOwner;
                 networkPlayer.ToggleStationaryMode(toggle);

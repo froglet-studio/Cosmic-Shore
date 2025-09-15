@@ -133,6 +133,8 @@ namespace CosmicShore.Game
                     
                 VesselStatus.VesselTransformer.Initialize(this);
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.ShipHudView);
+                VesselStatus.ResourceSystem.Reset();
+                VesselStatus.VesselTransformer.ResetShipTransformer();
                     
                 onBottomEdgeButtonsEnabled.Raise(true);
             }

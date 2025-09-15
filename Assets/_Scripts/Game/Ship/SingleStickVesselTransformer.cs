@@ -13,9 +13,9 @@ namespace CosmicShore.Game
         {
             courseObject = new GameObject("CourseObject");
             courseTransform = courseObject.transform;
-            Vessel.VesselStatus.SingleStickControls = true;
             
             base.Initialize(vessel);
+            Vessel.VesselStatus.SingleStickControls = true;
         }
 
         protected override void Pitch() // These need to not use *= because quaternions are not commutative
