@@ -208,7 +208,7 @@ namespace CosmicShore.Game
 
         public void OnButtonPressed(int buttonNumber)
         {
-            throw new NotImplementedException();
+           
         }
 
         public void ToggleAutoPilot(bool toggle)
@@ -230,7 +230,7 @@ namespace CosmicShore.Game
             {
                 if (!VesselStatus.CameraFollowTarget) 
                     VesselStatus.CameraFollowTarget = transform;
-                VesselStatus.ShipCameraCustomizer.Initialize(this);
+                VesselStatus.VesselCameraCustomizer.Initialize(this);
                     
                 // TODO - Temp disabled, for testing.
                 /*VesselStatus.ActionHandler.Initialize(VesselStatus);
@@ -272,15 +272,14 @@ namespace CosmicShore.Game
             if (!enableAIPilot)
             {
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.ShipHudView);
-                VesselStatus.ShipCameraCustomizer.Initialize(this);
+                VesselStatus.VesselCameraCustomizer.Initialize(this);
             }
                 
-            VesselStatus.TrailSpawner.Initialize(VesselStatus);  
-            
             // TODO - Currently AIPilot's update should run only after SingleStickVesselTransformer
             // sets SingleStickControls to true/false. Try finding a solution to remove this
             // sequential dependency.
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);
+            VesselStatus.TrailSpawner.Initialize(VesselStatus);  
             
             // TODO -> Remove the below TrailSpawner method execution if not needed.
             // Possibly this can be done when Players are activated for the game in GameDataSO

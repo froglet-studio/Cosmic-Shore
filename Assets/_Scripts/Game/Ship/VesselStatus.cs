@@ -21,7 +21,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(VesselTransformer))]
     [RequireComponent(typeof(AIPilot))]
     [RequireComponent(typeof(Silhouette))]
-    [RequireComponent(typeof(ShipCameraCustomizer))]
+    [RequireComponent(typeof(VesselCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
     [RequireComponent(typeof(R_ShipActionHandler))]
     [RequireComponent(typeof(R_ShipCustomization))]
@@ -197,13 +197,13 @@ namespace CosmicShore.Game
             }
         }
 
-        ShipCameraCustomizer _shipCameraCustomizer;
-        public ShipCameraCustomizer ShipCameraCustomizer
+        VesselCameraCustomizer _vesselCameraCustomizer;
+        public VesselCameraCustomizer VesselCameraCustomizer
         {
             get
             {
-                _shipCameraCustomizer = _shipCameraCustomizer != null ? _shipCameraCustomizer : gameObject.GetOrAdd<ShipCameraCustomizer>();
-                return _shipCameraCustomizer;
+                _vesselCameraCustomizer = _vesselCameraCustomizer != null ? _vesselCameraCustomizer : gameObject.GetOrAdd<VesselCameraCustomizer>();
+                return _vesselCameraCustomizer;
             }
         }
 

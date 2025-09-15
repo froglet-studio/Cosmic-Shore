@@ -116,7 +116,7 @@ public class CameraManager : Singleton<CameraManager>
         SetCloseCameraActive();
 
         var shipGO = _playerFollowTarget.gameObject;
-        var shipCustomizer = shipGO.GetComponent<ShipCameraCustomizer>();
+        var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
         shipCustomizer.Configure(_playerCamera);
     }
 

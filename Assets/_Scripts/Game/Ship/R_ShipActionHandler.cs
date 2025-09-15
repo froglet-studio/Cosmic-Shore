@@ -53,7 +53,6 @@ namespace CosmicShore.Game
 
             SubscribeEvents();
 
-            // 1) Initialize all executors on this ship (so coroutines/scene refs are ready)
             if (_executors != null)
                 _executors.InitializeAll(vesselStatus);
             else

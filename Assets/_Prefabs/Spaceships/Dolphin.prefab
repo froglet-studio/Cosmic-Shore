@@ -2277,7 +2277,7 @@ MonoBehaviour:
   shipHUDContainer: {fileID: 8963479766898053373}
   boostMultiplier: 4
   _name: Dolphin
-  _shipType: 2
+  vesselType: 2
   _nearFieldSkimmer: {fileID: 3137873377420312160}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 6807910618444506966}
@@ -2293,6 +2293,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  miniGameData: {fileID: 0}
   toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -2398,8 +2399,18 @@ MonoBehaviour:
   raycastWidth: 2
   ram: 0
   drift: 1
-  abilities: []
+  abilities:
+  - Ability: {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
+    Duration: 2
+    Cooldown: 2
+  - Ability: {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
+    Duration: 2
+    Cooldown: 2
+  - Ability: {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2, type: 2}
+    Duration: 2
+    Cooldown: 2
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
+  actionExecutorRegistry: {fileID: 3941163936891360053}
 --- !u!114 &7912223775244125494
 MonoBehaviour:
   m_ObjectHideFlags: 0

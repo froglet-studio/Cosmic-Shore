@@ -10,7 +10,7 @@ namespace CosmicShore
     /// Applies the CameraSettingsSO—including any ControlOverrideFlags—
     /// to the active ICameraController and CameraManager.
     /// </summary>
-    public class ShipCameraCustomizer : ElementalShipComponent, ICameraConfigurator
+    public class VesselCameraCustomizer : ElementalShipComponent, ICameraConfigurator
     {
         [Header("Per-Vessel Camera Settings")]
         [SerializeField] private CameraSettingsSO settings;

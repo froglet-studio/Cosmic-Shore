@@ -9,7 +9,7 @@ namespace CosmicShore.Game.AI
     [Serializable]
     public class AIAbility
     {
-        public ShipAction Ability;
+        public ShipActionSO Ability;
         public float Duration;
         public float Cooldown;
     }
@@ -54,6 +54,8 @@ namespace CosmicShore.Game.AI
 
         [SerializeField]
         ScriptableEventNoParam OnCellItemsUpdated;
+
+        [SerializeField] private ActionExecutorRegistry actionExecutorRegistry;
 
         enum Corner 
         {
@@ -147,7 +149,7 @@ namespace CosmicShore.Game.AI
         {
             this.vessel = vessel;
 
-            // Debug.Log($"AutoPilotStatus {AutoPilotEnabled}");
+            Debug.Log($"AutoPilotStatus {AutoPilotEnabled} Vessel Status {vessel.VesselStatus.IsStationary}");
 
             // TODO - Even a player can have autopilot mode enabled. So we initialize anyway.
             /*if (!AutoPilotEnabled)
@@ -242,9 +244,9 @@ namespace CosmicShore.Game.AI
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
             {
-                action.Ability.StartAction();
+                action.Ability.StartAction(actionExecutorRegistry);
                 yield return new WaitForSeconds(action.Duration);
-                action.Ability.StopAction();
+                action.Ability.StopAction(actionExecutorRegistry);
                 yield return new WaitForSeconds(action.Cooldown);
             }
         }

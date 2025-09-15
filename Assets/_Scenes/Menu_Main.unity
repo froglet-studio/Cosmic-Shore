@@ -80412,13 +80412,13 @@ MonoBehaviour:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 2996404617579086752}
   _initializeDatas:
-  - ShipClass: 2
+  - vesselClass: 2
     Team: 2
     PlayerName: Hostile1
     PlayerUUID: 
     EnableAIPilot: 1
-    AllowSpawning: 0
-  - ShipClass: 11
+    AllowSpawning: 1
+  - vesselClass: 11
     Team: 2
     PlayerName: Hostile2
     PlayerUUID: 
@@ -91728,7 +91728,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: 187.00002}
+  m_AnchoredPosition: {x: -32, y: 209.79646}
   m_SizeDelta: {x: 64, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &5840560526580898137
