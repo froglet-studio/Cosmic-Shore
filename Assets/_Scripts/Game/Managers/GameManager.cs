@@ -57,5 +57,10 @@ namespace CosmicShore.Core
             yield return new WaitForSecondsRealtime(WAIT_FOR_SECONDS_BEFORE_SCENELOAD);
             SceneManager.LoadScene(sceneName);
         }
+
+        private void OnApplicationQuit()
+        {
+            TeamAssigner.ClearCache();
+        }
     }
 }

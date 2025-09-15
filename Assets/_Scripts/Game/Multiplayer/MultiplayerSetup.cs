@@ -54,23 +54,20 @@ namespace CosmicShore.Game
             }
         }
 
-        HashSet<Teams> _assigned = new ();
-
 
         private void OnEnable()
         {
             DebugExtensions.LogColored("Hi this is multiplayer setuP!", Color.green);
 
-            if (NetworkManager.Singleton == null)
+            if (!NetworkManager.Singleton)
             {
                 Debug.LogError("[MultiplayerSetup] NetworkManager is not initialized. Ensure it is set up in the scene.");
                 return;
             }
 
             NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-
-            // OnArcadeMultiplayerModeSelected.OnRaised += OnMultiplayModeSelected;
+            // NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            
             miniGameData.OnLaunchGame += OnLaunchGame;
         }
 
@@ -104,13 +101,12 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
-            if (NetworkManager.Singleton != null)
+            if (NetworkManager.Singleton)
             {
                 NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+                // NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
             }
-
-            // OnArcadeMultiplayerModeSelected.OnRaised -= OnMultiplayModeSelected;
+            
             miniGameData.OnLaunchGame -= OnLaunchGame;
         }
 
@@ -259,7 +255,7 @@ namespace CosmicShore.Game
             return new Dictionary<string, PlayerProperty> { { PLAYER_NAME_PROPERTY_KEY, playerNameProperty } };
         }
 
-        void OnClientConnected(ulong clientId)
+        /*void OnClientConnected(ulong clientId)
         {
             NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
             if (playerNetObj != null)
@@ -278,46 +274,7 @@ namespace CosmicShore.Game
                     }
                 }
             }
-
-            /*if (clientId == NetworkManager.ServerClientId)
-            {
-                NetworkManager.Singleton.SceneManager.LoadScene(_multiplayerSceneName, LoadSceneMode.Single);
-            }*/
-        }
-    }
-
-    public static class TeamAssigner
-    {
-        /// <summary>
-        /// Picks a random team from all Teams (excluding None/Unassigned) that isn't already in assignedTeams,
-        /// adds it to assignedTeams, and returns it. If none are available, returns Teams.Unassigned.
-        /// </summary>
-        public static Teams AssignRandomTeam(HashSet<Teams> assignedTeams)
-        {
-            // Get all valid teams (exclude None and Unassigned)
-            var allTeams = Enum.GetValues(typeof(Teams))
-                               .Cast<Teams>()
-                               .Where(t => t != Teams.None && t != Teams.Unassigned)
-                               .ToArray();
-
-            // Filter out those already assigned
-            var available = allTeams.Where(t => !assignedTeams.Contains(t)).ToArray();
-
-            if (available.Length == 0)
-            {
-                // no teams left
-                return Teams.Unassigned;
-            }
-
-            // pick one at random
-            int idx = UnityEngine.Random.Range(0, available.Length);
-            var chosen = available[idx];
-
-            // mark as assigned
-            assignedTeams.Add(chosen);
-
-            return chosen;
-        }
+        }*/
     }
 }
 

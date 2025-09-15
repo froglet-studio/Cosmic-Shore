@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Game.IO;
+using CosmicShore.SOAP;
 using CosmicShore.Utility.ClassExtensions;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -9,6 +10,9 @@ namespace CosmicShore.Game
 {
     public class Player : NetworkBehaviour, IPlayer
     { 
+        [SerializeField]
+        MiniGameDataSO miniGameData;
+        
         public static List<IPlayer> NppList { get; } = new();
 
         // Declare the NetworkVariable without initializing its value.
@@ -63,6 +67,16 @@ namespace CosmicShore.Game
 
             NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
             NetTeam.OnValueChanged += OnNetTeamValueChanged;
+            
+            if (IsOwner)
+            {
+                NetDefaultShipType.Value = miniGameData.SelectedShipClass.Value;
+            }
+
+            if (IsServer)
+            {
+                NetTeam.Value = TeamAssigner.AssignRandomTeam();
+            }
         }
         
         public override void OnNetworkDespawn()
