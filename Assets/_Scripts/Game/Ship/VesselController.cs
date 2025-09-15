@@ -112,6 +112,118 @@ namespace CosmicShore.Game
             OnShipInitialized?.Invoke(VesselStatus);
         }
 
+        public void PerformButtonActions(int buttonNumber)
+        {
+            InputEvents controlType;
+            switch (buttonNumber)
+            {
+                case 1:
+                    controlType = InputEvents.Button1Action;
+                    break;
+                case 2:
+                    controlType = InputEvents.Button2Action;
+                    break;
+                case 3:
+                    controlType = InputEvents.Button3Action;
+                    break;
+                default:
+                    controlType = InputEvents.Button1Action;
+                    break;
+            }
+            PerformShipControllerActions(controlType);
+        }
+
+        public void StopButtonActions(int buttonNumber)
+        {
+            InputEvents controlType;
+            switch (buttonNumber)
+            {
+                case 1:
+                    controlType = InputEvents.Button1Action;
+                    break;
+                case 2:
+                    controlType = InputEvents.Button2Action;
+                    break;
+                case 3:
+                    controlType = InputEvents.Button3Action;
+                    break;
+                default:
+                    controlType = InputEvents.Button1Action;
+                    break;
+            }
+            StopShipControllerActions(controlType);
+        }
+
+        public void FlipShipUpsideDown() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
+        public void FlipShipRightsideUp() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
+        
+        public Transform Transform => transform;
+
+        public void Teleport(Transform targetTransform) =>
+            ShipHelper.Teleport(transform, targetTransform);
+
+        public void SetResourceLevels(ResourceCollection resources) =>
+            VesselStatus.ResourceSystem.InitializeElementLevels(resources);
+
+        public void SetShipUp(float angle) =>
+            VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+
+        public void DisableSkimmer()
+        {
+            VesselStatus.NearFieldSkimmer?.gameObject.SetActive(false);
+            VesselStatus.FarFieldSkimmer?.gameObject.SetActive(false);
+        }
+
+        public void SetBoostMultiplier(float multiplier) => VesselStatus.BoostMultiplier = multiplier;
+        
+        public void SetShipMaterial(Material material) =>
+            VesselStatus.ShipMaterial = material;
+
+        public void SetBlockSilhouettePrefab(GameObject prefab) =>
+            VesselStatus.ShipHUDController.SetBlockPrefab(prefab);
+
+        public void SetAOEExplosionMaterial(Material material) =>
+            VesselStatus.AOEExplosionMaterial = material;
+
+        public virtual void SetAOEConicExplosionMaterial(Material material) =>
+                VesselStatus.AOEConicExplosionMaterial = material;
+
+        public virtual void SetSkimmerMaterial(Material material) =>
+                VesselStatus.SkimmerMaterial = material;
+
+        public virtual void AssignCaptain(SO_Captain captain)
+        {
+            VesselStatus.Captain = captain;
+            SetResourceLevels(captain.InitialResourceLevels);
+        }
+
+        public virtual void BindElementalFloat(string name, Element element) =>
+            VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
+
+        public void PerformShipControllerActions(InputEvents controlType) =>
+                VesselStatus.ActionHandler.PerformShipControllerActions(controlType);
+
+        public void StopShipControllerActions(InputEvents controlType) =>
+                VesselStatus.ActionHandler.StopShipControllerActions(controlType);
+
+        public void OnButtonPressed(int buttonNumber)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ToggleAutoPilot(bool toggle)
+        {
+            if (toggle)
+                VesselStatus.AIPilot.StartAIPilot();
+            else
+                VesselStatus.AIPilot.StopAIPilot();
+        }
+
+        public void Destroy()
+        {
+            Destroy(gameObject);
+        }
+        
         void InitializeForMultiplayerMode()
         {
             if (IsOwner)
@@ -181,118 +293,6 @@ namespace CosmicShore.Game
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
-
-        public void PerformButtonActions(int buttonNumber)
-        {
-            InputEvents controlType;
-            switch (buttonNumber)
-            {
-                case 1:
-                    controlType = InputEvents.Button1Action;
-                    break;
-                case 2:
-                    controlType = InputEvents.Button2Action;
-                    break;
-                case 3:
-                    controlType = InputEvents.Button3Action;
-                    break;
-                default:
-                    controlType = InputEvents.Button1Action;
-                    break;
-            }
-            PerformShipControllerActions(controlType);
-        }
-
-        public void StopButtonActions(int buttonNumber)
-        {
-            InputEvents controlType;
-            switch (buttonNumber)
-            {
-                case 1:
-                    controlType = InputEvents.Button1Action;
-                    break;
-                case 2:
-                    controlType = InputEvents.Button2Action;
-                    break;
-                case 3:
-                    controlType = InputEvents.Button3Action;
-                    break;
-                default:
-                    controlType = InputEvents.Button1Action;
-                    break;
-            }
-            StopShipControllerActions(controlType);
-        }
-
-        public void FlipShipUpsideDown() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
-        public void FlipShipRightsideUp() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
-        
-        public Transform Transform => transform;
-
-        public virtual void Teleport(Transform targetTransform) =>
-            ShipHelper.Teleport(transform, targetTransform);
-
-        public virtual void SetResourceLevels(ResourceCollection resources) =>
-            VesselStatus.ResourceSystem.InitializeElementLevels(resources);
-
-        public virtual void SetShipUp(float angle) =>
-            VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
-
-        public virtual void DisableSkimmer()
-        {
-            VesselStatus.NearFieldSkimmer?.gameObject.SetActive(false);
-            VesselStatus.FarFieldSkimmer?.gameObject.SetActive(false);
-        }
-
-        public void SetBoostMultiplier(float multiplier) => VesselStatus.BoostMultiplier = multiplier;
-        
-        public void SetShipMaterial(Material material) =>
-            VesselStatus.ShipMaterial = material;
-
-        public void SetBlockSilhouettePrefab(GameObject prefab) =>
-            VesselStatus.ShipHUDController.SetBlockPrefab(prefab);
-
-        public void SetAOEExplosionMaterial(Material material) =>
-            VesselStatus.AOEExplosionMaterial = material;
-
-        public virtual void SetAOEConicExplosionMaterial(Material material) =>
-                VesselStatus.AOEConicExplosionMaterial = material;
-
-        public virtual void SetSkimmerMaterial(Material material) =>
-                VesselStatus.SkimmerMaterial = material;
-
-        public virtual void AssignCaptain(SO_Captain captain)
-        {
-            VesselStatus.Captain = captain;
-            SetResourceLevels(captain.InitialResourceLevels);
-        }
-
-        public virtual void BindElementalFloat(string name, Element element) =>
-            VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
-
-        public void PerformShipControllerActions(InputEvents controlType) =>
-                VesselStatus.ActionHandler.PerformShipControllerActions(controlType);
-
-        public void StopShipControllerActions(InputEvents controlType) =>
-                VesselStatus.ActionHandler.StopShipControllerActions(controlType);
-
-        public void OnButtonPressed(int buttonNumber)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ToggleAutoPilot(bool toggle)
-        {
-            if (toggle)
-                VesselStatus.AIPilot.StartAIPilot();
-            else
-                VesselStatus.AIPilot.StopAIPilot();
-        }
-
-        public void Destroy()
-        {
-            Destroy(gameObject);
-        }
         
         // helper
         void RefreshOwnershipFlag()
