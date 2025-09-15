@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class SparrowHUDView : ShipHUDView
+    public class SparrowHUDView : VesselHUDView
     {
         [Header("Missiles")]
         public Sprite[] missileIcons;

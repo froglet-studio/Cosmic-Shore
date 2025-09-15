@@ -5,10 +5,10 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class SerpentShipHUDController : ShipHUDController
+    public class SerpentVesselHUDController : VesselHUDController
     {
         [Header("View")]
-        [SerializeField] private SerpentShipHUDView view;
+        [SerializeField] private SerpentVesselHUDView view;
 
         [Header("Boost (charges)")]
         [SerializeField] private ConsumeBoostAction consumeBoost;
@@ -26,11 +26,11 @@ namespace CosmicShore.Game
 
         private Coroutine[] _pipAnim;
 
-        public override void Initialize(IVesselStatus vesselStatus, ShipHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
             _status = vesselStatus;
-            view = view != null ? view : baseView as SerpentShipHUDView;
+            view = view != null ? view : baseView as SerpentVesselHUDView;
             if(view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
             // shields: subscribe to resource change
             _rs = _status.ResourceSystem;

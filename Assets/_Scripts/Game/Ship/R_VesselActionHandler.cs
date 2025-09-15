@@ -11,7 +11,7 @@ namespace CosmicShore.Game
     /// Component responsible for mapping input and resource events to
     /// vessel actions.  This logic previously lived inside the Vessel classes.
     /// </summary>
-    public class R_ShipActionHandler : MonoBehaviour
+    public class R_VesselActionHandler : MonoBehaviour
     {
         [Header("Executors (one registry on this ship)")]
         [SerializeField] ActionExecutorRegistry _executors;   

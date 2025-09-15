@@ -1370,7 +1370,7 @@ GameObject:
   - component: {fileID: 1252869930824874955}
   - component: {fileID: 3941163936891360053}
   m_Layer: 0
-  m_Name: ShipActions
+  m_Name: VesselActions
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2273,7 +2273,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 6691152058983638505}
   _shipHUDController: {fileID: 2145686236205056283}
-  _shipHUDView: {fileID: 117603555638778835}
+  vesselHUDView: {fileID: 0}
   shipHUDContainer: {fileID: 8963479766898053373}
   boostMultiplier: 4
   _name: Dolphin

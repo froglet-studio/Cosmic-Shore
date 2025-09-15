@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class ShipHUDController : MonoBehaviour, IVesselHUDController
+    public class VesselHUDController : MonoBehaviour, IVesselHUDController
     {
-        private R_ShipActionHandler _actions;
-        private ShipHUDView _view;
+        private R_VesselActionHandler _actions;
+        private VesselHUDView _view;
         private IVesselStatus _status;
         [SerializeField] private int jawResourceIndex;
 
@@ -18,7 +18,7 @@ namespace CosmicShore.Game
         public GameObject BlockPrefab { get; private set; }
         
 
-        public virtual void Initialize(IVesselStatus vesselStatus, ShipHUDView view)
+        public virtual void Initialize(IVesselStatus vesselStatus, VesselHUDView view)
         {
             _status = vesselStatus;
             _view   = view;

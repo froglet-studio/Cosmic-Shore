@@ -23,7 +23,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(Silhouette))]
     [RequireComponent(typeof(VesselCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
-    [RequireComponent(typeof(R_ShipActionHandler))]
+    [RequireComponent(typeof(R_VesselActionHandler))]
     [RequireComponent(typeof(R_ShipCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
@@ -49,11 +49,11 @@ namespace CosmicShore.Game
         MonoBehaviour _shipHUDController;
         public IVesselHUDController ShipHUDController => _shipHUDController as IVesselHUDController;
         
-        [SerializeField] ShipHUDView _shipHUDView;
-        public ShipHUDView ShipHudView
+        [SerializeField] VesselHUDView vesselHUDView;
+        public VesselHUDView VesselHUDView
         {
-            get => _shipHUDView;
-            set => _shipHUDView = value;
+            get => vesselHUDView;
+            set => vesselHUDView = value;
         }
 
         [SerializeField] 
@@ -99,12 +99,12 @@ namespace CosmicShore.Game
         public List<GameObject> ShipGeometries { get; set; }
         public TrailBlock AttachedTrailBlock { get; set; }
 
-        R_ShipActionHandler actionHandler;
-        public R_ShipActionHandler ActionHandler
+        R_VesselActionHandler actionHandler;
+        public R_VesselActionHandler ActionHandler
         {
             get
             {
-                actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_ShipActionHandler>();
+                actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_VesselActionHandler>();
                 return actionHandler;
             }
         }

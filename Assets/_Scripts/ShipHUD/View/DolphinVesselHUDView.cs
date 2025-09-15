@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class DolphinShipHUDView : ShipHUDView
+    public class DolphinVesselHUDView : VesselHUDView
     {
         [Header("Charge steps (ordered)")]
         public List<Sprite> chargeSteps = new();

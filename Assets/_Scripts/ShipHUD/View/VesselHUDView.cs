@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class ShipHUDView : MonoBehaviour
+    public class VesselHUDView : MonoBehaviour
     {
         [Serializable]
         public struct HighlightBinding

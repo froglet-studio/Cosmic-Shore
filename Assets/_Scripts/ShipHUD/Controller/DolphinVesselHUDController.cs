@@ -2,10 +2,10 @@
 
 namespace CosmicShore.Game
 {
-    public class DolphinShipHUDController : ShipHUDController
+    public class DolphinVesselHUDController : VesselHUDController
     {
         [Header("View")]
-        [SerializeField] private DolphinShipHUDView view;
+        [SerializeField] private DolphinVesselHUDView view;
 
         [Header("Executor (runtime)")]
         [SerializeField] private ChargeBoostActionExecutor chargeBoostExecutor;
@@ -15,10 +15,10 @@ namespace CosmicShore.Game
         private float _maxUnits = 1f;
         private int   _stepsMinusOne;
 
-        public override void Initialize(IVesselStatus vesselStatus, ShipHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
-            view = view != null ? view : baseView as DolphinShipHUDView;
+            view = view != null ? view : baseView as DolphinVesselHUDView;
 
             if (view != null && !view.isActiveAndEnabled)
                 view.gameObject.SetActive(true);

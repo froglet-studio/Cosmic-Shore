@@ -2,10 +2,10 @@
 
 namespace CosmicShore.Game
 { 
-    public class MantaShipHUDController : ShipHUDController
+    public class MantaVesselHUDController : VesselHUDController
     {
         [Header("View")]
-        [SerializeField] private MantaShipHUDView view;
+        [SerializeField] private MantaVesselHUDView view;
 
         [Header("Effect Source (SO)")]
         [SerializeField] private SkimmerOverchargeCollectPrismEffectSO overchargeSO;
@@ -15,10 +15,10 @@ namespace CosmicShore.Game
 
         private int _max = 1;
 
-        public override void Initialize(IVesselStatus vesselStatus, ShipHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
-            view = view != null ? view : baseView as MantaShipHUDView;
+            view = view != null ? view : baseView as MantaVesselHUDView;
 
             if (overchargeSO == null || skimmer == null)
             {

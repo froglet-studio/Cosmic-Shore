@@ -244,7 +244,7 @@ namespace CosmicShore.Game
                 */
                     
                 VesselStatus.VesselTransformer.Initialize(this);
-                VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.ShipHudView);
+                VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
                 VesselStatus.ResourceSystem.Reset();
                 VesselStatus.VesselTransformer.ResetShipTransformer();
                     
@@ -271,7 +271,7 @@ namespace CosmicShore.Game
                 
             if (!enableAIPilot)
             {
-                VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.ShipHudView);
+                VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
             }
                 
