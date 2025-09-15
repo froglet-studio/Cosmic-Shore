@@ -9,54 +9,59 @@ namespace CosmicShore.Game
 {
     public class Skimmer : ElementalShipComponent
     {
-        [SerializeField] ScriptableEventString onSkimmerShipImpact;
+        [SerializeField] private ScriptableEventString onSkimmerShipImpact;
 
         [Header("Skim / Crystal")]
-        [SerializeField] float vaccumAmount = 80f;
-        [SerializeField] bool vacuumCrystal = true;
-        [SerializeField] bool affectSelf = true;
+        [SerializeField] private float vaccumAmount = 80f;
+        [SerializeField] private bool vacuumCrystal = true;
+        [SerializeField] private bool affectSelf = true;
 
         [Header("FX / Viz")]
-        [SerializeField] float particleDurationAtSpeedOne = 300f;
-        [SerializeField] bool visible;
-        [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
-        [SerializeField] PoolManager markerContainer;
-        [SerializeField] int markerDistance = 70;
+        [SerializeField] private float particleDurationAtSpeedOne = 300f;
+        [SerializeField] private bool visible;
+        [SerializeField] private ElementalFloat Scale = new ElementalFloat(1);
+        [SerializeField] private PoolManager markerContainer;
+        [SerializeField, Min(1)] private int markerDistance = 70;
 
         [Header("Optional")]
-        [SerializeField] GameObject AOEPrefab;
-        [SerializeField] float AOEPeriod;
+        [SerializeField] private GameObject AOEPrefab;
+        [SerializeField] private float AOEPeriod;
         [SerializeField] private Material lineMaterial;
 
-        [SerializeField] int resourceIndex = 0;
+        [SerializeField, Min(0)] private int resourceIndex = 0;
 
         public IPlayer Player => ShipStatus.Player;
         public IShipStatus ShipStatus { get; private set; }
         public bool AffectSelf => affectSelf;
 
-        CameraManager cameraManager;
-        float _appliedScale;
-        float _sweetSpot;
-        float _sqrRadius;
-        float _initialGap;
-        float _boosterTimer;
+        private CameraManager cameraManager;
+        private float _appliedScale;
+        private float _sweetSpot;
+        private float _sqrRadius;
+        private float _initialGap;
+        private float _boosterTimer;
 
-        void Start()
+        private void Start()
         {
             cameraManager = CameraManager.Instance;
 
-            _sweetSpot = transform.localScale.x / 4f;
-            _sqrRadius = transform.localScale.x * transform.localScale.x / 4f;
+            // These depend on current transform scale; keep them cheap and deterministic
+            var s = transform.localScale.x;
+            _sweetSpot = s * 0.25f;
+            _sqrRadius = (s * s) * 0.25f;
 
             ApplyScaleIfChanged();
-            if (markerContainer) markerContainer.transform.parent = ShipStatus?.Player?.Transform;
+
+            // Don’t assume ShipStatus exists at Start; Initialize() sets it later.
+            if (markerContainer && ShipStatus?.Player?.Transform != null)
+                markerContainer.transform.parent = ShipStatus.Player.Transform;
         }
 
-        void Update() => ApplyScaleIfChanged();
+        private void Update() => ApplyScaleIfChanged();
 
-        void ApplyScaleIfChanged()
+        private void ApplyScaleIfChanged()
         {
-            if (_appliedScale == Scale.Value) return;
+            if (Mathf.Approximately(_appliedScale, Scale.Value)) return;
             _appliedScale = Scale.Value;
             transform.localScale = Vector3.one * _appliedScale;
         }
@@ -67,18 +72,23 @@ namespace CosmicShore.Game
             BindElementalFloats(ShipStatus.Ship);
 
             if (visible)
-                GetComponent<MeshRenderer>().material = new Material(ShipStatus.SkimmerMaterial);
+            {
+                // NOTE: This instantiates a unique material. Keep if you truly need a unique instance.
+                var mr = GetComponent<MeshRenderer>();
+                if (mr && ShipStatus.SkimmerMaterial) mr.material = new Material(ShipStatus.SkimmerMaterial);
+            }
 
             _initialGap = ShipStatus.TrailSpawner.Gap;
 
-            if (markerContainer) markerContainer.transform.parent = ShipStatus.Player.Transform;
+            if (markerContainer && ShipStatus.Player?.Transform != null)
+                markerContainer.transform.parent = ShipStatus.Player.Transform;
         }
 
         // ---------------- Secondary helpers the Impactor can call ----------------
 
         public void ExecuteImpactOnShip(IShip ship)
         {
-            onSkimmerShipImpact.Raise(ShipStatus.PlayerName);
+            if (ShipStatus != null) onSkimmerShipImpact.Raise(ShipStatus.PlayerName);
         }
 
         public void ExecuteImpactOnPrism(TrailBlock trailBlock)
@@ -91,13 +101,13 @@ namespace CosmicShore.Game
         {
             if (!vacuumCrystal || crystal == null) return;
 
-            crystal.transform.position = Vector3.MoveTowards(
-                crystal.transform.position,
-                transform.position,
-                vaccumAmount * Time.deltaTime / crystal.transform.lossyScale.x);
+            var t = crystal.transform;
+            var target = transform.position;
+            var step = vaccumAmount * Time.deltaTime / Mathf.Max(1e-6f, crystal.transform.lossyScale.x);
+            t.position = Vector3.MoveTowards(t.position, target, step);
         }
 
-        void MakeBoosters(TrailBlock trailBlock)
+        private void MakeBoosters(TrailBlock trailBlock)
         {
             const int markerCount = 5;
             const float cooldown = 4f;
@@ -116,51 +126,53 @@ namespace CosmicShore.Game
             float stepSize = (float)(nextBlocks.Count - 1) / (markerCount - 1);
             for (int i = 1; i < markerCount - 1; i++)
             {
-                int index = nextBlocks.Count - 1 - (int)Mathf.Round(i * stepSize);
-                if (index >= 0 && index < nextBlocks.Count)
+                int index = nextBlocks.Count - 1 - Mathf.RoundToInt(i * stepSize);
+                if ((uint)index < (uint)nextBlocks.Count)
                     VisualizeTubeAroundBlock(nextBlocks[index]);
             }
         }
 
-        List<TrailBlock> FindNextBlocks(TrailBlock block, float distance = 100f)
+        private List<TrailBlock> FindNextBlocks(TrailBlock block, float distance = 100f)
         {
             if (block == null || block.Trail == null)
                 return new List<TrailBlock> { block };
 
             int idx = block.TrailBlockProperties.Index;
-            var forward = TrailFollowerDirection.Forward;
-            var backward = TrailFollowerDirection.Backward;
-
-            // simple: prefer forward unless at start and direction negative; adjust if you track direction elsewhere
-            if (idx > 0)
-                return block.Trail.LookAhead(idx, 0, forward, distance);
-
-            return block.Trail.LookAhead(idx, 0, forward, distance);
+            // Prefer forward for now; adjust if you track direction elsewhere
+            return block.Trail.LookAhead(idx, 0, TrailFollowerDirection.Forward, distance);
         }
 
         public static float ComputeGaussian(float x, float b, float c)
-            => Mathf.Exp(-Mathf.Pow(x - b, 2) / (2 * c * c));
+            => Mathf.Exp(-((x - b) * (x - b)) / (2f * c * c));
 
-        void VisualizeTubeAroundBlock(TrailBlock trailBlock)
+        private void VisualizeTubeAroundBlock(TrailBlock trailBlock)
         {
             if (trailBlock)
                 StartCoroutine(DrawCircle(trailBlock.transform, _sweetSpot));
         }
 
-        readonly HashSet<Vector3> shardPositions = new();
+        private readonly HashSet<Vector3> shardPositions = new();
 
-        IEnumerator DrawCircle(Transform blockTransform, float radius)
+        private IEnumerator DrawCircle(Transform blockTransform, float radius)
         {
-            int segments = Mathf.Min((int)(Mathf.PI * 2f * radius / blockTransform.localScale.x), 360);
-            float anglePerSegment = blockTransform.localScale.x / radius;
+            if (!markerContainer) yield break;
 
-            var markers = new List<GameObject>();
+            float blockScale = Mathf.Max(1e-6f, blockTransform.localScale.x);
+            int segments = Mathf.Min((int)(Mathf.PI * 2f * radius / blockScale), 360);
+            if (segments <= 0) yield break;
+
+            float anglePerSegment = blockScale / radius;
+            var markers = new List<GameObject>(segments);
+
+            // Cache once
+            var block = blockTransform.GetComponent<TrailBlock>();
 
             for (int i = -segments / 2; i < segments / 2; i++)
             {
                 float angle = i * anglePerSegment;
-                Vector3 localPos = (Mathf.Cos(angle + (Mathf.PI / 2)) * blockTransform.right
-                                   + Mathf.Sin(angle + (Mathf.PI / 2)) * blockTransform.up) * radius;
+                Vector3 localPos =
+                    (Mathf.Cos(angle + (Mathf.PI * 0.5f)) * blockTransform.right +
+                     Mathf.Sin(angle + (Mathf.PI * 0.5f)) * blockTransform.up) * radius;
 
                 Vector3 worldPos = blockTransform.position + localPos;
 
@@ -169,16 +181,26 @@ namespace CosmicShore.Game
                     worldPos,
                     Quaternion.LookRotation(blockTransform.forward, localPos));
 
+                if (marker == null) continue; // pool may be missing/empty in edge cases
+
+                // Dedup positions (note: exact Vector3 equality; consider approx if needed)
                 if (shardPositions.Contains(marker.transform.position))
                 {
-                    markerContainer.ReturnToPool(marker, "Shard");
+                    markerContainer.ReturnToPool(marker);
                     continue;
                 }
 
                 shardPositions.Add(marker.transform.position);
-                marker.transform.localScale = blockTransform.localScale / 2f;
-                marker.GetComponentInChildren<NudgeShard>().Prisms =
-                    FindNextBlocks(blockTransform.GetComponent<TrailBlock>(), markerDistance * ShipStatus.ResourceSystem.Resources[0].CurrentAmount);
+                marker.transform.localScale = blockTransform.localScale * 0.5f;
+
+                // Cache component; guard against missing
+                var nudge = marker.GetComponentInChildren<NudgeShard>();
+                if (nudge != null && ShipStatus?.ResourceSystem?.Resources != null)
+                {
+                    int idx = Mathf.Clamp(resourceIndex, 0, ShipStatus.ResourceSystem.Resources.Count - 1);
+                    var amount = ShipStatus.ResourceSystem.Resources[idx].CurrentAmount;
+                    nudge.Prisms = FindNextBlocks(block, markerDistance * amount);
+                }
 
                 markers.Add(marker);
             }
@@ -189,7 +211,7 @@ namespace CosmicShore.Game
             {
                 if (m == null) continue;
                 shardPositions.Remove(m.transform.position);
-                markerContainer.ReturnToPool(m, "Shard");
+                markerContainer.ReturnToPool(m); // NEW API: no tag argument
             }
         }
     }

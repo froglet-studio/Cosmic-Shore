@@ -1,6 +1,6 @@
 using System.Collections;
 using UnityEngine;
-
+using CosmicShore.Core; // for PooledObject
 
 namespace CosmicShore.Game
 {
@@ -8,58 +8,94 @@ namespace CosmicShore.Game
     {
         [SerializeField] private float minSpeed = 30f;
         [SerializeField] private float maxSpeed = 250f;
-        private Material material;
+
+        private MeshRenderer _renderer;
+        private MaterialPropertyBlock _mpb;
+        private PooledObject _pooled;
+        private Coroutine _running;
+
+        private void Awake()
+        {
+            _renderer = GetComponent<MeshRenderer>();
+            _pooled = GetComponent<PooledObject>(); // attached by PoolManagerBase on instantiate
+            _mpb = new MaterialPropertyBlock();
+        }
+
+        private void OnDisable()
+        {
+            // Stop any in-flight coroutine if object is disabled mid-flight
+            if (_running != null)
+            {
+                StopCoroutine(_running);
+                _running = null;
+            }
+
+            // Optional: clear per-instance overrides when disabled
+            if (_renderer != null && _mpb != null)
+            {
+                _mpb.Clear();
+                _renderer.SetPropertyBlock(_mpb);
+            }
+        }
 
         public void HandleImpact(Vector3 velocity)
         {
-            // Validate velocity before starting coroutine
+            // Validate velocity
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
-            {
-                velocity = Vector3.up * minSpeed; // Fallback velocity
-            }
-            StartCoroutine(ImpactCoroutine(velocity));
+                velocity = Vector3.up * minSpeed;
+
+            if (_running != null) StopCoroutine(_running);
+            _running = StartCoroutine(ImpactCoroutine(velocity));
         }
 
-        IEnumerator ImpactCoroutine(Vector3 velocity)
+        private IEnumerator ImpactCoroutine(Vector3 velocity)
         {
+            if (_renderer == null || _mpb == null)
+                yield break;
+
+            // Clamp magnitude and extract speed
             float speed;
             velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out speed);
 
-            material = GetComponent<MeshRenderer>()?.material;
-            if (material != null)
-            {
-                material.SetVector("_velocity", velocity);
-            }
+            // Initial property setup
+            _renderer.GetPropertyBlock(_mpb);
+            _mpb.SetVector("_velocity", velocity);
+            _renderer.SetPropertyBlock(_mpb);
 
-            var initialPosition = transform.position;
-            var maxDuration = 7f;
-            var duration = 0f;
+            Vector3 initialPosition = transform.position;
+            const float maxDuration = 7f;
+            float duration = 0f;
 
-            while (duration <= maxDuration && this != null && material != null)
+            while (duration <= maxDuration && this != null && _renderer != null)
             {
                 duration += Time.deltaTime;
 
-                // Calculate new position
+                // New position with NaN guard
                 Vector3 newPosition = initialPosition + duration * velocity;
-
-                // Validate position before applying
                 if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
-                {
                     transform.position = newPosition;
-                }
 
-                // Update material properties
-                material.SetFloat("_ExplosionAmount", speed * duration);
-                material.SetFloat("_opacity", 1 - (duration / maxDuration));
+                // Update shader properties via MPB
+                _renderer.GetPropertyBlock(_mpb);
+                _mpb.SetFloat("_ExplosionAmount", speed * duration);
+                _mpb.SetFloat("_opacity", 1f - (duration / maxDuration));
+                _renderer.SetPropertyBlock(_mpb);
 
                 yield return null;
             }
 
-            if (this != null && gameObject != null)
+            // Clear overrides when finished (optional)
+            if (_renderer != null)
             {
-                // Get the tag from the object itself since it might be from any of the team pools
-                transform.parent.GetComponent<TeamColorPoolManager>().ReturnToPool(gameObject, gameObject.tag);
+                _mpb.Clear();
+                _renderer.SetPropertyBlock(_mpb);
             }
+
+            // Return to pool via metadata (no tag needed)
+            if (_pooled != null && _pooled.Manager != null)
+                _pooled.Manager.ReturnToPool(gameObject);
+
+            _running = null;
         }
     }
 }

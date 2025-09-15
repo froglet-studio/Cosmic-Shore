@@ -71,19 +71,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2a9ffc4bf8a5d94f9d037ac90025cdf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _configDatas:
-  - prefab: {fileID: 5776304996075792891, guid: fe674295af724506ab1bf91d1096a6ae,
-      type: 3}
-    size: 1000
-  - prefab: {fileID: 5776304996075792891, guid: c9c575ec2c1344aca6553c15b88d6d35,
-      type: 3}
-    size: 1000
-  - prefab: {fileID: 5776304996075792891, guid: 803ec865038f43b7b0f898130a6209ee,
-      type: 3}
-    size: 1000
-  - prefab: {fileID: 5776304996075792891, guid: 1263d2306dde455092dc34161380df92,
-      type: 3}
-    size: 1000
+  _defaultInitialSize: 1000
+  _growthFactor: 2
+  poolConfigurations:
+  - {fileID: 11400000, guid: 2c2c4c456679ed048a5e905fc5a7dce5, type: 2}
   _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
