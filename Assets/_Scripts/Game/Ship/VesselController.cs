@@ -229,8 +229,7 @@ namespace CosmicShore.Game
         
         void InitializeForSinglePlayerMode(bool enableAIPilot)
         {
-            bool subscribeToPlayerEvents = !enableAIPilot;
-            VesselStatus.ActionHandler.Initialize(VesselStatus, subscribeToPlayerEvents);
+            VesselStatus.ActionHandler.Initialize(VesselStatus);
             VesselStatus.Customization.Initialize(VesselStatus);
 
             if (VesselStatus.NearFieldSkimmer) 

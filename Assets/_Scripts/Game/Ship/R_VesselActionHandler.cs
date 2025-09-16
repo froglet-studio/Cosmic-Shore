@@ -37,22 +37,21 @@ namespace CosmicShore.Game
 
         void SubscribeEvents()
         {
-            if (_onButtonPressed != null)  _onButtonPressed.OnRaised  += PerformShipControllerActions;
-            if (_onButtonReleased != null) _onButtonReleased.OnRaised += StopShipControllerActions;
+            _onButtonPressed.OnRaised  += OnButtonPressed;
+            _onButtonReleased.OnRaised += OnButtonReleased;
         }
 
         void OnDestroy()
         {
-            if (_onButtonPressed != null)  _onButtonPressed.OnRaised  -= PerformShipControllerActions;
-            if (_onButtonReleased != null) _onButtonReleased.OnRaised -= StopShipControllerActions;
+            _onButtonPressed.OnRaised  -= OnButtonPressed;
+            _onButtonReleased.OnRaised -= OnButtonReleased;
         }
 
-        public void Initialize(IVesselStatus v, bool subscribeToPlayerEvents)
+        public void Initialize(IVesselStatus v)
         {
             vesselStatus = v;
 
-            if(subscribeToPlayerEvents)
-                SubscribeEvents();
+            SubscribeEvents();
 
             if (_executors != null)
                 _executors.InitializeAll(vesselStatus);
@@ -96,8 +95,24 @@ namespace CosmicShore.Game
             OnInputEventStopped?.Invoke(controlType);
         }
 
-        public bool HasAction(InputEvents inputEvent)
+        bool HasAction(InputEvents inputEvent)
             => _shipControlActions.TryGetValue(inputEvent, out var list) && list != null && list.Count > 0;
+        
+        void OnButtonPressed(InputEvents ie)
+        {
+            if (vesselStatus.AutoPilotEnabled)
+                return;
+
+            PerformShipControllerActions(ie);
+        }
+        
+        void OnButtonReleased(InputEvents ie)
+        {
+            if (vesselStatus.AutoPilotEnabled)
+                return;
+            
+            StopShipControllerActions(ie);
+        }
     }
 
     [Serializable]
