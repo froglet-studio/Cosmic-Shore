@@ -165,7 +165,7 @@ namespace CosmicShore.Game
             var playerProperties = await GetPlayerProperties();
             var sessionOpts = new SessionOptions
             {
-                MaxPlayers = _maxPlayerPerSession,
+                MaxPlayers = 4,// _maxPlayerPerSession,
                 IsLocked = false,
                 IsPrivate = false,
                 PlayerProperties = playerProperties,
