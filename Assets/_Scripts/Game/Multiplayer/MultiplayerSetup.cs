@@ -16,6 +16,7 @@ using CosmicShore.SOAP;
 using Mono.Cecil;
 #endif
 using CosmicShore.Utility.ClassExtensions;
+using Obvious.Soap;
 
 
 namespace CosmicShore.Game
@@ -25,7 +26,13 @@ namespace CosmicShore.Game
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
         
         [SerializeField]
+        SceneNameListSO sceneNames;
+        
+        [SerializeField]
         MiniGameDataSO miniGameData;
+        
+        [SerializeField]
+        ScriptableEventNoParam OnLoadMainMenu;
 
         string _multiplayerSceneName;
         int _maxPlayerPerSession;
@@ -63,6 +70,7 @@ namespace CosmicShore.Game
             }
 
             NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
             // NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             
             miniGameData.OnLaunchGame += OnLaunchGame;
@@ -102,6 +110,7 @@ namespace CosmicShore.Game
             {
                 NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                 // NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+                NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
             }
               
             miniGameData.OnLaunchGame -= OnLaunchGame;
@@ -158,6 +167,15 @@ namespace CosmicShore.Game
             response.Position = Vector3.zero;
             response.Rotation = Quaternion.identity;
             response.PlayerPrefabHash = null; // Use the default player prefab
+        }
+        
+        private void OnClientDisconnect(ulong clientId)
+        {
+            // Check if we are a client and the disconnected client is the host
+            if (!NetworkManager.Singleton.IsClient ||
+                clientId != 0) return;
+            Debug.Log("[HostDisconnectHandler] Host disconnected. Returning to main menu.");
+            OnLoadMainMenu?.Raise();
         }
 
         async UniTask StartSessionAsHost()
