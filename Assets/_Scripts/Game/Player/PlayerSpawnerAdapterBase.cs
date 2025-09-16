@@ -11,14 +11,9 @@ namespace CosmicShore.Game
 
         [SerializeField] 
         protected IPlayer.InitializeData[] _initializeDatas;
-        
-        private void OnApplicationQuit()
-        {
-            _gameData.ResetData();
-        }
 
         /// <summary>Spawn all AI entries allowed by the spawner and add them to game data.</summary>
-        protected void SpawnAndAddAIPlayers()
+        protected void SpawnAIPlayersAndAddToGameData()
         {
             if (_initializeDatas == null) return;
 
@@ -28,15 +23,13 @@ namespace CosmicShore.Game
                 var data = _initializeDatas[i];
                 if (!data.AllowSpawning) continue;
 
-                var player = _playerSpawner.SpawnPlayerAndShip(data);
-                _gameData.AddPlayer(player);
+                SpawnPlayerAndAddToGameData(data);
             }
         }
 
         /// <summary>Spawn one player from InitializeData and add to game data.</summary>
-        protected void SpawnAndAddPlayer(IPlayer.InitializeData data)
+        protected void SpawnPlayerAndAddToGameData(IPlayer.InitializeData data)
         {
-            if (!data.AllowSpawning) return;
             var player = _playerSpawner.SpawnPlayerAndShip(data);
             _gameData.AddPlayer(player);
         }

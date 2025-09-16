@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>Concrete mini‑game that spawns a trail course of segments and a crystal pickup.</summary>
-    public class R_CourseMiniGame : R_MiniGameBase
+    public class FreestyleController : MiniGameControllerBase
     {
         [Header("Course Settings")]
         [SerializeField] Crystal crystal;

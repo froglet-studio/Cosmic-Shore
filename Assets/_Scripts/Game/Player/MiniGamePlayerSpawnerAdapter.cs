@@ -15,7 +15,7 @@ namespace CosmicShore.Game
         private void Start()
         {
             if (_spawnAIAtStart)
-                SpawnAndAddAIPlayers();
+                SpawnAIPlayersAndAddToGameData();
         }
 
         private void OnDisable()
@@ -25,25 +25,23 @@ namespace CosmicShore.Game
 
         void InitializeGame()
         {
-            SpawnAndAddHumanPlayer();
-            SpawnAndAddAIPlayers();
+            SpawnPlayerAndAddToGameData(InitializePlayerData());
+            SpawnAIPlayersAndAddToGameData();
             RaiseAllPlayersSpawned();
         }
 
-        private void SpawnAndAddHumanPlayer()
+        private IPlayer.InitializeData InitializePlayerData()
         {
             // TODO: Wire player name/uuid/teams from your profile/select flow.
-            var data = new IPlayer.InitializeData
+            return new IPlayer.InitializeData
             {
                 vesselClass      = _gameData.SelectedShipClass.Value,
                 Team           = Teams.Jade,         // Default for now
                 PlayerName     = "HumanJade",        // Placeholder
                 PlayerUUID     = "HumanJade1",       // Placeholder
                 AllowSpawning  = true,
-                EnableAIPilot  = false,
+                IsAI  = false,
             };
-
-            SpawnAndAddPlayer(data);
         }
     }
 }

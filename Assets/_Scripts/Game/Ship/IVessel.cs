@@ -9,10 +9,16 @@ namespace CosmicShore.Game
 {
     public interface IVessel : ITransform
     {
-        event Action<IVesselStatus> OnShipInitialized;
+        event Action OnInitialized;
+        event Action OnBeforeDestroyed;
 
         IVesselStatus VesselStatus { get; }
 
+        /// <summary>
+        /// In multiplayer mode, true -> owner client, false -> other clients
+        /// In singleplayer mode, always false.
+        /// </summary>
+        bool IsOwnerClient { get; }
         void Initialize(IPlayer player, bool enableAIPilot = false);
         void PerformShipControllerActions(InputEvents @event);
         void StopShipControllerActions(InputEvents @event);
@@ -29,8 +35,8 @@ namespace CosmicShore.Game
         void AssignCaptain(SO_Captain captain);
         void BindElementalFloat(string name, Element element);
         void PerformButtonActions(int buttonNumber);
-        void OnButtonPressed(int buttonNumber);
         void ToggleAutoPilot(bool toggle);
+        bool AllowClearPrismInitialization();
         void Destroy();
     }
 }

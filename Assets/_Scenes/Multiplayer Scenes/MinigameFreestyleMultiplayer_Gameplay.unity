@@ -1310,6 +1310,11 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 2520350284
       objectReference: {fileID: 0}
+    - target: {fileID: 216234809729414343, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
+        type: 3}
+      propertyPath: SynchronizeTransform
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2825104485464295778, guid: abd9b5fbe3d67f8419a6ce6e2791e571,
         type: 3}
       propertyPath: '_playerSpawnPoints.Array.data[0]'

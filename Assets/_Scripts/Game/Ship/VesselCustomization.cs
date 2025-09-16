@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     /// Utility component for applying vessel specific customisation such as
     /// materials and cosmetic settings.
     /// </summary>
-    public class R_ShipCustomization : MonoBehaviour
+    public class VesselCustomization : MonoBehaviour
     {
         [SerializeField]
         List<GameObject> _shipGeometries;
@@ -36,7 +36,7 @@ namespace CosmicShore.Game
         {
             if (vesselStatus == null)
             {
-                Debug.LogError("VesselStatus is null. Cannot initialize R_ShipCustomization.");
+                Debug.LogError("VesselStatus is null. Cannot initialize VesselCustomization.");
                 return false;
             }
             if (_shipGeometries == null || _shipGeometries.Count == 0)

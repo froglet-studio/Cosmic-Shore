@@ -23,8 +23,8 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(Silhouette))]
     [RequireComponent(typeof(VesselCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
-    [RequireComponent(typeof(R_VesselActionHandler))]
-    [RequireComponent(typeof(R_ShipCustomization))]
+    [RequireComponent(typeof(R_ShipActionHandler))]
+    [RequireComponent(typeof(VesselCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
@@ -49,11 +49,11 @@ namespace CosmicShore.Game
         MonoBehaviour _shipHUDController;
         public IVesselHUDController ShipHUDController => _shipHUDController as IVesselHUDController;
         
-        [SerializeField] VesselHUDView vesselHUDView;
-        public VesselHUDView VesselHUDView
+        [SerializeField] ShipHUDView _shipHUDView;
+        public ShipHUDView ShipHudView
         {
-            get => vesselHUDView;
-            set => vesselHUDView = value;
+            get => _shipHUDView;
+            set => _shipHUDView = value;
         }
 
         [SerializeField] 
@@ -99,22 +99,22 @@ namespace CosmicShore.Game
         public List<GameObject> ShipGeometries { get; set; }
         public TrailBlock AttachedTrailBlock { get; set; }
 
-        R_VesselActionHandler actionHandler;
-        public R_VesselActionHandler ActionHandler
+        R_ShipActionHandler actionHandler;
+        public R_ShipActionHandler ActionHandler
         {
             get
             {
-                actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_VesselActionHandler>();
+                actionHandler = actionHandler != null ? actionHandler : gameObject.GetOrAdd<R_ShipActionHandler>();
                 return actionHandler;
             }
         }
 
-        R_ShipCustomization customization;
-        public R_ShipCustomization Customization
+        VesselCustomization customization;
+        public VesselCustomization Customization
         {
             get
             {
-                customization = customization != null ? customization : gameObject.GetOrAdd<R_ShipCustomization>();
+                customization = customization != null ? customization : gameObject.GetOrAdd<VesselCustomization>();
                 return customization;
             }
         }
@@ -226,7 +226,6 @@ namespace CosmicShore.Game
         public bool SingleStickControls { get; set; }
         public bool LiveProjectiles { get; set; }
         public bool IsStationary { get; set; }
-        public bool ElevatedResourceGain { get; set; }
         public bool AlignmentEnabled { get; set; }
         public bool Slowed { get; set; }
         public bool Overheating { get; set; }
@@ -237,13 +236,8 @@ namespace CosmicShore.Game
         
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
-        public bool IsOwner { get; private set; }
-        public void SetIsOwnerForControllerOnly(bool value) => __SetIsOwner(value);
-        void __SetIsOwner(bool value) 
-        {
-            if (IsOwner != value) return;
-            IsOwner = value;
-        }
+        public bool IsOwnerClient => Vessel.IsOwnerClient;
+
         public void ResetValues()
         {
             Boosting = false;

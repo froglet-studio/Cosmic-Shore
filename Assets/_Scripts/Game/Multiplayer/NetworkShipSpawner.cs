@@ -1,43 +1,31 @@
-﻿using CosmicShore.Utility.ClassExtensions;
-using Cysharp.Threading.Tasks;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Soap;
-using Unity.Multiplayer.Samples.Utilities;
-using Unity.Netcode;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
+using Unity.Netcode;
+using Unity.Multiplayer.Samples.Utilities;
+using CosmicShore.Utility.ClassExtensions;
+using Obvious.Soap;
 using UnityEngine.Serialization;
-
 
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// Player prefab is spawned automatically in network, hence we are
-    /// spawning the network vessels and hooking it with network players.
+    /// Server-side system: Spawns networked vessels and keeps them synced with player prefab state.
     /// </summary>
     [RequireComponent(typeof(NetcodeHooks))]
     public class NetworkShipSpawner : MonoBehaviour
     {
-        [FormerlySerializedAs("_clientGameplayState")] [SerializeField]
-        ClientPlayerSpawner clientPlayerSpawner;
-
-        [SerializeField]
-        [Tooltip("A collection of locations for spawning players")]
+        [SerializeField] ScriptableEventNoParam OnAllClientJoined;
+        [SerializeField] ClientPlayerSpawner clientPlayerSpawner;
+        [SerializeField, Tooltip("A collection of locations for spawning players")]
         Transform[] _playerSpawnPoints;
+        [FormerlySerializedAs("shipPrefabContainer")] [SerializeField] VesselPrefabContainer vesselPrefabContainer;
+        [SerializeField] string _mainMenuSceneName = "Menu_Main";
 
-        [SerializeField] 
-        ShipPrefabContainer shipPrefabContainer;
-
-        [SerializeField]
-        string _mainMenuSceneName = "Menu_Main";
-
-        /// <summary>
-        /// Has the ServerGameplayState already hit its initial spawn? (i.e. spawned players following load from character select).
-        /// </summary>
-        public bool InitialSpawnDone { get; private set; }
-
+        bool initialSpawnDone;
         NetcodeHooks _netcodeHooks;
         List<Transform> _playerSpawnPointsList = null;
 
@@ -56,20 +44,24 @@ namespace CosmicShore.Game
                 return;
             }
 
-            Debug.Log("ServerGameplayState: OnNetworkSpawn invoked on the server.");
+            Debug.Log("[NetworkShipSpawner] OnNetworkSpawn invoked on the server.");
 
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnLoadEventCompleted;
             NetworkManager.Singleton.SceneManager.OnSynchronizeComplete += OnSynchronizeComplete;
+
+            NetworkVesselClientCache.OnNewInstanceAdded += OnNewVesselClientAdded;
         }
 
         private void OnNetworkDespawn()
         {
-            Debug.Log("ServerGameplayState: OnNetworkDespawn invoked.");
+            Debug.Log("[NetworkShipSpawner] OnNetworkDespawn invoked.");
 
             NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnLoadEventCompleted;
             NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnSynchronizeComplete;
+
+            NetworkVesselClientCache.OnNewInstanceAdded -= OnNewVesselClientAdded;
         }
 
         private void OnDestroy()
@@ -81,115 +73,157 @@ namespace CosmicShore.Game
             }
         }
 
-        async void OnSynchronizeComplete(ulong clientId)
+        void OnNewVesselClientAdded(IVessel _)
         {
-            Debug.Log($"OnSynchronizeComplete for client {clientId}.");
-
-            await UniTask.Delay(3000);
-
-            if (InitialSpawnDone && !NetworkShipClientCache.GetInstanceByClientId(clientId))
+            if (MultiplayerSetup.Instance.ActiveSession.AvailableSlots == 0)
             {
-                Debug.Log($"Late join detected for client {clientId}. Spawning player and vessel.");
-                SpawnShipForClient(clientId, true);
+                DebugExtensions.LogColored("[NetworkShipSpawner] All players have joined; starting the game.", Color.green);
+                OnAllClientJoined?.Raise();
+            }
+        }
 
-                await UniTask.Delay(3000);
+        void OnSynchronizeComplete(ulong clientId)
+        {
+            Debug.Log($"[NetworkShipSpawner] OnSynchronizeComplete for client {clientId}.");
 
-                // For late joins, wait a bit and then initialize the client gameplay state.
-                clientPlayerSpawner.InitializeAndSetupPlayer_ClientRpc();
-
-                if (MultiplayerSetup.Instance.ActiveSession.AvailableSlots == 0)
-                {
-                    DebugExtensions.LogColored("All players have joined; starting the game.", Color.green);
-                }
+            if (initialSpawnDone && !NetworkVesselClientCache.GetInstanceByClientId(clientId))
+            {
+                Debug.Log($"[NetworkShipSpawner] Late join detected for client {clientId}. Spawning player and vessel.");
+                ExecutePlayerConfigAndVesselSpawn(clientId, true);
+                DelayedInitializeClientAsync().Forget();
             }
         }
 
         void OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
         {
-            Debug.Log($"OnLoadEventCompleted: sceneName = {sceneName}, loadSceneMode = {loadSceneMode}");
-            if (InitialSpawnDone || loadSceneMode != LoadSceneMode.Single) 
+            Debug.Log($"[NetworkShipSpawner] OnLoadEventCompleted: {sceneName}, mode={loadSceneMode}");
+            if (initialSpawnDone || loadSceneMode != LoadSceneMode.Single)
                 return;
-            
-            InitialSpawnDone = true;
+
+            initialSpawnDone = true;
             foreach (var clientPair in NetworkManager.Singleton.ConnectedClients)
             {
-                Debug.Log($"Spawning player and vessel for client {clientPair.Key}.");
-                SpawnShipForClient(clientPair.Key, false);
+                ExecutePlayerConfigAndVesselSpawn(clientPair.Key, false);
             }
 
-            Debug.Log("Calling InitializeAndSetupPlayer_ClientRpc for all clients.");
-            clientPlayerSpawner.InitializeAndSetupPlayer_ClientRpc();
+            Debug.Log("[NetworkShipSpawner] Initial spawn done. Initializing players after short delay.");
+            DelayedInitializeClientAsync().Forget();
         }
 
         void OnClientDisconnect(ulong clientId)
         {
-            // if it is server, then tell MultiplayerSertup to free the team of this player
+            Debug.Log($"[NetworkShipSpawner] OnClientDisconnect: client {clientId} disconnected.");
 
-            Debug.Log($"OnClientDisconnect: client {clientId} disconnected.");
-            // If the server itself disconnects (host leaving), load back to character select.
             if (clientId == NetworkManager.Singleton.LocalClientId)
             {
-                Debug.Log("Server disconnect detected; loading character select scene.");
+                Debug.Log("[NetworkShipSpawner] Host disconnected; returning to main menu.");
                 SceneManager.LoadSceneAsync(_mainMenuSceneName, LoadSceneMode.Single);
             }
         }
 
-        void SpawnShipForClient(ulong clientId, bool lateJoin)
+        void ExecutePlayerConfigAndVesselSpawn(ulong clientId, bool lateJoin)
         {
-            NetworkObject playerNetworkObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (playerNetworkObject == null)
+            var playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+            if (!playerNetObj)
             {
-                Debug.LogError($"SpawnPlayerAndShipForClient: Player NetworkObject not found for client {clientId}.");
+                Debug.LogError($"[NetworkShipSpawner] Player object not found for client {clientId}");
                 return;
             }
 
-            // Get the vessel type from the NetworkPlayer.
-            Player networkPlayer = playerNetworkObject.GetComponent<Player>();
-            if (networkPlayer == null)
+            var player = playerNetObj.GetComponent<Player>();
+            if (!player)
             {
-                Debug.LogError($"SpawnPlayerAndShipForClient: NetworkPlayer component not found for client {clientId}.");
+                Debug.LogError($"[NetworkShipSpawner] Player component missing on {clientId}");
                 return;
             }
 
-            // Teams team = networkPlayer.NetTeam.Value;
-            VesselClassType vesselTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
-
-            if (!shipPrefabContainer.TryGetShipPrefab(vesselTypeToSpawn, out Transform shipPrefabTransform))
-                return;
-
-            if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
+            // Hook vessel type changes for this player
+            player.NetDefaultShipType.OnValueChanged += (oldVal, newVal) =>
             {
-                Debug.LogError($"SpawnPlayerAndShipForClient: No matching vessel prefab found for vessel type {vesselTypeToSpawn} for client {clientId}.");
-                return;
-            }
+                if (!_netcodeHooks.IsServer) return;
+                if (newVal == VesselClassType.Random) return;
 
-            // Instantiate and spawn the vessel.
-            NetworkObject networkShip = Instantiate(shipNetworkObject);
-            Assert.IsTrue(networkShip != null, $"Matching vessel network object for client {clientId} not found!");
-            networkShip.SpawnWithOwnership(clientId, true);
-            Debug.Log($"Spawned vessel for client {clientId} using vessel type {vesselTypeToSpawn}.");
+                Debug.Log($"[NetworkShipSpawner] Client {clientId} vessel type changed {oldVal} → {newVal}");
 
-            Transform spawnPoint = GetRandomSpawnPoint();
-            if (spawnPoint != null)
+                // despawn old vessel if exists
+                if (player.Vessel is NetworkBehaviour oldVesselNet)
+                {
+                    oldVesselNet.NetworkObject.Despawn();
+                }
+
+                // spawn new vessel
+                SpawnVesselForPlayer(clientId, player, preservePosition: oldVal != VesselClassType.Random);
+            };
+
+            // Spawn immediately if type already chosen
+            if (player.NetDefaultShipType.Value != VesselClassType.Random)
             {
-                networkShip.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-                Debug.Log($"Spawned client {clientId} at random spawn point.");
-            }
-            else
-            {
-                Debug.LogError("No available spawn point found!");
+                SpawnVesselForPlayer(clientId, player, preservePosition: false);
             }
         }
 
-        /// <summary>
-        /// Get a random spawn point from the list.
-        /// </summary>
-        /// <returns>A Transform representing a spawn point.</returns>
+        void SpawnVesselForPlayer(ulong clientId, Player networkPlayer, bool preservePosition)
+        {
+            VesselClassType vesselTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
+
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselTypeToSpawn, out Transform shipPrefabTransform))
+            {
+                Debug.LogError($"[NetworkShipSpawner] No prefab for vessel type {vesselTypeToSpawn}");
+                return;
+            }
+
+            if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
+            {
+                Debug.LogError($"[NetworkShipSpawner] Prefab {shipPrefabTransform.name} missing NetworkObject");
+                return;
+            }
+
+            var networkShip = Instantiate(shipNetworkObject);
+            networkShip.SpawnWithOwnership(clientId, true);
+
+            // assign vessel reference to player
+            if (networkShip.TryGetComponent(out IVessel vesselComp))
+            {
+                networkPlayer.InitializeForMultiplayerMode(vesselComp);
+            }
+
+            // set position
+            if (preservePosition && networkPlayer.Vessel is Component oldVesselComp)
+            {
+                networkShip.transform.position = oldVesselComp.transform.position;
+                networkShip.transform.rotation = oldVesselComp.transform.rotation;
+            }
+            else
+            {
+                Transform spawnPoint = GetRandomSpawnPoint();
+                if (spawnPoint != null)
+                {
+                    networkShip.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+                }
+            }
+
+            Debug.Log($"[NetworkShipSpawner] Spawned {vesselTypeToSpawn} for client {clientId}");
+        }
+
+        async UniTask DelayedInitializeClientAsync()
+        {
+            try
+            {
+                await UniTask.Delay(2000, DelayType.UnscaledDeltaTime);
+                Debug.Log("[NetworkShipSpawner] Running InitializeAndSetupPlayer_ClientRpc after delay.");
+                clientPlayerSpawner.InitializeAndSetupPlayer_ClientRpc();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[NetworkShipSpawner] Error in delayed init: {ex}");
+            }
+        }
+
         private Transform GetRandomSpawnPoint()
         {
             if (_playerSpawnPoints == null || _playerSpawnPoints.Length == 0)
             {
-                Debug.LogError("PlayerSpawnPoints array is not set or empty.");
+                Debug.LogError("[NetworkShipSpawner] PlayerSpawnPoints array not set or empty.");
                 return null;
             }
 
@@ -198,12 +232,9 @@ namespace CosmicShore.Game
                 _playerSpawnPointsList = new List<Transform>(_playerSpawnPoints);
             }
 
-            Debug.Assert(_playerSpawnPointsList.Count > 0, "PlayerSpawnPoints list should have at least 1 spawn point.");
-
-            int index = Random.Range(0, _playerSpawnPointsList.Count);
+            int index = UnityEngine.Random.Range(0, _playerSpawnPointsList.Count);
             Transform spawnPoint = _playerSpawnPointsList[index];
             _playerSpawnPointsList.RemoveAt(index);
-
             return spawnPoint;
         }
     }

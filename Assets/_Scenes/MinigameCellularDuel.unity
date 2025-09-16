@@ -950,7 +950,6 @@ GameObject:
   - component: {fileID: 1527998408}
   - component: {fileID: 1527998409}
   - component: {fileID: 1527998413}
-  - component: {fileID: 1527998414}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -1043,22 +1042,6 @@ MonoBehaviour:
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   monitors:
   - {fileID: 1527998409}
---- !u!114 &1527998414
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1527998405}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b418899d51c04d9ea0bb2f928046963e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  _playerSpawner: {fileID: 1870184177}
-  _initializeDatas: []
-  _spawnAIAtStart: 0
 --- !u!1001 &1666789273
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1325,17 +1308,17 @@ MonoBehaviour:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 1870184177}
   _initializeDatas:
-  - ShipClass: 1
+  - vesselClass: 2
     Team: 2
     PlayerName: Hostile1
     PlayerUUID: 
-    EnableAIPilot: 1
+    IsAI: 1
     AllowSpawning: 1
-  - ShipClass: 11
+  - vesselClass: 11
     Team: 2
     PlayerName: Hostile2
     PlayerUUID: 
-    EnableAIPilot: 1
+    IsAI: 1
     AllowSpawning: 0
   _spawnAIAtStart: 0
 --- !u!4 &1898590044 stripped

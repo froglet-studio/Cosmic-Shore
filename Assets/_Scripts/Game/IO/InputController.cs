@@ -8,6 +8,10 @@ using CosmicShore.Utility.ClassExtensions;
 
 namespace CosmicShore.Game.IO
 {
+    /// <summary>
+    /// This class should only be initialized if user wants to control any ship.
+    /// Don't initialize this for any AI / Multiplayer Non Owner Players
+    /// </summary>
     public class InputController : MonoBehaviour
     {
         struct JoystickData

@@ -118,7 +118,7 @@ namespace CosmicShore.SOAP
             PlayerOrigins = Array.Empty<Transform>();
             _activePlayerId = 0;
 
-            SelectedShipClass.Value = VesselClassType.Random;
+            SelectedShipClass.Value = VesselClassType.Dolphin;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             TurnStartTime = 0f;
@@ -210,9 +210,6 @@ namespace CosmicShore.SOAP
                 Name = p.Name,
                 Team = p.Team
             });
-
-            // Keep players stationary until game starts
-            p.ToggleStationaryMode(true);
         }
         
         public void ResetPlayerScores()
@@ -250,11 +247,17 @@ namespace CosmicShore.SOAP
         float VolumeOf(Teams team) =>
             FindByTeam(team)?.VolumeRemaining ?? 0f;
 
-        void SetPlayersActive(bool active)
+        public void SetPlayersActive(bool active)
         {
             foreach (var player in Players)
             {
-                if (player?.Vessel?.VesselStatus == null) continue;
+                var vesselStatus = player?.Vessel?.VesselStatus;
+
+                if (vesselStatus == null)
+                {
+                    Debug.LogError("No vessel status found for player.! This should never happen!");
+                    return;
+                }
 
                 if (active)
                 {
@@ -265,7 +268,8 @@ namespace CosmicShore.SOAP
 
                 // Stationary/input flags invert relative to "active"
                 player.ToggleStationaryMode(!active);
-                player.ToggleInputStatus(!active);
+                player.ToggleInputPause(active && player.IsInitializedAsAI);
+                player.ToggleAutoPilot(active && player.IsInitializedAsAI);
             }
         }
         

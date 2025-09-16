@@ -1072,19 +1072,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 945887367}
-  _initializeDatas:
-  - ShipClass: 1
-    Team: 2
-    PlayerName: Hostile1
-    PlayerUUID: 
-    EnableAIPilot: 1
-    AllowSpawning: 0
-  - ShipClass: 11
-    Team: 2
-    PlayerName: Hostile2
-    PlayerUUID: 
-    EnableAIPilot: 1
-    AllowSpawning: 0
+  _initializeDatas: []
   _spawnAIAtStart: 0
 --- !u!1 &954439793
 GameObject:
