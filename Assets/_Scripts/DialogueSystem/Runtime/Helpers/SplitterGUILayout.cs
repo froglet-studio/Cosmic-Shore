@@ -1,4 +1,4 @@
-#if !LINUX_BUILD
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 
