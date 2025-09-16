@@ -8,6 +8,6 @@ namespace CosmicShore.Game
     /// </summary>
     [RequireComponent(typeof(NetcodeHooks))]
     [RequireComponent(typeof(VesselController))]
-    public class NetworkShipClientCache : NetworkClientCache<VesselController> // TODO - Try using IVessel or such later.
+    public class NetworkVesselClientCache : NetworkClientCache<VesselController> // TODO - Try using IVessel or such later.
     {}
 }

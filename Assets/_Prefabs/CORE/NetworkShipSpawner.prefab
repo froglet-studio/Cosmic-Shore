@@ -85,6 +85,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  OnALlClientJoined: {fileID: 11400000, guid: 9b22d3442c2c72a4eafd0e396a9848bf, type: 2}
   clientPlayerSpawner: {fileID: 8874896592346530446}
   _playerSpawnPoints:
   - {fileID: 0}

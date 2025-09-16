@@ -53,6 +53,7 @@ namespace CosmicShore.Game
         /// </summary>
         public void InitializeForMultiplayerMode(IVessel vessel)
         {
+            Team = NetTeam.Value;
             Vessel = vessel;
         }
         
@@ -62,15 +63,14 @@ namespace CosmicShore.Game
             gameObject.name = "Player_" + OwnerClientId;
             Name = AuthenticationService.Instance.PlayerName;
             PlayerUUID = Name;
-            if (IsOwner)
-                InputController.Initialize();
-
+            
             NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
             NetTeam.OnValueChanged += OnNetTeamValueChanged;
             
             if (IsOwner)
             {
                 NetDefaultShipType.Value = miniGameData.SelectedShipClass.Value;
+                InputController.Initialize();
             }
 
             if (IsServer)

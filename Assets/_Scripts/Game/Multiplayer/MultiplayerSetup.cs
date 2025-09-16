@@ -23,9 +23,6 @@ namespace CosmicShore.Game
     public class MultiplayerSetup : SingletonNetworkPersistent<MultiplayerSetup>
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
-
-        // [SerializeField] ArcadeEventChannelSO OnArcadeMultiplayerModeSelected;
-        // [SerializeField] ScriptableEventArcadeData OnArcadeMultiplayerModeSelected;
         
         [SerializeField]
         MiniGameDataSO miniGameData;
@@ -106,7 +103,7 @@ namespace CosmicShore.Game
                 NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                 // NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
             }
-            
+              
             miniGameData.OnLaunchGame -= OnLaunchGame;
         }
 
@@ -258,10 +255,10 @@ namespace CosmicShore.Game
         /*void OnClientConnected(ulong clientId)
         {
             NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (playerNetObj != null)
+            if (playerNetObj)
             {
                 Player player = playerNetObj.GetComponent<Player>();
-                if (player != null)
+                if (player)
                 {
                     if (player.IsOwner)
                     {
@@ -270,7 +267,7 @@ namespace CosmicShore.Game
 
                     if (IsServer)
                     {
-                        player.NetTeam.Value = TeamAssigner.AssignRandomTeam(_assigned);
+                        player.NetTeam.Value = TeamAssigner.AssignRandomTeam();
                     }
                 }
             }

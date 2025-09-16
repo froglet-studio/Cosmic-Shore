@@ -17,7 +17,7 @@ namespace CosmicShore.Game
         {
             foreach (Player networkPlayer in Player.NppList)
             {
-                var networkShip = NetworkShipClientCache.GetInstanceByClientId(networkPlayer.OwnerClientId);
+                var networkShip = NetworkVesselClientCache.GetInstanceByClientId(networkPlayer.OwnerClientId);
                 Assert.IsTrue(networkShip, $"Network vessel not found for client {networkPlayer.OwnerClientId}!");
 
                 networkPlayer.InitializeForMultiplayerMode(networkShip);
