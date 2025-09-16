@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cdeee81af29d430c84a1ff518c94f971, type: 3}
   m_Name: DeployTeamCrystalAction
   m_EditorClassIdentifier: 
-  forwardOffset: 12
+  forwardOffset: 40
   fadeValue: 0.5
   rayMask:
     serializedVersion: 2

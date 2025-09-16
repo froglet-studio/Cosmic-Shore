@@ -1809,7 +1809,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bf98bef1c4b4178bc5562c99eaf0c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
+  crystalPrefab: {fileID: 2116889879390265659, guid: 922e4ca81ec32e9468c23c3a12a3c65c,
     type: 3}
 --- !u!1 &6636369852405642565
 GameObject:

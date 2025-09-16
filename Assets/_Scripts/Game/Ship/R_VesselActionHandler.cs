@@ -32,13 +32,23 @@ namespace CosmicShore.Game
 
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
-
+        private bool _subscribed;
         IVesselStatus vesselStatus;
 
         void SubscribeEvents()
         {
-            _onButtonPressed.OnRaised  += OnButtonPressed;
-            _onButtonReleased.OnRaised += OnButtonReleased;
+            if (_subscribed) return;
+            if (_onButtonPressed != null)  _onButtonPressed.OnRaised  += OnButtonPressed;
+            if (_onButtonReleased != null) _onButtonReleased.OnRaised += OnButtonReleased;
+            _subscribed = true;
+        }
+
+        void UnsubscribeEvents()
+        {
+            if (!_subscribed) return;
+            if (_onButtonPressed != null)  _onButtonPressed.OnRaised  -= OnButtonPressed;
+            if (_onButtonReleased != null) _onButtonReleased.OnRaised -= OnButtonReleased;
+            _subscribed = false;
         }
 
         void OnDestroy()
@@ -93,6 +103,14 @@ namespace CosmicShore.Game
                 actions[i].StopAction(_executors);    // <-- pass the registry to the SO
 
             OnInputEventStopped?.Invoke(controlType);
+        }
+        
+        public void ConfigureSubscriptions(bool subscribe)
+        {
+            if (subscribe) SubscribeEvents();
+            else UnsubscribeEvents();
+
+            Debug.Log($"[ActionHandler] {(vesselStatus?.PlayerName ?? "<no-player>")} subscribe={subscribe} AIInit={vesselStatus?.IsInitializedAsAI} AutoPilot={vesselStatus?.AutoPilotEnabled}");
         }
 
         bool HasAction(InputEvents inputEvent)

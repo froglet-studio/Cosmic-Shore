@@ -83,33 +83,33 @@ namespace CosmicShore.Game
         
         public void CrystalRespawn()
         {
-            if (allowRespawnOnImpact)
+            if (!allowRespawnOnImpact)
             {
-                foreach (var model in crystalModels)
-                {
-                    model.model.SetActive(true);
-                    model.model.GetComponent<FadeIn>().StartFadeIn();
-                }
-                
-                
-                Vector3 spawnPos;
-                do
-                {
-                    spawnPos = Random.insideUnitSphere * sphereRadius + origin;
-                } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);
-                
-                
-                transform.SetPositionAndRotation(spawnPos, Random.rotation);
-                collider.enabled = true;
-                cell.UpdateItem();
-                origin = transform.position;
-                _lastSpawnPosition = spawnPos;
-            }
-            else
-            {
-                cell.TryRemoveItem(this);
+                cell?.TryRemoveItem(this);    
                 Destroy(gameObject);
+                return;
             }
+            
+            foreach (var model in crystalModels)
+            {
+                model.model.SetActive(true);
+                model.model.GetComponent<FadeIn>().StartFadeIn();
+            }
+                
+                
+            Vector3 spawnPos;
+            do
+            {
+                spawnPos = Random.insideUnitSphere * sphereRadius + origin;
+            } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);
+                
+                
+            transform.SetPositionAndRotation(spawnPos, Random.rotation);
+            collider.enabled = true;
+            cell.UpdateItem();
+            origin = transform.position;
+            _lastSpawnPosition = spawnPos;
+  
         }
 
         //the following is a public method that can be called to grow the crystal

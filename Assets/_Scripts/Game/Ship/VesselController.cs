@@ -257,7 +257,7 @@ namespace CosmicShore.Game
             /// Multiplayer modes will also have auto-pilot initialized
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);   
             VesselStatus.TrailSpawner.Initialize(VesselStatus);  
-            
+            VesselStatus.ActionHandler.ConfigureSubscriptions(subscribe: !VesselStatus.IsInitializedAsAI);
             onBottomEdgeButtonsEnabled.Raise(true);
         }
 

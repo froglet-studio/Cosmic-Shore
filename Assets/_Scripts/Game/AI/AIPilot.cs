@@ -149,8 +149,16 @@ namespace CosmicShore.Game.AI
         {
             this.vessel = vessel;
 
-            Debug.Log($"AutoPilotStatus {AutoPilotEnabled} Vessel Status {vessel.VesselStatus.IsStationary}");
+            foreach (var ability in abilities)
+            {
+                var asset = ability.Ability;
+                if (asset == null) continue;
 
+                var inst = Instantiate(asset);
+                inst.name = $"{asset.name} [AI:{vessel.VesselStatus.PlayerName}]";
+                inst.Initialize(vessel);             
+                ability.Ability = inst;           
+            }
             // TODO - Even a player can have autopilot mode enabled. So we initialize anyway.
             /*if (!AutoPilotEnabled)
                 return;*/
