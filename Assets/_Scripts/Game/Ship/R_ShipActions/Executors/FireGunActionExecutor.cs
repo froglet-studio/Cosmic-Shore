@@ -57,10 +57,7 @@ public  class FireGunActionExecutor : ShipActionExecutorBase
 
         OnGunFired?.Invoke();
 
-        gun.FireGun(
-            projectileContainer,
-            so.Speed,
-            inheritedVelocity * status.Speed,
+        gun.FireGun(projectileContainer, so.Speed, inheritedVelocity * status.Speed,
             so.ProjectileScale,
             true,
             so.ProjectileTime.Value,

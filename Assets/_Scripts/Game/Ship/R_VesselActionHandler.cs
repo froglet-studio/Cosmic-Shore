@@ -13,9 +13,9 @@ namespace CosmicShore.Game
     /// </summary>
     public class R_VesselActionHandler : MonoBehaviour
     {
-        [Header("Executors (one registry on this ship)")]
+        [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;   
-        [Header("Action mappings (SO assets)")]
+        [Header("Action mappings")]
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
 
@@ -47,11 +47,12 @@ namespace CosmicShore.Game
             if (_onButtonReleased != null) _onButtonReleased.OnRaised -= StopShipControllerActions;
         }
 
-        public void Initialize(IVesselStatus v)
+        public void Initialize(IVesselStatus v, bool subscribeToPlayerEvents)
         {
             vesselStatus = v;
 
-            SubscribeEvents();
+            if(subscribeToPlayerEvents)
+                SubscribeEvents();
 
             if (_executors != null)
                 _executors.InitializeAll(vesselStatus);
@@ -66,12 +67,12 @@ namespace CosmicShore.Game
         {
             if (!HasAction(controlType))
                 return;
-
+            
             _inputAbilityStartTimes[controlType] = Time.time;
 
             var actions = _shipControlActions[controlType];
-            for (int i = 0; i < actions.Count; i++)
-                actions[i].StartAction(_executors);   // <-- pass the registry to the SO
+            foreach (var t in actions)
+                t.StartAction(_executors);
 
             OnInputEventStarted?.Invoke(controlType);
         }

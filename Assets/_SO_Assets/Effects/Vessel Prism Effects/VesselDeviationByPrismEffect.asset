@@ -13,3 +13,7 @@ MonoBehaviour:
   m_Name: VesselDeviationByPrismEffect
   m_EditorClassIdentifier: 
   deviationAngle: 45
+  slerpBlend: 0.35
+  cooldownSeconds: 0.15
+  speedModifierDuration: 0.5
+  debuffAmount: 0.5

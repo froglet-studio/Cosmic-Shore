@@ -74,8 +74,8 @@ namespace CosmicShore.Game
         IVesselHUDView ShipHUDView { get; set; }
         IVesselHUDController ShipHUDController { get; }
         VesselCustomization Customization { get; }
-        R_ShipActionHandler ActionHandler { get; }
-        ShipHUDView ShipHudView { get; set; }
+        R_VesselActionHandler ActionHandler { get; }
+        VesselHUDView VesselHUDView { get; set; }
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
         bool IsOwnerClient { get; }  
         void ResetValues();

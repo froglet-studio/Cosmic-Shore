@@ -105,43 +105,29 @@ namespace CosmicShore.Game
 
         public void PerformButtonActions(int buttonNumber)
         {
-            InputEvents controlType;
-            switch (buttonNumber)
+            if (VesselStatus.AutoPilotEnabled) return;
+
+            var controlType = buttonNumber switch
             {
-                case 1:
-                    controlType = InputEvents.Button1Action;
-                    break;
-                case 2:
-                    controlType = InputEvents.Button2Action;
-                    break;
-                case 3:
-                    controlType = InputEvents.Button3Action;
-                    break;
-                default:
-                    controlType = InputEvents.Button1Action;
-                    break;
-            }
+                1 => InputEvents.Button1Action,
+                2 => InputEvents.Button2Action,
+                3 => InputEvents.Button3Action,
+                _ => InputEvents.Button1Action
+            };
             PerformShipControllerActions(controlType);
         }
 
         public void StopButtonActions(int buttonNumber)
         {
-            InputEvents controlType;
-            switch (buttonNumber)
+            if (VesselStatus.AutoPilotEnabled) return;
+
+            var controlType = buttonNumber switch
             {
-                case 1:
-                    controlType = InputEvents.Button1Action;
-                    break;
-                case 2:
-                    controlType = InputEvents.Button2Action;
-                    break;
-                case 3:
-                    controlType = InputEvents.Button3Action;
-                    break;
-                default:
-                    controlType = InputEvents.Button1Action;
-                    break;
-            }
+                1 => InputEvents.Button1Action,
+                2 => InputEvents.Button2Action,
+                3 => InputEvents.Button3Action,
+                _ => InputEvents.Button1Action
+            };
             StopShipControllerActions(controlType);
         }
 
@@ -243,7 +229,8 @@ namespace CosmicShore.Game
         
         void InitializeForSinglePlayerMode(bool enableAIPilot)
         {
-            VesselStatus.ActionHandler.Initialize(VesselStatus);
+            bool subscribeToPlayerEvents = !enableAIPilot;
+            VesselStatus.ActionHandler.Initialize(VesselStatus, subscribeToPlayerEvents);
             VesselStatus.Customization.Initialize(VesselStatus);
 
             if (VesselStatus.NearFieldSkimmer) 

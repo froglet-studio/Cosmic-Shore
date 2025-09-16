@@ -13,10 +13,7 @@ namespace CosmicShore.Game
         private float _driftDot = 0.9999f; 
 
         private TrailPool _trailPool;
-        
-        
-        public GameObject BlockPrefab { get; private set; }
-        
+        private GameObject BlockPrefab { get; set; }
 
         public virtual void Initialize(IVesselStatus vesselStatus, VesselHUDView view)
         {
@@ -70,7 +67,7 @@ namespace CosmicShore.Game
 
         private void Toggle(InputEvents ev, bool on)
         {
-            if (_view == null) return;
+            if (!_view) return;
 
             for (var i = 0; i < _view.highlights.Count; i++)
             {
@@ -168,7 +165,7 @@ namespace CosmicShore.Game
         {
             if (_status is { AutoPilotEnabled: true }) return;
             if (_trailPool == null) return;
-            Debug.Log("Trail events");
+            
             var uiScale = _trailPool.WorldToUi;
             if (_trailPool.SwingBlocks)
             {

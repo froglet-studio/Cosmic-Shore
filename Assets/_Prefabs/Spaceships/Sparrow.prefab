@@ -1462,7 +1462,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 6159119908523249946}
   _shipHUDController: {fileID: 1002316194365813701}
-  _shipHUDView: {fileID: 8556911474882623255}
+  _vesselHUDView: {fileID: 8556911474882623255}
   shipHUDContainer: {fileID: 0}
   boostMultiplier: 4
   _name: Sparrow
@@ -1606,10 +1606,10 @@ MonoBehaviour:
     Duration: 3
     Cooldown: 0.8
   - Ability: {fileID: 11400000, guid: a44fc8c7f06cd494b9b6f18cbb799779, type: 2}
-    Duration: 0
+    Duration: 2
     Cooldown: 10
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
-  actionExecutorRegistry: {fileID: 0}
+  actionExecutorRegistry: {fileID: 7054624207099172035}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
   m_ObjectHideFlags: 0

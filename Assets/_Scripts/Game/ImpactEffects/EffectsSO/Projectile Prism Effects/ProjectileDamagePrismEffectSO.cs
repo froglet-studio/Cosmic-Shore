@@ -13,7 +13,7 @@ namespace CosmicShore.Game
         public override void Execute(ProjectileImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = impactor.Projectile.VesselStatus;
-            PrismEffectHelper.Damage(status, prismImpactee, inertia, overrideCourse, overrideSpeed);
+            PrismEffectHelper.Damage(status, prismImpactee, inertia, status.Course, status.Speed);
         }
     }
 }

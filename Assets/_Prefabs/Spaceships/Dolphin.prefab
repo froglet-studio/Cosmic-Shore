@@ -2273,7 +2273,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 6691152058983638505}
   _shipHUDController: {fileID: 2145686236205056283}
-  vesselHUDView: {fileID: 0}
+  _vesselHUDView: {fileID: 117603555638778835}
   shipHUDContainer: {fileID: 8963479766898053373}
   boostMultiplier: 4
   _name: Dolphin
