@@ -6,33 +6,36 @@ using CosmicShore.Game;
 
 public class ConsumeBoostAction : ShipAction
 {
-    [Header("Boost Effect")]
-    [SerializeField] ElementalFloat boostMultiplier = new(4f);
+    [Header("Boost Effect")] [SerializeField]
+    ElementalFloat boostMultiplier = new(4f);
+
     [SerializeField] float boostDuration = 4f;
 
-    [Header("Magazine (charges)")]
-    [SerializeField, Range(1, 4)] int maxCharges = 4;
-    [SerializeField] float reloadCooldown = 3f;     // wait before reload begins
-    [SerializeField] float reloadFillTime = 0.8f;   // HUD fill anim time for ALL pips (0→1)
+    [Header("Magazine (charges)")] [SerializeField, Range(1, 4)]
+    int maxCharges = 4;
 
-    [Header("Optional resource gate (one-time spend per shot; set <=0 to ignore)")]
-    [SerializeField] int resourceIndex = 1;
+    [SerializeField] float reloadCooldown = 3f; // wait before reload begins
+    [SerializeField] float reloadFillTime = 0.8f; // HUD fill anim time for ALL pips (0→1)
+
+    [Header("Optional resource gate (one-time spend per shot; set <=0 to ignore)")] [SerializeField]
+    int resourceIndex = 1;
+
     [SerializeField] float resourceCost = 0f;
 
     // HUD events (magazine-based)
-    public event Action<int,int>   OnChargesSnapshot;     // (available, max) – fire on init & after reload
-    public event Action<int,float> OnChargeConsumed;      // (pipIndex, durationSeconds) – animate 1→0
-    public event Action<float>     OnReloadStarted;       // (reloadFillTimeSeconds) – animate all pips 0→1
-    public event Action            OnReloadCompleted;     // fired when charges restored
+    public event Action<int, int> OnChargesSnapshot; // (available, max) – fire on init & after reload
+    public event Action<int, float> OnChargeConsumed; // (pipIndex, durationSeconds) – animate 1→0
+    public event Action<float> OnReloadStarted; // (reloadFillTimeSeconds) – animate all pips 0→1
+    public event Action OnReloadCompleted; // fired when charges restored
 
     // (legacy; safe to ignore in HUD)
-    public event Action<float, float> OnBoostStarted;     // (duration, resourceBeforeSpend)
+    public event Action<float, float> OnBoostStarted; // (duration, resourceBeforeSpend)
     public event Action OnBoostEnded;
 
-    int     available;
-    bool    reloading;
-    float   activeStacks;        // track stacked boosts to unwind properly
-    Coroutine currentBoost;      // last boost coroutine
+    int available;
+    bool reloading;
+    float activeStacks; // track stacked boosts to unwind properly
+    Coroutine currentBoost; // last boost coroutine
 
     public override void Initialize(IVessel vessel)
     {
@@ -48,8 +51,8 @@ public class ConsumeBoostAction : ShipAction
 
     public override void StartAction()
     {
-        if (reloading) return;                // cannot fire during reload
-        if (available <= 0) return;           // empty magazine
+        if (reloading) return; // cannot fire during reload
+        if (available <= 0) return; // empty magazine
 
         // optional resource gate
         if (resourceCost > 0f)
@@ -59,7 +62,7 @@ public class ConsumeBoostAction : ShipAction
             var res = rs.Resources[resourceIndex];
             if (res.CurrentAmount < resourceCost) return;
             rs.ChangeResourceAmount(resourceIndex, -resourceCost);
-            OnBoostStarted?.Invoke( boostDuration, res.CurrentAmount ); // legacy
+            OnBoostStarted?.Invoke(boostDuration, res.CurrentAmount); // legacy
         }
 
         // spend one charge: choose rightmost filled pip (available-1)
@@ -70,7 +73,7 @@ public class ConsumeBoostAction : ShipAction
 
         // apply one stack of boost
         currentBoost = StartCoroutine(BoostRoutine());
-        
+
         // if we just emptied the mag, schedule a single reload
         if (available == 0 && !reloading)
             StartCoroutine(ReloadRoutine());
@@ -79,12 +82,18 @@ public class ConsumeBoostAction : ShipAction
     public override void StopAction()
     {
         // immediately end current boost effect (doesn't refund a charge or trigger reload)
-        if (currentBoost != null) { StopCoroutine(currentBoost); currentBoost = null; }
+        if (currentBoost != null)
+        {
+            StopCoroutine(currentBoost);
+            currentBoost = null;
+        }
+
         if (activeStacks > 0)
         {
             Vessel.VesselStatus.BoostMultiplier -= activeStacks * boostMultiplier.Value;
             activeStacks = 0;
         }
+
         if (Vessel.VesselStatus.BoostMultiplier <= 1f)
         {
             Vessel.VesselStatus.BoostMultiplier = 1f;

@@ -11,7 +11,8 @@ namespace CosmicShore.Game
         [SerializeField] private SerpentVesselHUDView view;
 
         [Header("Boost (charges)")]
-        [SerializeField] private ConsumeBoostAction consumeBoost;
+        // OLD: [SerializeField] private ConsumeBoostAction consumeBoost;
+        [SerializeField] private ConsumeBoostActionExecutor consumeBoostExecutor; // <-- executor
 
         [Header("Shields (resource-driven)")]
         [SerializeField] private int shieldResourceIndex = 0;
@@ -31,9 +32,20 @@ namespace CosmicShore.Game
             base.Initialize(vesselStatus, baseView);
             _status = vesselStatus;
             view = view != null ? view : baseView as SerpentVesselHUDView;
-            if(view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
+            if (view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
+
+            // try to auto-resolve executor from ActionExecutorRegistry if not set
+            if (consumeBoostExecutor == null)
+            {
+                var registry = vesselStatus?.ShipTransform
+                    ? vesselStatus.ShipTransform.GetComponentInChildren<ActionExecutorRegistry>(true)
+                    : null;
+                if (registry != null)
+                    consumeBoostExecutor = registry.Get<ConsumeBoostActionExecutor>();
+            }
+
             // shields: subscribe to resource change
-            _rs = _status.ResourceSystem;
+            _rs = _status?.ResourceSystem;
             if (_rs != null) _rs.OnResourceChanged += HandleResourceChanged;
 
             // pips setup: ensure visible, filled type, and start full
@@ -43,18 +55,24 @@ namespace CosmicShore.Game
             {
                 var pip = pips[i];
                 if (!pip) continue;
-                pip.enabled = true;                        // ensure visible (fixes #1)
+                pip.enabled = true;
                 if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
-                pip.fillAmount = 1f;                       // start full
+                pip.fillAmount = 1f;
                 pip.color = pipFull;
             }
 
-            // subscribe to magazine events
-            if (consumeBoost != null)
+            // subscribe to magazine events from the EXECUTOR
+            if (consumeBoostExecutor != null)
             {
-                consumeBoost.OnChargesSnapshot += HandleBoostSnapshot;      // set all pips full/empty
-                consumeBoost.OnChargeConsumed  += HandleBoostChargeConsumed;// animate 1→0
-                consumeBoost.OnReloadStarted   += HandleBoostReloadStarted; // animate ALL 0→1
+                consumeBoostExecutor.OnChargesSnapshot += HandleBoostSnapshot;      // set all pips full/empty
+                consumeBoostExecutor.OnChargeConsumed  += HandleBoostChargeConsumed;// animate 1→0
+                consumeBoostExecutor.OnReloadStarted   += HandleBoostReloadStarted; // animate ALL 0→1
+
+                // Optional: force an initial snapshot so HUD matches current executor state
+                HandleBoostSnapshot(
+                    consumeBoostExecutor.AvailableCharges,
+                    consumeBoostExecutor.MaxCharges
+                );
             }
 
             // shields initial paint
@@ -65,11 +83,11 @@ namespace CosmicShore.Game
         {
             if (_rs != null) _rs.OnResourceChanged -= HandleResourceChanged;
 
-            if (consumeBoost != null)
+            if (consumeBoostExecutor != null)
             {
-                consumeBoost.OnChargesSnapshot -= HandleBoostSnapshot;
-                consumeBoost.OnChargeConsumed  -= HandleBoostChargeConsumed;
-                consumeBoost.OnReloadStarted   -= HandleBoostReloadStarted;
+                consumeBoostExecutor.OnChargesSnapshot -= HandleBoostSnapshot;
+                consumeBoostExecutor.OnChargeConsumed  -= HandleBoostChargeConsumed;
+                consumeBoostExecutor.OnReloadStarted   -= HandleBoostReloadStarted;
             }
 
             if (_pipAnim != null)

@@ -381,8 +381,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c3f54abda8145ecabf7c85253cab9ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  seedAssembler: {fileID: 0}
-  trailSpawner: {fileID: 0}
+  trailSpawner: {fileID: 874579555101021522}
+  seedAssemblerExecutor: {fileID: 0}
+  stationarySeedConfig: {fileID: 0}
 --- !u!1 &891036852695513002
 GameObject:
   m_ObjectHideFlags: 0
