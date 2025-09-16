@@ -19,20 +19,27 @@ namespace CosmicShore.Game
         IInputStatus InputStatus { get; }
 
         bool IsActive { get; }
-        bool IsAIModeActivated { get; }
-
+        bool AutoPilotEnabled { get; }
+        /// <summary>
+        /// If true, it means that this played was marked as AI at initialization
+        /// </summary>
+        bool IsInitializedAsAI { get; }
         void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
         void ToggleActive(bool active);
         void ToggleGameObject(bool toggle);
-        void ToggleAutoPilotMode(bool toggle);
         /// <summary>
         /// If true -> stationary mode is activated. false -> deactivated
         /// </summary>
         void ToggleStationaryMode(bool toggle);
         /// <summary>
+        /// If true -> start auto pilot mode, false -> stop auto pilot mode
+        /// </summary>
+        /// <param name="toggle"></param>
+        void ToggleAutoPilot(bool toggle);
+        /// <summary>
         /// If true -> pause input status. false -> unpause otherwise.
         /// </summary>
-        void ToggleInputStatus(bool toggle);
+        void ToggleInputPause(bool toggle);
         void Destroy();
 
         [System.Serializable]
@@ -43,8 +50,8 @@ namespace CosmicShore.Game
             public string PlayerName;
             public string PlayerUUID;
             
-            [Tooltip("If true, the player-vessel will spawn as AI")]
-            public bool EnableAIPilot;
+            [FormerlySerializedAs("EnableAIPilot")] [Tooltip("If true, the player-vessel will spawn as AI")]
+            public bool IsAI;
             
             [Tooltip("If true, then only this player-vessel will spawn")]
             public bool AllowSpawning;

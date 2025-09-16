@@ -25,7 +25,8 @@ namespace CosmicShore.Game
         public string PlayerUUID { get; private set; } // => InitializeData.PlayerUUID;
         public IVessel Vessel { get; private set; }
         public bool IsActive { get; private set; }
-        public bool IsAIModeActivated { get; private set; }
+        public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
+        public bool IsInitializedAsAI { get; private set; }
 
         readonly InputController _inputController;
         public InputController InputController =>
@@ -40,12 +41,17 @@ namespace CosmicShore.Game
         public void InitializeForSinglePlayerMode(IPlayer.InitializeData data, IVessel vessel)
         {
             InitializeData = data;
+            IsInitializedAsAI = InitializeData.IsAI;
             VesselClass = InitializeData.vesselClass;
             Team = InitializeData.Team;
             Name = InitializeData.PlayerName;
             PlayerUUID = InitializeData.PlayerUUID;
-            InputController.Initialize();
+            if (!IsInitializedAsAI)
+                InputController.Initialize();
             Vessel = vessel;
+            // Keep players stationary at initialize
+            ToggleStationaryMode(true);
+            ToggleInputPause(true);
         }
 
         /// <summary>
@@ -53,6 +59,7 @@ namespace CosmicShore.Game
         /// </summary>
         public void InitializeForMultiplayerMode(IVessel vessel)
         {
+            IsInitializedAsAI = false;
             Team = NetTeam.Value;
             Vessel = vessel;
         }
@@ -89,26 +96,20 @@ namespace CosmicShore.Game
 
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.
         public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
+        
         public void ToggleActive(bool active) => IsActive = active;
+        
+        public void ToggleStationaryMode(bool toggle) => Vessel.VesselStatus.IsStationary = toggle;
 
-        public void ToggleAutoPilotMode(bool toggle)
-        {
-            Vessel.ToggleAutoPilot(toggle);
-            InputController.Pause(toggle);   
-            IsAIModeActivated = toggle;
-        }
-
-        public void ToggleStationaryMode(bool toggle) =>
-            Vessel.VesselStatus.IsStationary = toggle;
-
-        public void ToggleInputStatus(bool toggle) =>
-            InputController.Pause(toggle);
+        public void ToggleAutoPilot(bool toggle) => Vessel.ToggleAutoPilot(toggle);
+        
+        public void ToggleInputPause(bool toggle) => InputController?.Pause(toggle);
         
         public void Destroy() => Destroy(gameObject);
-
+        
         private void OnNetDefaultShipTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>
             VesselClass = newValue;
-
+        
         private void OnNetTeamValueChanged(Teams previousValue, Teams newValue) =>
             Team = newValue;
     }

@@ -13,6 +13,7 @@ namespace CosmicShore.Game
         IVessel Vessel { get; } // FOR TEMP USE, TRY TO REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
         Transform Transform => Vessel.Transform;
         AIPilot AIPilot { get; }
+        bool IsInitializedAsAI => Player.IsInitializedAsAI;
         bool AutoPilotEnabled => AIPilot.AutoPilotEnabled;
         bool AlignmentEnabled { get; set; }
         Material AOEConicExplosionMaterial { get; set; }
@@ -28,7 +29,6 @@ namespace CosmicShore.Game
         bool ChargedBoostDischarging { get; set; }
         Vector3 Course { get; set; }
         bool Drifting { get; set; }
-        bool ElevatedResourceGain { get; set; }
         Transform CameraFollowTarget { get; set; }
         bool GunsActive { get; set; }
         InputController InputController { get; }
@@ -73,17 +73,11 @@ namespace CosmicShore.Game
         ShipHUDContainer ShipHUDContainer { get; }
         IVesselHUDView ShipHUDView { get; set; }
         IVesselHUDController ShipHUDController { get; }
-        R_ShipCustomization Customization { get; }
+        VesselCustomization Customization { get; }
         R_ShipActionHandler ActionHandler { get; }
-
         ShipHUDView ShipHudView { get; set; }
-        // Deprecated  - Use R_ShipImpactor instead
-        // R_ShipImpactHandler ImpactHandler { get; }
-        
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
-        bool IsOwner { get; }  
-        void SetIsOwnerForControllerOnly(bool value);
-
+        bool IsOwnerClient { get; }  
         void ResetValues();
     }
 }

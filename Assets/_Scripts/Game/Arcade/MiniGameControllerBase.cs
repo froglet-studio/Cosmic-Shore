@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Arcade
     /// Keeps responsibility limited to: StartGame ➜ Rounds ➜ Turns ➜ EndGame.
     /// Delegates per‑frame checks to TurnMonitorController and player logic to PlayerManager.
     /// </summary>
-    public abstract class R_MiniGameBase : MonoBehaviour
+    public abstract class MiniGameControllerBase : MonoBehaviour
     {
         [Header("Config")]
         [SerializeField] protected GameModes gameMode;

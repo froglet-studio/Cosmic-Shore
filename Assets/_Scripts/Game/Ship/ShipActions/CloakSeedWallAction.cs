@@ -343,7 +343,7 @@ namespace CosmicShore
 
         private bool IsLocalPlayerShip()
         {
-            return Vessel != null && Vessel.VesselStatus.IsOwner;
+            return Vessel != null && Vessel.VesselStatus.IsOwnerClient;
         }
         
         Quaternion ComputeGhostRotation()

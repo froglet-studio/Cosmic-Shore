@@ -24,7 +24,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(VesselCameraCustomizer))]
     [RequireComponent(typeof(ShipAnimation))]
     [RequireComponent(typeof(R_ShipActionHandler))]
-    [RequireComponent(typeof(R_ShipCustomization))]
+    [RequireComponent(typeof(VesselCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
@@ -109,12 +109,12 @@ namespace CosmicShore.Game
             }
         }
 
-        R_ShipCustomization customization;
-        public R_ShipCustomization Customization
+        VesselCustomization customization;
+        public VesselCustomization Customization
         {
             get
             {
-                customization = customization != null ? customization : gameObject.GetOrAdd<R_ShipCustomization>();
+                customization = customization != null ? customization : gameObject.GetOrAdd<VesselCustomization>();
                 return customization;
             }
         }
@@ -226,7 +226,6 @@ namespace CosmicShore.Game
         public bool SingleStickControls { get; set; }
         public bool LiveProjectiles { get; set; }
         public bool IsStationary { get; set; }
-        public bool ElevatedResourceGain { get; set; }
         public bool AlignmentEnabled { get; set; }
         public bool Slowed { get; set; }
         public bool Overheating { get; set; }
@@ -237,13 +236,8 @@ namespace CosmicShore.Game
         
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
-        public bool IsOwner { get; private set; }
-        public void SetIsOwnerForControllerOnly(bool value) => __SetIsOwner(value);
-        void __SetIsOwner(bool value) 
-        {
-            if (IsOwner != value) return;
-            IsOwner = value;
-        }
+        public bool IsOwnerClient => Vessel.IsOwnerClient;
+
         public void ResetValues()
         {
             Boosting = false;

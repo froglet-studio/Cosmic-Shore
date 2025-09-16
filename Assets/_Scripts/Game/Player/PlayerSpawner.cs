@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
 namespace CosmicShore.Game
@@ -11,8 +12,8 @@ namespace CosmicShore.Game
         [SerializeField, RequireInterface((typeof(IPlayer)))]
         Object _playerPrefab;
 
-        [SerializeField] 
-        ShipSpawner _shipSpawner;
+        [FormerlySerializedAs("_shipSpawner")] [SerializeField] 
+        VesselSpawner vesselSpawner;
         
 
         public IPlayer SpawnPlayerAndShip(IPlayer.InitializeData data)
@@ -21,10 +22,9 @@ namespace CosmicShore.Game
                 return null;
                 
             IPlayer player = (IPlayer)Instantiate(_playerPrefab);
-            _shipSpawner.SpawnShip(data.vesselClass, out IVessel ship);
+            vesselSpawner.SpawnShip(data.vesselClass, out IVessel ship);
             player.InitializeForSinglePlayerMode(data, ship);
-            ship.Initialize(player, data.EnableAIPilot);
-            player.ToggleAutoPilotMode(data.EnableAIPilot);
+            ship.Initialize(player, data.IsAI);
             PlayerVesselInitializeHelper.SetShipProperties(_themeManagerData, ship);
             return player;
         }

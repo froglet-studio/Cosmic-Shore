@@ -20,7 +20,7 @@ using UnityEngine.Serialization;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>
-    /// DEPRECATED - Use R_MiniGameBase instead
+    /// DEPRECATED - Use MiniGameControllerBase instead
     /// </summary>
     public abstract class MiniGame : MonoBehaviour
     {
@@ -114,7 +114,7 @@ namespace CosmicShore.Game.Arcade
         {
             // GameManager.OnPlayGame += InitializeGame;
             
-            // TODO - Replaced in R_MiniGameBase
+            // TODO - Replaced in MiniGameControllerBase
             // OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused += HandleGamePaused;
@@ -125,7 +125,7 @@ namespace CosmicShore.Game.Arcade
         {
             // GameManager.OnPlayGame -= InitializeGame;
             
-            // TODO - Replaced in R_MiniGameBase
+            // TODO - Replaced in MiniGameControllerBase
             // OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;

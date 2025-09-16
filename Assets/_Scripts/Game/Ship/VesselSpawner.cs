@@ -1,13 +1,14 @@
 using System;
 using CosmicShore.Soap;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
-    public class ShipSpawner : MonoBehaviour
+    public class VesselSpawner : MonoBehaviour
     {
-        [SerializeField] 
-        ShipPrefabContainer _shipPrefabContainer;
+        [FormerlySerializedAs("_shipPrefabContainer")] [SerializeField] 
+        VesselPrefabContainer vesselPrefabContainer;
         
         public bool SpawnShip(VesselClassType vesselType, out IVessel vessel)
         {
@@ -20,7 +21,7 @@ namespace CosmicShore.Game
             
             vessel = null;
             
-            if (!_shipPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefab))
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefab))
             {
                 Debug.LogError($"Could not find vessel prefab for {vesselType}");
                 return false;

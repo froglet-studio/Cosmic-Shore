@@ -8,6 +8,7 @@ using Unity.Netcode;
 using Unity.Multiplayer.Samples.Utilities;
 using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
@@ -21,7 +22,7 @@ namespace CosmicShore.Game
         [SerializeField] ClientPlayerSpawner clientPlayerSpawner;
         [SerializeField, Tooltip("A collection of locations for spawning players")]
         Transform[] _playerSpawnPoints;
-        [SerializeField] ShipPrefabContainer shipPrefabContainer;
+        [FormerlySerializedAs("shipPrefabContainer")] [SerializeField] VesselPrefabContainer vesselPrefabContainer;
         [SerializeField] string _mainMenuSceneName = "Menu_Main";
 
         bool initialSpawnDone;
@@ -165,7 +166,7 @@ namespace CosmicShore.Game
         {
             VesselClassType vesselTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
 
-            if (!shipPrefabContainer.TryGetShipPrefab(vesselTypeToSpawn, out Transform shipPrefabTransform))
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselTypeToSpawn, out Transform shipPrefabTransform))
             {
                 Debug.LogError($"[NetworkShipSpawner] No prefab for vessel type {vesselTypeToSpawn}");
                 return;

@@ -13,7 +13,8 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IVesselStatus))]
     public class VesselController : NetworkBehaviour, IVessel
     {
-        public event Action<IVesselStatus> OnShipInitialized;
+        public event Action OnInitialized;
+        public event Action OnBeforeDestroyed;
         
         [Header("Event Channels")]
         [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
@@ -27,41 +28,35 @@ namespace CosmicShore.Game
                 return vesselStatus;
             }
         }
-        
+
+        public bool IsOwnerClient => IsSpawned && IsOwner;
+
         readonly NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
-        
-        bool isMultiplayerMode = false;
 
         void OnEnable()
         {
-            if (isMultiplayerMode && !IsOwner)
+            if (IsSpawned && !IsOwner)
             {
                 n_Speed.OnValueChanged += OnSpeedChanged;
                 n_Course.OnValueChanged += OnCourseChanged;
                 n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
             }
-            RefreshOwnershipFlag();
         }
 
         void OnDisable()
         {
-            if (isMultiplayerMode && !IsOwner)
+            if (IsSpawned && !IsOwner)
             {
                 n_Speed.OnValueChanged -= OnSpeedChanged;
                 n_Course.OnValueChanged -= OnCourseChanged;
                 n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
             }
-            RefreshOwnershipFlag();
         }
 
         public override void OnNetworkSpawn()
         {
-            isMultiplayerMode = true;
-            
-            RefreshOwnershipFlag();
-
             if (IsOwner) 
                 return;
             
@@ -72,9 +67,6 @@ namespace CosmicShore.Game
 
         public override void OnNetworkDespawn()
         {
-            isMultiplayerMode = false;
-            RefreshOwnershipFlag();
-
             if (IsOwner) 
                 return;
             
@@ -85,7 +77,7 @@ namespace CosmicShore.Game
 
         void Update()
         {
-            if (!isMultiplayerMode || !IsOwner) 
+            if (!IsSpawned || !IsOwner) 
                 return;
             
             n_Speed.Value = VesselStatus.Speed;
@@ -98,9 +90,8 @@ namespace CosmicShore.Game
             VesselStatus.Player = player;
             VesselStatus.ShipAnimation.Initialize(VesselStatus);
             VesselStatus.TrailSpawner.Initialize(VesselStatus);
-            RefreshOwnershipFlag();
             
-            if (isMultiplayerMode)
+            if (IsSpawned)
             {
                 InitializeForMultiplayerMode();
             }
@@ -109,7 +100,7 @@ namespace CosmicShore.Game
                 InitializeForSinglePlayerMode(enableAIPilot);
             }
             
-            OnShipInitialized?.Invoke(VesselStatus);
+            OnInitialized?.Invoke();
         }
 
         public void PerformButtonActions(int buttonNumber)
@@ -206,11 +197,6 @@ namespace CosmicShore.Game
         public void StopShipControllerActions(InputEvents controlType) =>
                 VesselStatus.ActionHandler.StopShipControllerActions(controlType);
 
-        public void OnButtonPressed(int buttonNumber)
-        {
-           
-        }
-
         public void ToggleAutoPilot(bool toggle)
         {
             if (toggle)
@@ -219,8 +205,11 @@ namespace CosmicShore.Game
                 VesselStatus.AIPilot.StopAIPilot();
         }
 
+        public bool AllowClearPrismInitialization() => (IsSpawned && IsOwner) || VesselStatus.IsInitializedAsAI;
+
         public void Destroy()
         {
+            OnBeforeDestroyed?.Invoke();
             Destroy(gameObject);
         }
         
@@ -274,17 +263,14 @@ namespace CosmicShore.Game
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.ShipHudView);
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
             }
-                
+            
             // TODO - Currently AIPilot's update should run only after SingleStickVesselTransformer
             // sets SingleStickControls to true/false. Try finding a solution to remove this
             // sequential dependency.
-            VesselStatus.AIPilot.Initialize(enableAIPilot, this);
+            /// AIPilot will be initialized both in User controlled / AI Vessels
+            /// Multiplayer modes will also have auto-pilot initialized
+            VesselStatus.AIPilot.Initialize(enableAIPilot, this);   
             VesselStatus.TrailSpawner.Initialize(VesselStatus);  
-            
-            // TODO -> Remove the below TrailSpawner method execution if not needed.
-            // Possibly this can be done when Players are activated for the game in GameDataSO
-            /*VesselStatus.TrailSpawner.ForceStartSpawningTrail();
-            VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);*/
             
             onBottomEdgeButtonsEnabled.Raise(true);
         }
@@ -292,13 +278,5 @@ namespace CosmicShore.Game
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
-        
-        // helper
-        void RefreshOwnershipFlag()
-        {
-            var value = !isMultiplayerMode || IsOwner;
-            if (VesselStatus is VesselStatus concrete) concrete.SetIsOwnerForControllerOnly(value);
-        }
-
     }
 }

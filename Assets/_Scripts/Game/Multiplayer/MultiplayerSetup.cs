@@ -260,7 +260,7 @@ namespace CosmicShore.Game
                 Player player = playerNetObj.GetComponent<Player>();
                 if (player)
                 {
-                    if (player.IsOwner)
+                    if (player.IsOwnerClient)
                     {
                         player.NetDefaultShipType.Value = miniGameData.SelectedShipClass.Value;
                     }

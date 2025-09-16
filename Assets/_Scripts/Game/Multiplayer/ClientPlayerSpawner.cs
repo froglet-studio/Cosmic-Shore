@@ -26,7 +26,7 @@ namespace CosmicShore.Game
 
                 bool toggle = !networkPlayer.IsOwner;
                 networkPlayer.ToggleStationaryMode(toggle);
-                networkPlayer.ToggleInputStatus(toggle);
+                networkPlayer.ToggleInputPause(toggle);
             }
 
             // TODO - Should not access GameManager directly, use events

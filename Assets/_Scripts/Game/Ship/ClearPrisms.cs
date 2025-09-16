@@ -23,6 +23,8 @@ namespace CosmicShore
 
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
+        
+        bool isInitialized;
 
 
         private void OnEnable()
@@ -34,34 +36,45 @@ namespace CosmicShore
                 return;
             }
 
-            Vessel.OnShipInitialized += VesselInitialized;
+            Vessel.OnInitialized += VesselInitialized;
+            Vessel.OnBeforeDestroyed += OnBeforeVesselDestroyed;
         }
 
         private void OnDisable()
         {
-            Vessel.OnShipInitialized -= VesselInitialized;
+            Vessel.OnInitialized -= VesselInitialized;
+            Vessel.OnBeforeDestroyed -= OnBeforeVesselDestroyed;
         }
 
-        private void VesselInitialized(IVesselStatus _)
+        private void OnBeforeVesselDestroyed() => Destroy(gameObject);
+
+
+        private void VesselInitialized()
         {
-            if (Vessel.VesselStatus.AutoPilotEnabled) return;
+            if (!Vessel.IsOwnerClient && Vessel.VesselStatus.IsInitializedAsAI) 
+                return;
+            
             cameraManager = CameraManager.Instance;
             mainCamera = cameraManager.GetCloseCamera();
+            if (mainCamera == null)
+            {
+                Debug.LogError("Close main camera not found! This should not happen!");
+                return;
+            }
+            
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
             transform.SetParent(visibilityCapsuleTransform);
             visibilityCapsule = gameObject.AddComponent<CapsuleCollider>();
             visibilityCapsule.isTrigger = true;
             visibilityCapsule.radius = capsuleRadius;
+
+            isInitialized = true;
         }
 
         void Update()
         {
-            // NOT GOOD WAY TO DO THIS. STOP RUNNING UPDATE BEFORE CHANGING FROM MAIN_MENU TO MULTIPLAYER FREESTYLE SCENE
-            if (!mainCamera || 
-                Vessel == null || 
-                Vessel.VesselStatus == null ||
-                !Vessel.VesselStatus.AIPilot ||
-                Vessel.VesselStatus.AutoPilotEnabled) return;
+            if (!isInitialized)
+                return;
 
             Vector3 cameraPosition = mainCamera.position;
             Vector3 shipPosition = Vessel.Transform.position;
