@@ -2335,7 +2335,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  miniGameData: {fileID: 0}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   toggleManualThrottle: 0
   MinimumSpeed: 10
   ThrottleScaler: 50
@@ -2909,10 +2909,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ownPullSpeed: 400
-  opponentPullSpeed: 200
-  ownRotateSpeed: 350
-  opponentRotateSpeed: 180
+  ownPullSpeed: 1000
+  opponentPullSpeed: 400
+  ownRotateSpeed: 850
+  opponentRotateSpeed: 380
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
   TopIsBonded: 0

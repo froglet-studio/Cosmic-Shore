@@ -42,8 +42,7 @@ public  class FireGunActionExecutor : ShipActionExecutorBase
             gun.Initialize(shipStatus);
 
         if (projectileContainer != null)
-            projectileContainer.SetParent(shipStatus.Player.Transform, true);
-
+            projectileContainer.SetParent(null, true);
     }
 
     public void Fire(FireGunActionSO so, IVesselStatus status)
@@ -53,17 +52,11 @@ public  class FireGunActionExecutor : ShipActionExecutorBase
 
         _soRef = so;
         _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
-        var inheritedVelocity = status.Attached ? gun.transform.forward : status.Course;
+        var inheritedVelocity = /*status.Attached ?*/ gun.transform.forward  /*:status.Course*/;
 
         OnGunFired?.Invoke();
-
-        gun.FireGun(projectileContainer, so.Speed, inheritedVelocity * status.Speed,
-            so.ProjectileScale,
-            true,
-            so.ProjectileTime.Value,
-            0,
-            FiringPatterns.Default,
-            so.Energy
-        );
+        Debug.Log($"Inherited Velocity {inheritedVelocity} status Attached {status.Attached}");
+        gun.FireGun(projectileContainer, so.Speed, inheritedVelocity * status.Speed, so.ProjectileScale, true, so.ProjectileTime.Value, 0,
+            FiringPatterns.Default, so.Energy);
     }
 }

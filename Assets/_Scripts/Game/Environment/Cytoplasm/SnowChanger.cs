@@ -34,7 +34,11 @@ namespace CosmicShore.Game
         private const float NODE_SIZE   = 0.25f;
         private const float SPHERE_SCALER = 2f;
         
-        enum ControlMode { Crystal, Axis, Position, Transform }
+        public enum ControlMode { Crystal, Axis, Position, Transform }
+        
+        [Header("Control")]
+        [SerializeField] public ControlMode mode = ControlMode.Crystal;
+        
         ControlMode _mode = ControlMode.Crystal;
         Vector3 _overridePosition;
         Transform _overrideTransform;
@@ -45,7 +49,7 @@ namespace CosmicShore.Game
         void OnEnable()
         {
             OnCellItemsUpdated.OnRaised += ChangeSnowSize;
-            shardFieldBus?.Register(this);     // register to bus
+            shardFieldBus?.Register(this);    
             if (nudgeRoot != null)
             {
                 _nudgeOriginalRotation = nudgeRoot.rotation;
@@ -91,14 +95,40 @@ namespace CosmicShore.Game
                 }
             } 
             
-            _mode = ControlMode.Crystal;
+            // _mode = ControlMode.Crystal;
             _nudgeControlArmed = false;
             ChangeSnowSize(); 
         }
         
-         void ChangeSnowSize()
+        bool TryGetTargetPosition(out Vector3 targetPos)
+        {
+            switch (mode)
+            {
+                case ControlMode.Transform:
+                    if (_overrideTransform != null) { targetPos = _overrideTransform.position; return true; }
+                    break;
+                case ControlMode.Position:
+                    targetPos = _overridePosition; return true;
+                case ControlMode.Axis:
+                    // If nudgeRoot is missing, fall back to world origin + axis
+                    var basis = nudgeRoot != null ? nudgeRoot.position : Vector3.zero;
+                    targetPos = basis + (targetAxis.sqrMagnitude > 0.0001f ? targetAxis.normalized : Vector3.forward) * 10f;
+                    return true;
+                case ControlMode.Crystal:
+                default:
+                    if (_crystal != null) { targetPos = _crystal.transform.position; return true; }
+                    break;
+            }
+            targetPos = default;
+            return false;
+        }
+        
+        void ChangeSnowSize()
         {
             float nodeScalerOverThree = NODE_SCALER / 3;
+
+            // Compute the target once per pass
+            bool hasTarget = TryGetTargetPosition(out var targetPos);
 
             for (int x = 0; x < shardsX * 2 + 1; x++)
             for (int y = 0; y < shardsY * 2 + 1; y++)
@@ -107,20 +137,27 @@ namespace CosmicShore.Game
                 var shard = crystalLattice[x, y, z];
                 float normalizedDistance;
 
-                if (_mode == ControlMode.Crystal && _crystal != null)
+                if (mode == ControlMode.Crystal && _crystal != null)
                 {
                     float clampedDistance = Mathf.Clamp(
                         (shard.transform.position - _crystal.transform.position).magnitude, 0, sphereDiameter);
                     normalizedDistance = sphereDiameter > 0f ? clampedDistance / sphereDiameter : 0f;
-                    shard.transform.LookAt(_crystal.transform);
+
+                    if (lookAt && hasTarget) shard.transform.LookAt(targetPos);
                 }
                 else
                 {
-                    Vector3 dir = _overridePosition - shard.transform.position;
-                    float m = dir.magnitude;
-                    if (m > 0.0001f) shard.transform.rotation = Quaternion.LookRotation(dir);
+                    // Keep original behavior: non-crystal mode uses flat scaling
                     normalizedDistance = 1f;
+
+                    if (lookAt && hasTarget)
+                    {
+                        Vector3 dir = targetPos - shard.transform.position;
+                        if (dir.sqrMagnitude > 0.0001f)
+                            shard.transform.rotation = Quaternion.LookRotation(dir);
+                    }
                 }
+
                 shard.transform.localScale =
                     Vector3.forward * (normalizedDistance * NODE_SCALER + NODE_SIZE) +
                     Vector3.one     * (normalizedDistance * nodeScalerOverThree + NODE_SIZE);
@@ -130,29 +167,11 @@ namespace CosmicShore.Game
                 UpdateNudgeRootRotation();
         }
 
+
         void UpdateNudgeRootRotation()
         {
             if (nudgeRoot == null) return;
-
-            Vector3 targetPos;
-            switch (_mode)
-            {
-                case ControlMode.Transform:
-                    if (_overrideTransform == null) return;
-                    targetPos = _overrideTransform.position;
-                    break;
-                case ControlMode.Position:
-                    targetPos = _overridePosition;
-                    break;
-                case ControlMode.Axis:
-                    targetPos = nudgeRoot.position + targetAxis.normalized * 10f;
-                    break;
-                case ControlMode.Crystal:
-                default:
-                    if (_crystal == null) return;
-                    targetPos = _crystal.transform.position;
-                    break;
-            }
+            if (!TryGetTargetPosition(out var targetPos)) return;
 
             var dir = targetPos - nudgeRoot.position;
             if (dir.sqrMagnitude > 0.0001f)
@@ -164,7 +183,7 @@ namespace CosmicShore.Game
         public void PointAtPosition(Vector3 worldPos)
         {
             _overridePosition = worldPos;
-            _mode = ControlMode.Position;
+            mode = ControlMode.Position;     
             _nudgeControlArmed = true;                
             Debug.Log($"[SnowChanger] PointAtPosition -> {worldPos}");
             ChangeSnowSize();
@@ -173,7 +192,7 @@ namespace CosmicShore.Game
         public void RestoreToCrystal()
         {
             _overrideTransform = null;
-            _mode = ControlMode.Crystal;
+            mode = ControlMode.Crystal; 
             _nudgeControlArmed = false;                  
 
             Debug.Log("[SnowChanger] RestoreToCrystal");
@@ -181,6 +200,14 @@ namespace CosmicShore.Game
 
             if (nudgeRoot != null)
                 nudgeRoot.rotation = _nudgeOriginalRotation;
+        }
+        
+        public void PointAtTransform(Transform t)
+        {
+            _overrideTransform = t;
+            mode = ControlMode.Transform;
+            _nudgeControlArmed = true;
+            ChangeSnowSize();
         }
     }
 }

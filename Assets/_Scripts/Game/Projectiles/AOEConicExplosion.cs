@@ -6,7 +6,7 @@ namespace CosmicShore.Game.Projectiles
     public class AOEConicExplosion : AOEExplosion
     {
         [SerializeField] float height = 800; // TODO: maybe pull from node diameter
-        GameObject coneContainer;
+        [SerializeField] GameObject coneContainer;
 
         public override void Initialize(InitializeStruct initStruct)
         {
@@ -34,8 +34,8 @@ namespace CosmicShore.Game.Projectiles
             if (!Material)
                 Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);
             
-            if (!coneContainer)
-                coneContainer = new GameObject("AOEContainer");
+            // if (!coneContainer)
+            //     coneContainer = new GameObject("AOEContainer");
             coneContainer.transform.SetPositionAndRotation(SpawnPosition, SpawnRotation);
             transform.SetParent(coneContainer.transform, false);
         }

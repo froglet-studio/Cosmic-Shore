@@ -109,8 +109,7 @@ namespace CosmicShore.Game.Projectiles
             StartCoroutine(CooldownCoroutine());
         }
 
-        void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity,
-           float projectileScale, Vector3 offset, float projectileTime = 3, float charge = 0, int energy = 0)
+        void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity, float projectileScale, Vector3 offset, float projectileTime = 3, float charge = 0, int energy = 0)
         {
             FireProjectile(containerTransform, speed, inheritedVelocity,
             projectileScale, offset, transform.forward, projectileTime, charge, energy);
@@ -154,7 +153,7 @@ namespace CosmicShore.Game.Projectiles
             }
             _projectile.Initialize(_poolManager, _team, vesselStatus, charge);
             _projectile.transform.localScale = projectileScale * _projectile.InitialScale;
-            _projectile.transform.parent = containerTransform;
+            _projectile.transform.SetParent(containerTransform != null ? containerTransform : null, true);
             _projectile.Velocity = normalizedVelocity * speed + inheritedVelocity;
             _projectile.LaunchProjectile(projectileTime);
         }

@@ -4981,7 +4981,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2564c4fefc3011b43a28e573899e7889, type: 2}
   projectileMineEffects:
   - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}
-  projectileEndEffects: []
+  projectileEndEffects:
+  - {fileID: 11400000, guid: 45ad00737624ad24488231f779f85f4e, type: 2}
   projectileImpactorDataContainer: {fileID: 11400000, guid: c876b418c4188d546996eaabb11d0f26,
     type: 2}
 --- !u!114 &5884936712578775408

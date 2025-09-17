@@ -9,17 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da6292bbc55b40ef8b6b8c058a38b64a, type: 3}
-  m_Name: SkyBurstGunAction
+  m_Script: {fileID: 11500000, guid: bf98ddd0ffbb46599732949ed0ef76e5, type: 3}
+  m_Name: DetonateEndEffect
   m_EditorClassIdentifier: 
-  ammoIndex: 0
-  ammoCost: 0.5
-  projectileScale: 10
-  energy: 0
-  speed: 120
-  projectileTime:
-    Enabled: 0
-    Value: 3
-    Min: 0
-    Max: 0
-    element: 0
+  explosionPrefab: {fileID: 9218889541719856748, guid: b6aa24b5cd6a7f24c9f24c32c20eba91,
+    type: 3}
+  faceVelocity: 1
