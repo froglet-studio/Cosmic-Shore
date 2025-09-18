@@ -44,9 +44,8 @@ namespace CosmicShore.Game
                 return;
             }
 
-            Debug.Log("[NetworkShipSpawner] OnNetworkSpawn invoked on the server.");
-
-            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
+            // Debug.Log("[NetworkShipSpawner] OnNetworkSpawn invoked on the server.");
+            
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnLoadEventCompleted;
             NetworkManager.Singleton.SceneManager.OnSynchronizeComplete += OnSynchronizeComplete;
 
@@ -55,13 +54,15 @@ namespace CosmicShore.Game
 
         private void OnNetworkDespawn()
         {
-            Debug.Log("[NetworkShipSpawner] OnNetworkDespawn invoked.");
+            // Debug.Log("[NetworkShipSpawner] OnNetworkDespawn invoked.");
 
-            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnLoadEventCompleted;
             NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnSynchronizeComplete;
 
             NetworkVesselClientCache.OnNewInstanceAdded -= OnNewVesselClientAdded;
+            
+            if (_netcodeHooks.IsServer)
+                NetworkManager.Singleton.Shutdown();
         }
 
         private void OnDestroy()
@@ -108,17 +109,6 @@ namespace CosmicShore.Game
 
             Debug.Log("[NetworkShipSpawner] Initial spawn done. Initializing players after short delay.");
             DelayedInitializeClientAsync().Forget();
-        }
-
-        void OnClientDisconnect(ulong clientId)
-        {
-            Debug.Log($"[NetworkShipSpawner] OnClientDisconnect: client {clientId} disconnected.");
-
-            if (clientId == NetworkManager.Singleton.LocalClientId)
-            {
-                Debug.Log("[NetworkShipSpawner] Host disconnected; returning to main menu.");
-                SceneManager.LoadSceneAsync(_mainMenuSceneName, LoadSceneMode.Single);
-            }
         }
 
         void ExecutePlayerConfigAndVesselSpawn(ulong clientId, bool lateJoin)
