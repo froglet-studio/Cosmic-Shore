@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fde7d8c2dacf45f99e46799ffeea15e6, type: 3}
+  m_Name: MantaImpactorDataContainer
+  m_EditorClassIdentifier: 
+  vesselPrismEffects:
+  - {fileID: 11400000, guid: 78b37cebc40f2b7458b5958004216de5, type: 2}
+  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
+  - {fileID: 11400000, guid: 222210e40a351d5258b1ce66220b8453, type: 2}
+  - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
+  vesselCrystalEffects:
+  - {fileID: 11400000, guid: 9e42aec8bd1b90c4c8f115039bcd1716, type: 2}
+  - {fileID: 11400000, guid: ff89ef91b7f55d44d95e4f57a70eef64, type: 2}
+  - {fileID: 11400000, guid: 9b358aeb5b64e324c944c6bb77bb7fa8, type: 2}
+  - {fileID: 11400000, guid: 9b358aeb5b64e324c944c6bb77bb7fa8, type: 2}

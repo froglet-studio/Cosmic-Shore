@@ -8,9 +8,9 @@ namespace CosmicShore
     {
         Transform mainCamera;
 
-        [SerializeField, RequireInterface(typeof(IShip))]
+        [SerializeField, RequireInterface(typeof(IVessel))]
         Object _shipMono;
-        IShip _ship => _shipMono as IShip;
+        IVessel Vessel => _shipMono as IVessel;
 
         [SerializeField] AnimationCurve scaleCurve = AnimationCurve.Linear(0, 0, 1, 1);
         [SerializeField] float capsuleRadius = 5f;
@@ -23,49 +23,67 @@ namespace CosmicShore
 
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
+        
+        bool isInitialized;
 
 
         private void OnEnable()
         {
-            if (_ship == null)
+            if (Vessel == null)
             {
-                Debug.LogError("Ship instance is not set or does not implement IShip interface.");
+                Debug.LogError("Vessel instance is not set or does not implement IVessel interface.");
                 enabled = false;
                 return;
             }
 
-            _ship.OnShipInitialized += OnShipInitialized;
+            Vessel.OnInitialized += VesselInitialized;
+            Vessel.OnBeforeDestroyed += OnBeforeVesselDestroyed;
         }
 
         private void OnDisable()
         {
-            _ship.OnShipInitialized -= OnShipInitialized;
+            Vessel.OnInitialized -= VesselInitialized;
+            Vessel.OnBeforeDestroyed -= OnBeforeVesselDestroyed;
         }
 
-        private void OnShipInitialized(IShipStatus _)
+        private void OnBeforeVesselDestroyed() => Destroy(gameObject);
+
+
+        private void VesselInitialized()
         {
-            if (_ship.ShipStatus.AutoPilotEnabled) return;
+            if (!Vessel.IsOwnerClient && Vessel.VesselStatus.IsInitializedAsAI) 
+                return;
+            
             cameraManager = CameraManager.Instance;
             mainCamera = cameraManager.GetCloseCamera();
+            if (mainCamera == null)
+            {
+                Debug.LogError("Close main camera not found! This should not happen!");
+                return;
+            }
+            
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
             transform.SetParent(visibilityCapsuleTransform);
             visibilityCapsule = gameObject.AddComponent<CapsuleCollider>();
             visibilityCapsule.isTrigger = true;
             visibilityCapsule.radius = capsuleRadius;
+
+            isInitialized = true;
         }
 
         void Update()
         {
-            if (mainCamera == null || _ship.ShipStatus.AutoPilotEnabled) return;
+            if (!isInitialized)
+                return;
 
             Vector3 cameraPosition = mainCamera.position;
-            Vector3 shipPosition = _ship.Transform.position;
+            Vector3 shipPosition = Vessel.Transform.position;
 
-            // Position the capsule between the camera and the ship
+            // Position the capsule between the camera and the vessel
             transform.position = (cameraPosition + shipPosition) / 2f;
             transform.LookAt(shipPosition);
 
-            // Scale the capsule to fit between the camera and ship
+            // Scale the capsule to fit between the camera and vessel
             float distance = Vector3.Distance(cameraPosition, shipPosition);
             visibilityCapsule.height = distance;
 

@@ -4,15 +4,25 @@ using System;
 
 namespace CosmicShore.Core
 {
+    public enum BlockState
+    {
+        Normal,
+        Shielded,
+        SuperShielded,
+        Dangerous
+    }
+
     public class BlockStateManager : MonoBehaviour
     {
-        [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [Header("Data Containers")] [SerializeField]
+        ThemeManagerDataContainerSO _themeManagerData;
 
         private TrailBlock trailBlock;
         private MaterialPropertyAnimator materialAnimator;
         private BlockTeamManager teamManager;
         private Coroutine activeStateCoroutine;
+
+        public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
         private void Awake()
         {
@@ -31,6 +41,7 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Team),
                 _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Team)
             );
+            CurrentState = BlockState.Dangerous;
         }
 
         public void ActivateShield(float? duration = null)
@@ -41,6 +52,7 @@ namespace CosmicShore.Core
                 {
                     StopCoroutine(activeStateCoroutine);
                 }
+
                 activeStateCoroutine = StartCoroutine(TimedShieldCoroutine(duration.Value));
             }
             else
@@ -58,6 +70,7 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Team),
                 _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Team)
             );
+            CurrentState = BlockState.SuperShielded;
         }
 
         public void DeactivateShields(float? delay = null)
@@ -68,6 +81,7 @@ namespace CosmicShore.Core
                 {
                     StopCoroutine(activeStateCoroutine);
                 }
+
                 activeStateCoroutine = StartCoroutine(DelayedShieldDeactivationCoroutine(delay.Value));
             }
             else
@@ -85,6 +99,7 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Team),
                 _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Team)
             );
+            CurrentState = BlockState.Shielded;
         }
 
         private void ApplyNormalState()
@@ -96,6 +111,7 @@ namespace CosmicShore.Core
 
             trailBlock.TrailBlockProperties.IsShielded = false;
             trailBlock.TrailBlockProperties.IsSuperShielded = false;
+            CurrentState = BlockState.Normal;
         }
 
         private IEnumerator TimedShieldCoroutine(float duration)

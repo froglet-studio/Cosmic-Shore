@@ -9,39 +9,42 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
+    /// <summary>
+    /// DEPRECATED - Try remove all dependencies to this script
+    /// </summary>
     public class Hangar : Singleton<Hangar>
     {
         const string SELECTED_SHIP_KEY = "SelectedShip";
 
         // HashSet has only one same value in one set
         // TODO: move to cell
-        [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new();
+        // [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new();
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
         // TODO - Store in separate data container
-        public ShipClassType ChoosenClassType;
+        // public ShipClassType ChoosenClassType;
 
         /// <summary>
-        /// This is the ship that is currently selected in the hangar by local owner client.
+        /// This is the vessel that is currently selected in the hangar by local owner client.
         /// Store it in separate data container.
         /// </summary>
-        public IShip LocalPlayerShip { get; private set; }
+        public IVessel LocalPlayerVessel { get; private set; }
 
 
         public override void Awake()
         {
             base.Awake();
-            ChoosenClassType = (ShipClassType)PlayerPrefs.GetInt(SELECTED_SHIP_KEY);
+            // ChoosenClassType = (ShipClassType)PlayerPrefs.GetInt(SELECTED_SHIP_KEY);
         }
 
         // TODO - Store in separate data container
-        public void SetPlayerShip(int shipType)
+        /*public void SetPlayerShip(int shipType)
         {
             ChoosenClassType = (ShipClassType)shipType;
             PlayerPrefs.SetInt(SELECTED_SHIP_KEY, shipType);
-        }
+        }*/
 
         // TODO - Store in data container. Remove the method
         public void SetPlayerCaptain(Captain captain)
@@ -58,35 +61,32 @@ namespace CosmicShore.Core
         {
             _aiSkillLevel = level;
         }*/
-
-        /// <summary>
-        /// This method is used when ship is loaded for multiplayer gameplay
-        /// </summary>
-        public IShip SetShipProperties(IShip ship, Teams team, bool isOwner, SO_Captain so_captain = null)
+        
+        /*public IVessel SetShipProperties(IVessel vessel, Teams team, bool isOwner, SO_Captain so_captain = null)
         {
             // TODO - Get Captains from data containers
             /*if (so_captain == null && CaptainManager.Instance != null)
             {
-                var so_captains = CaptainManager.Instance.GetAllSOCaptains().Where(x => x.Ship.Class == ship.ShipStatus.ShipType).ToList();
+                var so_captains = CaptainManager.Instance.GetAllSOCaptains().Where(x => x.Vessel.Class == vessel.VesselStatus.ShipType).ToList();
                 so_captain = so_captains[Random.Range(0, 3)];
                 var captain = CaptainManager.Instance.GetCaptainByName(so_captain.Name);
                 if (captain != null)
                 {
-                    ship.AssignCaptain(so_captain);
-                    ship.SetResourceLevels(captain.ResourceLevels);
+                    vessel.AssignCaptain(so_captain);
+                    vessel.SetResourceLevels(captain.ResourceLevels);
                 }
-            }*/
+            }#1#
 
             var materialSet = _themeManagerData.TeamMaterialSets[team];
-            ship.SetShipMaterial(materialSet.ShipMaterial);
-            ship.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
-            ship.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
-            ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
-            ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
+            vessel.SetShipMaterial(materialSet.ShipMaterial);
+            vessel.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
+            vessel.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
+            vessel.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
+            vessel.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
             if (isOwner)
-                LocalPlayerShip = ship;
-            return ship;
-        }
+                LocalPlayerVessel = vessel;
+            return vessel;
+        }*/
     }
 }

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68b3e74284f14e32a6e21b5fb8c3e8ad, type: 3}
+  m_Name: RhinoForceFieldSkimmerImpactorDataContainer
+  m_EditorClassIdentifier: 
+  vesselSkimmerEffectsSO:
+  - {fileID: 11400000, guid: 02cd4a20ea91bbc4591c9ccbf9db91af, type: 2}
+  skimmerPrismEffectsSO:
+  - {fileID: 11400000, guid: a70647f138323c14392e84920a1a44f2, type: 2}
+  - {fileID: 11400000, guid: 66f1edf31a7db6e4d971af7586eedf8f, type: 2}
+  - {fileID: 11400000, guid: a4bf7b501d430854f88502f183aa990c, type: 2}
+  - {fileID: 11400000, guid: dcce08b9351b97c4eb275508001a5b8e, type: 2}
+  skimmerCrystalEffectsSO: []

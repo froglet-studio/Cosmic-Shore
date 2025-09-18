@@ -12,7 +12,7 @@ namespace CosmicShore.Game.Arcade
             Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
 
             // TODO - Cannot modify player datas directly... need other way of initialization.
-            // Players[0].ShipType = SquadSystem.SquadLeader.Ship.Class;
+            // Players[0].ShipType = SquadSystem.SquadLeader.Vessel.Class;
         }
     }
 }

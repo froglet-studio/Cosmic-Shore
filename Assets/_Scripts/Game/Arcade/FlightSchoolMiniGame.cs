@@ -47,7 +47,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
             Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Ship.DisableSkimmer();
+            ActivePlayer.Vessel.DisableSkimmer();
         }
     }
 }

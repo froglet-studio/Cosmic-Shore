@@ -28,11 +28,11 @@ namespace CosmicShore.Game.Projectiles
 
         protected List<Trail> trails = new List<Trail>();
 
-        /*public override void InitializeAndDetonate(IShip ship)
+        /*public override void InitializeAndDetonate(IVessel vessel)
         {
-            base.InitializeAndDetonate(ship);
-            blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team) 
-                : _themeManagerData.GetTeamBlockMaterial(Ship.ShipStatus.Team);
+            base.InitializeAndDetonate(vessel);
+            blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Vessel.VesselStatus.Team) 
+                : _themeManagerData.GetTeamBlockMaterial(Vessel.VesselStatus.Team);
         }*/
 
         protected override IEnumerator ExplodeCoroutine()
@@ -68,8 +68,8 @@ namespace CosmicShore.Game.Projectiles
         protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerId, Trail trail)
         {
             var block = TrailBlockBufferManager.Instance.GetBlock(Team);
-            block.ownerID = Ship.ShipStatus.Player.PlayerUUID;
-            block.PlayerName = Ship.ShipStatus.PlayerName;
+            block.ownerID = Vessel.VesselStatus.Player.PlayerUUID;
+            block.PlayerName = Vessel.VesselStatus.PlayerName;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ownerID = block.ownerID + ownerId + position;  

@@ -1,21 +1,25 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
+using CosmicShore.SOAP;
 using UnityEngine;
 
 namespace CosmicShore
 {
-    [RequireComponent(typeof(IShipStatus))]
+    [RequireComponent(typeof(IVesselStatus))]
     public class SlowShipViewer : MonoBehaviour
     {
+        [SerializeField]
+        MiniGameDataSO miniGameData;
+        
         [SerializeField] Material trailViewerMaterial;
 
         LineRenderer lineRenderer;
-        IShipStatus shipStatus;
+        IVesselStatus vesselStatus;
         Transform target;
         
         void Start()
         {
-            shipStatus = GetComponent<IShipStatus>();  
+            vesselStatus = GetComponent<IVesselStatus>();  
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.material = trailViewerMaterial;
             lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
@@ -28,10 +32,10 @@ namespace CosmicShore
             lineRenderer.enabled = false;
 
             // TODO - Can't have ActivePlayer as static
-            // if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Ship.ShipStatus == shipStatus)
+            // if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Vessel.VesselStatus == vesselStatus)
             {
                 var distance = float.PositiveInfinity;
-                foreach (var shipTransform in Hangar.Instance.SlowedShipTransforms)
+                foreach (var shipTransform in miniGameData.SlowedShipTransforms)
                 {
                     if (shipTransform == transform) continue;
                     float tempDistance;     

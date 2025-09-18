@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    // TODO - DEPRECATED SCRIPT, Use R_CourseMiniGame instead
+    // TODO - DEPRECATED SCRIPT, Use FreestyleController instead
     public class CourseMiniGame : MiniGame
     {
         [SerializeField] Crystal Crystal;
@@ -26,7 +26,7 @@ namespace CosmicShore.Game.Arcade
             SegmentSpawner.Seed = new System.Random().Next();
             if (ScaleNumberOfSegmentsWithIntensity) numberOfSegments *= IntensityLevel;
 
-            // TODO - Scoring mode should not be dependent on Ship Class Type
+            // TODO - Scoring mode should not be dependent on Vessel Class Type
             /*if (PlayerShipType == ShipClassType.Rhino)
                 ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;*/
 

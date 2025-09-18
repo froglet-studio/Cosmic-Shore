@@ -494,6 +494,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ownPullSpeed: 4
+  opponentPullSpeed: 1
+  ownRotateSpeed: 8
+  opponentRotateSpeed: 3
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
   TopIsBonded: 0
@@ -1992,7 +1996,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5928382658856804067}
-  - component: {fileID: 874579555101021527}
   - component: {fileID: 6441696348568773771}
   - component: {fileID: 8900747579718772804}
   - component: {fileID: 7686683633640807837}
@@ -2005,7 +2008,6 @@ GameObject:
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
   - component: {fileID: 9172589084772723142}
-  - component: {fileID: 3885827911418556293}
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
   m_Layer: 0
@@ -2033,76 +2035,6 @@ Transform:
   - {fileID: 4894037493201937865}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &874579555101021527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  impactProperties:
-  - fuelBonus: 0
-    fuelPenalty: 0
-    scoreBonus: 0
-    scorePenalty: 0
-    tailLengthBonus: 0
-    tailLengthPenalty: 0
-    speedBonus: 0
-    speedPenalty: 0
-    hapticType: 0
-    trailBlock: {fileID: 0}
-  _name: Shrike
-  _shipType: 10
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  OrientationHandle: {fileID: 1878660672777590133}
-  shipGeometries:
-  - {fileID: 7006514261138449697}
-  - {fileID: 1815102489639903026}
-  - {fileID: 8912034820902656382}
-  - {fileID: 6675130274311316141}
-  - {fileID: 7696976320636676308}
-  - {fileID: 1376376450048088127}
-  - {fileID: 6988205045896376628}
-  shipHUD: {fileID: 0}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
-    type: 3}
-  farFieldSkimmer: {fileID: 3138628630497430536}
-  resourceIndex: 0
-  ammoResourceIndex: 0
-  boostResourceIndex: 0
-  crystalImpactEffects: 030000000b000000
-  minExplosionScale: 50
-  maxExplosionScale: 500
-  trailBlockImpactEffects: 020000000f000000
-  blockChargeChange: 0
-  boostMultiplier: 5
-  bottomEdgeButtons: 0
-  Inertia: 70
-  inputEventShipActions:
-  - InputEvent: 6
-    ShipActions:
-    - {fileID: 4272400135030423314}
-  - InputEvent: 1
-    ShipActions:
-    - {fileID: 1865457525660812358}
-  - InputEvent: 7
-    ShipActions:
-    - {fileID: 3920075020299595483}
-  resourceEventClassActions: []
-  ElementStats: []
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 219921485f1b0be4bb968b2f60e22c38,
-    type: 2}
-  OnButton1Pressed: {fileID: 0}
-  OnButton1Released: {fileID: 0}
-  OnButton2Pressed: {fileID: 0}
-  OnButton2Released: {fileID: 0}
-  OnButton3Pressed: {fileID: 0}
-  OnButton3Released: {fileID: 0}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2117,6 +2049,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 0}
   _shipHUDController: {fileID: 0}
+  _shipHUDView: {fileID: 0}
   shipHUDContainer: {fileID: 0}
   boostMultiplier: 4
   _name: 
@@ -2243,7 +2176,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkillLevel: 0.3
+  skillLevel: 1
   defaultThrottleHigh: 0.9
   defaultThrottleLow: 0.2
   defaultAggressivenessHigh: 0.03
@@ -2254,24 +2187,12 @@ MonoBehaviour:
   avoidanceLow: 15
   aggressivenessIncreaseHigh: 0.07
   aggressivenessIncreaseLow: 0.02
-  throttle: 0
-  aggressiveness: 0.1
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  X: 0
-  Y: 0
   raycastHeight: 2
   raycastWidth: 2
-  LookingAtCrystal: 0
   ram: 0
   drift: 0
-  SingleStickControls: 0
   abilities: []
-  CrystalPosition: {x: 0, y: 0, z: 0}
-  TargetPosition: {x: 0, y: 0, z: 0}
-  flowFieldData: {fileID: 0}
+  OnCellItemsUpdated: {fileID: 0}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2356,7 +2277,6 @@ MonoBehaviour:
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
-  OnSilhouetteInitialized: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
@@ -2373,17 +2293,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ControlOverrides: 03000000
-  closeCamDistance: -25
-  farCamDistance:
-    Enabled: 0
-    Value: 0
-    Min: 0
-    Max: 0
-    element: 0
-  FollowTarget: {fileID: 0}
-  FollowTargetPosition: {x: 0, y: 0, z: 0}
-  isOrthographic: 0
+  settings: {fileID: 0}
+  OnInitializePlayerCamera: {fileID: 0}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2398,26 +2309,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _inputEventShipActions: []
   _resourceEventClassActions: []
-  OnButton1Pressed: {fileID: 0}
-  OnButton1Released: {fileID: 0}
-  OnButton2Pressed: {fileID: 0}
-  OnButton2Released: {fileID: 0}
-  OnButton3Pressed: {fileID: 0}
-  OnButton3Released: {fileID: 0}
---- !u!114 &3885827911418556293
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7c950cbe6934cc49b4940a883bc0c44, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _crystalImpactEffects: []
-  _trailBlockImpactEffects: []
+  _onButtonPressed: {fileID: 0}
+  _onButtonReleased: {fileID: 0}
+  onAbilityExecuted: {fileID: 0}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3302,9 +3196,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c736bc4b5e4a48e4fad10bb37817bf34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  assembler: {fileID: 6324276937506576558}
+  assemblerPrefab: {fileID: 0}
   depth: 50
-  resourceIndex: 0
+  shieldResourceIndex: 0
+  wallsPerFullResource: 4
 --- !u!1 &8777980414596646480
 GameObject:
   m_ObjectHideFlags: 0
@@ -3613,11 +3508,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: ship
-      value: 
-      objectReference: {fileID: 874579555101021527}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
       propertyPath: fuelAmount
       value: 0
       objectReference: {fileID: 0}
@@ -3672,18 +3562,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 4619950853104356685}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &3138628630497430536 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-    type: 3}
-  m_PrefabInstance: {fileID: 4619950853104356685}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &7471713358279828738
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3757,11 +3635,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
-      propertyPath: ship
-      value: 
-      objectReference: {fileID: 874579555101021527}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: selfSkim

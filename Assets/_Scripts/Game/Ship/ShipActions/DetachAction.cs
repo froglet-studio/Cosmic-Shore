@@ -4,10 +4,10 @@ public class DetachAction : ShipAction
 {
     public override void StartAction()
     {
-        if (ShipStatus.Attached)
+        if (VesselStatus.Attached)
         {
-            ShipStatus.Attached = false;
-            ShipStatus.AttachedTrailBlock = null;
+            VesselStatus.Attached = false;
+            VesselStatus.AttachedTrailBlock = null;
         }
     }
 

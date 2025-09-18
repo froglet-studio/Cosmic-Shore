@@ -21,15 +21,15 @@ namespace CosmicShore.Game.Projectiles
             yield return new WaitForSeconds(ExplosionDelay);
 
             var count = 0f;
-            int currentPosition = Ship.ShipStatus.TrailSpawner.TrailLength - 1;
+            int currentPosition = Vessel.VesselStatus.TrailSpawner.TrailLength - 1;
             while (count < TunnelAmount)
             {
-                if (currentPosition < Ship.ShipStatus.TrailSpawner.TrailLength)
+                if (currentPosition < Vessel.VesselStatus.TrailSpawner.TrailLength)
                 {
                     count++;
                     currentPosition++;
-                    SetBlockDimensions(Ship.ShipStatus.TrailSpawner.TargetScale);
-                    var lastTwoBlocks = Ship.ShipStatus.TrailSpawner.GetLastTwoBlocks();
+                    SetBlockDimensions(Vessel.VesselStatus.TrailSpawner.TargetScale);
+                    var lastTwoBlocks = Vessel.VesselStatus.TrailSpawner.GetLastTwoBlocks();
                     if(lastTwoBlocks != null)
                         SeedBlocks(lastTwoBlocks);
                 }

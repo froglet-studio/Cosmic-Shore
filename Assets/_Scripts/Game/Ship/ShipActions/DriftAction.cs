@@ -4,17 +4,17 @@ public class DriftAction : ShipAction
 {
     public override void StartAction()
     {
-        Ship.ShipStatus.ShipTransformer.PitchScaler *= 1.5f;
-        Ship.ShipStatus.ShipTransformer.YawScaler *= 1.5f;
-        Ship.ShipStatus.ShipTransformer.RollScaler *= 1.5f;
-        Ship.ShipStatus.Drifting = true;
+        Vessel.VesselStatus.VesselTransformer.PitchScaler *= 1.5f;
+        Vessel.VesselStatus.VesselTransformer.YawScaler *= 1.5f;
+        Vessel.VesselStatus.VesselTransformer.RollScaler *= 1.5f;
+        Vessel.VesselStatus.Drifting = true;
     }
 
     public override void StopAction()
     {
-        Ship.ShipStatus.ShipTransformer.PitchScaler /= 1.5f;
-        Ship.ShipStatus.ShipTransformer.YawScaler /= 1.5f;
-        Ship.ShipStatus.ShipTransformer.RollScaler /= 1.5f;
-        Ship.ShipStatus.Drifting = false;
+        Vessel.VesselStatus.VesselTransformer.PitchScaler /= 1.5f;
+        Vessel.VesselStatus.VesselTransformer.YawScaler /= 1.5f;
+        Vessel.VesselStatus.VesselTransformer.RollScaler /= 1.5f;
+        Vessel.VesselStatus.Drifting = false;
     }
 }

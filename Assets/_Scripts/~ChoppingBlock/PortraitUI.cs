@@ -6,7 +6,7 @@ namespace CosmicShore.Game.UI
 {
     public class PortraitUI : MonoBehaviour
     {
-        [SerializeField] R_Player player;
+        [SerializeField] Player player;
         RectTransform rectTransform;
         bool playerReady;
 
@@ -27,7 +27,7 @@ namespace CosmicShore.Game.UI
         IEnumerator InitializeCoroutine()
         {
             // TODO - Can't have ActivePlayer as static, find other way! Use Player Ready event!
-            // yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
+            // yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Vessel != null && Player.ActivePlayer.Vessel != null && Player.ActivePlayer.Vessel.VesselStatus.InputController != null);
             // TEMP
             yield return null;
             enabled = false;
@@ -40,7 +40,7 @@ namespace CosmicShore.Game.UI
             if (!playerReady) return;
 
             // TODO - Can't have ActivePlayer as static
-            // if (Player.ActivePlayer.Ship.ShipStatus.InputController.Portrait)
+            // if (Player.ActivePlayer.Vessel.VesselStatus.InputController.Portrait)
             if (true) // TEMP
             {
                 // Set the anchorMin and anchorMax values to center the RectTransform

@@ -8,8 +8,8 @@ public class ToggleTurretModeAction : ToggleStationaryModeAction
     public override void StartAction()
     {
         base.StartAction();
-        var resource = Ship.ShipStatus.ResourceSystem.Resources[resourceIndex];
-        resource.resourceGainRate = ShipStatus.IsStationary ? resource.initialResourceGainRate * 2 : resource.initialResourceGainRate;
+        var resource = Vessel.VesselStatus.ResourceSystem.Resources[resourceIndex];
+        resource.resourceGainRate = VesselStatus.IsStationary ? resource.initialResourceGainRate * 2 : resource.initialResourceGainRate;
     }
 
     public override void StopAction()

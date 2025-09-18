@@ -49,7 +49,7 @@ namespace CosmicShore.Game
         public Trail Trail = new Trail();
         readonly Trail Trail2 = new Trail();
 
-        IShipStatus _shipStatus;
+        IVesselStatus vesselStatus;
         string ownerId;
 
         // Scaling helpers
@@ -60,7 +60,7 @@ namespace CosmicShore.Game
 
         // Charm
         bool isCharmed;
-        IShipStatus tempShip;
+        IVesselStatus tempVessel;
 
         // Cancellation
         CancellationTokenSource cts;
@@ -93,14 +93,14 @@ namespace CosmicShore.Game
         /// <summary>
         /// Initializes and starts spawning.
         /// </summary>
-        public void Initialize(IShipStatus shipStatus)
+        public void Initialize(IVesselStatus vesselStatus)
         {
-            _shipStatus = shipStatus;
+            this.vesselStatus = vesselStatus;
 
-            // this.ship = ship;
+            // this.vessel = vessel;
             waitTime = defaultWaitTime;
             wavelength = initialWavelength;
-            ownerId = _shipStatus.Player.PlayerUUID;
+            ownerId = this.vesselStatus.Player.PlayerUUID;
             XScaler = minBlockScale;
 
             EnsureContainer();
@@ -140,9 +140,9 @@ namespace CosmicShore.Game
         }
 
         /// <summary>Temporarily charm this spawner.</summary>
-        public void Charm(IShipStatus other, float duration)
+        public void Charm(IVesselStatus other, float duration)
         {
-            tempShip = other;
+            tempVessel = other;
             isCharmed = true;
             _ = CharmAsync(duration, cts.Token);
         }
@@ -171,7 +171,7 @@ namespace CosmicShore.Game
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !_shipStatus.Attached && _shipStatus.Speed > 3f)
+                if (spawnerEnabled && !vesselStatus.Attached && vesselStatus.Speed > 3f)
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {
@@ -185,7 +185,7 @@ namespace CosmicShore.Game
                 }
 
                 // Ensure no NaN or Infinity for delay
-                float raw = _shipStatus.Speed > 0f ? wavelength / _shipStatus.Speed : defaultWaitTime;
+                float raw = vesselStatus.Speed > 0f ? wavelength / vesselStatus.Speed : defaultWaitTime;
                 float clamped = float.IsNaN(raw) || float.IsInfinity(raw)
                     ? defaultWaitTime
                     : Mathf.Clamp(raw, 0f, 3f);
@@ -239,25 +239,25 @@ namespace CosmicShore.Game
 
             // position & rotation
             float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - _shipStatus.Course * offset + _shipStatus.ShipTransform.right * xShift;
-            prism.transform.SetPositionAndRotation(pos, _shipStatus.blockRotation);
+            Vector3 pos = transform.position - vesselStatus.Course * offset + vesselStatus.ShipTransform.right * xShift;
+            prism.transform.SetPositionAndRotation(pos, vesselStatus.blockRotation);
             prism.transform.parent = TrailContainer.transform;
 
             // owner & player
-            bool charm = isCharmed && tempShip != null;
-            string creatorId = charm ? _shipStatus.Player.PlayerUUID : ownerId;
+            bool charm = isCharmed && tempVessel != null;
+            string creatorId = charm ? vesselStatus.Player.PlayerUUID : ownerId;
             if (string.IsNullOrEmpty(creatorId))
-                creatorId = _shipStatus.Player?.PlayerUUID ?? string.Empty;
+                creatorId = vesselStatus.Player?.PlayerUUID ?? string.Empty;
             prism.ownerID = creatorId;
 
-            prism.PlayerName = _shipStatus.PlayerName;
-            prism.ChangeTeam(_shipStatus.Team);
-            // prism.PlayerName = charm ? _shipStatus.PlayerName : _shipStatus.Team.ToString();
-            // prism.ChangeTeam(charm ? _shipStatus.Team : _shipStatus.Team);
+            prism.PlayerName = vesselStatus.PlayerName;
+            prism.ChangeTeam(vesselStatus.Team);
+            // prism.PlayerName = charm ? VesselStatus.PlayerName : VesselStatus.Team.ToString();
+            // prism.ChangeTeam(charm ? VesselStatus.Team : VesselStatus.Team);
 
             // waitTime
             prism.waitTime = waitTillOutsideSkimmer
-                ? (skimmer.transform.localScale.z + TrailZScale) / _shipStatus.Speed
+                ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
                 : waitTime;
 
             // shield

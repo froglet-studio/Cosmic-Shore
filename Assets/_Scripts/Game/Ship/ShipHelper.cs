@@ -6,37 +6,63 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// This class helps in method execution for IShipStatus instances
+    /// This class helps in method execution for IVesselStatus instances
     /// </summary>
     public static class ShipHelper
     {
-        public static void InitializeShipControlActions(IShipStatus shipStatus,
+        // ShipHelper.cs
+        public static void InitializeShipControlActions(
+            IVesselStatus vesselStatus,
             List<InputEventShipActionMapping> inputEventShipActions,
-            Dictionary<InputEvents, List<ShipAction>> shipControlActions)
+            Dictionary<InputEvents, List<ShipActionSO>> shipControlActions)
         {
-            foreach (var inputEventShipAction in inputEventShipActions)
-                if (!shipControlActions.ContainsKey(inputEventShipAction.InputEvent))
-                    shipControlActions.Add(inputEventShipAction.InputEvent, inputEventShipAction.ShipActions);
-                else
-                    shipControlActions[inputEventShipAction.InputEvent].AddRange(inputEventShipAction.ShipActions);
+            shipControlActions.Clear();
 
-            foreach (var shipAction in shipControlActions.Keys.SelectMany(key => shipControlActions[key]))
-                shipAction.Initialize(shipStatus.Ship);
+            foreach (var map in inputEventShipActions)
+            {
+                if (!shipControlActions.TryGetValue(map.InputEvent, out var list))
+                {
+                    list = new List<ShipActionSO>();
+                    shipControlActions.Add(map.InputEvent, list);
+                }
+
+                foreach (var asset in map.ShipActions)
+                {
+                    if (asset == null) continue;
+                    var instance = Object.Instantiate(asset); 
+                    instance.name = $"{asset.name} [runtime:{vesselStatus.PlayerName}]";
+                    instance.Initialize(vesselStatus.Vessel);       
+                    list.Add(instance);
+                }
+            }
         }
 
-        public static void InitializeClassResourceActions(IShipStatus shipStatus,
+        public static void InitializeClassResourceActions(
+            IVesselStatus vesselStatus,
             List<ResourceEventShipActionMapping> resourceEventShipActionMappings,
-            Dictionary<ResourceEvents, List<ShipAction>> classResourceActions)
+            Dictionary<ResourceEvents, List<ShipActionSO>> classResourceActions)
         {
-            foreach (var resourceEventClassAction in resourceEventShipActionMappings)
-                if (!classResourceActions.ContainsKey(resourceEventClassAction.ResourceEvent))
-                    classResourceActions.Add(resourceEventClassAction.ResourceEvent, resourceEventClassAction.ClassActions);
-                else
-                    classResourceActions[resourceEventClassAction.ResourceEvent].AddRange(resourceEventClassAction.ClassActions);
+            classResourceActions.Clear();
 
-            foreach (var classAction in classResourceActions.Keys.SelectMany(key => classResourceActions[key]))
-                classAction.Initialize(shipStatus.Ship);
+            foreach (var map in resourceEventShipActionMappings)
+            {
+                if (!classResourceActions.TryGetValue(map.ResourceEvent, out var list))
+                {
+                    list = new List<ShipActionSO>();
+                    classResourceActions.Add(map.ResourceEvent, list);
+                }
+
+                foreach (var asset in map.ClassActions)
+                {
+                    if (asset == null) continue;
+                    var instance = Object.Instantiate(asset);
+                    instance.name = $"{asset.name} [runtime:{vesselStatus.PlayerName}]";
+                    instance.Initialize(vesselStatus.Vessel);
+                    list.Add(instance);
+                }
+            }
         }
+
 
         public static void Teleport(Transform shipTransform, Transform targetTransform) => shipTransform.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);
 

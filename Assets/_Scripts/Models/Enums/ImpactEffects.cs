@@ -80,7 +80,7 @@ public enum ImpactEffects
     Shrink,
     Shield,
 
-    // Ship
+    // Vessel
     TriggerAreaEffect,
 }
 */

@@ -64,7 +64,7 @@ public class LightFauna : Fauna
             if (distance == 0) continue;
 
             // Hande Ships
-            if (collider.TryGetComponent(out IShipStatus _))
+            if (collider.TryGetComponent(out IVesselStatus _))
             {
                 neighborCount++;
                 separation -= diff.normalized / distance;

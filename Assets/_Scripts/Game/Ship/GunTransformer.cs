@@ -9,11 +9,11 @@ namespace CosmicShore
         [SerializeField] float radius = 20f;
         float constant;
 
-        [RequireInterface(typeof(IShipStatus))]
+        [RequireInterface(typeof(IVesselStatus))]
         [SerializeField] MonoBehaviour shipInstance;
         [SerializeField] Transform gunFocus;
 
-        IInputStatus InputStatus => (shipInstance as IShipStatus).InputStatus;
+        IInputStatus InputStatus => (shipInstance as IVesselStatus).InputStatus;
 
         void Start()
         {

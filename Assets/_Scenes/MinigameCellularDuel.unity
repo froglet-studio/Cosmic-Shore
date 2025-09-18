@@ -950,7 +950,6 @@ GameObject:
   - component: {fileID: 1527998408}
   - component: {fileID: 1527998409}
   - component: {fileID: 1527998413}
-  - component: {fileID: 1527998414}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -1043,21 +1042,6 @@ MonoBehaviour:
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   monitors:
   - {fileID: 1527998409}
---- !u!114 &1527998414
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1527998405}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b418899d51c04d9ea0bb2f928046963e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  _playerSpawner: {fileID: 1870184177}
-  _spawnAIAtStart: 0
 --- !u!1001 &1666789273
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1112,7 +1096,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
       propertyPath: _items.Array.size
-      value: 7
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: 92e6244855ae437cbcb05e8b36f01cec, type: 3}
       propertyPath: '_items.Array.data[0]'
@@ -1282,30 +1266,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player and Ship Spawner
       objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _spawnAtStart
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[0].Team
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[1].Team
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
-        type: 3}
-      propertyPath: _initializeDatas.Array.data[0].AllowSpawning
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1870184179}
   m_SourcePrefab: {fileID: 100100000, guid: a51d3a28670d8e64fbdb568abd6769e2, type: 3}
 --- !u!114 &1870184177 stripped
 MonoBehaviour:
@@ -1313,12 +1281,46 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 1870184176}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1870184178}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05f25773e3ee4abc86fa268757d3f4ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1870184178 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1870184176}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1870184179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1870184178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b418899d51c04d9ea0bb2f928046963e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _playerSpawner: {fileID: 1870184177}
+  _initializeDatas:
+  - vesselClass: 2
+    Team: 2
+    PlayerName: Hostile1
+    PlayerUUID: 
+    IsAI: 1
+    AllowSpawning: 1
+  - vesselClass: 11
+    Team: 2
+    PlayerName: Hostile2
+    PlayerUUID: 
+    IsAI: 1
+    AllowSpawning: 0
+  _spawnAIAtStart: 0
 --- !u!4 &1898590044 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8350600879602490814, guid: 7fec532a729a8b648a8de2399d1b918a,

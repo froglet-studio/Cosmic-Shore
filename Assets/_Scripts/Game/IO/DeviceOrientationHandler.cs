@@ -10,7 +10,8 @@ namespace CosmicShore.Game.IO
         private const float PHONE_FLIP_THRESHOLD = 0.1f;
         private const float GYRO_INITIALIZATION_RANGE = 0.05f;
         private bool phoneFlipState;
-        private IShip ship;
+        // private IVessel vessel;
+        IInputStatus inputStatus;
         private bool attitudeInitialized = false;
 
         private Quaternion derivedCorrection;
@@ -18,10 +19,12 @@ namespace CosmicShore.Game.IO
 
         private MonoBehaviour coroutineRunner;
 
-        public void Initialize(IShip ship, MonoBehaviour coroutineRunner)
+        // public void Initialize(IVessel vessel, MonoBehaviour coroutineRunner)
+        public void Initialize(IInputStatus status, MonoBehaviour runner)
         {
-            this.ship = ship;
-            this.coroutineRunner = coroutineRunner;
+            // this.vessel = vessel;
+            inputStatus = status;
+            coroutineRunner = runner;
             // Don't enable the sensor by default - wait for explicit enable via OnToggleGyro
 
             Screen.orientation = ScreenOrientation.LandscapeLeft;
@@ -51,20 +54,22 @@ namespace CosmicShore.Game.IO
 
         private void UpdatePhoneFlipState(float accelerationX)
         {
-            if (ship == null) return;
+            // if (vessel == null) return;
             bool newFlipState = accelerationX > 0;
             if (newFlipState != phoneFlipState)
             {
                 phoneFlipState = newFlipState;
                 if (phoneFlipState)
                 {
-                    ship.PerformShipControllerActions(InputEvents.FlipAction);
-                    //InputController.currentOrientation = ScreenOrientation.LandscapeRight;
+                    // vessel.PerformShipControllerActions(InputEvents.FlipAction);
+                    inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
+                    IInputStatus.CurrentOrientation = ScreenOrientation.LandscapeRight;
                 }
                 else
                 {
-                    ship.StopShipControllerActions(InputEvents.FlipAction);
-                    //InputController.currentOrientation = ScreenOrientation.LandscapeLeft;
+                    // vessel.StopShipControllerActions(InputEvents.FlipAction);
+                    inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
+                    IInputStatus.CurrentOrientation = ScreenOrientation.LandscapeLeft;
                 }
                 Debug.Log($"Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.x: {accelerationX}");
             }

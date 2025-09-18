@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7883774110713613109}
   - component: {fileID: 3022400141557085254}
   - component: {fileID: 8803590243382990783}
+  - component: {fileID: 6631921849521552077}
   m_Layer: 0
   m_Name: ShipHUDContainer
   m_TagString: Untagged
@@ -91,3 +92,26 @@ MonoBehaviour:
     prefab: {fileID: 2092273636776193303, guid: c1572db06ad4244469ad3f25d86940b8,
       type: 3}
   contentTransform: {fileID: 7883774110713613109}
+--- !u!114 &6631921849521552077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9167689459384443984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_UiScaleMode: 1
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 1920, y: 1080}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0

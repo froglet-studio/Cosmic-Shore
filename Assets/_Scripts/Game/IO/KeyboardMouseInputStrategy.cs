@@ -62,7 +62,7 @@ namespace CosmicShore.Game.IO
                 {
                     leftStickEffectsStarted = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-                    // _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                    // vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
                 }
             }
             else if (Keyboard.current.sKey.isPressed)
@@ -72,14 +72,14 @@ namespace CosmicShore.Game.IO
                 {
                     leftStickEffectsStarted = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-                    // _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                    // vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
                 }
             }
             else if (leftStickEffectsStarted)
             {
                 leftStickEffectsStarted = false;
                 inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-                // _ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                // vessel.StopShipControllerActions(InputEvents.LeftStickAction);
                 currentThrottle = Mathf.MoveTowards(currentThrottle, 0, THROTTLE_DECAY * Time.deltaTime);
             }
 
@@ -94,7 +94,7 @@ namespace CosmicShore.Game.IO
                 {
                     rightStickEffectsStarted = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-                    // _ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                    // vessel.PerformShipControllerActions(InputEvents.RightStickAction);
                 }
             }
             else if (Keyboard.current.dKey.isPressed)
@@ -104,14 +104,14 @@ namespace CosmicShore.Game.IO
                 {
                     rightStickEffectsStarted = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-                    // _ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                    // vessel.PerformShipControllerActions(InputEvents.RightStickAction);
                 }
             }
             else if (rightStickEffectsStarted)
             {
                 rightStickEffectsStarted = false;
                 inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-                // _ship.StopShipControllerActions(InputEvents.RightStickAction);
+                // vessel.StopShipControllerActions(InputEvents.RightStickAction);
             }
         }
 
@@ -136,24 +136,24 @@ namespace CosmicShore.Game.IO
         {
             if (Mouse.current.leftButton.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
-                // _ship.PerformShipControllerActions(InputEvents.Button1Action);
+                // vessel.PerformShipControllerActions(InputEvents.Button1Action);
             if (Mouse.current.leftButton.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
-                // _ship.StopShipControllerActions(InputEvents.Button1Action);
+                // vessel.StopShipControllerActions(InputEvents.Button1Action);
 
             if (Mouse.current.middleButton.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
-                // _ship.PerformShipControllerActions(InputEvents.Button2Action);
+                // vessel.PerformShipControllerActions(InputEvents.Button2Action);
             if (Mouse.current.middleButton.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
-                // _ship.StopShipControllerActions(InputEvents.Button2Action);
+                // vessel.StopShipControllerActions(InputEvents.Button2Action);
 
             if (Mouse.current.rightButton.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button3Action);
-                // _ship.PerformShipControllerActions(InputEvents.Button3Action);
+                // vessel.PerformShipControllerActions(InputEvents.Button3Action);
             if (Mouse.current.rightButton.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
-                // _ship.StopShipControllerActions(InputEvents.Button3Action);
+                // vessel.StopShipControllerActions(InputEvents.Button3Action);
 
             // Handle escape for cursor lock toggle
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -210,26 +210,26 @@ namespace CosmicShore.Game.IO
             {
                 fullSpeedStraightEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.FullSpeedStraightAction);
-                // _ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
+                // vessel.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
             }
             else if (fullSpeedStraightEffectsStarted && DeviationFromFullSpeedStraight > threshold)
             {
                 fullSpeedStraightEffectsStarted = false;
                 inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
-                // _ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
+                // vessel.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
             }
 
             if (DeviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
             {
                 minimumSpeedStraightEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.MinimumSpeedStraightAction);
-                // _ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
+                // vessel.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
             else if (minimumSpeedStraightEffectsStarted && DeviationFromMinimumSpeedStraight > threshold)
             {
                 minimumSpeedStraightEffectsStarted = false;
                 inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
-                // _ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
+                // vessel.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
         }
 

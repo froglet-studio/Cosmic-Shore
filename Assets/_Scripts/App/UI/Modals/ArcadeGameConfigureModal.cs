@@ -62,7 +62,7 @@ namespace CosmicShore.App.UI.Modals
             SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
             SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
 
-            var index = loadout.ShipType == ShipClassType.Random ? 0 : ShipSelectionView.Models.IndexOf(ShipSelectionView.Models.Where(x => (x as SO_Ship).Class == loadout.ShipType).FirstOrDefault());
+            var index = loadout.VesselType == VesselClassType.Random ? 0 : ShipSelectionView.Models.IndexOf(ShipSelectionView.Models.Where(x => (x as SO_Ship).Class == loadout.VesselType).FirstOrDefault());
             if (index == -1) index = 0;
 
             ShipSelectionView.Select(index);
@@ -128,7 +128,7 @@ namespace CosmicShore.App.UI.Modals
             ArcadeExploreView.SelectShip(ship);
         }
 
-        public void SetPlayerCount(int playerCount)
+        void SetPlayerCount(int playerCount)
         {
             foreach (var button in PlayerCountButtons)
                 button.SetSelected(button.Count == playerCount);;

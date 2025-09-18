@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [RequireComponent(typeof(IShipStatus))]
+    [RequireComponent(typeof(IVesselStatus))]
     public class Pip : MonoBehaviour
     {
         [SerializeField] Camera pipCamera;
@@ -15,18 +15,18 @@ namespace CosmicShore.Game
 
         void Start()
         {
-            IShipStatus shipStatus = GetComponent<IShipStatus>();
+            IVesselStatus vesselStatus = GetComponent<IVesselStatus>();
 
 
             // TODO - remove GameCanvas dependency
-            // if (shipStatus.Player.GameCanvas != null) shipStatus.Player.GameCanvas.MiniGameHUD.SetPipActive(!shipStatus.AIPilot.AutoPilotEnabled, mirrored);
+            // if (vesselStatus.Player.GameCanvas != null) vesselStatus.Player.GameCanvas.MiniGameHUD.SetPipActive(!vesselStatus.AIPilot.AutoPilotEnabled, mirrored);
             _EventPipEventData.Raise(new PipData()
             {
-                IsActive = !shipStatus.AutoPilotEnabled,
+                IsActive = !vesselStatus.AutoPilotEnabled,
                 IsMirrored = mirrored
             });
 
-            if (pipCamera != null) pipCamera.gameObject.SetActive(!shipStatus.AutoPilotEnabled);
+            if (pipCamera != null) pipCamera.gameObject.SetActive(!vesselStatus.AutoPilotEnabled);
         }
     }
 }

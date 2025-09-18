@@ -12,9 +12,9 @@ public class GrowTrailAction : GrowActionBase
     TrailSpawner spawner;
     private string scalingDimension;
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
+        base.Initialize(vessel);
         spawner = target.GetComponent<TrailSpawner>();
 
         // Determine the scaling dimension

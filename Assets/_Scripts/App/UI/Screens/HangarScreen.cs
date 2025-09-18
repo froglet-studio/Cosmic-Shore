@@ -38,7 +38,7 @@ namespace CosmicShore.App.UI.Screens
         }
 
         /// <summary>
-        /// Populates the list of ship buttons based using the SO_ShipList ShipList assigned to the menu
+        /// Populates the list of vessel buttons based using the SO_ShipList ShipList assigned to the menu
         /// </summary>
         void PopulateShipSelectionList()
         {
@@ -60,7 +60,7 @@ namespace CosmicShore.App.UI.Screens
             for (var i = 0; i < Ships.Count; i++)
             {
                 var ship = Ships[i];
-                Debug.Log($"Populating Ship Select List: {ship.Name}");                
+                Debug.Log($"Populating Vessel Select List: {ship.Name}");                
                 var shipSelectCard = Instantiate(ShipSelectCardPrefab, ShipSelectionContainer.transform);
                 shipSelectCard.name = shipSelectCard.name.Replace("(Clone)", "");
                 shipSelectCard.AssignShipClass(ship);

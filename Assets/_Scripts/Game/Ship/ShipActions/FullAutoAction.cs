@@ -46,15 +46,15 @@ namespace CosmicShore
         }
 
 
-        public override void Initialize(IShip ship)
+        public override void Initialize(IVessel vessel)
         {
-            base.Initialize(ship);
+            base.Initialize(vessel);
             if (gunTransforms == null || gunTransforms.Length == 0)
             {
                 gunTransforms = new Transform[1];
                 gunTransforms[0] = gunContainer.transform;
             }
-            gunContainer.Initialize(ship.ShipStatus);
+            gunContainer.Initialize(vessel.VesselStatus);
         }
 
         public override void StartAction()
@@ -82,11 +82,11 @@ namespace CosmicShore
                     {
                         if (inherit)
                         {
-                            if (ShipStatus.Attached) inheritedVelocity = transform.transform.forward;
-                            else inheritedVelocity = ShipStatus.Course;
+                            if (VesselStatus.Attached) inheritedVelocity = transform.transform.forward;
+                            else inheritedVelocity = VesselStatus.Course;
                         }
                         else inheritedVelocity = Vector3.zero;
-                        gunContainer.FireGun(transform, speed.Value, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
+                        gunContainer.FireGun(transform, speed.Value, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                     }
                     ResourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
                 }

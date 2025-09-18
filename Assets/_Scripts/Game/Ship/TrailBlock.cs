@@ -89,6 +89,7 @@ namespace CosmicShore.Core
         }
 
         public float Volume => scaleAnimator?.GetCurrentVolume() ?? .001f;
+        public BlockState CurrentState => stateManager?.CurrentState ?? BlockState.Normal;
 
         public Vector3 MaxScale
         {
@@ -184,6 +185,7 @@ namespace CosmicShore.Core
                 OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
             });
 
+            // TODO - Use Event Channel
             if (CellControlManager.Instance)
             {
                 CellControlManager.Instance.AddBlock(Team, TrailBlockProperties);
@@ -207,9 +209,9 @@ namespace CosmicShore.Core
             // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
             /*if (other.TryGetComponent(out IVesselCollider vesselCollider))
             {
-                var ship = vesselCollider.Ship;
-                if (!ship.ShipStatus.Attached)
-                    ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
+                var vessel = vesselCollider.Vessel;
+                if (!vessel.VesselStatus.Attached)
+                    vessel.PerformTrailBlockImpactEffects(TrailBlockProperties);
             }*/
             
             if (other.TryGetComponent(out CellItem cellItem))
@@ -226,47 +228,25 @@ namespace CosmicShore.Core
         }
 
         // Destruction Methods
-        protected virtual GameObject SetupDestruction(Teams team, string playerName, bool devastate = false)
+        protected virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
         {
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
-            // Ensure volume is up to date before destruction
+            // Ensure volume is up to date before explosion
             TrailBlockProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
 
-            destroyed = true;
-            devastated = devastate;
-
-            // Stats tracking
-            _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
-            {
-                PlayerName = PlayerName,
-                Volume = TrailBlockProperties.volume,
-                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
-            });
-
-            // Cell control management
-            if (CellControlManager.Instance != null)
-                CellControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
-
-            return null; // Will be set by specific destruction method
-        }
-
-        // Explosion Methods
-        protected virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
-        {
-            SetupDestruction(team, playerName, devastate);
-
-            // Spawn explosion object
+            // var explodingBlock = FossilBlockPool.SpawnFromTeamPool(Team, transform.position, transform.rotation);
             var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
             {
                 OwnTeam = Team,
+                // PlayerTeam = team,
+                // PlayerName = playerName,
                 Position = transform.position,
                 Rotation = transform.rotation,
-                PoolName = "Explosion"
             });
-
             GameObject explodingBlock = returnData.SpawnedObject;
+
             if (!explodingBlock)
             {
                 Debug.LogError("Failed to spawn exploding block. Check if the pool is initialized and has available objects.");
@@ -275,53 +255,26 @@ namespace CosmicShore.Core
 
             explodingBlock.transform.localScale = transform.lossyScale;
 
-            // Handle explosion-specific impact
             var impact = explodingBlock.GetComponent<BlockImpact>();
-            if (impact != null)
-                impact.HandleImpact(impactVector / TrailBlockProperties.volume);
-        }
+            if (impact != null) impact.HandleImpact(impactVector / TrailBlockProperties.volume);
 
-        // Implosion Methods  
-        protected virtual void Implode(Vector3 sinkPoint, Teams team, string playerName, bool devastate = false)
-        {
-            SetupDestruction(team, playerName, devastate);
+            destroyed = true;
+            devastated = devastate;
 
-            // Spawn implosion object
-            var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
+            /*if (StatsManager.Instance != null)
+                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);*/
+
+            _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
-                OwnTeam = Team,
-                Position = transform.position,
-                Rotation = transform.rotation,
-                PoolName = "Implosion"
+                // OwnTeam = Team,
+                PlayerName = PlayerName,
+                Volume = TrailBlockProperties.volume,
+                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
             });
 
-            GameObject implodingBlock = returnData.SpawnedObject;
-            if (!implodingBlock)
-            {
-                Debug.LogError("Failed to spawn imploding block. Check if the pool is initialized and has available objects.");
-                return;
-            }
-
-            implodingBlock.transform.localScale = transform.lossyScale;
-
-            // Handle implosion-specific effect
-            var implosion = implodingBlock.GetComponent<BlockImplosion>();
-            if (implosion != null)
-            {
-                implosion.StartImplosion(sinkPoint, TrailBlockProperties.volume);
-            }
-            else
-            {
-                // Fallback to impact component with inward force
-                var impact = implodingBlock.GetComponent<BlockImpact>();
-                if (impact != null)
-                {
-                    Vector3 implosionVector = (sinkPoint - transform.position).normalized;
-                    impact.HandleImpact(-implosionVector / TrailBlockProperties.volume);
-                }
-            }
+            if (CellControlManager.Instance != null)
+                CellControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
         }
-
 
         public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
         {
@@ -332,18 +285,6 @@ namespace CosmicShore.Core
             else
             {
                 Explode(impactVector, team, playerName, devastate);
-            }
-        }
-        
-        public void Consume(Vector3 Sink, Teams team, string playerName)
-        {
-            if (TrailBlockProperties.IsSuperShielded)
-            {
-                DeactivateShields();
-            }
-            else
-            {
-                Implode(Sink, team, playerName, true);
             }
         }
 

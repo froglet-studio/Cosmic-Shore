@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
-    [RequireComponent(typeof(IShipStatus))]
+    [RequireComponent(typeof(IVesselStatus))]
     public class ResourceSystem : ElementalShipComponent
     {
         [SerializeField] public List<Resource> Resources;
@@ -85,7 +85,7 @@ namespace CosmicShore.Core
             Resources[index].CurrentAmount = Resources[index].InitialAmount;
             EmitResourceChanged(index);   
         }
-
+        
         public void ChangeResourceAmount(int index, float amount)
         {
             var r = Resources[index];
@@ -93,6 +93,14 @@ namespace CosmicShore.Core
             r.CurrentAmount = Mathf.Clamp(prev + amount, 0, r.MaxAmount);
             if (!Mathf.Approximately(prev, r.CurrentAmount))
                 EmitResourceChanged(index);
+        }
+
+        public void SetResourceAmount(int index, float amount)
+        {
+            var r = Resources[index];
+            float min = 0f;
+            float max = r.MaxAmount;
+            r.CurrentAmount = Mathf.Clamp(amount, min, max);
         }
 
 

@@ -71,7 +71,7 @@ namespace CosmicShore.App.UI.Elements
                 GameTitle.text = game.DisplayName;
                 BackgroundImage.sprite = game.CardBackground;
 
-                SO_Ship ship = AllShips.ShipList.Where(x => x.Class == loadout.ShipType).FirstOrDefault();
+                SO_Ship ship = AllShips.ShipList.Where(x => x.Class == loadout.VesselType).FirstOrDefault();
                 ShipImage.sprite = ship.CardSilohoutteInactive;
 
                 PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];

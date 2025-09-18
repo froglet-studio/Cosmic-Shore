@@ -209,7 +209,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             // {
             //     { FirebaseAnalytics.ParameterLevel, nameof(MiniGames) },
             //     { FirebaseAnalytics.ParameterLevelName, mode.ToString()},
-            //     { FirebaseAnalytics.ParameterCharacter, ship.ToString()},
+            //     { FirebaseAnalytics.ParameterCharacter, vessel.ToString()},
             //     { "mini_game_player_count", playerCount},
             //     { "mini_game_intensity", intensity}
             // };

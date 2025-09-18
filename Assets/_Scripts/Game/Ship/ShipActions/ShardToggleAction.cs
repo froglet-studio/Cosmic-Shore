@@ -32,7 +32,7 @@ namespace CosmicShore.Game
             
             if (!_redirectActive)
             {
-                var shipPos = Ship != null ? Ship.Transform.position : transform.position;
+                var shipPos = Vessel != null ? Vessel.Transform.position : transform.position;
                 var cell = CellControlManager.Instance.GetNearestCell(shipPos);
 
                 Vector3 highDensityPosition = cell.GetExplosionTarget(team);

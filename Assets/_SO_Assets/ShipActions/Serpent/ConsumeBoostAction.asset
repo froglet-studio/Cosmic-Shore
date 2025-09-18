@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1654d1e385904a699381e6932fb1be74, type: 3}
+  m_Name: ConsumeBoostAction
+  m_EditorClassIdentifier: 
+  boostMultiplier:
+    Enabled: 1
+    Value: 1.2
+    Min: 1.2
+    Max: 2.7
+    element: 4
+  boostDuration: 3
+  maxCharges: 4
+  reloadCooldown: 3
+  reloadFillTime: 0.8
+  resourceIndex: 1
+  resourceCost: 0.25

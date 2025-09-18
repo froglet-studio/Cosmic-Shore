@@ -9,11 +9,11 @@ public class DriftTrailAction : ShipAction
     public event ChangeDriftAltitude OnChangeDriftAltitude;
     #endregion
 
-    TrailSpawner trailSpawner => ShipStatus.TrailSpawner;
+    TrailSpawner trailSpawner => VesselStatus.TrailSpawner;
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
+        base.Initialize(vessel);
     }
 
     public override void StartAction()
@@ -25,7 +25,7 @@ public class DriftTrailAction : ShipAction
     {
         StopAllCoroutines();
         trailSpawner.SetDotProduct(1);
-        if (!Ship.ShipStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1);
+        if (!Vessel.VesselStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1);
     }
 
 
@@ -33,8 +33,8 @@ public class DriftTrailAction : ShipAction
     {
         while (true) 
         {
-            var driftAltitude = Vector3.Dot(Ship.ShipStatus.Course, Ship.Transform.forward);
-            if (!Ship.ShipStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
+            var driftAltitude = Vector3.Dot(Vessel.VesselStatus.Course, Vessel.Transform.forward);
+            if (!Vessel.VesselStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
             trailSpawner.SetDotProduct(driftAltitude);
             yield return new WaitForSeconds(.05f);
         }

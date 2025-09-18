@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace CosmicShore
 {
     /// <summary>
-    /// The UI card view for individual items in the ship selection nav bar of the hangar
+    /// The UI card view for individual items in the vessel selection nav bar of the hangar
     /// 
     /// </summary>
     public class HangarShipSelectNavLink : NavLink

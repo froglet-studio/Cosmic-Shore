@@ -30,11 +30,11 @@ public class FireGunAction : ShipAction
         }
     }
 
-    public override void Initialize(IShip ship)
+    public override void Initialize(IVessel vessel)
     {
-        base.Initialize(ship);
-        gun.Initialize(ship.ShipStatus);
-        projectileContainer.transform.parent = Ship.ShipStatus.Player.Transform;
+        base.Initialize(vessel);
+        gun.Initialize(vessel.VesselStatus);
+        projectileContainer.transform.parent = Vessel.VesselStatus.Player.Transform;
     }
     public override void StartAction()
     {
@@ -43,10 +43,10 @@ public class FireGunAction : ShipAction
             ResourceSystem.ChangeResourceAmount(ammoIndex, - ammoCost);
 
             Vector3 inheritedVelocity;
-            if (ShipStatus.Attached) inheritedVelocity = gun.transform.forward;
-            else inheritedVelocity = ShipStatus.Course;
+            if (VesselStatus.Attached) inheritedVelocity = gun.transform.forward;
+            else inheritedVelocity = VesselStatus.Course;
             OnGunFired?.Invoke(); 
-            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
+            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
         }
     }
 

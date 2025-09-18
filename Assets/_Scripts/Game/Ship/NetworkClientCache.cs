@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Unity.Multiplayer.Samples.Utilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,6 +14,8 @@ namespace CosmicShore.Game
     /// </typeparam>
     public abstract class NetworkClientCache<T> : MonoBehaviour where T : NetworkBehaviour
     {
+        public static Action<T> OnNewInstanceAdded;
+        
         // Static list of all active T instances
         private static readonly List<T> s_ActiveInstances = new();
 
@@ -69,6 +72,7 @@ namespace CosmicShore.Game
             if (!s_ActiveInstances.Contains(_ownComponent))
             {
                 s_ActiveInstances.Add(_ownComponent);
+                OnNewInstanceAdded?.Invoke(_ownComponent);
             }
         }
 

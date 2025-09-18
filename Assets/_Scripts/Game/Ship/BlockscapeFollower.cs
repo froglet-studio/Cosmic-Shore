@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
-    [RequireComponent(typeof(IShipStatus))]
+    [RequireComponent(typeof(IVesselStatus))]
     public class BlockscapeFollower : MonoBehaviour
     {
         public TrailBlock AttachedTrailBlock { get; private set; }
@@ -13,12 +13,12 @@ namespace CosmicShore.Core
         [HideInInspector] public float Throttle;
         private Vector3 currentSurfaceNormal = Vector3.up;
 
-        private IShipStatus shipData;
+        private IVesselStatus vesselData;
         float SurfaceOffset = 1f;
 
         private void Start()
         {
-            shipData = GetComponent<IShipStatus>();
+            vesselData = GetComponent<IVesselStatus>();
         }
 
         public void Attach(TrailBlock trailBlock)
@@ -102,7 +102,7 @@ namespace CosmicShore.Core
             if (AttachedTrailBlock == null) return;
 
             float speed = Throttle * GetTerrainAwareBlockSpeed(AttachedTrailBlock);
-            shipData.Speed = speed;
+            vesselData.Speed = speed;
 
             Vector3 movementDirection = transform.forward * speed * Time.deltaTime;
             Vector3 projectedMovement = Vector3.ProjectOnPlane(movementDirection, currentSurfaceNormal);
@@ -130,7 +130,7 @@ namespace CosmicShore.Core
         private float GetTerrainAwareBlockSpeed(TrailBlock trailBlock)
         {
             if (trailBlock.destroyed) return DestroyedTerrainSpeed;
-            return trailBlock.Team == shipData.Team ? FriendlyTerrainSpeed : HostileTerrainSpeed;
+            return trailBlock.Team == vesselData.Team ? FriendlyTerrainSpeed : HostileTerrainSpeed;
         }
     }
 }

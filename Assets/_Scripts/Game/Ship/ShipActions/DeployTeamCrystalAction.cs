@@ -35,7 +35,7 @@ namespace CosmicShore.Game
             if (_ghostCrystal != null) return;
 
             Vector3 pos = GetSpawnPoint();
-            Quaternion rot = Quaternion.LookRotation(Ship.Transform.forward, Ship.Transform.up);
+            Quaternion rot = Quaternion.LookRotation(Vessel.Transform.forward, Vessel.Transform.up);
 
             _ghostCrystal = Instantiate(crystalPrefab, pos, rot);
 
@@ -58,10 +58,10 @@ namespace CosmicShore.Game
 
         Vector3 GetSpawnPoint()
         {
-            Vector3 pos = Ship.Transform.position + Ship.Transform.forward * forwardOffset;
+            Vector3 pos = Vessel.Transform.position + Vessel.Transform.forward * forwardOffset;
 
             if (rayMask.value != 0 &&
-                Physics.Raycast(Ship.Transform.position, Ship.Transform.forward,
+                Physics.Raycast(Vessel.Transform.position, Vessel.Transform.forward,
                                 out RaycastHit hit, forwardOffset, rayMask,
                                 QueryTriggerInteraction.Ignore))
             {
@@ -76,7 +76,7 @@ namespace CosmicShore.Game
             {
                 _ghostCrystal.transform.SetPositionAndRotation(
                     GetSpawnPoint(),
-                    Quaternion.LookRotation(Ship.Transform.forward, Ship.Transform.up));
+                    Quaternion.LookRotation(Vessel.Transform.forward, Vessel.Transform.up));
                 yield return null;
             }
         }
@@ -98,7 +98,7 @@ namespace CosmicShore.Game
 
         void ActivateCrystal(Crystal cr)
         {
-            cr.OwnTeam = Ship.ShipStatus.Team;
+            cr.OwnTeam = Vessel.VesselStatus.Team;
 
             var colliders = cr.GetComponentsInChildren<Collider>(true);
             foreach (var col in colliders)

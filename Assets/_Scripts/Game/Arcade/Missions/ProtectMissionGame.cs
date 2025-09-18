@@ -16,19 +16,19 @@ namespace CosmicShore
         [Header("Mission Configuration")]
         [SerializeField] SO_Mission MissionData;
         [SerializeField] List<Transform> SpawnLocations;
-        [SerializeField] R_Player SquadMateOne;
-        [SerializeField] R_Player SquadMateTwo;
-        [SerializeField] R_Player HostileAIOne;
-        [SerializeField] R_Player HostileAITwo;
-        [SerializeField] R_Player HostileAIThree;
-        [SerializeField] List<ShipClassType> EnemyShipClasses = new()
+        [SerializeField] Player SquadMateOne;
+        [SerializeField] Player SquadMateTwo;
+        [SerializeField] Player HostileAIOne;
+        [SerializeField] Player HostileAITwo;
+        [SerializeField] Player HostileAIThree;
+        [SerializeField] List<VesselClassType> EnemyShipClasses = new()
         {
-            ShipClassType.Rhino,
-            ShipClassType.Manta,
-            ShipClassType.Dolphin,
-            ShipClassType.Serpent,
-            ShipClassType.Sparrow,
-            ShipClassType.Squirrel,
+            VesselClassType.Rhino,
+            VesselClassType.Manta,
+            VesselClassType.Dolphin,
+            VesselClassType.Serpent,
+            VesselClassType.Sparrow,
+            VesselClassType.Squirrel,
         };
 
         [Range(1, 9)] public int CurrentDifficulty = 5;
@@ -47,9 +47,9 @@ namespace CosmicShore
             Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
 
             // TODO - Cannot modify player datas directly... need other way of initialization.
-            /*Players[0].ShipType = SquadSystem.SquadLeader.Ship.Class;
-            SquadMateOne.ShipType = SquadSystem.RogueOne.Ship.Class;
-            SquadMateTwo.ShipType = SquadSystem.RogueTwo.Ship.Class;
+            /*Players[0].ShipType = SquadSystem.SquadLeader.Vessel.Class;
+            SquadMateOne.ShipType = SquadSystem.RogueOne.Vessel.Class;
+            SquadMateTwo.ShipType = SquadSystem.RogueTwo.Vessel.Class;
             HostileAIOne.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAITwo.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];*/

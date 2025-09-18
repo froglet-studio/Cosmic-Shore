@@ -252,54 +252,57 @@ namespace CosmicShore
 
         IEnumerator LookForMates()
         {
-            while (true)
+            while (!isStopped)
             {
-                if (TrailBlock == null)
+                while (true)
                 {
+                    if (TrailBlock == null)
+                    {
+                        yield return new WaitForSeconds(1f);
+                        continue;
+                    }
+
+                    if (TopMate.Mate == null)
+                    {
+                        TopMate = FindClosestMate(globalBondSiteTop, SiteType.Top);
+
+                        if (TopMate.Mate)
+                        {
+                            TopMate.Mate.RightMate = this;
+                            MateList.Add(TopMate.Mate);
+                            TopMate.Mate.MateList.Add(this);
+                            updateTopMate = StartCoroutine(UpdateTopMate());
+                        }
+                    }
+
                     yield return new WaitForSeconds(1f);
-                    continue;
-                }
-
-                if (TopMate.Mate == null)
-                {
-                    TopMate = FindClosestMate(globalBondSiteTop, SiteType.Top);
-
-                    if (TopMate.Mate)
+                    if (BottomMate.Mate == null)
                     {
-                        TopMate.Mate.RightMate = this;
-                        MateList.Add(TopMate.Mate);
-                        TopMate.Mate.MateList.Add(this);
-                        updateTopMate = StartCoroutine(UpdateTopMate());
-                    }
-                }
-
-                yield return new WaitForSeconds(1f);
-                if (BottomMate.Mate == null)
-                {
-                    BottomMate = FindClosestMate(globalBondSiteBottom, SiteType.Bottom);
-                    if (BottomMate.Mate)
-                    {
-                        BottomMate.Mate.LeftMate = this;
-                        MateList.Add(BottomMate.Mate);
-                        BottomMate.Mate.MateList.Add(this);
-                        updateBottomMate = StartCoroutine(UpdateBottomMate());
-                    }
-                }
-
-                yield return new WaitForSeconds(1f);
-                if (TopIsBonded && BottomIsBonded)
-                {
-                    //Debug.Log("Bonded Top and Bottom");
-                    StopAllCoroutines();
-                    TrailBlock.Grow();
-                    if (TopMate.Mate.MateList.Count < 2)
-                    {
-                        TopMate.Mate.StartBonding();
+                        BottomMate = FindClosestMate(globalBondSiteBottom, SiteType.Bottom);
+                        if (BottomMate.Mate)
+                        {
+                            BottomMate.Mate.LeftMate = this;
+                            MateList.Add(BottomMate.Mate);
+                            BottomMate.Mate.MateList.Add(this);
+                            updateBottomMate = StartCoroutine(UpdateBottomMate());
+                        }
                     }
 
-                    if (BottomMate.Mate.MateList.Count < 2)
+                    yield return new WaitForSeconds(1f);
+                    if (TopIsBonded && BottomIsBonded)
                     {
-                        BottomMate.Mate.StartBonding();
+                        //Debug.Log("Bonded Top and Bottom");
+                        StopAllCoroutines();
+                        TrailBlock.Grow();
+                        if (TopMate.Mate.MateList.Count < 2)
+                        {
+                            TopMate.Mate.StartBonding();
+                        }
+
+                        if (BottomMate.Mate.MateList.Count < 2)
+                        {
+                            BottomMate.Mate.StartBonding();
+                        }
                     }
                 }
             }
@@ -537,6 +540,20 @@ namespace CosmicShore
             CalculateGlobalBondSites();
         }
 
+        public override void StopBonding()
+        {
+            isStopped = true;
+            if (updateTopMate != null) { StopCoroutine(updateTopMate); updateTopMate = null; }
+            if (updateBottomMate != null) { StopCoroutine(updateBottomMate); updateBottomMate = null; }
+
+            ClearMateList();
+            TopMate = default;
+            BottomMate = default;
+            RightMate = null;
+            LeftMate  = null;
+        
+            Debug.Log("WallAssembler stopped bonding");
+        }
 
         public void StopAssembly()
         {

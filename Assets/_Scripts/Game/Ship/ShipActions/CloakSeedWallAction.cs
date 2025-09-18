@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using CosmicShore.Core;
@@ -9,80 +10,67 @@ namespace CosmicShore
 {
     public class CloakSeedWallAction : ShipAction
     {
-        #region Config
-
         [Header("Cooldown")] [SerializeField] private float cooldownSeconds = 20f;
 
-        [Header("Ship Visibility")] [SerializeField]
-        private bool hideShipDuringCooldown = true;
-
+        [Header("Vessel Visibility")] 
+        [SerializeField] private bool hideShipDuringCooldown = true;
         [SerializeField] private SkinnedMeshRenderer skinnedMeshRenderer;
 
         [Header("Local vs Remote Visibility")]
-        [Tooltip("Alpha seen by the LOCAL player while cloaked.")]
-        [SerializeField, Range(0f, 1f)]
-        private float localCloakAlpha = 0.2f; // 20%
+        [SerializeField, Range(0f, 1f)] private float localCloakAlpha = 0.2f;
+        [SerializeField] private bool remoteFullInvisible = true;
 
-        [Tooltip("If TRUE, non-local ships will be 0% while cloaked.")] [SerializeField]
-        private bool remoteFullInvisible = true;
+        [Header("Vessel Fade")]
+        [SerializeField] private float fadeOutSeconds = 0.25f;
+        [SerializeField] private float fadeInSeconds  = 0.25f;
+        [SerializeField] private bool hardToggleIfAnyOpaqueAtZero = true;
 
-        [Header("Ship Fade")] [SerializeField] private float fadeOutSeconds = 0.25f;
-        [SerializeField] private float fadeInSeconds = 0.25f;
+        [Header("Seed Wall")]
+        [SerializeField] private SeedAssemblerConfigurator seedAssemblerAction;   
+        [SerializeField] private bool requireExistingTrailBlock = true;
 
-        [Tooltip("If any sub-material is Opaque AND target alpha is 0, disable SMR during cloak.")] [SerializeField]
-        private bool hardToggleIfAnyOpaqueAtZero = true;
-
-        [Header("Seed Wall")] [SerializeField] private Assembler assemblerTypeSource;
-        [SerializeField] private int assemblerDepth = 50;
-
-        [Header("Ghost Ship")]
-        [Tooltip("Seconds to keep the ghost. Default ties to cooldown; 0 = same as cooldown.")]
-        [SerializeField]
-        private float ghostLifetime = 0f;
-
-        [Tooltip("Extra scale on the ghost, 1 = same size.")] [SerializeField]
-        private float ghostScaleMultiplier = 1f;
-
-        [Tooltip("Optional material override for ghost (else copies your SMR shared materials).")] [SerializeField]
-        private Material ghostMaterialOverride;
-
-        [Header("Safety")] [SerializeField] private bool requireExistingTrailBlock = true;
-
-        #endregion
-
-        #region State
-
+        [Header("Ghost Vessel")]
+        [SerializeField] private float  ghostLifetime       = 0f;  // 0 = same as cooldown
+        [SerializeField] private float  ghostScaleMultiplier = 1f;
+        [SerializeField] private Material ghostMaterialOverride;
+        [Tooltip("Applied after reading vessel rotation; use (0,180,0) if baked mesh is flipped.")]
+        [SerializeField] private Vector3 ghostEulerOffset = new Vector3(0f, 180f, 0f);
+        [Tooltip("Enable subtle idle motion so the ghost feels alive.")]
+        [SerializeField] private bool ghostIdleMotion = true;
+        [SerializeField] private float ghostBobAmplitude = 0.15f;
+        [SerializeField] private float ghostBobSpeed     = 1.2f;
+        [SerializeField] private float ghostYawSpeed     = 10f; // deg/sec
+        [Header("Model Root")]
+        [SerializeField] private Transform modelRoot; 
+        
+        private readonly HashSet<int> _protectedBlockIds = new();
         private TrailSpawner _spawner;
         private Coroutine _runRoutine;
-
-        private Assembler _seedAssembler;
-        private TrailBlock _seedBlock;
 
         private GameObject _ghostGo;
         private bool _rendererWasHardDisabled;
         private bool _cloakActive;
         private float _cooldownEndTime;
-        
-        private Coroutine _ghostRotRoutine;
+
+        private Coroutine _ghostFollowRoutine;
         private Vector3 _ghostAnchorPos;
         private Transform _followTf;
-        
+
         private static readonly int IDColor = Shader.PropertyToID("_Color");
         private static readonly int IDBaseColor = Shader.PropertyToID("_BaseColor");
         private static readonly int IDColor1 = Shader.PropertyToID("Color1");
         private static readonly int IDColor2 = Shader.PropertyToID("Color2");
         private static readonly int IDColorMult = Shader.PropertyToID("ColorMultiplier");
 
-        #endregion
-
-        #region Lifecycle
-
-        public override void Initialize(IShip ship)
+        public override void Initialize(IVessel vessel)
         {
-            base.Initialize(ship);
-            _spawner = Ship?.ShipStatus?.TrailSpawner;
+            base.Initialize(vessel);
+            _spawner = Vessel?.VesselStatus?.TrailSpawner;
             _spawner.OnBlockSpawned += HandleBlockSpawned;
-            Debug.Log("[CloakSeedWallAction] Initialized with TrailSpawner: " + _spawner);
+
+            // Initialize the shared seeding action
+            if (seedAssemblerAction != null)
+                seedAssemblerAction.Initialize(Vessel);
         }
 
         public override void StartAction()
@@ -96,52 +84,34 @@ namespace CosmicShore
                 return;
             }
 
-            Debug.Log("[CloakSeedWallAction] Starting action...");
-            _runRoutine = StartCoroutine(Run(latest));
+            _runRoutine = StartCoroutine(Run());
         }
 
-        public override void StopAction()
+        public override void StopAction() { }
+
+        private IEnumerator Run()
         {
-        }
-
-        #endregion
-
-        #region Flow
-
-        private IEnumerator Run(TrailBlock latestBlock)
-        {
-            _seedBlock = latestBlock ?? GetLatestBlock();
-            if (_seedBlock != null)
+            if (seedAssemblerAction.StartSeed())
             {
-                var assemblerType = assemblerTypeSource.GetType();
-                _seedAssembler = _seedBlock.GetComponent(assemblerType) as Assembler;
-                if (_seedAssembler == null)
-                {
-                    _seedAssembler = _seedBlock.gameObject.AddComponent(assemblerType) as Assembler;
-                }
+                var seed = seedAssemblerAction.ActiveSeedBlock;
+                if (seed != null) _protectedBlockIds.Add(seed.GetInstanceID());
 
-                if (_seedAssembler != null)
-                {
-                    _seedAssembler.Depth = assemblerDepth;
-                    _seedAssembler.SeedBonding();
-                }
+                seedAssemblerAction.BeginBonding();
             }
-
-            if (_seedBlock != null && skinnedMeshRenderer != null)
+            var seedBlock = seedAssemblerAction?.ActiveSeedBlock ?? GetLatestBlock();
+            if (seedBlock != null && skinnedMeshRenderer != null)
             {
-                CreateGhostAt(_seedBlock.transform.position, _seedBlock.transform.rotation);
+                CreateGhostAt(seedBlock.transform.position, seedBlock.transform.rotation);
             }
 
             if (hideShipDuringCooldown)
-            {
                 yield return StartCoroutine(FadeShipOut());
-            }
 
-            var wait = Mathf.Max(0.01f, cooldownSeconds);
+            float wait = Mathf.Max(0.01f, cooldownSeconds);
             _cloakActive = true;
             _cooldownEndTime = Time.time + wait;
 
-            var t = 0f;
+            float t = 0f;
             while (t < wait)
             {
                 t += Time.deltaTime;
@@ -150,18 +120,12 @@ namespace CosmicShore
 
             _cloakActive = false;
 
+            CleanupGhost();
             if (hideShipDuringCooldown)
-            {
                 yield return StartCoroutine(FadeShipIn());
-            }
-
-            if (_seedBlock != null)
-            {
-                _seedBlock.ActivateSuperShield();
-            }
             
-            if (_ghostRotRoutine != null) { StopCoroutine(_ghostRotRoutine); _ghostRotRoutine = null; }
-            if (_ghostGo != null) Destroy(_ghostGo);
+            if (seedAssemblerAction != null)
+                seedAssemblerAction.StopSeedCompletely();
             _runRoutine = null;
         }
 
@@ -169,22 +133,16 @@ namespace CosmicShore
         {
             if (!_cloakActive || block == null) return;
 
+            if (_protectedBlockIds.Contains(block.GetInstanceID())) return;
+            if (block.GetComponent<Assembler>() != null) return;
+
             var remaining = _cooldownEndTime - Time.time;
-            if (remaining <= 0f) return;
-
-            var original = block.waitTime;
-            var target = Mathf.Max(original, remaining);
-
-            if (!Mathf.Approximately(original, target))
+            if (remaining > 0f)
             {
-                block.waitTime = target;
-                Debug.Log(
-                    $"[CloakSeedWallAction] Extended waitTime {original:0.00} → {target:0.00} (remaining {remaining:0.00}s) on {block.name}");
-            }
-            else
-            {
-                Debug.Log(
-                    $"[CloakSeedWallAction] Block already has sufficient waitTime ({original:0.00}s) on {block.name}");
+                var original = block.waitTime;
+                var target   = Mathf.Max(original, remaining);
+                if (!Mathf.Approximately(original, target))
+                    block.waitTime = target;
             }
 
             block.SetTransparency(true);
@@ -192,86 +150,88 @@ namespace CosmicShore
             if (r != null) r.enabled = false;
         }
 
-        #endregion
 
-        #region Ghost ship
+        // ---------- Ghost ----------
 
         private void CreateGhostAt(Vector3 seedPos, Quaternion seedRot)
         {
             if (skinnedMeshRenderer == null) return;
 
             var baked = new Mesh();
-            
-            skinnedMeshRenderer.BakeMesh(baked, true); // include scale
+            // do NOT bake scale; we’ll set it explicitly from the model
+            skinnedMeshRenderer.BakeMesh(baked, true);
 
             _ghostGo = new GameObject("ShipGhost");
             var mf = _ghostGo.AddComponent<MeshFilter>();
             var mr = _ghostGo.AddComponent<MeshRenderer>();
             mf.sharedMesh = baked;
 
-            // make independent material instances so live-ship fade never affects ghost
             if (ghostMaterialOverride != null)
-            {
                 mr.material = new Material(ghostMaterialOverride);
-            }
             else
             {
-                var live = skinnedMeshRenderer.materials;
+                var live  = skinnedMeshRenderer.materials;
                 var ghost = new Material[live.Length];
                 for (int i = 0; i < live.Length; i++) ghost[i] = new Material(live[i]);
                 mr.materials = ghost;
                 for (int i = 0; i < mr.materials.Length; i++) SetMaterialAlpha(mr.materials[i], 1f);
             }
 
-            // anchor at seed position (no movement); rotation will follow chosen transform each frame
             _ghostAnchorPos = seedPos;
             _followTf = GetShipFollowTransform();
 
-            // initial orientation
-            var initialRot = _followTf != null ? _followTf.rotation : seedRot;
-            _ghostGo.transform.SetPositionAndRotation(_ghostAnchorPos, initialRot);
+            var finalRot = ComputeGhostRotation() * Quaternion.Euler(ghostEulerOffset);
+            _ghostGo.transform.SetPositionAndRotation(_ghostAnchorPos, finalRot);
 
-            // do NOT rescale (BakeMesh(true) already applied world scale)
-            _ghostGo.transform.localScale = Vector3.one;
-            if (Mathf.Abs(ghostScaleMultiplier - 1f) > 0.0001f)
-                _ghostGo.transform.localScale *= ghostScaleMultiplier;
-
-            // start rotation-follow
-            if (_ghostRotRoutine != null) StopCoroutine(_ghostRotRoutine);
-            _ghostRotRoutine = StartCoroutine(GhostFollowRotation());
-
-            float life = ghostLifetime > 0f ? ghostLifetime : cooldownSeconds;
-            if (life > 0f) StartCoroutine(DestroyAfter(_ghostGo, life));
-
-            Debug.Log($"[CloakSeedWallAction] Ghost anchored at seed. Following rotation of: {(_followTf ? _followTf.name : "NONE")}");
+            _ghostGo = new GameObject("ShipGhost");
+            mf.sharedMesh = baked;
+            
+            _ghostGo.transform.localScale = Vector3.one; 
+            _ghostGo.transform.localScale *= 1.5f;
+            if (_ghostFollowRoutine != null) StopCoroutine(_ghostFollowRoutine);
+            _ghostFollowRoutine = StartCoroutine(GhostFollow());
+        }
+        
+        private void CleanupGhost()
+        {
+            _ghostGo.SetActive(false);
+            Destroy(_ghostGo);
+            _ghostGo = null;
         }
 
-
-        private IEnumerator GhostFollowRotation()
+        private IEnumerator GhostFollow()
         {
+            float t = 0f;
             while (_ghostGo != null)
             {
-                // lock position
                 _ghostGo.transform.position = _ghostAnchorPos;
-
-                // mirror rotation from the authoritative transform
+                
                 if (_followTf != null)
-                    _ghostGo.transform.rotation = _followTf.rotation;
+                {
+                    var baseRot = _followTf.rotation;
+                    var offsetQ = Quaternion.Euler(ghostEulerOffset);
+                    _ghostGo.transform.rotation = baseRot * offsetQ;
+                }
+                
+                if (ghostIdleMotion)
+                {
+                    t += Time.deltaTime;
+                    var bob = Mathf.Sin(t * ghostBobSpeed) * ghostBobAmplitude;
+                    _ghostGo.transform.position = _ghostAnchorPos + new Vector3(0, bob, 0);
+                    _ghostGo.transform.Rotate(Vector3.up, ghostYawSpeed * Time.deltaTime, Space.World);
+                }
 
                 yield return null;
             }
         }
 
-        
         private IEnumerator DestroyAfter(GameObject go, float seconds)
         {
             yield return new WaitForSeconds(seconds);
             if (go != null) Destroy(go);
         }
 
-        #endregion
-
-        #region Ship fade
+        // ---------- Vessel fade (unchanged core) ----------
 
         private IEnumerator FadeShipOut()
         {
@@ -317,7 +277,7 @@ namespace CosmicShore
                 yield return StartCoroutine(FadeAlpha(mats, GetCurrentAlpha(mats, 1f), 1f,
                     Mathf.Max(0.01f, fadeInSeconds)));
         }
-
+        
         private float GetCurrentAlpha(Material[] mats, float defaultAlpha)
         {
             foreach (var m in mats)
@@ -353,63 +313,18 @@ namespace CosmicShore
 
         private static bool MaterialSupportsAlpha(Material m)
         {
-            return m.HasProperty(IDBaseColor) || m.HasProperty(IDColor)
-                                              || m.HasProperty(IDColor1) || m.HasProperty(IDColor2)
-                                              || m.HasProperty(IDColorMult);
+            return m && (m.HasProperty(IDBaseColor) || m.HasProperty(IDColor) ||
+                         m.HasProperty(IDColor1) || m.HasProperty(IDColor2) ||
+                         m.HasProperty(IDColorMult) || m.HasProperty("_MainTex")); // last resort gate
         }
 
-        private static void SetMaterialAlpha(Material m, float alpha)
-        {
-            if (m.HasProperty(IDBaseColor))
-            {
-                var c = m.GetColor(IDBaseColor);
-                c.a = alpha;
-                m.SetColor(IDBaseColor, c);
-                return;
-            }
+        private static void SetMaterialAlpha(Material m, float alpha) {  }
 
-            if (m.HasProperty(IDColor))
-            {
-                var c = m.GetColor(IDColor);
-                c.a = alpha;
-                m.SetColor(IDColor, c);
-                return;
-            }
-
-            var g = false;
-            if (m.HasProperty(IDColor1))
-            {
-                var c1 = m.GetColor(IDColor1);
-                c1.a = alpha;
-                m.SetColor(IDColor1, c1);
-                g = true;
-            }
-
-            if (m.HasProperty(IDColor2))
-            {
-                var c2 = m.GetColor(IDColor2);
-                c2.a = alpha;
-                m.SetColor(IDColor2, c2);
-                g = true;
-            }
-
-            if (g) return;
-
-            if (m.HasProperty(IDColorMult)) m.SetFloat(IDColorMult, alpha);
-        }
-
-        private bool IsLocalPlayerShip()
-        {
-            return Ship != null && Ship.ShipStatus.IsOwner;
-        }
-
-        #endregion
-
-        #region Utils
+        // ---------- Utils ----------
 
         private TrailBlock GetLatestBlock()
         {
-            var listA = _spawner.Trail?.TrailList;
+            var listA = _spawner?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
             var trail2Field = typeof(TrailSpawner).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -418,16 +333,31 @@ namespace CosmicShore
 
             return null;
         }
-        
+
         private Transform GetShipFollowTransform()
         {
-            var statusTf = Ship?.ShipStatus?.ShipTransform;
+            var statusTf = Vessel?.VesselStatus?.ShipTransform;
             if (statusTf != null) return statusTf;
-
             return null;
         }
 
+        private bool IsLocalPlayerShip()
+        {
+            return Vessel != null && Vessel.VesselStatus.IsOwnerClient;
+        }
+        
+        Quaternion ComputeGhostRotation()
+        {
+            var shipTf   = Vessel?.VesselStatus?.ShipTransform;
+            var shipUp   = shipTf ? shipTf.up : Vector3.up;
+            var course   = Vessel?.VesselStatus?.Course ?? Vector3.zero;
+            
+            if (course.sqrMagnitude > 0.0001f)
+                return Quaternion.LookRotation(course.normalized, shipUp);
 
-        #endregion
+            return shipTf ? shipTf.rotation : Quaternion.identity;
+        }
     }
 }
+
+

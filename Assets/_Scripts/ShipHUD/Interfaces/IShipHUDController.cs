@@ -1,7 +1,10 @@
+using UnityEngine;
+
 namespace CosmicShore.Game
 {
-    public interface IShipHUDController
+    public interface IVesselHUDController
     {
-        void Initialize(IShipStatus status, R_ShipHUDView view);
+        void Initialize(IVesselStatus status, VesselHUDView view);
+        void SetBlockPrefab(GameObject block);
     }
 }

@@ -49,6 +49,7 @@ namespace CosmicShore.SOAP
         public Transform[] PlayerOrigins;
         public List<IRoundStats> RoundStatsList = new();
         public Dictionary<int, CellStats> CellStatsList = new();
+        public HashSet<Transform> SlowedShipTransforms = new();
         public float TurnStartTime;
         public bool IsRunning { get; private set; }
         
@@ -75,6 +76,20 @@ namespace CosmicShore.SOAP
             OnMiniGameInitialize?.Invoke();
         }
 
+        public void SetupForMultiplayer()
+        {
+            if (Players == null || Players.Count == 0)
+                return;
+            
+            for (int i = Players.Count - 1; i >= 0; i--)
+            {
+                Players[i].Vessel?.Destroy();
+                Players[i].Destroy();
+            }
+            
+            Players.Clear();
+        }
+
         public void InvokeMiniGameStart()
         {
             IsRunning = true;
@@ -94,6 +109,15 @@ namespace CosmicShore.SOAP
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
         public void InvokeAllPlayersSpawned() => OnAllPlayersSpawned?.Invoke();
 
+        public void ResetOnSceneChanged()
+        {
+            Players.Clear();
+            RoundStatsList.Clear();
+            PlayerOrigins = Array.Empty<Transform>();
+            _activePlayerId = 0;
+            TurnStartTime = 0f;
+        }
+        
         public void ResetData()
         {
             GameMode = GameModes.Random;
@@ -102,7 +126,7 @@ namespace CosmicShore.SOAP
             PlayerOrigins = Array.Empty<Transform>();
             _activePlayerId = 0;
 
-            SelectedShipClass.Value = ShipClassType.Random;
+            SelectedShipClass.Value = VesselClassType.Dolphin;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             TurnStartTime = 0f;
@@ -194,9 +218,6 @@ namespace CosmicShore.SOAP
                 Name = p.Name,
                 Team = p.Team
             });
-
-            // Keep players stationary until game starts
-            p.ToggleStationaryMode(true);
         }
         
         public void ResetPlayerScores()
@@ -234,22 +255,29 @@ namespace CosmicShore.SOAP
         float VolumeOf(Teams team) =>
             FindByTeam(team)?.VolumeRemaining ?? 0f;
 
-        void SetPlayersActive(bool active)
+        public void SetPlayersActive(bool active)
         {
             foreach (var player in Players)
             {
-                if (player?.Ship?.ShipStatus == null) continue;
+                var vesselStatus = player?.Vessel?.VesselStatus;
+
+                if (vesselStatus == null)
+                {
+                    Debug.LogError("No vessel status found for player.! This should never happen!");
+                    return;
+                }
 
                 if (active)
                 {
-                    // Reset ship state when activating for a new run
-                    player.Ship.ShipStatus.ResourceSystem.Reset();
-                    player.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();
+                    // Reset vessel state when activating for a new run
+                    player.Vessel.VesselStatus.ResourceSystem.Reset();
+                    player.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
                 }
 
                 // Stationary/input flags invert relative to "active"
                 player.ToggleStationaryMode(!active);
-                player.ToggleInputStatus(!active);
+                player.ToggleInputPause(active && player.IsInitializedAsAI);
+                player.ToggleAutoPilot(active && player.IsInitializedAsAI);
             }
         }
         
@@ -270,13 +298,13 @@ namespace CosmicShore.SOAP
             
             localPlayer.Transform.SetPositionAndRotation(activePlayerOrigin.position, activePlayerOrigin.rotation);
             localPlayer.InputController.InputStatus.Paused = true;
-            localPlayer.Ship.Teleport(activePlayerOrigin);
-            localPlayer.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();
-            // ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
-            localPlayer.Ship.ShipStatus.ResourceSystem.Reset();
-            // ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
+            localPlayer.Vessel.Teleport(activePlayerOrigin);
+            localPlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
+            // ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            localPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
+            // ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);
 
-            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
+            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Vessel.VesselStatus.CameraFollowTarget);
             
             foreach (var player in Players)
             {
@@ -293,15 +321,15 @@ namespace CosmicShore.SOAP
         {
             LocalPlayer.ToggleStationaryMode(false);
             LocalPlayer.InputController.InputStatus.Paused = false;
-            // ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
+            // ActivePlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
         }
 
 
         public void SetupForNextTurn()
         {
             LocalPlayer.InputController.InputStatus.Paused = false;
-            LocalPlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
-            LocalPlayer.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+            LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
+            LocalPlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
         }
 
         public void EliminateActive()

@@ -127,7 +127,7 @@ namespace CosmicShore.App.UI.Views
 
             _selectedShipClassType.Value = selectedShip.Class;
             // TODO - Remove statics from MiniGame, use SOAP Data Container
-            // notify the mini game engine that this is the ship to play
+            // notify the mini game engine that this is the vessel to play
             // MiniGame.PlayerShipType = selectedShip.Class;
 
             // if game.captains matches selectedShip.captains, that's the one
@@ -163,9 +163,9 @@ namespace CosmicShore.App.UI.Views
 
         public void PlaySelectedGame()
         {
-            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerShipType, SelectedGame.Mode));
+            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode));
 
-            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerShipType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, false);
+            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, false);
         }
 
         public void ToggleFavorite()

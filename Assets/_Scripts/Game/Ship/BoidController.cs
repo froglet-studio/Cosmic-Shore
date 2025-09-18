@@ -9,7 +9,7 @@ namespace CosmicShore
 {
     public class BoidController : BoidManager
     {
-        [SerializeField] IShip ship;
+        [SerializeField] IVessel vessel;
         GameObject container;
 
         [SerializeField]
@@ -24,24 +24,24 @@ namespace CosmicShore
         protected override void  Start()
         {
             container = new GameObject("BoidContainer");
-            container.transform.SetParent(ship.ShipStatus.Player.Transform);
+            container.transform.SetParent(vessel.VesselStatus.Player.Transform);
         }
 
         public void SpawnDrone(Transform goal, bool isQueenDrone)
         {
-            GameObject drone = Instantiate(boidPrefab.gameObject, ship.Transform.position, Quaternion.identity);
+            GameObject drone = Instantiate(boidPrefab.gameObject, vessel.Transform.position, Quaternion.identity);
             drone.transform.SetParent(container.transform);
-            drone.transform.position = ship.Transform.position;
+            drone.transform.position = vessel.Transform.position;
             var boid = drone.GetComponent<Boid>();
             boid.DefaultGoal = goal;
-            boid.Team = ship.ShipStatus.Team;
+            boid.Team = vessel.VesselStatus.Team;
             boid.Population = this;
             if (isQueenDrone)
             {
                 queenDrones.Add(drone);
 
                 // TODO - Remove MiniGameHUD dependency
-                // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
+                // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
                 onQueenDroneSpawned.Raise(queenDrones.Count);
             }
             else
@@ -49,7 +49,7 @@ namespace CosmicShore
                 moundDrones.Add(drone);
 
                 // TODO - Remove MiniGameHUD dependency
-                // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
+                // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
                 onMoundDroneSpawned.Raise(moundDrones.Count);
             }
         }
@@ -59,15 +59,15 @@ namespace CosmicShore
             if (toQueen && moundDrones.Count > 0)
             {
                 var drone = moundDrones[0];
-                drone.GetComponent<Boid>().DefaultGoal = ship.Transform;
+                drone.GetComponent<Boid>().DefaultGoal = vessel.Transform;
                 moundDrones.Remove(drone);
                 queenDrones.Add(drone);
 
                 // TODO - Remove MiniGameHUD dependency
                 onMoundDroneSpawned.Raise(moundDrones.Count);
-                // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
+                // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
                 onQueenDroneSpawned.Raise(queenDrones.Count);
-                // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
+                // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
             }
             else if (!toQueen && queenDrones.Count > 0)
             {
@@ -78,9 +78,9 @@ namespace CosmicShore
 
                 // TODO - Remove MiniGameHUD dependency
                 onQueenDroneSpawned.Raise(queenDrones.Count);
-                // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
+                // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
                 onMoundDroneSpawned.Raise(moundDrones.Count);
-                // ship.ShipStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
+                // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
             }
             else
             {

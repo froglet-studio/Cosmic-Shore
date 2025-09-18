@@ -16,10 +16,10 @@ namespace CosmicShore.App.Systems.UserActions
             Label = string.IsNullOrEmpty(label) ? ActionType.ToString() : label;
         }
 
-        public static string GetGameplayUserActionLabel(GameModes gameMode, ShipClassType shipType, int intensity)
+        public static string GetGameplayUserActionLabel(GameModes gameMode, VesselClassType vesselType, int intensity)
         {
-            Debug.Log($"GetGameplayUserActionLabel: {gameMode}_{shipType}_{intensity}");
-            return $"{gameMode}_{shipType}_{intensity}";
+            Debug.Log($"GetGameplayUserActionLabel: {gameMode}_{vesselType}_{intensity}");
+            return $"{gameMode}_{vesselType}_{intensity}";
         }
     }
 }

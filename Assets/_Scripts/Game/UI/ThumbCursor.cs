@@ -13,7 +13,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] Vector2 offset;
         [SerializeField] Sprite InactiveImage;
         [SerializeField] Sprite ActiveImage;
-        [SerializeField] R_Player player;
+        [SerializeField] Player player;
 
         Image image;
         bool initialized;
@@ -50,10 +50,10 @@ namespace CosmicShore.Game.UI
         IEnumerator InitializeCoroutine()
         {
             // TODO - Can't have ActivePlayer as static
-            /*yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.ShipStatus.InputController != null);
+            /*yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Vessel != null && Player.ActivePlayer.Vessel.VesselStatus.InputController != null);
 
-            if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
-                gameObject.SetActive(Gamepad.current == null && !Player.ActivePlayer.Ship.ShipStatus.CommandStickControls && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
+            if (!Player.ActivePlayer.Vessel.VesselStatus.AutoPilotEnabled)
+                gameObject.SetActive(Gamepad.current == null && !Player.ActivePlayer.Vessel.VesselStatus.CommandStickControls && (LeftThumb || !Player.ActivePlayer.Vessel.VesselStatus.SingleStickControls));
 
             initialized = true;*/
 
@@ -65,7 +65,7 @@ namespace CosmicShore.Game.UI
         void Update()
         {
             // TODO - Can't have ActivePlayer as static
-            // if (initialized && !Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
+            // if (initialized && !Player.ActivePlayer.Vessel.VesselStatus.AutoPilotEnabled)
             // TEMP
             {
                 if (Input.touches.Length == 0)
@@ -79,16 +79,16 @@ namespace CosmicShore.Game.UI
                     transform.position = Vector2.Lerp(transform.position, leftTouch, .2f);
                     imageEnabled = true ? image.sprite = ActiveImage : image.sprite = InactiveImage;
                     
-                    //image.transform.localScale = (Player.ActivePlayer.Ship.InputController.LeftJoystickStart              //makes circles grow as they get close to perimeter
-                    //    - Player.ActivePlayer.Ship.InputController.LeftClampedPosition).magnitude * .025f * Vector3.one;
+                    //image.transform.localScale = (Player.ActivePlayer.Vessel.InputController.LeftJoystickStart              //makes circles grow as they get close to perimeter
+                    //    - Player.ActivePlayer.Vessel.InputController.LeftClampedPosition).magnitude * .025f * Vector3.one;
                 }
                 else
                 {
                     rightTouch = inputStatus.RightClampedPosition;
                     transform.position = Vector2.Lerp(transform.position, rightTouch, .2f);
                     imageEnabled = true ? image.sprite = ActiveImage : image.sprite = InactiveImage;
-                    //image.transform.localScale = (Player.ActivePlayer.Ship.InputController.RightJoystickStart
-                    //    - Player.ActivePlayer.Ship.InputController.RightClampedPosition).magnitude * .025f * Vector3.one;
+                    //image.transform.localScale = (Player.ActivePlayer.Vessel.InputController.RightJoystickStart
+                    //    - Player.ActivePlayer.Vessel.InputController.RightClampedPosition).magnitude * .025f * Vector3.one;
                 }
             }
         }

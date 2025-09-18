@@ -11,7 +11,7 @@ public class ElementalFloat
     [SerializeField] float Min;
     [SerializeField] float Max;
     [SerializeField] Element element;
-    IShip ship;
+    IVessel vessel;
     string name;
 
     public ElementalFloat(float value)
@@ -24,16 +24,16 @@ public class ElementalFloat
         set { name = value; }
     }
 
-    public IShip Ship
+    public IVessel Vessel
     {
         set
         {
-            ship = value;
+            vessel = value;
 
             if (Enabled)
             {
-                ship.BindElementalFloat(name, element);
-                ship.ShipStatus.ResourceSystem.OnElementLevelChange += ScaleValueWithLevel;
+                vessel.BindElementalFloat(name, element);
+                vessel.VesselStatus.ResourceSystem.OnElementLevelChange += ScaleValueWithLevel;
             }
         }
     }

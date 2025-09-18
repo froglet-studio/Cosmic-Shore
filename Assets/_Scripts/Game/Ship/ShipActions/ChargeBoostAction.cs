@@ -6,25 +6,26 @@ using UnityEngine;
 public class ChargeBoostAction : ShipAction
 {
     [Header("Charge Boost Settings")]
-    [SerializeField] float maxBoostMultiplier   = 3f;   // stronger top-end boost
-    [SerializeField] float maxNormalizedCharge  = 5f;   // capacity in 'units'
+    [SerializeField] float maxBoostMultiplier; 
+    [SerializeField] float maxNormalizedCharge;
 
     [Header("Timing (seconds)")]
-    [SerializeField] float chargeTimeToFull     = 2.0f;
-    [SerializeField] float dischargeTimeToEmpty = 2.5f;
+    [SerializeField] float chargeTimeToFull;
+    [SerializeField] float dischargeTimeToEmpty;
 
     [Tooltip("Tick cadence for UI/physics updates")]
-    [SerializeField] float tickSeconds = 0.05f;
+    [SerializeField] float tickSeconds;
 
     [Header("Resource slot holding the charged units (0..maxNormalizedCharge)")]
-    [SerializeField] int boostBoostResourceIndex = 0;
+    [SerializeField] int boostBoostResourceIndex;
 
     [Header("Optional Safety")]
-    [SerializeField] float rechargeCooldownSeconds = 0f;
+    [SerializeField] float rechargeCooldownSeconds;
 
     [Header("Debug")]
-    [SerializeField] bool verbose = false;
-
+    [SerializeField] bool verbose;
+    
+    bool resourceStoresNormalized = true;
     private bool  _charging;
     private float _cooldownUntilUtc;
 
@@ -54,10 +55,10 @@ public class ChargeBoostAction : ShipAction
 
         _charging = true;
 
-        // preview multiplier (optional), but ship speed shouldn’t use it yet
+        // preview multiplier (optional), but vessel speed shouldn’t use it yet
         var start = GetUnits();
-        ShipStatus.ChargedBoostDischarging = false;
-        ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(start);
+        VesselStatus.ChargedBoostDischarging = false;
+        VesselStatus.ChargedBoostCharge = BoostMultiplierFrom(start);
 
         OnChargeStarted?.Invoke(start);
         StartCoroutine(ChargeRoutine());
@@ -75,7 +76,7 @@ public class ChargeBoostAction : ShipAction
         }
 
         var start = GetUnits();
-        ShipStatus.ChargedBoostDischarging = true;
+        VesselStatus.ChargedBoostDischarging = true;
 
         OnDischargeStarted?.Invoke(start);
         StartCoroutine(DischargeRoutine());
@@ -92,7 +93,7 @@ public class ChargeBoostAction : ShipAction
             float v = GetUnits();
 
             // preview value (UI can also use events)
-            ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(v);
+            VesselStatus.ChargedBoostCharge = BoostMultiplierFrom(v);
             OnChargeProgress?.Invoke(v);
 
             if (v >= maxNormalizedCharge - 1e-4f) break;
@@ -104,7 +105,7 @@ public class ChargeBoostAction : ShipAction
 
         // snap to full for determinism
         SetUnits(maxNormalizedCharge);
-        ShipStatus.ChargedBoostCharge = BoostMultiplierFrom(maxNormalizedCharge);
+        VesselStatus.ChargedBoostCharge = BoostMultiplierFrom(maxNormalizedCharge);
         OnChargeEnded?.Invoke();
     }
 
@@ -112,27 +113,23 @@ public class ChargeBoostAction : ShipAction
     {
         float perTick = DischargePerSecond * tickSeconds;
 
-        // IMPORTANT: actually apply boost to ship movement while discharging
         while (GetUnits() > 0f)
         {
             float v = GetUnits();
-            // Ship code should already multiply movement/thrust by BoostMultiplier.
-            Ship.ShipStatus.BoostMultiplier = BoostMultiplierFrom(v);
-            ShipStatus.Boosting = true;
+            Vessel.VesselStatus.BoostMultiplier = BoostMultiplierFrom(v);
+            VesselStatus.Boosting = true;
 
             OnDischargeProgress?.Invoke(v);
 
-            // drain after we reported the current value (so UI shows full before first decrement)
             AddUnits(-perTick);
 
             yield return new WaitForSeconds(tickSeconds);
         }
 
-        // fully ended
         SetUnits(0f);
-        Ship.ShipStatus.BoostMultiplier = 1f;
-        ShipStatus.ChargedBoostDischarging = false;
-        ShipStatus.Boosting = false;
+        Vessel.VesselStatus.BoostMultiplier = 1f;
+        VesselStatus.ChargedBoostDischarging = false;
+        VesselStatus.Boosting = false;
 
         if (rechargeCooldownSeconds > 0f)
             _cooldownUntilUtc = Time.unscaledTime + rechargeCooldownSeconds;
@@ -140,17 +137,33 @@ public class ChargeBoostAction : ShipAction
         OnDischargeEnded?.Invoke();
     }
 
-    // ----- units helpers -----
     float GetUnits()
     {
         if (!ResourceSystem) return 0f;
-        return Mathf.Clamp(ResourceSystem.Resources[boostBoostResourceIndex].CurrentAmount, 0f, maxNormalizedCharge);
+
+        var raw = ResourceSystem.Resources[boostBoostResourceIndex].CurrentAmount;
+        if (resourceStoresNormalized)
+        {
+            return Mathf.Clamp01(raw) * maxNormalizedCharge;
+        }
+        return Mathf.Clamp(raw, 0f, maxNormalizedCharge);
     }
 
-    void SetUnits(float value)
+
+    void SetUnits(float units)
     {
         if (!ResourceSystem) return;
-        ResourceSystem.Resources[boostBoostResourceIndex].CurrentAmount = Mathf.Clamp(value, 0f, maxNormalizedCharge);
+
+        units = Mathf.Clamp(units, 0f, maxNormalizedCharge);
+        if (resourceStoresNormalized)
+        {
+            ResourceSystem
+                .Resources[boostBoostResourceIndex]
+                .CurrentAmount = (maxNormalizedCharge > 0f) ? (units / maxNormalizedCharge) : 0f;
+            return;
+        }
+
+        ResourceSystem.Resources[boostBoostResourceIndex].CurrentAmount = units;
     }
 
     void AddUnits(float delta) => SetUnits(GetUnits() + delta);

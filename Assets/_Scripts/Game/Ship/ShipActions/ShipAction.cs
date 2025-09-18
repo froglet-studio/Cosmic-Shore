@@ -3,14 +3,16 @@ using CosmicShore.Game;
 
 public abstract class ShipAction : ElementalShipComponent
 {
-    public IShip Ship { get; private set; }
-    protected IShipStatus ShipStatus => Ship.ShipStatus;
-    protected ResourceSystem ResourceSystem => Ship.ShipStatus.ResourceSystem;
+    protected IVessel Vessel { get; private set; }
+    protected IVesselStatus VesselStatus => Vessel.VesselStatus;
+    protected ResourceSystem ResourceSystem => Vessel.VesselStatus.ResourceSystem;
+    public bool IsInitialized { get; private set; }
 
-    public virtual void Initialize(IShip ship)
+    public virtual void Initialize(IVessel vessel)
     {
-        Ship = ship;
-        BindElementalFloats(Ship);
+        Vessel = vessel;
+        BindElementalFloats(Vessel);
+        IsInitialized = true;
     }
 
     public abstract void StartAction();

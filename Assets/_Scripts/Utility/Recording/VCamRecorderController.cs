@@ -9,7 +9,7 @@ namespace CosmicShore.Utility.Recording
     public class VCamRecorderController : MonoBehaviour
     {
         //[SerializeField] MiniGame game;
-        [SerializeField] R_Player player;
+        [SerializeField] Player player;
         [SerializeField] CinemachineVirtualCameraBase specialCamera;
         // Start is called before the first frame update
         void Start()
@@ -19,8 +19,8 @@ namespace CosmicShore.Utility.Recording
         IEnumerator LateStartCoroutine() 
         {
             yield return new WaitForSeconds(3);
-            //specialCamera.Follow = specialCamera.LookAt = game.ActivePlayer.Ship.transform;
-            specialCamera.Follow = specialCamera.LookAt = player.Ship.Transform;        
+            //specialCamera.Follow = specialCamera.LookAt = game.ActivePlayer.Vessel.transform;
+            specialCamera.Follow = specialCamera.LookAt = player.Vessel.Transform;        
         }
     }
 }

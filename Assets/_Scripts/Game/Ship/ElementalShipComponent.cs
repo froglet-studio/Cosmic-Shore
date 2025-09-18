@@ -7,7 +7,7 @@ using UnityEngine;
 public class ElementalShipComponent : MonoBehaviour
 {
     readonly BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-    public void BindElementalFloats(IShip ship)
+    public void BindElementalFloats(IVessel vessel)
     {
         Type thisType = GetType();
         FieldInfo[] fields = thisType.GetFields(bindingFlags);
@@ -17,10 +17,10 @@ public class ElementalShipComponent : MonoBehaviour
         {
             if (fieldInfo.FieldType == typeof(ElementalFloat))
             {
-                // Assign the ElementalFloat fields name and ship properties
+                // Assign the ElementalFloat fields name and vessel properties
                 var elementalFloatInstance = thisType.GetField(fieldInfo.Name, bindingFlags).GetValue(this);
                 typeof(ElementalFloat).GetProperty("Name").SetValue(elementalFloatInstance, GetType().Name + "." + fieldInfo.Name);
-                typeof(ElementalFloat).GetProperty("Ship").SetValue(elementalFloatInstance, ship);
+                typeof(ElementalFloat).GetProperty("Vessel").SetValue(elementalFloatInstance, vessel);
             }
         }
     }

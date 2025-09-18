@@ -61,7 +61,7 @@ namespace CosmicShore.Integrations.Instrumentation
         /// </summary>
         /// <param name="captainName"></param>
         /// <param name="captainLevel"></param>
-        /// <param name="shipType">Ship type enums should be converted to string before call the event log</param>
+        /// <param name="shipType">Vessel type enums should be converted to string before call the event log</param>
         public void LogEventUpgradeCaptain(string captainName, int captainLevel, string shipType)
         {
             _playerDataCollector.LogEventUpgradeCaptain(captainName, captainLevel, shipType);
@@ -134,7 +134,7 @@ namespace CosmicShore.Integrations.Instrumentation
         /// </summary>
         /// <param name="gameType">Game type enum should be converted to string before call the log event</param>
         /// <param name="intensity">Game intensity</param>
-        /// <param name="shipType">Ship type enum should be converted to string before call the log event</param>
+        /// <param name="shipType">Vessel type enum should be converted to string before call the log event</param>
         public void LogEventStartArcadeGame(string gameType, int intensity, string shipType)
         {
             _arcadeDataCollector.LogEventStartArcadeGame(gameType, intensity, shipType);

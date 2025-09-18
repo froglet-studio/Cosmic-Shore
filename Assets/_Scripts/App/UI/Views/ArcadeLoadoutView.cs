@@ -34,7 +34,7 @@ namespace CosmicShore.App.UI.Views
         // Current Loadout Settings
         int activeIntensity = 0;
         int activePlayerCount = 0;
-        ShipClassType activeShipType = 0;
+        VesselClassType activeVesselType = 0;
         GameModes activeGameMode = 0;
 
         void Start()
@@ -66,12 +66,12 @@ namespace CosmicShore.App.UI.Views
 
             // Default load out for building a new one
             if (!loadout.Initialized)
-                loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = GameModes.BlockBandit, ShipType = ShipClassType.Manta };
+                loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = GameModes.BlockBandit, VesselType = VesselClassType.Manta };
 
             // Load values from loadout
             activeIntensity = loadout.Intensity;
             activePlayerCount = loadout.PlayerCount;
-            activeShipType = loadout.ShipType;
+            activeVesselType = loadout.VesselType;
             activeGameMode = loadout.GameMode;
 
             // Clear out player select and intensity selections
@@ -92,7 +92,7 @@ namespace CosmicShore.App.UI.Views
             // 
             selectedGameIndex = AllGames.Games.IndexOf(AllGames.Games.Where(x => x.Mode == activeGameMode).FirstOrDefault());
             UpdateGameMode();
-            selectedShipIndex = availableShips.IndexOf(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault());
+            selectedShipIndex = availableShips.IndexOf(AllShips.ShipList.Where(x => x.Class == activeVesselType).FirstOrDefault());
             UpdateShipClass();
 
             Debug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
@@ -104,7 +104,7 @@ namespace CosmicShore.App.UI.Views
         public void OnClickPlayButton() 
         {
             Loadout loadout = LoadoutSystem.GetActiveLoadout();
-            Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.ShipType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false);
+            Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false);
         }
 
         // Sets ShipTypes
@@ -127,11 +127,11 @@ namespace CosmicShore.App.UI.Views
             if (selectedShipIndex < 0) selectedShipIndex = availableShips.Count() - 1;
             if (selectedShipIndex >= availableShips.Count()) selectedShipIndex = 0;
 
-            activeShipType = availableShips[selectedShipIndex].Class;
+            activeVesselType = availableShips[selectedShipIndex].Class;
             ShipTitle.text = availableShips[selectedShipIndex].Name;
             ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutteInactive;
 
-            Debug.Log("Active Ship Type is " + activeShipType);
+            Debug.Log("Active Vessel Type is " + activeVesselType);
         }
 
         // Sets MiniGames
@@ -159,8 +159,8 @@ namespace CosmicShore.App.UI.Views
             foreach (var captain in selectedGame.Captains)
                 availableShips.Add(captain.Ship);
 
-            // If selected ship is not available, fall back to zero
-            if (!availableShips.Contains(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault()))
+            // If selected vessel is not available, fall back to zero
+            if (!availableShips.Contains(AllShips.ShipList.Where(x => x.Class == activeVesselType).FirstOrDefault()))
             {
                 selectedShipIndex = 0;
                 UpdateShipClass();
@@ -249,7 +249,7 @@ namespace CosmicShore.App.UI.Views
             Loadout loadout = new Loadout();
             loadout.Intensity = activeIntensity;
             loadout.PlayerCount = activePlayerCount;
-            loadout.ShipType = activeShipType;
+            loadout.VesselType = activeVesselType;
             loadout.GameMode = activeGameMode;
 
             int idx = LoadoutSystem.GetActiveLoadoutIndex();

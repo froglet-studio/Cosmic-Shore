@@ -128,35 +128,35 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         /// <summary>
         /// Update Gameplay Stats
-        /// Upload game mode, ship type, intensity level and scores to memory
+        /// Upload game mode, vessel type, intensity level and scores to memory
         /// </summary>
-        public void ReportGameplayStatistic(GameModes gameMode, ShipClassType shipType, int intensity, int score, bool golfScoring)
+        public void ReportGameplayStatistic(GameModes gameMode, VesselClassType vesselType, int intensity, int score, bool golfScoring)
         {
             // Build list of statistics to update
-            // One entry for each score for specific game mode/ship combination
-            // One entry for each score for game mode any ship
-            // One entry to count how many times people have played a given game with a given ship
+            // One entry for each score for specific game mode/vessel combination
+            // One entry for each score for game mode any vessel
+            // One entry to count how many times people have played a given game with a given vessel
 
             // Playfab does not support reverse sort for leaderboards... take the negative to figure out the position, then flip it again when displaying the score
             if (golfScoring)
                 score *= -1;
 
-            Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{shipType}, intensity:{intensity}, score:{score}");
+            Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{vesselType}, intensity:{intensity}, score:{score}");
             List<StatisticUpdate> stats = new()
             {
                 new StatisticUpdate()
                 {
-                    StatisticName = GetGameplayStatKey(gameMode, shipType),
+                    StatisticName = GetGameplayStatKey(gameMode, vesselType),
                     Value = score
                 },
                 new StatisticUpdate()
                 {
-                    StatisticName = GetGameplayStatKey(gameMode, ShipClassType.Any),
+                    StatisticName = GetGameplayStatKey(gameMode, VesselClassType.Any),
                     Value = score
                 },
                 new StatisticUpdate()
                 {
-                    StatisticName = GetGameplayStatKey(gameMode, shipType) + "_PlayCount",
+                    StatisticName = GetGameplayStatKey(gameMode, vesselType) + "_PlayCount",
                     Value = 1
                 }
             };
@@ -166,7 +166,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         /// <summary>
         /// Update Gameplay Stats
-        /// Upload game mode, ship type, intensity level and scores to memory
+        /// Upload game mode, vessel type, intensity level and scores to memory
         /// </summary>
         public void ReportDailyChallengeStatistic(int score, bool golfScoring)
         {
@@ -190,11 +190,11 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         /// <summary>
         /// Get Gameplay Stats Key
-        /// Combines game mode and ship type as search key, and return it.
+        /// Combines game mode and vessel type as search key, and return it.
         /// </summary>
-        public string GetGameplayStatKey(GameModes gameMode, ShipClassType shipType)
+        public string GetGameplayStatKey(GameModes gameMode, VesselClassType vesselType)
         {
-            var statKey = gameMode.ToString().ToUpper() + "_" + shipType.ToString().ToUpper();
+            var statKey = gameMode.ToString().ToUpper() + "_" + vesselType.ToString().ToUpper();
 
             Debug.Log("GetGameplayStatKey: " +  statKey);
 
@@ -322,7 +322,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         /// <summary>
         /// Get Leaderboard By leaderboard name
-        /// Fetches leaderboard data by name (aggregation of mini game and ship type name)
+        /// Fetches leaderboard data by name (aggregation of mini game and vessel type name)
         /// Takes front end leaderboard name and callback
         /// Might be good to add error handler
         /// </summary>
@@ -374,7 +374,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         /// <summary>
         /// Request Friend Leaderboard By leaderboard name
-        /// Fetches friend leaderboard data by name (aggregation of mini game and ship type name)
+        /// Fetches friend leaderboard data by name (aggregation of mini game and vessel type name)
         /// Takes front end leaderboard name and callback
         /// Might be good to add error handler
         /// </summary>

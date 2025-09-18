@@ -406,7 +406,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     CaptainManager.Instance.EncounterCaptain(item.Name);
                     break;
                 case "Class":
-                    Debug.LogFormat("{0} - {1} - Adding Ship",nameof(CatalogManager), nameof(AddToInventory));
+                    Debug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.shipClasses.Add(item);
                     break;
                 case "CaptainUpgrade":
@@ -471,7 +471,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         /// <summary>
         /// Add Items to Inventory
-        /// Add shinny new stuff! Any type of item from currency to captain and ship upgrades
+        /// Add shinny new stuff! Any type of item from currency to captain and vessel upgrades
         /// </summary>
         public void AddInventoryItem(VirtualItem virtualItem)
         {

@@ -63,7 +63,7 @@ namespace CosmicShore.Core
             miniGameData.InvokeGameLaunch();
             
             /*MiniGame.PlayerCaptain = captain;
-            MiniGame.PlayerShipType = captain.Ship.Class;
+            MiniGame.PlayerShipType = captain.Vessel.Class;
             MiniGame.ResourceCollection = CaptainManager.Instance.GetCaptainByName(captain.Name).ResourceLevels;
             MiniGame.IntensityLevel = intensity;
             MiniGame.NumberOfPlayers = 1;
@@ -84,7 +84,7 @@ namespace CosmicShore.Core
             */
         }
 
-        public void LaunchArcadeGame(GameModes gameMode, ShipClassType ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
+        public void LaunchArcadeGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
             miniGameData.ResourceCollection = shipResources;
             miniGameData.IsDailyChallenge = isDailyChallenge;
@@ -94,7 +94,7 @@ namespace CosmicShore.Core
             miniGameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
             miniGameData.InvokeGameLaunch();
 
-            /*MiniGame.PlayerShipType = ship;
+            /*MiniGame.PlayerShipType = vessel;
             MiniGame.ResourceCollection = shipResources;
             MiniGame.IntensityLevel = intensity;
             MiniGame.NumberOfPlayers = numberOfPlayers;
@@ -133,7 +133,7 @@ namespace CosmicShore.Core
             return ArcadeGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
         }*/
 
-        public void LaunchTrainingGame(GameModes gameMode, ShipClassType ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
+        public void LaunchTrainingGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
             miniGameData.ResourceCollection = shipResources;
             miniGameData.IsDailyChallenge = isDailyChallenge;
@@ -143,7 +143,7 @@ namespace CosmicShore.Core
             miniGameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
             miniGameData.InvokeGameLaunch();
             
-            /*MiniGame.PlayerShipType = ship;
+            /*MiniGame.PlayerShipType = vessel;
             MiniGame.ResourceCollection = shipResources;
             MiniGame.IntensityLevel = intensity;
             MiniGame.NumberOfPlayers = numberOfPlayers;
