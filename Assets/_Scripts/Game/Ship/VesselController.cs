@@ -55,6 +55,11 @@ namespace CosmicShore.Game
             }
         }
 
+        public override void OnDestroy()
+        {
+            OnBeforeDestroyed?.Invoke();
+        }
+
         public override void OnNetworkSpawn()
         {
             if (IsOwner) 
@@ -193,11 +198,7 @@ namespace CosmicShore.Game
 
         public bool AllowClearPrismInitialization() => (IsSpawned && IsOwner) || VesselStatus.IsInitializedAsAI;
 
-        public void Destroy()
-        {
-            OnBeforeDestroyed?.Invoke();
-            Destroy(gameObject);
-        }
+        public void Destroy() => Destroy(gameObject);
         
         void InitializeForMultiplayerMode()
         {

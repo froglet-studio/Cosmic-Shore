@@ -78,13 +78,12 @@ namespace CosmicShore.SOAP
 
         public void SetupForMultiplayer()
         {
-            foreach (var player in Players)
-            {
-                player.Vessel.Destroy();
-            }
+            if (Players == null || Players.Count == 0)
+                return;
             
             for (int i = Players.Count - 1; i >= 0; i--)
             {
+                Players[i].Vessel?.Destroy();
                 Players[i].Destroy();
             }
             
@@ -110,6 +109,15 @@ namespace CosmicShore.SOAP
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
         public void InvokeAllPlayersSpawned() => OnAllPlayersSpawned?.Invoke();
 
+        public void ResetOnSceneChanged()
+        {
+            Players.Clear();
+            RoundStatsList.Clear();
+            PlayerOrigins = Array.Empty<Transform>();
+            _activePlayerId = 0;
+            TurnStartTime = 0f;
+        }
+        
         public void ResetData()
         {
             GameMode = GameModes.Random;
