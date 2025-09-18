@@ -59,8 +59,6 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            DebugExtensions.LogColored("Hi this is multiplayer setuP!", Color.green);
-
             if (!NetworkManager.Singleton)
             {
                 Debug.LogError("[MultiplayerSetup] NetworkManager is not initialized. Ensure it is set up in the scene.");
@@ -69,7 +67,6 @@ namespace CosmicShore.Game
 
             NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
-            // NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             
             miniGameData.OnLaunchGame += OnLaunchGame;
         }
@@ -107,7 +104,6 @@ namespace CosmicShore.Game
             if (NetworkManager.Singleton)
             {
                 NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                // NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
                 NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
             }
               
@@ -169,9 +165,8 @@ namespace CosmicShore.Game
         
         private void OnClientDisconnect(ulong clientId)
         {
-            // Check if we are a client and the disconnected client is the host
-            if (!NetworkManager.Singleton.IsClient ||
-                clientId != 0) return;
+            // If we are a client, check if the host (always clientId = 0) disconnected
+            if (!NetworkManager.Singleton.IsClient || clientId != 0) return;
             Debug.Log("[HostDisconnectHandler] Host disconnected. Returning to main menu.");
             OnLoadMainMenu?.Raise();
         }
@@ -267,27 +262,6 @@ namespace CosmicShore.Game
             var playerNameProperty = new PlayerProperty(playerName, VisibilityPropertyOptions.Member);
             return new Dictionary<string, PlayerProperty> { { PLAYER_NAME_PROPERTY_KEY, playerNameProperty } };
         }
-
-        /*void OnClientConnected(ulong clientId)
-        {
-            NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (playerNetObj)
-            {
-                Player player = playerNetObj.GetComponent<Player>();
-                if (player)
-                {
-                    if (player.IsOwnerClient)
-                    {
-                        player.NetDefaultShipType.Value = miniGameData.SelectedShipClass.Value;
-                    }
-
-                    if (IsServer)
-                    {
-                        player.NetTeam.Value = TeamAssigner.AssignRandomTeam();
-                    }
-                }
-            }
-        }*/
     }
 }
 
