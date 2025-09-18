@@ -34,8 +34,8 @@ namespace CosmicShore.Game.Projectiles
             if (!Material)
                 Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);
             
-            // if (!coneContainer)
-            //     coneContainer = new GameObject("AOEContainer");
+            if (!coneContainer)
+                coneContainer = new GameObject("AOEContainer");
             coneContainer.transform.SetPositionAndRotation(SpawnPosition, SpawnRotation);
             transform.SetParent(coneContainer.transform, false);
         }

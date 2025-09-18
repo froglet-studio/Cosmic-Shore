@@ -4,17 +4,19 @@ using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
-public  class FireGunActionExecutor : ShipActionExecutorBase
+public class FireGunActionExecutor : ShipActionExecutorBase
 {
     public event Action OnGunFired;
 
-    [Header("Scene Refs")]
-    [SerializeField] Gun gun;
+    [Header("Scene Refs")] [SerializeField]
+    Gun gun;
+
     [SerializeField] Transform projectileContainer;
 
     IVesselStatus _status;
     ResourceSystem _resources;
     FireGunActionSO _soRef;
+
     public float Ammo01
     {
         get
@@ -42,7 +44,7 @@ public  class FireGunActionExecutor : ShipActionExecutorBase
             gun.Initialize(shipStatus);
 
         if (projectileContainer != null)
-            projectileContainer.SetParent(null, true);
+            projectileContainer.SetParent(_status.ShipTransform, true);
     }
 
     public void Fire(FireGunActionSO so, IVesselStatus status)
@@ -52,11 +54,12 @@ public  class FireGunActionExecutor : ShipActionExecutorBase
 
         _soRef = so;
         _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
-        var inheritedVelocity = /*status.Attached ?*/ gun.transform.forward  /*:status.Course*/;
+        var inheritedVelocity = status.Attached ? gun.transform.forward : status.Course;
 
         OnGunFired?.Invoke();
         Debug.Log($"Inherited Velocity {inheritedVelocity} status Attached {status.Attached}");
-        gun.FireGun(projectileContainer, so.Speed, inheritedVelocity * status.Speed, so.ProjectileScale, true, so.ProjectileTime.Value, 0,
+        gun.FireGun(projectileContainer, so.Speed, inheritedVelocity * status.Speed, so.ProjectileScale, true,
+            so.ProjectileTime.Value, 0,
             FiringPatterns.Default, so.Energy);
     }
 }

@@ -21,7 +21,7 @@ namespace CosmicShore.Game.Projectiles
 
         bool _onCooldown = false;
         float _sideLength = 2;
-        float _barrelLength = 0;
+        float _barrelLength = 2f;
 
         Projectile _projectile;
 

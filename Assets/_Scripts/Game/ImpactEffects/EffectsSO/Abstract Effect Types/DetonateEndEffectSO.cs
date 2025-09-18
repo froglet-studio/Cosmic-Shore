@@ -3,36 +3,55 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "DetonateEndEffect", menuName = "ScriptableObjects/Impact Effects/Projectile/End Effects/Detonate")]
+    [CreateAssetMenu(
+        fileName = "DetonateEndEffect",
+        menuName = "ScriptableObjects/Impact Effects/Projectile/End Effects/Detonate")]
     public class DetonateEndEffectSO : ProjectileEndEffectSO
     {
-        [SerializeField] private GameObject explosionPrefab;
-        [SerializeField] private bool faceVelocity = true;
+        [SerializeField] private AOEExplosion[] aoePrefabs;
+        [SerializeField] private float minExplosionScale = 0.75f;
+        [SerializeField] private float maxExplosionScale = 2.5f;
+        [SerializeField] private bool faceExitVelocity = true;
 
-
-        public override void Execute(ProjectileImpactor impactor, ImpactorBase _)
+        public override void Execute(ProjectileImpactor impactor, ImpactorBase impactee)
         {
-            if (impactor == null || explosionPrefab == null) return;
+            if (!impactor || !impactor.Projectile || aoePrefabs == null || aoePrefabs.Length == 0)
+                return;
 
-            var pos = impactor.transform.position;
-            var rot = impactor.transform.rotation;
+            var projectile = impactor.Projectile;
+            var status     = projectile.VesselStatus;
+            var pos        = projectile.transform.position;
+            var rot        = projectile.transform.rotation;
 
-            var proj = impactor.Projectile;
-            if (faceVelocity && proj != null && proj.Velocity.sqrMagnitude > 1e-6f)
-                rot = Quaternion.LookRotation(proj.Velocity.normalized, Vector3.up);
+            if (faceExitVelocity && projectile.Velocity.sqrMagnitude > 1e-6f)
+                rot = Quaternion.LookRotation(projectile.Velocity.normalized, Vector3.up);
 
-            GameObject instance = null;
-
-            instance = Instantiate(explosionPrefab, pos, rot);
-  
-            if (instance != null && instance.TryGetComponent(out AOEExplosion aoe))
+            foreach (var aoePrefab in aoePrefabs)
             {
-                aoe.Detonate();
+                if (!aoePrefab) continue;
+
+                var spawned = Object.Instantiate(aoePrefab, pos, rot);
+
+                var team     = status?.Team ?? Teams.None;
+                var vessel   = status?.Vessel; 
+                var mat      = status?.AOEExplosionMaterial;
+
+                spawned.Initialize(new AOEExplosion.InitializeStruct
+                {
+                    OwnTeam             = team,
+                    Vessel              = vessel,  
+                    MaxScale            = Mathf.Lerp(minExplosionScale, maxExplosionScale, Mathf.Clamp01(projectile.Charge)),
+                    OverrideMaterial    = mat,    
+                    AnnonymousExplosion = false,
+                    SpawnPosition       = pos,
+                    SpawnRotation       = rot
+                });
+
+                spawned.Detonate();
             }
-            else
-            {
-                Debug.LogWarning("DetonateEndEffectSO: spawned explosion has no AOEExplosion component.");
-            }
+            Debug.Log("Detonating End Effect");
+            projectile.Stop();
+            projectile.ReturnToPool();
         }
     }
 }
