@@ -18,20 +18,17 @@ namespace CosmicShore.Game
             foreach (Player networkPlayer in Player.NppList)
             {
                 var networkShip = NetworkVesselClientCache.GetInstanceByClientId(networkPlayer.OwnerClientId);
-                Assert.IsTrue(networkShip, $"Network vessel not found for client {networkPlayer.OwnerClientId}!");
+                if (!networkShip) continue;
 
                 networkPlayer.InitializeForMultiplayerMode(networkShip);
                 networkShip.Initialize(networkPlayer, false);
+
                 PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
 
                 bool toggle = !networkPlayer.IsOwner;
                 networkPlayer.ToggleStationaryMode(toggle);
                 networkPlayer.ToggleInputPause(toggle);
             }
-
-            // TODO - Should not access GameManager directly, use events
-            // GameManager.UnPauseGame();
-            // GameManager.Instance.WaitOnPlayerLoading();
 
             PauseSystem.TogglePauseGame(false);
         }

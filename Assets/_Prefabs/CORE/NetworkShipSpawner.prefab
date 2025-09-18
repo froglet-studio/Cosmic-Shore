@@ -52,7 +52,7 @@ MonoBehaviour:
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
+  SynchronizeTransform: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -85,14 +85,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OnALlClientJoined: {fileID: 11400000, guid: 9b22d3442c2c72a4eafd0e396a9848bf, type: 2}
+  OnAllClientJoined: {fileID: 11400000, guid: 9b22d3442c2c72a4eafd0e396a9848bf, type: 2}
   clientPlayerSpawner: {fileID: 8874896592346530446}
   _playerSpawnPoints:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  shipPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
+  vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
   _mainMenuSceneName: Menu_Main
 --- !u!114 &8874896592346530446

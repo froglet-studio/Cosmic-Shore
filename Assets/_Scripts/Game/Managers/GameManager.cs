@@ -36,8 +36,8 @@ namespace CosmicShore.Core
 
         void LaunchGame()
         {
-            if (miniGameData.IsMultiplayerMode)
-                return;
+            /*if (miniGameData.IsMultiplayerMode)
+                return;*/
 
             LoadSceneAsync(miniGameData.SceneName).Forget();
         }
@@ -46,6 +46,8 @@ namespace CosmicShore.Core
         {
             _onSceneTransition.Raise(false);
 
+            miniGameData.ResetOnSceneChanged();
+            
             // Delay is realtime so it still works if Time.timeScale = 0
             await UniTask.Delay(TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD), 
                 DelayType.UnscaledDeltaTime);
