@@ -14,20 +14,12 @@ namespace CosmicShore.Game
 
         [SerializeField] private float cooldownSeconds;
 
-        [Header("Speed Debuff")]
-        [SerializeField] private float speedModifierDuration;
-
-        [SerializeField] private float debuffAmount;
-
         private static readonly Dictionary<int, float> _lastAppliedAt = new();
 
         public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = impactor?.Vessel?.VesselStatus;
             if (status == null || status.IsStationary) return;
-
-            if (debuffAmount != 0f && speedModifierDuration > 0f)
-                status.VesselTransformer?.ModifyThrottle(debuffAmount, speedModifierDuration);
 
             var t = status.ShipTransform;
             if (t == null) return;

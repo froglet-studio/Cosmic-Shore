@@ -10,9 +10,9 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utilities;
 using CosmicShore.SOAP;
-/*#if !LINUX_BUILD && !PLATFORM_STANDALONE_WIN
+#if !LINUX_BUILD && !PLATFORM_STANDALONE_WIN
 using Mono.Cecil;
-#endif*/
+#endif
 using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 

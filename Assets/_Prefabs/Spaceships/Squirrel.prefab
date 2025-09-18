@@ -447,11 +447,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 3202054749536864766}
   _shipHUDController: {fileID: 7874551534278607383}
-  _shipHUDView: {fileID: 8405677031294957519}
+  _vesselHUDView: {fileID: 0}
   shipHUDContainer: {fileID: 4040093138880822241}
   boostMultiplier: 4
   _name: Squirrel
-  _shipType: 6
+  vesselType: 6
   _nearFieldSkimmer: {fileID: 708149374973573223}
   _farFieldSkimmer: {fileID: 708149374973573223}
   orientationHandle: {fileID: 1878660672777590133}
@@ -467,6 +467,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -569,6 +570,7 @@ MonoBehaviour:
   drift: 0
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
+  actionExecutorRegistry: {fileID: 0}
 --- !u!114 &5500781737155866732
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -652,16 +654,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _executors: {fileID: 0}
   _inputEventShipActions:
   - InputEvent: 3
     ShipActions:
-    - {fileID: 1244531863877960553}
+    - {fileID: 0}
   - InputEvent: 3
     ShipActions:
-    - {fileID: 1244531863877960553}
+    - {fileID: 0}
   - InputEvent: 1
     ShipActions:
-    - {fileID: 1244531863877960553}
+    - {fileID: 0}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4350495d5514413bd426985732629dc, type: 3}
+  m_Name: CloakSeedWallAction
+  m_EditorClassIdentifier: 
+  cooldownSeconds: 15
+  hideShipDuringCooldown: 1
+  localCloakAlpha: 0.2
+  remoteFullInvisible: 1
+  fadeOutSeconds: 0.25
+  fadeInSeconds: 0.25
+  hardToggleIfAnyOpaqueAtZero: 1
+  requireExistingTrailBlock: 1
+  ghostLifetime: 0
+  ghostScaleMultiplier: 1
+  ghostMaterialOverride: {fileID: 0}
+  ghostEulerOffset: {x: 0, y: 180, z: 0}
+  ghostIdleMotion: 1
+  ghostBobAmplitude: 0.15
+  ghostBobSpeed: 1.2
+  ghostYawSpeed: 10

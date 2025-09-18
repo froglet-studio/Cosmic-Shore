@@ -16,7 +16,7 @@ MonoBehaviour:
   ammoCost: 0.5
   projectileScale: 10
   energy: 0
-  speed: 10
+  speed: 120
   projectileTime:
     Enabled: 0
     Value: 3

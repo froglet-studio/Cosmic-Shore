@@ -289,7 +289,7 @@ namespace CosmicShore.Game.Projectiles
             }
             //if (endEffects.Count > 0) PerformEndEffects();
             projectileImpactor.ExecuteEndEffects();
-            ReturnToPool();
+            // ReturnToPool();
         }
 
         public void Stop() 
