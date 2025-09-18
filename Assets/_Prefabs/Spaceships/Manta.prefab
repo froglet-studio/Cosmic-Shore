@@ -1369,6 +1369,52 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &4912294615010770138
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1716607888102834236}
+  - component: {fileID: 7385827388877614041}
+  m_Layer: 0
+  m_Name: YawsteryActionExecutor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1716607888102834236
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4912294615010770138}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8075578658670966254}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7385827388877614041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4912294615010770138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e203b39ef384f5197d87c9351470a98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vesselTransformer: {fileID: 7686683633640807837}
+  shipAnimator: {fileID: 0}
 --- !u!1 &5022817358293899131
 GameObject:
   m_ObjectHideFlags: 0
@@ -2219,10 +2265,10 @@ MonoBehaviour:
   _inputEventShipActions:
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: 308c8f103951d554da5e7e7a29c638f1, type: 2}
+    - {fileID: 11400000, guid: 84774ce2f6617b54c8fd2d4acdd26a43, type: 2}
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: 527787d0752629e48b66e14440cd07a0, type: 2}
+    - {fileID: 11400000, guid: 9959da05222d3d546934b4c1cc1a64d0, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
@@ -2955,7 +3001,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1716607888102834236}
   m_Father: {fileID: 5928382658856804067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6891956288899835182
@@ -2970,7 +3017,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db6dbfb1f4d3438184815697c23aefce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _executors: []
+  _executors:
+  - {fileID: 7385827388877614041}
 --- !u!1 &7953374546544284131
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -27,11 +28,19 @@ namespace CosmicShore.Game
         {
             if (prismImpactee.Prism.Team == Teams.Jade)
             {
+                if (prismImpactee.Prism.CurrentState == BlockState.Normal)
+                {
+                    prismImpactee.Prism.ActivateShield();
+                }
+                return;
+            }
+
+            if (prismImpactee.Prism.CurrentState == BlockState.Shielded)
+            {
                 prismImpactee.Prism.DeactivateShields();
                 return;
             }
 
-            // cooldown gate
             if (cooldownTimers.TryGetValue(impactor, out var cooldownEnd) && Time.time < cooldownEnd)
             {
                 if (verbose) Debug.Log("[SkimmerOvercharge] Still on cooldown.", impactor);
@@ -44,19 +53,15 @@ namespace CosmicShore.Game
                 hitsBySkimmer[impactor] = hitSet;
             }
 
-            // skip duplicates
             if (!hitSet.Add(prismImpactee)) return;
-
-            // visual: mark prism overcharged
             var rend = prismImpactee ? prismImpactee.GetComponent<Renderer>() : null;
             if (rend && overchargedMaterial) rend.material = overchargedMaterial;
 
             var count = hitSet.Count;
-            OnCountChanged?.Invoke(impactor, count, maxBlockHits);   // <— notify HUD
+            OnCountChanged?.Invoke(impactor, count, maxBlockHits); 
 
             if (count < maxBlockHits) return;
 
-            // threshold reached
             TriggerOvercharge(impactor, hitSet);
 
             hitSet.Clear();
