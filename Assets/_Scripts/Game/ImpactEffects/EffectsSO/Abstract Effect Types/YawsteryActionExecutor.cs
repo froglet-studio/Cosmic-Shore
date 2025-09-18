@@ -20,8 +20,11 @@ public sealed class YawsteryActionExecutor : ShipActionExecutorBase
     float _intensity;
     bool _running;
 
+    int _activeSign = 0;                  
+    bool _swapRequested = false;
     YawsteryActionSO _so;
-    float _accumulatedYawThisRun; // NEW: tracks how much yaw applied this hold
+    YawsteryActionSO _requestedSo;
+    float _accumulatedYawThisRun; 
 
     public override void Initialize(IVesselStatus shipStatus)
     {
@@ -35,8 +38,20 @@ public sealed class YawsteryActionExecutor : ShipActionExecutorBase
     public void Begin(YawsteryActionSO so, IVesselStatus status)
     {
         if (so == null || status == null) return;
+
+        int newSign = (int)so.Steer;
+
+        if (_running && _activeSign != 0 && newSign != _activeSign)
+        {
+            _requestedSo = so;
+            _swapRequested = true;
+            return;
+        }
+
+        // Normal begin
         _so = so;
-        _accumulatedYawThisRun = 0f; // reset lock counter
+        _activeSign = newSign;
+        _accumulatedYawThisRun = 0f;
 
         if (vesselTransformer == null)
         {
@@ -56,13 +71,21 @@ public sealed class YawsteryActionExecutor : ShipActionExecutorBase
 
     IEnumerator HoldToYawRoutine()
     {
-        //TryTriggerAnimator(_so.AnimStart);
         OnYawsteryStarted?.Invoke();
 
+        // Ramp-in
         float t = 0f;
         float rampIn = Mathf.Max(0.01f, _so.RampInSeconds);
         while (_running && _intensity < 1f)
         {
+            // If swap is requested during ramp-in → do swap flow
+            if (_swapRequested)
+            {
+                yield return StartCoroutine(SwapDirectionFlow());
+                // After swap, restart ramp-in timing
+                t = 0f; rampIn = Mathf.Max(0.01f, _so.RampInSeconds);
+            }
+
             t += Time.deltaTime;
             _intensity = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / rampIn));
             OnYawsteryIntensityChanged?.Invoke(_intensity);
@@ -71,13 +94,20 @@ public sealed class YawsteryActionExecutor : ShipActionExecutorBase
             yield return null;
         }
 
+        // Steady hold
         while (_running)
         {
+            if (_swapRequested)
+            {
+                yield return StartCoroutine(SwapDirectionFlow());
+            }
+
             OnYawsteryIntensityChanged?.Invoke(_intensity);
             ApplyYawThisFrame(_intensity);
             yield return null;
         }
 
+        // Ramp-out on release
         float start = _intensity;
         float rampOut = Mathf.Max(0.01f, _so.RampOutSeconds);
         float u = 0f;
@@ -93,10 +123,52 @@ public sealed class YawsteryActionExecutor : ShipActionExecutorBase
 
         _intensity = 0f;
         OnYawsteryIntensityChanged?.Invoke(0f);
-
-        //TryTriggerAnimator(_so.AnimEnd);
         OnYawsteryEnded?.Invoke();
         _turnRoutine = null;
+    }
+    
+    IEnumerator SwapDirectionFlow()
+    {
+        _swapRequested = false;
+
+        // Decelerate
+        float start = _intensity;
+        float rampOut = Mathf.Max(0.01f, _so.RampOutSeconds);
+        float u = 0f;
+        while (_intensity > 0f)
+        {
+            u += Time.deltaTime;
+            _intensity = Mathf.Lerp(start, 0f, Mathf.Clamp01(u / rampOut));
+            OnYawsteryIntensityChanged?.Invoke(_intensity);
+            ApplyYawThisFrame(_intensity);
+            yield return null;
+        }
+        _intensity = 0f;
+        OnYawsteryIntensityChanged?.Invoke(0f);
+
+        // Swap to requested SO
+        if (_requestedSo != null)
+        {
+            _so = _requestedSo;
+            _requestedSo = null;
+        }
+        _activeSign = (int)_so.Steer;
+        _accumulatedYawThisRun = 0f; // reset lock counter
+
+        // Accelerate
+        float t = 0f;
+        float rampIn = Mathf.Max(0.01f, _so.RampInSeconds);
+        while (_running && _intensity < 1f)
+        {
+            // If user requests another swap immediately, break to let outer loop handle it
+            if (_swapRequested) yield break;
+
+            t += Time.deltaTime;
+            _intensity = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / rampIn));
+            OnYawsteryIntensityChanged?.Invoke(_intensity);
+            ApplyYawThisFrame(_intensity);
+            yield return null;
+        }
     }
 
     void ApplyYawThisFrame(float intensity01)

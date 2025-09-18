@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31e77d97d19543d8a27a98a3a069b847, type: 3}
+  m_Name: GrowSkimmerAction
+  m_EditorClassIdentifier: 
+  maxSize:
+    Enabled: 1
+    Value: 120
+    Min: 120
+    Max: 180
+    element: 3
+  growRate: 12
+  shrinkRate:
+    Enabled: 1
+    Value: 6
+    Min: 6
+    Max: 2
+    element: 1
+  applyBoostWhileGrowing: 0
+  boostMultiplier:
+    Enabled: 0
+    Value: 1.25
+    Min: 0
+    Max: 0
+    element: 0

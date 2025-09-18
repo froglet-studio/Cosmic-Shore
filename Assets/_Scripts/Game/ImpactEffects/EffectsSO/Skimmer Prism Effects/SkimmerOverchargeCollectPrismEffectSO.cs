@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
+using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -14,6 +15,8 @@ namespace CosmicShore.Game
         [SerializeField] private float cooldownDuration = 5f;
         [SerializeField] private bool  verbose;
         [SerializeField] private Material overchargedMaterial;
+        [SerializeField] private float overchargeInertia = 70f;
+        [SerializeField] private float minBlastSpeed     = 25f; 
 
         public int MaxBlockHits => maxBlockHits;
         
@@ -23,6 +26,7 @@ namespace CosmicShore.Game
 
         private static readonly Dictionary<SkimmerImpactor, HashSet<PrismImpactor>> hitsBySkimmer = new();
         private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers = new();
+        private IVesselStatus _vesselStatus;
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
@@ -42,10 +46,7 @@ namespace CosmicShore.Game
             }
 
             if (cooldownTimers.TryGetValue(impactor, out var cooldownEnd) && Time.time < cooldownEnd)
-            {
-                if (verbose) Debug.Log("[SkimmerOvercharge] Still on cooldown.", impactor);
                 return;
-            }
 
             if (!hitsBySkimmer.TryGetValue(impactor, out var hitSet))
             {
@@ -54,24 +55,43 @@ namespace CosmicShore.Game
             }
 
             if (!hitSet.Add(prismImpactee)) return;
+
             var rend = prismImpactee ? prismImpactee.GetComponent<Renderer>() : null;
             if (rend && overchargedMaterial) rend.material = overchargedMaterial;
 
-            var count = hitSet.Count;
-            OnCountChanged?.Invoke(impactor, count, maxBlockHits); 
+            var rawCount = hitSet.Count;
+            var clamped  = Mathf.Min(rawCount, maxBlockHits);  // <- clamp for UI
+            OnCountChanged?.Invoke(impactor, clamped, maxBlockHits);
 
-            if (count < maxBlockHits) return;
+            if (rawCount < maxBlockHits) return;
 
             TriggerOvercharge(impactor, hitSet);
-
             hitSet.Clear();
+
             cooldownTimers[impactor] = Time.time + cooldownDuration;
             OnCooldownStarted?.Invoke(impactor, cooldownDuration);
+
+            OnCountChanged?.Invoke(impactor, 0, maxBlockHits);
         }
 
         private void TriggerOvercharge(SkimmerImpactor impactor, HashSet<PrismImpactor> hitSet)
         {
-            foreach (var prism in hitSet) prism.gameObject.SetActive(false);
+            var status = impactor?.Skimmer.VesselStatus;
+            if (status == null) return;
+
+            var shipPos = status.ShipTransform ? status.ShipTransform.position : impactor.transform.position;
+            var speed   = Mathf.Max(minBlastSpeed, status.Speed);
+
+            foreach (var prism in hitSet)
+            {
+                if (!prism || !prism.Prism) continue;
+
+                var dir = (prism.transform.position - shipPos).normalized;
+                var damage = dir * speed * overchargeInertia;
+
+                prism.Prism.Damage(damage, Teams.None, status.PlayerName, devastate: true);
+            }
+
             OnOvercharge?.Invoke(impactor);
             if (verbose) Debug.Log($"[SkimmerOvercharge] Overcharge triggered! ({hitSet.Count})", impactor);
         }

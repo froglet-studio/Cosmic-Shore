@@ -61,9 +61,9 @@ namespace CosmicShore.Game
 
         void HandleCooldownStarted(SkimmerImpactor who, float seconds)
         {
-            
+            if (who != skimmer) return;
+            SetCounter(0, _max);
         }
-
 
         void SetCounter(int count, int max)
         {
