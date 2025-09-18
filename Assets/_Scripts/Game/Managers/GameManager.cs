@@ -1,30 +1,22 @@
 using System;
 using CosmicShore.Utilities;
-using System.Collections;
 using CosmicShore.SOAP;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Cysharp.Threading.Tasks;
 
-// TODO: P1 - some work needs to be done to unify this with the MiniGame engine managers
 namespace CosmicShore.Core
 {
     [DefaultExecutionOrder(0)]
     public class GameManager : MonoBehaviour
     {
-        const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = .5f;
+        const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = 0.5f;
 
-        [SerializeField]
-        SceneNameListSO _sceneNames;
-        
-        [SerializeField] 
-        SO_GameList AllGames;
-        
-        [SerializeField]
-        MiniGameDataSO miniGameData;
-
-        [SerializeField]
-        ScriptableEventBool _onSceneTransition;
+        [SerializeField] SceneNameListSO _sceneNames;
+        [SerializeField] SO_GameList AllGames;
+        [SerializeField] MiniGameDataSO miniGameData;
+        [SerializeField] ScriptableEventBool _onSceneTransition;
 
         private void OnEnable()
         {
@@ -38,23 +30,26 @@ namespace CosmicShore.Core
             miniGameData.OnLaunchGame -= LaunchGame;
         }
 
-        public void RestartGame() => StartCoroutine(StartSceneRoutine(SceneManager.GetActiveScene().name));
+        public void RestartGame() => LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
 
-        public void ReturnToMainMenu() => StartCoroutine(StartSceneRoutine(_sceneNames.MainMenuScene));
+        public void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
 
         void LaunchGame()
         {
             if (miniGameData.IsMultiplayerMode)
                 return;
-            
-            StartCoroutine(StartSceneRoutine(miniGameData.SceneName));   
+
+            LoadSceneAsync(miniGameData.SceneName).Forget();
         }
-        
-        IEnumerator StartSceneRoutine(string sceneName)
+
+        private async UniTaskVoid LoadSceneAsync(string sceneName)
         {
             _onSceneTransition.Raise(false);
-            
-            yield return new WaitForSecondsRealtime(WAIT_FOR_SECONDS_BEFORE_SCENELOAD);
+
+            // Delay is realtime so it still works if Time.timeScale = 0
+            await UniTask.Delay(TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD), 
+                DelayType.UnscaledDeltaTime);
+
             SceneManager.LoadScene(sceneName);
         }
 
