@@ -14,39 +14,50 @@ namespace CosmicShore.Game
     {
         public static async UniTaskVoid RunAsync(
             IVesselStatus vesselStatus,
-            TrailBlock trailBlock,
+            TrailBlock prism,
             float particleDurationAtSpeedOne)
         {
-            if (vesselStatus?.ShipTransform == null || trailBlock == null)
+            if (vesselStatus == null || !prism)
                 return;
 
-            // Auto-cancel when the trailBlock is destroyed.
-            CancellationToken token = trailBlock.GetCancellationTokenOnDestroy();
+            var shipTransform = vesselStatus.ShipTransform;
+            if (!shipTransform)
+                return;
 
-            var particle = Object.Instantiate(trailBlock.ParticleEffect, trailBlock.transform, true);
+            // Auto-cancel when prism is destroyed
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                prism.GetCancellationTokenOnDestroy());
+
+            var token = linkedCts.Token;
+
+            var particle = Object.Instantiate(prism.ParticleEffect, prism.transform, true);
             try
             {
-                float progress = 0f; // accumulates speed * dt
+                float progress = 0f;
 
                 while (!token.IsCancellationRequested)
                 {
+                    // 🔑 Explicit null-check cancellation
+                    if (shipTransform == null || prism == null)
+                    {
+                        linkedCts.Cancel(); // cancel everything
+                        break;
+                    }
+
                     float speed = Mathf.Max(0f, vesselStatus.Speed);
 
-                    // If speed is ~0, just wait a frame and try again
                     if (speed <= 0.0001f)
                     {
                         await UniTask.Yield(PlayerLoopTiming.Update, token);
                         continue;
                     }
 
-                    // Position & orient the particle as a tube from vessel to block
-                    Vector3 distance = trailBlock.transform.position - vesselStatus.ShipTransform.position;
+                    Vector3 distance = prism.transform.position - shipTransform.position;
                     particle.transform.localScale = new Vector3(1f, 1f, distance.magnitude);
                     particle.transform.SetPositionAndRotation(
-                        vesselStatus.ShipTransform.position,
-                        Quaternion.LookRotation(distance, trailBlock.transform.up));
+                        shipTransform.position,
+                        Quaternion.LookRotation(distance, prism.transform.up));
 
-                    // Advance lifetime with speed scaling
                     progress += speed * Time.deltaTime;
                     if (progress >= particleDurationAtSpeedOne)
                         break;
@@ -57,7 +68,9 @@ namespace CosmicShore.Game
             finally
             {
                 if (particle) Object.Destroy(particle);
+                linkedCts.Dispose();
             }
         }
     }
+
 }
