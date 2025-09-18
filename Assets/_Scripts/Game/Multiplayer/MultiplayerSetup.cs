@@ -9,12 +9,10 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utilities;
-using CosmicShore.Game;
-using CosmicShore.Game.Arcade;
 using CosmicShore.SOAP;
-#if !LINUX_BUILD
+/*#if !LINUX_BUILD && !PLATFORM_STANDALONE_WIN
 using Mono.Cecil;
-#endif
+#endif*/
 using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 
