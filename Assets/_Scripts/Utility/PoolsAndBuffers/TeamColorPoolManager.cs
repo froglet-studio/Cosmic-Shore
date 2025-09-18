@@ -157,7 +157,7 @@ namespace CosmicShore.Game
 
             if (!configurationMap.TryGetValue(poolName, out var cfg))
             {
-                Debug.LogError($"[TeamColorPoolManager] No PoolConfiguration found for '{poolName}'.");
+                Debug.LogWarning($"[TeamColorPoolManager] No PoolConfiguration found for '{poolName}'.");
                 return null;
             }
 

@@ -172,7 +172,7 @@ namespace CosmicShore.Game
 
                 if (shardPositions.Contains(marker.transform.position))
                 {
-                    markerContainer.ReturnToPool(marker, "Shard");
+                    markerContainer.ReturnToPool(marker);
                     continue;
                 }
 
@@ -190,7 +190,7 @@ namespace CosmicShore.Game
             {
                 if (m == null) continue;
                 shardPositions.Remove(m.transform.position);
-                markerContainer.ReturnToPool(m, "Shard");
+                markerContainer.ReturnToPool(m);
             }
         }
     }

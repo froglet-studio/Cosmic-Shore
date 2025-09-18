@@ -249,7 +249,7 @@ namespace CosmicShore.Core
 
             if (!explodingBlock)
             {
-                Debug.LogError("Failed to spawn exploding block. Check if the pool is initialized and has available objects.");
+                Debug.LogWarning("Failed to spawn exploding block. Check if the pool is initialized and has available objects.");
                 return;
             }
 
