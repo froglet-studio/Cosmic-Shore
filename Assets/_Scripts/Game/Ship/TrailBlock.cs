@@ -89,6 +89,7 @@ namespace CosmicShore.Core
         }
 
         public float Volume => scaleAnimator?.GetCurrentVolume() ?? .001f;
+        public BlockState CurrentState => stateManager?.CurrentState ?? BlockState.Normal;
 
         public Vector3 MaxScale
         {

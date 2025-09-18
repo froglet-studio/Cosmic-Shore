@@ -61,8 +61,8 @@ namespace CosmicShore.Game
             ApplyScaleIfChanged();
             BindElementalFloats(VesselStatus.Vessel);
 
-            if (visible)
-                GetComponent<MeshRenderer>().material = new Material(VesselStatus.SkimmerMaterial);
+            // if (visible)
+            //     GetComponent<MeshRenderer>().material = new Material(VesselStatus.SkimmerMaterial);
 
             _initialGap = VesselStatus.TrailSpawner.Gap;
             if (markerContainer) markerContainer.transform.parent = VesselStatus?.Player?.Transform;

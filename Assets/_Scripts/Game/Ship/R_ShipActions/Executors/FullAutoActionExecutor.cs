@@ -1,5 +1,4 @@
-﻿// FullAutoActionExecutor.cs
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game;
@@ -10,7 +9,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     [Header("Scene Refs")]
     [SerializeField] Gun gun;
     [SerializeField] Transform[] muzzles;
-    [SerializeField] PoolManager projectilePool; // if your Gun needs it
+    [SerializeField] PoolManager projectilePool;
 
     IVesselStatus _status;
     ResourceSystem _resources;
