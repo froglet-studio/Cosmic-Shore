@@ -137,11 +137,11 @@ Material:
     - _ZWriteControl: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 0.048099205, g: 0.6456548, b: 0.8050314, a: 0}
+    - _BrightColor: {r: 0, g: 1.3641537, b: 1.7207953, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _DarkColor: {r: 0.010798596, g: 0.11261414, b: 0.16352195, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _SinkLocation: {r: 13, g: 22, b: 30, a: 0}
+    - _SinkLocation: {r: 91, g: 44, b: 46, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 0.2, g: 0.2, b: 0.2, a: 0}
   m_BuildTextureStacks: []
