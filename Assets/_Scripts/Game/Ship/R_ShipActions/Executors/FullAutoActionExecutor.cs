@@ -9,7 +9,6 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     [Header("Scene Refs")]
     [SerializeField] Gun gun;
     [SerializeField] Transform[] muzzles;
-    [SerializeField] PoolManager projectilePool;
 
     IVesselStatus _status;
     ResourceSystem _resources;

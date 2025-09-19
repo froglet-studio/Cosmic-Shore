@@ -35,7 +35,7 @@ public class Impact : MonoBehaviour
             yield return null;
             distance += velocityScale * Time.deltaTime * velocity;
             material.SetVector("_velocity", distance);
-            material.SetFloat("_opacity", Mathf.Clamp(1 - (distance.magnitude / maxDistance), 0, 1));
+            material.SetFloat("_Opacity", Mathf.Clamp(1 - (distance.magnitude / maxDistance), 0, 1));
             transform.position += positionScale*distance;
         }
 

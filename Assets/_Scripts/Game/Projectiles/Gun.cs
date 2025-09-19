@@ -1,7 +1,6 @@
-using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Video;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -13,175 +12,172 @@ namespace CosmicShore.Game.Projectiles
 
     public class Gun : MonoBehaviour
     {
-        [SerializeField]
-        float _firePeriod = .2f;
+        [Header("Gun Settings")]
+        [SerializeField] private float firePeriod = 0.2f;
+        [SerializeField] private float sideLength = 2f;
+        [SerializeField] private float barrelLength = 2f;
 
-        Teams _team;
-        IVesselStatus vesselStatus;
+        [Header("Dependencies")]
+        [SerializeField] private ProjectileFactory projectileFactory;
 
-        bool _onCooldown = false;
-        float _sideLength = 2;
-        float _barrelLength = 2f;
+        private Teams _team;
+        private IVesselStatus _vesselStatus;
+        private Projectile _lastProjectile;
 
-        Projectile _projectile;
+        private bool _onCooldown;
 
-        [SerializeField]
-        PoolManager _poolManager;
-
+        #region Initialization
         public void Initialize(IVesselStatus vesselStatus)
-        {          
-            this.vesselStatus = vesselStatus;
-            _team = this.vesselStatus.Team;
-        }
-
-        public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,
-            float projectileScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0, FiringPatterns firingPattern = FiringPatterns.Default, int energy = 0)
         {
-            if (_onCooldown && !ignoreCooldown)
-                return;
+            _vesselStatus = vesselStatus;
+            _team = vesselStatus.Team;
+        }
+        #endregion
+
+        #region Public API
+        public void FireGun(
+            Transform containerTransform,
+            float speed,
+            Vector3 inheritedVelocity,
+            float projectileScale,
+            bool ignoreCooldown = false,
+            float projectileTime = 3,
+            float charge = 0,
+            FiringPatterns firingPattern = FiringPatterns.Default,
+            int energy = 0)
+        {
+            if (_onCooldown && !ignoreCooldown) return;
 
             _onCooldown = true;
 
             switch (firingPattern)
             {
                 case FiringPatterns.Spherical:
-                    if (energy == 0) // Tetrahedral pattern
-                    {
-                        Vector3[] tetrahedralVertices = {
-                            new Vector3(1, 1, 1),
-                            new Vector3(-1, -1, 1),
-                            new Vector3(-1, 1, -1),
-                            new Vector3(1, -1, -1)
-                        };
-
-                        foreach (Vector3 direction in tetrahedralVertices)
-                        {
-                            Vector3 offset = direction.normalized * _sideLength;
-                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction.normalized, projectileTime, charge);
-                        }
-                    }
-                    else // Golden Spiral method for spherical pattern
-                    {
-                        int points = 2 * ((int)energy + 3); // 
-                        float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // Golden angle
-                        var randomRotation = Random.rotation;
-                        energy--;
-                        for (int i = 0; i < points; i++)
-                        {
-                            float y = 1 - (i / (float)(points - 1)) * 2; // y goes from 1 to -1
-                            float radius = Mathf.Sqrt(1 - y * y); // Radius at y position
-
-                            float theta = phi * i; // Azimuthal angle
-
-                            float x = Mathf.Cos(theta) * radius;
-                            float z = Mathf.Sin(theta) * radius;
-
-                            Vector3 direction = randomRotation * (new Vector3(x, y, z));
-                            Vector3 offset = direction * _sideLength;
-                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction, projectileTime, charge, energy);
-                        }
-                    }
+                    FireSpherical(containerTransform, speed, inheritedVelocity,
+                        projectileScale, projectileTime, charge, energy);
                     break;
-                default: // Using default to cover single, HexRing, and DoubleHexRing as a single unified pattern . . . all this ring functionality is ready to be restored upon refactor
-      
-                    //for (int ring = 0; ring <= energy; ring++)
-                    //{
-                    //    // Center point only for the first ring
-                    //    if (ring == 0)
-                    //    {
-                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, Vector3.zero, projectileTime, charge, energy);
-                    //    }
-                    //    else
-                    //    {
-                    //        int projectilesInThisRing = 6 * (ring); // This scales the number of projectiles with the ring number
-                    //        float angleIncrement = 360f / projectilesInThisRing;
 
-                    //        for (int i = 0; i < projectilesInThisRing; i++)
-                    //        {
-                    //            Vector3 offset = Quaternion.Euler(0, 0, ring%2 * 30 + angleIncrement * i) * transform.right * _sideLength * ring;
-                    //            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge, energy);
-                    //        }
-                    //    }
-                    //}
+                default:
+                    FireSingle(containerTransform, speed, inheritedVelocity,
+                        projectileScale, Vector3.zero, projectileTime, charge, energy);
                     break;
             }
 
             StartCoroutine(CooldownCoroutine());
         }
 
-        void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity, float projectileScale, Vector3 offset, float projectileTime = 3, float charge = 0, int energy = 0)
-        {
-            FireProjectile(containerTransform, speed, inheritedVelocity,
-            projectileScale, offset, transform.forward, projectileTime, charge, energy);
-        }
-
-        void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity,
-            float projectileScale, Vector3 offset, Vector3 normalizedVelocity, float projectileTime = 3, float charge = 0, int energy = 0)
-        {
-            if (vesselStatus == null)
-            {
-                Debug.LogError("Gun.FireProjectile - VesselStatus is null. Cannot fire projectile.");
-                return;
-            }
-
-            string poolTag = GetPoolTag(energy);
-            if (poolTag == null)
-            {
-                Debug.LogError("Gun.FireProjectile - PoolTag is null. Cannot spawn projectile.");
-                return;
-            }
-            
-            Vector3 spawnPosition = transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * _barrelLength);
-            Quaternion rotation = Quaternion.LookRotation(normalizedVelocity);
-
-            if (_poolManager == null)
-            {
-                Debug.LogError("Gun.FireProjectile - PoolManager is null. Cannot spawn projectile.");
-                return;
-            }
-
-            var projectileGO = _poolManager.SpawnFromPool(poolTag, spawnPosition, rotation);
-            if (projectileGO == null)
-            {
-                Debug.LogError("No projectile gameobject available in pool to spawn!");
-                return;
-            }
-            if (!projectileGO.TryGetComponent(out _projectile))
-            {
-                Debug.LogError("Gun.FireProjectile - Failed to spawn projectile from pool. Try increasing pool size!");
-                return;
-            }
-            _projectile.Initialize(_poolManager, _team, vesselStatus, charge);
-            _projectile.transform.localScale = projectileScale * _projectile.InitialScale;
-            _projectile.transform.SetParent(containerTransform != null ? containerTransform : null, true);
-            _projectile.Velocity = normalizedVelocity * speed + inheritedVelocity;
-            _projectile.LaunchProjectile(projectileTime);
-        }
-
-        private string GetPoolTag(int energy)
-        {
-            if (energy > 1) return "SuperEnergizedProjectile";
-            else if (energy > 0) return "EnergizedProjectile";
-            else return "Projectile";
-        }
-
-        IEnumerator CooldownCoroutine()
-        {
-            yield return new WaitForSeconds(_firePeriod);
-            _onCooldown = false;
-        }
-
         public void StopProjectile()
         {
-            if (_projectile != null)
-                _projectile.Stop();
+            _lastProjectile?.Stop();
         }
 
         public void DetonateProjectile()
         {
-            Debug.Log("GunExplode");
-            // if (_projectile is ExplodableProjectile ep) ep.Detonate();
+            Debug.Log("Gun DetonateProjectile called");
+            // Example: if (_lastProjectile is ExplodableProjectile ep) ep.Detonate();
         }
-       
+        #endregion
+
+        #region Firing Implementations
+        private void FireSpherical(
+            Transform containerTransform,
+            float speed,
+            Vector3 inheritedVelocity,
+            float projectileScale,
+            float projectileTime,
+            float charge,
+            int energy)
+        {
+            if (energy == 0) // tetrahedral pattern
+            {
+                Vector3[] tetrahedralVertices =
+                {
+                    new(1, 1, 1),
+                    new(-1, -1, 1),
+                    new(-1, 1, -1),
+                    new(1, -1, -1)
+                };
+
+                foreach (var dir in tetrahedralVertices)
+                {
+                    var offset = dir.normalized * sideLength;
+                    FireSingle(containerTransform, speed, inheritedVelocity,
+                        projectileScale, offset, projectileTime, charge, 0, dir.normalized);
+                }
+            }
+            else // Golden Spiral method
+            {
+                int points = 2 * (energy + 3);
+                float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // golden angle
+                var randomRotation = Random.rotation;
+                energy--;
+
+                for (int i = 0; i < points; i++)
+                {
+                    float y = 1 - (i / (float)(points - 1)) * 2; // y from 1 to -1
+                    float radius = Mathf.Sqrt(1 - y * y);
+
+                    float theta = phi * i;
+                    float x = Mathf.Cos(theta) * radius;
+                    float z = Mathf.Sin(theta) * radius;
+
+                    var dir = randomRotation * new Vector3(x, y, z);
+                    var offset = dir * sideLength;
+
+                    FireSingle(containerTransform, speed, inheritedVelocity,
+                        projectileScale, offset, projectileTime, charge, energy, dir);
+                }
+            }
+        }
+
+        private void FireSingle(
+            Transform containerTransform,
+            float speed,
+            Vector3 inheritedVelocity,
+            float projectileScale,
+            Vector3 offset,
+            float projectileTime,
+            float charge,
+            int energy,
+            Vector3? customDirection = null)
+        {
+            if (_vesselStatus == null)
+            {
+                Debug.LogError("Gun.FireSingle - VesselStatus is null!");
+                return;
+            }
+            
+            Vector3 direction = customDirection ?? transform.forward;
+            Vector3 spawnPos = transform.position +
+                               Quaternion.LookRotation(transform.forward) * offset +
+                               (transform.forward * barrelLength);
+
+            Quaternion rotation = Quaternion.LookRotation(direction);
+
+            var projectile = projectileFactory.GetProjectile(energy, spawnPos, rotation,
+                containerTransform != null ? containerTransform : null);
+
+            if (projectile == null)
+            {
+                Debug.LogError($"Gun.FireSingle - Failed to spawn projectile of charge {projectile.Charge}");
+                return;
+            }
+
+            projectile.Initialize(projectileFactory, _team, _vesselStatus, charge);
+            projectile.transform.localScale = projectileScale * projectile.InitialScale;
+            projectile.Velocity = direction * speed + inheritedVelocity;
+            projectile.LaunchProjectile(projectileTime);
+
+            _lastProjectile = projectile;
+        }
+        #endregion
+
+        #region Helpers
+        private IEnumerator CooldownCoroutine()
+        {
+            yield return new WaitForSeconds(firePeriod);
+            _onCooldown = false;
+        }
+        #endregion
     }
 }

@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: BlueBlockMateral
-  m_Shader: {fileID: -6465566751694194690, guid: bf8c159f627e64b439094797bff88611,
+  m_Shader: {fileID: -6465566751694194690, guid: de59ec1f616f51044a23e6c1368d6660,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -128,6 +128,7 @@ Material:
     - Normal_Blend: 0.5
     - _Alpha: 0
     - _AlphaClip: 0
+    - _AlphaToMask: 0
     - _BASE_COLOR_WEIGHT: 1
     - _BUMP_MAP_STRENGTH: 0.3
     - _Blend: 0
@@ -148,12 +149,16 @@ Material:
     - _DstBlend: 0
     - _EMISSION_WEIGHT: 1
     - _EnvironmentReflections: 1
+    - _ExplosionAmount: 0
+    - _ExplosiveRotation: 0.1
+    - _ExplosiveSpead: 0.1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _METALNESS: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
+    - _Opacity: 0
     - _Parallax: 0.005
     - _Proximity: 0
     - _QueueControl: 0
@@ -165,6 +170,7 @@ Material:
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
+    - _SqrDistance: 100000
     - _SrcBlend: 1
     - _Surface: 0
     - _TRANSPARENCY: 0
@@ -191,7 +197,8 @@ Material:
     - _REFLECTIONS_COLOR: {r: 1, g: 1, b: 1, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    - _spread: {r: 0.2, g: 0.2, b: 0.2, a: 0}
+    - _Velocity: {r: 0.01, g: 0, b: 0, a: 0}
+    - _spread: {r: 0.5, g: 0.5, b: 0.5, a: 0}
     - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

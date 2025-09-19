@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game;
@@ -15,7 +15,6 @@ namespace CosmicShore.Core
         const string DEFAULT_PLAYER_NAME = "DefaultPlayer"; // -> This should be removed later,
 
         [Header("Trail Block Properties")]
-        [SerializeField] private GameObject FossilBlock;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
         public GameObject ParticleEffect;
         public Trail Trail;
@@ -36,11 +35,10 @@ namespace CosmicShore.Core
 
         [Header("Event Channels")]
         
-        // [SerializeField] TrailBlockEventChannelSO _onTrailBlockCreatedEventChannel;
         [SerializeField] ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
-        // [SerializeField] TrailBlockEventChannelSO _onTrailBlockDestroyedEventChannel;
+        
         [SerializeField] ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
-        // [SerializeField] TrailBlockEventChannelSO _onTrailBlockRestoredEventChannel;
+        
         [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
         
         [SerializeField] PrismEventChannelWithReturnSO _onFlockSpawnedEventChannel;
@@ -107,9 +105,7 @@ namespace CosmicShore.Core
                 scaleAnimator.SetTargetScale(TargetScale);
             }
         }
-
-        // Static references
-        // private TeamColorPoolManager FossilBlockPool => TeamColorPoolManager.Instance as TeamColorPoolManager;
+        
         private const string layerName = "TrailBlocks";
 
         private void Awake()
@@ -226,54 +222,91 @@ namespace CosmicShore.Core
             if (other.gameObject.IsLayer("Crystals"))
                 ActivateShield(2.0f);
         }
-
-        // Destruction Methods
-        protected virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
+        
+        protected virtual GameObject SetupDestruction(Teams team, string playerName, bool devastate = false)
         {
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
-            // Ensure volume is up to date before explosion
+            // Ensure volume is up to date before destruction
             TrailBlockProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
 
-            // var explodingBlock = FossilBlockPool.SpawnFromTeamPool(Team, transform.position, transform.rotation);
+            destroyed = true;
+            devastated = devastate;
+
+            // Stats tracking
+            _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
+            {
+                PlayerName      = PlayerName,
+                Volume          = TrailBlockProperties.volume,
+                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
+            });
+
+            // Cell control management
+            if (CellControlManager.Instance != null)
+                CellControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
+
+            return null; // Will be set by specific destruction method
+        }
+
+        // Explosion Methods
+        protected virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
+        {
+            SetupDestruction(team, playerName, devastate);
+
+            // Spawn explosion object
             var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
             {
-                OwnTeam = Team,
-                // PlayerTeam = team,
-                // PlayerName = playerName,
+                OwnTeam  = Team,
                 Position = transform.position,
                 Rotation = transform.rotation,
+                PrismType = PrismType.Explosion
             });
-            GameObject explodingBlock = returnData.SpawnedObject;
 
+            GameObject explodingBlock = returnData.SpawnedObject;
             if (!explodingBlock)
             {
-                Debug.LogWarning("Failed to spawn exploding block. Check if the pool is initialized and has available objects.");
+                Debug.LogError("Failed to spawn exploding block. Check if the pool is initialized and has available objects.");
                 return;
             }
 
             explodingBlock.transform.localScale = transform.lossyScale;
 
-            var impact = explodingBlock.GetComponent<BlockImpact>();
-            if (impact != null) impact.HandleImpact(impactVector / TrailBlockProperties.volume);
+            // Handle explosion-specific impact
+            var impact = explodingBlock.GetComponent<PrismExplosion>();
+            if (impact != null)
+                impact.TriggerExplosion(impactVector / TrailBlockProperties.volume);
+        }
 
-            destroyed = true;
-            devastated = devastate;
+        // Implosion Methods
+        protected virtual void Implode(Vector3 sinkPoint, Teams team, string playerName, bool devastate = false)
+        {
+            SetupDestruction(team, playerName, devastate);
 
-            /*if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);*/
-
-            _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
+            // Spawn implosion object
+            var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
             {
-                // OwnTeam = Team,
-                PlayerName = PlayerName,
-                Volume = TrailBlockProperties.volume,
-                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
+                OwnTeam  = Team,
+                Position = transform.position,
+                Rotation = transform.rotation,
+                PrismType = PrismType.Implosion
             });
 
-            if (CellControlManager.Instance != null)
-                CellControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
+            GameObject implodingBlock = returnData.SpawnedObject;
+            if (!implodingBlock)
+            {
+                Debug.LogError("Failed to spawn imploding block. Check if the pool is initialized and has available objects.");
+                return;
+            }
+
+            implodingBlock.transform.localScale = transform.lossyScale;
+
+            // Handle implosion-specific effect
+            var implosion = implodingBlock.GetComponent<PrismImplosion>();
+            if (implosion != null)
+            {
+                implosion.StartImplosion(sinkPoint, TrailBlockProperties.volume);
+            }
         }
 
         public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate = false)

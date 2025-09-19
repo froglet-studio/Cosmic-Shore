@@ -50,8 +50,7 @@ namespace CosmicShore.Game
                 spawned.Detonate();
             }
             Debug.Log("Detonating End Effect");
-            projectile.Stop();
-            projectile.ReturnToPool();
+            projectile.ReturnToFactory();
         }
     }
 }

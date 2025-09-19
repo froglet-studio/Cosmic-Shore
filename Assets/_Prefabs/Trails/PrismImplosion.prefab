@@ -11,10 +11,10 @@ GameObject:
   - component: {fileID: 5222650486365209692}
   - component: {fileID: 1981306459138289011}
   - component: {fileID: 7076137217386601628}
-  - component: {fileID: 8796858733488306809}
+  - component: {fileID: 6685113723044457391}
   m_Layer: 0
-  m_Name: FossilPrism_RubyVariant
-  m_TagString: FossilPrism_Ruby
+  m_Name: PrismImplosion
+  m_TagString: FossilPrism
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 126
@@ -87,7 +87,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &8796858733488306809
+--- !u!114 &6685113723044457391
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -96,8 +96,33 @@ MonoBehaviour:
   m_GameObject: {fileID: 5776304996075792891}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40bd8a87d69ca1c4b84b230d021000a3, type: 3}
+  m_Script: {fileID: 11500000, guid: 781f426fe0d9e704184e5a73aa77535d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSpeed: 30
-  maxSpeed: 250
+  implosionMaterial: {fileID: 2100000, guid: 58c6ba9d8851ffb4abe8e1cb0f26bfac, type: 2}
+  blockRenderer: {fileID: 7076137217386601628}
+  implosionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  implosionDuration: 2
