@@ -997,7 +997,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 1000
 --- !u!1 &4766430080969567088
 GameObject:
   m_ObjectHideFlags: 0
@@ -1935,7 +1935,7 @@ MonoBehaviour:
   firePeriod: 0.2
   sideLength: 2
   barrelLength: 2
-  projectileFactory: {fileID: 7431025502994110553}
+  projectileFactory: {fileID: 3682687894971536088}
 --- !u!1 &6990635015910708553
 GameObject:
   m_ObjectHideFlags: 0

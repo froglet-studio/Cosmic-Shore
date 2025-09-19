@@ -260,9 +260,12 @@ namespace CosmicShore.Core
                 OwnTeam  = Team,
                 Position = transform.position,
                 Rotation = transform.rotation,
+                Scale = transform.lossyScale,
+                Velocity = impactVector / TrailBlockProperties.volume,
                 PrismType = PrismType.Explosion
             });
 
+            /*
             GameObject explodingBlock = returnData.SpawnedObject;
             if (!explodingBlock)
             {
@@ -275,7 +278,7 @@ namespace CosmicShore.Core
             // Handle explosion-specific impact
             var impact = explodingBlock.GetComponent<PrismExplosion>();
             if (impact != null)
-                impact.TriggerExplosion(impactVector / TrailBlockProperties.volume);
+                impact.TriggerExplosion(impactVector / TrailBlockProperties.volume);*/
         }
 
         // Implosion Methods
@@ -289,10 +292,13 @@ namespace CosmicShore.Core
                 OwnTeam  = Team,
                 Position = transform.position,
                 Rotation = transform.rotation,
+                Scale = transform.lossyScale,
+                SinkPoint = sinkPoint,
+                Volume = TrailBlockProperties.volume,
                 PrismType = PrismType.Implosion
             });
 
-            GameObject implodingBlock = returnData.SpawnedObject;
+            /*GameObject implodingBlock = returnData.SpawnedObject;
             if (!implodingBlock)
             {
                 Debug.LogError("Failed to spawn imploding block. Check if the pool is initialized and has available objects.");
@@ -306,7 +312,7 @@ namespace CosmicShore.Core
             if (implosion != null)
             {
                 implosion.StartImplosion(sinkPoint, TrailBlockProperties.volume);
-            }
+            }*/
         }
 
         public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate = false)

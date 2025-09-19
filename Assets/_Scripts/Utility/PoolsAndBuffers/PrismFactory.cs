@@ -51,11 +51,11 @@ namespace CosmicShore.Game
             switch (data.PrismType)
             {
                 case PrismType.Explosion :
-                    spawned = SpawnExplosion(data.OwnTeam, data.Position, data.Rotation);
+                    spawned = SpawnExplosion(data);
                     break;
 
                 case PrismType.Implosion :
-                    spawned = SpawnImplosion(data.OwnTeam, data.Position, data.Rotation);
+                    spawned = SpawnImplosion(data);
                     break;
 
                 // Add more cases here later
@@ -69,17 +69,17 @@ namespace CosmicShore.Game
         #endregion
 
         #region Public API
-        public GameObject SpawnExplosion(Teams team, Vector3 pos, Quaternion rot)
+        public GameObject SpawnExplosion(PrismEventData data)
         {
-            var obj = explosionPool?.Get(pos, rot);
-            ConfigureForTeam(obj.gameObject, team);
+            var obj = explosionPool?.Spawn(data.Position, data.Rotation, data.Velocity);
+            ConfigureForTeam(obj.gameObject, data.OwnTeam);
             return obj.gameObject;
         }
 
-        public GameObject SpawnImplosion(Teams team, Vector3 pos, Quaternion rot)
+        public GameObject SpawnImplosion(PrismEventData data)
         {
-            var obj = implosionPool?.Get(pos, rot);
-            ConfigureForTeam(obj.gameObject, team);
+            var obj = implosionPool?.Spawn(data.Position, data.Rotation, data.SinkPoint, data.Volume);
+            ConfigureForTeam(obj.gameObject, data.OwnTeam);
             return obj.gameObject;
         }
         #endregion

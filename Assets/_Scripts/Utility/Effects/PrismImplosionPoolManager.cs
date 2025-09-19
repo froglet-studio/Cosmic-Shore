@@ -10,8 +10,8 @@ namespace CosmicShore.Game
     {
         public PrismImplosion Spawn(Vector3 position, Quaternion rotation, Vector3 convergencePoint, float volume = 1f)
         {
-            var implosion = Get(position, rotation);
-            implosion.OnFinished = Release; // auto return when done
+            var implosion = Get_(position, rotation);
+            implosion.OnFinished = Release_; // auto return when done
             implosion.StartImplosion(convergencePoint, volume);
             return implosion;
         }

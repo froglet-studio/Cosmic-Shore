@@ -30,7 +30,7 @@ namespace CosmicShore.Core
         }
 
         /// <summary>Spawns an object from the pool.</summary>
-        public T Get(Vector3 position, Quaternion rotation, Transform parent = null)
+        protected T Get_(Vector3 position, Quaternion rotation, Transform parent = null)
         {
             var instance = pool.Get();
             instance.transform.SetPositionAndRotation(position, rotation);
@@ -39,7 +39,7 @@ namespace CosmicShore.Core
         }
 
         /// <summary>Returns an object back to the pool.</summary>
-        public void Release(T instance)
+        protected void Release_(T instance)
         {
             pool.Release(instance);
         }
