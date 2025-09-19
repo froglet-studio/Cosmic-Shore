@@ -5,6 +5,7 @@ namespace CosmicShore.Game
 {
     /// <summary>
     /// Handles visual + positional explosion effect for prism destruction.
+    /// Uses MaterialPropertyBlock to keep prefab-assigned materials intact.
     /// </summary>
     public class PrismExplosion : MonoBehaviour
     {
@@ -14,8 +15,14 @@ namespace CosmicShore.Game
         private MeshRenderer _renderer;
         private MaterialPropertyBlock _mpb;
         private Coroutine _running;
-        
-        public System.Action<PrismExplosion> OnFinished; // callback for pool manager
+
+        // Callback so the pool manager can reclaim this instance
+        public System.Action<PrismExplosion> OnFinished;
+
+        // Cache shader property IDs for performance
+        private static readonly int VelocityID = Shader.PropertyToID("_Velocity");
+        private static readonly int ExplosionAmountID = Shader.PropertyToID("_ExplosionAmount");
+        private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
 
         private void Awake()
         {
@@ -45,12 +52,18 @@ namespace CosmicShore.Game
 
             if (_running != null)
                 StopCoroutine(_running);
-            
-            if (!_renderer.sharedMaterial.HasProperty("_ExplosionAmount"))
-                Debug.LogError("Shader missing property: _ExplosionAmount");
 
-            if (!_renderer.sharedMaterial.HasProperty("_Opacity"))
-                Debug.LogError("Shader missing property: _Opacity");
+#if UNITY_EDITOR
+            // Optional debug: check if prefab material has the needed properties
+            var mat = _renderer != null ? _renderer.material : null;
+            if (mat != null)
+            {
+                if (!mat.HasProperty(ExplosionAmountID))
+                    Debug.LogWarning($"Material {mat.name} missing property: _ExplosionAmount");
+                if (!mat.HasProperty(OpacityID))
+                    Debug.LogWarning($"Material {mat.name} missing property: _Opacity");
+            }
+#endif
 
             _running = StartCoroutine(ExplosionCoroutine(velocity));
         }
@@ -65,30 +78,32 @@ namespace CosmicShore.Game
             velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out speed);
 
             _renderer.GetPropertyBlock(_mpb);
-            _mpb.SetVector("_Velocity", velocity);
+            _mpb.SetVector(VelocityID, velocity);
             _renderer.SetPropertyBlock(_mpb);
 
             Vector3 initialPosition = transform.position;
             const float maxDuration = 7f;
             float duration = 0f;
 
-            while (duration <= maxDuration && this != null && _renderer != null)
+            while (duration <= maxDuration)
             {
                 duration += Time.deltaTime;
 
+                // Update position
                 Vector3 newPosition = initialPosition + duration * velocity;
                 if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
                     transform.position = newPosition;
 
+                // Update shader overrides
                 _renderer.GetPropertyBlock(_mpb);
-                _mpb.SetFloat("_ExplosionAmount", speed * duration);
-                _mpb.SetFloat("_Opacity", 1f - (duration / maxDuration));
+                _mpb.SetFloat(ExplosionAmountID, speed * duration);
+                _mpb.SetFloat(OpacityID, 1f - (duration / maxDuration));
                 _renderer.SetPropertyBlock(_mpb);
 
                 yield return null;
             }
 
-            // Reset
+            // Reset overrides
             if (_renderer != null)
             {
                 _mpb.Clear();
@@ -96,7 +111,7 @@ namespace CosmicShore.Game
             }
 
             _running = null;
-            OnFinished?.Invoke(this); // notify pool manager
+            OnFinished?.Invoke(this); // Notify pool manager
         }
     }
 }

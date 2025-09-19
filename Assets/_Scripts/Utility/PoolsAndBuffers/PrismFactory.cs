@@ -105,7 +105,7 @@ namespace CosmicShore.Game
             if (renderer != null && materialSet != null)
             {
                 // Apply basic material set — refine later if different prisms need different materials
-                renderer.material = materialSet.BlockMaterial;
+                renderer.material = materialSet.ExplodingBlockMaterial;
             }
         }
         #endregion
