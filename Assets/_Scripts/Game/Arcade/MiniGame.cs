@@ -42,7 +42,7 @@ namespace CosmicShore.Game.Arcade
         protected List<IPlayer> Players = new();
         protected CountdownTimer countdownTimer;
 
-        List<Teams> PlayerTeams = new() { Teams.Jade, Teams.Ruby, Teams.Gold };
+        List<Domains> PlayerTeams = new() { Domains.Jade, Domains.Ruby, Domains.Gold };
         List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
         // Configuration set by player
@@ -209,7 +209,7 @@ namespace CosmicShore.Game.Arcade
                 IPlayer.InitializeData data = new()
                 {
                     vesselClass = playerShipTypeInitialized ? PlayerVesselType : defaultPlayerVesselType,
-                    Team = PlayerTeams[i],
+                    domain = PlayerTeams[i],
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
                     PlayerUUID = PlayerNames[i]
                 };

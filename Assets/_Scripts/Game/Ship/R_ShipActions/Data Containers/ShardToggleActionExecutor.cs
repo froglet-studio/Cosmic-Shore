@@ -31,8 +31,8 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
                 return;
             }
 
-            Vector3 highDensityPosition = cell.GetExplosionTarget(so.Team);
-            Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={so.Team} Target={highDensityPosition}");
+            Vector3 highDensityPosition = cell.GetExplosionTarget(so.Domain);
+            Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={so.Domain} Target={highDensityPosition}");
             shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
             _redirectActive = true;
         }

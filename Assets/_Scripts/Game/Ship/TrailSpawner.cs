@@ -251,7 +251,7 @@ namespace CosmicShore.Game
             prism.ownerID = creatorId;
 
             prism.PlayerName = vesselStatus.PlayerName;
-            prism.ChangeTeam(vesselStatus.Team);
+            prism.ChangeTeam(vesselStatus.Domain);
             // prism.PlayerName = charm ? VesselStatus.PlayerName : VesselStatus.Team.ToString();
             // prism.ChangeTeam(charm ? VesselStatus.Team : VesselStatus.Team);
 

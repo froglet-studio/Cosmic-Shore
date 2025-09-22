@@ -112,7 +112,7 @@ namespace CosmicShore.Core
 
             try
             {
-                var team = cachedTrailBlock.Team;
+                var team = cachedTrailBlock.Domain;
                 activeOpaqueMaterial = _themeManagerData.GetTeamBlockMaterial(team);
                 activeTransparentMaterial = _themeManagerData.GetTeamTransparentBlockMaterial(team);
                 

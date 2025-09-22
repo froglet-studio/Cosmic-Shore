@@ -75,7 +75,7 @@ namespace CosmicShore.Core
             _onGameOver.OnRaised -= OutputRoundStats;*/
         }
         
-        public virtual IRoundStats GetOrCreateRoundStats(Teams team) => new RoundStats();
+        public virtual IRoundStats GetOrCreateRoundStats(Domains domain) => new RoundStats();
         
         public void LifeformCreated(int cellID)
         {

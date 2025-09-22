@@ -42,7 +42,7 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
             var position = new Vector3(x, y, 0);
             var lookPosition = position;
             if (block != 0) lookPosition = trail1.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK1::" + block, trail1, trailBlock.transform.localScale, trailBlock, container, Teams.Jade);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK1::" + block, trail1, trailBlock.transform.localScale, trailBlock, container, Domains.Jade);
         }
         for (int block = 0; block < blockCount; block++)
         {
@@ -52,7 +52,7 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
             var position = new Vector3(x, 0, z);
             var lookPosition = position;
             if (block != 0) lookPosition = trail2.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK2::" + block, trail2, trailBlock.transform.localScale, trailBlock, container, Teams.Ruby);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK2::" + block, trail2, trailBlock.transform.localScale, trailBlock, container, Domains.Ruby);
         }
         for (int block = 0; block < blockCount; block++)
         {
@@ -62,7 +62,7 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
             var position = new Vector3(0, y, z);
             var lookPosition = position;
             if (block != 0) lookPosition = trail3.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK3::" + block, trail3, trailBlock.transform.localScale, trailBlock, container, Teams.Gold);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK3::" + block, trail3, trailBlock.transform.localScale, trailBlock, container, Domains.Gold);
         }
 
         trails.Add(trail1);

@@ -469,7 +469,7 @@ namespace CosmicShore
             Vector3 targetPos = bondSite - mateLocalOffset;
 
             // choose speeds based on whether this is own team or opponent team
-            bool isOwnTeam = (mate.Mate.TrailBlock.Team == TrailBlock.Team);
+            bool isOwnTeam = (mate.Mate.TrailBlock.Domain == TrailBlock.Domain);
             float moveSpeed = isOwnTeam ? ownPullSpeed : opponentPullSpeed;
 
             // move towards target at a fixed speed (frame-rate independent)
@@ -501,9 +501,9 @@ namespace CosmicShore
                 }
                 
                 var mateTB = mate.Mate.TrailBlock;
-                if (mateTB != null && mateTB.Team != TrailBlock.Team)
+                if (mateTB != null && mateTB.Domain != TrailBlock.Domain)
                 {
-                    mateTB.Steal(TrailBlock.PlayerName, TrailBlock.Team, true);
+                    mateTB.Steal(TrailBlock.PlayerName, TrailBlock.Domain, true);
                 }
             }
         }
@@ -526,7 +526,7 @@ namespace CosmicShore
             }
             else
             {
-                bool isOwnTeam = (mate.Mate.TrailBlock.Team == TrailBlock.Team);
+                bool isOwnTeam = (mate.Mate.TrailBlock.Domain == TrailBlock.Domain);
                 float rotSpeed = isOwnTeam ? ownRotateSpeed : opponentRotateSpeed;
 
                 mate.Mate.transform.rotation = Quaternion.Slerp(

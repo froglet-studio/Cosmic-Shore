@@ -12,21 +12,21 @@ namespace CosmicShore.Game
     {
         [SerializeField] List<Cell> cells;
         
-        public void AddBlock(Teams team, TrailBlockProperties blockProperties)
+        public void AddBlock(Domains domain, TrailBlockProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
-                cell.ChangeVolume(team, blockProperties.volume);
+                cell.ChangeVolume(domain, blockProperties.volume);
                 cell.AddBlock(blockProperties.trailBlock);
                 break;
             }
         }
 
-        public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
+        public void RemoveBlock(Domains domain, TrailBlockProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
-                cell.ChangeVolume(team, -blockProperties.volume);
+                cell.ChangeVolume(domain, -blockProperties.volume);
                 cell.RemoveBlock(blockProperties.trailBlock);
                 break;
             }
@@ -78,21 +78,21 @@ namespace CosmicShore.Game
             }
         }
 
-        public void StealBlock(Teams team, TrailBlockProperties blockProperties)
+        public void StealBlock(Domains domain, TrailBlockProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
-                cell.ChangeVolume(team, blockProperties.volume);
-                cell.ChangeVolume(blockProperties.trailBlock.Team, -blockProperties.volume);
+                cell.ChangeVolume(domain, blockProperties.volume);
+                cell.ChangeVolume(blockProperties.trailBlock.Domain, -blockProperties.volume);
                 break;
             }
         }
 
-        public void RestoreBlock(Teams team, TrailBlockProperties blockProperties)
+        public void RestoreBlock(Domains domain, TrailBlockProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
-                cell.ChangeVolume(team, blockProperties.volume);
+                cell.ChangeVolume(domain, blockProperties.volume);
                 break;
             }
         }

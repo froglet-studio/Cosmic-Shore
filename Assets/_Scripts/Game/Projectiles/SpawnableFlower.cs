@@ -15,9 +15,9 @@ namespace CosmicShore.Game.Projectiles
         static int ObjectsSpawned = 0;
 
         Material material;
-        Teams team;
+        Domains domain;
         public Material Material { get { return material; } set { material = new Material(value); } }
-        public Teams Team { get => team; set => team = value; }
+        public Domains Domain { get => domain; set => domain = value; }
 
         public override GameObject Spawn()
         {
@@ -95,7 +95,7 @@ namespace CosmicShore.Game.Projectiles
         protected TrailBlock CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string ownerId, Trail trail, GameObject container)
         {
             var Block = Instantiate(trailBlock);
-            Block.ChangeTeam(Team);
+            Block.ChangeTeam(Domain);
             //Block.ownerId = Vessel.Player.PlayerUUID;
             //Block.PlayerName = Vessel.Player.PlayerName;
             Block.ownerID = "public";

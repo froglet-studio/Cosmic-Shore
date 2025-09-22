@@ -23,7 +23,7 @@ namespace CosmicShore.Game.Projectiles
         public ProjectileType Type { get; private set; }
         public float ProjectileTime { get; private set; }
 
-        public Teams OwnTeam { get; private set; }
+        public Domains OwnDomain { get; private set; }
         public IVesselStatus VesselStatus { get; private set; }
 
         private MeshRenderer meshRenderer;
@@ -42,16 +42,16 @@ namespace CosmicShore.Game.Projectiles
             if (spike)
             {
                 meshRenderer = GetComponent<MeshRenderer>();
-                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(OwnTeam);
+                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(OwnDomain);
                 meshRenderer.material.SetFloat("_Opacity", 0.5f);
             }
         }
 
         #region Initialization
-        public virtual void Initialize(ProjectileFactory factory, Teams ownTeam, IVesselStatus vesselStatus, float charge)
+        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge)
         {
             _factory = factory;
-            OwnTeam = ownTeam;
+            OwnDomain = ownDomain;
             VesselStatus = vesselStatus;
             Charge = charge;
 
@@ -65,8 +65,8 @@ namespace CosmicShore.Game.Projectiles
         #endregion
 
         #region Impact Checks
-        public bool DisallowImpactOnPrism(Teams trailBlockTeam) => !friendlyFire && trailBlockTeam == OwnTeam;
-        public bool DisallowImpactOnVessel(Teams vesselTeam) => vesselTeam == OwnTeam;
+        public bool DisallowImpactOnPrism(Domains trailBlockDomain) => !friendlyFire && trailBlockDomain == OwnDomain;
+        public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
 
         #region Lifecycle

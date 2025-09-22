@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ExplodingGreenBlockMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: de59ec1f616f51044a23e6c1368d6660,
+  m_Name: SuctionShaderMaterial
+  m_Shader: {fileID: -6465566751694194690, guid: ba81f239cd8660e47b1b52247719049a,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

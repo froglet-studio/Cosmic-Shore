@@ -38,8 +38,8 @@ namespace CosmicShore.Core
             trailBlock.TrailBlockProperties.IsShielded = false;
 
             materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Team),
-                _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Team)
+                _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.Dangerous;
         }
@@ -67,8 +67,8 @@ namespace CosmicShore.Core
             trailBlock.TrailBlockProperties.IsDangerous = false;
 
             materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Team),
-                _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Team)
+                _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.SuperShielded;
         }
@@ -96,8 +96,8 @@ namespace CosmicShore.Core
             trailBlock.TrailBlockProperties.IsDangerous = false;
 
             materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Team),
-                _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Team)
+                _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.Shielded;
         }
@@ -105,8 +105,8 @@ namespace CosmicShore.Core
         private void ApplyNormalState()
         {
             materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Team),
-                _themeManagerData.GetTeamBlockMaterial(teamManager.Team)
+                _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
             );
 
             trailBlock.TrailBlockProperties.IsShielded = false;

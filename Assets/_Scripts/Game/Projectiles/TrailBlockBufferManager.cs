@@ -24,8 +24,8 @@ namespace CosmicShore.Game.Projectiles
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
-        private Dictionary<Teams, Queue<TrailBlock>> teamBuffers = new Dictionary<Teams, Queue<TrailBlock>>();
-        private Dictionary<Teams, float> instantiateTimers = new Dictionary<Teams, float>();
+        private Dictionary<Domains, Queue<TrailBlock>> teamBuffers = new Dictionary<Domains, Queue<TrailBlock>>();
+        private Dictionary<Domains, float> instantiateTimers = new Dictionary<Domains, float>();
 
         private void Start()
         {
@@ -36,9 +36,9 @@ namespace CosmicShore.Game.Projectiles
         private void InitializeTeamBuffers()
         {
             // Initialize buffers for each team
-            foreach (Teams team in System.Enum.GetValues(typeof(Teams)))
+            foreach (Domains team in System.Enum.GetValues(typeof(Domains)))
             {
-                if (team != Teams.Unassigned && team != Teams.None)
+                if (team != Domains.Unassigned && team != Domains.None)
                 {
                     teamBuffers[team] = new Queue<TrailBlock>();
                     instantiateTimers[team] = 0f;
@@ -54,16 +54,16 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        private TrailBlock CreateBlockForTeam(Teams team)
+        private TrailBlock CreateBlockForTeam(Domains domain)
         {
             var block = Instantiate(trailBlockPrefab);
             block.transform.parent = transform;
 
-            block.ChangeTeam(team);
+            block.ChangeTeam(domain);
             var renderer = block.GetComponent<MeshRenderer>();
             if (renderer != null)
             {
-                renderer.material = _themeManagerData.GetTeamBlockMaterial(team);
+                renderer.material = _themeManagerData.GetTeamBlockMaterial(domain);
             }
             return block;
         }
@@ -96,15 +96,15 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        public TrailBlock GetBlock(Teams team)
+        public TrailBlock GetBlock(Domains domain)
         {
-            if (!teamBuffers.ContainsKey(team))
+            if (!teamBuffers.ContainsKey(domain))
             {
-                Debug.LogError($"No buffer exists for team {team}");
-                return CreateBlockForTeam(team);
+                Debug.LogError($"No buffer exists for team {domain}");
+                return CreateBlockForTeam(domain);
             }
 
-            var buffer = teamBuffers[team];
+            var buffer = teamBuffers[domain];
             if (buffer.Count > 0)
             {
                 var block = buffer.Dequeue();
@@ -112,13 +112,13 @@ namespace CosmicShore.Game.Projectiles
                 return block;
             }
             
-            Debug.LogWarning($"Buffer depleted for team {team}! Falling back to direct instantiation.");
-            return CreateBlockForTeam(team);
+            Debug.LogWarning($"Buffer depleted for team {domain}! Falling back to direct instantiation.");
+            return CreateBlockForTeam(domain);
         }
 
-        public bool HasAvailableBlocks(Teams team, int count)
+        public bool HasAvailableBlocks(Domains domain, int count)
         {
-            return teamBuffers.ContainsKey(team) && teamBuffers[team].Count >= count;
+            return teamBuffers.ContainsKey(domain) && teamBuffers[domain].Count >= count;
         }
 
         protected void OnDestroy()

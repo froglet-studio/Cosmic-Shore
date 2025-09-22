@@ -10,7 +10,7 @@ namespace CosmicShore.Game
     {
         [SerializeField] GameObject playerPrefab;
         [SerializeField] List<string> PlayerNames = new() { "FriendlyOne", "HostileOne", "HostileTwo" };
-        [SerializeField] List<Teams> PlayerTeams = new() { Teams.Jade, Teams.Ruby, Teams.Ruby };
+        [SerializeField] List<Domains> PlayerTeams = new() { Domains.Jade, Domains.Ruby, Domains.Ruby };
         [SerializeField] List<VesselClassType> PlayerShipTypes = new() { VesselClassType.Rhino, VesselClassType.Rhino, VesselClassType.Rhino };
 
         void Start()
@@ -32,7 +32,7 @@ namespace CosmicShore.Game
                 IPlayer.InitializeData data = new()
                 {
                     vesselClass = PlayerShipTypes[i],
-                    Team = PlayerTeams[i],
+                    domain = PlayerTeams[i],
                     PlayerName = PlayerNames[i],
                     PlayerUUID = "Player" + (i + 1),
                 };

@@ -133,7 +133,7 @@ namespace CosmicShore.Game.AI
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
-                    (item.ItemType != ItemType.Debuff || item.OwnTeam == VesselStatus.Team)) continue;
+                    (item.ItemType != ItemType.Debuff || item.ownDomain == VesselStatus.Domain)) continue;
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (sqDistance < (MinDistance * MinDistance))
                 {

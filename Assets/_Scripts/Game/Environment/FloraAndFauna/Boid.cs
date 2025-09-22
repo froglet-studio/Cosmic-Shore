@@ -60,7 +60,7 @@ public class Boid : Fauna
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
-        healthBlock.Team = Team;
+        healthBlock.Domain = domain;
     }
 
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)
@@ -129,7 +129,7 @@ public class Boid : Fauna
                 //float blockWeight = Population.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized / distance;
 
-                if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != healthBlock.Team)
+                if (distance < trailBlockInteractionRadius && otherTrailBlock.Domain != healthBlock.Domain)
                 {
                     foreach (var effect in collisionEffects)
                     {
@@ -155,7 +155,7 @@ public class Boid : Fauna
                                     Debug.LogError($"Infinite velocity on block collision detected! velocity:({currentVelocity.x},{currentVelocity.y},{currentVelocity.z})");
                                     break;
                                 }
-                                otherTrailBlock.Damage(currentVelocity * healthBlock.Volume, healthBlock.Team, healthBlock.PlayerName + " boid", true);
+                                otherTrailBlock.Damage(currentVelocity * healthBlock.Volume, healthBlock.Domain, healthBlock.PlayerName + " boid", true);
                                 break;
                         }
                     }
@@ -231,7 +231,7 @@ public class Boid : Fauna
     (TrailBlock, GyroidAssembler) NewBlock()
     {
         var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
-        newBlock.ChangeTeam(healthBlock.Team);
+        newBlock.ChangeTeam(healthBlock.Domain);
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         newBlock.TrailBlockProperties = new()
         {

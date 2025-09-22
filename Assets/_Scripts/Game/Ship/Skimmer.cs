@@ -77,7 +77,7 @@ namespace CosmicShore.Game
 
         public void ExecuteImpactOnPrism(TrailBlock trailBlock)
         {
-            if (VesselStatus is null || (!affectSelf && trailBlock.Team == VesselStatus.Team)) return;
+            if (VesselStatus is null || (!affectSelf && trailBlock.Domain == VesselStatus.Domain)) return;
             MakeBoosters(trailBlock);
         }
 

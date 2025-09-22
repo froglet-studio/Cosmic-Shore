@@ -19,7 +19,7 @@ namespace CosmicShore.Game
                 }
             }*/
 
-            var materialSet = themeManagerData.TeamMaterialSets[vessel.VesselStatus.Team];
+            var materialSet = themeManagerData.TeamMaterialSets[vessel.VesselStatus.Domain];
             vessel.SetShipMaterial(materialSet.ShipMaterial);
             vessel.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
             vessel.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);

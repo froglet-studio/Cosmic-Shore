@@ -1,5 +1,6 @@
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game.AI
@@ -9,7 +10,7 @@ namespace CosmicShore.Game.AI
         [SerializeField] Gun gun;
         [SerializeField] GameObject gunMount;
 
-        public Teams Team;
+        [FormerlySerializedAs("Team")] public Domains domain;
 
         /*[RequireInterface(typeof(IVessel))]
         public MonoBehaviour Vessel;*/

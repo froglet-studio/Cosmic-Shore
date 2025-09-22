@@ -67,9 +67,9 @@ public class BoidSImulationController : MonoBehaviour
                     position = block.transform.position,
                     velocity = Vector3.zero, // Trail blocks don't move on their own
                     goalDirection = Vector3.zero,
-                    team = (int)block.Team
+                    team = (int)block.Domain
                 };
-                Debug.Log($"team {(int)block.Team}");
+                Debug.Log($"team {(int)block.Domain}");
 
                 // Add blockEntity to the entities list
                 entities.Add(blockEntity);
@@ -101,7 +101,7 @@ public class BoidSImulationController : MonoBehaviour
                 velocity = newBoid.transform.forward,
                 goalDirection = globalGoal.position - spawnPosition,
                 teamWeights = new Vector4(1.0f, 1.0f, 1.0f, 1.0f), // Example weights for 4 teams
-                team = (int)Teams.Blue
+                team = (int)Domains.Blue
             };
 
             entities.Add(newEntity);
@@ -239,7 +239,7 @@ public class BoidSImulationController : MonoBehaviour
             position = position,
             velocity = direction,
             goalDirection = globalGoal.position - position,
-            team = (int)Teams.None
+            team = (int)Domains.None
         };
 
         entities.Add(newEntity);

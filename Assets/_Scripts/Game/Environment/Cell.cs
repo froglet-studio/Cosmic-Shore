@@ -51,11 +51,11 @@ namespace CosmicShore.Game
         [SerializeField]
         MiniGameDataSO miniGameData;
 
-        public Dictionary<Teams, BlockCountDensityGrid> countGrids = new Dictionary<Teams, BlockCountDensityGrid>();
-        public Dictionary<Teams, BlockVolumeDensityGrid> volumeGrids = new Dictionary<Teams, BlockVolumeDensityGrid>();
+        public Dictionary<Domains, BlockCountDensityGrid> countGrids = new Dictionary<Domains, BlockCountDensityGrid>();
+        public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new Dictionary<Domains, BlockVolumeDensityGrid>();
         public List<CellItem> CellItems { get; private set; }
 
-        Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
+        Dictionary<Domains, float> teamVolumes = new Dictionary<Domains, float>();
 
         int _itemsAdded;
 
@@ -69,8 +69,8 @@ namespace CosmicShore.Game
             }
 
             // TODO: handle Blue?
-            Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold, Teams.Blue };  // TODO: Store this as a constant somewhere (where?).
-            foreach (Teams t in teams)
+            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };  // TODO: Store this as a constant somewhere (where?).
+            foreach (Domains t in teams)
             {
                 countGrids.Add(t, new BlockCountDensityGrid(t));
                 //volumeGrids.Add(t, new BlockVolumeDensityGrid(t));
@@ -97,10 +97,10 @@ namespace CosmicShore.Game
             SnowChanger.Initialize(Crystal);
             SnowChanger.SetOrigin(transform.position);
 
-            teamVolumes.Add(Teams.Jade, 0);
-            teamVolumes.Add(Teams.Ruby, 0);
-            teamVolumes.Add(Teams.Gold, 0);
-            teamVolumes.Add(Teams.Blue, 0);
+            teamVolumes.Add(Domains.Jade, 0);
+            teamVolumes.Add(Domains.Ruby, 0);
+            teamVolumes.Add(Domains.Gold, 0);
+            teamVolumes.Add(Domains.Blue, 0);
 
             Crystal.SetOrigin(transform.position);
 
@@ -201,25 +201,25 @@ namespace CosmicShore.Game
 
         public void AddBlock(TrailBlock block)
         {
-            Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
-            foreach (Teams t in teams)
+            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+            foreach (Domains t in teams)
             {
-                if (t != block.Team) countGrids[t].AddBlock(block);
+                if (t != block.Domain) countGrids[t].AddBlock(block);
             }
         }
 
         public void RemoveBlock(TrailBlock block)
         {
-            Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
-            foreach (Teams t in teams)
+            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+            foreach (Domains t in teams)
             {
-                if (t != block.Team) countGrids[t].RemoveBlock(block);
+                if (t != block.Domain) countGrids[t].RemoveBlock(block);
             }
         }
 
-        public Vector3 GetExplosionTarget(Teams team)
+        public Vector3 GetExplosionTarget(Domains domain)
         {
-            return countGrids[team].FindDensestRegion();
+            return countGrids[domain].FindDensestRegion();
         }
 
         public bool TryInitializeAndAdd(CellItem item)
@@ -278,20 +278,20 @@ namespace CosmicShore.Game
             return Vector3.Distance(position, transform.position) < membrane.transform.localScale.x; // only works if nodes remain spherical
         }
 
-        public void ChangeVolume(Teams team, float volume)
+        public void ChangeVolume(Domains domain, float volume)
         {
-            if (!teamVolumes.ContainsKey(team))
-                teamVolumes.Add(team, 0);
+            if (!teamVolumes.ContainsKey(domain))
+                teamVolumes.Add(domain, 0);
 
-            teamVolumes[team] += volume;
+            teamVolumes[domain] += volume;
         }
 
-        public float GetTeamVolume(Teams team)
+        public float GetTeamVolume(Domains domain)
         {
-            if (!teamVolumes.ContainsKey(team))
+            if (!teamVolumes.ContainsKey(domain))
                 return 0;
 
-            return teamVolumes[team];
+            return teamVolumes[domain];
         }
 
         /*public Teams ControllingTeam
@@ -331,7 +331,7 @@ namespace CosmicShore.Game
             for (int i = 0; i < floraConfiguration.initialSpawnCount - 1; i++)
             {
                 var newFlora = Instantiate(floraConfiguration.Flora, transform.position, Quaternion.identity);
-                newFlora.Team = spawnJade ? (Teams)Random.Range(1, 5): (Teams)Random.Range(2, 5);
+                newFlora.domain = spawnJade ? (Domains)Random.Range(1, 5): (Domains)Random.Range(2, 5);
                 newFlora.Initialize(this);
             }
             while (true)
@@ -340,7 +340,7 @@ namespace CosmicShore.Game
                 if (controllingVolume < floraSpawnVolumeCeiling)
                 {
                     var newFlora = Instantiate(floraConfiguration.Flora, transform.position, Quaternion.identity);
-                    newFlora.Team = spawnJade ? (Teams)Random.Range(1, 5) : (Teams)Random.Range(2, 5);
+                    newFlora.domain = spawnJade ? (Domains)Random.Range(1, 5) : (Domains)Random.Range(2, 5);
                     newFlora.Initialize(this);
                 }
 
@@ -365,7 +365,7 @@ namespace CosmicShore.Game
                 if (controllingVolume > faunaSpawnVolumeThreshold)
                 {
                     var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
-                    newPopulation.Team = controllingTeamStat.Item1; // ControllingTeam;
+                    newPopulation.domain = controllingTeamStat.Item1; // ControllingTeam;
                     newPopulation.Goal = Crystal.transform.position;
                     yield return new WaitForSeconds(baseFaunaSpawnTime);
                 }

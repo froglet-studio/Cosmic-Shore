@@ -94,10 +94,10 @@ public class GunVesselTransformer : VesselTransformer
         if (VesselStatus.AttachedTrailBlock.destroyed)
             VesselStatus.AttachedTrailBlock.Restore();
 
-        if (VesselStatus.AttachedTrailBlock.Team == Vessel.VesselStatus.Team)
+        if (VesselStatus.AttachedTrailBlock.Domain == Vessel.VesselStatus.Domain)
         {
             VesselStatus.AttachedTrailBlock.Grow(growthAmount.Value);
         }
-        else VesselStatus.AttachedTrailBlock.Steal(Vessel.VesselStatus.Player.Name, Vessel.VesselStatus.Team);
+        else VesselStatus.AttachedTrailBlock.Steal(Vessel.VesselStatus.Player.Name, Vessel.VesselStatus.Domain);
     }
 }

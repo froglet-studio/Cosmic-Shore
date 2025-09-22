@@ -34,7 +34,7 @@ namespace CosmicShore
             drone.transform.position = vessel.Transform.position;
             var boid = drone.GetComponent<Boid>();
             boid.DefaultGoal = goal;
-            boid.Team = vessel.VesselStatus.Team;
+            boid.domain = vessel.VesselStatus.Domain;
             boid.Population = this;
             if (isQueenDrone)
             {

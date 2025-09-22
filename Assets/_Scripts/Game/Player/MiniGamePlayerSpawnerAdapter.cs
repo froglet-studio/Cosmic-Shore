@@ -36,7 +36,7 @@ namespace CosmicShore.Game
             return new IPlayer.InitializeData
             {
                 vesselClass      = _gameData.SelectedShipClass.Value,
-                Team           = Teams.Jade,         // Default for now
+                domain           = Domains.Jade,         // Default for now
                 PlayerName     = "HumanJade",        // Placeholder
                 PlayerUUID     = "HumanJade1",       // Placeholder
                 AllowSpawning  = true,

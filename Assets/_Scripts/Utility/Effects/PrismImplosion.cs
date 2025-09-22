@@ -1,4 +1,5 @@
 using System.Collections;
+using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -6,35 +7,45 @@ namespace CosmicShore.Game
 {
     /// <summary>
     /// Handles prism implosion VFX. Managed by PrismImplosionPoolManager.
+    /// Uses MaterialPropertyBlock so prefab materials remain untouched.
     /// </summary>
+    [RequireComponent(typeof(Renderer))]
     public class PrismImplosion : MonoBehaviour
     {
-        [SerializeField] private Material implosionMaterial;
-        [FormerlySerializedAs("blockRenderer")] 
         [SerializeField] private Renderer prismRenderer;
-        [SerializeField] private AnimationCurve implosionCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
         [SerializeField] private float implosionDuration = 2f;
 
-        private Vector3 convergencePoint;
+        private MaterialPropertyBlock mpb;
+        private Transform convergenceTransform;
         private float implosionProgress;
         private bool isImploding;
-        private float blockVolume = 1f;
-
-        // Shader property IDs
-        private static readonly int ImplosionProgressID = Shader.PropertyToID("_ImplosionProgress");
-        private static readonly int ConvergencePointID = Shader.PropertyToID("_ConvergencePoint");
 
         private Coroutine running;
+
+        // Shader property IDs (cache for performance)
+        private static readonly int ImplosionProgressID = Shader.PropertyToID("_State");
+        private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
 
         /// <summary>
         /// Callback for pooling system when implosion finishes.
         /// </summary>
         public System.Action<PrismImplosion> OnFinished;
 
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (!prismRenderer)
+                prismRenderer = GetComponent<Renderer>();
+        }
+#endif
+
         private void Awake()
         {
             if (prismRenderer == null)
                 prismRenderer = GetComponent<Renderer>();
+
+            mpb = new MaterialPropertyBlock();
         }
 
         private void OnDisable()
@@ -44,45 +55,55 @@ namespace CosmicShore.Game
                 StopCoroutine(running);
                 running = null;
             }
+
+            if (prismRenderer != null && mpb != null)
+            {
+                mpb.Clear();
+                prismRenderer.SetPropertyBlock(mpb);
+            }
         }
 
-        public void StartImplosion(Vector3 worldConvergencePoint, float volume = 1f)
+        public void StartImplosion(Transform worldConvergenceTransform)
         {
-            convergencePoint = worldConvergencePoint;
-            blockVolume = Mathf.Max(0.01f, volume);
+            if (!prismRenderer || mpb == null)
+            {
+                Debug.LogError("[PrismImplosion] Missing required components, cannot start implosion.");
+                return;
+            }
+
+            convergenceTransform = worldConvergenceTransform;
             isImploding = true;
             implosionProgress = 0f;
 
-            if (implosionMaterial != null && prismRenderer != null)
-            {
-                prismRenderer.material = implosionMaterial;
-                prismRenderer.material.SetFloat(ImplosionProgressID, 0f);
-                prismRenderer.material.SetVector(ConvergencePointID, convergencePoint);
-            }
+            prismRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(ImplosionProgressID, 0f);
+            mpb.SetVector(ConvergencePointID,convergenceTransform.position);
+            prismRenderer.SetPropertyBlock(mpb);
 
             if (running != null)
                 StopCoroutine(running);
 
             running = StartCoroutine(HandleImplosionAnimation());
+            
+            DebugExtensions.LogColored("Prism implosion started", Color.green);
         }
 
         private IEnumerator HandleImplosionAnimation()
         {
             float elapsedTime = 0f;
-            float adjustedDuration = implosionDuration / Mathf.Sqrt(blockVolume);
 
-            while (elapsedTime < adjustedDuration && isImploding)
+            while (elapsedTime < implosionDuration && isImploding)
             {
                 elapsedTime += Time.deltaTime;
-                float normalizedTime = elapsedTime / adjustedDuration;
+                implosionProgress = Mathf.Clamp01(elapsedTime / implosionDuration);
 
-                implosionProgress = implosionCurve.Evaluate(normalizedTime);
+                if (!prismRenderer || mpb == null)
+                    yield break;
 
-                if (prismRenderer != null && prismRenderer.material != null)
-                {
-                    prismRenderer.material.SetFloat(ImplosionProgressID, implosionProgress);
-                    prismRenderer.material.SetVector(ConvergencePointID, convergencePoint);
-                }
+                prismRenderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(ImplosionProgressID, implosionProgress);
+                mpb.SetVector(ConvergencePointID, convergenceTransform.position);
+                prismRenderer.SetPropertyBlock(mpb);
 
                 yield return null;
             }
@@ -95,10 +116,15 @@ namespace CosmicShore.Game
             isImploding = false;
             implosionProgress = 1f;
 
-            if (prismRenderer != null && prismRenderer.material != null)
+            if (prismRenderer && mpb != null)
             {
-                prismRenderer.material.SetFloat(ImplosionProgressID, 1f);
+                prismRenderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(ImplosionProgressID, 1f);
+                prismRenderer.SetPropertyBlock(mpb);
             }
+
+            if (running != null)
+                StopCoroutine(running);
 
             running = StartCoroutine(DelayedFinish());
         }
@@ -108,6 +134,7 @@ namespace CosmicShore.Game
             yield return new WaitForSeconds(0.5f);
             running = null;
             OnFinished?.Invoke(this); // notify pool manager
+            DebugExtensions.LogColored("Prism implosion ended", Color.red);
         }
 
         public float GetImplosionProgress() => implosionProgress;

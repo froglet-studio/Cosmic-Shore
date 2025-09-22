@@ -37,7 +37,7 @@ namespace CosmicShore
                     shipStatus.ResourceSystem.ChangeResourceAmount(energyResourceIndex, energyAmount);
                     foreach (var prism in Prisms)
                     {
-                        prism.Steal(shipStatus.Player.Name, shipStatus.Player.Team);
+                        prism.Steal(shipStatus.Player.Name, shipStatus.Player.Domain);
                     }
                 }
             }

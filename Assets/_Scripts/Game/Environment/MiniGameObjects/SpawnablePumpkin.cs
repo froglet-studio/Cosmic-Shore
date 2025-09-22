@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Environment.MiniGameObjects
 {
@@ -10,7 +11,7 @@ namespace CosmicShore.Environment.MiniGameObjects
         static int SegmentsSpawned = 0;
         private bool isLooping = false;
         private GameObject container;
-        [SerializeField] Teams Team = Teams.Gold;
+        [FormerlySerializedAs("Team")] [SerializeField] Domains domain = Domains.Gold;
 
         public override GameObject Spawn()
         {
@@ -103,7 +104,7 @@ namespace CosmicShore.Environment.MiniGameObjects
                     lookPosition = trail.GetBlock(block - 1).transform.position;
                 }
 
-                CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, sizeMultiplier * pumpkinWidth * trailBlock.transform.localScale * Mathf.Sin(t), trailBlock, container, Team);
+                CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, sizeMultiplier * pumpkinWidth * trailBlock.transform.localScale * Mathf.Sin(t), trailBlock, container, domain);
             }
         }
     }

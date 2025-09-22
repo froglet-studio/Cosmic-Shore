@@ -14,23 +14,23 @@ namespace CosmicShore.Core
 
         private TrailBlock trailBlock;
         private MaterialPropertyAnimator materialAnimator;
-        private Teams currentTeam = Teams.Unassigned;
+        private Domains currentDomain = Domains.Unassigned;
 
-        public Teams Team
+        public Domains Domain
         {
-            get => currentTeam;
+            get => currentDomain;
             private set
             {
-                if (currentTeam != value)
+                if (currentDomain != value)
                 {
-                    var oldTeam = currentTeam;
-                    currentTeam = value;
+                    var oldTeam = currentDomain;
+                    currentDomain = value;
                     OnTeamChanged?.Invoke(oldTeam, value);
                 }
             }
         }
 
-        public event Action<Teams, Teams> OnTeamChanged;
+        public event Action<Domains, Domains> OnTeamChanged;
 
         private void Awake()
         {
@@ -48,29 +48,29 @@ namespace CosmicShore.Core
             OnTeamChanged -= HandleTeamChange;
         }
 
-        public void SetInitialTeam(Teams team)
+        public void SetInitialTeam(Domains domain)
         {
-            if (currentTeam == Teams.Unassigned)
+            if (currentDomain == Domains.Unassigned)
             {
-                Team = team;
+                Domain = domain;
                 materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentBlockMaterial(team),
-                    _themeManagerData.GetTeamBlockMaterial(team)
+                    _themeManagerData.GetTeamTransparentBlockMaterial(domain),
+                    _themeManagerData.GetTeamBlockMaterial(domain)
                 );
             }
         }
 
-        public void ChangeTeam(Teams newTeam)
+        public void ChangeTeam(Domains newDomain)
         {
-            if (Team != newTeam)
+            if (Domain != newDomain)
             {
-                Team = newTeam;
+                Domain = newDomain;
             }
         }
 
-        public void Steal(string playerName, Teams newTeam, bool superSteal)
+        public void Steal(string playerName, Domains newDomain, bool superSteal)
         {
-            if (Team == newTeam) 
+            if (Domain == newDomain) 
                 return;
             
             if (!superSteal && (trailBlock.TrailBlockProperties.IsShielded || trailBlock.TrailBlockProperties.IsSuperShielded))
@@ -97,41 +97,41 @@ namespace CosmicShore.Core
 
             if (CellControlManager.Instance)
             {
-                CellControlManager.Instance.StealBlock(newTeam, trailBlock.TrailBlockProperties);
+                CellControlManager.Instance.StealBlock(newDomain, trailBlock.TrailBlockProperties);
             }
 
-            ChangeTeam(newTeam);
+            ChangeTeam(newDomain);
             // trailBlock.Player = player;
         }
 
-        private void HandleTeamChange(Teams oldTeam, Teams newTeam)
+        private void HandleTeamChange(Domains oldDomain, Domains newDomain)
         {
             if (trailBlock.TrailBlockProperties.IsDangerous)
             {
                 materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentDangerousBlockMaterial(newTeam),
-                    _themeManagerData.GetTeamDangerousBlockMaterial(newTeam)
+                    _themeManagerData.GetTeamTransparentDangerousBlockMaterial(newDomain),
+                    _themeManagerData.GetTeamDangerousBlockMaterial(newDomain)
                 );
             }
             else if (trailBlock.TrailBlockProperties.IsShielded)
             {
                 materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentShieldedBlockMaterial(newTeam),
-                    _themeManagerData.GetTeamShieldedBlockMaterial(newTeam)
+                    _themeManagerData.GetTeamTransparentShieldedBlockMaterial(newDomain),
+                    _themeManagerData.GetTeamShieldedBlockMaterial(newDomain)
                 );
             }
             else if (trailBlock.TrailBlockProperties.IsSuperShielded)
             {
                 materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(newTeam),
-                    _themeManagerData.GetTeamSuperShieldedBlockMaterial(newTeam)
+                    _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(newDomain),
+                    _themeManagerData.GetTeamSuperShieldedBlockMaterial(newDomain)
                 );  
             }
             else
             {
                 materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentBlockMaterial(newTeam),
-                    _themeManagerData.GetTeamBlockMaterial(newTeam)
+                    _themeManagerData.GetTeamTransparentBlockMaterial(newDomain),
+                    _themeManagerData.GetTeamBlockMaterial(newDomain)
                 );
             }
         }

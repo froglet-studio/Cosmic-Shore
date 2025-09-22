@@ -47,7 +47,7 @@ namespace CosmicShore.Game
                 return "No-name";
             }
         }
-        Teams Team => Player.Team;
+        Domains Domain => Player.Domain;
 
         bool Portrait { get; set; }
         ResourceSystem ResourceSystem { get; }

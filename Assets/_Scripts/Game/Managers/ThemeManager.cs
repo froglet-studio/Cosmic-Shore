@@ -16,11 +16,11 @@ namespace CosmicShore.Core
             var BlueTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.BlueColors, "Blue");
 
             _dataContainer.TeamMaterialSets = new() {
-                { Teams.Jade, GreenTeamMaterialSet },
-                { Teams.Ruby,   RedTeamMaterialSet },
-                { Teams.Blue,  BlueTeamMaterialSet },
-                { Teams.Gold,  GoldTeamMaterialSet },
-                { Teams.Unassigned,  BlueTeamMaterialSet },
+                { Domains.Jade, GreenTeamMaterialSet },
+                { Domains.Ruby,   RedTeamMaterialSet },
+                { Domains.Blue,  BlueTeamMaterialSet },
+                { Domains.Gold,  GoldTeamMaterialSet },
+                { Domains.Unassigned,  BlueTeamMaterialSet },
             };
         }
 

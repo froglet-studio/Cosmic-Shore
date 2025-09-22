@@ -46,7 +46,7 @@ namespace CosmicShore.Game
             // TrailBlock: compute combined weight & run stay effects
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
-            if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team) return;
+            if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
             // ensure we started skimming
             StartSkimIfNeeded(prism.ownerID);
@@ -77,7 +77,7 @@ namespace CosmicShore.Game
 
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
-            if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team) return;
+            if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
             if (!_skimStartTimes.ContainsKey(prism.ownerID)) return;
 
@@ -114,7 +114,7 @@ namespace CosmicShore.Game
                     }
                     skimmer.ExecuteImpactOnPrism(prism);    // secondary call (booster viz, etc.)
                     
-                    if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team)
+                    if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain)
                         return;
                     StartSkimIfNeeded(prism.ownerID);
                     

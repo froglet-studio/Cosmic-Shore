@@ -37,7 +37,7 @@ namespace CosmicShore.Game
                 {
                     Vector3 position = new Vector3(x * blockSpacing, y * blockSpacing, 0);
                     var correction = new Vector3(blockSpacing * .5f , blockSpacing * .5f, 0);
-                    CreateBlock(position + correction, Vector3.up, $"WB:{WallCount}:{x}:{y}", trail, size * blockSize, trailBlock, container, Vector3.forward, Teams.Blue, false);
+                    CreateBlock(position + correction, Vector3.up, $"WB:{WallCount}:{x}:{y}", trail, size * blockSize, trailBlock, container, Vector3.forward, Domains.Blue, false);
                     if (crystal != null)
                     {
                         var newCrystal = Instantiate(crystal,container.transform);

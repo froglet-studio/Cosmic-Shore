@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
@@ -12,7 +13,7 @@ namespace CosmicShore.Game
     public abstract class CellItem : MonoBehaviour
     {
         public int Id { get; private set; }
-        public Teams OwnTeam = Teams.None;
+        [FormerlySerializedAs("OwnTeam")] public Domains ownDomain = Domains.None;
         public ItemType ItemType = ItemType.Buff;
 
         protected Cell cell;

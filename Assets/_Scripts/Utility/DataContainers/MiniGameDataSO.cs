@@ -135,13 +135,13 @@ namespace CosmicShore.SOAP
         // -----------------------------------------------------------------------------------------
         // Queries / Scores
 
-        public (Teams Team, float Volume) GetControllingTeamStatsBasedOnVolumeRemaining()
+        public (Domains Team, float Volume) GetControllingTeamStatsBasedOnVolumeRemaining()
         {
             var top = RoundStatsList
                 .OrderByDescending(rs => rs.VolumeRemaining)
                 .FirstOrDefault();
 
-            return top is null ? (Teams.Jade, 0f) : (top.Team, top.VolumeRemaining);
+            return top is null ? (Domains.Jade, 0f) : (Team: top.Domain, top.VolumeRemaining);
         }
         
         public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>
@@ -154,9 +154,9 @@ namespace CosmicShore.SOAP
             return player != null && roundStats != null;
         }
 
-        public bool TryGetRoundStats(Teams team, out IRoundStats roundStats)
+        public bool TryGetRoundStats(Domains domain, out IRoundStats roundStats)
         {
-            roundStats = FindByTeam(team);
+            roundStats = FindByTeam(domain);
             return roundStats != null;
         }
 
@@ -170,10 +170,10 @@ namespace CosmicShore.SOAP
 
         public Vector4 GetTeamVolumes()
         {
-            float jade = VolumeOf(Teams.Jade);
-            float ruby = VolumeOf(Teams.Ruby);
-            float blue = VolumeOf(Teams.Blue);
-            float gold = VolumeOf(Teams.Gold);
+            float jade = VolumeOf(Domains.Jade);
+            float ruby = VolumeOf(Domains.Ruby);
+            float blue = VolumeOf(Domains.Blue);
+            float gold = VolumeOf(Domains.Gold);
             return new Vector4(jade, ruby, blue, gold);
         }
 
@@ -216,7 +216,7 @@ namespace CosmicShore.SOAP
             RoundStatsList.Add(new RoundStats
             {
                 Name = p.Name,
-                Team = p.Team
+                Domain = p.Domain
             });
         }
         
@@ -246,14 +246,14 @@ namespace CosmicShore.SOAP
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
 
-        IRoundStats FindByTeam(Teams team) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Team == team);
+        IRoundStats FindByTeam(Domains domain) =>
+            RoundStatsList.FirstOrDefault(rs => rs.Domain == domain);
 
         IRoundStats FindByName(string name) =>
             RoundStatsList.FirstOrDefault(rs => rs.Name == name);
 
-        float VolumeOf(Teams team) =>
-            FindByTeam(team)?.VolumeRemaining ?? 0f;
+        float VolumeOf(Domains domain) =>
+            FindByTeam(domain)?.VolumeRemaining ?? 0f;
 
         public void SetPlayersActive(bool active)
         {

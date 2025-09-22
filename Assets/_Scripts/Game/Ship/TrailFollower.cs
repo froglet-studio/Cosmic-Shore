@@ -16,7 +16,7 @@ namespace CosmicShore.Core
     {
         int attachedBlockIndex;
         Trail attachedTrail;
-        Teams team;
+        Domains domain;
         float percentTowardNextBlock;
         TrailFollowerDirection direction;
         public TrailFollowerDirection Direction { get { return direction; } }
@@ -38,7 +38,7 @@ namespace CosmicShore.Core
         {
             // TODO: find a better way of setting team that doesn't assume a vessel
             vesselData = GetComponent<IVesselStatus>();
-            team = vesselData.Team;
+            domain = vesselData.Domain;
         }
 
         public void Attach(TrailBlock trailBlock)
@@ -135,7 +135,7 @@ namespace CosmicShore.Core
             if (trailBlock.destroyed)
                 return DestroyedTerrainSpeed;
 
-            if (trailBlock.Team == team)
+            if (trailBlock.Domain == domain)
                 return FriendlyTerrainSpeed;
 
             return HostileTerrainSpeed;

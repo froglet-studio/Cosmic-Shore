@@ -43,9 +43,9 @@ namespace CosmicShore.Core
         
         [SerializeField] PrismEventChannelWithReturnSO _onFlockSpawnedEventChannel;
 
-        public Teams Team
+        public Domains Domain
         {
-            get => teamManager?.Team ?? Teams.Unassigned;
+            get => teamManager?.Domain ?? Domains.Unassigned;
             set
             {
                 if (teamManager != null)
@@ -184,13 +184,13 @@ namespace CosmicShore.Core
             // TODO - Use Event Channel
             if (CellControlManager.Instance)
             {
-                CellControlManager.Instance.AddBlock(Team, TrailBlockProperties);
+                CellControlManager.Instance.AddBlock(Domain, TrailBlockProperties);
                 
                 // Setup team node tracking after block is fully initialized
                 Cell targetCell = CellControlManager.Instance.GetNearestCell(TrailBlockProperties.position);
-                System.Array.ForEach(new[] { Teams.Jade, Teams.Ruby, Teams.Gold }, t =>
+                System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
                 {
-                    if (t != Team) targetCell.countGrids[t].AddBlock(this);
+                    if (t != Domain) targetCell.countGrids[t].AddBlock(this);
                 });
             }
         }
@@ -223,7 +223,7 @@ namespace CosmicShore.Core
                 ActivateShield(2.0f);
         }
         
-        protected virtual GameObject SetupDestruction(Teams team, string playerName, bool devastate = false)
+        protected virtual GameObject SetupDestruction(Domains domain, string playerName, bool devastate = false)
         {
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
@@ -244,21 +244,21 @@ namespace CosmicShore.Core
 
             // Cell control management
             if (CellControlManager.Instance != null)
-                CellControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
+                CellControlManager.Instance.RemoveBlock(domain, TrailBlockProperties);
 
             return null; // Will be set by specific destruction method
         }
 
         // Explosion Methods
-        protected virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
+        protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
-            SetupDestruction(team, playerName, devastate);
+            SetupDestruction(domain, playerName, devastate);
 
             // Spawn explosion object
             var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
             {
-                OwnTeam  = Team,
-                Position = transform.position,
+                ownDomain  = Domain,
+                SpawnPosition = transform.position,
                 Rotation = transform.rotation,
                 Scale = transform.lossyScale,
                 Velocity = impactVector / TrailBlockProperties.volume,
@@ -282,18 +282,18 @@ namespace CosmicShore.Core
         }
 
         // Implosion Methods
-        protected virtual void Implode(Vector3 sinkPoint, Teams team, string playerName, bool devastate = false)
+        protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
-            SetupDestruction(team, playerName, devastate);
+            SetupDestruction(domain, playerName, devastate);
 
             // Spawn implosion object
             var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
             {
-                OwnTeam  = Team,
-                Position = transform.position,
+                ownDomain  = Domain,
+                SpawnPosition = transform.position,
                 Rotation = transform.rotation,
                 Scale = transform.lossyScale,
-                SinkPoint = sinkPoint,
+                TargetTransform = targetTransform,
                 Volume = TrailBlockProperties.volume,
                 PrismType = PrismType.Implosion
             });
@@ -315,7 +315,7 @@ namespace CosmicShore.Core
             }*/
         }
 
-        public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
+        public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             if ((TrailBlockProperties.IsShielded && !devastate) || TrailBlockProperties.IsSuperShielded)
             {
@@ -323,7 +323,19 @@ namespace CosmicShore.Core
             }
             else
             {
-                Explode(impactVector, team, playerName, devastate);
+                Explode(impactVector, domain, playerName, devastate);
+            }
+        }
+        
+        public void Consume(Transform target, Domains domain, string playerName, bool devastate = false)
+        {
+            if ((TrailBlockProperties.IsShielded && !devastate) || TrailBlockProperties.IsSuperShielded)
+            {
+                DeactivateShields();
+            }
+            else
+            {
+                Implode(target, domain, playerName, devastate);
             }
         }
 
@@ -336,9 +348,9 @@ namespace CosmicShore.Core
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 
         // Team Management Methods
-        public void Steal(string playerName, Teams team, bool superSteal = false) => teamManager.Steal(playerName, team, superSteal);
+        public void Steal(string playerName, Domains domain, bool superSteal = false) => teamManager.Steal(playerName, domain, superSteal);
         // public void Steal(string playerName, Teams team) => Steal(playerName, team);
-        public void ChangeTeam(Teams team) => teamManager?.ChangeTeam(team);
+        public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
 
         // Restoration
         public void Restore()
@@ -357,7 +369,7 @@ namespace CosmicShore.Core
                 });
 
                 if (CellControlManager.Instance != null)
-                    CellControlManager.Instance.RestoreBlock(Team, TrailBlockProperties);
+                    CellControlManager.Instance.RestoreBlock(Domain, TrailBlockProperties);
 
                 blockCollider.enabled = true;
                 meshRenderer.enabled = true;

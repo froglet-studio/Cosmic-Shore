@@ -13,7 +13,7 @@ namespace CosmicShore.Game
             var shipStatus = impactor.Vessel.VesselStatus;
             var trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;
             
-            if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != shipStatus.Team)
+            if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Domain != shipStatus.Domain)
             {
                 shipStatus.VesselTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, duration);
             }

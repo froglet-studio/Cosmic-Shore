@@ -85,7 +85,7 @@ namespace CosmicShore
                 scale = TrailBlock.TargetScale;
                 if (isSeed)
                 {
-                    TrailBlock.Team = Teams.Blue;
+                    TrailBlock.Domain = Domains.Blue;
                 }
             }
         }
@@ -478,7 +478,7 @@ namespace CosmicShore
             trailBlock.TargetScale = scale;
             trailBlock.MaxScale = TrailBlock.MaxScale;
             trailBlock.GrowthVector = TrailBlock.GrowthVector;
-            trailBlock.Steal(TrailBlock.PlayerName, TrailBlock.Team);
+            trailBlock.Steal(TrailBlock.PlayerName, TrailBlock.Domain);
             trailBlock.ChangeSize();
             var mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
             mateComponent.TrailBlock = trailBlock;

@@ -30,7 +30,7 @@ namespace CosmicShore.Game
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            if (prismImpactee.Prism.Team == Teams.Jade)
+            if (prismImpactee.Prism.Domain == Domains.Jade)
             {
                 if (prismImpactee.Prism.CurrentState == BlockState.Normal)
                 {
@@ -89,7 +89,7 @@ namespace CosmicShore.Game
                 var dir = (prism.transform.position - shipPos).normalized;
                 var damage = dir * speed * overchargeInertia;
 
-                prism.Prism.Damage(damage, Teams.None, status.PlayerName, devastate: true);
+                prism.Prism.Damage(damage, Domains.None, status.PlayerName, devastate: true);
             }
 
             OnOvercharge?.Invoke(impactor);

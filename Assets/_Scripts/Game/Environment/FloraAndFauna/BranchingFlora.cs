@@ -90,7 +90,7 @@ namespace CosmicShore
                             var distance = newHealthblock.transform.position - crystal.transform.position;
                             var newLifeform = Instantiate(SecondarySpawn, crystal.transform.position + (2 * distance), Quaternion.LookRotation(-distance), this.transform);
                             newLifeform.cell = cell;
-                            newLifeform.Team = Team;
+                            newLifeform.domain = domain;
                             newLifeform.goal = newHealthblock.transform.position;
                             hasPlantedSecondary = true;
                             newLifeform.hasPlantedSecondary = true;

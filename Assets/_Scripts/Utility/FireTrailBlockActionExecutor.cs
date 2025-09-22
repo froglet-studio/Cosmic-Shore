@@ -62,7 +62,7 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
         blockInstance.TargetScale *= so.ProjectileScale;
         blockInstance.TrailBlockProperties.IsShielded = so.Shielded;
         blockInstance.TrailBlockProperties.IsDangerous = so.FriendlyFire; 
-        blockInstance.Team = _status.Team; 
+        blockInstance.Domain = _status.Domain; 
         blockInstance.PlayerName = _status.PlayerName;
         
         StartCoroutine(MoveBlockForward(blockInstance, so));

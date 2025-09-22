@@ -67,7 +67,7 @@ namespace CosmicShore.Game.Arcade
         virtual protected TrailBlock CreateBlock(Vector3 position, Vector3 lookPosition, Trail trail)
         {
             var Block = Instantiate(trailBlock);
-            Block.ChangeTeam(ActivePlayer.Team);
+            Block.ChangeTeam(ActivePlayer.Domain);
             Block.ownerID = ActivePlayer.PlayerUUID;
             Block.PlayerName = ActivePlayer.Name;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));

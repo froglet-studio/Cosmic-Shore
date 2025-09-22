@@ -9,6 +9,24 @@ public class SO_ColorSet : ScriptableObject
     [SerializeField] public DomainColorSet GoldColors;
     [SerializeField] public DomainColorSet BlueColors;
     [SerializeField] public EnvironmentColorSet EnvironmentColors;
+
+    public bool TryGetColorSetByDomain(Domains domain,  out DomainColorSet colorSet)
+    {
+        colorSet = domain switch
+        {
+            Domains.Jade => JadeColors,
+            Domains.Ruby => RubyColors,
+            Domains.Gold => GoldColors,
+            Domains.Blue => BlueColors,
+            _ => null
+        };
+
+        if (colorSet != null) 
+            return true;
+        
+        Debug.LogWarning($"Unknown domain: {domain}, No color set found!");
+        return false;
+    }
 }
 
 [System.Serializable]

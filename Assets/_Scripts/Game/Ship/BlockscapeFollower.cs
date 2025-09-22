@@ -130,7 +130,7 @@ namespace CosmicShore.Core
         private float GetTerrainAwareBlockSpeed(TrailBlock trailBlock)
         {
             if (trailBlock.destroyed) return DestroyedTerrainSpeed;
-            return trailBlock.Team == vesselData.Team ? FriendlyTerrainSpeed : HostileTerrainSpeed;
+            return trailBlock.Domain == vesselData.Domain ? FriendlyTerrainSpeed : HostileTerrainSpeed;
         }
     }
 }

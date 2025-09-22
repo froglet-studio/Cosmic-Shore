@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using CosmicShore.Game;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Utilities
@@ -12,14 +13,14 @@ namespace CosmicShore.Utilities
     [System.Serializable]
     public class PrismEventData
     {
-        public Teams OwnTeam;
+        [FormerlySerializedAs("OwnTeam")] public Domains ownDomain;
         public Quaternion Rotation;
-        public Vector3 Position;
+        public Vector3 SpawnPosition;
         public Vector3 Scale;
         public Vector3 Velocity;
-        public Vector3 SinkPoint;
         public float Volume;
         public PrismType PrismType;
+        public Transform TargetTransform;
     }
 
     [CreateAssetMenu(fileName = "PrismEventChannelWithReturn", menuName = "ScriptableObjects/Event Channels/PrismEventChannelWithReturnSO")]

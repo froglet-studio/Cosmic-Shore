@@ -16,7 +16,7 @@ public class SpawnableDartBoard : SpawnableAbstractBase
     void CreateRings()
     {
         TrailBlock trailBlock;
-        Teams team;
+        Domains domain;
         container = new()
         {
             name = "SpawnedDartBoard"
@@ -30,19 +30,19 @@ public class SpawnableDartBoard : SpawnableAbstractBase
                 if ( (block / ring + ring/3) % 2 == 0)
                 { 
                     trailBlock = greenTrailBlock;
-                    team = Teams.Jade; 
+                    domain = Domains.Jade; 
                 }
                 else 
                 { 
                     trailBlock = redTrailBlock; 
-                    team = Teams.Ruby;
+                    domain = Domains.Ruby;
                 }
-                CreateRingBlock(block, 0, 0, 0, trails[ring-1], ring, trailBlock, team); // old value for phase = ring % 2 * .5f
+                CreateRingBlock(block, 0, 0, 0, trails[ring-1], ring, trailBlock, domain); // old value for phase = ring % 2 * .5f
             }
         }
     }
 
-    void CreateRingBlock(int i, float phase, float tilt, float sweep, Trail trail, int ring, TrailBlock trailBlock, Teams team)
+    void CreateRingBlock(int i, float phase, float tilt, float sweep, Trail trail, int ring, TrailBlock trailBlock, Domains domain)
     {
         var position = transform.position +
                              ring * ringThickness * Mathf.Cos(((i + phase) / (blockCount * ring)) * 2 * Mathf.PI) * transform.right +
@@ -51,13 +51,13 @@ public class SpawnableDartBoard : SpawnableAbstractBase
         CreateBlock(position, position + tilt * ringThickness * transform.forward, "::SpawnableDartBoard::" + Time.time + "::" + i, trail,
             new Vector3(((Mathf.PI / 3f) * ringThickness) - (gap / (2 * ring)), // blockwidth 
                         (ringCount - ring) * ringThickness/3f, // dartboard thickness
-                         ringThickness - (gap/5f)), trailBlock, team); //annulus thickness
+                         ringThickness - (gap/5f)), trailBlock, domain); //annulus thickness
     }
 
-    void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, Teams team)
+    void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, Domains domain)
     {
         var Block = Instantiate(trailBlock);
-        Block.ChangeTeam(team);
+        Block.ChangeTeam(domain);
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.transform.SetParent(container.transform, false);
         Block.ownerID = blockId;

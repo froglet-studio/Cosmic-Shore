@@ -46,19 +46,19 @@ namespace CosmicShore.Game
                 allowRecord = false;
         }
 
-        public override IRoundStats GetOrCreateRoundStats(Teams team)
+        public override IRoundStats GetOrCreateRoundStats(Domains domain)
         {
-            var player = NetworkPlayerClientCache.GetPlayerByTeam(team);
+            var player = NetworkPlayerClientCache.GetPlayerByTeam(domain);
             if (!player)
             {
-                Debug.LogError($"NetworkStatsManager: No player found for team {team}.");
+                Debug.LogError($"NetworkStatsManager: No player found for team {domain}.");
                 return null;
             }
 
             if (player.gameObject.TryGetComponent(out NetworkRoundStats roundStats)) 
                 return roundStats;
             
-            Debug.LogError($"NetworkStatsManager: No NetworkRoundStats found for player on team {team}.");
+            Debug.LogError($"NetworkStatsManager: No NetworkRoundStats found for player on team {domain}.");
             return null;
         }
     }

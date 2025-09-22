@@ -42,7 +42,7 @@ namespace CosmicShore.Game
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
-                    if (Projectile.DisallowImpactOnVessel(shipImpactee.Vessel.VesselStatus.Team))
+                    if (Projectile.DisallowImpactOnVessel(shipImpactee.Vessel.VesselStatus.Domain))
                         break;
                     // ExecuteEffect(impactee, projectileShipEffects);
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileShipEffects)) return;
@@ -53,7 +53,7 @@ namespace CosmicShore.Game
                     break;
                 
                 case PrismImpactor prismImpactee:
-                    if (Projectile.DisallowImpactOnPrism(prismImpactee.Prism.Team))
+                    if (Projectile.DisallowImpactOnPrism(prismImpactee.Prism.Domain))
                         break;
                     // ExecuteEffect(impactee, projectilePrismEffects);
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectilePrismEffects)) return;

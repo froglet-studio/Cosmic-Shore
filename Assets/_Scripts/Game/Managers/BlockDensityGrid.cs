@@ -47,7 +47,7 @@ public class BlockDensityGrid
     public float Stride = 60f;
     public float totalLength = 1000f;
     public Vector3 origin;
-    public Teams team;
+    public Domains Domain;
     public byte[,,] values;
 
     protected int nGridPointsPerDimension;
@@ -55,9 +55,9 @@ public class BlockDensityGrid
     protected NativeArray<int3> jobResult;
     protected bool jobSystemInitialized = false;
 
-    public void Init(Teams Team)
+    public void Init(Domains domain)
     {
-        team = Team;
+        Domain = domain;
         this.origin = new Vector3(-this.totalLength / 2, -this.totalLength / 2, -this.totalLength / 2);
         nGridPointsPerDimension = (int)Math.Floor(this.totalLength / this.Stride) + 1;
         
@@ -147,9 +147,9 @@ public class BlockDensityGrid
 
 public class BlockCountDensityGrid : BlockDensityGrid
 {
-    public BlockCountDensityGrid(Teams team)
+    public BlockCountDensityGrid(Domains domain)
     {
-        base.Init(team);
+        base.Init(domain);
         values = new byte[nGridPointsPerDimension, nGridPointsPerDimension, nGridPointsPerDimension];
     }
 

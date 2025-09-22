@@ -39,12 +39,12 @@ namespace CosmicShore
         public GameObject threatPrefab;
         public SpawnMode spawnMode;
 
-        public virtual void Spawn(Vector3 spawnPoint, Teams team)
+        public virtual void Spawn(Vector3 spawnPoint, Domains domain)
         {
             var threat = GameObject.Instantiate(threatPrefab, spawnPoint, Quaternion.identity);
             ITeamAssignable iTeam = threat.GetComponent<ITeamAssignable>();
             if (iTeam != null)
-                iTeam.SetTeam(team);
+                iTeam.SetTeam(domain);
         }
     }
 

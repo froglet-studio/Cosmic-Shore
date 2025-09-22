@@ -7,12 +7,18 @@ namespace CosmicShore.Game
     /// Handles visual + positional explosion effect for prism destruction.
     /// Uses MaterialPropertyBlock to keep prefab-assigned materials intact.
     /// </summary>
+    [RequireComponent(typeof(MeshRenderer))]
     public class PrismExplosion : MonoBehaviour
     {
-        [SerializeField] private float minSpeed = 30f;
-        [SerializeField] private float maxSpeed = 250f;
+        [SerializeField] 
+        private float minSpeed = 30f;
 
+        [SerializeField] 
+        private float maxSpeed = 250f;
+
+        [SerializeField] 
         private MeshRenderer _renderer;
+
         private MaterialPropertyBlock _mpb;
         private Coroutine _running;
 
@@ -24,9 +30,20 @@ namespace CosmicShore.Game
         private static readonly int ExplosionAmountID = Shader.PropertyToID("_ExplosionAmount");
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
 
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (!_renderer)
+                _renderer = GetComponent<MeshRenderer>();
+        }
+#endif
+
         private void Awake()
         {
-            _renderer = GetComponent<MeshRenderer>();
+            if (_renderer == null)
+                _renderer = GetComponent<MeshRenderer>();
+
+            // Always create a MPB instance
             _mpb = new MaterialPropertyBlock();
         }
 
@@ -38,7 +55,7 @@ namespace CosmicShore.Game
                 _running = null;
             }
 
-            if (_renderer != null && _mpb != null)
+            if (_renderer && _mpb != null)
             {
                 _mpb.Clear();
                 _renderer.SetPropertyBlock(_mpb);
@@ -47,30 +64,24 @@ namespace CosmicShore.Game
 
         public void TriggerExplosion(Vector3 velocity)
         {
+            if (!_renderer || _mpb == null)
+            {
+                Debug.LogError("[PrismExplosion] Missing required components, cannot trigger explosion.");
+                return;
+            }
+
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * minSpeed;
 
             if (_running != null)
                 StopCoroutine(_running);
 
-#if UNITY_EDITOR
-            // Optional debug: check if prefab material has the needed properties
-            var mat = _renderer != null ? _renderer.material : null;
-            if (mat != null)
-            {
-                if (!mat.HasProperty(ExplosionAmountID))
-                    Debug.LogWarning($"Material {mat.name} missing property: _ExplosionAmount");
-                if (!mat.HasProperty(OpacityID))
-                    Debug.LogWarning($"Material {mat.name} missing property: _Opacity");
-            }
-#endif
-
             _running = StartCoroutine(ExplosionCoroutine(velocity));
         }
 
         private IEnumerator ExplosionCoroutine(Vector3 velocity)
         {
-            if (_renderer == null || _mpb == null)
+            if (!_renderer || _mpb == null)
                 yield break;
 
             // Clamp velocity and calculate speed
@@ -89,6 +100,9 @@ namespace CosmicShore.Game
             {
                 duration += Time.deltaTime;
 
+                if (!_renderer || _mpb == null) // safety exit if destroyed mid-run
+                    yield break;
+
                 // Update position
                 Vector3 newPosition = initialPosition + duration * velocity;
                 if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
@@ -104,7 +118,7 @@ namespace CosmicShore.Game
             }
 
             // Reset overrides
-            if (_renderer != null)
+            if (_renderer != null && _mpb != null)
             {
                 _mpb.Clear();
                 _renderer.SetPropertyBlock(_mpb);

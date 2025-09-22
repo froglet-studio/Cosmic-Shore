@@ -43,7 +43,7 @@ namespace CosmicShore.Game.Projectiles
             int totalBlocksNeeded = (int)blockCount * ringCount;
 
             // Wait for buffer to have enough blocks
-            while (!TrailBlockBufferManager.Instance.HasAvailableBlocks(Team, totalBlocksNeeded))
+            while (!TrailBlockBufferManager.Instance.HasAvailableBlocks(Domain, totalBlocksNeeded))
             {
                 yield return new WaitForSeconds(0.1f);
             }
@@ -67,7 +67,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerId, Trail trail)
         {
-            var block = TrailBlockBufferManager.Instance.GetBlock(Team);
+            var block = TrailBlockBufferManager.Instance.GetBlock(Domain);
             block.ownerID = Vessel.VesselStatus.Player.PlayerUUID;
             block.PlayerName = Vessel.VesselStatus.PlayerName;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));

@@ -14,11 +14,11 @@ namespace CosmicShore.Core
             set => n_Name.Value = value;
         }
         
-        private readonly NetworkVariable<Teams> n_Team = new(
+        private readonly NetworkVariable<Domains> n_Team = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
 
-        public Teams Team
+        public Domains Domain
         {
             get => n_Team.Value;
             set => n_Team.Value = value;

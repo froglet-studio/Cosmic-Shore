@@ -51,10 +51,10 @@ namespace CosmicShore
 
             CreateBlock(transform.position + offset, tilt * transform.forward - (offset + transform.position), transform.forward, container.name + "::BLOCK::" + block, trail, tempBlockscale, trailBlock, container);
         }
-        void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
+        void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.TrailBlock trailBlock, GameObject container, Domains domain = Domains.Blue)
         {
             var Block = Instantiate(trailBlock);
-            Block.ChangeTeam(team);
+            Block.ChangeTeam(domain);
             Block.ownerID = "public";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             Block.transform.SetParent(container.transform, false);

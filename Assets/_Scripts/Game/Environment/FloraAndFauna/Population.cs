@@ -3,6 +3,7 @@ using System.Collections;
 using CosmicShore.Game;
 using CosmicShore.SOAP;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
@@ -11,7 +12,7 @@ namespace CosmicShore
         [SerializeField]
         MiniGameDataSO miniGameData;
         
-        public Teams Team;
+        [FormerlySerializedAs("Team")] public Domains domain;
         [SerializeField] float goalUpdateInterval = 5f;
         public Vector3 Goal;
         //public List<float> Weights;
@@ -43,7 +44,7 @@ namespace CosmicShore
             while (true)
             {
                 yield return new WaitForSeconds(goalUpdateInterval);
-                Vector3 highDensityPosition = cell.GetExplosionTarget(Team);
+                Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
                 Goal = highDensityPosition;
                 //CalculateTeamWeights();
             }
@@ -54,9 +55,9 @@ namespace CosmicShore
             return gameObject;
         }
 
-        public void SetTeam(Teams team)
+        public void SetTeam(Domains domain)
         {
-            Team = team;
+            this.domain = domain;
         }
     }
 }
