@@ -381,7 +381,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c3f54abda8145ecabf7c85253cab9ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   seedAssemblerExecutor: {fileID: 0}
   stationarySeedConfig: {fileID: 0}
 --- !u!1 &891036852695513002
@@ -1638,7 +1638,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
-  trailBlock: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
+  prismPrefab: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
     type: 3}
   skimmer: {fileID: 2413128156359967549}
   initialWavelength: 7
@@ -1776,7 +1776,7 @@ MonoBehaviour:
   - {fileID: 4010301292554909138}
   - {fileID: 4125835721608554647}
   - {fileID: 5978549935140177486}
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 0}
@@ -3421,7 +3421,7 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   jawResourceIndex: -1
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   worldToUIScale: 8
   imageScale: 0.08

@@ -132,8 +132,8 @@ namespace CosmicShore.Core
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
-            CreateBlock();
-            // StartCoroutine(CreateBlockCoroutine());
+            // CreateBlock();
+            StartCoroutine(CreateBlockCoroutine());
 
             // Apply initial states if needed
             if (prismProperties.IsShielded) ActivateShield();

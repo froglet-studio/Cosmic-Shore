@@ -20,7 +20,7 @@ GameObject:
   - component: {fileID: 1559508741070701007}
   - component: {fileID: 5595695120196220643}
   m_Layer: 0
-  m_Name: SparrowBlock
+  m_Name: Sparrow Prism
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

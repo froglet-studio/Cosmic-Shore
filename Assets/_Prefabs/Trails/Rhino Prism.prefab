@@ -20,7 +20,7 @@ GameObject:
   - component: {fileID: 1449908699290282134}
   - component: {fileID: 6190978898789478956}
   m_Layer: 0
-  m_Name: RhinoBlock
+  m_Name: Rhino Prism
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -19,9 +19,8 @@ namespace CosmicShore.Game
 
         [SerializeField] private PrismEventChannelWithReturnSO _onPrismSpawnedEventChannel;
         
-        [FormerlySerializedAs("trailBlock")]
         [Header("References")]
-        [SerializeField] Prism prism;
+        [SerializeField] Prism prismPrefab;
         [SerializeField] Skimmer skimmer;
 
         [Header("Wave Settings")]
@@ -76,7 +75,7 @@ namespace CosmicShore.Game
         // Properties
         public float MinWaveLength => minWavelength;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
-        public float TrailZScale => prism.transform.localScale.z;
+        public float TrailZScale => prismPrefab.transform.localScale.z;
         public event Action<Prism> OnBlockSpawned;
 
         private void Awake()
@@ -228,13 +227,13 @@ namespace CosmicShore.Game
         }
 
         /// <summary>Creates a block at offset.</summary>
-        /*void CreateBlock(float halfGap, Trail prisms)
+        void CreateBlock(float halfGap, Trail prisms)
         {
-            var prism = Instantiate(trailBlock);
+            var prism = Instantiate(prismPrefab);
             EnsureContainer();
 
             // scale
-            Vector3 baseScale = trailBlock.transform.localScale;
+            Vector3 baseScale = prismPrefab.transform.localScale;
             var scale = new Vector3(
                 baseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
                 baseScale.y * YScaler,
@@ -267,23 +266,23 @@ namespace CosmicShore.Game
 
             // shield
             if (shielded)
-                prism.PrismProperties.IsShielded = true;
+                prism.prismProperties.IsShielded = true;
 
             // add to trail
             prisms.Add(prism);
-            prism.PrismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
+            prism.prismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
 
             // event
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
             OnBlockSpawned?.Invoke(prism);
-        }*/
+        }
         
-        void CreateBlock(float halfGap, Trail prisms)
+        void CreateBlockWithGrow(float halfGap, Trail prisms)
         {
             EnsureContainer();
 
             // --- Scale ---
-            Vector3 baseScale = prism.transform.localScale;
+            Vector3 baseScale = prismPrefab.transform.localScale;
             Vector3 scale = new Vector3(
                 baseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
                 baseScale.y * YScaler,
@@ -301,7 +300,7 @@ namespace CosmicShore.Game
             void OnGrowCompleted()
             {
                 // Instantiate real TrailBlock
-                Prism prism = Instantiate(this.prism, pos, rot, TrailContainer.transform);
+                Prism prism = Instantiate(prismPrefab, pos, rot, TrailContainer.transform);
                 prism.TargetScale = scale;
 
                 // --- Ownership & Team ---
