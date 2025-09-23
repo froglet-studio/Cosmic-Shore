@@ -151,7 +151,7 @@ namespace CosmicShore.Core
             TrailBlockProperties.volume = 1f; // Set a default non-zero volume
         }
 
-        /*private IEnumerator CreateBlockCoroutine()
+        private IEnumerator CreateBlockCoroutine()
         {
             yield return new WaitForSeconds(waitTime);
             // yield return new WaitUntil(() => Player != null);
@@ -172,7 +172,7 @@ namespace CosmicShore.Core
 
             // TODO - Raise events about block creation.
             /*if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);#1#
+                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);*/
 
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
@@ -194,7 +194,7 @@ namespace CosmicShore.Core
                     if (t != Domain) targetCell.countGrids[t].AddBlock(this);
                 });
             }
-        }*/
+        }
         
         private void CreateBlock()
         {
