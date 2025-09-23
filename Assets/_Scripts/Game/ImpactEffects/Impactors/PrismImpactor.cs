@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [RequireComponent(typeof(TrailBlock))]
+    [RequireComponent(typeof(Prism))]
     public class PrismImpactor : ImpactorBase
     {
         VesselPrismEffectSO[] vesselPrismEffects;
@@ -16,11 +16,11 @@ namespace CosmicShore.Game
         ExplosionPrismEffectSO[] explosionPrismEffects;
        
         
-        public TrailBlock Prism;
+        public Prism Prism;
 
         void Awake()
         {
-            Prism ??= GetComponent<TrailBlock>();
+            Prism ??= GetComponent<Prism>();
         }
         
         protected override void AcceptImpactee(IImpactor impactee)
@@ -64,7 +64,7 @@ namespace CosmicShore.Game
 
         private void OnValidate()
         {
-            Prism ??= GetComponent<TrailBlock>();
+            Prism ??= GetComponent<Prism>();
         }
     }
 }

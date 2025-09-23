@@ -1,10 +1,11 @@
 
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SpawnableHelix : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     [SerializeField] Vector3 scale;
     static int ObjectsSpawned = 0;
     [SerializeField] public float firstOrderRadius = 1;
@@ -33,7 +34,7 @@ public class SpawnableHelix : SpawnableAbstractBase
             var y = firstOrderRadius * (Mathf.Cos(t) * yc1) + (secondOrderRadius * (Mathf.Cos(t*yc2 + yc3) * yc4));
             var position = new Vector3(x, y, t*30f);
             var lookPosition = (block == 0) ? position : trail.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, scale, trailBlock, container, Domains.Gold);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, scale, prism, container, Domains.Gold);
         }
 
         trails.Add(trail);

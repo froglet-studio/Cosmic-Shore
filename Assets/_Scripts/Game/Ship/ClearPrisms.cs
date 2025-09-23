@@ -96,10 +96,10 @@ namespace CosmicShore
 
         void OnTriggerEnter(Collider other)
         {
-            TrailBlock trailBlock = other.GetComponent<TrailBlock>();
-            if (trailBlock != null)
+            Prism prism = other.GetComponent<Prism>();
+            if (prism != null)
             {
-                trailBlock.SetTransparency(true);
+                prism.SetTransparency(true);
             }
         }
 
@@ -114,10 +114,10 @@ namespace CosmicShore
 
         void OnTriggerExit(Collider other)
         {
-            TrailBlock trailBlock = other.GetComponent<TrailBlock>();
-            if (trailBlock != null)
+            Prism prism = other.GetComponent<Prism>();
+            if (prism != null)
             {
-                trailBlock.SetTransparency(false);
+                prism.SetTransparency(false);
             }
         }
     }

@@ -7,7 +7,7 @@ public class DetachAction : ShipAction
         if (VesselStatus.Attached)
         {
             VesselStatus.Attached = false;
-            VesselStatus.AttachedTrailBlock = null;
+            VesselStatus.AttachedPrism = null;
         }
     }
 

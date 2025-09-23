@@ -32,7 +32,7 @@ public class GunVesselTransformer : VesselTransformer
         {
             case true when !attached:
             {
-                trailFollower.Attach(VesselStatus.AttachedTrailBlock);
+                trailFollower.Attach(VesselStatus.AttachedPrism);
                 if (Vessel.VesselStatus.AutoPilotEnabled && cameraManager != null)
                 {
                     cameraManager.SetNormalizedCloseCameraDistance(1);
@@ -83,21 +83,21 @@ public class GunVesselTransformer : VesselTransformer
     void SlideActions()
     {
         // TODO: should this be pulled out as an action type?
-        if (trailFollower.AttachedTrailBlock.TrailBlockProperties.IsShielded) resourceSystem.ChangeResourceAmount(ammoIndex, rechargeRate * 2 * Time.deltaTime);
+        if (trailFollower.AttachedPrism.prismProperties.IsShielded) resourceSystem.ChangeResourceAmount(ammoIndex, rechargeRate * 2 * Time.deltaTime);
         else resourceSystem.ChangeResourceAmount(ammoIndex, rechargeRate * Time.deltaTime);
     }
 
     public void FinalBlockSlideEffects()
     {
-        VesselStatus.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
+        VesselStatus.AttachedPrism = trailFollower.AttachedPrism;
 
-        if (VesselStatus.AttachedTrailBlock.destroyed)
-            VesselStatus.AttachedTrailBlock.Restore();
+        if (VesselStatus.AttachedPrism.destroyed)
+            VesselStatus.AttachedPrism.Restore();
 
-        if (VesselStatus.AttachedTrailBlock.Domain == Vessel.VesselStatus.Domain)
+        if (VesselStatus.AttachedPrism.Domain == Vessel.VesselStatus.Domain)
         {
-            VesselStatus.AttachedTrailBlock.Grow(growthAmount.Value);
+            VesselStatus.AttachedPrism.Grow(growthAmount.Value);
         }
-        else VesselStatus.AttachedTrailBlock.Steal(Vessel.VesselStatus.Player.Name, Vessel.VesselStatus.Domain);
+        else VesselStatus.AttachedPrism.Steal(Vessel.VesselStatus.Player.Name, Vessel.VesselStatus.Domain);
     }
 }

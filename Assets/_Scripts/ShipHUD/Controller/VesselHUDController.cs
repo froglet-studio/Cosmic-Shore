@@ -138,7 +138,7 @@ namespace CosmicShore.Game
             // _view.trailBlockPrefab = prefab;
             BlockPrefab = prefab; 
             
-            if (_trailPool == null && _view.trailSpawner && _view.trailDisplayContainer && BlockPrefab != null)
+            if (_trailPool == null && _view.prismSpawner && _view.trailDisplayContainer && BlockPrefab != null)
                 BindTrail();
         }
         
@@ -146,22 +146,22 @@ namespace CosmicShore.Game
         {
             if (_view == null) return;
 
-            if (_view.trailSpawner == null) { Debug.LogWarning("HUD: no TrailSpawner"); return; }
+            if (_view.prismSpawner == null) { Debug.LogWarning("HUD: no TrailSpawner"); return; }
             if (_view.trailDisplayContainer == null) { Debug.LogWarning("HUD: no TrailDisplayContainer"); return; }
             if (BlockPrefab == null) { Debug.LogWarning("HUD: no TrailBlockPrefab"); return; }
 
             _trailPool = new TrailPool(
                 _view.trailDisplayContainer,
                 BlockPrefab,
-                _view.trailSpawner,
+                _view.prismSpawner,
                 _view.worldToUIScale,
                 _view.imageScale,
                 _view.swingBlocks
             );
-            _view.trailSpawner.OnBlockCreated += OnTrailBlockCreated;
+            _view.prismSpawner.OnBlockCreated += PrismBlockCreated;
         }
 
-        private void OnTrailBlockCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
+        private void PrismBlockCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
             if (_status is { AutoPilotEnabled: true }) return;
             if (_trailPool == null) return;
@@ -195,7 +195,7 @@ namespace CosmicShore.Game
         {
             private readonly RectTransform _container;
             private readonly GameObject _blockPrefab;
-            private readonly TrailSpawner _spawner;
+            private readonly PrismSpawner _spawner;
 
             public readonly float WorldToUi;
             public readonly float ImageScale;
@@ -204,7 +204,7 @@ namespace CosmicShore.Game
             private GameObject[,] _pool;
             private int _poolSize;
 
-            public TrailPool(RectTransform container, GameObject prefab, TrailSpawner spawner,
+            public TrailPool(RectTransform container, GameObject prefab, PrismSpawner spawner,
                              float worldToUi, float imageScale, bool swingBlocks)
             {
                 _container  = container;

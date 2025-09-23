@@ -6,7 +6,7 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(IVesselStatus))]
     public class BlockscapeFollower : MonoBehaviour
     {
-        public TrailBlock AttachedTrailBlock { get; private set; }
+        public Prism AttachedPrism { get; private set; }
         [SerializeField] private float FriendlyTerrainSpeed;
         [SerializeField] private float HostileTerrainSpeed;
         [SerializeField] private float DestroyedTerrainSpeed;
@@ -21,21 +21,21 @@ namespace CosmicShore.Core
             vesselData = GetComponent<IVesselStatus>();
         }
 
-        public void Attach(TrailBlock trailBlock)
+        public void Attach(Prism prism)
         {
-            AttachedTrailBlock = trailBlock;
-            currentSurfaceNormal = DetermineCollidingSurface(transform, AttachedTrailBlock.transform);
+            AttachedPrism = prism;
+            currentSurfaceNormal = DetermineCollidingSurface(transform, AttachedPrism.transform);
         }
 
         public void Detach()
         {
-            AttachedTrailBlock = null;
+            AttachedPrism = null;
         }
 
         void UpdateSurfaceNormalIfNeeded(ref Vector3 projectedMovement)
         {
-            Vector3 localPosition = AttachedTrailBlock.transform.InverseTransformPoint(transform.position + projectedMovement);
-            Vector3 extents = AttachedTrailBlock.transform.localScale / 2;
+            Vector3 localPosition = AttachedPrism.transform.InverseTransformPoint(transform.position + projectedMovement);
+            Vector3 extents = AttachedPrism.transform.localScale / 2;
 
             if (Mathf.Abs(localPosition.x) > extents.x || Mathf.Abs(localPosition.y) > extents.y || Mathf.Abs(localPosition.z) > extents.z)
             {
@@ -43,9 +43,9 @@ namespace CosmicShore.Core
                 // Adjust the position to the edge of the new surface
                 AdjustPositionForNewSurface(ref localPosition, extents, currentSurfaceNormal);
                 // Convert back to world space after adjustment
-                transform.position = AttachedTrailBlock.transform.TransformPoint(localPosition);
+                transform.position = AttachedPrism.transform.TransformPoint(localPosition);
                 // Re-project the movement onto the new surface normal
-                projectedMovement = Vector3.ProjectOnPlane(transform.forward * Throttle * GetTerrainAwareBlockSpeed(AttachedTrailBlock) * Time.deltaTime, currentSurfaceNormal);
+                projectedMovement = Vector3.ProjectOnPlane(transform.forward * Throttle * GetTerrainAwareBlockSpeed(AttachedPrism) * Time.deltaTime, currentSurfaceNormal);
             }
         }
 
@@ -82,26 +82,26 @@ namespace CosmicShore.Core
             if (xExcess > yExcess && xExcess > zExcess)
             {
                 // Crossed on the X-axis.
-                return localPosition.x > 0 ? AttachedTrailBlock.transform.right : -AttachedTrailBlock.transform.right;
+                return localPosition.x > 0 ? AttachedPrism.transform.right : -AttachedPrism.transform.right;
             }
             else if (yExcess > zExcess)
             {
                 // Crossed on the Y-axis.
-                return localPosition.y > 0 ? AttachedTrailBlock.transform.up : -AttachedTrailBlock.transform.up;
+                return localPosition.y > 0 ? AttachedPrism.transform.up : -AttachedPrism.transform.up;
             }
             else
             {
                 // Crossed on the Z-axis.
-                return localPosition.z > 0 ? AttachedTrailBlock.transform.forward : -AttachedTrailBlock.transform.forward;
+                return localPosition.z > 0 ? AttachedPrism.transform.forward : -AttachedPrism.transform.forward;
             }
         }
 
 
         public void RideTheTrail()
         {
-            if (AttachedTrailBlock == null) return;
+            if (AttachedPrism == null) return;
 
-            float speed = Throttle * GetTerrainAwareBlockSpeed(AttachedTrailBlock);
+            float speed = Throttle * GetTerrainAwareBlockSpeed(AttachedPrism);
             vesselData.Speed = speed;
 
             Vector3 movementDirection = transform.forward * speed * Time.deltaTime;
@@ -127,10 +127,10 @@ namespace CosmicShore.Core
             else return localPos.z > 0 ? block.forward : -block.forward;
         }
 
-        private float GetTerrainAwareBlockSpeed(TrailBlock trailBlock)
+        private float GetTerrainAwareBlockSpeed(Prism prism)
         {
-            if (trailBlock.destroyed) return DestroyedTerrainSpeed;
-            return trailBlock.Domain == vesselData.Domain ? FriendlyTerrainSpeed : HostileTerrainSpeed;
+            if (prism.destroyed) return DestroyedTerrainSpeed;
+            return prism.Domain == vesselData.Domain ? FriendlyTerrainSpeed : HostileTerrainSpeed;
         }
     }
 }

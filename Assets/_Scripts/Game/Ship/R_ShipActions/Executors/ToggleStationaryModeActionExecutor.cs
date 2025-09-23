@@ -1,11 +1,14 @@
 ﻿using CosmicShore;
 using CosmicShore.Game;
 using UnityEngine;
+using UnityEngine.Serialization;
+using PrismSpawner = CosmicShore.Game.PrismSpawner;
 
 public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
 {
+    [FormerlySerializedAs("trailSpawner")]
     [Header("Scene Refs")]
-    [SerializeField] private TrailSpawner trailSpawner;
+    [SerializeField] private PrismSpawner prismSpawner;
 
     [Header("Seeding")]
     [SerializeField] private SeedAssemblerActionExecutor seedAssemblerExecutor;
@@ -22,8 +25,8 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
         _registry = GetComponent<ActionExecutorRegistry>();
 
         // Auto-resolve missing refs
-        if (trailSpawner == null)
-            trailSpawner = shipStatus?.TrailSpawner;
+        if (prismSpawner == null)
+            prismSpawner = shipStatus?.PrismSpawner;
 
         if (seedAssemblerExecutor == null && _registry != null)
             seedAssemblerExecutor = _registry.Get<SeedAssemblerActionExecutor>();
@@ -47,22 +50,22 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
                 else
                     seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status); 
 
-                trailSpawner?.PauseTrailSpawner();
+                prismSpawner?.PauseTrailSpawner();
 
                 if (seeded)
                     seedAssemblerExecutor.BeginBonding();
             }
             else
             {
-                trailSpawner?.RestartTrailSpawnerAfterDelay(0);
+                prismSpawner?.RestartTrailSpawnerAfterDelay(0);
                 seedAssemblerExecutor.StopSeedCompletely();
             }
         }
         else
         {
             // Non-Serpent modes: just pause/resume trail spawner
-            if (isOn) trailSpawner?.PauseTrailSpawner();
-            else      trailSpawner?.RestartTrailSpawnerAfterDelay(0);
+            if (isOn) prismSpawner?.PauseTrailSpawner();
+            else      prismSpawner?.RestartTrailSpawnerAfterDelay(0);
         }
     }
 }

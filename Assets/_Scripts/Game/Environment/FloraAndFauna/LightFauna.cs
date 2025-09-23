@@ -92,7 +92,7 @@ public class LightFauna : Fauna
             }
 
             // Handle blocks
-            TrailBlock block = collider.GetComponent<TrailBlock>();
+            Prism block = collider.GetComponent<Prism>();
             if (block && block.Domain != domain && distance < consumeRadius)
             {
                 block.Consume(transform, domain, PLAYER_NAME, true);

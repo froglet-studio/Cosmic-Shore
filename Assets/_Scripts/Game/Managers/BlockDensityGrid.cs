@@ -140,9 +140,9 @@ public class BlockDensityGrid
         return MapGridIndicesToCoordinates(bestIndices);
     }
 
-    public virtual void AddBlock(TrailBlock block) {}
+    public virtual void AddBlock(Prism block) {}
 
-    public virtual void RemoveBlock(TrailBlock block) {}
+    public virtual void RemoveBlock(Prism block) {}
 }
 
 public class BlockCountDensityGrid : BlockDensityGrid
@@ -153,7 +153,7 @@ public class BlockCountDensityGrid : BlockDensityGrid
         values = new byte[nGridPointsPerDimension, nGridPointsPerDimension, nGridPointsPerDimension];
     }
 
-    public override void AddBlock(TrailBlock block)
+    public override void AddBlock(Prism block)
     {
         Vector3Int indicesOfDestinationCell = MapCoordinatesToGridIndices(block.transform.position);
         if (indicesOfDestinationCell.x >= 0 && indicesOfDestinationCell.x < nGridPointsPerDimension &&
@@ -162,7 +162,7 @@ public class BlockCountDensityGrid : BlockDensityGrid
             this.values[indicesOfDestinationCell.x, indicesOfDestinationCell.y, indicesOfDestinationCell.z] += 1;
     }
 
-    public override void RemoveBlock(TrailBlock block)
+    public override void RemoveBlock(Prism block)
     {
         Vector3Int indicesOfDestinationCell = MapCoordinatesToGridIndices(block.transform.position);
         if (indicesOfDestinationCell.x >= 0 && indicesOfDestinationCell.x < nGridPointsPerDimension &&

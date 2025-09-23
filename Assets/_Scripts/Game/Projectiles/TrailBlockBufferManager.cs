@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using System.Collections;
 using CosmicShore.Utilities;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game.Projectiles
@@ -19,12 +20,12 @@ namespace CosmicShore.Game.Projectiles
         }
 
         [SerializeField] private BufferSettings settings;
-        [SerializeField] private TrailBlock trailBlockPrefab;
+        [FormerlySerializedAs("trailBlockPrefab")] [SerializeField] private Prism prismPrefab;
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
-        private Dictionary<Domains, Queue<TrailBlock>> teamBuffers = new Dictionary<Domains, Queue<TrailBlock>>();
+        private Dictionary<Domains, Queue<Prism>> teamBuffers = new Dictionary<Domains, Queue<Prism>>();
         private Dictionary<Domains, float> instantiateTimers = new Dictionary<Domains, float>();
 
         private void Start()
@@ -40,7 +41,7 @@ namespace CosmicShore.Game.Projectiles
             {
                 if (team != Domains.Unassigned && team != Domains.None)
                 {
-                    teamBuffers[team] = new Queue<TrailBlock>();
+                    teamBuffers[team] = new Queue<Prism>();
                     instantiateTimers[team] = 0f;
                     
                     // Pre-instantiate initial blocks
@@ -54,9 +55,9 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        private TrailBlock CreateBlockForTeam(Domains domain)
+        private Prism CreateBlockForTeam(Domains domain)
         {
-            var block = Instantiate(trailBlockPrefab);
+            var block = Instantiate(prismPrefab);
             block.transform.parent = transform;
 
             block.ChangeTeam(domain);
@@ -96,7 +97,7 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        public TrailBlock GetBlock(Domains domain)
+        public Prism GetBlock(Domains domain)
         {
             if (!teamBuffers.ContainsKey(domain))
             {

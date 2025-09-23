@@ -14,9 +14,9 @@ public class TrailViewer : MonoBehaviour
     [SerializeField] Material trailViewerMaterial;
     private Trail attachedTrail;
 
-    List<TrailBlock> transparentBlocks = new();
+    List<Prism> transparentBlocks = new();
     //List<Material> savedMaterials = new();
-    Dictionary<TrailBlock, Material> originalMaterials = new Dictionary<TrailBlock, Material>();
+    Dictionary<Prism, Material> originalMaterials = new Dictionary<Prism, Material>();
 
 
     void Start()
@@ -33,7 +33,7 @@ public class TrailViewer : MonoBehaviour
         if (transparentBlocks != null)
         {
             Debug.Log("Number of entries in originalMaterials: " + originalMaterials.Count);
-            foreach (TrailBlock block in transparentBlocks)
+            foreach (Prism block in transparentBlocks)
             {
                 if (block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
                 {
@@ -49,8 +49,8 @@ public class TrailViewer : MonoBehaviour
         if (!trailFollower.IsAttached) return;
 
 
-        attachedTrail = trailFollower.AttachedTrailBlock.Trail;
-        int attachedBlockIndex = trailFollower.AttachedTrailBlock.TrailBlockProperties.Index;
+        attachedTrail = trailFollower.AttachedPrism.Trail;
+        int attachedBlockIndex = trailFollower.AttachedPrism.prismProperties.Index;
 
 
         // Set materials of blocks in view distance
@@ -71,7 +71,7 @@ public class TrailViewer : MonoBehaviour
 
         // Draw line
         lineRenderer.positionCount = transparentBlocks.Count;
-        foreach (TrailBlock block in transparentBlocks)
+        foreach (Prism block in transparentBlocks)
         {
             lineRenderer.SetPosition(transparentBlocks.IndexOf(block), block.transform.position);
         }

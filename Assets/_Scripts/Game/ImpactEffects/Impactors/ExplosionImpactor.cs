@@ -48,9 +48,9 @@ namespace CosmicShore.Game
             }
         }
         
-        void ExecuteCommonPrismCommands(TrailBlock prism, Vector3 impactVector)
+        void ExecuteCommonPrismCommands(Prism prism, Vector3 impactVector)
         {
-            if ((prism.Domain != Explosion.Domain || affectSelf) && prism.TrailBlockProperties.IsSuperShielded)
+            if ((prism.Domain != Explosion.Domain || affectSelf) && prism.prismProperties.IsSuperShielded)
             {
                 prism.DeactivateShields();
                 Destroy(gameObject);    // TODO: This seems wrong...

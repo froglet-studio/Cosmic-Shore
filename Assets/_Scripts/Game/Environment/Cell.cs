@@ -199,7 +199,7 @@ namespace CosmicShore.Game
                 cellType.SupportedFlora[i].SpawnProbability = cellType.SupportedFlora[i].SpawnProbability * (1 / totalWeight);
         }
 
-        public void AddBlock(TrailBlock block)
+        public void AddBlock(Prism block)
         {
             Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             foreach (Domains t in teams)
@@ -208,7 +208,7 @@ namespace CosmicShore.Game
             }
         }
 
-        public void RemoveBlock(TrailBlock block)
+        public void RemoveBlock(Prism block)
         {
             Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             foreach (Domains t in teams)

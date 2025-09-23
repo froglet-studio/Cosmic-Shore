@@ -269,7 +269,7 @@ namespace CosmicShore.Game.Arcade
             /*foreach (var turnMonitor in TurnMonitors)
                 turnMonitor.PauseTurn();*/
             ActivePlayer.InputController.InputStatus.Paused = true;
-            ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
 
             yield return new WaitForSeconds(EndOfTurnDelay);
 
@@ -437,7 +437,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Vessel.Teleport(PlayerOrigin.transform);
             ActivePlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
-            ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
             ActivePlayer.Vessel.VesselStatus.ResourceSystem.Reset();
             ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);
 

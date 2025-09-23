@@ -12,30 +12,30 @@ namespace CosmicShore.Core
         Dangerous
     }
 
-    public class BlockStateManager : MonoBehaviour
+    public class PrismStateManager : MonoBehaviour
     {
         [Header("Data Containers")] [SerializeField]
         ThemeManagerDataContainerSO _themeManagerData;
 
-        private TrailBlock trailBlock;
+        private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
-        private BlockTeamManager teamManager;
+        private PrismTeamManager teamManager;
         private Coroutine activeStateCoroutine;
 
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
         private void Awake()
         {
-            trailBlock = GetComponent<TrailBlock>();
+            prism = GetComponent<Prism>();
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
-            teamManager = GetComponent<BlockTeamManager>();
+            teamManager = GetComponent<PrismTeamManager>();
         }
 
         public void MakeDangerous()
         {
-            trailBlock.TrailBlockProperties.IsDangerous = true;
-            trailBlock.TrailBlockProperties.speedDebuffAmount = 0.1f;
-            trailBlock.TrailBlockProperties.IsShielded = false;
+            prism.prismProperties.IsDangerous = true;
+            prism.prismProperties.speedDebuffAmount = 0.1f;
+            prism.prismProperties.IsShielded = false;
 
             materialAnimator.UpdateMaterial(
                 _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Domain),
@@ -63,8 +63,8 @@ namespace CosmicShore.Core
 
         public void ActivateSuperShield()
         {
-            trailBlock.TrailBlockProperties.IsSuperShielded = true;
-            trailBlock.TrailBlockProperties.IsDangerous = false;
+            prism.prismProperties.IsSuperShielded = true;
+            prism.prismProperties.IsDangerous = false;
 
             materialAnimator.UpdateMaterial(
                 _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Domain),
@@ -92,8 +92,8 @@ namespace CosmicShore.Core
 
         private void ApplyShieldState()
         {
-            trailBlock.TrailBlockProperties.IsShielded = true;
-            trailBlock.TrailBlockProperties.IsDangerous = false;
+            prism.prismProperties.IsShielded = true;
+            prism.prismProperties.IsDangerous = false;
 
             materialAnimator.UpdateMaterial(
                 _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Domain),
@@ -109,8 +109,8 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
             );
 
-            trailBlock.TrailBlockProperties.IsShielded = false;
-            trailBlock.TrailBlockProperties.IsSuperShielded = false;
+            prism.prismProperties.IsShielded = false;
+            prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
         }
 

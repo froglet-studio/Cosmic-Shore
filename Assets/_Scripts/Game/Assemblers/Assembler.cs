@@ -5,7 +5,7 @@ namespace CosmicShore
 {
     public abstract class Assembler : MonoBehaviour
     {
-        public abstract TrailBlock TrailBlock { get; set; }
+        public abstract Prism Prism { get; set; }
         public abstract Spindle Spindle { get; set; }
 
         public abstract bool IsFullyBonded();

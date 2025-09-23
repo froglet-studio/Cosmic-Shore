@@ -178,7 +178,7 @@ namespace CosmicShore
             newHealthBlock.LifeForm = this;
 
             Assembler newAssembler = newHealthBlock.GetComponent<Assembler>();
-            newAssembler.TrailBlock = newHealthBlock;
+            newAssembler.Prism = newHealthBlock;
             newAssembler.Spindle = newSpindle;
             newAssembler.Depth = depth;
 

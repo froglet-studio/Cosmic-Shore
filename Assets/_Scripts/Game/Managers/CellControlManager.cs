@@ -12,22 +12,22 @@ namespace CosmicShore.Game
     {
         [SerializeField] List<Cell> cells;
         
-        public void AddBlock(Domains domain, TrailBlockProperties blockProperties)
+        public void AddBlock(Domains domain, PrismProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
                 cell.ChangeVolume(domain, blockProperties.volume);
-                cell.AddBlock(blockProperties.trailBlock);
+                cell.AddBlock(blockProperties.prism);
                 break;
             }
         }
 
-        public void RemoveBlock(Domains domain, TrailBlockProperties blockProperties)
+        public void RemoveBlock(Domains domain, PrismProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
                 cell.ChangeVolume(domain, -blockProperties.volume);
-                cell.RemoveBlock(blockProperties.trailBlock);
+                cell.RemoveBlock(blockProperties.prism);
                 break;
             }
         }
@@ -78,17 +78,17 @@ namespace CosmicShore.Game
             }
         }
 
-        public void StealBlock(Domains domain, TrailBlockProperties blockProperties)
+        public void StealBlock(Domains domain, PrismProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {
                 cell.ChangeVolume(domain, blockProperties.volume);
-                cell.ChangeVolume(blockProperties.trailBlock.Domain, -blockProperties.volume);
+                cell.ChangeVolume(blockProperties.prism.Domain, -blockProperties.volume);
                 break;
             }
         }
 
-        public void RestoreBlock(Domains domain, TrailBlockProperties blockProperties)
+        public void RestoreBlock(Domains domain, PrismProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
             {

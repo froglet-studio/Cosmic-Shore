@@ -10,7 +10,7 @@ namespace CosmicShore
     public class SeedWallAction : ShipAction
     {
         [SerializeField] float enhancementsPerFullAmmo = 3;
-        TrailSpawner spawner;
+        Game.PrismSpawner spawner;
 
         [SerializeField] int resourceIndex = 0;
         float resourceCost;
@@ -18,7 +18,7 @@ namespace CosmicShore
         public override void Initialize(IVessel vessel)
         {
             base.Initialize(vessel);
-            spawner = Vessel.VesselStatus.TrailSpawner;
+            spawner = Vessel.VesselStatus.PrismSpawner;
             resourceCost = ResourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
         }
 
@@ -28,7 +28,7 @@ namespace CosmicShore
             {
                 ResourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
                 var BlockObject = spawner.Trail.TrailList.Last().gameObject;
-                BlockObject.GetComponent<TrailBlock>().ActivateSuperShield();
+                BlockObject.GetComponent<Prism>().ActivateSuperShield();
                 var assembler = BlockObject.AddComponent<GyroidAssembler>();
                 assembler.Depth = 50;
                 assembler.StartBonding();

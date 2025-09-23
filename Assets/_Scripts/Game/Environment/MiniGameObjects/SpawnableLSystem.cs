@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using CosmicShore.Core;
+using UnityEngine.Serialization;
 
 public class SpawnableLSystem : SpawnableAbstractBase
 {
@@ -17,7 +18,7 @@ public class SpawnableLSystem : SpawnableAbstractBase
         CrystalStructure
     }
 
-    [SerializeField] TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     [SerializeField] LSystemPreset preset = LSystemPreset.BasicTree;
     [SerializeField] float baseLength = 5f;
     [SerializeField] float baseWidth = 1f;
@@ -169,7 +170,7 @@ public class SpawnableLSystem : SpawnableAbstractBase
                 case 'G':
                     Vector3 newPosition = currentPosition + currentRotation * Vector3.forward * currentLength;
                     CreateBlock(currentPosition, newPosition, container.name + "::BLOCK::" + currentTrail.TrailList.Count,
-                                currentTrail, new Vector3(currentWidth, currentWidth, currentLength), trailBlock, container);
+                                currentTrail, new Vector3(currentWidth, currentWidth, currentLength), prism, container);
                     currentPosition = newPosition;
                     break;
                 case '+':

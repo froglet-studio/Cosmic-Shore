@@ -64,7 +64,7 @@ namespace CosmicShore.Game
             // if (visible)
             //     GetComponent<MeshRenderer>().material = new Material(VesselStatus.SkimmerMaterial);
 
-            _initialGap = VesselStatus.TrailSpawner.Gap;
+            _initialGap = VesselStatus.PrismSpawner.Gap;
             if (markerContainer) markerContainer.transform.parent = VesselStatus?.Player?.Transform;
         }
 
@@ -75,10 +75,10 @@ namespace CosmicShore.Game
             onSkimmerShipImpact.Raise(VesselStatus.PlayerName);
         }
 
-        public void ExecuteImpactOnPrism(TrailBlock trailBlock)
+        public void ExecuteImpactOnPrism(Prism prism)
         {
-            if (VesselStatus is null || (!affectSelf && trailBlock.Domain == VesselStatus.Domain)) return;
-            MakeBoosters(trailBlock);
+            if (VesselStatus is null || (!affectSelf && prism.Domain == VesselStatus.Domain)) return;
+            MakeBoosters(prism);
         }
 
         public void TryVacuumCrystal(Crystal crystal)
@@ -98,7 +98,7 @@ namespace CosmicShore.Game
             transform.localScale = Vector3.one * _appliedScale;
         }
 
-        void MakeBoosters(TrailBlock trailBlock)
+        void MakeBoosters(Prism prism)
         {
             const int markerCount = 5;
             const float cooldown = 4f;
@@ -106,7 +106,7 @@ namespace CosmicShore.Game
             if (Time.time - _boosterTimer < cooldown) return;
             _boosterTimer = Time.time;
 
-            var nextBlocks = FindNextBlocks(trailBlock, markerCount * markerDistance);
+            var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance);
             if (!markerContainer || nextBlocks.Count == 0) return;
 
             // last element
@@ -123,12 +123,12 @@ namespace CosmicShore.Game
             }
         }
 
-        List<TrailBlock> FindNextBlocks(TrailBlock block, float distance = 100f)
+        List<Prism> FindNextBlocks(Prism block, float distance = 100f)
         {
             if (block == null || block.Trail == null)
-                return new List<TrailBlock> { block };
+                return new List<Prism> { block };
 
-            int idx = block.TrailBlockProperties.Index;
+            int idx = block.prismProperties.Index;
             var forward = TrailFollowerDirection.Forward;
             var backward = TrailFollowerDirection.Backward;
 
@@ -142,10 +142,10 @@ namespace CosmicShore.Game
         public static float ComputeGaussian(float x, float b, float c)
             => Mathf.Exp(-Mathf.Pow(x - b, 2) / (2 * c * c));
 
-        void VisualizeTubeAroundBlock(TrailBlock trailBlock)
+        void VisualizeTubeAroundBlock(Prism prism)
         {
-            if (trailBlock)
-                StartCoroutine(DrawCircle(trailBlock.transform, _sweetSpot));
+            if (prism)
+                StartCoroutine(DrawCircle(prism.transform, _sweetSpot));
         }
 
         readonly HashSet<Vector3> shardPositions = new();
@@ -179,7 +179,7 @@ namespace CosmicShore.Game
                 shardPositions.Add(marker.transform.position);
                 marker.transform.localScale = blockTransform.localScale / 2f;
                 marker.GetComponentInChildren<NudgeShard>().Prisms =
-                    FindNextBlocks(blockTransform.GetComponent<TrailBlock>(), markerDistance * VesselStatus.ResourceSystem.Resources[0].CurrentAmount);
+                    FindNextBlocks(blockTransform.GetComponent<Prism>(), markerDistance * VesselStatus.ResourceSystem.Resources[0].CurrentAmount);
 
                 markers.Add(marker);
             }

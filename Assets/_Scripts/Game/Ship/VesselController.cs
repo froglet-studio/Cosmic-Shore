@@ -94,7 +94,7 @@ namespace CosmicShore.Game
         {
             VesselStatus.Player = player;
             VesselStatus.ShipAnimation.Initialize(VesselStatus);
-            VesselStatus.TrailSpawner.Initialize(VesselStatus);
+            VesselStatus.PrismSpawner.Initialize(VesselStatus);
             
             if (IsSpawned)
             {
@@ -257,7 +257,7 @@ namespace CosmicShore.Game
             /// AIPilot will be initialized both in User controlled / AI Vessels
             /// Multiplayer modes will also have auto-pilot initialized
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);   
-            VesselStatus.TrailSpawner.Initialize(VesselStatus);  
+            VesselStatus.PrismSpawner.Initialize(VesselStatus);  
             VesselStatus.ActionHandler.ConfigureSubscriptions(subscribe: !VesselStatus.IsInitializedAsAI);
             onBottomEdgeButtonsEnabled.Raise(true);
         }

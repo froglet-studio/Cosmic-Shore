@@ -105,7 +105,7 @@ public class Boid : Fauna
             if (collider.gameObject == BlockCollider.gameObject) continue;
 
             Boid otherBoid = collider.GetComponentInParent<Boid>();
-            TrailBlock otherTrailBlock = collider.GetComponent<TrailBlock>();
+            Prism otherPrism = collider.GetComponent<Prism>();
 
             Vector3 diff = transform.position - collider.transform.position;
             float distance = diff.magnitude;
@@ -124,12 +124,12 @@ public class Boid : Fauna
                     averageSpeed += currentVelocity.magnitude;
                 }
             }
-            else if (otherTrailBlock)
+            else if (otherPrism)
             {
                 //float blockWeight = Population.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized / distance;
 
-                if (distance < trailBlockInteractionRadius && otherTrailBlock.Domain != healthBlock.Domain)
+                if (distance < trailBlockInteractionRadius && otherPrism.Domain != healthBlock.Domain)
                 {
                     foreach (var effect in collisionEffects)
                     {
@@ -138,11 +138,11 @@ public class Boid : Fauna
                             case BoidCollisionEffects.Attach:
                                 if (!isTraveling)
                                 {
-                                    if (!otherTrailBlock.IsSmallest)
+                                    if (!otherPrism.IsSmallest)
                                     {
                                         isAttached = true;
-                                        target = otherTrailBlock.transform.position;
-                                        otherTrailBlock.Grow(-1);
+                                        target = otherPrism.transform.position;
+                                        otherPrism.Grow(-1);
                                         healthBlock.Grow(1);
                                         if (healthBlock.IsLargest) StartCoroutine(AddToMoundCoroutine());
                                     }
@@ -155,7 +155,7 @@ public class Boid : Fauna
                                     Debug.LogError($"Infinite velocity on block collision detected! velocity:({currentVelocity.x},{currentVelocity.y},{currentVelocity.z})");
                                     break;
                                 }
-                                otherTrailBlock.Damage(currentVelocity * healthBlock.Volume, healthBlock.Domain, healthBlock.PlayerName + " boid", true);
+                                otherPrism.Damage(currentVelocity * healthBlock.Volume, healthBlock.Domain, healthBlock.PlayerName + " boid", true);
                                 break;
                         }
                     }
@@ -207,7 +207,7 @@ public class Boid : Fauna
                 {
                     (var newBlock1, var gyroidBlock1) = NewBlock();
                     nakedEdge.preferedBlocks.Enqueue(gyroidBlock1);
-                    gyroidBlock1.TrailBlock = newBlock1;
+                    gyroidBlock1.Prism = newBlock1;
 
                     //(var newBlock2, var gyroidBlock2) = NewBlock();
                     //nakedEdge.preferedBlocks.Enqueue(gyroidBlock2);
@@ -228,14 +228,14 @@ public class Boid : Fauna
         healthBlock.Grow(-3);
     }
 
-    (TrailBlock, GyroidAssembler) NewBlock()
+    (Prism, GyroidAssembler) NewBlock()
     {
         var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
         newBlock.ChangeTeam(healthBlock.Domain);
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
-        newBlock.TrailBlockProperties = new()
+        newBlock.prismProperties = new()
         {
-            trailBlock = newBlock
+            prism = newBlock
         };
         var gyroidBlock = newBlock.gameObject.AddComponent<GyroidAssembler>();
         return (newBlock,gyroidBlock);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game
@@ -29,8 +30,8 @@ namespace CosmicShore.Game
         public Image bottomJaw;
         public int jawResourceIndex = -1;
         
-        [Header("Trail / Drift Sources")]
-        public TrailSpawner trailSpawner;
+        [FormerlySerializedAs("trailSpawner")] [Header("Trail / Drift Sources")]
+        public PrismSpawner prismSpawner;
         public DriftTrailAction driftTrailAction;
 
         

@@ -305,7 +305,7 @@ namespace CosmicShore.Core
             roundStats.VolumeRemaining += prismStats.Volume;
         }
 
-        // public void PrismStolen(Teams stealingTeam, string stealingPlayerName, TrailBlockProperties stolenTrailBlockProperties)
+        // public void PrismStolen(Teams stealingTeam, string stealingPlayerName, PrismProperties stolenTrailBlockProperties)
         public void PrismStolen(PrismStats prismStats)
         {
             if (!allowRecord) return;

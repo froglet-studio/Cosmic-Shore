@@ -52,7 +52,7 @@ namespace CosmicShore.Game
             StartSkimIfNeeded(prism.ownerID);
 
             // choose “mature & nearest” block per your old logic
-            if (Time.time - prism.TrailBlockProperties.TimeCreated <= 4f) return;
+            if (Time.time - prism.prismProperties.TimeCreated <= 4f) return;
 
             // distance from skimmer to this block
             float sqrDistance = (skimmer.transform.position - other.transform.position).sqrMagnitude;

@@ -104,7 +104,7 @@ namespace CosmicShore.Environment.MiniGameObjects
                     lookPosition = trail.GetBlock(block - 1).transform.position;
                 }
 
-                CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, sizeMultiplier * pumpkinWidth * trailBlock.transform.localScale * Mathf.Sin(t), trailBlock, container, domain);
+                CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, sizeMultiplier * pumpkinWidth * prism.transform.localScale * Mathf.Sin(t), prism, container, domain);
             }
         }
     }

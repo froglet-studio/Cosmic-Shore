@@ -29,7 +29,7 @@ public class BoidManager : Population
             newBoid.transform.SetParent(transform);
             newBoid.Population = this;
             newBoid.domain = domain;
-            var block = newBoid.GetComponentInChildren<TrailBlock>();
+            var block = newBoid.GetComponentInChildren<Prism>();
 
             if (Mound)
             {

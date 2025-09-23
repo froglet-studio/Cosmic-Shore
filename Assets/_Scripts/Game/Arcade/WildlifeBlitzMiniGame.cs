@@ -33,7 +33,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
-            TrailSpawner.NukeTheTrails();
+            PrismSpawner.NukeTheTrails();
             Crystal.transform.position = CrystalStartPosition;
 
         }

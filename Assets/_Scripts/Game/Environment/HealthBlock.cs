@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public class HealthBlock : TrailBlock
+    public class HealthBlock : Prism
     {
         
         public LifeForm LifeForm;

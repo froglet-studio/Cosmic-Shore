@@ -9,15 +9,15 @@ namespace CosmicShore.Game
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
             IVesselStatus vesselStatus = vesselImpactor.Vessel.VesselStatus;
-            TrailBlockProperties trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;
+            PrismProperties prismProperties = prismImpactee.Prism.prismProperties;
             
-            if (trailBlockProperties == null)
+            if (prismProperties == null)
             {
-                Debug.LogError("VesselAttachPrismEffectSO called with null data or trailBlockProperties.");
+                Debug.LogError("VesselAttachPrismEffectSO called with null data or prismProperties.");
                 return;
             }
 
-            var trailBlock = trailBlockProperties.trailBlock;
+            var trailBlock = prismProperties.prism;
 
             if (trailBlock.Trail == null)
             {
@@ -26,7 +26,7 @@ namespace CosmicShore.Game
             }
 
             vesselStatus.Attached = true;
-            vesselStatus.AttachedTrailBlock = trailBlock;
+            vesselStatus.AttachedPrism = trailBlock;
         }
     }
 }

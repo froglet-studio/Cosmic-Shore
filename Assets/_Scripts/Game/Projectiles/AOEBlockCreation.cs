@@ -2,14 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Projectiles
 {
     public class AOEBlockCreation : AOEExplosion
     {
         #region Attributes for Block Creation
+        [FormerlySerializedAs("trailBlock")]
         [Header("Block Creation")]
-        [SerializeField] protected TrailBlock trailBlock;
+        [SerializeField] protected Prism prism;
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
         [SerializeField] bool shielded = true;
 
@@ -65,7 +67,7 @@ namespace CosmicShore.Game.Projectiles
             CreateBlock(transform.position + offset, offset + tilt * radius * forwardDirection, forwardDirection, "::AOE::" + Time.time + "::" + i, trail);
         }
 
-        protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerId, Trail trail)
+        protected Prism CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerId, Trail trail)
         {
             var block = TrailBlockBufferManager.Instance.GetBlock(Domain);
             block.ownerID = Vessel.VesselStatus.Player.PlayerUUID;
@@ -74,9 +76,9 @@ namespace CosmicShore.Game.Projectiles
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ownerID = block.ownerID + ownerId + position;  
             block.TargetScale = blockScale;
-            block.transform.parent = TrailSpawner.TrailContainer.transform;
+            block.transform.parent = PrismSpawner.TrailContainer.transform;
             block.Trail = trail;
-            if (shielded) block.TrailBlockProperties.IsShielded = true;
+            if (shielded) block.prismProperties.IsShielded = true;
             trail.Add(block);
             return block;
         }

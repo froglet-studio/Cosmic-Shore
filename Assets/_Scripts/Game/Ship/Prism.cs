@@ -3,28 +3,30 @@ using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
     [RequireComponent(typeof(MaterialPropertyAnimator))]
-    [RequireComponent(typeof(BlockScaleAnimator))]
-    [RequireComponent(typeof(BlockTeamManager))]
-    [RequireComponent(typeof(BlockStateManager))]
-    public class TrailBlock : MonoBehaviour
+    [RequireComponent(typeof(PrismScaleAnimator))]
+    [RequireComponent(typeof(PrismTeamManager))]
+    [RequireComponent(typeof(PrismStateManager))]
+    public class Prism : MonoBehaviour
     {
         const string DEFAULT_PLAYER_NAME = "DefaultPlayer"; // -> This should be removed later,
 
-        [Header("Trail Block Properties")]
-        [SerializeField] public TrailBlockProperties TrailBlockProperties;
+        [FormerlySerializedAs("Prism Properties")]
+        [Header("Prism Properties")]
+        [SerializeField] public PrismProperties prismProperties;
         public GameObject ParticleEffect;
         public Trail Trail;
 
-        [Header("Trail Block Growth")]
+        [Header("Prism Growth")]
         public Vector3 GrowthVector = new Vector3(0, 2, 0);
         public float growthRate = 0.01f;
         public float waitTime = 0.6f;
 
-        [Header("Trail Block Status")]
+        [Header("Prism Status")]
         public bool destroyed;
         public bool devastated;
         public bool IsSmallest;
@@ -70,9 +72,9 @@ namespace CosmicShore.Core
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;
-        private BlockScaleAnimator scaleAnimator;
-        private BlockTeamManager teamManager;
-        private BlockStateManager stateManager;
+        private PrismScaleAnimator scaleAnimator;
+        private PrismTeamManager teamManager;
+        private PrismStateManager stateManager;
         private MeshRenderer meshRenderer;
         private BoxCollider blockCollider;
 
@@ -114,9 +116,9 @@ namespace CosmicShore.Core
 
             // Cache component references
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
-            scaleAnimator = GetComponent<BlockScaleAnimator>();
-            teamManager = GetComponent<BlockTeamManager>();
-            stateManager = GetComponent<BlockStateManager>();
+            scaleAnimator = GetComponent<PrismScaleAnimator>();
+            teamManager = GetComponent<PrismTeamManager>();
+            stateManager = GetComponent<PrismStateManager>();
             meshRenderer = GetComponent<MeshRenderer>();
             blockCollider = GetComponent<BoxCollider>();
 
@@ -134,21 +136,21 @@ namespace CosmicShore.Core
             // StartCoroutine(CreateBlockCoroutine());
 
             // Apply initial states if needed
-            if (TrailBlockProperties.IsShielded) ActivateShield();
-            if (TrailBlockProperties.IsDangerous) MakeDangerous();
+            if (prismProperties.IsShielded) ActivateShield();
+            if (prismProperties.IsDangerous) MakeDangerous();
         }
 
         private void InitializeTrailBlockProperties()
         {
-            if (TrailBlockProperties == null) return;
+            if (prismProperties == null) return;
 
-            TrailBlockProperties.position = transform.position;
-            TrailBlockProperties.trailBlock = this;
-            TrailBlockProperties.Trail = Trail;
-            TrailBlockProperties.TimeCreated = Time.time;
+            prismProperties.position = transform.position;
+            prismProperties.prism = this;
+            prismProperties.Trail = Trail;
+            prismProperties.TimeCreated = Time.time;
             
             // Initialize volume immediately to prevent zero-volume explosions
-            TrailBlockProperties.volume = 1f; // Set a default non-zero volume
+            prismProperties.volume = 1f; // Set a default non-zero volume
         }
 
         private IEnumerator CreateBlockCoroutine()
@@ -166,29 +168,29 @@ namespace CosmicShore.Core
             }
             
             // Update volume before growth animation starts
-            TrailBlockProperties.volume = scaleAnimator.GetCurrentVolume();
+            prismProperties.volume = scaleAnimator.GetCurrentVolume();
             
             scaleAnimator.BeginGrowthAnimation();
 
             // TODO - Raise events about block creation.
             /*if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);*/
+                StatsManager.Instance.BlockCreated(Team, PlayerName, PrismProperties);*/
 
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 // OwnTeam = Team,
                 PlayerName = PlayerName,
-                Volume = TrailBlockProperties.volume,
-                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
+                Volume = prismProperties.volume,
+                OtherPlayerName = prismProperties.prism.PlayerName,
             });
 
             // TODO - Use Event Channel
             if (CellControlManager.Instance)
             {
-                CellControlManager.Instance.AddBlock(Domain, TrailBlockProperties);
+                CellControlManager.Instance.AddBlock(Domain, prismProperties);
                 
                 // Setup team node tracking after block is fully initialized
-                Cell targetCell = CellControlManager.Instance.GetNearestCell(TrailBlockProperties.position);
+                Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
                 System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
                 {
                     if (t != Domain) targetCell.countGrids[t].AddBlock(this);
@@ -215,7 +217,7 @@ namespace CosmicShore.Core
             }*/
 
             // Update volume immediately
-            TrailBlockProperties.volume = scaleAnimator != null 
+            prismProperties.volume = scaleAnimator != null 
                 ? scaleAnimator.GetCurrentVolume() 
                 : Mathf.Max(TargetScale.x * TargetScale.y * TargetScale.z, 0.001f);
 
@@ -223,16 +225,16 @@ namespace CosmicShore.Core
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 PlayerName      = PlayerName,
-                Volume          = TrailBlockProperties.volume,
-                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
+                Volume          = prismProperties.volume,
+                OtherPlayerName = prismProperties.prism.PlayerName,
             });
 
             // Add to cell system
             if (CellControlManager.Instance)
             {
-                CellControlManager.Instance.AddBlock(Domain, TrailBlockProperties);
+                CellControlManager.Instance.AddBlock(Domain, prismProperties);
 
-                Cell targetCell = CellControlManager.Instance.GetNearestCell(TrailBlockProperties.position);
+                Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
                 System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
                 {
                     if (t != Domain) targetCell.countGrids[t].AddBlock(this);
@@ -252,12 +254,12 @@ namespace CosmicShore.Core
             {
                 var vessel = vesselCollider.Vessel;
                 if (!vessel.VesselStatus.Attached)
-                    vessel.PerformTrailBlockImpactEffects(TrailBlockProperties);
+                    vessel.PerformTrailBlockImpactEffects(PrismProperties);
             }*/
             
             if (other.TryGetComponent(out CellItem cellItem))
             {
-                if (!TrailBlockProperties.IsShielded)
+                if (!prismProperties.IsShielded)
                     ActivateShield();
             }
         }
@@ -274,7 +276,7 @@ namespace CosmicShore.Core
             meshRenderer.enabled = false;
 
             // Ensure volume is up to date before destruction
-            TrailBlockProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
+            prismProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
 
             destroyed = true;
             devastated = devastate;
@@ -283,13 +285,13 @@ namespace CosmicShore.Core
             _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
                 PlayerName      = PlayerName,
-                Volume          = TrailBlockProperties.volume,
-                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
+                Volume          = prismProperties.volume,
+                OtherPlayerName = prismProperties.prism.PlayerName,
             });
 
             // Cell control management
             if (CellControlManager.Instance != null)
-                CellControlManager.Instance.RemoveBlock(domain, TrailBlockProperties);
+                CellControlManager.Instance.RemoveBlock(domain, prismProperties);
 
             return null; // Will be set by specific destruction method
         }
@@ -306,7 +308,7 @@ namespace CosmicShore.Core
                 SpawnPosition = transform.position,
                 Rotation = transform.rotation,
                 Scale = transform.lossyScale,
-                Velocity = impactVector / TrailBlockProperties.volume,
+                Velocity = impactVector / prismProperties.volume,
                 PrismType = PrismType.Explosion
             });
 
@@ -323,7 +325,7 @@ namespace CosmicShore.Core
             // Handle explosion-specific impact
             var impact = explodingBlock.GetComponent<PrismExplosion>();
             if (impact != null)
-                impact.TriggerExplosion(impactVector / TrailBlockProperties.volume);*/
+                impact.TriggerExplosion(impactVector / PrismProperties.volume);*/
         }
 
         // Implosion Methods
@@ -339,7 +341,7 @@ namespace CosmicShore.Core
                 Rotation = transform.rotation,
                 Scale = transform.lossyScale,
                 TargetTransform = targetTransform,
-                Volume = TrailBlockProperties.volume,
+                Volume = prismProperties.volume,
                 PrismType = PrismType.Implosion
             });
 
@@ -356,13 +358,13 @@ namespace CosmicShore.Core
             var implosion = implodingBlock.GetComponent<PrismImplosion>();
             if (implosion != null)
             {
-                implosion.StartImplosion(sinkPoint, TrailBlockProperties.volume);
+                implosion.StartImplosion(sinkPoint, PrismProperties.volume);
             }*/
         }
 
         public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
-            if ((TrailBlockProperties.IsShielded && !devastate) || TrailBlockProperties.IsSuperShielded)
+            if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
             {
                 DeactivateShields();
             }
@@ -374,7 +376,7 @@ namespace CosmicShore.Core
         
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false)
         {
-            if ((TrailBlockProperties.IsShielded && !devastate) || TrailBlockProperties.IsSuperShielded)
+            if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
             {
                 DeactivateShields();
             }
@@ -403,18 +405,18 @@ namespace CosmicShore.Core
             if (!devastated)
             {
                 /*if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockRestored(Team, PlayerName, TrailBlockProperties);*/
+                    StatsManager.Instance.BlockRestored(Team, PlayerName, PrismProperties);*/
 
                 _onTrailBlockRestoredEventChannel.Raise(new PrismStats
                 {
                     // OwnTeam = Team,
                     PlayerName = PlayerName,
-                    Volume = TrailBlockProperties.volume,
-                    OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
+                    Volume = prismProperties.volume,
+                    OtherPlayerName = prismProperties.prism.PlayerName,
                 });
 
                 if (CellControlManager.Instance != null)
-                    CellControlManager.Instance.RestoreBlock(Domain, TrailBlockProperties);
+                    CellControlManager.Instance.RestoreBlock(Domain, prismProperties);
 
                 blockCollider.enabled = true;
                 meshRenderer.enabled = true;

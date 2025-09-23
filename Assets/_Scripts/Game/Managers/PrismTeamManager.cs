@@ -5,14 +5,14 @@ using CosmicShore.Utilities;
 
 namespace CosmicShore.Core
 {
-    public class BlockTeamManager : MonoBehaviour
+    public class PrismTeamManager : MonoBehaviour
     {
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
         [SerializeField] private ScriptableEventPrismStats onPrismStolen;
 
-        private TrailBlock trailBlock;
+        private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
         private Domains currentDomain = Domains.Unassigned;
 
@@ -34,7 +34,7 @@ namespace CosmicShore.Core
 
         private void Awake()
         {
-            trailBlock = GetComponent<TrailBlock>();
+            prism = GetComponent<Prism>();
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
         }
 
@@ -73,9 +73,9 @@ namespace CosmicShore.Core
             if (Domain == newDomain) 
                 return;
             
-            if (!superSteal && (trailBlock.TrailBlockProperties.IsShielded || trailBlock.TrailBlockProperties.IsSuperShielded))
+            if (!superSteal && (prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded))
             {
-                trailBlock.DeactivateShields();
+                prism.DeactivateShields();
                 return;
             }
 
@@ -87,17 +87,17 @@ namespace CosmicShore.Core
                 new PrismStats
                 {
                     PlayerName = playerName,
-                    Volume = trailBlock.Volume,
-                    OtherPlayerName = trailBlock.PlayerName
+                    Volume = prism.Volume,
+                    OtherPlayerName = prism.PlayerName
                 });
             /*if (StatsManager.Instance != null)
                 {
-                    StatsManager.Instance.PrismStolen(newTeam, playerName, trailBlock.TrailBlockProperties);
+                    StatsManager.Instance.PrismStolen(newTeam, playerName, trailBlock.PrismProperties);
                 }*/
 
             if (CellControlManager.Instance)
             {
-                CellControlManager.Instance.StealBlock(newDomain, trailBlock.TrailBlockProperties);
+                CellControlManager.Instance.StealBlock(newDomain, prism.prismProperties);
             }
 
             ChangeTeam(newDomain);
@@ -106,21 +106,21 @@ namespace CosmicShore.Core
 
         private void HandleTeamChange(Domains oldDomain, Domains newDomain)
         {
-            if (trailBlock.TrailBlockProperties.IsDangerous)
+            if (prism.prismProperties.IsDangerous)
             {
                 materialAnimator.UpdateMaterial(
                     _themeManagerData.GetTeamTransparentDangerousBlockMaterial(newDomain),
                     _themeManagerData.GetTeamDangerousBlockMaterial(newDomain)
                 );
             }
-            else if (trailBlock.TrailBlockProperties.IsShielded)
+            else if (prism.prismProperties.IsShielded)
             {
                 materialAnimator.UpdateMaterial(
                     _themeManagerData.GetTeamTransparentShieldedBlockMaterial(newDomain),
                     _themeManagerData.GetTeamShieldedBlockMaterial(newDomain)
                 );
             }
-            else if (trailBlock.TrailBlockProperties.IsSuperShielded)
+            else if (prism.prismProperties.IsSuperShielded)
             {
                 materialAnimator.UpdateMaterial(
                     _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(newDomain),

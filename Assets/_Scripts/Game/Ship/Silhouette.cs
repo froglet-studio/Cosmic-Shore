@@ -2,6 +2,7 @@ using CosmicShore.Game;
 using CosmicShore.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore
@@ -15,7 +16,7 @@ namespace CosmicShore
 
         #region Optional configuration 
         // trails //
-        [SerializeField] TrailSpawner trailSpawner;
+        [FormerlySerializedAs("trailSpawner")] [SerializeField] Game.PrismSpawner prismSpawner;
 
         // drifting //
         [SerializeField] DriftTrailAction driftTrailAction;
@@ -47,7 +48,7 @@ namespace CosmicShore
         {
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude -= calculateDriftAngle;
             if (topJaw) vessel.VesselStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
-            if (trailSpawner) trailSpawner.OnBlockCreated -= HandleBlockCreation;
+            if (prismSpawner) prismSpawner.OnBlockCreated -= HandleBlockCreation;
         }
 
         public void Initialize(IVessel vessel)
@@ -80,7 +81,7 @@ namespace CosmicShore
 
             if (topJaw) this.vessel.VesselStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;
-            if (trailSpawner) trailSpawner.OnBlockCreated += HandleBlockCreation;
+            if (prismSpawner) prismSpawner.OnBlockCreated += HandleBlockCreation;
         }
 
         public void SetSilhouetteReference(Transform silhouetteContainer, Transform trailDisplayContainer)
@@ -126,10 +127,10 @@ namespace CosmicShore
                 if (poolSize < 1)
                 {
                     if (swingBlocks && _trailDisplayContainer != null) 
-                        poolSize = Mathf.CeilToInt(((RectTransform)_trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale));
+                        poolSize = Mathf.CeilToInt(((RectTransform)_trailDisplayContainer).rect.width / (prismSpawner.MinWaveLength * worldToUIScale));
 
                     else if (_trailDisplayContainer != null) 
-                        poolSize = Mathf.CeilToInt(((RectTransform)_trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale * scaleY));
+                        poolSize = Mathf.CeilToInt(((RectTransform)_trailDisplayContainer).rect.width / (prismSpawner.MinWaveLength * worldToUIScale * scaleY));
                     
                     InitializeBlockPool();
                 }
@@ -155,9 +156,9 @@ namespace CosmicShore
                 {
                     GameObject newBlock = Instantiate(BlockPrefab, _trailDisplayContainer.transform);
                     newBlock.transform.SetParent(tempContainer.transform, false);
-                    newBlock.transform.parent.localPosition = new Vector3(-i * trailSpawner.MinWaveLength * worldToUIScale +
+                    newBlock.transform.parent.localPosition = new Vector3(-i * prismSpawner.MinWaveLength * worldToUIScale +
                         (((RectTransform)_trailDisplayContainer).rect.width/2), 0, 0);
-                    newBlock.transform.localPosition = new Vector3(0, j * 2 * trailSpawner.Gap - trailSpawner.Gap, 0);
+                    newBlock.transform.localPosition = new Vector3(0, j * 2 * prismSpawner.Gap - prismSpawner.Gap, 0);
                     newBlock.transform.localScale = Vector3.zero;
                     newBlock.SetActive(true);
                     blockPool[i, j] = newBlock;

@@ -44,16 +44,16 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         return trails;
     }
 
-    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Domains? team = null)
+    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, Prism prism, GameObject container, Domains? team = null)
     {
-        CreateBlock(position, lookPosition, blockId, trail, scale, trailBlock, container, Vector3.up, team);
+        CreateBlock(position, lookPosition, blockId, trail, scale, prism, container, Vector3.up, team);
     }
 
-    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Vector3 up, Domains? team = null, bool relativeLook = true, bool flip = true)
+    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, Prism prism, GameObject container, Vector3 up, Domains? team = null, bool relativeLook = true, bool flip = true)
     {
         Domains actualDomain = team ?? domain;
 
-        var Block = Instantiate(trailBlock);
+        var Block = Instantiate(prism);
         Block.ChangeTeam(actualDomain);
         Block.ownerID = "public";
         if (relativeLook) Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(flip ? position - lookPosition : lookPosition - position, up));
