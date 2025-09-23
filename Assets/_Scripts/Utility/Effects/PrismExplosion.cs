@@ -81,9 +81,6 @@ namespace CosmicShore.Game
 
         private IEnumerator ExplosionCoroutine(Vector3 velocity)
         {
-            if (!_renderer || _mpb == null)
-                yield break;
-
             // Clamp velocity and calculate speed
             float speed;
             velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out speed);
@@ -100,9 +97,6 @@ namespace CosmicShore.Game
             {
                 duration += Time.deltaTime;
 
-                if (!_renderer || _mpb == null) // safety exit if destroyed mid-run
-                    yield break;
-
                 // Update position
                 Vector3 newPosition = initialPosition + duration * velocity;
                 if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
@@ -118,7 +112,7 @@ namespace CosmicShore.Game
             }
 
             // Reset overrides
-            if (_renderer != null && _mpb != null)
+            if (_renderer && _mpb != null)
             {
                 _mpb.Clear();
                 _renderer.SetPropertyBlock(_mpb);
