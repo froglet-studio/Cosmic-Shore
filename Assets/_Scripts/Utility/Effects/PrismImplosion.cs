@@ -79,7 +79,7 @@ namespace CosmicShore.Game
 
             running = StartCoroutine(GrowEffectCoroutine(ownerTransform));
 
-            DebugExtensions.LogColored("Prism grow started", Color.green);
+            // DebugExtensions.LogColored("Prism grow started", Color.green);
         }
 
         // ---------------- Internals ----------------
@@ -103,7 +103,7 @@ namespace CosmicShore.Game
 
             running = StartCoroutine(EffectCoroutine(targetPos, startValue, endValue, endMsg));
 
-            DebugExtensions.LogColored(startMsg, Color.green);
+            // DebugExtensions.LogColored(startMsg, Color.green);
         }
 
         private IEnumerator EffectCoroutine(Vector3 targetPos, float startValue, float endValue, string endMsg)
@@ -116,9 +116,6 @@ namespace CosmicShore.Game
                 float t = Mathf.Clamp01(elapsedTime / implosionDuration);
 
                 implosionProgress = Mathf.Lerp(startValue, endValue, t);
-
-                if (!prismRenderer || mpb == null)
-                    yield break;
 
                 prismRenderer.GetPropertyBlock(mpb);
                 mpb.SetFloat(ImplosionProgressID, implosionProgress);
@@ -138,7 +135,8 @@ namespace CosmicShore.Game
             if (running != null)
                 StopCoroutine(running);
 
-            running = StartCoroutine(DelayedFinish(endMsg));
+            running = null;
+            OnFinished?.Invoke(this);
         }
 
         private IEnumerator GrowEffectCoroutine(Transform ownerTransform)
@@ -149,21 +147,12 @@ namespace CosmicShore.Game
             mpb.SetFloat(ImplosionProgressID, 1f);
             mpb.SetVector(ConvergencePointID, startPosition);
             prismRenderer.SetPropertyBlock(mpb);
-            
-            // Wait before expanding (small charge-up delay)
-            if (growDelay > 0f)
-                yield return new WaitForSeconds(growDelay);
 
             float elapsedTime = 0f;
             while (elapsedTime < implosionDuration)
             {
                 elapsedTime += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsedTime / implosionDuration);
-
-                implosionProgress = Mathf.Lerp(1f, 0f, t); // 1 → 0
-
-                if (!prismRenderer || mpb == null)
-                    yield break;
+                implosionProgress = 1 - Mathf.Clamp01(elapsedTime / implosionDuration);
 
                 prismRenderer.GetPropertyBlock(mpb);
                 mpb.SetFloat(ImplosionProgressID, implosionProgress);
@@ -174,24 +163,20 @@ namespace CosmicShore.Game
             }
 
             // Force final state (fully grown, placed at start position)
-            implosionProgress = 0f;
+            /*implosionProgress = 0f;
             prismRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat(ImplosionProgressID, 0f);
             mpb.SetVector(ConvergencePointID, startPosition);
-            prismRenderer.SetPropertyBlock(mpb);
+            prismRenderer.SetPropertyBlock(mpb);*/
 
-            if (running != null)
-                StopCoroutine(running);
-
-            running = StartCoroutine(DelayedFinish("Prism grow finished"));
-        }
-
-        private IEnumerator DelayedFinish(string endMsg)
-        {
-            yield return new WaitForSeconds(0.5f);
+            if (prismRenderer && mpb != null)
+            {
+                mpb.Clear();
+                prismRenderer.SetPropertyBlock(mpb);
+            }
+            
             running = null;
             OnFinished?.Invoke(this);
-            DebugExtensions.LogColored(endMsg, Color.cyan);
         }
 
         public float GetImplosionProgress() => implosionProgress;
