@@ -9,12 +9,17 @@ namespace CosmicShore.Game
     /// </summary>
     public class PrismImplosionPoolManager : GenericPoolManager<PrismImplosion>
     {
-        public PrismImplosion Spawn(Vector3 spawnPosition, Quaternion rotation, Transform targetTransform)
+        public PrismImplosion Spawn(Vector3 spawnPosition, Quaternion rotation)
         {
             var implosion = Get_(spawnPosition, rotation);
-            implosion.OnFinished = Release_; // auto return when done
-            implosion.StartImplosion(targetTransform);
+            implosion.OnFinished += OnFinished; // auto return when done
             return implosion;
+        }
+
+        void OnFinished(PrismImplosion implosion)
+        {
+            implosion.OnFinished -= OnFinished;
+            Release_(implosion);
         }
     }
 }

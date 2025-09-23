@@ -7,7 +7,8 @@ namespace CosmicShore.Game
     public enum PrismType
     {
         Explosion,
-        Implosion
+        Implosion,
+        Grow
     }
     
     public class PrismFactory : MonoBehaviour
@@ -64,6 +65,10 @@ namespace CosmicShore.Game
                 case PrismType.Implosion :
                     spawned = SpawnImplosion(data);
                     break;
+                
+                case PrismType.Grow :
+                    spawned = SpawnGrow(data);
+                    break;
 
                 // Add more cases here later
                 // case "Shockwave":
@@ -78,17 +83,36 @@ namespace CosmicShore.Game
         #region Public API
         GameObject SpawnExplosion(PrismEventData data)
         {
-            var obj = explosionPool?.Spawn(data.SpawnPosition, data.Rotation, data.Velocity);
+            var obj = explosionPool?.Spawn(data.SpawnPosition, data.Rotation);
             ConfigureForTeam(obj.gameObject, data.ownDomain);
+            obj.TriggerExplosion(data.Velocity);
             return obj.gameObject;
         }
 
         GameObject SpawnImplosion(PrismEventData data)
         {
-            var obj = implosionPool?.Spawn(data.SpawnPosition, data.Rotation, data.TargetTransform);
+            var obj = implosionPool?.Spawn(data.SpawnPosition, data.Rotation);
             ConfigureForTeam(obj.gameObject, data.ownDomain);
+            obj.StartImplosion(data.TargetTransform);
             return obj.gameObject;
         }
+        
+        GameObject SpawnGrow(PrismEventData data)
+        {
+            var obj = implosionPool?.Spawn(data.SpawnPosition, data.Rotation);
+            obj.transform.localScale = data.Scale;
+            ConfigureForTeam(obj.gameObject, data.ownDomain);
+
+            obj.OnFinished += _ =>
+            {
+                data.OnGrowCompleted?.Invoke();
+            };
+
+            obj.StartGrow(data.TargetTransform); // adjust if different
+
+            return obj.gameObject;
+        }
+        
         #endregion
 
         #region Helpers

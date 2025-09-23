@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
+using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using UnityEngine;
@@ -15,6 +16,8 @@ namespace CosmicShore.Game
 
         const string playerNamePropertyKey = "playerName";
 
+        [SerializeField] private PrismEventChannelWithReturnSO _onPrismSpawnedEventChannel;
+        
         [Header("References")]
         [SerializeField] TrailBlock trailBlock;
         [SerializeField] Skimmer skimmer;
@@ -223,7 +226,7 @@ namespace CosmicShore.Game
         }
 
         /// <summary>Creates a block at offset.</summary>
-        void CreateBlock(float halfGap, Trail prisms)
+        /*void CreateBlock(float halfGap, Trail prisms)
         {
             var prism = Instantiate(trailBlock);
             EnsureContainer();
@@ -271,7 +274,75 @@ namespace CosmicShore.Game
             // event
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
             OnBlockSpawned?.Invoke(prism);
+        }*/
+        
+        void CreateBlock(float halfGap, Trail prisms)
+        {
+            EnsureContainer();
+
+            // --- Scale ---
+            Vector3 baseScale = trailBlock.transform.localScale;
+            Vector3 scale = new Vector3(
+                baseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
+                baseScale.y * YScaler,
+                baseScale.z * ZScaler
+            );
+
+            // --- Position & Rotation ---
+            float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
+            Vector3 pos = transform.position
+                          - vesselStatus.Course * offset
+                          + vesselStatus.ShipTransform.right * xShift;
+            Quaternion rot = vesselStatus.blockRotation;
+
+            // --- Setup Grow Callback ---
+            void OnGrowCompleted()
+            {
+                // Instantiate real TrailBlock
+                TrailBlock prism = Instantiate(trailBlock, pos, rot, TrailContainer.transform);
+                prism.TargetScale = scale;
+
+                // --- Ownership & Team ---
+                bool charm = isCharmed && tempVessel != null;
+                string creatorId = charm ? vesselStatus.Player.PlayerUUID : ownerId;
+                if (string.IsNullOrEmpty(creatorId)) creatorId = vesselStatus.Player?.PlayerUUID ?? string.Empty;
+
+                prism.ownerID = creatorId;
+                prism.PlayerName = vesselStatus.PlayerName;
+                prism.ChangeTeam(vesselStatus.Domain);
+
+                // --- Wait Time ---
+                prism.waitTime = waitTillOutsideSkimmer
+                    ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
+                    : waitTime;
+
+                // --- Shield ---
+                if (shielded) prism.TrailBlockProperties.IsShielded = true;
+
+                // --- Add to Trail ---
+                prisms.Add(prism);
+                prism.TrailBlockProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
+
+                // --- Events ---
+                OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
+                OnBlockSpawned?.Invoke(prism);
+            }
+
+            // --- Raise Grow Prism Event (dummy visual effect first) ---
+            var eventData = new PrismEventData
+            {
+                ownDomain = vesselStatus.Domain,
+                Rotation = rot,
+                SpawnPosition = pos,
+                Scale = scale,
+                TargetTransform = transform, // current jet transform
+                PrismType = PrismType.Grow,  // Grow uses same shader reversed
+                OnGrowCompleted = OnGrowCompleted // << callback injected here
+            };
+
+            _onPrismSpawnedEventChannel.RaiseEvent(eventData);
         }
+
 
         public List<TrailBlock> GetLastTwoBlocks()
         {

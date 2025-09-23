@@ -21,6 +21,7 @@ namespace CosmicShore.Utilities
         public float Volume;
         public PrismType PrismType;
         public Transform TargetTransform;
+        public System.Action OnGrowCompleted;
     }
 
     [CreateAssetMenu(fileName = "PrismEventChannelWithReturn", menuName = "ScriptableObjects/Event Channels/PrismEventChannelWithReturnSO")]

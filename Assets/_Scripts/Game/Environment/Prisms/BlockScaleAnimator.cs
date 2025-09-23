@@ -83,7 +83,7 @@ namespace CosmicShore.Core
                 TryRegisterWithManager();
             }
         }
-
+        
         private void TryRegisterWithManager()
         {
             if (BlockScaleManager.Instance != null && !isRegistered)

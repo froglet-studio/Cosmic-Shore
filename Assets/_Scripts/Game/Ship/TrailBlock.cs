@@ -130,7 +130,8 @@ namespace CosmicShore.Core
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
-            StartCoroutine(CreateBlockCoroutine());
+            CreateBlock();
+            // StartCoroutine(CreateBlockCoroutine());
 
             // Apply initial states if needed
             if (TrailBlockProperties.IsShielded) ActivateShield();
@@ -150,7 +151,7 @@ namespace CosmicShore.Core
             TrailBlockProperties.volume = 1f; // Set a default non-zero volume
         }
 
-        private IEnumerator CreateBlockCoroutine()
+        /*private IEnumerator CreateBlockCoroutine()
         {
             yield return new WaitForSeconds(waitTime);
             // yield return new WaitUntil(() => Player != null);
@@ -171,7 +172,7 @@ namespace CosmicShore.Core
 
             // TODO - Raise events about block creation.
             /*if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);*/
+                StatsManager.Instance.BlockCreated(Team, PlayerName, TrailBlockProperties);#1#
 
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
@@ -193,11 +194,55 @@ namespace CosmicShore.Core
                     if (t != Domain) targetCell.countGrids[t].AddBlock(this);
                 });
             }
+        }*/
+        
+        private void CreateBlock()
+        {
+            meshRenderer.enabled = true;
+            blockCollider.enabled = true;
+
+            transform.localScale = TargetScale == Vector3.zero ? Vector3.one : TargetScale;
+            
+            /*if (scaleAnimator)
+            {
+                // Force it to target immediately
+                scaleAnimator.ForceSetScale(TargetScale);
+            }
+            else
+            {
+                // fallback if animator missing
+                transform.localScale = TargetScale == Vector3.zero ? Vector3.one : TargetScale;
+            }*/
+
+            // Update volume immediately
+            TrailBlockProperties.volume = scaleAnimator != null 
+                ? scaleAnimator.GetCurrentVolume() 
+                : Mathf.Max(TargetScale.x * TargetScale.y * TargetScale.z, 0.001f);
+
+            // Fire creation event
+            _onTrailBlockCreatedEventChannel.Raise(new PrismStats
+            {
+                PlayerName      = PlayerName,
+                Volume          = TrailBlockProperties.volume,
+                OtherPlayerName = TrailBlockProperties.trailBlock.PlayerName,
+            });
+
+            // Add to cell system
+            if (CellControlManager.Instance)
+            {
+                CellControlManager.Instance.AddBlock(Domain, TrailBlockProperties);
+
+                Cell targetCell = CellControlManager.Instance.GetNearestCell(TrailBlockProperties.position);
+                System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
+                {
+                    if (t != Domain) targetCell.countGrids[t].AddBlock(this);
+                });
+            }
         }
 
         // Growth Methods
         public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
-        public void Grow(Vector3 growthVector) => scaleAnimator.Grow(growthVector);
+        // public void Grow(Vector3 growthVector) => scaleAnimator.Grow(growthVector);
 
         // Collision Handling
         protected void OnTriggerEnter(Collider other)

@@ -96,6 +96,7 @@ namespace CosmicShore
             crystal.ActivateCrystal();
             foreach (HealthBlock healthBlock in healthBlocks.ToArray())
             {
+                Debug.LogWarning("Post death health block created!. Should not happen!");
                 healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
             }
             StopAllCoroutines();
