@@ -61,6 +61,9 @@ namespace CosmicShore.Game
             {
                 NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                 NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
+
+                if (NetworkManager.Singleton.IsHost)
+                    EndActiveSessionAsync().Forget();
             }
         }
 
@@ -112,11 +115,39 @@ namespace CosmicShore.Game
 
         void OnClientDisconnect(ulong clientId)
         {
+            if (!NetworkManager.Singleton)
+                return;
+
             // host always = 0
-            if (NetworkManager.Singleton.IsClient && clientId == 0)
-            {
-                Debug.Log("[MultiplayerSetup] Host disconnected, returning to menu.");
+            if (clientId != NetworkManager.Singleton.ServerClientId)
+                return;
+
+            Debug.Log("[MultiplayerSetup] Host disconnected, returning to menu.");
+
+            if (NetworkManager.Singleton.IsHost)
+                EndActiveSessionAsync().Forget();
+
+            if (NetworkManager.Singleton.IsClient)
                 OnLoadMainMenu?.Raise();
+        }
+
+        async UniTaskVoid EndActiveSessionAsync()
+        {
+            if (ActiveSession == null)
+                return;
+
+            try
+            {
+                await MultiplayerService.Instance.LeaveSessionAsync();
+                await MultiplayerService.Instance.DeleteSessionAsync(ActiveSession.Id);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[MultiplayerSetup] Failed to end session: {ex}");
+            }
+            finally
+            {
+                ActiveSession = null;
             }
         }
 
