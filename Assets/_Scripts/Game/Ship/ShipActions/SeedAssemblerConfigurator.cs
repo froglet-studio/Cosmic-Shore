@@ -17,17 +17,17 @@ namespace CosmicShore
         [SerializeField] int shieldResourceIndex = 0;
         [SerializeField] float wallsPerFullResource = 4f;
 
-        TrailSpawner _spawner;
+        Game.PrismSpawner _spawner;
         Assembler _activeAssembler;
         IVesselStatus vesselStatus;
-        TrailBlock _activeSeedBlock;
+        Prism _activeSeedBlock;
 
-        public TrailBlock ActiveSeedBlock => _activeSeedBlock;
+        public Prism ActiveSeedBlock => _activeSeedBlock;
 
         public void Initialize(IVessel vessel)
         {
             vesselStatus = vessel.VesselStatus;
-            _spawner    = vesselStatus.TrailSpawner;
+            _spawner    = vesselStatus.PrismSpawner;
         }
 
         public bool StartSeed()
@@ -47,7 +47,7 @@ namespace CosmicShore
             var trailBlockGO = _spawner?.Trail?.TrailList?.LastOrDefault()?.gameObject;
             if (trailBlockGO == null || assemblerPrefab == null) return false;
 
-            _activeSeedBlock = trailBlockGO.GetComponent<TrailBlock>();
+            _activeSeedBlock = trailBlockGO.GetComponent<Prism>();
 
             // add concrete assembler type matching prefab
             var newAsm = trailBlockGO.AddComponent(assemblerPrefab.GetType()) as Assembler;

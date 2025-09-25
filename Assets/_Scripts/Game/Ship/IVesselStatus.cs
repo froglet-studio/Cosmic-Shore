@@ -19,7 +19,7 @@ namespace CosmicShore.Game
         Material AOEConicExplosionMaterial { get; set; }
         Material AOEExplosionMaterial { get; set; }
         bool Attached { get; set; }
-        TrailBlock AttachedTrailBlock { get; set; }
+        Prism AttachedPrism { get; set; }
         Quaternion blockRotation { get; set; }
         bool Boosting { get; set; }
         float BoostMultiplier { get; set; }
@@ -47,7 +47,7 @@ namespace CosmicShore.Game
                 return "No-name";
             }
         }
-        Teams Team => Player.Team;
+        Domains Domain => Player.Domain;
 
         bool Portrait { get; set; }
         ResourceSystem ResourceSystem { get; }
@@ -69,7 +69,7 @@ namespace CosmicShore.Game
         bool Slowed { get; set; }
         bool IsStationary { get; set; }
         bool Turret { get; set; }
-        TrailSpawner TrailSpawner { get; }
+        PrismSpawner PrismSpawner { get; }
         ShipHUDContainer ShipHUDContainer { get; }
         IVesselHUDView ShipHUDView { get; set; }
         IVesselHUDController ShipHUDController { get; }

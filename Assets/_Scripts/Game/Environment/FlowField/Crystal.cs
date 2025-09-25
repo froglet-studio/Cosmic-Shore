@@ -77,7 +77,7 @@ namespace CosmicShore.Game
 //             CrystalRespawn();
 //         }
 
-        public bool CanBeCollected(Teams shipTeam) => OwnTeam == Teams.None || OwnTeam == shipTeam;
+        public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
         private Vector3 _lastSpawnPosition;
         
@@ -192,12 +192,12 @@ namespace CosmicShore.Game
             }
         }
 
-        public void Steal(Teams team, float duration)
+        public void Steal(Domains domain, float duration)
         {
-            OwnTeam = team;
+            ownDomain = domain;
             foreach (var modelData in crystalModels)
             {
-                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(team), 1));
+                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(domain), 1));
             }
             StartCoroutine(DecayingTheftCoroutine(duration));
         }
@@ -205,7 +205,7 @@ namespace CosmicShore.Game
         IEnumerator DecayingTheftCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            OwnTeam = Teams.None;
+            ownDomain = Domains.None;
             foreach (var modelData in crystalModels)
             {
                 StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, modelData.defaultMaterial, 1));

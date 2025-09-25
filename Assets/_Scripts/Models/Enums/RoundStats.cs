@@ -4,7 +4,7 @@ namespace CosmicShore.Core
     public class RoundStats : IRoundStats
     {
         public string Name { get; set; }
-        public Teams Team { get; set; }
+        public Domains Domain { get; set; }
         public float Score { get; set; }
         public int BlocksCreated { get; set; }
         public int BlocksDestroyed { get; set; }

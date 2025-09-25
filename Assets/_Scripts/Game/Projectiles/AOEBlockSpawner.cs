@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Projectiles
         {
             var position = Vessel.Transform.position;
             var rotation = Vessel.Transform.rotation;
-            var team = Vessel.VesselStatus.Team;
+            var team = Vessel.VesselStatus.Domain;
 
             yield return new WaitForSeconds(ExplosionDelay);
 

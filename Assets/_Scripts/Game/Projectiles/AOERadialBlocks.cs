@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -14,8 +15,9 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
         #region Attributes for Block Creation
+        [FormerlySerializedAs("trailBlock")]
         [Header("Block Creation")]
-        [SerializeField] protected TrailBlock trailBlock;
+        [SerializeField] protected Prism prism;
         [SerializeField] protected Vector3 baseBlockScale = new Vector3(10f, 5f, 5f);
         [SerializeField] bool shielded = true;
         private Material blockMaterial;
@@ -62,7 +64,7 @@ namespace CosmicShore.Game.Projectiles
             int totalBlocksNeeded = numberOfRays * blocksPerRay;
 
             // Wait for buffer to have enough blocks
-            while (!TrailBlockBufferManager.Instance.HasAvailableBlocks(Team, totalBlocksNeeded))
+            while (!TrailBlockBufferManager.Instance.HasAvailableBlocks(Domain, totalBlocksNeeded))
             {
                 Debug.Log($"AOERadialBlocks: Waiting for blocks: {totalBlocksNeeded}");
                 yield return new WaitForSeconds(0.1f);
@@ -104,9 +106,9 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string blockId, Trail trail, Vector3 scale)
+        protected Prism CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string blockId, Trail trail, Vector3 scale)
         {
-            var block = TrailBlockBufferManager.Instance.GetBlock(Team);
+            var block = TrailBlockBufferManager.Instance.GetBlock(Domain);
             //block.ownerID = Vessel.Player.PlayerUUID;
             block.PlayerName = Vessel.VesselStatus.PlayerName;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
@@ -116,7 +118,7 @@ namespace CosmicShore.Game.Projectiles
             //block.transform.parent = TrailSpawner.TrailContainer.transform;
             block.Trail = trail;
             block.growthRate = growthRate;
-            if (shielded) block.TrailBlockProperties.IsShielded = true;
+            if (shielded) block.prismProperties.IsShielded = true;
             trail.Add(block);
             return block;
         }

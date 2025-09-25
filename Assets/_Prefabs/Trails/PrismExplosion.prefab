@@ -13,8 +13,8 @@ GameObject:
   - component: {fileID: 7076137217386601628}
   - component: {fileID: 8796858733488306809}
   m_Layer: 0
-  m_Name: FossilPrism
-  m_TagString: FossilPrism
+  m_Name: PrismExplosion
+  m_TagString: FossilPrism_Blue
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 126

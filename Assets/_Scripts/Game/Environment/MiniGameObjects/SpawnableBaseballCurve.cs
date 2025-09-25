@@ -1,9 +1,10 @@
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SpawnableBaseballCurve : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     static int SpawnedCount = 0;
 
     public float radius = 1.0f;

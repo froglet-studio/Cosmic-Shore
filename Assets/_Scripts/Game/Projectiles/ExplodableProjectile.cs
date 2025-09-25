@@ -39,7 +39,7 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        protected override void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
+        protected override void PerformTrailImpactEffects(PrismProperties prismProperties)
         {
             foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
             {
@@ -47,18 +47,18 @@ namespace CosmicShore.Game.Projectiles
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         Debug.Log("DeactivateTrailBlock from projectile");
-                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, VesselStatus.Team, VesselStatus.PlayerName);
+                        prismProperties.trailBlock.Damage(Velocity * Inertia, VesselStatus.Team, VesselStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        // trailBlockProperties.trailBlock.Steal(Vessel.VesselStatus.PlayerName, Team);
-                        trailBlockProperties.trailBlock.Steal(VesselStatus.PlayerName, OwnTeam);
+                        // prismProperties.trailBlock.Steal(Vessel.VesselStatus.PlayerName, Team);
+                        prismProperties.trailBlock.Steal(VesselStatus.PlayerName, OwnTeam);
                         break;
                     case TrailBlockImpactEffects.Shield:
-                        trailBlockProperties.trailBlock.ActivateShield(.5f);
+                        prismProperties.trailBlock.ActivateShield(.5f);
                         break;
                     case TrailBlockImpactEffects.Stop:
 
-                        if (!trailBlockProperties.trailBlock.GetComponent<Boid>()) Stop();
+                        if (!prismProperties.trailBlock.GetComponent<Boid>()) Stop();
                         else _poolManager.ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:

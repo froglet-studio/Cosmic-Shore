@@ -613,14 +613,15 @@ MonoBehaviour:
   minHealthBlocks: 0
   shieldPeriod: 0
   Team: 0
-  aggression: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   Population: {fileID: 0}
   detectionRadius: 70
   separationRadius: 70
   consumeRadius: 40
   behaviorUpdateRate: 2
   separationWeight: 10
-  cohesionWeight: 1
   goalWeight: 2
   minSpeed: 15
   maxSpeed: 25

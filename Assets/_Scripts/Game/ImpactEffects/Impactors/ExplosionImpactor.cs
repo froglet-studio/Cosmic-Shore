@@ -26,7 +26,7 @@ namespace CosmicShore.Game
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
-                    if (shipImpactee.Vessel.VesselStatus.Team == Explosion.Team && !affectSelf)
+                    if (shipImpactee.Vessel.VesselStatus.Domain == Explosion.Domain && !affectSelf)
                         break;
                     // ExecuteEffect(shipImpactee, explosionShipEffects);
                     if(!DoesEffectExist(shipAOEEffects)) return;
@@ -48,16 +48,16 @@ namespace CosmicShore.Game
             }
         }
         
-        void ExecuteCommonPrismCommands(TrailBlock prism, Vector3 impactVector)
+        void ExecuteCommonPrismCommands(Prism prism, Vector3 impactVector)
         {
-            if ((prism.Team != Explosion.Team || affectSelf) && prism.TrailBlockProperties.IsSuperShielded)
+            if ((prism.Domain != Explosion.Domain || affectSelf) && prism.prismProperties.IsSuperShielded)
             {
                 prism.DeactivateShields();
                 Destroy(gameObject);    // TODO: This seems wrong...
             } 
-            if ((prism.Team == Explosion.Team && !affectSelf) || !destructive)
+            if ((prism.Domain == Explosion.Domain && !affectSelf) || !destructive)
             {
-                if (shielding && prism.Team == Explosion.Team)
+                if (shielding && prism.Domain == Explosion.Domain)
                     prism.ActivateShield();
                 else 
                     prism.ActivateShield(2f);
@@ -65,11 +65,11 @@ namespace CosmicShore.Game
             }
             
             if (Explosion.AnonymousExplosion) // Vessel Status will be null here
-                prism.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
+                prism.Damage(impactVector, Domains.None, "🔥GuyFawkes🔥", devastating);
             else
             {
                 var shipStatus = Explosion.Vessel.VesselStatus;
-                prism.Damage(impactVector, shipStatus.Team, shipStatus.Player.Name, devastating);
+                prism.Damage(impactVector, shipStatus.Domain, shipStatus.Player.Name, devastating);
             }
         }
     }

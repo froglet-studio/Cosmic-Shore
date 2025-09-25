@@ -39,7 +39,7 @@ namespace CosmicShore.Game
         {
             var shipStatus = vesselImpactee.Vessel.VesselStatus;
 
-            if (!Crystal.CanBeCollected(shipStatus.Team))
+            if (!Crystal.CanBeCollected(shipStatus.Domain))
                 return;
             
 //             if (allowVesselImpactEffect)

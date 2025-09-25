@@ -2,21 +2,25 @@
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
+using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
-    public class TrailSpawner : MonoBehaviour
+    public class PrismSpawner : MonoBehaviour
     {
         public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);
         public event BlockCreationHandler OnBlockCreated;
 
         const string playerNamePropertyKey = "playerName";
 
+        [SerializeField] private PrismEventChannelWithReturnSO _onPrismSpawnedEventChannel;
+        
         [Header("References")]
-        [SerializeField] TrailBlock trailBlock;
+        [SerializeField] Prism prismPrefab;
         [SerializeField] Skimmer skimmer;
 
         [Header("Wave Settings")]
@@ -71,8 +75,8 @@ namespace CosmicShore.Game
         // Properties
         public float MinWaveLength => minWavelength;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
-        public float TrailZScale => trailBlock.transform.localScale.z;
-        public event Action<TrailBlock> OnBlockSpawned;
+        public float TrailZScale => prismPrefab.transform.localScale.z;
+        public event Action<Prism> OnBlockSpawned;
 
         private void Awake()
         {
@@ -225,11 +229,11 @@ namespace CosmicShore.Game
         /// <summary>Creates a block at offset.</summary>
         void CreateBlock(float halfGap, Trail prisms)
         {
-            var prism = Instantiate(trailBlock);
+            var prism = Instantiate(prismPrefab);
             EnsureContainer();
 
             // scale
-            Vector3 baseScale = trailBlock.transform.localScale;
+            Vector3 baseScale = prismPrefab.transform.localScale;
             var scale = new Vector3(
                 baseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
                 baseScale.y * YScaler,
@@ -251,7 +255,7 @@ namespace CosmicShore.Game
             prism.ownerID = creatorId;
 
             prism.PlayerName = vesselStatus.PlayerName;
-            prism.ChangeTeam(vesselStatus.Team);
+            prism.ChangeTeam(vesselStatus.Domain);
             // prism.PlayerName = charm ? VesselStatus.PlayerName : VesselStatus.Team.ToString();
             // prism.ChangeTeam(charm ? VesselStatus.Team : VesselStatus.Team);
 
@@ -262,21 +266,89 @@ namespace CosmicShore.Game
 
             // shield
             if (shielded)
-                prism.TrailBlockProperties.IsShielded = true;
+                prism.prismProperties.IsShielded = true;
 
             // add to trail
             prisms.Add(prism);
-            prism.TrailBlockProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
+            prism.prismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
 
             // event
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
             OnBlockSpawned?.Invoke(prism);
         }
+        
+        void CreateBlockWithGrow(float halfGap, Trail prisms)
+        {
+            EnsureContainer();
 
-        public List<TrailBlock> GetLastTwoBlocks()
+            // --- Scale ---
+            Vector3 baseScale = prismPrefab.transform.localScale;
+            Vector3 scale = new Vector3(
+                baseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
+                baseScale.y * YScaler,
+                baseScale.z * ZScaler
+            );
+
+            // --- Position & Rotation ---
+            float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
+            Vector3 pos = transform.position
+                          - vesselStatus.Course * offset
+                          + vesselStatus.ShipTransform.right * xShift;
+            Quaternion rot = vesselStatus.blockRotation;
+
+            // --- Setup Grow Callback ---
+            void OnGrowCompleted()
+            {
+                // Instantiate real TrailBlock
+                Prism prism = Instantiate(prismPrefab, pos, rot, TrailContainer.transform);
+                prism.TargetScale = scale;
+
+                // --- Ownership & Team ---
+                bool charm = isCharmed && tempVessel != null;
+                string creatorId = charm ? vesselStatus.Player.PlayerUUID : ownerId;
+                if (string.IsNullOrEmpty(creatorId)) creatorId = vesselStatus.Player?.PlayerUUID ?? string.Empty;
+
+                prism.ownerID = creatorId;
+                prism.PlayerName = vesselStatus.PlayerName;
+                prism.ChangeTeam(vesselStatus.Domain);
+
+                // --- Wait Time ---
+                prism.waitTime = waitTillOutsideSkimmer
+                    ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
+                    : waitTime;
+
+                // --- Shield ---
+                if (shielded) prism.prismProperties.IsShielded = true;
+
+                // --- Add to Trail ---
+                prisms.Add(prism);
+                prism.prismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
+
+                // --- Events ---
+                OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
+                OnBlockSpawned?.Invoke(prism);
+            }
+
+            // --- Raise Grow Prism Event (dummy visual effect first) ---
+            var eventData = new PrismEventData
+            {
+                ownDomain = vesselStatus.Domain,
+                Rotation = rot,
+                SpawnPosition = pos,
+                Scale = scale,
+                TargetTransform = transform, // current jet transform
+                PrismType = PrismType.Grow,  // Grow uses same shader reversed
+                OnGrowCompleted = OnGrowCompleted // << callback injected here
+            };
+
+            _onPrismSpawnedEventChannel.RaiseEvent(eventData);
+        }
+
+
+        public List<Prism> GetLastTwoBlocks()
         {
             if (Trail2.TrailList.Count > 0)
-                return new List<TrailBlock>
+                return new List<Prism>
                 {
                     Trail.TrailList[^1],
                     Trail2.TrailList[^1]

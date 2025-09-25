@@ -35,7 +35,7 @@ public class SpawnableCardioidSmear : SpawnableEllipsoid
 
                 var lookPosition = position;
                 if (block != 0) lookPosition = trail.GetBlock(block - 1).transform.position;
-                CreateBlock(position, lookPosition, container.name + "::BLOCK" + cardioidIndex + "::" + block, trail, trailBlock.transform.localScale, trailBlock, container);
+                CreateBlock(position, lookPosition, container.name + "::BLOCK" + cardioidIndex + "::" + block, trail, prism.transform.localScale, prism, container);
             }
 
             trails.Add(trail);

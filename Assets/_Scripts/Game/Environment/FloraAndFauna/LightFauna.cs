@@ -6,6 +6,8 @@ using CosmicShore.Game;
 
 public class LightFauna : Fauna
 {
+    const string PLAYER_NAME = "light fauna";
+    
     [Header("Detection Settings")]
     [SerializeField] float detectionRadius = 100.0f;
     //[SerializeField] float cohesionRadius = 8.0f;
@@ -83,15 +85,17 @@ public class LightFauna : Fauna
                 {
                     separation += diff.normalized / distance;
                 }
-                if (distance < consumeRadius && otherHealthBlock.LifeForm.Team != Team) otherHealthBlock.Damage(currentVelocity, Team, "light fauna", true);
+                if (distance < consumeRadius && otherHealthBlock.LifeForm.domain != domain) 
+                    // otherHealthBlock.Damage(currentVelocity, Team, "light fauna", true);
+                    otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
                 continue;
             }
 
             // Handle blocks
-            TrailBlock block = collider.GetComponent<TrailBlock>();
-            if (block && block.Team != Team && distance < consumeRadius)
+            Prism block = collider.GetComponent<Prism>();
+            if (block && block.Domain != domain && distance < consumeRadius)
             {
-                block.Damage(currentVelocity, Team, "light fauna", true);
+                block.Consume(transform, domain, PLAYER_NAME, true);
             }
         }
 

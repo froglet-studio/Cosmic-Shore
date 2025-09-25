@@ -1,11 +1,12 @@
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
     public class SpawnableCylinder : SpawnableAbstractBase
     {
-        [SerializeField] TrailBlock trailBlock;
+        [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
         static int CylindersSpawned = 0;
 
         #region Attributes for Explosion Parameters
@@ -49,12 +50,12 @@ namespace CosmicShore
                          distanceTowardTail * -transform.forward;
             var tempBlockscale = new Vector3(blockScale.x * scale, blockScale.y, blockScale.z * scale);
 
-            CreateBlock(transform.position + offset, tilt * transform.forward - (offset + transform.position), transform.forward, container.name + "::BLOCK::" + block, trail, tempBlockscale, trailBlock, container);
+            CreateBlock(transform.position + offset, tilt * transform.forward - (offset + transform.position), transform.forward, container.name + "::BLOCK::" + block, trail, tempBlockscale, prism, container);
         }
-        void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
+        void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.Prism prism, GameObject container, Domains domain = Domains.Blue)
         {
-            var Block = Instantiate(trailBlock);
-            Block.ChangeTeam(team);
+            var Block = Instantiate(prism);
+            Block.ChangeTeam(domain);
             Block.ownerID = "public";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             Block.transform.SetParent(container.transform, false);

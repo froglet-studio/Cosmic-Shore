@@ -26,7 +26,7 @@ namespace CosmicShore.Game
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
         private int ActivelySkimmingBlockCount;
-        public float CombinedWeight;  // exposed for effects that need it
+        private float CombinedWeight;  // exposed for effects that need it
 
         // ------------------------------------------------------------------
         // Trigger callbacks moved here
@@ -46,13 +46,13 @@ namespace CosmicShore.Game
             // TrailBlock: compute combined weight & run stay effects
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
-            if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team) return;
+            if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
             // ensure we started skimming
             StartSkimIfNeeded(prism.ownerID);
 
             // choose “mature & nearest” block per your old logic
-            if (Time.time - prism.TrailBlockProperties.TimeCreated <= 4f) return;
+            if (Time.time - prism.prismProperties.TimeCreated <= 4f) return;
 
             // distance from skimmer to this block
             float sqrDistance = (skimmer.transform.position - other.transform.position).sqrMagnitude;
@@ -77,7 +77,7 @@ namespace CosmicShore.Game
 
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
-            if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team) return;
+            if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
             if (!_skimStartTimes.ContainsKey(prism.ownerID)) return;
 
@@ -107,16 +107,14 @@ namespace CosmicShore.Game
                 case PrismImpactor prismImpactor:
                     var prism = prismImpactor.Prism;
                     var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
-                    if (DoesEffectExist(esp))
+                    if(!DoesEffectExist(esp)) return;
+                    foreach (var effect in esp)
                     {
-                        foreach (var effect in esp)
-                        {
-                            effect.Execute(this, prismImpactor);
-                        }
+                        effect.Execute(this, prismImpactor);
                     }
-                    
                     skimmer.ExecuteImpactOnPrism(prism);    // secondary call (booster viz, etc.)
-                    if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team)
+                    
+                    if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain)
                         return;
                     StartSkimIfNeeded(prism.ownerID);
                     

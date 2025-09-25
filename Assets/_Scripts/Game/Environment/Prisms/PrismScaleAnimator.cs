@@ -4,7 +4,7 @@ using CosmicShore.Utilities;
 
 namespace CosmicShore.Core
 {
-    public class BlockScaleAnimator : MonoBehaviour
+    public class PrismScaleAnimator : MonoBehaviour
     {
         [SerializeField]
         ScriptableEventPrismStats onPrismVolumeModified;
@@ -45,7 +45,7 @@ namespace CosmicShore.Core
         
         public Action OnScaleComplete { get; set; }
 
-        private TrailBlock trailBlock;
+        private Prism prism;
         private Vector3 spread;
         private Vector3 outerDimensions;
         private MeshRenderer meshRenderer;
@@ -55,7 +55,7 @@ namespace CosmicShore.Core
         {
             // Cache components
             meshRenderer = GetComponent<MeshRenderer>();
-            trailBlock = GetComponent<TrailBlock>();
+            prism = GetComponent<Prism>();
             
             if (meshRenderer == null)
             {
@@ -83,7 +83,7 @@ namespace CosmicShore.Core
                 TryRegisterWithManager();
             }
         }
-
+        
         private void TryRegisterWithManager()
         {
             if (BlockScaleManager.Instance != null && !isRegistered)
@@ -146,12 +146,12 @@ namespace CosmicShore.Core
                     new PrismStats
                     {
                         Volume = deltaVolume,
-                        OtherPlayerName = trailBlock.PlayerName,
+                        OtherPlayerName = prism.PlayerName,
                     });
                 
                 /*if (StatsManager.Instance != null)
                 {
-                    StatsManager.Instance.PrismVolumeModified(deltaVolume, trailBlock.TrailBlockProperties);
+                    StatsManager.Instance.PrismVolumeModified(deltaVolume, trailBlock.PrismProperties);
                 }*/
 
                 CheckScaleBounds();
@@ -160,23 +160,23 @@ namespace CosmicShore.Core
 
         private void CheckScaleBounds()
         {
-            if (trailBlock == null) return;
+            if (prism == null) return;
 
             if (TargetScale.x > MaxScale.x || TargetScale.y > MaxScale.y || TargetScale.z > MaxScale.z)
             {
-                trailBlock.ActivateShield();
-                trailBlock.IsLargest = true;
+                prism.ActivateShield();
+                prism.IsLargest = true;
             }
             if (TargetScale.x < MinScale.x || TargetScale.y < MinScale.y || TargetScale.z < MinScale.z)
             {
-                trailBlock.IsSmallest = true;
+                prism.IsSmallest = true;
             }
         }
 
         public void Grow(float amount = 1)
         {
-            if (!enabled || trailBlock == null) return;
-            Grow(amount * trailBlock.GrowthVector);
+            if (!enabled || prism == null) return;
+            Grow(amount * prism.GrowthVector);
         }
 
         public void Grow(Vector3 growthVector)
@@ -194,16 +194,16 @@ namespace CosmicShore.Core
 
         private float UpdateVolume()
         {
-            if (!enabled || trailBlock == null || trailBlock.TrailBlockProperties == null)
+            if (!enabled || prism == null || prism.prismProperties == null)
             {
                 Debug.LogError($"Required components are null on {gameObject.name}");
                 return 0f;
             }
 
-            var oldVolume = trailBlock.TrailBlockProperties.volume;
+            var oldVolume = prism.prismProperties.volume;
             outerDimensions = TargetScale + 2 * spread;
-            trailBlock.TrailBlockProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
-            return trailBlock.TrailBlockProperties.volume - oldVolume;
+            prism.prismProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
+            return prism.prismProperties.volume - oldVolume;
         }
 
         private void OnDestroy()

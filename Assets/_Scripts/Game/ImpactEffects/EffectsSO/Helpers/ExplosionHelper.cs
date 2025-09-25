@@ -22,7 +22,7 @@ namespace CosmicShore.Game
 
             var init = new AOEExplosion.InitializeStruct
             {
-                OwnTeam            = ss.Team,
+                OwnDomain            = ss.Domain,
                 Vessel               = ss.Vessel,
                 MaxScale           = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex),
                 OverrideMaterial   = overrideMaterial ? overrideMaterial : ss.AOEExplosionMaterial,
@@ -47,7 +47,7 @@ namespace CosmicShore.Game
 
             var init = new AOEExplosion.InitializeStruct
             {
-                OwnTeam            = ss.Team,
+                OwnDomain            = ss.Domain,
                 Vessel               = ss.Vessel,
                 MaxScale           = Mathf.Lerp(minExplosionScale, maxExplosionScale, proj.Charge),
                 OverrideMaterial   = ss.AOEExplosionMaterial,

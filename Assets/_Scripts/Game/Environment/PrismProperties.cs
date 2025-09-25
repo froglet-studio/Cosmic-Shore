@@ -1,14 +1,15 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
     [System.Serializable]
-    public class TrailBlockProperties
+    public class PrismProperties
     {
         public Vector3 position;
         public float volume;
         public float speedDebuffAmount; // don't use more than two sig figs, see vessel.DebuffSpeed
-        public TrailBlock trailBlock;
+        [FormerlySerializedAs("trailBlock")] public Prism prism;
         public ushort Index;
         public Trail Trail;
         public bool IsShielded;

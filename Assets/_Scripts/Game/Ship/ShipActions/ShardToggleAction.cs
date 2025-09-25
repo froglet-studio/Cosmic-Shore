@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
@@ -12,9 +13,10 @@ namespace CosmicShore.Game
         [Header("Bus (required)")]
         [SerializeField] private ShardFieldBus shardFieldBus;
 
+        [FormerlySerializedAs("team")]
         [Header("Mass Centroids Settings")]
         [Tooltip("Team whose density grid is queried for the explosion target.")]
-        [SerializeField] private Teams team = Teams.Jade;
+        [SerializeField] private Domains domain = Domains.Jade;
 
         [Tooltip("Max distance to search for a cell (used by CellControlManager on its side, if applicable).")]
         [SerializeField] private float searchRadiusHint = 0f; // optional / unused here, kept for future
@@ -35,9 +37,9 @@ namespace CosmicShore.Game
                 var shipPos = Vessel != null ? Vessel.Transform.position : transform.position;
                 var cell = CellControlManager.Instance.GetNearestCell(shipPos);
 
-                Vector3 highDensityPosition = cell.GetExplosionTarget(team);
+                Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
 
-                Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={team} Target={highDensityPosition}");
+                Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
                 shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
 
                 _redirectActive = true;

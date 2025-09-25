@@ -17,10 +17,10 @@ namespace CosmicShore.Game
 
         // Declare the NetworkVariable without initializing its value.
         public NetworkVariable<VesselClassType> NetDefaultShipType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        public NetworkVariable<Teams> NetTeam = new();
+        public NetworkVariable<Domains> NetTeam = new();
 
         public VesselClassType VesselClass { get; private set; } // => InitializeData.ShipClass;   
-        public Teams Team { get; private set; } // => InitializeData.Team;
+        public Domains Domain { get; private set; } // => InitializeData.Team;
         public string Name { get; private set; } // => InitializeData.PlayerName;
         public string PlayerUUID { get; private set; } // => InitializeData.PlayerUUID;
         public IVessel Vessel { get; private set; }
@@ -43,7 +43,7 @@ namespace CosmicShore.Game
             InitializeData = data;
             IsInitializedAsAI = InitializeData.IsAI;
             VesselClass = InitializeData.vesselClass;
-            Team = InitializeData.Team;
+            Domain = InitializeData.domain;
             Name = InitializeData.PlayerName;
             PlayerUUID = InitializeData.PlayerUUID;
             if (!IsInitializedAsAI)
@@ -60,7 +60,7 @@ namespace CosmicShore.Game
         public void InitializeForMultiplayerMode(IVessel vessel)
         {
             IsInitializedAsAI = false;
-            Team = NetTeam.Value;
+            Domain = NetTeam.Value;
             Vessel = vessel;
         }
         
@@ -110,7 +110,7 @@ namespace CosmicShore.Game
         private void OnNetDefaultShipTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>
             VesselClass = newValue;
         
-        private void OnNetTeamValueChanged(Teams previousValue, Teams newValue) =>
-            Team = newValue;
+        private void OnNetTeamValueChanged(Domains previousValue, Domains newValue) =>
+            Domain = newValue;
     }
 }

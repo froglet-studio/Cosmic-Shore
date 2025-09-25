@@ -32,13 +32,13 @@ namespace CosmicShore.Game
 
                 var spawned = Object.Instantiate(aoePrefab, pos, rot);
 
-                var team     = status?.Team ?? Teams.None;
+                var team     = status?.Domain ?? Domains.None;
                 var vessel   = status?.Vessel; 
                 var mat      = status?.AOEExplosionMaterial;
 
                 spawned.Initialize(new AOEExplosion.InitializeStruct
                 {
-                    OwnTeam             = team,
+                    OwnDomain             = team,
                     Vessel              = vessel,  
                     MaxScale            = Mathf.Lerp(minExplosionScale, maxExplosionScale, Mathf.Clamp01(projectile.Charge)),
                     OverrideMaterial    = mat,    
@@ -50,8 +50,7 @@ namespace CosmicShore.Game
                 spawned.Detonate();
             }
             Debug.Log("Detonating End Effect");
-            projectile.Stop();
-            projectile.ReturnToPool();
+            projectile.ReturnToFactory();
         }
     }
 }

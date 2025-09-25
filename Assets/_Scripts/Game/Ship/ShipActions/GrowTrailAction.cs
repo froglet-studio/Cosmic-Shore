@@ -9,13 +9,13 @@ public class GrowTrailAction : GrowActionBase
     [SerializeField] float ZWeight;
     [SerializeField] float GapWeight;
 
-    TrailSpawner spawner;
+    PrismSpawner spawner;
     private string scalingDimension;
 
     public override void Initialize(IVessel vessel)
     {
         base.Initialize(vessel);
-        spawner = target.GetComponent<TrailSpawner>();
+        spawner = target.GetComponent<PrismSpawner>();
 
         // Determine the scaling dimension
         scalingDimension = DetermineScalingDimension();

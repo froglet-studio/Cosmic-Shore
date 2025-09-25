@@ -4,11 +4,13 @@ using CosmicShore.Core;
 //using System.Diagnostics;
 //using System.Numerics;
 using UnityEngine;
+using UnityEngine.Serialization;
+
 //using static UnityEngine.ParticleSystem;
 
 public class SpawnableDriftCourse : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     static int ObjectsSpawned = 0;
     [SerializeField] Vector3 blockScale = new Vector3(1,3,5);
     [SerializeField] float spawnDistance = 5f;
@@ -34,7 +36,7 @@ public class SpawnableDriftCourse : SpawnableAbstractBase
                 ChangeDirection(position, out rotation);
             }
 
-            CreateBlock(position, rotation * Vector3.forward, container.name + "::BLOCK::" + block, trail, blockScale, trailBlock, container);
+            CreateBlock(position, rotation * Vector3.forward, container.name + "::BLOCK::" + block, trail, blockScale, prism, container);
 
             var dir = rotation * Vector3.forward;
             position += spawnDistance * dir;

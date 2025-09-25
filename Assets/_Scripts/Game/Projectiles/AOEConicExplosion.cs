@@ -21,9 +21,9 @@ namespace CosmicShore.Game.Projectiles
                 return;
             }
 
-            Team = initStruct.OwnTeam;
-            if (Team == Teams.Unassigned)
-                Team = Vessel.VesselStatus.Team;
+            Domain = initStruct.OwnDomain;
+            if (Domain == Domains.Unassigned)
+                Domain = Vessel.VesselStatus.Domain;
 
             MaxScale = initStruct.MaxScale;
             MaxScaleVector = new Vector3(MaxScale, MaxScale, height);

@@ -7,14 +7,10 @@ namespace CosmicShore.Game
     {
         [SerializeField]
         float _speedModifierDuration;
-        [SerializeField] 
-        float _speedBuffAmount = 2.5f;
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            var vesselStatus = impactor.Skimmer.VesselStatus;
-            vesselStatus.Boosting = true;
-            vesselStatus.BoostMultiplier = 1 + (_speedBuffAmount * impactor.CombinedWeight);
+            impactor.Skimmer.VesselStatus.VesselTransformer.ModifyThrottle(prismImpactee.Prism.prismProperties.speedDebuffAmount, _speedModifierDuration);
         }
     }
 }

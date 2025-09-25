@@ -23,7 +23,7 @@ namespace CosmicShore
         public override bool CheckForEndOfTurn()
         {
             // return monitoredNode.ControllingTeam() != playerTeam;
-            return miniGameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item1 == miniGameData.ActivePlayer.Team;
+            return miniGameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item1 == miniGameData.ActivePlayer.Domain;
         }
 
         /*public override void StartMonitor()

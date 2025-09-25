@@ -760,8 +760,9 @@ MonoBehaviour:
   minHealthBlocks: 0
   shieldPeriod: 0
   Team: 0
-  onLifeFormCreated: {fileID: 0}
-  onLifeFormDestroyed: {fileID: 0}
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
+    type: 2}
   Population: {fileID: 0}
   detectionRadius: 100
   separationRadius: 100

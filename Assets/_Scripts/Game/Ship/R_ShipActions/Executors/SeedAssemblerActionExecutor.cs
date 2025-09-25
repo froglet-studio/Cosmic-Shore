@@ -2,6 +2,7 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
@@ -11,26 +12,27 @@ namespace CosmicShore
     /// </summary>
     public class SeedAssemblerActionExecutor : ShipActionExecutorBase
     {
+        [FormerlySerializedAs("trailSpawner")]
         [Header("Scene Refs")]
-        [SerializeField] private TrailSpawner trailSpawner;
+        [SerializeField] private Game.PrismSpawner prismSpawner;
 
         // Runtime
         IVesselStatus _status;
         ResourceSystem _resources;
 
-        public TrailBlock ActiveSeedBlock { get; private set; }
+        public Prism ActiveSeedBlock { get; private set; }
         Assembler _activeAssembler;
 
-        public event Action<TrailBlock> OnSeedStarted;
-        public event Action<TrailBlock> OnBondingBegan;
+        public event Action<Prism> OnSeedStarted;
+        public event Action<Prism> OnBondingBegan;
         public event Action OnSeedStopped;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
             _resources = shipStatus?.ResourceSystem;
-            if (trailSpawner == null)
-                trailSpawner = shipStatus?.TrailSpawner;
+            if (prismSpawner == null)
+                prismSpawner = shipStatus?.PrismSpawner;
         }
 
         /// <summary>
@@ -40,7 +42,7 @@ namespace CosmicShore
         /// </summary>
         public bool StartSeed(SeedWallActionSO so, IVesselStatus status)
         {
-            if (so == null || status == null || _resources == null || trailSpawner == null)
+            if (so == null || status == null || _resources == null || prismSpawner == null)
                 return false;
 
             // resource check
@@ -101,15 +103,15 @@ namespace CosmicShore
 
         // ===== Helpers =====
 
-        TrailBlock GetLatestBlock()
+        Prism GetLatestBlock()
         {
-            var listA = trailSpawner?.Trail?.TrailList;
+            var listA = prismSpawner?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
             // In case you keep a secondary trail internally (compat with older code)
-            var trail2Field = typeof(TrailSpawner).GetField("Trail2",
+            var trail2Field = typeof(Game.PrismSpawner).GetField("Trail2",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var trail2 = trail2Field?.GetValue(trailSpawner) as Trail;
+            var trail2 = trail2Field?.GetValue(prismSpawner) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
             return null;
@@ -122,7 +124,7 @@ namespace CosmicShore
             return (res != null && res.CurrentAmount >= cost);
         }
 
-        void ApplyShield(TrailBlock block, SeedWallActionSO.ShieldMode mode)
+        void ApplyShield(Prism block, SeedWallActionSO.ShieldMode mode)
         {
             if (block == null) return;
             switch (mode)
@@ -138,7 +140,7 @@ namespace CosmicShore
             }
         }
 
-        Assembler EnsureAssembler(TrailBlock block, SeedWallActionSO.AssemblerKind kind)
+        Assembler EnsureAssembler(Prism block, SeedWallActionSO.AssemblerKind kind)
         {
             if (block == null) return null;
 

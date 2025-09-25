@@ -88,7 +88,7 @@ namespace CosmicShore.Core
         {
             if (!_prefabLookup.TryGetValue(key, out var prefab))
             {
-                Debug.LogError($"[PoolManagerBase] Cannot expand pool '{key}' – missing prefab.");
+                Debug.LogError($"[PoolManagerBase] Cannot expand pool '{key}' ï¿½ missing prefab.");
                 return;
             }
 
@@ -202,12 +202,5 @@ namespace CosmicShore.Core
         }
 
         #endregion
-    }
-
-    /// <summary>Metadata attached to each pooled instance.</summary>
-    public sealed class PooledObject : MonoBehaviour
-    {
-        public string PoolKey { get; internal set; }
-        public PoolManagerBase Manager { get; internal set; }
     }
 }

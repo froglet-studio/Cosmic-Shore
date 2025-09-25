@@ -6,6 +6,7 @@ using System.Linq;
 using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace CosmicShore
@@ -18,7 +19,7 @@ namespace CosmicShore
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
 
-        public Teams Team;
+        [FormerlySerializedAs("Team")] public Domains domain;
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
         protected Crystal crystal;
         protected Cell cell;
@@ -45,7 +46,7 @@ namespace CosmicShore
         public virtual void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
-            healthBlock.ChangeTeam(Team);
+            healthBlock.ChangeTeam(domain);
             healthBlock.LifeForm = this;
             healthBlock.ownerID = $"{this} + {healthBlock} + {healthBlocks.Count}";
             CheckIfMature();
@@ -95,7 +96,8 @@ namespace CosmicShore
             crystal.ActivateCrystal();
             foreach (HealthBlock healthBlock in healthBlocks.ToArray())
             {
-                healthBlock.Damage(Random.onUnitSphere, Teams.None, "Guy Fawkes", true);
+                Debug.LogWarning("Post death health block created!. Should not happen!");
+                healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
             }
             StopAllCoroutines();
             StartCoroutine(DieCoroutine());
@@ -117,9 +119,9 @@ namespace CosmicShore
             return gameObject;
         }
 
-        public void SetTeam(Teams team)
+        public void SetTeam(Domains domain)
         {
-            Team = team;
+            this.domain = domain;
         }
 
         IEnumerator ShieldRegen()

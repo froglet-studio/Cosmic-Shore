@@ -7,7 +7,7 @@ using CosmicShore.Utility;
 public class Worm : MonoBehaviour
 {
     public WormManager Manager { get; set; }
-    public Teams Team { get; set; }
+    public Domains Domain { get; set; }
 
     [SerializeField] private BodySegmentFauna headPrefab;
     [SerializeField] private BodySegmentFauna middleSegmentPrefab;

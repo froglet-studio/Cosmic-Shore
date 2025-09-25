@@ -7,8 +7,8 @@ namespace CosmicShore.Game
     [CreateAssetMenu(fileName = "Pool Configuration", menuName = "CosmicShore/Pool Configuration")]
     public class PoolConfigurationSO : ScriptableObject
     {
-        [Header("Pool Identity")]
-        public string poolName;         // used as the pool key
+        [Header("Pool Identity"), Tooltip("Used as the pool key")]
+        public string poolName;         
 
         [Header("Pool Settings")]
         public GameObject basePrefab;

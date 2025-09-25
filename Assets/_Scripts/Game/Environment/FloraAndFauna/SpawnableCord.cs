@@ -33,7 +33,7 @@ public struct Cord
 
 public class SpawnableCord : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock healthBlock;
+    [SerializeField] Prism healthBlock;
     [SerializeField] Vector3 blockScale;
     [SerializeField] Material lineMaterial;
 

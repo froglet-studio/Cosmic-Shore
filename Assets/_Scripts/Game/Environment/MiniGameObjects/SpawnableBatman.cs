@@ -2,10 +2,11 @@ using CosmicShore.Core;
 using System;
 
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SpawnableBatman : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     static int BatsSpawned = 0;
 
     public override GameObject Spawn()
@@ -29,21 +30,21 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = outerWing(block) * 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::0", trail, Vector3.one, prism, container);
 
             if (block > 4)
             {
                 position = new Vector3(x, -y, 0);
-                CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::1", trail, Vector3.one, trailBlock, container);
+                CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::1", trail, Vector3.one, prism, container);
             }
 
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::2", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::2", trail, Vector3.one, prism, container);
 
             if (block > 4)
             {
                 position = new Vector3(-x, -y, 0);
-                CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::3", trail, Vector3.one, trailBlock, container);
+                CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::3", trail, Vector3.one, prism, container);
             }
         }
 
@@ -54,10 +55,10 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = innerWing(block) * 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::INNER::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::INNER::" + block + "::0", trail, Vector3.one, prism, container);
 
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::INNER::" + block + "::1", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::INNER::" + block + "::1", trail, Vector3.one, prism, container);
         }
 
         // Bottom
@@ -67,10 +68,10 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = (bottom(block) * 5) - 2;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::BOTTOM::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::BOTTOM::" + block + "::0", trail, Vector3.one, prism, container);
 
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::BOTTOM::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::BOTTOM::" + block + "::0", trail, Vector3.one, prism, container);
         }
 
         // Head
@@ -80,9 +81,9 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = (head1(block) * 5) + 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD1::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD1::" + block + "::0", trail, Vector3.one, prism, container);
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD1::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD1::" + block + "::0", trail, Vector3.one, prism, container);
         }
         // Head2
         for (float block = .5f; block <= .75; block += .025f)
@@ -91,10 +92,10 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = (head2(block) * 5) + 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD2::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD2::" + block + "::0", trail, Vector3.one, prism, container);
 
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD2::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD2::" + block + "::0", trail, Vector3.one, prism, container);
         }
         // Head
         for (float block = -.5f; block <= .5f; block += .025f)
@@ -103,7 +104,7 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = (head3(block) * 5) + 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD3::" + block + "::0", trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD3::" + block + "::0", trail, Vector3.one, prism, container);
         }
 
         trails.Add(trail);

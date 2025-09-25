@@ -14,7 +14,7 @@ namespace CosmicShore
         [SerializeField] int energyResourceIndex = 0;
         [SerializeField] float energyAmount = 0.05f;
 
-        public List<TrailBlock> Prisms;
+        public List<Prism> Prisms;
 
         private void Start()
         {
@@ -37,7 +37,7 @@ namespace CosmicShore
                     shipStatus.ResourceSystem.ChangeResourceAmount(energyResourceIndex, energyAmount);
                     foreach (var prism in Prisms)
                     {
-                        prism.Steal(shipStatus.Player.Name, shipStatus.Player.Team);
+                        prism.Steal(shipStatus.Player.Name, shipStatus.Player.Domain);
                     }
                 }
             }

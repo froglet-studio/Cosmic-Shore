@@ -17,10 +17,10 @@ namespace CosmicShore.Game.UI
             // Use MiniGameData instead of StatsManager
             var roundStats = miniGameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
 
-            float Vol(Teams t) => roundStats.FirstOrDefault(rs => rs.Team == t)?.VolumeRemaining ?? 0f;
+            float Vol(Domains t) => roundStats.FirstOrDefault(rs => rs.Domain == t)?.VolumeRemaining ?? 0f;
 
-            float greenVolume = Vol(Teams.Jade);
-            float redVolume   = Vol(Teams.Ruby);
+            float greenVolume = Vol(Domains.Jade);
+            float redVolume   = Vol(Domains.Ruby);
 
             currentScoreText.text = (greenVolume - redVolume).ToString("F0");
 

@@ -1,6 +1,6 @@
-﻿using CosmicShore.Core;
-using UnityEngine;
+﻿using UnityEngine;
 using CosmicShore.Game;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Utilities
@@ -13,28 +13,15 @@ namespace CosmicShore.Utilities
     [System.Serializable]
     public class PrismEventData
     {
-        public Teams OwnTeam;
-        public Vector3 Position;
+        [FormerlySerializedAs("OwnTeam")] public Domains ownDomain;
         public Quaternion Rotation;
-        public string PoolName = "Explosion"; // Default to explosion pool
-    }
-
-    // Alternative: Create separate event channels for explosions and implosions
-    [System.Serializable]
-    public class ExplosionEventData
-    {
-        public Teams OwnTeam;
-        public Vector3 Position;
-        public Quaternion Rotation;
-    }
-
-    [System.Serializable]
-    public class ImplosionEventData
-    {
-        public Teams OwnTeam;
-        public Vector3 Position;
-        public Quaternion Rotation;
-        public Vector3 SinkPoint; // Specific to implosions
+        public Vector3 SpawnPosition;
+        public Vector3 Scale;
+        public Vector3 Velocity;
+        public float Volume;
+        public PrismType PrismType;
+        public Transform TargetTransform;
+        public System.Action OnGrowCompleted;
     }
 
     [CreateAssetMenu(fileName = "PrismEventChannelWithReturn", menuName = "ScriptableObjects/Event Channels/PrismEventChannelWithReturnSO")]

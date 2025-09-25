@@ -75,7 +75,7 @@ namespace CosmicShore.Core
             _onGameOver.OnRaised -= OutputRoundStats;*/
         }
         
-        public virtual IRoundStats GetOrCreateRoundStats(Teams team) => new RoundStats();
+        public virtual IRoundStats GetOrCreateRoundStats(Domains domain) => new RoundStats();
         
         public void LifeformCreated(int cellID)
         {
@@ -305,7 +305,7 @@ namespace CosmicShore.Core
             roundStats.VolumeRemaining += prismStats.Volume;
         }
 
-        // public void PrismStolen(Teams stealingTeam, string stealingPlayerName, TrailBlockProperties stolenTrailBlockProperties)
+        // public void PrismStolen(Teams stealingTeam, string stealingPlayerName, PrismProperties stolenTrailBlockProperties)
         public void PrismStolen(PrismStats prismStats)
         {
             if (!allowRecord) return;

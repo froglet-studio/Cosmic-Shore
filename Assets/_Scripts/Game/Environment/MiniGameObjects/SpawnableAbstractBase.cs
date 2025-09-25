@@ -1,13 +1,14 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public abstract class SpawnableAbstractBase : MonoBehaviour
 {
     protected System.Random rng = new System.Random();
     protected int Seed;
     protected List<Trail> trails = new List<Trail>();
-    public Teams Team = Teams.Blue;
+    [FormerlySerializedAs("Team")] public Domains domain = Domains.Blue;
     public abstract GameObject Spawn();
 
     public virtual GameObject Spawn(int intensityLevel = 1)
@@ -15,20 +16,20 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         return Spawn();
     }
 
-    public virtual GameObject Spawn(Vector3 position, Quaternion rotation, Teams team)
+    public virtual GameObject Spawn(Vector3 position, Quaternion rotation, Domains domain)
     {
         transform.position = position;
         transform.rotation = rotation;
-        Team = team;
+        this.domain = domain;
 
         return Spawn();
     }
 
-    public virtual GameObject Spawn(Vector3 position, Quaternion rotation, Teams team, int intensityLevel = 1)
+    public virtual GameObject Spawn(Vector3 position, Quaternion rotation, Domains domain, int intensityLevel = 1)
     {
         transform.position = position;
         transform.rotation = rotation;
-        Team = team;
+        this.domain = domain;
 
         return Spawn(intensityLevel);
     }
@@ -43,17 +44,17 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         return trails;
     }
 
-    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Teams? team = null)
+    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, Prism prism, GameObject container, Domains? team = null)
     {
-        CreateBlock(position, lookPosition, blockId, trail, scale, trailBlock, container, Vector3.up, team);
+        CreateBlock(position, lookPosition, blockId, trail, scale, prism, container, Vector3.up, team);
     }
 
-    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Vector3 up, Teams? team = null, bool relativeLook = true, bool flip = true)
+    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, Prism prism, GameObject container, Vector3 up, Domains? team = null, bool relativeLook = true, bool flip = true)
     {
-        Teams actualTeam = team ?? Team;
+        Domains actualDomain = team ?? domain;
 
-        var Block = Instantiate(trailBlock);
-        Block.ChangeTeam(actualTeam);
+        var Block = Instantiate(prism);
+        Block.ChangeTeam(actualDomain);
         Block.ownerID = "public";
         if (relativeLook) Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(flip ? position - lookPosition : lookPosition - position, up));
         else Block.transform.SetPositionAndRotation(position, Quaternion.identity);

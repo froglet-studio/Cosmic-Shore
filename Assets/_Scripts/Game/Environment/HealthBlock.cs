@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public class HealthBlock : TrailBlock
+    public class HealthBlock : Prism
     {
         
         public LifeForm LifeForm;
@@ -29,12 +29,12 @@ namespace CosmicShore
             spindle.CheckForLife();
         }
 
-        protected override void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
+        protected override void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             spindle ??= transform.parent.GetComponent<Spindle>();
             spindle.RemoveHealthBlock(this);
             
-            base.Explode(impactVector, team, playerName, devastate);
+            base.Explode(impactVector, domain, playerName, devastate);
             
             LifeForm.RemoveHealthBlock(this);
             spindle.CheckForLife();

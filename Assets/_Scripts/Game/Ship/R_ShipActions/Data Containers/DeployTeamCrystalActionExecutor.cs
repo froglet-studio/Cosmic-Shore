@@ -93,7 +93,7 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
 
     void ActivateCrystal(Crystal cr, IVesselStatus status)
     {
-        cr.OwnTeam = status.Team;
+        cr.ownDomain = status.Domain;
         foreach (var col in cr.GetComponentsInChildren<Collider>(true)) col.enabled = true;
         foreach (var fade in cr.GetComponentsInChildren<FadeIn>(true)) fade.enabled = true;
         cr.enabled = true;

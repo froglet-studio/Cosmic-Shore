@@ -8,6 +8,6 @@ namespace CosmicShore
 {
     public interface ITeamAssignable
     {
-        public void SetTeam(Teams team);
+        public void SetTeam(Domains domain);
     }
 }
