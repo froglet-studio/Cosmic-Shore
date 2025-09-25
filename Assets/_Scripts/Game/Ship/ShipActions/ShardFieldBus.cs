@@ -13,12 +13,12 @@ namespace CosmicShore.Game
 
         public void BroadcastPointAtPosition(Vector3 worldPos)
         {
-            foreach (var l in _listeners) l.PointAtPosition(worldPos);
+            // foreach (var l in _listeners) l.PointAtPosition(worldPos);
         }
         
         public void BroadcastRestoreToCrystal()
         {
-            foreach (var l in _listeners) l.RestoreToCrystal();
+            // foreach (var l in _listeners) l.RestoreToCrystal();
         }
     }
 }

@@ -1318,7 +1318,7 @@ MonoBehaviour:
   _playerOrigins:
   - {fileID: 1192541911}
   crystal: {fileID: 1715503258}
-  crystalStartPosition: {x: 0, y: 0, z: -120}
+  crystalStartPosition: {x: 0, y: 0, z: 175.9}
   segmentSpawner: {fileID: 1020381236}
   baseNumberOfSegments: 10
   baseStraightLineLength: 400

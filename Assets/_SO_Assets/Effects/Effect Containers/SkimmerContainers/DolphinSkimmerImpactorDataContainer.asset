@@ -9,8 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1cec5eae39fd4dc79c39aea4d292ff9f, type: 3}
-  m_Name: SkimmerBoostByPrismEffect
+  m_Script: {fileID: 11500000, guid: 68b3e74284f14e32a6e21b5fb8c3e8ad, type: 3}
+  m_Name: DolphinSkimmerImpactorDataContainer
   m_EditorClassIdentifier: 
-  _speedModifierDuration: 3
-  _speedBuffAmount: 4
+  vesselSkimmerEffectsSO: []
+  skimmerPrismEffectsSO: []
+  skimmerCrystalEffectsSO: []
