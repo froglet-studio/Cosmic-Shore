@@ -1252,7 +1252,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trailProvider: {fileID: 6994424773851051839}
-  skimmerProvider: {fileID: 0}
+  skimmerProvider: {fileID: 1218614309347018735}
   farClipPadding: 1.3
   maxDistanceAbs: 10000
 --- !u!1 &5546161687949175897

@@ -1,3 +1,4 @@
+// DEPRECATED : USE GENERIC POOL MANAGER
 // File: Assets/Scripts/Core/PoolManager.cs
 using UnityEngine;
 

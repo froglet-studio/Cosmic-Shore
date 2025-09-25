@@ -24,6 +24,8 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     const float ScaleEpsilon = 0.0025f;
     const float DistEpsilon  = 0.0005f;
     private float _lastScale;
+    private enum State { Idle, Expanding, Retracting }
+    private State _state = State.Idle;
     
     public override void Initialize(IVesselStatus shipStatus)
     {
@@ -39,32 +41,36 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
         var provider = Provider();
         if (provider == null) return;
 
-        _lastScale = _baseScale = Mathf.Max(provider.CurrentScale, 0.0001f);
+        // REBASE every time Begin is called:
+        float currentScale = Mathf.Max(provider.CurrentScale, 0.0001f);
+        float currentZ     = _controller.GetCameraDistance();
 
-        float currentZ = _controller.GetCameraDistance();
-        _baseDistance = (_controller.NeutralOffsetZ != 0f) ? _controller.NeutralOffsetZ : currentZ;
-        if (Mathf.Approximately(_baseDistance, 0f))
-            _baseDistance = -20f;
+        _baseScale    = currentScale;
+        _baseDistance = ( _state == State.Idle && _controller.NeutralOffsetZ != 0f )
+            ? _controller.NeutralOffsetZ   
+            : currentZ;               
 
-
+        _lastScale = _baseScale; 
+        _state     = State.Expanding;
+        _active    = true;
         _retracting = false;
-        _active     = true;
     }
 
     public void End()
     {
-        if (_controller == null || !_so)
+        if (_controller == null || _so == null)
         {
             _active = false;
             _retracting = false;
+            _state = State.Idle;
             _so = null;
             return;
         }
 
         _retracting = true;
-        _active     = true; 
+        _active     = true;
+        _state      = State.Retracting;
     }
-
     private IScaleProvider Provider()
     {
         if (!_so) return null;
@@ -73,47 +79,59 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
             : trailProvider;
     }
 
-    private void LateUpdate()
+    void LateUpdate()
     {
-        if (!_active || _status == null || _status.AutoPilotEnabled) return;
-        if (!_so) return;
+        if (!_active || _status == null || _status.AutoPilotEnabled || !_so) return;
 
         var provider = Provider();
-        if (provider == null) { _active = false; _retracting = false; _so = null; return; }
+        if (provider == null)
+        {
+            _active = false;
+            _retracting = false;
+            _state = State.Idle;
+            _so = null;
+            return;
+        }
 
         _controller ??= CameraManager.Instance?.GetActiveController();
         if (_controller == null) return;
 
-        float currentScale = Mathf.Max(provider.CurrentScale, 0.0001f);
-        float ratio        = currentScale / _baseScale;
-        float target       = _baseDistance * ratio;
+        // read latest scale after growth/shrink for this frame
+        float rawScale = Mathf.Max(provider.CurrentScale, 0.0001f);
+
+        // monotonic guard (direction depends on state)
+        bool shrinking = (_state == State.Retracting);
+        float currentScale = shrinking
+            ? Mathf.Min(rawScale, _lastScale + 0.0001f)
+            : Mathf.Max(rawScale, _lastScale - 0.0001f);
+        _lastScale = currentScale;
+
+        float ratio = currentScale / _baseScale;
+        float target = _baseDistance * ratio;
 
         if (!Mathf.Approximately(Mathf.Sign(target), Mathf.Sign(_baseDistance)))
             target = -Mathf.Abs(target);
-
         target = Mathf.Clamp(target, -maxDistanceAbs, -0.01f);
 
-        float currentZ = _controller.GetCameraDistance();
-        if (Mathf.Abs(target - currentZ) > DistEpsilon)
+        float zNow = _controller.GetCameraDistance();
+        if (Mathf.Abs(target - zNow) > 0.0005f) // deadband
             _controller.SetCameraDistance(target);
 
-        if (_controller is CustomCameraController concrete)
+        if (_controller is CustomCameraController c)
         {
-            var cam = concrete.Camera;
             float need = Mathf.Abs(target) * 1.05f;
-            if (need > cam.farClipPlane * 0.95f)
-                cam.farClipPlane = need * farClipPadding;
+            if (need > c.Camera.farClipPlane * 0.95f)
+                c.Camera.farClipPlane = need * farClipPadding;
         }
 
-        if (_retracting && Mathf.Abs(ratio - 1f) <= ScaleEpsilon)
+        if (_state == State.Retracting && Mathf.Abs(ratio - 1f) <= 0.0025f)
         {
             _controller.SetCameraDistance(_baseDistance);
             _retracting = false;
-            _active     = false;
+            _active = false;
+            _state = State.Idle;
             _so = null;
         }
-
-        if (_so && _so.DebugLogs)
-            Debug.Log($"[CamZoom/Exact] ratio={ratio:0.###} baseZ={_baseDistance:0.###} -> targetZ={target:0.###} (upd)");
     }
+
 }

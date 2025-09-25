@@ -9,7 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1cec5eae39fd4dc79c39aea4d292ff9f, type: 3}
-  m_Name: SkimmerBoostByPrismEffect
+  m_Script: {fileID: 11500000, guid: 9fe38b6843b843c9b2503db9edfde502, type: 3}
+  m_Name: SkimmerAlignPrismEffect
   m_EditorClassIdentifier: 
-  _speedModifierValue: 2.5
+  velocityNudgeStrength: 4
+  alignSpeedFactor: 15

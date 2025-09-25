@@ -20,7 +20,7 @@ namespace CosmicShore.Game
         [SerializeField] float particleDurationAtSpeedOne = 300f;
         [SerializeField] bool visible;
         [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
-        [SerializeField] PoolManager markerContainer;
+        [SerializeField] NudgeShardPoolManager nudgeShardPoolManager;
         [SerializeField] int markerDistance = 70;
 
         [Header("Optional")]
@@ -65,7 +65,7 @@ namespace CosmicShore.Game
             //     GetComponent<MeshRenderer>().material = new Material(VesselStatus.SkimmerMaterial);
 
             _initialGap = VesselStatus.PrismSpawner.Gap;
-            if (markerContainer) markerContainer.transform.parent = VesselStatus?.Player?.Transform;
+            if (nudgeShardPoolManager) nudgeShardPoolManager.transform.parent = VesselStatus?.Player?.Transform;
         }
 
         // ---------------- Secondary helpers the Impactor can call ----------------
@@ -107,7 +107,7 @@ namespace CosmicShore.Game
             _boosterTimer = Time.time;
 
             var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance);
-            if (!markerContainer || nextBlocks.Count == 0) return;
+            if (nextBlocks.Count == 0) return;
 
             // last element
             VisualizeTubeAroundBlock(nextBlocks[^1]);
@@ -155,7 +155,7 @@ namespace CosmicShore.Game
             int segments = Mathf.Min((int)(Mathf.PI * 2f * radius / blockTransform.localScale.x), 360);
             float anglePerSegment = blockTransform.localScale.x / radius;
 
-            var markers = new List<GameObject>();
+            var markers = new List<NudgeShard>();
 
             for (int i = -segments / 2; i < segments / 2; i++)
             {
@@ -165,20 +165,18 @@ namespace CosmicShore.Game
 
                 Vector3 worldPos = blockTransform.position + localPos;
 
-                var marker = markerContainer.SpawnFromPool(
-                    "Shard",
+                var marker = nudgeShardPoolManager.Get(
                     worldPos,
-                    Quaternion.LookRotation(blockTransform.forward, localPos));
+                    Quaternion.LookRotation(blockTransform.forward, localPos), nudgeShardPoolManager.transform);
 
-                if (shardPositions.Contains(marker.transform.position))
+                if (!shardPositions.Add(marker.transform.position))
                 {
-                    markerContainer.ReturnToPool(marker);
+                    nudgeShardPoolManager.Release(marker);
                     continue;
                 }
 
-                shardPositions.Add(marker.transform.position);
                 marker.transform.localScale = blockTransform.localScale / 2f;
-                marker.GetComponentInChildren<NudgeShard>().Prisms =
+                marker.Prisms =
                     FindNextBlocks(blockTransform.GetComponent<Prism>(), markerDistance * VesselStatus.ResourceSystem.Resources[0].CurrentAmount);
 
                 markers.Add(marker);
@@ -188,9 +186,9 @@ namespace CosmicShore.Game
 
             foreach (var m in markers)
             {
-                if (m == null) continue;
+                if (!m) continue;
                 shardPositions.Remove(m.transform.position);
-                markerContainer.ReturnToPool(m);
+                nudgeShardPoolManager.Release(m);
             }
         }
     }

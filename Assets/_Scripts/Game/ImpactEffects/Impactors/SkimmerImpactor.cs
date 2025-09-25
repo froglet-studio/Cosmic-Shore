@@ -13,21 +13,22 @@ namespace CosmicShore.Game
         // [SerializeField] VesselSkimmerEffectsSO[] vesselSkimmerEffectsSO;
         // [SerializeField] SkimmerPrismEffectSO[] skimmerPrismEffectsSO;
         // [SerializeField] SkimmerCrystalEffectSO[] skimmerCrystalEffectsSO;
+        [SerializeField]
+        private SkimmerImpactorDataContainerSO skimmerImpactorDataContainer;
 
-        [SerializeField] private SkimmerImpactorDataContainerSO skimmerImpactorDataContainer;
-        [Header("Block-Stay effects (tick while skimming)")]
-        [SerializeField] SkimmerPrismEffectSO[] skimmerPrismStayEffectsSO;      // TODO -> Add to the container
+        [Header("Block-Stay effects (tick while skimming)")] [SerializeField]
+        SkimmerPrismEffectSO[] skimmerPrismStayEffectsSO; // TODO -> Add to the container
 
-        [Header("Refs")]
-        [SerializeField] private Skimmer skimmer;
+        [Header("Refs")] [SerializeField] private Skimmer skimmer;
         public Skimmer Skimmer => skimmer;
         protected override bool isInitialized => Skimmer.IsInitialized;
-        
+
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
         private int ActivelySkimmingBlockCount;
-        private float CombinedWeight;  // exposed for effects that need it
-
+        [HideInInspector]
+        public float CombinedWeight; // exposed for effects that need it
+    
         // ------------------------------------------------------------------
         // Trigger callbacks moved here
 
@@ -62,11 +63,10 @@ namespace CosmicShore.Game
             float sqrSweetSpot = (scale * scale) / 16f;
             float sigma = (sqrSweetSpot) / 2.355f; // since FWHM = sqrSweetSpot
 
-            float distanceWeight  = Skimmer.ComputeGaussian(sqrDistance, sqrSweetSpot, sigma);
+            float distanceWeight = Skimmer.ComputeGaussian(sqrDistance, sqrSweetSpot, sigma);
             float directionWeight = Vector3.Dot(skimmer.VesselStatus.Transform.forward, prism.transform.forward);
 
             CombinedWeight = distanceWeight * Mathf.Abs(directionWeight);
-
             // tick stay effects (centralized)
             ExecuteBlockStayEffects(CombinedWeight, prismImpactor);
         }
@@ -96,37 +96,41 @@ namespace CosmicShore.Game
             {
                 case VesselImpactor shipImpactor:
                     var evs = skimmerImpactorDataContainer.VesselSkimmerEffects;
-                    if(!DoesEffectExist(evs)) return;
+                    if (!DoesEffectExist(evs)) return;
                     foreach (var effect in evs)
                     {
                         effect.Execute(shipImpactor, this);
                     }
-                    skimmer.ExecuteImpactOnShip(shipImpactor.Vessel);       // secondary call
+
+                    skimmer.ExecuteImpactOnShip(shipImpactor.Vessel); // secondary call
                     break;
 
                 case PrismImpactor prismImpactor:
                     var prism = prismImpactor.Prism;
                     var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
-                    if(!DoesEffectExist(esp)) return;
+                    skimmer.ExecuteImpactOnPrism(prism); // secondary call (booster viz, etc.)
+                    if (!DoesEffectExist(esp)) return;
+
                     foreach (var effect in esp)
                     {
                         effect.Execute(this, prismImpactor);
                     }
-                    skimmer.ExecuteImpactOnPrism(prism);    // secondary call (booster viz, etc.)
-                    
+
+
                     if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain)
                         return;
                     StartSkimIfNeeded(prism.ownerID);
-                    
+
                     break;
 
                 case ElementalCrystalImpactor elementalCrystalImpactor:
                     var esc = skimmerImpactorDataContainer.SkimmerCrystalEffects;
-                    if(!DoesEffectExist(esc)) return;
+                    if (!DoesEffectExist(esc)) return;
                     foreach (var effect in esc)
                     {
                         effect.Execute(this, elementalCrystalImpactor);
                     }
+
                     break;
             }
         }

@@ -6,11 +6,13 @@ namespace CosmicShore.Game
     public class SkimmerModifyThrotleByPrismEffectSO : SkimmerPrismEffectSO
     {
         [SerializeField]
-        float _speedModifierDuration;
+        float _speedModifierValue;
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            impactor.Skimmer.VesselStatus.VesselTransformer.ModifyThrottle(prismImpactee.Prism.prismProperties.speedDebuffAmount, _speedModifierDuration);
+            var vesselStatus = impactor.Skimmer.VesselStatus;
+            vesselStatus.Boosting = true;
+            vesselStatus.BoostMultiplier = 1 + (_speedModifierValue * impactor.CombinedWeight);
         }
     }
 }

@@ -16,7 +16,7 @@ MonoBehaviour:
     Enabled: 1
     Value: 120
     Min: 120
-    Max: 180
+    Max: 120
     element: 3
   growRate: 12
   shrinkRate:

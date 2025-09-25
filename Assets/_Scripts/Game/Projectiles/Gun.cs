@@ -148,9 +148,10 @@ namespace CosmicShore.Game.Projectiles
             }
             
             Vector3 direction = customDirection ?? transform.forward;
-            Vector3 spawnPos = transform.position +
-                               Quaternion.LookRotation(transform.forward) * offset +
-                               (transform.forward * barrelLength);
+            // Vector3 spawnPos = containerTransform.position +
+            //                    Quaternion.LookRotation(containerTransform.forward) * offset +
+            //                    (containerTransform.forward * barrelLength);
+            Vector3 spawnPos = containerTransform.position;
 
             Quaternion rotation = Quaternion.LookRotation(direction);
 

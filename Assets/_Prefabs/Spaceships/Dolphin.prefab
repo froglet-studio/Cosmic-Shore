@@ -2627,9 +2627,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jawResourceIndex: 0
-  fullThreshold: 0.98
-  silhouetteSmoothTime: 0.12
-  trailSmoothTime: 0.12
+  blockBaseSize: {x: 90, y: 90}
   view: {fileID: 117603555638778835}
   chargeBoostExecutor: {fileID: 8363998993469153081}
   chargeBoostActionSO: {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2,

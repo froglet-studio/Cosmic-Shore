@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     {
         private readonly RectTransform _container;
         private readonly GameObject _blockPrefab;
-        private readonly TrailSpawner _spawner;
+        private readonly PrismSpawner _spawner;
 
         public GameObject Prefab => _blockPrefab;
         public readonly float WorldToUi;
@@ -16,20 +16,23 @@ namespace CosmicShore.Game
 
         private GameObject[,] _pool;
         private int _poolSize;
+        private readonly int _hardRowCap;
 
         // Layout-safe root (we do NOT rotate this)
         private RectTransform _root;
 
-        // Binary target angle (0 or -180), smoothed on rows
+        // Drift smoothing
         private readonly float _smoothTime;
         private float _curAngleDeg;
         private float _targetAngleDeg;
         private float _angleVelDeg;
+        private Vector2 _blockBaseSize;
 
         public float TargetDriftAngle => _targetAngleDeg;
 
-        public TrailPool(RectTransform container, GameObject prefab, TrailSpawner spawner,
-                         float worldToUi, float imageScale, bool swingBlocks, float smoothTime)
+        public TrailPool(RectTransform container, GameObject prefab, PrismSpawner spawner,
+            float worldToUi, float imageScale, bool swingBlocks, float smoothTime, Vector2 blockBaseSize,
+            int hardRowCap = 8)
         {
             _container   = container;
             _blockPrefab = prefab;
@@ -42,6 +45,8 @@ namespace CosmicShore.Game
             _curAngleDeg    = 0f;
             _targetAngleDeg = 0f;
             _angleVelDeg    = 0f;
+            _hardRowCap     = Mathf.Max(1, hardRowCap);
+            _blockBaseSize = blockBaseSize;
 
             _root = new GameObject("TrailPoolRoot", typeof(RectTransform)).transform as RectTransform;
             _root.SetParent(_container, false);
@@ -75,7 +80,7 @@ namespace CosmicShore.Game
                 Mathf.Infinity,
                 dt);
 
-            // Apply the yaw to each row; keep children Z locked after
+            // Apply yaw per-row; keep children’s world Z locked
             for (int i = 0; i < _poolSize; i++)
             {
                 var rowParent = _pool[i, 0]?.transform?.parent as RectTransform;
@@ -98,9 +103,12 @@ namespace CosmicShore.Game
         {
             if (_poolSize > 0) return;
 
-            float rectHeight = _container.rect.height;
-            float denom      = _spawner.MinWaveLength * WorldToUi * (SwingBlocks ? 1f : scaleY);
-            _poolSize        = Mathf.Max(1, Mathf.CeilToInt(rectHeight / Mathf.Max(0.0001f, denom)));
+            var rect = _container.rect;
+            if (rect.height < 1f) return; // defer until layout
+
+            float denom   = _spawner.MinWaveLength * WorldToUi * (SwingBlocks ? 1f : Mathf.Max(0.0001f, scaleY));
+            int desired   = Mathf.Max(1, Mathf.CeilToInt(rect.height / Mathf.Max(0.0001f, denom)));
+            _poolSize     = Mathf.Clamp(desired, 1, _hardRowCap);
 
             _pool = new GameObject[_poolSize, 2];
 
@@ -112,10 +120,10 @@ namespace CosmicShore.Game
                 rowParent.pivot     = new Vector2(0.5f, 0.5f);
                 AddIgnoreLayout(rowParent.gameObject);
 
-                // parent Y = center + offset downward; we yaw rows in Tick()
+                // position row downwards; we yaw rows in Tick()
                 rowParent.localPosition = new Vector3(
                     0f,
-                    -i * _spawner.MinWaveLength * WorldToUi + (_container.rect.height * 0.5f),
+                    -i * _spawner.MinWaveLength * WorldToUi + (rect.height * 0.5f),
                     0f);
                 rowParent.localRotation = Quaternion.identity;
 
@@ -125,10 +133,14 @@ namespace CosmicShore.Game
                     var blockRt = block.transform as RectTransform;
                     blockRt.SetParent(rowParent, false);
 
-                    NormalizeBlockRect(blockRt);    // 120 x 120
+                    // in case this instance lacks preserveAspect
+                    var img = block.GetComponent<Image>();
+                    if (img != null) img.preserveAspect = true;
+
+                    NormalizeBlockRect(blockRt);    // stable rect (e.g., 120x120)
                     SetChildWorldZ(blockRt, -90f);  // lock world Z
 
-                    // left/right around X, centered on Y
+                    // left/right along X by Gap; vertically centered
                     blockRt.localPosition = new Vector3(j * 2f * _spawner.Gap - _spawner.Gap, 0f, 0f);
                     blockRt.localScale    = Vector3.zero;
 
@@ -139,19 +151,26 @@ namespace CosmicShore.Game
             }
         }
 
+        /// <summary>
+        /// xShift: horizontal half-separation of the pair (mirrored),
+        /// wavelength: vertical spacing between rows (in UI units),
+        /// scaleX: "width" of each block vis (applied on X),
+        /// scaleZ: "height" of each block vis (applied on Y),
+        /// driftDot: optional to keep compatibility with non-drift ships.
+        /// </summary>
         public void UpdateHead(float xShift, float wavelength, float scaleX, float scaleZ, float? driftDot)
         {
             if (_pool == null) return;
 
             var rectHeight = _container.rect.height;
 
-            // head row at center; blocks slide left/right by xShift
+            // Head row at center; blocks slide horizontally by xShift
             for (int j = 0; j < 2; j++)
             {
                 var head = _pool[0, j].transform as RectTransform;
                 if (!head) continue;
 
-                // vertical visual: width by scaleX, height by scaleZ
+                // Vertical depiction: localScale.x = visual width, localScale.y = visual height
                 head.localScale = new Vector3(j * 2f * scaleX - scaleX, scaleZ, 1f);
 
                 var parent = head.parent as RectTransform;
@@ -162,7 +181,7 @@ namespace CosmicShore.Game
                 SetChildWorldZ(head, -90f);
             }
 
-            // Shift tail rows down Y
+            // Shift tail rows downward by current wavelength
             for (int i = _poolSize - 1; i > 0; i--)
             {
                 for (int j = 0; j < 2; j++)
@@ -191,12 +210,12 @@ namespace CosmicShore.Game
 
         // --- helpers ---
 
-        private static void NormalizeBlockRect(RectTransform rt)
+        private void NormalizeBlockRect(RectTransform rt)
         {
             if (!rt) return;
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot     = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(120f, 120f);
+            rt.sizeDelta = _blockBaseSize; 
         }
 
         // Force child's WORLD rotation to an exact Z angle (independent of parent rotation)
@@ -211,9 +230,9 @@ namespace CosmicShore.Game
 
         private static void AddIgnoreLayout(GameObject go)
         {
-            var le = go.GetComponent<LayoutElement>();
-            if (!le) le = go.AddComponent<LayoutElement>();
-            le.ignoreLayout = true;
+            // var le = go.GetComponent<LayoutElement>();
+            // if (!le) le = go.AddComponent<LayoutElement>();
+            // le.ignoreLayout = true;
         }
     }
 }

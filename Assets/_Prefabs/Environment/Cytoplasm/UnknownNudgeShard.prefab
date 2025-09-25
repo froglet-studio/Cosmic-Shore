@@ -95,8 +95,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7282582830167250108}
+  - component: {fileID: -6460196413846026995}
   m_Layer: 14
-  m_Name: NudgeShard
+  m_Name: UnknownNudgeShard
   m_TagString: Shard
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -118,3 +119,18 @@ Transform:
   - {fileID: 8317977128912638887}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-6460196413846026995
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5258412105609794183}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0675ab701bf5e14194b6955e4e36810, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  energyResourceIndex: 0
+  energyAmount: 0.05
+  Prisms: []

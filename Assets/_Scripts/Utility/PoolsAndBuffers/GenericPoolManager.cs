@@ -29,12 +29,15 @@ namespace CosmicShore.Core
             );
         }
 
+        public abstract T Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true); 
+        public abstract void Release(T instance); 
+
         /// <summary>Spawns an object from the pool.</summary>
-        protected T Get_(Vector3 position, Quaternion rotation, Transform parent = null)
+        protected T Get_(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var instance = pool.Get();
             instance.transform.SetPositionAndRotation(position, rotation);
-            if (parent != null) instance.transform.SetParent(parent);
+            if (parent) instance.transform.SetParent(parent, worldPositionStays);
             return instance;
         }
 

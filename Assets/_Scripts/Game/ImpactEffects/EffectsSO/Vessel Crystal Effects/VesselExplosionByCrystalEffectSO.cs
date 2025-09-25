@@ -20,6 +20,8 @@ namespace CosmicShore.Game
 
         [SerializeField]
         Material _aoeExplosionMaterial;
+        [SerializeField] 
+        Vector3 _spawnOffset = new Vector3(0, 0, -5f); 
         
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor crystalImpactee)
         {
@@ -29,7 +31,8 @@ namespace CosmicShore.Game
                 _minExplosionScale,
                 _maxExplosionScale,
                 _aoeExplosionMaterial,
-                _resourceIndex);
+                _resourceIndex, 
+                _spawnOffset);
         }
         
         /*public override void Execute(VesselImpactor shipImpactor, ImpactorBase impactee)
