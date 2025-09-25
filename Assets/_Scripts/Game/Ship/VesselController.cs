@@ -7,8 +7,8 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// Combines behaviour of R_LocalShip and R_NetworkShip. Behaviour is
-    /// selected at runtime based on <see cref="isMultiplayerMode"/>.
+    /// Combines behaviour of R_LocalVessel and R_NetworkVessel. Behaviour is
+    /// selected at runtime based on <see cref="IsSpawned"/> in multiplayer mode.
     /// </summary>
     [RequireComponent(typeof(IVesselStatus))]
     public class VesselController : NetworkBehaviour, IVessel
@@ -108,7 +108,7 @@ namespace CosmicShore.Game
             OnInitialized?.Invoke();
         }
 
-        public void PerformButtonActions(int buttonNumber)
+        /*public void PerformButtonActions(int buttonNumber)
         {
             if (VesselStatus.AutoPilotEnabled) return;
 
@@ -134,7 +134,7 @@ namespace CosmicShore.Game
                 _ => InputEvents.Button1Action
             };
             StopShipControllerActions(controlType);
-        }
+        }*/
 
         public void FlipShipUpsideDown() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
         public void FlipShipRightsideUp() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
@@ -209,8 +209,7 @@ namespace CosmicShore.Game
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
                     
                 // TODO - Temp disabled, for testing.
-                /*VesselStatus.ActionHandler.Initialize(VesselStatus);
-                VesselStatus.Customization.Initialize(VesselStatus);
+                /*VesselStatus.Customization.Initialize(VesselStatus);
 
                 if (VesselStatus.NearFieldSkimmer)
                     VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
@@ -226,11 +225,13 @@ namespace CosmicShore.Game
                     
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
+            
+            VesselStatus.ActionHandler.Initialize(VesselStatus, IsOwner);
         }
         
         void InitializeForSinglePlayerMode(bool enableAIPilot)
         {
-            VesselStatus.ActionHandler.Initialize(VesselStatus);
+            VesselStatus.ActionHandler.Initialize(VesselStatus, !VesselStatus.IsInitializedAsAI);
             VesselStatus.Customization.Initialize(VesselStatus);
 
             if (VesselStatus.NearFieldSkimmer) 
@@ -258,7 +259,6 @@ namespace CosmicShore.Game
             /// Multiplayer modes will also have auto-pilot initialized
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);   
             VesselStatus.PrismSpawner.Initialize(VesselStatus);  
-            VesselStatus.ActionHandler.ConfigureSubscriptions(subscribe: !VesselStatus.IsInitializedAsAI);
             onBottomEdgeButtonsEnabled.Raise(true);
         }
 
