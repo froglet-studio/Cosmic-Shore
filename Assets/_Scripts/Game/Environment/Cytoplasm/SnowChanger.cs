@@ -5,209 +5,107 @@ namespace CosmicShore.Game
 {
     public class SnowChanger : MonoBehaviour
     {
-        [Header("Bus")]
-        [SerializeField] ShardFieldBus shardFieldBus;
-
         [SerializeField] GameObject snow;
         [SerializeField] Vector3 crystalSize = new Vector3(500, 500, 500);
         [SerializeField] int shardDistance = 100;
 
-        [Header("Optional Fields")]
-        [SerializeField] bool lookAt;
+        [Header("Optional Fields")] [SerializeField]
+        bool lookAt;
+
         [SerializeField] Vector3 targetAxis;
         [SerializeField] Vector3 newOrigin;
-
-        [Header("Nudge")]
-        [SerializeField] Transform nudgeRoot;
-        
         [SerializeField] ScriptableEventNoParam OnCellItemsUpdated;
-
         Crystal _crystal;
-
         GameObject[,,] crystalLattice;
-        int shardsX, shardsY, shardsZ;
+        readonly float nodeScaler = 10;
+        readonly float nodeSize = .25f;
+        readonly float sphereScaler = 2;
+        int shardsX;
+        int shardsY;
+        int shardsZ;
         float sphereDiameter;
         Vector3 origin = Vector3.zero;
-        Vector3[,,] _originalPositions;
-        
-        private const float NODE_SCALER = 10f;
-        private const float NODE_SIZE   = 0.25f;
-        private const float SPHERE_SCALER = 2f;
-        
-        public enum ControlMode { Crystal, Axis, Position, Transform }
-        
-        [Header("Control")]
-        [SerializeField] public ControlMode mode = ControlMode.Crystal;
-        
-        ControlMode _mode = ControlMode.Crystal;
-        Vector3 _overridePosition;
-        Transform _overrideTransform;
-        
-        bool _nudgeControlArmed = false;   
-        Quaternion _nudgeOriginalRotation;
-        
+
         void OnEnable()
         {
             OnCellItemsUpdated.OnRaised += ChangeSnowSize;
-            shardFieldBus?.Register(this);    
-            if (nudgeRoot != null)
-            {
-                _nudgeOriginalRotation = nudgeRoot.rotation;
-                Debug.Log($"[SnowChanger] Registered with bus, nudgeRoot='{nudgeRoot.name}'");
-            }
-            else
-            {
-                Debug.LogWarning("[SnowChanger] nudgeRoot not assigned. Parent rotation will not reflect!");
-            }
         }
 
         void OnDisable()
         {
             OnCellItemsUpdated.OnRaised -= ChangeSnowSize;
-            shardFieldBus?.Unregister(this);   // unregister
         }
 
-        public void Initialize(Crystal crystal) 
-        { 
-            _crystal = crystal; // TODO: this should be injected by the node, but that's not working at the moment :/
-            origin = newOrigin; 
-            shardsX = (int)(crystalSize.x / shardDistance); 
-            shardsY = (int)(crystalSize.y / shardDistance); 
-            shardsZ = (int)(crystalSize.z / shardDistance); 
-                
-            if (_crystal != null) 
-                sphereDiameter = SPHERE_SCALER  * _crystal.GetComponent<Crystal>().sphereRadius; 
-            
-            crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1]; // both sides of each axis plus the midplane
-            
-            for(int x = -shardsX; x <= shardsX; x++)
-            {
-                for(int y = -shardsY; y <= shardsY; y++) 
-                { 
-                    for (int z = -shardsZ; z <= shardsZ; z++) 
-                    { 
-                        var tempSnow = Instantiate(snow, transform, true); 
-                        tempSnow.transform.localScale = Vector3.one * NODE_SCALER; 
-                        tempSnow.transform.position = origin + new Vector3(x * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2), y * shardDistance + 
-                            Random.Range(-shardDistance / 2, shardDistance / 2), z * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2)); 
-                            
-                        crystalLattice[x + shardsX, y + shardsY, z + shardsZ] = tempSnow; } 
-                }
-            } 
-            
-            // _mode = ControlMode.Crystal;
-            _nudgeControlArmed = false;
-            ChangeSnowSize(); 
-        }
-        
-        bool TryGetTargetPosition(out Vector3 targetPos)
+        public void Initialize(Crystal crystal)
         {
-            switch (mode)
+            _crystal = crystal;
+            origin = newOrigin;
+            shardsX = (int)(crystalSize.x / shardDistance);
+            shardsY = (int)(crystalSize.y / shardDistance);
+            shardsZ = (int)(crystalSize.z / shardDistance);
+            if (_crystal != null) sphereDiameter = sphereScaler * _crystal.GetComponent<Crystal>().sphereRadius;
+            crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1];
+            for (int x = -shardsX;
+                 x <= shardsX;
+                 x++)
             {
-                case ControlMode.Transform:
-                    if (_overrideTransform != null) { targetPos = _overrideTransform.position; return true; }
-                    break;
-                case ControlMode.Position:
-                    targetPos = _overridePosition; return true;
-                case ControlMode.Axis:
-                    // If nudgeRoot is missing, fall back to world origin + axis
-                    var basis = nudgeRoot != null ? nudgeRoot.position : Vector3.zero;
-                    targetPos = basis + (targetAxis.sqrMagnitude > 0.0001f ? targetAxis.normalized : Vector3.forward) * 10f;
-                    return true;
-                case ControlMode.Crystal:
-                default:
-                    if (_crystal != null) { targetPos = _crystal.transform.position; return true; }
-                    break;
-            }
-            targetPos = default;
-            return false;
-        }
-        
-        void ChangeSnowSize()
-        {
-            float nodeScalerOverThree = NODE_SCALER / 3;
-
-            // Compute the target once per pass
-            bool hasTarget = TryGetTargetPosition(out var targetPos);
-
-            for (int x = 0; x < shardsX * 2 + 1; x++)
-            for (int y = 0; y < shardsY * 2 + 1; y++)
-            for (int z = 0; z < shardsZ * 2 + 1; z++)
-            {
-                var shard = crystalLattice[x, y, z];
-                float normalizedDistance;
-
-                if (mode == ControlMode.Crystal && _crystal != null)
+                for (int y = -shardsY; y <= shardsY; y++)
                 {
-                    float clampedDistance = Mathf.Clamp(
-                        (shard.transform.position - _crystal.transform.position).magnitude, 0, sphereDiameter);
-                    normalizedDistance = sphereDiameter > 0f ? clampedDistance / sphereDiameter : 0f;
-
-                    if (lookAt && hasTarget) shard.transform.LookAt(targetPos);
-                }
-                else
-                {
-                    // Keep original behavior: non-crystal mode uses flat scaling
-                    normalizedDistance = 1f;
-
-                    if (lookAt && hasTarget)
+                    for (int z = -shardsZ; z <= shardsZ; z++)
                     {
-                        Vector3 dir = targetPos - shard.transform.position;
-                        if (dir.sqrMagnitude > 0.0001f)
-                            shard.transform.rotation = Quaternion.LookRotation(dir);
+                        GameObject tempSnow = Instantiate(snow, transform, true);
+                        tempSnow.transform.localScale = Vector3.one * nodeScaler;
+                        tempSnow.transform.position = origin + new Vector3(
+                            x * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2),
+                            y * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2),
+                            z * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2));
+                        crystalLattice[x + shardsX, y + shardsY, z + shardsZ] = tempSnow;
                     }
                 }
-
-                shard.transform.localScale =
-                    Vector3.forward * (normalizedDistance * NODE_SCALER + NODE_SIZE) +
-                    Vector3.one     * (normalizedDistance * nodeScalerOverThree + NODE_SIZE);
             }
-            
-            if (_nudgeControlArmed)
-                UpdateNudgeRootRotation();
+
+            ChangeSnowSize();
         }
 
-
-        void UpdateNudgeRootRotation()
+        void ChangeSnowSize()
         {
-            if (nudgeRoot == null) return;
-            if (!TryGetTargetPosition(out var targetPos)) return;
+            float nodeScalerOverThree = nodeScaler / 3;
+            for (int x = 0; x < shardsX * 2 + 1; x++)
+            {
+                for (int y = 0; y < shardsY * 2 + 1; y++)
+                {
+                    for (int z = 0; z < shardsZ * 2 + 1; z++)
+                    {
+                        var shard = crystalLattice[x, y, z];
+                        float normalizedDistance;
+                        if (_crystal != null)
+                        {
+                            float clampedDistance =
+                                Mathf.Clamp((shard.transform.position - _crystal.transform.position).magnitude, 0,
+                                    sphereDiameter);
+                            normalizedDistance = clampedDistance / sphereDiameter;
+                            shard.transform.LookAt(_crystal.transform);
+                        }
+                        else
+                        {
+                            var reject = shard.transform.position -
+                                         (Vector3.Dot(shard.transform.position, targetAxis.normalized) *
+                                          targetAxis.normalized);
+                            var maxDistance = Mathf.Max(shardsX, shardsY) * shardDistance;
+                            float clampedDistance = Mathf.Clamp(reject.magnitude, 0, maxDistance);
+                            normalizedDistance = clampedDistance / maxDistance;
+                            if (lookAt) shard.transform.rotation = Quaternion.LookRotation(-reject.normalized);
+                            else shard.transform.rotation = Quaternion.LookRotation(targetAxis);
+                        }
 
-            var dir = targetPos - nudgeRoot.position;
-            if (dir.sqrMagnitude > 0.0001f)
-                nudgeRoot.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                        shard.transform.localScale = Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +
+                                                     Vector3.one * (normalizedDistance * nodeScalerOverThree +
+                                                                    nodeSize);
+                    }
+                }
+            }
         }
-        
+
         public void SetOrigin(Vector3 origin) => this.origin = origin;
-  
-        public void PointAtPosition(Vector3 worldPos)
-        {
-            _overridePosition = worldPos;
-            mode = ControlMode.Position;     
-            _nudgeControlArmed = true;                
-            Debug.Log($"[SnowChanger] PointAtPosition -> {worldPos}");
-            ChangeSnowSize();
-        }
-        
-        public void RestoreToCrystal()
-        {
-            _overrideTransform = null;
-            mode = ControlMode.Crystal; 
-            _nudgeControlArmed = false;                  
-
-            Debug.Log("[SnowChanger] RestoreToCrystal");
-            ChangeSnowSize();
-
-            if (nudgeRoot != null)
-                nudgeRoot.rotation = _nudgeOriginalRotation;
-        }
-        
-        public void PointAtTransform(Transform t)
-        {
-            _overrideTransform = t;
-            mode = ControlMode.Transform;
-            _nudgeControlArmed = true;
-            ChangeSnowSize();
-        }
     }
 }

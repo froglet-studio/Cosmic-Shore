@@ -26,7 +26,7 @@ namespace CosmicShore.Game
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
         private int ActivelySkimmingBlockCount;
-        private float CombinedWeight;  // exposed for effects that need it
+        public float CombinedWeight;  // exposed for effects that need it
 
         // ------------------------------------------------------------------
         // Trigger callbacks moved here
@@ -107,13 +107,15 @@ namespace CosmicShore.Game
                 case PrismImpactor prismImpactor:
                     var prism = prismImpactor.Prism;
                     var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
-                    if(!DoesEffectExist(esp)) return;
-                    foreach (var effect in esp)
+                    if (DoesEffectExist(esp))
                     {
-                        effect.Execute(this, prismImpactor);
+                        foreach (var effect in esp)
+                        {
+                            effect.Execute(this, prismImpactor);
+                        }
                     }
-                    skimmer.ExecuteImpactOnPrism(prism);    // secondary call (booster viz, etc.)
                     
+                    skimmer.ExecuteImpactOnPrism(prism);    // secondary call (booster viz, etc.)
                     if (!skimmer.AffectSelf && prism.Team == skimmer.VesselStatus.Team)
                         return;
                     StartSkimIfNeeded(prism.ownerID);

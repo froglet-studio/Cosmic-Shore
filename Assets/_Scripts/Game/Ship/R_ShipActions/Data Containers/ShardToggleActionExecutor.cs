@@ -10,7 +10,7 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
 
     public override void Initialize(IVesselStatus shipStatus)
     {
-        // no special init needed; bus is scene ref
+        
     }
 
     public void Toggle(ShardToggleActionSO so, IVessel ship, IVesselStatus status)

@@ -18,7 +18,7 @@ namespace CosmicShore.Game
         public List<HighlightBinding> highlights = new();
         
         [Header("Silhouette Containers")]
-        public RectTransform silhouetteContainer;
+        public Transform silhouetteContainer;
         public RectTransform trailDisplayContainer;
         
         [Header("Silhouette Parts")]
@@ -31,7 +31,7 @@ namespace CosmicShore.Game
         
         [Header("Trail / Drift Sources")]
         public TrailSpawner trailSpawner;
-        public DriftTrailAction driftTrailAction;
+        public DriftTrailActionExecutor driftTrailAction;
 
         
         [Header("Trail Config (UI scaling only)")]

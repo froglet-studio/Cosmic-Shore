@@ -62,11 +62,10 @@ namespace CosmicShore.Game
                 sc.SetOrigin(pos);
                 sc.Initialize(null);
 
-                // If you want everything to face a target (since no Crystal), use the public API:
-                if (aimAtTarget)
-                {
-                    sc.PointAtPosition(worldTarget);
-                }
+                // if (aimAtTarget)
+                // {
+                //     sc.PointAtPosition(worldTarget);
+                // }
 
                 count++;
             }

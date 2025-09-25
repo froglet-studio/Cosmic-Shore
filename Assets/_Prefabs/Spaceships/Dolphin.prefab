@@ -1856,6 +1856,56 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
+--- !u!1 &6776402933378899515
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6223442238412242697}
+  - component: {fileID: 1643211402533326836}
+  m_Layer: 0
+  m_Name: Container
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &6223442238412242697
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6776402933378899515}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2515900224755962236}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -778, y: -145.939}
+  m_SizeDelta: {x: 279.593, y: 459.187}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1643211402533326836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6776402933378899515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding: {x: 0, y: 0, z: 0, w: -3.85}
+  m_Softness: {x: 0, y: 0}
 --- !u!1 &6807910618444506966
 GameObject:
   m_ObjectHideFlags: 0
@@ -2038,8 +2088,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6991916221215901041}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -848, y: 200.8, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -792.5926, y: 200.80002, z: -21.817314}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2575,6 +2625,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jawResourceIndex: 0
+  fullThreshold: 0.98
+  silhouetteSmoothTime: 0.12
+  trailSmoothTime: 0.12
   view: {fileID: 117603555638778835}
   chargeBoostExecutor: {fileID: 8363998993469153081}
   chargeBoostActionSO: {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2,
@@ -3742,6 +3795,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
+      propertyPath: driftTrailAction
+      value: 
+      objectReference: {fileID: 1396157652283013214}
+    - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
       propertyPath: jawResourceIndex
       value: 0
       objectReference: {fileID: 0}
@@ -3749,12 +3807,12 @@ PrefabInstance:
         type: 3}
       propertyPath: silhouetteContainer
       value: 
-      objectReference: {fileID: 6897005205462982225}
+      objectReference: {fileID: 7318639533368661048}
     - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       propertyPath: trailDisplayContainer
       value: 
-      objectReference: {fileID: 28329926121792408}
+      objectReference: {fileID: 6223442238412242697}
     - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       propertyPath: silhouetteParts.Array.size
@@ -3776,20 +3834,20 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 7834992998503353775}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 4228086418629391062, guid: 3a48a770e15885e4dbc159855aebb73e, type: 3}
+    - {fileID: 7050311106190801462, guid: 3a48a770e15885e4dbc159855aebb73e, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 5628569816686872434, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 7318639533368661048}
+    - targetCorrespondingSourceObject: {fileID: 5628569816686872434, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6223442238412242697}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3a48a770e15885e4dbc159855aebb73e, type: 3}
---- !u!224 &28329926121792408 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 7823406122630149526, guid: 3a48a770e15885e4dbc159855aebb73e,
-    type: 3}
-  m_PrefabInstance: {fileID: 7851735137950422542}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &117603555638778835 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
@@ -3805,12 +3863,6 @@ MonoBehaviour:
 --- !u!224 &2515900224755962236 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5628569816686872434, guid: 3a48a770e15885e4dbc159855aebb73e,
-    type: 3}
-  m_PrefabInstance: {fileID: 7851735137950422542}
-  m_PrefabAsset: {fileID: 0}
---- !u!224 &6897005205462982225 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 3693481868198987871, guid: 3a48a770e15885e4dbc159855aebb73e,
     type: 3}
   m_PrefabInstance: {fileID: 7851735137950422542}
   m_PrefabAsset: {fileID: 0}

@@ -297,6 +297,6 @@ namespace CosmicShore.Game.Projectiles
             if (moveCoroutine != null) StopCoroutine(moveCoroutine);
         }
         
-        public void ReturnToPool() => _poolManager.ReturnToPool(gameObject, gameObject.tag);
+        public void ReturnToPool() => _poolManager.ReturnToPool(gameObject);
     }
 }
