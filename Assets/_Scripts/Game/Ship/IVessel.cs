@@ -34,7 +34,7 @@ namespace CosmicShore.Game
         void SetSkimmerMaterial(Material material);
         void AssignCaptain(SO_Captain captain);
         void BindElementalFloat(string name, Element element);
-        void PerformButtonActions(int buttonNumber);
+        // void PerformButtonActions(int buttonNumber);
         void ToggleAutoPilot(bool toggle);
         bool AllowClearPrismInitialization();
         void Destroy();
