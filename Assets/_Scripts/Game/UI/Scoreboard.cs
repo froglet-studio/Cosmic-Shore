@@ -73,10 +73,10 @@ namespace CosmicShore
             if (!won)
                 BannerText.text = "DEFEAT";
             else
-                BannerText.text = "RUN RESULTS";
+                BannerText.text = "WON";
 
             // Populate this run's score
-            var playerScore = Mathf.Max(roundStats.Score, 0);
+            var playerScore = roundStats.Score; // Mathf.Max(roundStats.Score, 0);
             SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
 
             // TODO: pull actual high score
