@@ -2546,6 +2546,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 3941163936891360053}
   _inputEventShipActions:
   - InputEvent: 2
@@ -2553,12 +2554,10 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
     - {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2, type: 2}
     - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
+    - {fileID: 11400000, guid: a8d01c9d7c3bfb245ba8e3303bdecfc6, type: 2}
   - InputEvent: 1
     ShipActions:
     - {fileID: 11400000, guid: 205c7e57ccef34f4f858f04857f7c542, type: 2}
-  - InputEvent: 6
-    ShipActions:
-    - {fileID: 11400000, guid: a8d01c9d7c3bfb245ba8e3303bdecfc6, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
