@@ -46,8 +46,8 @@ namespace CosmicShore.Core
         public Action OnScaleComplete { get; set; }
 
         private Prism prism;
-        private Vector3 spread;
-        private Vector3 outerDimensions;
+        // private Vector3 spread;
+        // private Vector3 outerDimensions;             // REMARKS -> OuterDimensions that account for spread introduces unnecessary complications. especially with dynamic spread.
         private MeshRenderer meshRenderer;
         private bool isRegistered;
 
@@ -68,10 +68,10 @@ namespace CosmicShore.Core
             transform.localScale = Vector3.zero;
             
             // Initialize spread for volume calculations
-            if (meshRenderer.material != null)
+            /*if (meshRenderer.material != null)
             {
                 spread = meshRenderer.material.GetVector("_Spread");
-            }
+            }*/
 
             TryRegisterWithManager();
         }
@@ -154,24 +154,26 @@ namespace CosmicShore.Core
                     StatsManager.Instance.PrismVolumeModified(deltaVolume, trailBlock.PrismProperties);
                 }*/
 
-                CheckScaleBounds();
+                if (prism == null) return;
+                
+                if (CheckIfIsLargest())
+                {
+                    prism.ActivateShield();
+                    prism.IsLargest = true;
+                }
+
+                if (CheckIfIsSmallest())
+                {
+                    prism.IsSmallest = true;
+                }
             };
         }
+        
+        private bool CheckIfIsLargest() => 
+            TargetScale.x > MaxScale.x || TargetScale.y > MaxScale.y || TargetScale.z > MaxScale.z;
 
-        private void CheckScaleBounds()
-        {
-            if (prism == null) return;
-
-            if (TargetScale.x > MaxScale.x || TargetScale.y > MaxScale.y || TargetScale.z > MaxScale.z)
-            {
-                prism.ActivateShield();
-                prism.IsLargest = true;
-            }
-            if (TargetScale.x < MinScale.x || TargetScale.y < MinScale.y || TargetScale.z < MinScale.z)
-            {
-                prism.IsSmallest = true;
-            }
-        }
+        private bool CheckIfIsSmallest() =>
+            TargetScale.x < MinScale.x || TargetScale.y < MinScale.y || TargetScale.z < MinScale.z;
 
         public void Grow(float amount = 1)
         {
@@ -188,10 +190,14 @@ namespace CosmicShore.Core
         public float GetCurrentVolume()
         {
             if (!enabled) return 0f;
-            outerDimensions = transform.localScale + 2 * spread;
-            return outerDimensions.x * outerDimensions.y * outerDimensions.z;
+            
+            /*outerDimensions = transform.localScale + 2 * spread;
+            return outerDimensions.x * outerDimensions.y * outerDimensions.z;*/
+            
+            var v = transform.localScale;
+            return v.x * v.y * v.z;
         }
-
+        
         private float UpdateVolume()
         {
             if (!enabled || prism == null || prism.prismProperties == null)
@@ -201,8 +207,11 @@ namespace CosmicShore.Core
             }
 
             var oldVolume = prism.prismProperties.volume;
-            outerDimensions = TargetScale + 2 * spread;
-            prism.prismProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
+            /*outerDimensions = TargetScale + 2 * spread;
+            prism.prismProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;*/
+
+            prism.prismProperties.volume = TargetScale.x * TargetScale.y * TargetScale.z;
+            
             return prism.prismProperties.volume - oldVolume;
         }
 
