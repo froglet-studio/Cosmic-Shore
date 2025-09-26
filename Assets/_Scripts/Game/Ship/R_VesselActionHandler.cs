@@ -112,8 +112,8 @@ namespace CosmicShore.Game
 
             if (IsSpawned)
             {
-                if (IsHost)
-                    OnButtonPressedClientRpc(ie); // Broadcast to all, including self
+                if (IsOwner)
+                    SendButtonPressed_ServerRpc(ie); // Only owner can send
                 return; // Non-host clients do nothing directly
             }
 
@@ -121,8 +121,15 @@ namespace CosmicShore.Game
             PerformShipControllerActions(ie);
         }
         
-        [ClientRpc]
-        void OnButtonPressedClientRpc(InputEvents ie) =>
+        [ServerRpc]
+        private void SendButtonPressed_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
+        {
+            // Server rebroadcasts to everyone
+            OnButtonPressedClientRpc(ie); 
+        }
+        
+        [ClientRpc] 
+        void OnButtonPressedClientRpc(InputEvents ie) => 
             PerformShipControllerActions(ie);
         
         void OnButtonReleased(InputEvents ie)
@@ -133,13 +140,20 @@ namespace CosmicShore.Game
 
             if (IsSpawned)
             {
-                if (IsHost)
-                    OnButtonReleased_ClientRpc(ie); // Broadcast to all, including self
+                if (IsOwner)
+                    SendButtonReleased_ServerRpc(ie);
                 return; // Non-host clients do nothing directly
             }
 
             // Singleplayer
             StopShipControllerActions(ie);
+        }
+        
+        [ServerRpc]
+        private void SendButtonReleased_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
+        {
+            // Server rebroadcasts to everyone
+            OnButtonReleased_ClientRpc(ie); 
         }
     
         [ClientRpc]
