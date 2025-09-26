@@ -258,7 +258,6 @@ namespace CosmicShore.Game
             /// AIPilot will be initialized both in User controlled / AI Vessels
             /// Multiplayer modes will also have auto-pilot initialized
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);   
-            VesselStatus.PrismSpawner.Initialize(VesselStatus);  
             onBottomEdgeButtonsEnabled.Raise(true);
         }
 
