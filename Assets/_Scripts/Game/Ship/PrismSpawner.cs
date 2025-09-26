@@ -123,13 +123,6 @@ namespace CosmicShore.Game
         /// <summary>Pause spawning until restarted.</summary>
         public void PauseTrailSpawner() => spawnerEnabled = false;
 
-        /// <summary>Force restart after default delay.</summary>
-        public void ForceStartSpawningTrail()
-        {
-            spawnerEnabled = true;
-            _ = SpawnLoopAsync(cts.Token);
-        }
-
         /// <summary>Restart spawner after delay (player & AI).</summary>
         public void RestartTrailSpawnerAfterDelay(float delay)
         {
@@ -358,13 +351,13 @@ namespace CosmicShore.Game
 
         void EnsureContainer()
         {
-            if (TrailContainer == null)
+            if (!TrailContainer)
                 TrailContainer = new GameObject("TrailContainer");
         }
 
         public static void NukeTheTrails()
         {
-            if (TrailContainer == null) return;
+            if (!TrailContainer) return;
             foreach (Transform child in TrailContainer.transform)
                 Destroy(child.gameObject);
         }
