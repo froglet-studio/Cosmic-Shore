@@ -2427,7 +2427,7 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 0
   shielded: 1
   offset: 0
-  Gap: 0
+  Gap: 1
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
