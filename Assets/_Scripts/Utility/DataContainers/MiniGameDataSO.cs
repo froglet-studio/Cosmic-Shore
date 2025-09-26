@@ -47,6 +47,7 @@ namespace CosmicShore.SOAP
         public bool IsMultiplayerMode;
         public List<IPlayer> Players = new();
         public Transform[] PlayerOrigins;
+        [SerializeReference]
         public List<IRoundStats> RoundStatsList = new();
         public Dictionary<int, CellStats> CellStatsList = new();
         public HashSet<Transform> SlowedShipTransforms = new();
