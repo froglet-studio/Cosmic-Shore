@@ -806,7 +806,7 @@ MonoBehaviour:
     Min: 10
     Max: 30
     element: 1
-  markerContainer: {fileID: 0}
+  nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70
   AOEPrefab: {fileID: 0}
   AOEPeriod: 0
@@ -2604,6 +2604,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 3871735532039758911}
   _inputEventShipActions:
   - InputEvent: 6
@@ -2673,6 +2674,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jawResourceIndex: 0
+  blockBaseSize: {x: 30, y: 30}
   view: {fileID: 5470374086122723936}
   consumeBoostExecutor: {fileID: 2460618104011007721}
   shieldResourceIndex: 0
@@ -2961,10 +2963,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ownPullSpeed: 1000
-  opponentPullSpeed: 400
-  ownRotateSpeed: 850
-  opponentRotateSpeed: 380
+  ownPullSpeed: 90000
+  opponentPullSpeed: 85000
+  ownRotateSpeed: 78000
+  opponentRotateSpeed: 75000
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
   TopIsBonded: 0
