@@ -301,7 +301,7 @@ namespace CosmicShore.Core
 
             // if (!EnsureDictionaryEntriesExist(ownerTeam, ownerPlayerName)) return;
 
-            roundStats.VolumeRemaining += prismStats.Volume;
+            roundStats.VolumeCreated += prismStats.Volume;
             roundStats.VolumeRemaining += prismStats.Volume;
         }
 
@@ -322,7 +322,7 @@ namespace CosmicShore.Core
             if (!_miniGameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
                 return;
             
-            stealingPlayerStats.BlocksStolen++;
+            stealingPlayerStats.PrismStolen++;
             stealingPlayerStats.PrismsRemaining++;
             stealingPlayerStats.VolumeStolen += prismStats.Volume;
             stealingPlayerStats.VolumeRemaining += prismStats.Volume;

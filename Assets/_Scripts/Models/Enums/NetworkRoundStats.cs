@@ -64,7 +64,7 @@ namespace CosmicShore.Core
         private readonly NetworkVariable<int> n_BlocksStolen = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
-        public int BlocksStolen
+        public int PrismStolen
         {
             get => n_BlocksStolen.Value;
             set => n_BlocksStolen.Value = value;

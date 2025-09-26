@@ -9,7 +9,7 @@ namespace CosmicShore.Core
         public int BlocksCreated { get; set; }
         public int BlocksDestroyed { get; set; }
         public int BlocksRestored { get; set; }
-        public int BlocksStolen { get; set; }
+        public int PrismStolen { get; set; }
         public int PrismsRemaining { get; set; }
         public int FriendlyPrismsDestroyed { get; set; }
         public int HostilePrismsDestroyed { get; set; }
@@ -41,7 +41,7 @@ namespace CosmicShore.Core
             BlocksCreated = 0;
             BlocksDestroyed = 0;
             BlocksRestored = 0;
-            BlocksStolen = 0;
+            PrismStolen = 0;
             PrismsRemaining = 0;
             FriendlyPrismsDestroyed = 0;
             HostilePrismsDestroyed = 0;
