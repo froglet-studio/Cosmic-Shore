@@ -40,7 +40,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float radius = 60f;
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
         [SerializeField] protected Material blockMaterial;
-        protected List<Trail> trails = new List<Trail>();
+        List<Trail> trails = new ();
 
         public void SetBlockMaterial(Material material)
         {
@@ -69,12 +69,12 @@ namespace CosmicShore.Game.Arcade
         {
             var Block = Instantiate(prism);
             Block.ChangeTeam(ActivePlayer.Domain);
-            Block.ownerID = ActivePlayer.PlayerUUID;
-            Block.PlayerName = ActivePlayer.Name;
+            // Block.ownerID = ActivePlayer.PlayerUUID;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
-            Block.ownerID = Block.ownerID + position;
+            // Block.ownerID = Block.ownerID + position;
             Block.TargetScale = blockScale;
             Block.Trail = trail;
+            Block.Initialize(ActivePlayer.Name);
             trail.Add(Block);
             return Block;
         }

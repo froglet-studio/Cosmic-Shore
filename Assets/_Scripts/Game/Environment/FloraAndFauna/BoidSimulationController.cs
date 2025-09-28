@@ -91,7 +91,8 @@ public class BoidSImulationController : MonoBehaviour
             Debug.Log("Instantiating boid number: " + i);
             Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
             newBoid.transform.SetParent(transform);
-
+            newBoid.Initialize();
+            
             boids[i] = newBoid; // Store the boid game object reference
 
             Entity newEntity = new Entity
@@ -232,6 +233,7 @@ public class BoidSImulationController : MonoBehaviour
     {
         Prism newBoid = Instantiate(boidPrefab, position, Quaternion.LookRotation(direction));
         newBoid.transform.SetParent(transform);
+        newBoid.Initialize();
 
         Entity newEntity = new Entity
         {

@@ -95,7 +95,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected Prism CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string ownerId, Trail trail, GameObject container)
         {
-            var Block = Instantiate(prism);
+            var Block = Instantiate(prism, container.transform, false);
             Block.ChangeTeam(Domain);
             //Block.ownerId = Vessel.Player.PlayerUUID;
             //Block.PlayerName = Vessel.Player.PlayerName;
@@ -105,8 +105,8 @@ namespace CosmicShore.Game.Projectiles
             Block.ownerID = /*Block.ownerId +*/ ownerId + position;
             Block.TargetScale = blockScale;
             Block.Trail = trail;
+            Block.Initialize();
             trail.Add(Block);
-            Block.transform.SetParent(container.transform, false);
             return Block;
         }
     }

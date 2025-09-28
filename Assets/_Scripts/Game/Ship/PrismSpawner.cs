@@ -222,7 +222,7 @@ namespace CosmicShore.Game
         /// <summary>Creates a block at offset.</summary>
         void CreateBlock(float halfGap, Trail prisms)
         {
-            var prism = Instantiate(prismPrefab);
+            var prism = Instantiate(prismPrefab, TrailContainer.transform, true);
             EnsureContainer();
 
             // scale
@@ -238,7 +238,6 @@ namespace CosmicShore.Game
             float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
             Vector3 pos = transform.position - vesselStatus.Course * offset + vesselStatus.ShipTransform.right * xShift;
             prism.transform.SetPositionAndRotation(pos, vesselStatus.blockRotation);
-            prism.transform.parent = TrailContainer.transform;
 
             // owner & player
             bool charm = isCharmed && tempVessel != null;
@@ -247,7 +246,7 @@ namespace CosmicShore.Game
                 creatorId = vesselStatus.Player?.PlayerUUID ?? string.Empty;
             prism.ownerID = creatorId;
 
-            prism.PlayerName = vesselStatus.PlayerName;
+            // prism.PlayerName = vesselStatus.PlayerName;
             prism.ChangeTeam(vesselStatus.Domain);
             // prism.PlayerName = charm ? VesselStatus.PlayerName : VesselStatus.Team.ToString();
             // prism.ChangeTeam(charm ? VesselStatus.Team : VesselStatus.Team);
@@ -264,7 +263,7 @@ namespace CosmicShore.Game
             // add to trail
             prisms.Add(prism);
             prism.prismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
-
+            prism.Initialize(vesselStatus.PlayerName);
             // event
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
             OnBlockSpawned?.Invoke(prism);
@@ -302,7 +301,7 @@ namespace CosmicShore.Game
                 if (string.IsNullOrEmpty(creatorId)) creatorId = vesselStatus.Player?.PlayerUUID ?? string.Empty;
 
                 prism.ownerID = creatorId;
-                prism.PlayerName = vesselStatus.PlayerName;
+                // prism.PlayerName = vesselStatus.PlayerName;
                 prism.ChangeTeam(vesselStatus.Domain);
 
                 // --- Wait Time ---
@@ -316,7 +315,7 @@ namespace CosmicShore.Game
                 // --- Add to Trail ---
                 prisms.Add(prism);
                 prism.prismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
-
+                prism.Initialize(vesselStatus.PlayerName);
                 // --- Events ---
                 OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
                 OnBlockSpawned?.Invoke(prism);

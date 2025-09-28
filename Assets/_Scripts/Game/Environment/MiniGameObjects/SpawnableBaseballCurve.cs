@@ -32,11 +32,12 @@ public class SpawnableBaseballCurve : SpawnableAbstractBase
             var go = Instantiate(blockPrefab);
             go.transform.position = new Vector3(x, y, z);
             go.transform.SetParent(container.transform, false);
+            go.GetComponent<Prism>().Initialize();
 
             go = Instantiate(blockPrefab);
             go.transform.position = new Vector3(x, y, z + seamWidth);
             go.transform.SetParent(container.transform, false);
-
+            go.GetComponent<Prism>().Initialize();
         }
 
         return container;

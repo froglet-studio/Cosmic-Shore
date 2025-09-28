@@ -110,7 +110,6 @@ namespace CosmicShore.Game.Projectiles
         {
             var block = TrailBlockBufferManager.Instance.GetBlock(Domain);
             //block.ownerID = Vessel.Player.PlayerUUID;
-            block.PlayerName = Vessel.VesselStatus.PlayerName;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ownerID = block.ownerID + blockId + position;
@@ -119,6 +118,7 @@ namespace CosmicShore.Game.Projectiles
             block.Trail = trail;
             block.growthRate = growthRate;
             if (shielded) block.prismProperties.IsShielded = true;
+            block.Initialize(Vessel.VesselStatus.PlayerName);
             trail.Add(block);
             return block;
         }

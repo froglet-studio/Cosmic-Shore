@@ -13,7 +13,7 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(PrismStateManager))]
     public class Prism : MonoBehaviour
     {
-        const string DEFAULT_PLAYER_NAME = "DefaultPlayer"; // -> This should be removed later,
+        protected const string DEFAULT_PLAYER_NAME = "DefaultPlayer"; // -> This should be removed later,
 
         [FormerlySerializedAs("Prism Properties")]
         [Header("Prism Properties")]
@@ -56,8 +56,8 @@ namespace CosmicShore.Core
         }
         // public IPlayer Player;
         string _playerName;
-        public string PlayerName 
-        { 
+        public string PlayerName { get; private set; } 
+        /*{ 
             get
             {
                 if (_playerName == null)
@@ -67,8 +67,8 @@ namespace CosmicShore.Core
                 }
                 return _playerName;
             }
-            set => _playerName = value;
-        }
+            private set => _playerName = value;
+        }*/
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;
@@ -85,6 +85,7 @@ namespace CosmicShore.Core
             set
             {
                 scaleAnimator?.SetTargetScale(value);
+                scaleAnimator?.BeginGrowthAnimation();  // TODO ->, Make separate method for SetTargetScale, and Begin Growth.
             }
         }
 
@@ -105,6 +106,7 @@ namespace CosmicShore.Core
             if (scaleAnimator is not null)
             {
                 scaleAnimator.SetTargetScale(TargetScale);
+                scaleAnimator.BeginGrowthAnimation();
             }
         }
         
@@ -124,14 +126,16 @@ namespace CosmicShore.Core
 
             scaleAnimator.GrowthRate = growthRate;
 
-            InitializeTrailBlockProperties();
+            InitializePrismProperties();
         }
 
-        protected virtual void Start()
+        public virtual void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
+            PlayerName = playerName;
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
+            scaleAnimator.Initialize();
             // CreateBlock();
             StartCoroutine(CreateBlockCoroutine());
 
@@ -140,7 +144,7 @@ namespace CosmicShore.Core
             if (prismProperties.IsDangerous) MakeDangerous();
         }
 
-        private void InitializeTrailBlockProperties()
+        private void InitializePrismProperties()
         {
             if (prismProperties == null) return;
 
@@ -181,7 +185,6 @@ namespace CosmicShore.Core
                 // OwnTeam = Team,
                 PlayerName = PlayerName,
                 Volume = prismProperties.volume,
-                OtherPlayerName = prismProperties.prism.PlayerName,
             });
 
             // TODO - Use Event Channel

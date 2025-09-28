@@ -62,6 +62,7 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         Block.ownerID = blockId;
         Block.TargetScale = scale;
         Block.Trail = trail;
+        Block.Initialize();
         trail.Add(Block);
     }
 }

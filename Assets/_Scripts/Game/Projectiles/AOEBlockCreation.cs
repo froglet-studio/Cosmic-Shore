@@ -71,7 +71,6 @@ namespace CosmicShore.Game.Projectiles
         {
             var block = TrailBlockBufferManager.Instance.GetBlock(Domain);
             block.ownerID = Vessel.VesselStatus.Player.PlayerUUID;
-            block.PlayerName = Vessel.VesselStatus.PlayerName;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ownerID = block.ownerID + ownerId + position;  
@@ -79,6 +78,7 @@ namespace CosmicShore.Game.Projectiles
             block.transform.parent = PrismSpawner.TrailContainer.transform;
             block.Trail = trail;
             if (shielded) block.prismProperties.IsShielded = true;
+            block.Initialize(Vessel.VesselStatus.PlayerName);
             trail.Add(block);
             return block;
         }

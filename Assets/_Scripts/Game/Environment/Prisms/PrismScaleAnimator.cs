@@ -4,6 +4,7 @@ using CosmicShore.Utilities;
 
 namespace CosmicShore.Core
 {
+    [RequireComponent(typeof(Prism))]
     public class PrismScaleAnimator : MonoBehaviour
     {
         [SerializeField]
@@ -42,8 +43,6 @@ namespace CosmicShore.Core
                 }
             }
         }
-        
-        public Action OnScaleComplete { get; set; }
 
         private Prism prism;
         // private Vector3 spread;
@@ -72,11 +71,9 @@ namespace CosmicShore.Core
             {
                 spread = meshRenderer.material.GetVector("_Spread");
             }*/
-
-            TryRegisterWithManager();
         }
 
-        private void Start()
+        public void Initialize()
         {
             if (!isRegistered)
             {
@@ -93,11 +90,6 @@ namespace CosmicShore.Core
             }
         }
 
-        private void OnEnable()
-        {
-            TryRegisterWithManager();
-        }
-
         private void OnDisable()
         {
             if (BlockScaleManager.Instance != null && isRegistered)
@@ -110,6 +102,7 @@ namespace CosmicShore.Core
         public void BeginGrowthAnimation()
         {
             if (!enabled) return;
+            if (IsScaling) return;
 
             // If TargetScale hasn't been set, use transform's scale as target
             if (TargetScale == Vector3.zero)
@@ -132,41 +125,35 @@ namespace CosmicShore.Core
             newTarget.z = Mathf.Clamp(newTarget.z, minScale.z, maxScale.z);
 
             TargetScale = newTarget;
-
-            // If not already scaling, start the growth animation
-            if (!IsScaling)
+        }
+        
+        public void ExecuteOnScaleComplete()
+        {
+            var deltaVolume = UpdateVolume();
+            onPrismVolumeModified.Raise(
+                new PrismStats
+                {
+                    Volume = deltaVolume,
+                    PlayerName = prism.PlayerName,
+                });
+                
+            /*if (StatsManager.Instance != null)
             {
-                BeginGrowthAnimation();
+                StatsManager.Instance.PrismVolumeModified(deltaVolume, trailBlock.PrismProperties);
+            }*/
+
+            if (prism == null) return;
+                
+            if (CheckIfIsLargest())
+            {
+                prism.ActivateShield();
+                prism.IsLargest = true;
             }
 
-            OnScaleComplete = () =>
+            if (CheckIfIsSmallest())
             {
-                var deltaVolume = UpdateVolume();
-                onPrismVolumeModified.Raise(
-                    new PrismStats
-                    {
-                        Volume = deltaVolume,
-                        OtherPlayerName = prism.PlayerName,
-                    });
-                
-                /*if (StatsManager.Instance != null)
-                {
-                    StatsManager.Instance.PrismVolumeModified(deltaVolume, trailBlock.PrismProperties);
-                }*/
-
-                if (prism == null) return;
-                
-                if (CheckIfIsLargest())
-                {
-                    prism.ActivateShield();
-                    prism.IsLargest = true;
-                }
-
-                if (CheckIfIsSmallest())
-                {
-                    prism.IsSmallest = true;
-                }
-            };
+                prism.IsSmallest = true;
+            }
         }
         
         private bool CheckIfIsLargest() => 
@@ -177,14 +164,10 @@ namespace CosmicShore.Core
 
         public void Grow(float amount = 1)
         {
-            if (!enabled || prism == null) return;
-            Grow(amount * prism.GrowthVector);
-        }
-
-        public void Grow(Vector3 growthVector)
-        {
-            if (!enabled) return;
+            if (!enabled || !prism) return;
+            var growthVector = amount * prism.GrowthVector;
             SetTargetScale(TargetScale + growthVector);
+            BeginGrowthAnimation();
         }
 
         public float GetCurrentVolume()
@@ -222,7 +205,6 @@ namespace CosmicShore.Core
                 BlockScaleManager.Instance.UnregisterAnimator(this);
                 isRegistered = false;
             }
-            OnScaleComplete = null;
         }
 
     }

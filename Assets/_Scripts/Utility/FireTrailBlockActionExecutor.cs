@@ -65,7 +65,7 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
         blockInstance.prismProperties.IsShielded = so.Shielded;
         blockInstance.prismProperties.IsDangerous = so.FriendlyFire; 
         blockInstance.Domain = _status.Domain; 
-        blockInstance.PlayerName = _status.PlayerName;
+        blockInstance.Initialize(_status.PlayerName);
         
         StartCoroutine(MoveBlockForward(blockInstance, so));
 

@@ -10,9 +10,9 @@ namespace CosmicShore
         [Header("Optional Components")]
         [SerializeField] Spindle spindle;
         
-        protected override void Start()
+        public override void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
-            base.Start();
+            base.Initialize(playerName);
             if (LifeForm) LifeForm.AddHealthBlock(this);
             spindle ??= transform.parent.GetComponent<Spindle>(); // Every healthBlock requires a spindle parent
             spindle.AddHealthBlock(this);

@@ -66,6 +66,7 @@ namespace CosmicShore.Game.Projectiles
             {
                 renderer.material = _themeManagerData.GetTeamBlockMaterial(domain);
             }
+            block.Initialize();
             return block;
         }
 

@@ -294,7 +294,7 @@ namespace CosmicShore.Core
             if (!allowRecord) return;
 
             // var ownerTeam = modifiedTrailBlockProperties.trailBlock.Team;
-            var ownerPlayerName = prismStats.OtherPlayerName;
+            var ownerPlayerName = prismStats.PlayerName;
             
             if (!_miniGameData.TryGetRoundStats(ownerPlayerName, out IRoundStats roundStats))
                 return;
