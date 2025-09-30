@@ -2,14 +2,13 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "SkimmerDamagePrismEffect",
-        menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerDamagePrismEffectSO")]
+    [CreateAssetMenu(fileName = "SkimmerDamagePrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerDamagePrismEffectSO")]
     public class SkimmerDamagePrismEffectSO : SkimmerPrismEffectSO
     {
-        [SerializeField] float inertia = 70f;   // global scalar you can tune per effect
+        [SerializeField] float inertia = 70f;
         [SerializeField] private Vector3 overrideCourse;
         [SerializeField] private float overrideSpeed;
-    
+        
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = impactor.Skimmer.VesselStatus;

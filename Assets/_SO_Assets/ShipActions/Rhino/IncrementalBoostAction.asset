@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a29eec48c9d96e4d9966fb92ffb4469, type: 3}
-  m_Name: SkimmerOverchargeCollectPrismEffect
+  m_Script: {fileID: 11500000, guid: 4eb9850c809e42d49325ef8cb002e8f3, type: 3}
+  m_Name: IncrementalBoostAction
   m_EditorClassIdentifier: 
-  maxBlockHits: 50
-  cooldownDuration: 5
+  maxBoostMultiplier: 2
+  drainPerSecond: 0.25
+  tickSeconds: 0.1
+  boostResourceIndex: 0
+  scaleMultiplierWithAmount: 1
   verbose: 1
-  overchargedMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
-  overchargeInertia: 30
-  minBlastSpeed: 15

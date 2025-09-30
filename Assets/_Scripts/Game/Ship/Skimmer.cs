@@ -164,14 +164,17 @@ namespace CosmicShore.Game
                                    + Mathf.Sin(angle + (Mathf.PI / 2)) * blockTransform.up) * radius;
 
                 Vector3 worldPos = blockTransform.position + localPos;
-
-                var marker = nudgeShardPoolManager.Get(
+ 
+                
+                var marker = nudgeShardPoolManager?.Get(
                     worldPos,
                     Quaternion.LookRotation(blockTransform.forward, localPos), nudgeShardPoolManager.transform);
 
+                if (!marker) break;
+                
                 if (!shardPositions.Add(marker.transform.position))
                 {
-                    nudgeShardPoolManager.Release(marker);
+                    nudgeShardPoolManager?.Release(marker);
                     continue;
                 }
 
@@ -188,7 +191,7 @@ namespace CosmicShore.Game
             {
                 if (!m) continue;
                 shardPositions.Remove(m.transform.position);
-                nudgeShardPoolManager.Release(m);
+                nudgeShardPoolManager?.Release(m);
             }
         }
     }

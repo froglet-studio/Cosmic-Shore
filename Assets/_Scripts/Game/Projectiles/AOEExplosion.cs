@@ -57,8 +57,7 @@ namespace CosmicShore.Game.Projectiles
 
         public void Detonate() => StartCoroutine(ExplodeCoroutine());
 
-        public Vector3 CalculateImpactVector(Vector3 impacteePosition) =>
-            impacteePosition - transform.position.normalized * speed * Inertia ;
+        public Vector3 CalculateImpactVector(Vector3 impacteePosition) => (impacteePosition - transform.position).normalized * speed * Inertia ;
         
         // Deprecated - Moved to R_ExplosionImpactor.cs
         /*protected virtual void OnTriggerEnter(Collider other)
