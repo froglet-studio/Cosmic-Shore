@@ -8,6 +8,7 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using Obvious.Soap;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.SOAP
 {
@@ -31,7 +32,8 @@ namespace CosmicShore.SOAP
 
         
         // Local player config / state
-        public ShipClassTypeVariable SelectedShipClass;
+        [FormerlySerializedAs("SelectedShipClass")] public VesselClassTypeVariable selectedVesselClass;
+        public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
         public SO_Captain PlayerCaptain;
@@ -84,8 +86,8 @@ namespace CosmicShore.SOAP
             
             for (int i = Players.Count - 1; i >= 0; i--)
             {
-                Players[i].Vessel?.Destroy();
-                Players[i].Destroy();
+                Players[i].Vessel?.Cleanup();
+                Players[i].Cleanup();
             }
             
             Players.Clear();
@@ -127,7 +129,8 @@ namespace CosmicShore.SOAP
             PlayerOrigins = Array.Empty<Transform>();
             _activePlayerId = 0;
 
-            SelectedShipClass.Value = VesselClassType.Dolphin;
+            selectedVesselClass.Value = VesselClassType.Manta;
+            VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             TurnStartTime = 0f;

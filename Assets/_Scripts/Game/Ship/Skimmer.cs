@@ -33,7 +33,6 @@ namespace CosmicShore.Game
         public IVesselStatus VesselStatus { get; private set; }
         public bool AffectSelf => affectSelf;
 
-        CameraManager cameraManager;
         float _appliedScale;
         float _sweetSpot;
         float _sqrRadius;
@@ -53,8 +52,6 @@ namespace CosmicShore.Game
             IsInitialized = true;
             VesselStatus = vesselStatus;
             
-            cameraManager = CameraManager.Instance;
-
             _sweetSpot = transform.localScale.x / 4f;
             _sqrRadius = transform.localScale.x * transform.localScale.x / 4f;
 

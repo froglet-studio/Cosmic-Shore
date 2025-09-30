@@ -46,7 +46,7 @@ namespace CosmicShore
             Vessel.OnBeforeDestroyed -= OnBeforeVesselDestroyed;
         }
 
-        private void OnBeforeVesselDestroyed() => Destroy(gameObject);
+        private void OnBeforeVesselDestroyed() => isInitialized = false; // Destroy(gameObject);
 
 
         private void VesselInitialized()

@@ -76,7 +76,7 @@ namespace CosmicShore.Game
             
             if (IsOwner)
             {
-                NetDefaultShipType.Value = miniGameData.SelectedShipClass.Value;
+                NetDefaultShipType.Value = miniGameData.selectedVesselClass.Value;
                 InputController.Initialize();
             }
 
@@ -104,8 +104,13 @@ namespace CosmicShore.Game
         public void ToggleAutoPilot(bool toggle) => Vessel.ToggleAutoPilot(toggle);
         
         public void ToggleInputPause(bool toggle) => InputController?.Pause(toggle);
-        
-        public void Destroy() => Destroy(gameObject);
+
+        public void Cleanup()
+        {
+            if (IsSpawned)
+                return;
+            Destroy(gameObject);   
+        }
         
         private void OnNetDefaultShipTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>
             VesselClass = newValue;

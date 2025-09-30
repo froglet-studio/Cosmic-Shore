@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Obvious.Soap;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Views
@@ -29,7 +30,7 @@ namespace CosmicShore.App.UI.Views
         [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
         [SerializeField] bool RespectInventoryForGameSelection = false;
 
-        [SerializeField] ShipClassTypeVariable _selectedShipClassType;
+        [FormerlySerializedAs("_selectedShipClassType")] [SerializeField] VesselClassTypeVariable selectedVesselClassType;
         [SerializeField] IntVariable _selectedPlayerCount;
         [SerializeField] IntVariable _selectedIntensity;
         
@@ -125,7 +126,7 @@ namespace CosmicShore.App.UI.Views
         {
             Debug.Log($"SelectShip: {selectedShip.Name}");
 
-            _selectedShipClassType.Value = selectedShip.Class;
+            selectedVesselClassType.Value = selectedShip.Class;
             // TODO - Remove statics from MiniGame, use SOAP Data Container
             // notify the mini game engine that this is the vessel to play
             // MiniGame.PlayerShipType = selectedShip.Class;

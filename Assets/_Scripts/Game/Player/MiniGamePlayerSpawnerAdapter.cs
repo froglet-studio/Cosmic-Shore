@@ -35,7 +35,7 @@ namespace CosmicShore.Game
             // TODO: Wire player name/uuid/teams from your profile/select flow.
             return new IPlayer.InitializeData
             {
-                vesselClass      = _gameData.SelectedShipClass.Value,
+                vesselClass      = _gameData.selectedVesselClass.Value,
                 domain           = Domains.Jade,         // Default for now
                 PlayerName     = "HumanJade",        // Placeholder
                 PlayerUUID     = "HumanJade1",       // Placeholder

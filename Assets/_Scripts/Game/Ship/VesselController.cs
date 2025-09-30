@@ -57,7 +57,10 @@ namespace CosmicShore.Game
 
         public override void OnDestroy()
         {
-            OnBeforeDestroyed?.Invoke();
+            if ((!IsSpawned && !VesselStatus.Player.IsInitializedAsAI) || IsOwner)
+            {
+                OnBeforeDestroyed?.Invoke();
+            }
         }
 
         public override void OnNetworkSpawn()
@@ -198,7 +201,12 @@ namespace CosmicShore.Game
 
         public bool AllowClearPrismInitialization() => (IsSpawned && IsOwner) || VesselStatus.IsInitializedAsAI;
 
-        public void Destroy() => Destroy(gameObject);
+        public void Cleanup()
+        {
+            if (IsSpawned)
+                return;
+            Destroy(gameObject);   
+        }
         
         void InitializeForMultiplayerMode()
         {
@@ -209,14 +217,13 @@ namespace CosmicShore.Game
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
                     
                 // TODO - Temp disabled, for testing.
-                /*VesselStatus.Customization.Initialize(VesselStatus);
+                /*VesselStatus.Customization.Initialize(VesselStatus);*/
 
                 if (VesselStatus.NearFieldSkimmer)
                     VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
 
                 if (VesselStatus.FarFieldSkimmer)
                     VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
-                */
                     
                 VesselStatus.VesselTransformer.Initialize(this);
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
