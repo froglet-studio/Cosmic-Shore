@@ -56,11 +56,11 @@ public class Boid : Fauna
     public override void Initialize(Cell cell)
     {
         AddSpindle(spindle);
-        BlockCollider = healthBlock.GetComponent<BoxCollider>();
+        BlockCollider = healthPrism.GetComponent<BoxCollider>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
-        healthBlock.Domain = domain;
+        healthPrism.Domain = domain;
     }
 
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)
@@ -129,7 +129,7 @@ public class Boid : Fauna
                 //float blockWeight = Population.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized / distance;
 
-                if (distance < trailBlockInteractionRadius && otherPrism.Domain != healthBlock.Domain)
+                if (distance < trailBlockInteractionRadius && otherPrism.Domain != healthPrism.Domain)
                 {
                     foreach (var effect in collisionEffects)
                     {
@@ -143,19 +143,19 @@ public class Boid : Fauna
                                         isAttached = true;
                                         target = otherPrism.transform.position;
                                         otherPrism.Grow(-1);
-                                        healthBlock.Grow(1);
-                                        if (healthBlock.IsLargest) StartCoroutine(AddToMoundCoroutine());
+                                        healthPrism.Grow(1);
+                                        if (healthPrism.IsLargest) StartCoroutine(AddToMoundCoroutine());
                                     }
                                     else target = DefaultGoal.position;
                                 }
                                 break;
                             case BoidCollisionEffects.Explode:
-                                if ((currentVelocity * healthBlock.Volume).x == Mathf.Infinity || (currentVelocity * healthBlock.Volume).x == Mathf.NegativeInfinity)
+                                if ((currentVelocity * healthPrism.Volume).x == Mathf.Infinity || (currentVelocity * healthPrism.Volume).x == Mathf.NegativeInfinity)
                                 {
                                     Debug.LogError($"Infinite velocity on block collision detected! velocity:({currentVelocity.x},{currentVelocity.y},{currentVelocity.z})");
                                     break;
                                 }
-                                otherPrism.Damage(currentVelocity * healthBlock.Volume, healthBlock.Domain, healthBlock.PlayerName + " boid", true);
+                                otherPrism.Damage(currentVelocity * healthPrism.Volume, healthPrism.Domain, healthPrism.PlayerName + " boid", true);
                                 break;
                         }
                     }
@@ -223,15 +223,15 @@ public class Boid : Fauna
         }
 
         isTraveling = false;
-        healthBlock.IsLargest = false;
-        healthBlock.DeactivateShields();
-        healthBlock.Grow(-3);
+        healthPrism.IsLargest = false;
+        healthPrism.DeactivateShields();
+        healthPrism.Grow(-3);
     }
 
     (Prism, GyroidAssembler) NewBlock()
     {
-        var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
-        newBlock.ChangeTeam(healthBlock.Domain);
+        var newBlock = Instantiate(healthPrism, transform.position, transform.rotation, Population.transform);
+        newBlock.ChangeTeam(healthPrism.Domain);
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         newBlock.prismProperties = new()
         {

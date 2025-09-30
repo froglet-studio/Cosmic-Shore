@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public class HealthBlock : Prism
+    public class HealthPrism : Prism
     {
         
         public LifeForm LifeForm;
@@ -14,7 +14,7 @@ namespace CosmicShore
         {
             base.Initialize(playerName);
             if (LifeForm) LifeForm.AddHealthBlock(this);
-            spindle ??= transform.parent.GetComponent<Spindle>(); // Every healthBlock requires a spindle parent
+            spindle ??= transform.parent.GetComponent<Spindle>(); // Every healthPrism requires a spindle parent
             spindle.AddHealthBlock(this);
         }
 

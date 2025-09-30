@@ -15,10 +15,10 @@ public abstract class Flora : LifeForm
 
     public abstract void Plant();
 
-    public override void AddHealthBlock(HealthBlock healthBlock)
+    public override void AddHealthBlock(HealthPrism healthPrism)
     {
-        base.AddHealthBlock(healthBlock);
-        healthBlock.TargetScale = leafSize;
+        base.AddHealthBlock(healthPrism);
+        healthPrism.TargetScale = leafSize;
     }
 
     public override void Initialize(Cell cell)
@@ -28,9 +28,9 @@ public abstract class Flora : LifeForm
         StartCoroutine(GrowCoroutine());
     }
 
-    public override void RemoveHealthBlock(HealthBlock healthBlock)
+    public override void RemoveHealthBlock(HealthPrism healthPrism)
     {
-        base.RemoveHealthBlock(healthBlock);
+        base.RemoveHealthBlock(healthPrism);
         isGrowing = false;
     }
 

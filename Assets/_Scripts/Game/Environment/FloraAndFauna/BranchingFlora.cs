@@ -81,9 +81,9 @@ namespace CosmicShore
                     Branch newBranch = new Branch();
                     if (Random.value < leafChance)
                     {
-                        newBranch.gameObject = Instantiate(healthBlock, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
+                        newBranch.gameObject = Instantiate(healthPrism, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
                         ScaleAndPositionBranch(ref newBranch, branch);
-                        var newHealthblock = newBranch.gameObject.GetComponent<HealthBlock>();
+                        var newHealthblock = newBranch.gameObject.GetComponent<HealthPrism>();
                         AddHealthBlock(newHealthblock);
                         if (SecondarySpawn && !hasPlantedSecondary)
                         {

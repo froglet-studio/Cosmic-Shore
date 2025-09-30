@@ -74,7 +74,7 @@ public class LightFauna : Fauna
             }
 
             // Handle other fauna
-            var otherHealthBlock = collider.GetComponent<HealthBlock>();
+            var otherHealthBlock = collider.GetComponent<HealthPrism>();
             if (otherHealthBlock)
             {
                 if (otherHealthBlock.LifeForm == this) continue;

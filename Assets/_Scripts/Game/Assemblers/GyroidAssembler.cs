@@ -470,10 +470,10 @@ namespace CosmicShore
 
         GyroidAssembler ConvertBlock(Prism prism)
         {
-            HealthBlock healthBlock = prism.GetComponent<HealthBlock>();
-            if (healthBlock != null)
+            HealthPrism healthPrism = prism.GetComponent<HealthPrism>();
+            if (healthPrism != null)
             {
-                healthBlock.Reparent(Prism.transform.parent);
+                healthPrism.Reparent(Prism.transform.parent);
             }
             prism.TargetScale = scale;
             prism.MaxScale = Prism.MaxScale;

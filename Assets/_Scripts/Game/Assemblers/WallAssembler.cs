@@ -383,10 +383,10 @@ namespace CosmicShore
                     var trailBlock = potentialMate.GetComponent<Prism>();
                     if (trailBlock != null)
                     {
-                        HealthBlock healthBlock = trailBlock.GetComponent<HealthBlock>();
-                        if (healthBlock != null)
+                        HealthPrism healthPrism = trailBlock.GetComponent<HealthPrism>();
+                        if (healthPrism != null)
                         {
-                            healthBlock.Reparent(Prism.transform.parent);
+                            healthPrism.Reparent(Prism.transform.parent);
                         }
 
                         trailBlock.TargetScale = scale;
