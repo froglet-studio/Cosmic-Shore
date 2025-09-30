@@ -813,6 +813,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Cell
       objectReference: {fileID: 0}
+    - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_RootOrder
@@ -1309,13 +1314,13 @@ MonoBehaviour:
   _playerSpawner: {fileID: 1870184177}
   _initializeDatas:
   - vesselClass: 2
-    Team: 2
+    domain: 2
     PlayerName: Hostile1
     PlayerUUID: 
     IsAI: 1
     AllowSpawning: 1
   - vesselClass: 11
-    Team: 2
+    domain: 2
     PlayerName: Hostile2
     PlayerUUID: 
     IsAI: 1
