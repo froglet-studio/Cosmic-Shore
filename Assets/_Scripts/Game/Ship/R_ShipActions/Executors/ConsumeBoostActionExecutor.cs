@@ -8,33 +8,30 @@ using UnityEngine;
 
 public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 {
-    // ===== HUD events (magazine-based) =====
-    public event Action<int,int>   OnChargesSnapshot;   // count update (HUD decides which pips look full/empty)
-    public event Action<int,float> OnChargeConsumed;    // (pipIndex, duration) -> animate this pip draining
-    public event Action<float>     OnReloadStarted;     // total fill time for full mag animation (optional)
+ 
+    public event Action<int,int>   OnChargesSnapshot;   
+    public event Action<int,float> OnChargeConsumed;   
+    public event Action<float>     OnReloadStarted;    
     public event Action            OnReloadCompleted;
-
+    public event Action<int, float> OnReloadPipStarted;      
+    public event Action<int, float> OnReloadPipProgress;  
+    public event Action<int>        OnReloadPipCompleted;  
     // (legacy; optional)
     public event Action<float, float> OnBoostStarted;  
     public event Action OnBoostEnded;
 
-    // Runtime
     IVesselStatus _status;
     ResourceSystem _resources;
-
-    // Config (captured from SO on use)
     ConsumeBoostActionSO _so;
 
-    // State
     int _available;
     bool _reloading;
 
-    // Independent stacks
     class BoostStack
     {
         public float Mult;
         public float Duration;
-        public int   PipIndex;   // the pip that was consumed
+        public int   PipIndex;  
         public Coroutine Routine; 
     }
 
@@ -62,9 +59,14 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
     /// </summary>
     public void Consume(ConsumeBoostActionSO so, IVesselStatus status)
     {
-        if (so == null || status == null) return;
+        if (!so || status == null) return;
 
-        // Initial (re)bind and magazine init
+        if (_reloadRoutine != null)
+        {
+            StopCoroutine(_reloadRoutine);
+            _reloadRoutine = null;
+            _reloading = false;
+        }
         if (_so != so || (_available <= 0 && _activeStacks.Count == 0 && !_reloading))
         {
             _so = so;
@@ -79,10 +81,9 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         if (_reloading) return;
         if (_available <= 0) return;
 
-        // Optional resource gate
         if (_so.ResourceCost > 0f)
         {
-            if (_resources == null) return;
+            if (!_resources) return;
             if (_so.ResourceIndex < 0 || _so.ResourceIndex >= _resources.Resources.Count) return;
 
             var res = _resources.Resources[_so.ResourceIndex];
@@ -91,19 +92,14 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
             _resources.ChangeResourceAmount(_so.ResourceIndex, -_so.ResourceCost);
             OnBoostStarted?.Invoke(_so.BoostDuration, res.CurrentAmount);
         }
-
-        // Choose the rightmost filled pip for this shot
         int pipIndex = Mathf.Clamp(_available - 1, 0, _so.MaxCharges - 1);
 
-        // Tell HUD to animate THIS pip draining over the boost duration
         float duration = Mathf.Max(0.05f, _so.BoostDuration);
         OnChargeConsumed?.Invoke(pipIndex, duration);
-
-        // Spend one charge (count only; HUD snapshot should NOT override animating pip visuals)
+        
         _available = Mathf.Max(0, _available - 1);
         OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
 
-        // Start independent stack tied to THIS pip
         var stack = new BoostStack
         {
             Mult     = _so.BoostMultiplier.Value,
@@ -115,7 +111,6 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 
         RecalculateMultiplier();
 
-        // If we just emptied the mag, schedule reload (fills 1-by-1)
         if (_available == 0 && !_reloading)
             _reloadRoutine = StartCoroutine(ReloadRoutine(_so.ReloadCooldown, _so.ReloadFillTime));
     }
@@ -133,7 +128,6 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
     {
         yield return new WaitForSeconds(stack.Duration);
 
-        // Remove THIS exact stack
         int idx = _activeStacks.IndexOf(stack);
         if (idx >= 0) _activeStacks.RemoveAt(idx);
 
@@ -148,7 +142,6 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         {
             _status.Boosting = true;
 
-            // baseline + sum of active stacks (additive)
             float total = 1f;
             for (int i = 0; i < _activeStacks.Count; i++)
                 total += _activeStacks[i].Mult;
@@ -163,27 +156,39 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
     }
 
-    IEnumerator ReloadRoutine(float cooldown, float fillTime)
+    IEnumerator ReloadRoutine(float cooldown, float perPipFillTime)
     {
         _reloading = true;
 
         if (cooldown > 0f)
             yield return new WaitForSeconds(cooldown);
 
-        // Optional: tell HUD the total fill animation time (we still push counts per pip)
-        OnReloadStarted?.Invoke(Mathf.Max(0.01f, fillTime));
+        perPipFillTime = Mathf.Max(0.01f, perPipFillTime);
 
-        // Refill pip-by-pip over fillTime (equal slices)
-        int toFill = _so.MaxCharges - _available;
-        if (toFill > 0)
+        // Fill strictly one pip at a time
+        while (_available < _so.MaxCharges)
         {
-            float per = Mathf.Max(0.01f, fillTime / toFill);
-            while (_available < _so.MaxCharges)
+            int pipIndex = _available; // next empty pip to fill (0-based from left)
+
+            // tell HUD: start animating THIS pip for perPipFillTime
+            OnReloadPipStarted?.Invoke(pipIndex, perPipFillTime);
+
+            float t = 0f;
+            while (t < perPipFillTime)
             {
-                yield return new WaitForSeconds(per);
-                _available++;
-                OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
+                t += Time.deltaTime;
+                float norm = Mathf.Clamp01(t / perPipFillTime);
+                OnReloadPipProgress?.Invoke(pipIndex, norm);
+                yield return null;
+
+                // if someone consumed mid-reload, abort gracefully
+                if (!_reloading) yield break;
             }
+
+            // commit this pip as filled
+            _available++;
+            OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
+            OnReloadPipCompleted?.Invoke(pipIndex);
         }
 
         OnReloadCompleted?.Invoke();
@@ -191,4 +196,6 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         _reloading = false;
         _reloadRoutine = null;
     }
+
+
 }

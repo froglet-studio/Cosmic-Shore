@@ -92,9 +92,7 @@ namespace CosmicShore
 
         public void End()
         {
-            // This action is time-boxed (cooldown); explicit stop is usually a no-op.
-            // You could allow early-cancel here if needed:
-            // if (_runRoutine != null) { StopCoroutine(_runRoutine); _runRoutine = null; CleanupGhost(); ForceFadeInIfNeeded(); }
+
         }
 
         // ===== Core routine =====
@@ -104,13 +102,11 @@ namespace CosmicShore
             if (seedAssemblerExecutor != null && seedAssemblerExecutor.StartSeed(seedWallConfig, _status))
             {
                 var seed = seedAssemblerExecutor.ActiveSeedBlock;
-                if (seed != null) _protectedBlockIds.Add(seed.GetInstanceID());
+                if (seed) _protectedBlockIds.Add(seed.GetInstanceID());
                 seedAssemblerExecutor.BeginBonding();
             }
-
-            // 2) Get seed block / latest block and create ghost at anchor
             var seedBlock = seedAssemblerExecutor?.ActiveSeedBlock ?? GetLatestBlock();
-            if (seedBlock != null && skinnedMeshRenderer != null)
+            if (seedBlock && skinnedMeshRenderer)
                 CreateGhostAt(seedBlock.transform.position, seedBlock.transform.rotation);
 
             // 3) Fade out ship (optional)
@@ -151,13 +147,11 @@ namespace CosmicShore
             _runRoutine = null;
         }
 
-        // ===== Trail handling during cloak =====
-
         void HandleBlockSpawned(Prism block)
         {
-            if (!_cloakActive || block == null) return;
+            if (!_cloakActive || !block) return;
             if (_protectedBlockIds.Contains(block.GetInstanceID())) return;
-            if (block.GetComponent<Assembler>() != null) return;
+            if (block.GetComponent<Assembler>()) return;
 
             var remaining = _cooldownEndTime - Time.time;
             if (remaining > 0f)
@@ -171,18 +165,17 @@ namespace CosmicShore
             block.SetTransparency(true);
 
             // hide visuals of freshly spawned blocks until cloak ends
-            var r = block.GetComponentInChildren<Renderer>(true);
-            if (r != null) r.enabled = false;
+            var r = block;
+            if (r) r.gameObject.SetActive(false);
         }
 
         // ===== Ghost =====
 
         void CreateGhostAt(Vector3 seedPos, Quaternion seedRot)
         {
-            if (skinnedMeshRenderer == null) return;
+            if (!skinnedMeshRenderer) return;
 
             var baked = new Mesh();
-            // do NOT bake scale; we’ll set scale manually from model
             skinnedMeshRenderer.BakeMesh(baked, true);
 
             _ghostGo = new GameObject("ShipGhost");
@@ -198,11 +191,14 @@ namespace CosmicShore
             {
                 var live  = skinnedMeshRenderer.materials;
                 var ghost = new Material[live.Length];
+                
                 for (int i = 0; i < live.Length; i++)
                     ghost[i] = new Material(live[i]);
+                
                 mr.materials = ghost;
-                for (int i = 0; i < mr.materials.Length; i++)
-                    SetMaterialAlpha(mr.materials[i], 1f);
+                
+                foreach (var t in mr.materials)
+                    SetMaterialAlpha(t, 1f);
             }
 
             _ghostAnchorPos = seedPos;
@@ -212,7 +208,7 @@ namespace CosmicShore
             _ghostGo.transform.SetPositionAndRotation(_ghostAnchorPos, finalRot);
 
             // scale = model root scale * multiplier (fallback to 1)
-            var baseScale = modelRoot != null ? modelRoot.lossyScale : Vector3.one;
+            var baseScale = modelRoot ? modelRoot.lossyScale : Vector3.one;
             var s = Mathf.Max(0.0001f, _so.GhostScaleMultiplier);
             _ghostGo.transform.localScale = new Vector3(baseScale.x * s, baseScale.y * s, baseScale.z * s);
 
@@ -263,7 +259,7 @@ namespace CosmicShore
         IEnumerator DestroyAfter(GameObject go, float seconds)
         {
             yield return new WaitForSeconds(seconds);
-            if (go != null) Destroy(go);
+            if (go) Destroy(go);
         }
 
         // ===== Fade =====
@@ -292,7 +288,7 @@ namespace CosmicShore
 
         IEnumerator FadeShipIn()
         {
-            if (!_so.HideShipDuringCooldown || skinnedMeshRenderer == null) yield break;
+            if (!_so.HideShipDuringCooldown || !skinnedMeshRenderer) yield break;
 
             var mats = skinnedMeshRenderer.materials;
 
@@ -311,7 +307,7 @@ namespace CosmicShore
         {
             foreach (var m in mats)
             {
-                if (m == null) continue;
+                if (!m) continue;
                 if (m.HasProperty(IDBaseColor)) return m.GetColor(IDBaseColor).a;
                 if (m.HasProperty(IDColor))     return m.GetColor(IDColor).a;
                 if (m.HasProperty(IDColor1))    return m.GetColor(IDColor1).a;
@@ -350,7 +346,7 @@ namespace CosmicShore
 
         static void SetMaterialAlpha(Material m, float alpha)
         {
-            if (m == null) return;
+            if (!m) return;
 
             // Try common properties in priority order
             if (m.HasProperty(IDBaseColor))
