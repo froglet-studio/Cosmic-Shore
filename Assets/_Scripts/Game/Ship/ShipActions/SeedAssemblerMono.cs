@@ -17,7 +17,7 @@ namespace CosmicShore
         [SerializeField] private int depth = 50;
         [SerializeField] private int resourceIndex = 0;
 
-        private TrailSpawner spawner;
+        private Game.PrismSpawner spawner;
         private Assembler currentAssembler;
         private IVessel vessel;
 

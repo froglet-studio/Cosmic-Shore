@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using System;
 using CosmicShore.Game.IO;
+using UnityEngine.Serialization;
 
 [Serializable]
 public struct ImpactProperties
@@ -14,5 +15,5 @@ public struct ImpactProperties
     public float speedBonus;
     public float speedPenalty;
     public HapticType hapticType;
-    public TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] public Prism prism;
 }

@@ -21,7 +21,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                 if (!TryGetRoundStats(playerScore.Name, out IRoundStats roundStats))
                     return;
                 
-                playerScore.Score += (trackBlocks ? roundStats.BlocksStolen : roundStats.VolumeStolen) * scoreMultiplier;
+                playerScore.Score += (trackBlocks ? roundStats.PrismStolen : roundStats.VolumeStolen) * scoreMultiplier;
             }
         }
         

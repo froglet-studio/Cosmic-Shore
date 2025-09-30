@@ -51,14 +51,14 @@ namespace CosmicShore.Core
         private Material activeTransparentMaterial;
         private Material activeOpaqueMaterial;
         private bool isRegistered;
-        private TrailBlock cachedTrailBlock;
+        private Prism cachedPrism;
         private bool materialsDirty;
 
         private void Awake()
         {
             // Cache components
             MeshRenderer = GetComponent<MeshRenderer>();
-            cachedTrailBlock = GetComponent<TrailBlock>();
+            cachedPrism = GetComponent<Prism>();
             
             if (MeshRenderer == null)
             {
@@ -107,12 +107,12 @@ namespace CosmicShore.Core
             if (!materialsDirty && activeTransparentMaterial != null && activeOpaqueMaterial != null)
                 return true;
 
-            if (cachedTrailBlock == null)
+            if (cachedPrism == null)
                 return false;
 
             try
             {
-                var team = cachedTrailBlock.Team;
+                var team = cachedPrism.Domain;
                 activeOpaqueMaterial = _themeManagerData.GetTeamBlockMaterial(team);
                 activeTransparentMaterial = _themeManagerData.GetTeamTransparentBlockMaterial(team);
                 
@@ -172,10 +172,10 @@ namespace CosmicShore.Core
                 activeTransparentMaterial = transparentMaterial;
                 activeOpaqueMaterial = opaqueMaterial;
                 
-                if (MeshRenderer != null && cachedTrailBlock != null && 
-                    cachedTrailBlock.TrailBlockProperties != null)
+                if (MeshRenderer != null && cachedPrism != null && 
+                    cachedPrism.prismProperties != null)
                 {
-                    MeshRenderer.material = cachedTrailBlock.TrailBlockProperties.IsTransparent ?
+                    MeshRenderer.material = cachedPrism.prismProperties.IsTransparent ?
                         transparentMaterial : opaqueMaterial;
                 }
 

@@ -29,7 +29,7 @@ namespace CosmicShore
 
         // Runtime
         IVesselStatus _status;
-        TrailSpawner  _spawner;
+        Game.PrismSpawner  _spawner;
         ActionExecutorRegistry _registry;
 
         readonly HashSet<int> _protectedBlockIds = new();
@@ -56,7 +56,7 @@ namespace CosmicShore
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status   = shipStatus;
-            _spawner  = shipStatus?.TrailSpawner;
+            _spawner  = shipStatus?.PrismSpawner;
             _registry = GetComponent<ActionExecutorRegistry>();
 
             if (_spawner != null)
@@ -153,7 +153,7 @@ namespace CosmicShore
 
         // ===== Trail handling during cloak =====
 
-        void HandleBlockSpawned(TrailBlock block)
+        void HandleBlockSpawned(Prism block)
         {
             if (!_cloakActive || block == null) return;
             if (_protectedBlockIds.Contains(block.GetInstanceID())) return;
@@ -383,13 +383,13 @@ namespace CosmicShore
 
         // ===== Utils =====
 
-        TrailBlock GetLatestBlock()
+        Prism GetLatestBlock()
         {
             var listA = _spawner?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
             // compatibility with private Trail2 field (as in original)
-            var trail2Field = typeof(TrailSpawner).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
+            var trail2Field = typeof(Game.PrismSpawner).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
             var trail2 = trail2Field?.GetValue(_spawner) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 

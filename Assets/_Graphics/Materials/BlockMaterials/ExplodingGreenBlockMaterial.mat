@@ -87,6 +87,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _Add_sin: 0
+    - _Alpha: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
     - _Blend: 0
@@ -101,12 +102,14 @@ Material:
     - _DstBlend: 10
     - _EnvironmentReflections: 1
     - _ExplosionAmount: 0.08
-    - _ExplosiveRotation: 0.2
-    - _ExplosiveSpead: 0.4
+    - _ExplosiveRotation: 0.1
+    - _ExplosiveSpead: 0.1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _LerpAmount: 0
     - _Metallic: 0
+    - _Move: 0
     - _OcclusionStrength: 1
     - _Opacity: 0
     - _Parallax: 0.005
@@ -141,6 +144,7 @@ Material:
     - _scale: 0
     - _seedx: 0.8
     - _seedy: 0.1
+    - _state: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BrightColor: {r: 0, g: 0.7764706, b: 1.4980392, a: 1}
@@ -149,10 +153,12 @@ Material:
     - _Color2: {r: 0, g: 0.02352941, b: 0.05490196, a: 0}
     - _DarkColor: {r: 0, g: 0.03327561, b: 0.06655122, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _SinkLocation: {r: 0, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 1.25, g: 0.07, b: 0.31, a: 0}
     - _Velocity: {r: 0.01, g: 0, b: 0, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
+    - _location: {r: 0, g: 0, b: 0, a: 0}
     - _spread: {r: 0.3, g: 0.3, b: 0.3, a: 0}
     - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}
     - _velocity: {r: 1, g: 0.01, b: 0.01, a: 0}

@@ -3,12 +3,12 @@
     public interface IRoundStats
     {
         string Name { get; set; }
-        Teams Team { get; set; }
+        Domains Domain { get; set; }
         float Score { get; set; }
         int BlocksCreated { get; set; }
         int BlocksDestroyed { get; set; }
         int BlocksRestored { get; set; }
-        int BlocksStolen { get; set; }
+        int PrismStolen { get; set; }
         int PrismsRemaining { get; set; }
         int FriendlyPrismsDestroyed { get; set; }
         int HostilePrismsDestroyed { get; set; }

@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -23,23 +24,23 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
-            TrailSpawner.NukeTheTrails();
+            PrismSpawner.NukeTheTrails();
 
             SegmentSpawner.NumberOfSegments = 60;
             SegmentSpawner.Initialize();
 
             Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
 
             FormRing();
         }
 
-        [SerializeField] protected TrailBlock trailBlock;
+        [FormerlySerializedAs("trailBlock")] [SerializeField] protected Prism prism;
         [SerializeField] float blockCount = 20;
         [SerializeField] float radius = 60f;
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
         [SerializeField] protected Material blockMaterial;
-        protected List<Trail> trails = new List<Trail>();
+        List<Trail> trails = new ();
 
         public void SetBlockMaterial(Material material)
         {
@@ -64,16 +65,16 @@ namespace CosmicShore.Game.Arcade
             CreateBlock(position, position, trail);
         }
 
-        virtual protected TrailBlock CreateBlock(Vector3 position, Vector3 lookPosition, Trail trail)
+        virtual protected Prism CreateBlock(Vector3 position, Vector3 lookPosition, Trail trail)
         {
-            var Block = Instantiate(trailBlock);
-            Block.ChangeTeam(ActivePlayer.Team);
-            Block.ownerID = ActivePlayer.PlayerUUID;
-            Block.PlayerName = ActivePlayer.Name;
+            var Block = Instantiate(prism);
+            Block.ChangeTeam(ActivePlayer.Domain);
+            // Block.ownerID = ActivePlayer.PlayerUUID;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
-            Block.ownerID = Block.ownerID + position;
+            // Block.ownerID = Block.ownerID + position;
             Block.TargetScale = blockScale;
             Block.Trail = trail;
+            Block.Initialize(ActivePlayer.Name);
             trail.Add(Block);
             return Block;
         }

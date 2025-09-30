@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
+using Cysharp.Threading.Tasks;
 using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 
@@ -16,21 +17,22 @@ namespace CosmicShore.Game
         [SerializeField] private bool  verbose;
         [SerializeField] private Material overchargedMaterial;
         [SerializeField] private float overchargeInertia = 70f;
-        [SerializeField] private float minBlastSpeed     = 25f; 
+        [SerializeField] private float minBlastSpeed     = 25f;
 
         public int MaxBlockHits => maxBlockHits;
-        
-        public event Action<SkimmerImpactor,int,int> OnCountChanged;   
-        public event Action<SkimmerImpactor,float>   OnCooldownStarted; 
-        public event Action<SkimmerImpactor>         OnOvercharge;     
+
+        public event Action<SkimmerImpactor,int,int> OnCountChanged;
+        public event Action<SkimmerImpactor>         OnReadyToOvercharge; // NEW
+        public event Action<SkimmerImpactor,float>   OnCooldownStarted;
+        public event Action<SkimmerImpactor>         OnOvercharge;
 
         private static readonly Dictionary<SkimmerImpactor, HashSet<PrismImpactor>> hitsBySkimmer = new();
-        private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers = new();
-        private IVesselStatus _vesselStatus;
+        private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers   = new();
+        private static readonly HashSet<SkimmerImpactor> readySet                  = new(); // NEW: prevent double-ready
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            if (prismImpactee.Prism.Team == Teams.Jade)
+            if (prismImpactee.Prism.Domain == impactor.Skimmer.Domain)
             {
                 if (prismImpactee.Prism.CurrentState == BlockState.Normal)
                 {
@@ -48,6 +50,10 @@ namespace CosmicShore.Game
             if (cooldownTimers.TryGetValue(impactor, out var cooldownEnd) && Time.time < cooldownEnd)
                 return;
 
+            // If already full/ready, ignore more hits until controller confirms
+            if (readySet.Contains(impactor)) return;
+
+            // Collect unique hits
             if (!hitsBySkimmer.TryGetValue(impactor, out var hitSet))
             {
                 hitSet = new HashSet<PrismImpactor>();
@@ -60,41 +66,76 @@ namespace CosmicShore.Game
             if (rend && overchargedMaterial) rend.material = overchargedMaterial;
 
             var rawCount = hitSet.Count;
-            var clamped  = Mathf.Min(rawCount, maxBlockHits);  // <- clamp for UI
+            var clamped  = Mathf.Min(rawCount, maxBlockHits);
             OnCountChanged?.Invoke(impactor, clamped, maxBlockHits);
 
-            if (rawCount < maxBlockHits) return;
+            if (rawCount >= maxBlockHits)
+            {
+                readySet.Add(impactor);
+                OnReadyToOvercharge?.Invoke(impactor);
+            }
+        }
+
+        public void ConfirmOvercharge(SkimmerImpactor impactor)
+        {
+            if (impactor == null) return;
+
+            if (!hitsBySkimmer.TryGetValue(impactor, out var hitSet) || hitSet.Count == 0)
+            {
+                // Nothing to do; still start cooldown/UI reset to be safe
+                StartCooldownAndReset(impactor);
+                return;
+            }
 
             TriggerOvercharge(impactor, hitSet);
             hitSet.Clear();
-
-            cooldownTimers[impactor] = Time.time + cooldownDuration;
-            OnCooldownStarted?.Invoke(impactor, cooldownDuration);
-
-            OnCountChanged?.Invoke(impactor, 0, maxBlockHits);
+            StartCooldownAndReset(impactor);
         }
 
+        private void StartCooldownAndReset(SkimmerImpactor impactor)
+        {
+            readySet.Remove(impactor);
+            cooldownTimers[impactor] = Time.time + cooldownDuration;
+            OnCooldownStarted?.Invoke(impactor, cooldownDuration);
+            OnCountChanged?.Invoke(impactor, 0, maxBlockHits); // reset UI counter
+        }
+        
         private void TriggerOvercharge(SkimmerImpactor impactor, HashSet<PrismImpactor> hitSet)
         {
-            var status = impactor?.Skimmer.VesselStatus;
+            var status = impactor?.Skimmer?.VesselStatus;
             if (status == null) return;
 
+            // Fire and forget async task
+            BlowUpPrismsOverTime(impactor, hitSet, status).Forget();
+        }
+
+        private async UniTaskVoid BlowUpPrismsOverTime(
+            SkimmerImpactor impactor, 
+            HashSet<PrismImpactor> hitSet, 
+            IVesselStatus status)
+        {
             var shipPos = status.ShipTransform ? status.ShipTransform.position : impactor.transform.position;
             var speed   = Mathf.Max(minBlastSpeed, status.Speed);
 
-            foreach (var prism in hitSet)
+            var orderedPrisms = hitSet
+                .Where(p => p && p.Prism)
+                .OrderBy(p => Vector3.Distance(shipPos, p.transform.position));
+
+            foreach (var prism in orderedPrisms)
             {
-                if (!prism || !prism.Prism) continue;
+                var dir    = (prism.transform.position - shipPos).normalized;
+                var damage = dir * (overchargeInertia * speed);
 
-                var dir = (prism.transform.position - shipPos).normalized;
-                var damage = dir * speed * overchargeInertia;
+                prism.Prism.Damage(damage, Domains.None, status.PlayerName, devastate: true);
 
-                prism.Prism.Damage(damage, Teams.None, status.PlayerName, devastate: true);
+                // Async delay before hitting the next prism
+                await UniTask.Delay(TimeSpan.FromSeconds(0.1f));
             }
 
             OnOvercharge?.Invoke(impactor);
-            if (verbose) Debug.Log($"[SkimmerOvercharge] Overcharge triggered! ({hitSet.Count})", impactor);
+            if (verbose) Debug.Log($"[SkimmerOvercharge] Overcharge triggered sequentially! ({hitSet.Count})", impactor);
         }
+
     }
 }
 

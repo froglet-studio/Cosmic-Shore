@@ -6,24 +6,24 @@ namespace CosmicShore.Core
     public class Trail
     {
         bool isLoop;
-        public List<TrailBlock> TrailList { get; }
-        Dictionary<TrailBlock, ushort> trailBlockIndices;
+        public List<Prism> TrailList { get; }
+        Dictionary<Prism, ushort> trailBlockIndices;
 
         public Trail(bool isLoop = false)
         {
             this.isLoop = isLoop;
-            TrailList = new List<TrailBlock>();
-            trailBlockIndices = new Dictionary<TrailBlock, ushort>();
+            TrailList = new List<Prism>();
+            trailBlockIndices = new Dictionary<Prism, ushort>();
         }
 
-        public void Add(TrailBlock block)
+        public void Add(Prism block)
         {
             trailBlockIndices.Add(block, (ushort)TrailList.Count);
             TrailList.Add(block);
-            block.TrailBlockProperties.Index = (ushort) trailBlockIndices.Count;
+            block.prismProperties.Index = (ushort) trailBlockIndices.Count;
         }
 
-        public int GetBlockIndex(TrailBlock block)
+        public int GetBlockIndex(Prism block)
         {
             return trailBlockIndices[block];
         }
@@ -36,7 +36,7 @@ namespace CosmicShore.Core
         /// </summary>
         /// <param name="index"></param>
         /// <param name="lerp"></param>
-        public List<TrailBlock> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
+        public List<Prism> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
         {
             var incrementor = (int)direction;
             var distanceTravelled = 0f;
@@ -49,7 +49,7 @@ namespace CosmicShore.Core
             (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor, trailListCount);
             var nextBlock = TrailList[nextIndex];
 
-            var lookAheadBlocks = new List<TrailBlock> { currentBlock };
+            var lookAheadBlocks = new List<Prism> { currentBlock };
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - lerp);
 
             while (distanceTravelled < distance)
@@ -150,7 +150,7 @@ namespace CosmicShore.Core
             return (index, incrementor);
         }
 
-        public TrailBlock GetBlock(int blockIndex)
+        public Prism GetBlock(int blockIndex)
         {
             if (blockIndex < 0) return TrailList[0];
             return TrailList[blockIndex];

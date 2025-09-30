@@ -9,6 +9,7 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using CosmicShore.SOAP;
 using CosmicShore.Utilities;
+using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 
 namespace CosmicShore.Game
@@ -59,8 +60,10 @@ namespace CosmicShore.Game
         {
             if (NetworkManager.Singleton)
             {
-                NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
+                if (IsHost)
+                {
+                    NetworkManager.Singleton.Shutdown();
+                }
             }
         }
 
@@ -78,7 +81,7 @@ namespace CosmicShore.Game
             var playerProperties = await GetPlayerProperties();
             var sessionOpts = new SessionOptions
             {
-                MaxPlayers = miniGameData.SelectedPlayerCount.Value,
+                MaxPlayers = 4, //miniGameData.SelectedPlayerCount.Value,
                 IsLocked = false,
                 IsPrivate = false,
                 PlayerProperties = playerProperties,
@@ -112,8 +115,14 @@ namespace CosmicShore.Game
 
         void OnClientDisconnect(ulong clientId)
         {
+            if (!NetworkManager.Singleton)
+                return;
+            
+            NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
+            
             // host always = 0
-            if (NetworkManager.Singleton.IsClient && clientId == 0)
+            if (!NetworkManager.Singleton.IsHost && clientId == NetworkManager.Singleton.LocalClientId)
             {
                 Debug.Log("[MultiplayerSetup] Host disconnected, returning to menu.");
                 OnLoadMainMenu?.Raise();

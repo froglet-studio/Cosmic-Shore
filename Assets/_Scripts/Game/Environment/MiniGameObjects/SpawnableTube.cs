@@ -2,12 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
+using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
     public class SpawnableTube : SpawnableAbstractBase
     {
-        [SerializeField] TrailBlock trailBlock;
+        [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
         [SerializeField] int radius = 3;
         [SerializeField] int length = 20;
         [SerializeField] int segments = 8;
@@ -28,7 +29,7 @@ namespace CosmicShore
                         Mathf.Sin(angle) * radius * blockSize,
                         z * blockSize
                     );
-                    CreateBlock(position, -position.normalized, container.name + $"::BLOCK::{z}:{i}", trail, Vector3.one * blockSize, trailBlock, container);
+                    CreateBlock(position, -position.normalized, container.name + $"::BLOCK::{z}:{i}", trail, Vector3.one * blockSize, prism, container);
                 }
             }
 

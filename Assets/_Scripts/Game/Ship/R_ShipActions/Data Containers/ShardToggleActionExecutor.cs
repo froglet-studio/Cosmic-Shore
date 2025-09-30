@@ -10,7 +10,7 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
 
     public override void Initialize(IVesselStatus shipStatus)
     {
-        // no special init needed; bus is scene ref
+        
     }
 
     public void Toggle(ShardToggleActionSO so, IVessel ship, IVesselStatus status)
@@ -31,8 +31,8 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
                 return;
             }
 
-            Vector3 highDensityPosition = cell.GetExplosionTarget(so.Team);
-            Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={so.Team} Target={highDensityPosition}");
+            Vector3 highDensityPosition = cell.GetExplosionTarget(so.Domain);
+            Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={so.Domain} Target={highDensityPosition}");
             shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
             _redirectActive = true;
         }

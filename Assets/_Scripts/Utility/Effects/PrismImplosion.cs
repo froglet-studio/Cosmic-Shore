@@ -1,40 +1,45 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Serialization;
+using CosmicShore.Utility.ClassExtensions;
 
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// Handles prism implosion VFX. Managed by PrismImplosionPoolManager.
+    /// Handles prism implosion/grow VFX. Managed by PrismImplosionPoolManager.
+    /// Uses MaterialPropertyBlock so prefab materials remain untouched.
     /// </summary>
+    [RequireComponent(typeof(Renderer))]
     public class PrismImplosion : MonoBehaviour
     {
-        [SerializeField] private Material implosionMaterial;
-        [FormerlySerializedAs("blockRenderer")] 
         [SerializeField] private Renderer prismRenderer;
-        [SerializeField] private AnimationCurve implosionCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
         [SerializeField] private float implosionDuration = 2f;
+        [SerializeField] private float growDelay = 0.25f; // small pause before expanding
 
-        private Vector3 convergencePoint;
+        private MaterialPropertyBlock mpb;
+        private Coroutine running;
         private float implosionProgress;
-        private bool isImploding;
-        private float blockVolume = 1f;
 
         // Shader property IDs
-        private static readonly int ImplosionProgressID = Shader.PropertyToID("_ImplosionProgress");
-        private static readonly int ConvergencePointID = Shader.PropertyToID("_ConvergencePoint");
+        private static readonly int ImplosionProgressID = Shader.PropertyToID("_State");
+        private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
 
-        private Coroutine running;
-
-        /// <summary>
-        /// Callback for pooling system when implosion finishes.
-        /// </summary>
+        /// <summary> Callback for pooling system when effect finishes. </summary>
         public System.Action<PrismImplosion> OnFinished;
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (!prismRenderer)
+                prismRenderer = GetComponent<Renderer>();
+        }
+#endif
 
         private void Awake()
         {
-            if (prismRenderer == null)
+            if (!prismRenderer)
                 prismRenderer = GetComponent<Renderer>();
+
+            mpb = new MaterialPropertyBlock();
         }
 
         private void OnDisable()
@@ -44,77 +49,140 @@ namespace CosmicShore.Game
                 StopCoroutine(running);
                 running = null;
             }
+
+            if (prismRenderer != null && mpb != null)
+            {
+                mpb.Clear();
+                prismRenderer.SetPropertyBlock(mpb);
+            }
         }
 
-        public void StartImplosion(Vector3 worldConvergencePoint, float volume = 1f)
-        {
-            convergencePoint = worldConvergencePoint;
-            blockVolume = Mathf.Max(0.01f, volume);
-            isImploding = true;
-            implosionProgress = 0f;
+        // ---------------- API ----------------
 
-            if (implosionMaterial != null && prismRenderer != null)
+        /// <summary> Start implosion (shader: 0 → 1). </summary>
+        public void StartImplosion(Transform convergenceTransform)
+        {
+            StartEffect(convergenceTransform.position, 0f, 1f, "Prism implosion started", "Prism implosion ended");
+        }
+
+        /// <summary> Start grow (shader: 1 → 0). </summary>
+        public void StartGrow(Transform ownerTransform)
+        {
+            if (!prismRenderer || mpb == null)
             {
-                prismRenderer.material = implosionMaterial;
-                prismRenderer.material.SetFloat(ImplosionProgressID, 0f);
-                prismRenderer.material.SetVector(ConvergencePointID, convergencePoint);
+                Debug.LogError("[PrismImplosion] Missing required components, cannot start grow.");
+                return;
             }
 
             if (running != null)
                 StopCoroutine(running);
 
-            running = StartCoroutine(HandleImplosionAnimation());
+            running = StartCoroutine(GrowEffectCoroutine(ownerTransform));
+
+            // DebugExtensions.LogColored("Prism grow started", Color.green);
         }
 
-        private IEnumerator HandleImplosionAnimation()
+        // ---------------- Internals ----------------
+
+        private void StartEffect(Vector3 targetPos, float startValue, float endValue, string startMsg, string endMsg)
+        {
+            if (!prismRenderer || mpb == null)
+            {
+                Debug.LogError("[PrismImplosion] Missing required components, cannot start effect.");
+                return;
+            }
+
+            // Reset shader properties
+            prismRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(ImplosionProgressID, startValue);
+            mpb.SetVector(ConvergencePointID, targetPos);
+            prismRenderer.SetPropertyBlock(mpb);
+
+            if (running != null)
+                StopCoroutine(running);
+
+            running = StartCoroutine(EffectCoroutine(targetPos, startValue, endValue, endMsg));
+
+            // DebugExtensions.LogColored(startMsg, Color.green);
+        }
+
+        private IEnumerator EffectCoroutine(Vector3 targetPos, float startValue, float endValue, string endMsg)
         {
             float elapsedTime = 0f;
-            float adjustedDuration = implosionDuration / Mathf.Sqrt(blockVolume);
 
-            while (elapsedTime < adjustedDuration && isImploding)
+            while (elapsedTime < implosionDuration)
             {
                 elapsedTime += Time.deltaTime;
-                float normalizedTime = elapsedTime / adjustedDuration;
+                float t = Mathf.Clamp01(elapsedTime / implosionDuration);
 
-                implosionProgress = implosionCurve.Evaluate(normalizedTime);
+                implosionProgress = Mathf.Lerp(startValue, endValue, t);
 
-                if (prismRenderer != null && prismRenderer.material != null)
-                {
-                    prismRenderer.material.SetFloat(ImplosionProgressID, implosionProgress);
-                    prismRenderer.material.SetVector(ConvergencePointID, convergencePoint);
-                }
+                prismRenderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(ImplosionProgressID, implosionProgress);
+                mpb.SetVector(ConvergencePointID, targetPos);
+                prismRenderer.SetPropertyBlock(mpb);
 
                 yield return null;
             }
 
-            CompleteImplosion();
+            // Force final state
+            implosionProgress = endValue;
+            prismRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(ImplosionProgressID, endValue);
+            mpb.SetVector(ConvergencePointID, targetPos);
+            prismRenderer.SetPropertyBlock(mpb);
+
+            if (running != null)
+                StopCoroutine(running);
+
+            running = null;
+            OnFinished?.Invoke(this);
         }
 
-        private void CompleteImplosion()
+        private IEnumerator GrowEffectCoroutine(Transform ownerTransform)
         {
-            isImploding = false;
-            implosionProgress = 1f;
+            Vector3 startPosition = ownerTransform.position;
+            // Initialize at collapsed state
+            prismRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(ImplosionProgressID, 1f);
+            mpb.SetVector(ConvergencePointID, startPosition);
+            prismRenderer.SetPropertyBlock(mpb);
 
-            if (prismRenderer != null && prismRenderer.material != null)
+            float elapsedTime = 0f;
+            while (elapsedTime < implosionDuration)
             {
-                prismRenderer.material.SetFloat(ImplosionProgressID, 1f);
+                elapsedTime += Time.deltaTime;
+                implosionProgress = 1 - Mathf.Clamp01(elapsedTime / implosionDuration);
+
+                prismRenderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(ImplosionProgressID, implosionProgress);
+                // mpb.SetVector(ConvergencePointID, ownerTransform.position);
+                prismRenderer.SetPropertyBlock(mpb);
+
+                yield return null;
             }
 
-            running = StartCoroutine(DelayedFinish());
-        }
+            // Force final state (fully grown, placed at start position)
+            /*implosionProgress = 0f;
+            prismRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(ImplosionProgressID, 0f);
+            mpb.SetVector(ConvergencePointID, startPosition);
+            prismRenderer.SetPropertyBlock(mpb);*/
 
-        private IEnumerator DelayedFinish()
-        {
-            yield return new WaitForSeconds(0.5f);
+            if (prismRenderer && mpb != null)
+            {
+                mpb.Clear();
+                prismRenderer.SetPropertyBlock(mpb);
+            }
+            
             running = null;
-            OnFinished?.Invoke(this); // notify pool manager
+            OnFinished?.Invoke(this);
         }
 
         public float GetImplosionProgress() => implosionProgress;
 
-        public void StopImplosion()
+        public void StopEffect()
         {
-            isImploding = false;
             if (running != null)
             {
                 StopCoroutine(running);

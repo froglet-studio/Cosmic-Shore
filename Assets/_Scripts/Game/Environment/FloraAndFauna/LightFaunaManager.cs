@@ -32,7 +32,7 @@ public class LightFaunaManager : Population
             Vector3 spawnPosition = transform.position + randomOffset;
             
             LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
-            fauna.Team = Team;
+            fauna.domain = domain;
             fauna.Population = this;
             fauna.Phase = PhaseIncrease*i;
             fauna.Initialize(cell);

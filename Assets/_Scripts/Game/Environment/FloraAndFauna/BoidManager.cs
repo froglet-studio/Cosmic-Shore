@@ -28,8 +28,8 @@ public class BoidManager : Population
             Boid newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.LookRotation(Vector3.Cross(spawnPosition,Vector3.forward)));
             newBoid.transform.SetParent(transform);
             newBoid.Population = this;
-            newBoid.Team = Team;
-            var block = newBoid.GetComponentInChildren<TrailBlock>();
+            newBoid.domain = domain;
+            var block = newBoid.GetComponentInChildren<Prism>();
 
             if (Mound)
             {
@@ -39,7 +39,7 @@ public class BoidManager : Population
             //newBoid.DefaultGoal = node.GetClosestItem(spawnPosition).transform;
 
             boidTrail.Add(block);
-            block.ChangeTeam(Team);
+            block.ChangeTeam(domain);
             block.Trail = boidTrail;
             
             newBoid.normalizedIndex = (float)i / numberOfBoids;

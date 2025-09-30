@@ -1,9 +1,10 @@
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SpawnableBaseballCurve : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     static int SpawnedCount = 0;
 
     public float radius = 1.0f;
@@ -31,11 +32,12 @@ public class SpawnableBaseballCurve : SpawnableAbstractBase
             var go = Instantiate(blockPrefab);
             go.transform.position = new Vector3(x, y, z);
             go.transform.SetParent(container.transform, false);
+            go.GetComponent<Prism>().Initialize();
 
             go = Instantiate(blockPrefab);
             go.transform.position = new Vector3(x, y, z + seamWidth);
             go.transform.SetParent(container.transform, false);
-
+            go.GetComponent<Prism>().Initialize();
         }
 
         return container;

@@ -14,7 +14,7 @@ namespace CosmicShore.Game
     {
         public static async UniTaskVoid RunAsync(
             IVesselStatus vesselStatus,
-            TrailBlock prism,
+            Prism prism,
             float particleDurationAtSpeedOne)
         {
             if (vesselStatus == null || !prism)

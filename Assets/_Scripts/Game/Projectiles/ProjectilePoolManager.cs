@@ -5,9 +5,9 @@ namespace CosmicShore.Game.Projectiles
 {
     public class ProjectilePoolManager : GenericPoolManager<Projectile>
     {
-        public Projectile Get(Vector3 position, Quaternion rotation, Transform parent) =>
+        public override Projectile Get(Vector3 position, Quaternion rotation, Transform parent, bool worldPositionStays) =>
             Get_(position, rotation, parent);
         
-        public void Release(Projectile instance) =>  Release_(instance);
+        public override void Release(Projectile instance) =>  Release_(instance);
     }
 }

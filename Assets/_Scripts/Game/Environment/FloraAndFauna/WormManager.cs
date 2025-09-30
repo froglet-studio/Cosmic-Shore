@@ -62,7 +62,7 @@ public class WormManager : Population
         if (targetUpdateTimer >= targetUpdateInterval)
         {
             targetUpdateTimer = 0f;
-            Vector3 highDensityPosition = cell.GetExplosionTarget(Team);
+            Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
             foreach (Worm worm in activeWorms)
             {
                 worm.SetTarget(highDensityPosition);
@@ -77,7 +77,7 @@ public class WormManager : Population
         else newWorm = Instantiate(newWormPrefab, position, Quaternion.identity);
 
         newWorm.Manager = this;
-        newWorm.Team = Team;
+        newWorm.Domain = domain;
         newWorm.transform.parent = transform;
         newWorm.headSpacing = headSpacing;
         newWorm.tailSpacing = tailSpacing;

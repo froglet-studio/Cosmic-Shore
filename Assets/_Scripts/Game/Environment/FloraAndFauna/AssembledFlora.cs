@@ -24,11 +24,11 @@ namespace CosmicShore
             public int depth;
             public Assembler assembler;
 
-            public Branch(HealthBlock healthBlock)
+            public Branch(HealthPrism healthPrism)
             {
-                gameObject = healthBlock.gameObject;
+                gameObject = healthPrism.gameObject;
                 depth = 0;
-                assembler = healthBlock.GetComponent<Assembler>();
+                assembler = healthPrism.GetComponent<Assembler>();
             }
         }
 
@@ -104,11 +104,11 @@ namespace CosmicShore
                     continue;
                 }
 
-                HealthBlock newHealthBlock = Instantiate(healthBlock, growthInfo.Position, growthInfo.Rotation);
-                AddHealthBlock(newHealthBlock);
-                Branch newBranch = new Branch(newHealthBlock);
+                HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
+                AddHealthBlock(newHealthPrism);
+                Branch newBranch = new Branch(newHealthPrism);
 
-                var newAssembler = AssemblerFactory.ProgramAssembler(newHealthBlock.gameObject, growthInfo);
+                var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
                 if (newAssembler == null)
                 {
                     Debug.LogError("Failed to create assembler");
@@ -117,13 +117,14 @@ namespace CosmicShore
 
                 Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
                 newSpindle.LifeForm = this;
-                newSpindle.transform.position = newHealthBlock.transform.position;
-                newSpindle.transform.rotation = newHealthBlock.transform.rotation;
+                newSpindle.transform.position = newHealthPrism.transform.position;
+                newSpindle.transform.rotation = newHealthPrism.transform.rotation;
 
-                newHealthBlock.transform.SetParent(newSpindle.transform, false);
-                newHealthBlock.transform.localPosition = Vector3.zero;
-                newHealthBlock.transform.localRotation = Quaternion.identity;
-
+                newHealthPrism.transform.SetParent(newSpindle.transform, false);
+                newHealthPrism.transform.localPosition = Vector3.zero;
+                newHealthPrism.transform.localRotation = Quaternion.identity;
+                newHealthPrism.Initialize();
+                
                 newBranch.gameObject = newSpindle.gameObject;
                 newBranch.assembler = newAssembler;
                 newBranch.depth = branch.depth + 1;
@@ -172,17 +173,18 @@ namespace CosmicShore
             Debug.Log("New Assembler");
             var newSpindle = AddSpindle();
 
-            HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position, transform.rotation);
-            AddHealthBlock(newHealthBlock);
-            newHealthBlock.transform.SetParent(newSpindle.transform, false);
-            newHealthBlock.LifeForm = this;
+            HealthPrism newHealthPrism = Instantiate(healthPrism, transform.position, transform.rotation);
+            AddHealthBlock(newHealthPrism);
+            newHealthPrism.transform.SetParent(newSpindle.transform, false);
+            newHealthPrism.LifeForm = this;
+            newHealthPrism.Initialize();
 
-            Assembler newAssembler = newHealthBlock.GetComponent<Assembler>();
-            newAssembler.TrailBlock = newHealthBlock;
+            Assembler newAssembler = newHealthPrism.GetComponent<Assembler>();
+            newAssembler.Prism = newHealthPrism;
             newAssembler.Spindle = newSpindle;
             newAssembler.Depth = depth;
 
-            Branch newBranch = new Branch(newHealthBlock);
+            Branch newBranch = new Branch(newHealthPrism);
             newBranch.gameObject = newSpindle.gameObject;
             newBranch.assembler = newAssembler;
             newBranch.depth = 0;

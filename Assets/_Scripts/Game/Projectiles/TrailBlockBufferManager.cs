@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using System.Collections;
 using CosmicShore.Utilities;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game.Projectiles
@@ -19,13 +20,13 @@ namespace CosmicShore.Game.Projectiles
         }
 
         [SerializeField] private BufferSettings settings;
-        [SerializeField] private TrailBlock trailBlockPrefab;
+        [FormerlySerializedAs("trailBlockPrefab")] [SerializeField] private Prism prismPrefab;
 
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
-        private Dictionary<Teams, Queue<TrailBlock>> teamBuffers = new Dictionary<Teams, Queue<TrailBlock>>();
-        private Dictionary<Teams, float> instantiateTimers = new Dictionary<Teams, float>();
+        private Dictionary<Domains, Queue<Prism>> teamBuffers = new Dictionary<Domains, Queue<Prism>>();
+        private Dictionary<Domains, float> instantiateTimers = new Dictionary<Domains, float>();
 
         private void Start()
         {
@@ -36,11 +37,11 @@ namespace CosmicShore.Game.Projectiles
         private void InitializeTeamBuffers()
         {
             // Initialize buffers for each team
-            foreach (Teams team in System.Enum.GetValues(typeof(Teams)))
+            foreach (Domains team in System.Enum.GetValues(typeof(Domains)))
             {
-                if (team != Teams.Unassigned && team != Teams.None)
+                if (team != Domains.Unassigned && team != Domains.None)
                 {
-                    teamBuffers[team] = new Queue<TrailBlock>();
+                    teamBuffers[team] = new Queue<Prism>();
                     instantiateTimers[team] = 0f;
                     
                     // Pre-instantiate initial blocks
@@ -54,17 +55,18 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        private TrailBlock CreateBlockForTeam(Teams team)
+        private Prism CreateBlockForTeam(Domains domain)
         {
-            var block = Instantiate(trailBlockPrefab);
+            var block = Instantiate(prismPrefab);
             block.transform.parent = transform;
 
-            block.ChangeTeam(team);
+            block.ChangeTeam(domain);
             var renderer = block.GetComponent<MeshRenderer>();
             if (renderer != null)
             {
-                renderer.material = _themeManagerData.GetTeamBlockMaterial(team);
+                renderer.material = _themeManagerData.GetTeamBlockMaterial(domain);
             }
+            block.Initialize();
             return block;
         }
 
@@ -96,15 +98,15 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        public TrailBlock GetBlock(Teams team)
+        public Prism GetBlock(Domains domain)
         {
-            if (!teamBuffers.ContainsKey(team))
+            if (!teamBuffers.ContainsKey(domain))
             {
-                Debug.LogError($"No buffer exists for team {team}");
-                return CreateBlockForTeam(team);
+                Debug.LogError($"No buffer exists for team {domain}");
+                return CreateBlockForTeam(domain);
             }
 
-            var buffer = teamBuffers[team];
+            var buffer = teamBuffers[domain];
             if (buffer.Count > 0)
             {
                 var block = buffer.Dequeue();
@@ -112,13 +114,13 @@ namespace CosmicShore.Game.Projectiles
                 return block;
             }
             
-            Debug.LogWarning($"Buffer depleted for team {team}! Falling back to direct instantiation.");
-            return CreateBlockForTeam(team);
+            Debug.LogWarning($"Buffer depleted for team {domain}! Falling back to direct instantiation.");
+            return CreateBlockForTeam(domain);
         }
 
-        public bool HasAvailableBlocks(Teams team, int count)
+        public bool HasAvailableBlocks(Domains domain, int count)
         {
-            return teamBuffers.ContainsKey(team) && teamBuffers[team].Count >= count;
+            return teamBuffers.ContainsKey(domain) && teamBuffers[domain].Count >= count;
         }
 
         protected void OnDestroy()

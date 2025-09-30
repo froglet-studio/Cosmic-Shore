@@ -7,11 +7,15 @@ namespace CosmicShore.Game
     public enum PrismType
     {
         Explosion,
-        Implosion
+        Implosion,
+        Grow
     }
     
     public class PrismFactory : MonoBehaviour
     {
+        private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
+        private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
+        
         [Header("Pool Managers")]
         [SerializeField] private PrismExplosionPoolManager explosionPool;
         [SerializeField] private PrismImplosionPoolManager implosionPool;
@@ -23,11 +27,15 @@ namespace CosmicShore.Game
         [Header("Event Channels")]
         [SerializeField] private PrismEventChannelWithReturnSO _onPrismSpawnedEventChannel;
 
+        private MaterialPropertyBlock mpb;
+        
         #region Lifecycle
         private void OnEnable()
         {
             if (_onPrismSpawnedEventChannel)
                 _onPrismSpawnedEventChannel.OnEventReturn += OnPrismSpawnedEventRaised;
+            
+            mpb = new MaterialPropertyBlock();
         }
 
         private void OnDisable()
@@ -57,6 +65,10 @@ namespace CosmicShore.Game
                 case PrismType.Implosion :
                     spawned = SpawnImplosion(data);
                     break;
+                
+                case PrismType.Grow :
+                    spawned = SpawnGrow(data);
+                    break;
 
                 // Add more cases here later
                 // case "Shockwave":
@@ -69,43 +81,68 @@ namespace CosmicShore.Game
         #endregion
 
         #region Public API
-        public GameObject SpawnExplosion(PrismEventData data)
+        GameObject SpawnExplosion(PrismEventData data)
         {
-            var obj = explosionPool?.Spawn(data.Position, data.Rotation, data.Velocity);
-            ConfigureForTeam(obj.gameObject, data.OwnTeam);
+            var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation);
+            ConfigureForTeam(obj.gameObject, data.ownDomain);
+            obj.TriggerExplosion(data.Velocity);
             return obj.gameObject;
         }
 
-        public GameObject SpawnImplosion(PrismEventData data)
+        GameObject SpawnImplosion(PrismEventData data)
         {
-            var obj = implosionPool?.Spawn(data.Position, data.Rotation, data.SinkPoint, data.Volume);
-            ConfigureForTeam(obj.gameObject, data.OwnTeam);
+            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation);
+            ConfigureForTeam(obj.gameObject, data.ownDomain);
+            obj.StartImplosion(data.TargetTransform);
             return obj.gameObject;
         }
+        
+        GameObject SpawnGrow(PrismEventData data)
+        {
+            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation);
+            obj.transform.localScale = data.Scale;
+            ConfigureForTeam(obj.gameObject, data.ownDomain);
+
+            obj.OnFinished += _ =>
+            {
+                data.OnGrowCompleted?.Invoke();
+            };
+
+            obj.StartGrow(data.TargetTransform); // adjust if different
+
+            return obj.gameObject;
+        }
+        
         #endregion
 
         #region Helpers
-        private void ConfigureForTeam(GameObject obj, Teams team)
+        private void ConfigureForTeam(GameObject obj, Domains domain)
         {
-            if (obj == null) return;
+            if (!obj) return;
 
-            if (_themeManagerData == null || _themeManagerData.TeamMaterialSets == null)
+            if (!_themeManagerData || !_themeManagerData.ColorSet)
             {
-                Debug.LogWarning("[PrismFactory] ThemeManagerData or TeamMaterialSets is null.");
+                Debug.LogWarning("[PrismFactory] ThemeManagerData or ColorSet is null.");
                 return;
             }
 
-            if (!_themeManagerData.TeamMaterialSets.TryGetValue(team, out var materialSet))
+            if (!_themeManagerData.TeamMaterialSets.TryGetValue(domain, out var materialSet))
             {
-                Debug.LogWarning($"[PrismFactory] No material set for team '{team}'.");
+                Debug.LogWarning($"[PrismFactory] No material set for team '{domain}'.");
                 return;
             }
+
+            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var colorSet))
+                return;
 
             var renderer = obj.GetComponent<Renderer>();
-            if (renderer != null && materialSet != null)
+            if (renderer && materialSet)
             {
+                renderer.GetPropertyBlock(mpb);
                 // Apply basic material set — refine later if different prisms need different materials
-                renderer.material = materialSet.ExplodingBlockMaterial;
+                mpb.SetColor(DarkColorID, colorSet.OutsideBlockColor);
+                mpb.SetColor(BrightColorID, colorSet.InsideBlockColor);
+                renderer.SetPropertyBlock(mpb);
             }
         }
         #endregion

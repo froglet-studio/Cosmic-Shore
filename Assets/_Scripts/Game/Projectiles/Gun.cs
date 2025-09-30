@@ -20,7 +20,7 @@ namespace CosmicShore.Game.Projectiles
         [Header("Dependencies")]
         [SerializeField] private ProjectileFactory projectileFactory;
 
-        private Teams _team;
+        private Domains domain;
         private IVesselStatus _vesselStatus;
         private Projectile _lastProjectile;
 
@@ -30,7 +30,7 @@ namespace CosmicShore.Game.Projectiles
         public void Initialize(IVesselStatus vesselStatus)
         {
             _vesselStatus = vesselStatus;
-            _team = vesselStatus.Team;
+            domain = vesselStatus.Domain;
         }
         #endregion
 
@@ -148,9 +148,10 @@ namespace CosmicShore.Game.Projectiles
             }
             
             Vector3 direction = customDirection ?? transform.forward;
-            Vector3 spawnPos = transform.position +
-                               Quaternion.LookRotation(transform.forward) * offset +
-                               (transform.forward * barrelLength);
+            // Vector3 spawnPos = containerTransform.position +
+            //                    Quaternion.LookRotation(containerTransform.forward) * offset +
+            //                    (containerTransform.forward * barrelLength);
+            Vector3 spawnPos = containerTransform.position;
 
             Quaternion rotation = Quaternion.LookRotation(direction);
 
@@ -163,7 +164,7 @@ namespace CosmicShore.Game.Projectiles
                 return;
             }
 
-            projectile.Initialize(projectileFactory, _team, _vesselStatus, charge);
+            projectile.Initialize(projectileFactory, domain, _vesselStatus, charge);
             projectile.transform.localScale = projectileScale * projectile.InitialScale;
             projectile.Velocity = direction * speed + inheritedVelocity;
             projectile.LaunchProjectile(projectileTime);

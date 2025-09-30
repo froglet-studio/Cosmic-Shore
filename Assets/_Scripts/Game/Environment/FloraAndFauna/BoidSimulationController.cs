@@ -28,7 +28,7 @@ public class BoidSImulationController : MonoBehaviour
     MiniGameDataSO miniGameData;
     
     public ComputeShader boidSimulationShader;
-    public TrailBlock boidPrefab;
+    public Prism boidPrefab;
     public int numberOfBoids = 100;
     public float spawnRadius = 50.0f;
     public Transform globalGoal;
@@ -37,7 +37,7 @@ public class BoidSImulationController : MonoBehaviour
     private ComputeBuffer writeBuffer;
     public List<Entity> entities = new List<Entity>();
     private Entity[] entityArray;
-    private TrailBlock[] boids; // Array to keep track of boid game objects
+    private Prism[] boids; // Array to keep track of boid game objects
 
     int kernel;
 
@@ -56,7 +56,7 @@ public class BoidSImulationController : MonoBehaviour
     private void InitializeTrailBlocks()
     {
         // Assuming you have a method or a way to get all non-boid trail blocks in the scene
-        TrailBlock[] trailBlocks = FindObjectsByType<TrailBlock>(FindObjectsSortMode.None);
+        Prism[] trailBlocks = FindObjectsByType<Prism>(FindObjectsSortMode.None);
         foreach (var block in trailBlocks)
         {
             if (!block.CompareTag("Fauna")) // Assuming "Fauna" is the tag for boid trail blocks
@@ -67,9 +67,9 @@ public class BoidSImulationController : MonoBehaviour
                     position = block.transform.position,
                     velocity = Vector3.zero, // Trail blocks don't move on their own
                     goalDirection = Vector3.zero,
-                    team = (int)block.Team
+                    team = (int)block.Domain
                 };
-                Debug.Log($"team {(int)block.Team}");
+                Debug.Log($"team {(int)block.Domain}");
 
                 // Add blockEntity to the entities list
                 entities.Add(blockEntity);
@@ -82,16 +82,17 @@ public class BoidSImulationController : MonoBehaviour
     {
         entities = new List<Entity>(numberOfBoids);
 
-        boids = new TrailBlock[numberOfBoids]; // Initialize the boids array
+        boids = new Prism[numberOfBoids]; // Initialize the boids array
 
         // Initialize boids
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
             Debug.Log("Instantiating boid number: " + i);
-            TrailBlock newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
+            Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
             newBoid.transform.SetParent(transform);
-
+            newBoid.Initialize();
+            
             boids[i] = newBoid; // Store the boid game object reference
 
             Entity newEntity = new Entity
@@ -101,7 +102,7 @@ public class BoidSImulationController : MonoBehaviour
                 velocity = newBoid.transform.forward,
                 goalDirection = globalGoal.position - spawnPosition,
                 teamWeights = new Vector4(1.0f, 1.0f, 1.0f, 1.0f), // Example weights for 4 teams
-                team = (int)Teams.Blue
+                team = (int)Domains.Blue
             };
 
             entities.Add(newEntity);
@@ -195,7 +196,7 @@ public class BoidSImulationController : MonoBehaviour
         );
     }
 
-    private TrailBlock FindBlockByPosition(Vector3 position)
+    private Prism FindBlockByPosition(Vector3 position)
     {
         // Get the node that contains the position
         Cell containingNode = CellControlManager.Instance.GetCellByPosition(position);
@@ -208,18 +209,18 @@ public class BoidSImulationController : MonoBehaviour
 
         // Iterate through all NodeItems in the node to find the closest TrailBlock
         IList<CellItem> cellItems = containingNode.CellItems;
-        TrailBlock closestBlock = null;
+        Prism closestBlock = null;
         float closestDistance = float.MaxValue;
 
         foreach (var item in cellItems)
         {
-            if (item.GetComponent<TrailBlock>() && !item.CompareTag("Fauna"))
+            if (item.GetComponent<Prism>() && !item.CompareTag("Fauna"))
             {
                 float distance = Vector3.Distance(position, item.transform.position);
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
-                    closestBlock = item.GetComponent<TrailBlock>();
+                    closestBlock = item.GetComponent<Prism>();
                 }
             }
         }
@@ -230,8 +231,9 @@ public class BoidSImulationController : MonoBehaviour
 
     public void CreateBoid(Vector3 position, Vector3 direction)
     {
-        TrailBlock newBoid = Instantiate(boidPrefab, position, Quaternion.LookRotation(direction));
+        Prism newBoid = Instantiate(boidPrefab, position, Quaternion.LookRotation(direction));
         newBoid.transform.SetParent(transform);
+        newBoid.Initialize();
 
         Entity newEntity = new Entity
         {
@@ -239,11 +241,11 @@ public class BoidSImulationController : MonoBehaviour
             position = position,
             velocity = direction,
             goalDirection = globalGoal.position - position,
-            team = (int)Teams.None
+            team = (int)Domains.None
         };
 
         entities.Add(newEntity);
-        boids = new List<TrailBlock>(boids) { newBoid }.ToArray();
+        boids = new List<Prism>(boids) { newBoid }.ToArray();
 
         readBuffer.Release();
         writeBuffer.Release();

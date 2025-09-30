@@ -11,7 +11,7 @@ namespace CosmicShore.Core
         public SO_MaterialSet BaseMaterialSet;
         public SO_ColorSet ColorSet;
 
-        public Dictionary<Teams, SO_MaterialSet> TeamMaterialSets { get; set; }
+        public Dictionary<Domains, SO_MaterialSet> TeamMaterialSets { get; set; }
 
         public void SetBackgroundColor(Camera mainCamera)
         {
@@ -29,59 +29,54 @@ namespace CosmicShore.Core
             mainCamera.backgroundColor = ColorSet.EnvironmentColors.SkyColor;
         }
 
-        public Material GetTeamBlockMaterial(Teams team)
+        public Material GetTeamBlockMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].BlockMaterial;
+            return TeamMaterialSets[domain].BlockMaterial;
         }
 
-        public Material GetTeamTransparentBlockMaterial(Teams team)
+        public Material GetTeamTransparentBlockMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].TransparentBlockMaterial;
+            return TeamMaterialSets[domain].TransparentBlockMaterial;
         }
 
-        public Material GetTeamCrystalMaterial(Teams team)
+        public Material GetTeamCrystalMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].CrystalMaterial;
+            return TeamMaterialSets[domain].CrystalMaterial;
         }
 
-        public Material GetTeamExplodingBlockMaterial(Teams team)
+        public Material GetTeamSpikeMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].ExplodingBlockMaterial;
+            return TeamMaterialSets[domain].SpikeMaterial;
         }
 
-        public Material GetTeamSpikeMaterial(Teams team)
+        public Material GetTeamShieldedBlockMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].SpikeMaterial;
+            return TeamMaterialSets[domain].ShieldedBlockMaterial;
         }
 
-        public Material GetTeamShieldedBlockMaterial(Teams team)
+        public Material GetTeamTransparentShieldedBlockMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].ShieldedBlockMaterial;
+            return TeamMaterialSets[domain].TransparentShieldedBlockMaterial;
         }
 
-        public Material GetTeamTransparentShieldedBlockMaterial(Teams team)
+        public Material GetTeamDangerousBlockMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].TransparentShieldedBlockMaterial;
+            return TeamMaterialSets[domain].DangerousBlockMaterial;
         }
 
-        public Material GetTeamDangerousBlockMaterial(Teams team)
+        public Material GetTeamTransparentDangerousBlockMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].DangerousBlockMaterial;
+            return TeamMaterialSets[domain].TransparentDangerousBlockMaterial;
         }
 
-        public Material GetTeamTransparentDangerousBlockMaterial(Teams team)
+        public Material GetTeamSuperShieldedBlockMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].TransparentDangerousBlockMaterial;
+            return TeamMaterialSets[domain].SuperShieldedBlockMaterial;
         }
 
-        public Material GetTeamSuperShieldedBlockMaterial(Teams team)
+        public Material GetTeamTransparentSuperShieldedBlockMaterial(Domains domain)
         {
-            return TeamMaterialSets[team].SuperShieldedBlockMaterial;
-        }
-
-        public Material GetTeamTransparentSuperShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentSuperShieldedBlockMaterial;
+            return TeamMaterialSets[domain].TransparentSuperShieldedBlockMaterial;
         }
     }
 }

@@ -136,7 +136,7 @@ namespace CosmicShore.Game
             IEnumerable<IImpactEffect> effects, 
             ImpactEffectData impactEffectData, 
             CrystalProperties crystalProperties = default, 
-            TrailBlockProperties trailBlockProperties = null)
+            PrismProperties prismProperties = null)
         {
             foreach (IImpactEffect effect in effects)
             {
@@ -152,7 +152,7 @@ namespace CosmicShore.Game
                         crystalImpactEffect.Execute(impactEffectData, crystalProperties);
                         break;
                     case ITrailBlockImpactEffect trailBlockImpactEffect:
-                        trailBlockImpactEffect.Execute(impactEffectData, trailBlockProperties);
+                        trailBlockImpactEffect.Execute(impactEffectData, prismProperties);
                         break;
                     default:
                         Debug.LogWarning($"Unknown impact effect type: {effect.GetType()}");

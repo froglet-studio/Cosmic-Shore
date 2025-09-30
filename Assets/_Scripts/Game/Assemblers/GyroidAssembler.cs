@@ -55,7 +55,7 @@ namespace CosmicShore
         public HashSet<GyroidAssembler> MateList = new();
         public Queue<GyroidAssembler> preferedBlocks = new();
 
-        public override TrailBlock TrailBlock { get; set; }
+        public override Prism Prism { get; set; }
         public  override Spindle Spindle { get; set; }
 
         public GyroidBlockType BlockType = GyroidBlockType.AB;
@@ -79,13 +79,13 @@ namespace CosmicShore
 
         void Start()
         {
-            TrailBlock = GetComponent<TrailBlock>();
-            if (TrailBlock)
+            Prism = GetComponent<Prism>();
+            if (Prism)
             {
-                scale = TrailBlock.TargetScale;
+                scale = Prism.TargetScale;
                 if (isSeed)
                 {
-                    TrailBlock.Team = Teams.Blue;
+                    Prism.Domain = Domains.Blue;
                 }
             }
         }
@@ -116,7 +116,7 @@ namespace CosmicShore
                 var newRotation = CalculateRotation(CreateGyroidBondMate(this, BlockType, growthSite));
 
                 // Check if there is already a block at the new position using Physics.CheckBox
-                if (!Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
+                if (!Physics.CheckBox(newPosition, Prism.transform.localScale / 2f))
                     return new GyroidGrowthInfo
                     {
                         CanGrow = true,
@@ -262,7 +262,7 @@ namespace CosmicShore
 
             while (true)
             {
-                if (TrailBlock == null)
+                if (Prism == null)
                 {
                     yield return new WaitForSeconds(1f);
                     continue;
@@ -337,7 +337,7 @@ namespace CosmicShore
             if (!AreAllActiveMatesBonded(activeMates)) return;
             
             StopAllCoroutines();
-            TrailBlock.Grow();
+            Prism.Grow();
         }
 
         Dictionary<GyroidBondMate, Coroutine> updateCoroutineDict = new Dictionary<GyroidBondMate, Coroutine>();
@@ -431,7 +431,7 @@ namespace CosmicShore
                 var mateComponent = potentialMate.GetComponent<GyroidAssembler>();
                 if (mateComponent == null)
                 {
-                    var trailBlock = potentialMate.GetComponent<TrailBlock>();
+                    var trailBlock = potentialMate.GetComponent<Prism>();
                     if (trailBlock != null)
                     {
                         mateComponent = ConvertBlock(trailBlock);
@@ -445,14 +445,14 @@ namespace CosmicShore
                 {
                     
                     if (Vector3.SqrMagnitude(transform.position - mateComponent.transform.position) < snapDistance  //block younger and in this block's position then clear its mate list
-                        && mateComponent.TrailBlock.TrailBlockProperties.TimeCreated > TrailBlock.TrailBlockProperties.TimeCreated)
+                        && mateComponent.Prism.prismProperties.TimeCreated > Prism.prismProperties.TimeCreated)
                     {
                         mateComponent.StopAllCoroutines();
                         mateComponent.ClearMateList();
                     }
                     if (sqrDistance < snapDistance) // if block is  already  in position supershield it.
                     {
-                        mateComponent.TrailBlock.ActivateSuperShield();
+                        mateComponent.Prism.ActivateSuperShield();
                         return CreateGyroidBondMate(mateComponent, BlockType, siteType);
                     }
                 }
@@ -468,20 +468,20 @@ namespace CosmicShore
             return CreateGyroidBondMate(closest, BlockType, siteType);
         }
 
-        GyroidAssembler ConvertBlock(TrailBlock trailBlock)
+        GyroidAssembler ConvertBlock(Prism prism)
         {
-            HealthBlock healthBlock = trailBlock.GetComponent<HealthBlock>();
-            if (healthBlock != null)
+            HealthPrism healthPrism = prism.GetComponent<HealthPrism>();
+            if (healthPrism != null)
             {
-                healthBlock.Reparent(TrailBlock.transform.parent);
+                healthPrism.Reparent(Prism.transform.parent);
             }
-            trailBlock.TargetScale = scale;
-            trailBlock.MaxScale = TrailBlock.MaxScale;
-            trailBlock.GrowthVector = TrailBlock.GrowthVector;
-            trailBlock.Steal(TrailBlock.PlayerName, TrailBlock.Team);
-            trailBlock.ChangeSize();
-            var mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
-            mateComponent.TrailBlock = trailBlock;
+            prism.TargetScale = scale;
+            prism.MaxScale = Prism.MaxScale;
+            prism.GrowthVector = Prism.GrowthVector;
+            prism.Steal(Prism.PlayerName, Prism.Domain);
+            prism.ChangeSize();
+            var mateComponent = prism.gameObject.AddComponent<GyroidAssembler>();
+            mateComponent.Prism = prism;
             return mateComponent;
         }
 

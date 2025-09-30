@@ -73,10 +73,10 @@ namespace CosmicShore
             if (!won)
                 BannerText.text = "DEFEAT";
             else
-                BannerText.text = "RUN RESULTS";
+                BannerText.text = "WON";
 
             // Populate this run's score
-            var playerScore = Mathf.Max(roundStats.Score, 0);
+            var playerScore = roundStats.Score; // Mathf.Max(roundStats.Score, 0);
             SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
 
             // TODO: pull actual high score
@@ -93,25 +93,25 @@ namespace CosmicShore
         {
             // Set banner for winning player
             // TODO - Take winner data from MiniGameDataSO
-            var winningTeam = Teams.Jade; // miniGameData.GetWinnerScoreData().Team;
+            var winningTeam = Domains.Jade; // miniGameData.GetWinnerScoreData().Team;
 
             switch (winningTeam)
             {
-                case Teams.Jade:
+                case Domains.Jade:
                     BannerImage.color = JadeTeamBannerColor;
                     BannerText.text = "JADE VICTORY";
                     break;
-                case Teams.Ruby:
+                case Domains.Ruby:
                     BannerImage.color = RubyTeamBannerColor;
                     BannerText.text = "RUBY VICTORY";
                     break;
-                case Teams.Gold:
+                case Domains.Gold:
                     BannerImage.color = GoldTeamBannerColor;
                     BannerText.text = "GOLD VICTORY";
                     break;
-                case Teams.Blue:
-                case Teams.Unassigned:
-                case Teams.None:
+                case Domains.Blue:
+                case Domains.Unassigned:
+                case Domains.None:
                 default:
                     Debug.LogWarning($"{winningTeam} does not have assigned banner image color and banner text preset.");
                     break;

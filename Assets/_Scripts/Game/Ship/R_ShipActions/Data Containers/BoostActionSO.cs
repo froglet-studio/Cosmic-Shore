@@ -15,13 +15,11 @@ public class BoostActionSO : ShipActionSO
         if (ShipStatus == null) return;
         ShipStatus.Boosting = true;
         ShipStatus.IsStationary = false;
-        Debug.Log($"[BoostActionSO] Boost started on ship: {ShipStatus.PlayerName}");
     }
 
     public override void StopAction(ActionExecutorRegistry execs)
     {
         if (ShipStatus == null) return;
         ShipStatus.Boosting = false;
-        Debug.Log($"[BoostActionSO] Boost stopped on ship: {ShipStatus.PlayerName}");
     }
 }

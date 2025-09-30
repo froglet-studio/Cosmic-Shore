@@ -7,23 +7,23 @@ using System.Linq;
 
 namespace CosmicShore.Core
 {
-    public class BlockScaleManager : AdaptiveAnimationManager<BlockScaleManager, BlockScaleAnimator, ScaleAnimationData>
+    public class BlockScaleManager : AdaptiveAnimationManager<BlockScaleManager, PrismScaleAnimator, ScaleAnimationData>
     {
         private const float COMPLETION_THRESHOLD = 0.01f;
-        private readonly List<(BlockScaleAnimator block, Vector3 scale)> completionQueue =
-            new List<(BlockScaleAnimator, Vector3)>(32);
+        private readonly List<(PrismScaleAnimator block, Vector3 scale)> completionQueue =
+            new List<(PrismScaleAnimator, Vector3)>(32);
 
-        protected override bool IsAnimatorActive(BlockScaleAnimator animator) =>
+        protected override bool IsAnimatorActive(PrismScaleAnimator animator) =>
             animator.IsScaling;
 
-        protected override bool IsAnimatorValid(BlockScaleAnimator animator) =>
+        protected override bool IsAnimatorValid(PrismScaleAnimator animator) =>
             animator.enabled;
 
-        internal void OnBlockStartScaling(BlockScaleAnimator block) =>
-            OnAnimatorStart(block);
+        internal void OnBlockStartScaling(PrismScaleAnimator prism) =>
+            OnAnimatorStart(prism);
 
-        internal void OnBlockStopScaling(BlockScaleAnimator block) =>
-            OnAnimatorStop(block);
+        internal void OnBlockStopScaling(PrismScaleAnimator prism) =>
+            OnAnimatorStop(prism);
 
         protected override void ProcessAnimationFrame(float deltaTime)
         {
@@ -101,17 +101,7 @@ namespace CosmicShore.Core
                     bool contains = activeAnimators.Contains(block);
                 }
 
-                if (block.OnScaleComplete == null) 
-                    continue;
-                try
-                {
-                    block.OnScaleComplete.Invoke();
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"Error in scale completion callback: {e.Message}");
-                }
-                block.OnScaleComplete = null;
+                block.ExecuteOnScaleComplete();
             }
 
             // Validate all remaining active animators are actually scaling

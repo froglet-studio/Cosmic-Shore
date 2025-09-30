@@ -16,7 +16,7 @@ namespace CosmicShore.Game
     /// Keep this class as monobehaviour, 
     /// as the network vessel status needs to be a network behaviour
     /// </remarks>
-    [RequireComponent(typeof(TrailSpawner))]
+    [RequireComponent(typeof(PrismSpawner))]
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(VesselTransformer))]
     [RequireComponent(typeof(AIPilot))]
@@ -97,7 +97,7 @@ namespace CosmicShore.Game
         public SO_Captain Captain { get; set; }
         public CameraManager CameraManager { get; set; }
         public List<GameObject> ShipGeometries { get; set; }
-        public TrailBlock AttachedTrailBlock { get; set; }
+        public Prism AttachedPrism { get; set; }
 
         R_VesselActionHandler actionHandler;
         public R_VesselActionHandler ActionHandler
@@ -147,13 +147,13 @@ namespace CosmicShore.Game
             }
         }
 
-        TrailSpawner _trailSpawner;
-        public TrailSpawner TrailSpawner
+        PrismSpawner prismSpawner;
+        public PrismSpawner PrismSpawner
         {
             get
             {
-                _trailSpawner = _trailSpawner != null ? _trailSpawner : gameObject.GetOrAdd<TrailSpawner>();
-                return _trailSpawner;
+                prismSpawner = prismSpawner != null ? prismSpawner : gameObject.GetOrAdd<PrismSpawner>();
+                return prismSpawner;
             }
         }
 
@@ -244,7 +244,7 @@ namespace CosmicShore.Game
             ChargedBoostDischarging = false;
             Drifting = false;
             Attached = false;
-            AttachedTrailBlock = null;
+            AttachedPrism = null;
             GunsActive = false;
             Course = transform.forward;
             ChargedBoostCharge = 1f;

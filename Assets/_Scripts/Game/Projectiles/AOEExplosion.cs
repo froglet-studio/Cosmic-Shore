@@ -24,7 +24,7 @@ namespace CosmicShore.Game.Projectiles
 
         // Material and Team
         public Material Material { get; protected set; }
-        public Teams Team { get; protected set; }
+        public Domains Domain { get; protected set; }
         public IVessel Vessel { get; protected set; }
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
@@ -42,9 +42,9 @@ namespace CosmicShore.Game.Projectiles
                 return;
             }
 
-            Team = initStruct.OwnTeam;
-            if (Team == Teams.Unassigned)
-                Team = Vessel.VesselStatus.Team;
+            Domain = initStruct.OwnDomain;
+            if (Domain == Domains.Unassigned)
+                Domain = Vessel.VesselStatus.Domain;
 
             MaxScale = initStruct.MaxScale;
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
@@ -57,8 +57,7 @@ namespace CosmicShore.Game.Projectiles
 
         public void Detonate() => StartCoroutine(ExplodeCoroutine());
 
-        public Vector3 CalculateImpactVector(Vector3 impacteePosition) =>
-            impacteePosition - transform.position.normalized * speed * Inertia ;
+        public Vector3 CalculateImpactVector(Vector3 impacteePosition) => (impacteePosition - transform.position).normalized * speed * Inertia ;
         
         // Deprecated - Moved to R_ExplosionImpactor.cs
         /*protected virtual void OnTriggerEnter(Collider other)
@@ -67,7 +66,7 @@ namespace CosmicShore.Game.Projectiles
 
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if ((trailBlock.Team != Team || affectSelf) && trailBlock.TrailBlockProperties.IsSuperShielded)
+                if ((trailBlock.Team != Team || affectSelf) && trailBlock.PrismProperties.IsSuperShielded)
                 {
                     trailBlock.DeactivateShields();
                     Destroy(gameObject);    // TODO: This seems wrong...
@@ -139,7 +138,7 @@ namespace CosmicShore.Game.Projectiles
 
         public struct InitializeStruct
         {
-            public Teams OwnTeam;
+            public Domains OwnDomain;
             public bool AnnonymousExplosion;
             public IVessel Vessel;
             public Material OverrideMaterial;

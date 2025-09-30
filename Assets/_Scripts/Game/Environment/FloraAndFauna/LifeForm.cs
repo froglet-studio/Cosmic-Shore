@@ -6,25 +6,26 @@ using System.Linq;
 using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace CosmicShore
 {
     public abstract class LifeForm : MonoBehaviour, ITeamAssignable
     {
-        [SerializeField] protected HealthBlock healthBlock;
+        [FormerlySerializedAs("healthBlock")] [SerializeField] protected HealthPrism healthPrism;
         [SerializeField] protected Spindle spindle;
         [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
 
-        public Teams Team;
+        [FormerlySerializedAs("Team")] public Domains domain;
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
         protected Crystal crystal;
         protected Cell cell;
         bool mature = false;
         bool dying = false;
-        HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
+        HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
         
         [SerializeField]
         ScriptableEventInt onLifeFormCreated;
@@ -42,12 +43,12 @@ namespace CosmicShore
             onLifeFormCreated?.Raise(cell.ID);
         }
 
-        public virtual void AddHealthBlock(HealthBlock healthBlock)
+        public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
-            healthBlocks.Add(healthBlock);
-            healthBlock.ChangeTeam(Team);
-            healthBlock.LifeForm = this;
-            healthBlock.ownerID = $"{this} + {healthBlock} + {healthBlocks.Count}";
+            healthBlocks.Add(healthPrism);
+            healthPrism.ChangeTeam(domain);
+            healthPrism.LifeForm = this;
+            healthPrism.ownerID = $"{this} + {healthPrism} + {healthBlocks.Count}";
             CheckIfMature();
         }
 
@@ -69,9 +70,9 @@ namespace CosmicShore
             spindles.Remove(spindle);
         }
 
-        public virtual void RemoveHealthBlock(HealthBlock healthBlock)
+        public virtual void RemoveHealthBlock(HealthPrism healthPrism)
         { 
-            healthBlocks.Remove(healthBlock);
+            healthBlocks.Remove(healthPrism);
             CheckIfDead();
         }
 
@@ -93,9 +94,10 @@ namespace CosmicShore
         protected virtual void Die()
         {
             crystal.ActivateCrystal();
-            foreach (HealthBlock healthBlock in healthBlocks.ToArray())
+            foreach (HealthPrism healthBlock in healthBlocks.ToArray())
             {
-                healthBlock.Damage(Random.onUnitSphere, Teams.None, "Guy Fawkes", true);
+                Debug.LogWarning("Post death health block created!. Should not happen!");
+                healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
             }
             StopAllCoroutines();
             StartCoroutine(DieCoroutine());
@@ -117,9 +119,9 @@ namespace CosmicShore
             return gameObject;
         }
 
-        public void SetTeam(Teams team)
+        public void SetTeam(Domains domain)
         {
-            Team = team;
+            this.domain = domain;
         }
 
         IEnumerator ShieldRegen()
@@ -127,11 +129,11 @@ namespace CosmicShore
             while (shieldPeriod > 0)
             {
                 // Create a snapshot of the current health blocks
-                List<HealthBlock> currentBlocks = new List<HealthBlock>(healthBlocks);
+                List<HealthPrism> currentBlocks = new List<HealthPrism>(healthBlocks);
 
                 if (currentBlocks.Count > 0)
                 {
-                    foreach (HealthBlock healthBlock in currentBlocks)
+                    foreach (HealthPrism healthBlock in currentBlocks)
                     {
                         // Check if the block still exists in the main list
                         if (healthBlocks.Contains(healthBlock))

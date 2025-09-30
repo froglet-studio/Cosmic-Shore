@@ -2,11 +2,13 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
 {
+    [FormerlySerializedAs("trailBlockPrefab")]
     [Header("Scene Refs")]
-    [SerializeField] private TrailBlock trailBlockPrefab; 
+    [SerializeField] private Prism prismPrefab; 
     [SerializeField] private Transform muzzle;           
     [SerializeField] private PoolManager pool;     
 
@@ -44,33 +46,33 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
 
     void FireBlock(FireTrailBlockActionSO so)
     {
-        if (trailBlockPrefab == null || muzzle == null) return;
+        if (prismPrefab == null || muzzle == null) return;
 
-        TrailBlock blockInstance = null;
+        Prism blockInstance = null;
         if (pool != null)
         {
-            var go = pool.SpawnFromPool(trailBlockPrefab.tag, muzzle.position, muzzle.rotation);
-            blockInstance = go?.GetComponent<TrailBlock>();
+            var go = pool.SpawnFromPool(prismPrefab.tag, muzzle.position, muzzle.rotation);
+            blockInstance = go?.GetComponent<Prism>();
         }
         else
         {
-            blockInstance = Instantiate(trailBlockPrefab, muzzle.position, muzzle.rotation);
+            blockInstance = Instantiate(prismPrefab, muzzle.position, muzzle.rotation);
         }
 
         if (blockInstance == null) return;
 
         blockInstance.TargetScale *= so.ProjectileScale;
-        blockInstance.TrailBlockProperties.IsShielded = so.Shielded;
-        blockInstance.TrailBlockProperties.IsDangerous = so.FriendlyFire; 
-        blockInstance.Team = _status.Team; 
-        blockInstance.PlayerName = _status.PlayerName;
+        blockInstance.prismProperties.IsShielded = so.Shielded;
+        blockInstance.prismProperties.IsDangerous = so.FriendlyFire; 
+        blockInstance.Domain = _status.Domain; 
+        blockInstance.Initialize(_status.PlayerName);
         
         StartCoroutine(MoveBlockForward(blockInstance, so));
 
         Destroy(blockInstance.gameObject, so.ProjectileTime);
     }
     
-    IEnumerator MoveBlockForward(TrailBlock block, FireTrailBlockActionSO so)
+    IEnumerator MoveBlockForward(Prism block, FireTrailBlockActionSO so)
     {
         float t = 0f;
         Transform tf = block.transform;

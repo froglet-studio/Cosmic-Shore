@@ -16,7 +16,7 @@ namespace CosmicShore.Core
     {
         int attachedBlockIndex;
         Trail attachedTrail;
-        Teams team;
+        Domains domain;
         float percentTowardNextBlock;
         TrailFollowerDirection direction;
         public TrailFollowerDirection Direction { get { return direction; } }
@@ -30,7 +30,7 @@ namespace CosmicShore.Core
         public float Throttle;
 
         public bool IsAttached { get { return attachedTrail != null; } }
-        public TrailBlock AttachedTrailBlock { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
+        public Prism AttachedPrism { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
 
         IVesselStatus vesselData;
 
@@ -38,14 +38,14 @@ namespace CosmicShore.Core
         {
             // TODO: find a better way of setting team that doesn't assume a vessel
             vesselData = GetComponent<IVesselStatus>();
-            team = vesselData.Team;
+            domain = vesselData.Domain;
         }
 
-        public void Attach(TrailBlock trailBlock)
+        public void Attach(Prism prism)
         {
-            Debug.Log($"Attaching: trail:{trailBlock.Trail}");
-            attachedTrail = trailBlock.Trail;
-            attachedBlockIndex = attachedTrail.GetBlockIndex(trailBlock);
+            Debug.Log($"Attaching: trail:{prism.Trail}");
+            attachedTrail = prism.Trail;
+            attachedBlockIndex = attachedTrail.GetBlockIndex(prism);
             percentTowardNextBlock = 0; // TODO: calculate initial percentTowardNextBlock
             direction = TrailFollowerDirection.Forward; // TODO: use dot product to capture initial direction
         }
@@ -130,12 +130,12 @@ namespace CosmicShore.Core
             else attachedBlockIndex++;
         }
 
-        float GetTerrainAwareBlockSpeed(TrailBlock trailBlock) 
+        float GetTerrainAwareBlockSpeed(Prism prism) 
         {
-            if (trailBlock.destroyed)
+            if (prism.destroyed)
                 return DestroyedTerrainSpeed;
 
-            if (trailBlock.Team == team)
+            if (prism.Domain == domain)
                 return FriendlyTerrainSpeed;
 
             return HostileTerrainSpeed;

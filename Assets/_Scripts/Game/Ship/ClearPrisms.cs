@@ -46,7 +46,7 @@ namespace CosmicShore
             Vessel.OnBeforeDestroyed -= OnBeforeVesselDestroyed;
         }
 
-        private void OnBeforeVesselDestroyed() => Destroy(gameObject);
+        private void OnBeforeVesselDestroyed() => isInitialized = false; // Destroy(gameObject);
 
 
         private void VesselInitialized()
@@ -96,10 +96,10 @@ namespace CosmicShore
 
         void OnTriggerEnter(Collider other)
         {
-            TrailBlock trailBlock = other.GetComponent<TrailBlock>();
-            if (trailBlock != null)
+            Prism prism = other.GetComponent<Prism>();
+            if (prism != null)
             {
-                trailBlock.SetTransparency(true);
+                prism.SetTransparency(true);
             }
         }
 
@@ -114,10 +114,10 @@ namespace CosmicShore
 
         void OnTriggerExit(Collider other)
         {
-            TrailBlock trailBlock = other.GetComponent<TrailBlock>();
-            if (trailBlock != null)
+            Prism prism = other.GetComponent<Prism>();
+            if (prism != null)
             {
-                trailBlock.SetTransparency(false);
+                prism.SetTransparency(false);
             }
         }
     }

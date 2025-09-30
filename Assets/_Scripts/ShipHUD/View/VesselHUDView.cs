@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game
@@ -18,7 +19,7 @@ namespace CosmicShore.Game
         public List<HighlightBinding> highlights = new();
         
         [Header("Silhouette Containers")]
-        public RectTransform silhouetteContainer;
+        public Transform silhouetteContainer;
         public RectTransform trailDisplayContainer;
         
         [Header("Silhouette Parts")]
@@ -29,9 +30,9 @@ namespace CosmicShore.Game
         public Image bottomJaw;
         public int jawResourceIndex = -1;
         
-        [Header("Trail / Drift Sources")]
-        public TrailSpawner trailSpawner;
-        public DriftTrailAction driftTrailAction;
+        [FormerlySerializedAs("trailSpawner")] [Header("Trail / Drift Sources")]
+        public PrismSpawner prismSpawner;
+        public DriftTrailActionExecutor driftTrailAction;
 
         
         [Header("Trail Config (UI scaling only)")]

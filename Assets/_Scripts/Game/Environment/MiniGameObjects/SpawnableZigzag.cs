@@ -1,10 +1,11 @@
 
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SpawnableZigzag : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     [SerializeField] float amplitude = 25;
     [SerializeField] float period = 26;
     static int ObjectsSpawned = 0;
@@ -31,7 +32,7 @@ public class SpawnableZigzag : SpawnableAbstractBase
                 x = a - (t%p/p * a);
 
             var position = new Vector3(x, 0, t*1.5f);
-            CreateBlock(position, Vector3.zero, container.name + "::BLOCK::" + block, trail, Vector3.one, trailBlock, container);
+            CreateBlock(position, Vector3.zero, container.name + "::BLOCK::" + block, trail, Vector3.one, prism, container);
         }
 
         trails.Add(trail);

@@ -11,7 +11,7 @@ namespace CosmicShore
         public LifeForm LifeForm;
         [SerializeField] bool retainSpindle = false;
 
-        HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
+        HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         Material originalMaterial; // Store the original shared material
@@ -37,15 +37,15 @@ namespace CosmicShore
             if (parentSpindle) parentSpindle.AddSpindle(this);
         }
 
-        public void AddHealthBlock(HealthBlock healthBlock)
+        public void AddHealthBlock(HealthPrism healthPrism)
         {
-            healthBlocks.Add(healthBlock);
-            healthBlock.LifeForm = LifeForm;
+            healthBlocks.Add(healthPrism);
+            healthPrism.LifeForm = LifeForm;
         }
 
-        public void RemoveHealthBlock(HealthBlock healthBlock)
+        public void RemoveHealthBlock(HealthPrism healthPrism)
         {
-            healthBlocks.Remove(healthBlock);
+            healthBlocks.Remove(healthPrism);
         }
 
         public void AddSpindle(Spindle spindle)

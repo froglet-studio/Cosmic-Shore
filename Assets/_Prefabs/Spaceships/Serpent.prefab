@@ -806,12 +806,62 @@ MonoBehaviour:
     Min: 10
     Max: 30
     element: 1
-  markerContainer: {fileID: 0}
+  nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70
   AOEPrefab: {fileID: 0}
   AOEPeriod: 0
   lineMaterial: {fileID: 0}
   resourceIndex: 0
+--- !u!1 &2969734681862394597
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3146713351324216133}
+  - component: {fileID: 7380371677531126050}
+  m_Layer: 0
+  m_Name: Container
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &3146713351324216133
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2969734681862394597}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1775870881170808980}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -778, y: -145.93893}
+  m_SizeDelta: {x: 279.593, y: 459.187}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &7380371677531126050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2969734681862394597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding: {x: 0, y: 0, z: 0, w: -5.38}
+  m_Softness: {x: 0, y: 0}
 --- !u!1 &3062687464665182224
 GameObject:
   m_ObjectHideFlags: 0
@@ -963,7 +1013,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83d4515a3a4d46b5953d56502ebaeea0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
 --- !u!1 &3331933485322077660
 GameObject:
   m_ObjectHideFlags: 0
@@ -2049,7 +2099,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c3f54abda8145ecabf7c85253cab9ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   seedAssemblerExecutor: {fileID: 8230992318499782635}
   stationarySeedConfig: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162,
     type: 2}
@@ -2363,7 +2413,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailBlock: {fileID: 4563009547826722997, guid: 0a5b78684a1e89341a2483949089f33c,
+  _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+    type: 2}
+  prismPrefab: {fileID: 4563009547826722997, guid: 0a5b78684a1e89341a2483949089f33c,
     type: 3}
   skimmer: {fileID: 874579554510349383}
   initialWavelength: 2
@@ -2375,7 +2427,7 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 0
   shielded: 1
   offset: 0
-  Gap: 0
+  Gap: 1
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
@@ -2503,7 +2555,7 @@ MonoBehaviour:
   - {fileID: 4010301292554909138}
   - {fileID: 4125835721608554647}
   - {fileID: 5978549935140177486}
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 0}
@@ -2552,6 +2604,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 3871735532039758911}
   _inputEventShipActions:
   - InputEvent: 6
@@ -2621,6 +2674,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jawResourceIndex: 0
+  blockBaseSize: {x: 30, y: 30}
   view: {fileID: 5470374086122723936}
   consumeBoostExecutor: {fileID: 2460618104011007721}
   shieldResourceIndex: 0
@@ -2909,10 +2963,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ownPullSpeed: 1000
-  opponentPullSpeed: 400
-  ownRotateSpeed: 850
-  opponentRotateSpeed: 380
+  ownPullSpeed: 90000
+  opponentPullSpeed: 85000
+  ownRotateSpeed: 78000
+  opponentRotateSpeed: 75000
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
   TopIsBonded: 0
@@ -3791,6 +3845,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 4894037493201937865}
+    - targetCorrespondingSourceObject: {fileID: 3412957971693408596, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3146713351324216133}
     - targetCorrespondingSourceObject: {fileID: 7010789474626174362, guid: af7b78e6bb3a8394f88f24bb0e31667a,
         type: 3}
       insertIndex: -1
@@ -3875,12 +3933,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 4033090122440962496}
   m_PrefabAsset: {fileID: 0}
---- !u!224 &6462089279346268830 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 7950429970536442718, guid: af7b78e6bb3a8394f88f24bb0e31667a,
-    type: 3}
-  m_PrefabInstance: {fileID: 4033090122440962496}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &6994409938927139675 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6262616819589991067, guid: af7b78e6bb3a8394f88f24bb0e31667a,
@@ -3911,7 +3963,7 @@ MonoBehaviour:
   - input: 7
     image: {fileID: 3512818663123036916}
   silhouetteContainer: {fileID: 5982939433017233667}
-  trailDisplayContainer: {fileID: 6462089279346268830}
+  trailDisplayContainer: {fileID: 3146713351324216133}
   silhouetteParts:
   - {fileID: 322268676704545573}
   - {fileID: 8777980414596646480}
@@ -3921,7 +3973,7 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   jawResourceIndex: -1
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   worldToUIScale: 2
   imageScale: 0.02

@@ -33,7 +33,7 @@ public struct Cord
 
 public class SpawnableCord : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock healthBlock;
+    [SerializeField] Prism healthBlock;
     [SerializeField] Vector3 blockScale;
     [SerializeField] Material lineMaterial;
 
@@ -42,7 +42,7 @@ public class SpawnableCord : SpawnableAbstractBase
     [SerializeField] float length = 150;
     static int ObjectsSpawned = 0;
 
-    List<Cord> Cords = new List<Cord>();
+    List<Cord> Cords = new ();
 
     float equilibriumDistanceSqr;
     float tolerance = .01f;

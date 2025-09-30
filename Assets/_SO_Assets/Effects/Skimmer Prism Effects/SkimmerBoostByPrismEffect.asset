@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1cec5eae39fd4dc79c39aea4d292ff9f, type: 3}
   m_Name: SkimmerBoostByPrismEffect
   m_EditorClassIdentifier: 
-  _speedModifierDuration: 3
+  _speedModifierValue: 2.5

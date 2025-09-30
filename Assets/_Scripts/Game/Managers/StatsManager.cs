@@ -75,7 +75,7 @@ namespace CosmicShore.Core
             _onGameOver.OnRaised -= OutputRoundStats;*/
         }
         
-        public virtual IRoundStats GetOrCreateRoundStats(Teams team) => new RoundStats();
+        public virtual IRoundStats GetOrCreateRoundStats(Domains domain) => new RoundStats();
         
         public void LifeformCreated(int cellID)
         {
@@ -294,18 +294,18 @@ namespace CosmicShore.Core
             if (!allowRecord) return;
 
             // var ownerTeam = modifiedTrailBlockProperties.trailBlock.Team;
-            var ownerPlayerName = prismStats.OtherPlayerName;
+            var ownerPlayerName = prismStats.PlayerName;
             
             if (!_miniGameData.TryGetRoundStats(ownerPlayerName, out IRoundStats roundStats))
                 return;
 
             // if (!EnsureDictionaryEntriesExist(ownerTeam, ownerPlayerName)) return;
 
-            roundStats.VolumeRemaining += prismStats.Volume;
+            roundStats.VolumeCreated += prismStats.Volume;
             roundStats.VolumeRemaining += prismStats.Volume;
         }
 
-        // public void PrismStolen(Teams stealingTeam, string stealingPlayerName, TrailBlockProperties stolenTrailBlockProperties)
+        // public void PrismStolen(Teams stealingTeam, string stealingPlayerName, PrismProperties stolenTrailBlockProperties)
         public void PrismStolen(PrismStats prismStats)
         {
             if (!allowRecord) return;
@@ -322,7 +322,7 @@ namespace CosmicShore.Core
             if (!_miniGameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
                 return;
             
-            stealingPlayerStats.BlocksStolen++;
+            stealingPlayerStats.PrismStolen++;
             stealingPlayerStats.PrismsRemaining++;
             stealingPlayerStats.VolumeStolen += prismStats.Volume;
             stealingPlayerStats.VolumeRemaining += prismStats.Volume;

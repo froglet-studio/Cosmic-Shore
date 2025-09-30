@@ -12,7 +12,7 @@ namespace CosmicShore.Game.Arcade
         
         // [SerializeField] bool hostileVolume;
         // Core.IRoundStats volumeStat;
-        Teams team;
+        Domains domain;
         float volumeUnitConverstion = 145.65f;
 
         /*private void Start()

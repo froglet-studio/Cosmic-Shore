@@ -120,7 +120,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
     float GetUnits(ChargeBoostActionSO so)
     {
         if (_resources == null) return 0f;
-        var res = _resources.Resources[so.BoostBoostResourceIndex];
+        var res = _resources.Resources[so.BoostResourceIndex];
         return Mathf.Clamp01(res.CurrentAmount) * so.MaxNormalizedCharge;
     }
 
@@ -129,7 +129,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         if (_resources == null) return;
         units = Mathf.Clamp(units, 0f, so.MaxNormalizedCharge);
 
-        var res = _resources.Resources[so.BoostBoostResourceIndex];
+        var res = _resources.Resources[so.BoostResourceIndex];
         res.CurrentAmount = (so.MaxNormalizedCharge > 0f) ? (units / so.MaxNormalizedCharge) : 0f;
     }
 

@@ -15,7 +15,7 @@ public class ChargeBoostActionSO : ShipActionSO
     [SerializeField] float tickSeconds = 0.1f;
 
     [Header("Resource slot holding the charged units (0..maxNormalizedCharge)")]
-    [SerializeField] int boostBoostResourceIndex = 0;
+    [SerializeField] int boostResourceIndex = 1;
 
     [Header("Optional Safety")]
     [SerializeField] float rechargeCooldownSeconds = 1f;
@@ -28,7 +28,7 @@ public class ChargeBoostActionSO : ShipActionSO
     public float ChargeTimeToFull       => chargeTimeToFull;
     public float DischargeTimeToEmpty   => dischargeTimeToEmpty;
     public float TickSeconds            => tickSeconds;
-    public int BoostBoostResourceIndex  => boostBoostResourceIndex;
+    public int BoostResourceIndex  => boostResourceIndex;
     public float RechargeCooldownSeconds=> rechargeCooldownSeconds;
     public bool Verbose                 => verbose;
 

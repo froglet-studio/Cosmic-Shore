@@ -3,6 +3,7 @@ using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
 using CosmicShore.SOAP;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -11,7 +12,7 @@ namespace CosmicShore.Game
     /// Component responsible for mapping input and resource events to
     /// vessel actions.  This logic previously lived inside the Vessel classes.
     /// </summary>
-    public class R_VesselActionHandler : MonoBehaviour
+    public class R_VesselActionHandler : NetworkBehaviour
     {
         [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;   
@@ -32,38 +33,33 @@ namespace CosmicShore.Game
 
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
-        private bool _subscribed;
         IVesselStatus vesselStatus;
 
-        void SubscribeEvents()
+        void SubscribeToInputEvents()
         {
-            if (_subscribed) return;
-            if (_onButtonPressed != null)  _onButtonPressed.OnRaised  += OnButtonPressed;
-            if (_onButtonReleased != null) _onButtonReleased.OnRaised += OnButtonReleased;
-            _subscribed = true;
+            _onButtonPressed.OnRaised  += OnButtonPressed;
+            _onButtonReleased.OnRaised += OnButtonReleased;
         }
 
-        void UnsubscribeEvents()
-        {
-            if (!_subscribed) return;
-            if (_onButtonPressed != null)  _onButtonPressed.OnRaised  -= OnButtonPressed;
-            if (_onButtonReleased != null) _onButtonReleased.OnRaised -= OnButtonReleased;
-            _subscribed = false;
-        }
-
-        void OnDestroy()
+        void UnsubscribeFromInputEvents()
         {
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
         }
 
-        public void Initialize(IVesselStatus v)
+        void OnDisable()
+        {
+            UnsubscribeFromInputEvents();
+        }
+
+        public void Initialize(IVesselStatus v, bool subscribeToInputEvents)
         {
             vesselStatus = v;
 
-            SubscribeEvents();
+            if (subscribeToInputEvents)
+                SubscribeToInputEvents();
 
-            if (_executors != null)
+            if (_executors)
                 _executors.InitializeAll(vesselStatus);
             else
                 Debug.LogWarning("[R_ShipActionHandler] ActionExecutorRegistry is not assigned.");
@@ -104,33 +100,65 @@ namespace CosmicShore.Game
 
             OnInputEventStopped?.Invoke(controlType);
         }
-        
-        public void ConfigureSubscriptions(bool subscribe)
-        {
-            if (subscribe) SubscribeEvents();
-            else UnsubscribeEvents();
-
-            Debug.Log($"[ActionHandler] {(vesselStatus?.PlayerName ?? "<no-player>")} subscribe={subscribe} AIInit={vesselStatus?.IsInitializedAsAI} AutoPilot={vesselStatus?.AutoPilotEnabled}");
-        }
 
         bool HasAction(InputEvents inputEvent)
             => _shipControlActions.TryGetValue(inputEvent, out var list) && list != null && list.Count > 0;
         
         void OnButtonPressed(InputEvents ie)
         {
+            // Skip if autopilot
             if (vesselStatus.AutoPilotEnabled)
                 return;
 
+            if (IsSpawned)
+            {
+                if (IsOwner)
+                    SendButtonPressed_ServerRpc(ie); // Only owner can send
+                return; // Non-host clients do nothing directly
+            }
+
+            // Singleplayer
             PerformShipControllerActions(ie);
         }
         
+        [ServerRpc]
+        private void SendButtonPressed_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
+        {
+            // Server rebroadcasts to everyone
+            OnButtonPressedClientRpc(ie); 
+        }
+        
+        [ClientRpc] 
+        void OnButtonPressedClientRpc(InputEvents ie) => 
+            PerformShipControllerActions(ie);
+        
         void OnButtonReleased(InputEvents ie)
         {
+            // Skip if autopilot
             if (vesselStatus.AutoPilotEnabled)
                 return;
-            
+
+            if (IsSpawned)
+            {
+                if (IsOwner)
+                    SendButtonReleased_ServerRpc(ie);
+                return; // Non-host clients do nothing directly
+            }
+
+            // Singleplayer
             StopShipControllerActions(ie);
         }
+        
+        [ServerRpc]
+        private void SendButtonReleased_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
+        {
+            // Server rebroadcasts to everyone
+            OnButtonReleased_ClientRpc(ie); 
+        }
+    
+        [ClientRpc]
+        void OnButtonReleased_ClientRpc(InputEvents ie) =>
+            StopShipControllerActions(ie);
     }
 
     [Serializable]

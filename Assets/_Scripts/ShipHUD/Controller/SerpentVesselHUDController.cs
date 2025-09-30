@@ -140,13 +140,15 @@ namespace CosmicShore.Game
                 var pip = pips[i];
                 if (!pip) continue;
 
-                // stop any anim so snapshot wins
-                if (_pipAnim[i] != null) { StopCoroutine(_pipAnim[i]); _pipAnim[i] = null; }
+                // NEW: if pip is animating (draining or refilling), DO NOT overwrite it with snapshot
+                if (_pipAnim[i] != null)
+                    continue; // let the ongoing animation show the true remaining time
 
                 bool full = i < available;
                 pip.enabled = true;
                 pip.fillAmount = full ? 1f : 0f;
                 pip.color = full ? pipFull : pipEmpty;
+
             }
         }
 

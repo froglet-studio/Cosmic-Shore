@@ -54,7 +54,7 @@ namespace CosmicShore
         public override bool IsFullyBonded() => TopIsBonded && RightIsBonded && BottomIsBonded && LeftIsBonded;
 
         [HideInInspector] public HashSet<WallAssembler> MateList = new();
-        public override TrailBlock TrailBlock { get; set; }
+        public override Prism Prism { get; set; }
         public override Spindle Spindle { get; set; }
 
         private float snapDistance = .2f;
@@ -73,10 +73,10 @@ namespace CosmicShore
 
         void Start()
         {
-            TrailBlock = GetComponent<TrailBlock>();
-            if (TrailBlock)
+            Prism = GetComponent<Prism>();
+            if (Prism)
             {
-                scale = TrailBlock.TargetScale;
+                scale = Prism.TargetScale;
                 CalculateGlobalBondSites();
             }
         }
@@ -194,7 +194,7 @@ namespace CosmicShore
                     Vector3 newPosition = CalculatePosition(site);
                     Quaternion newRotation = CalculateRotation(site);
 
-                    if (!Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
+                    if (!Physics.CheckBox(newPosition, Prism.transform.localScale / 2f))
                     {
                         SetBondSiteStatus(site, true);
                         return new GrowthInfo
@@ -256,7 +256,7 @@ namespace CosmicShore
             {
                 while (true)
                 {
-                    if (TrailBlock == null)
+                    if (Prism == null)
                     {
                         yield return new WaitForSeconds(1f);
                         continue;
@@ -293,7 +293,7 @@ namespace CosmicShore
                     {
                         //Debug.Log("Bonded Top and Bottom");
                         StopAllCoroutines();
-                        TrailBlock.Grow();
+                        Prism.Grow();
                         if (TopMate.Mate.MateList.Count < 2)
                         {
                             TopMate.Mate.StartBonding();
@@ -380,18 +380,18 @@ namespace CosmicShore
                 WallAssembler mateComponent = potentialMate.GetComponent<WallAssembler>();
                 if (mateComponent == null)
                 {
-                    var trailBlock = potentialMate.GetComponent<TrailBlock>();
+                    var trailBlock = potentialMate.GetComponent<Prism>();
                     if (trailBlock != null)
                     {
-                        HealthBlock healthBlock = trailBlock.GetComponent<HealthBlock>();
-                        if (healthBlock != null)
+                        HealthPrism healthPrism = trailBlock.GetComponent<HealthPrism>();
+                        if (healthPrism != null)
                         {
-                            healthBlock.Reparent(TrailBlock.transform.parent);
+                            healthPrism.Reparent(Prism.transform.parent);
                         }
 
                         trailBlock.TargetScale = scale;
-                        trailBlock.MaxScale = TrailBlock.MaxScale;
-                        trailBlock.GrowthVector = TrailBlock.GrowthVector;
+                        trailBlock.MaxScale = Prism.MaxScale;
+                        trailBlock.GrowthVector = Prism.GrowthVector;
                         // trailBlock.Steal(TrailBlock.PlayerName, TrailBlock.Team, true);
                         trailBlock.ChangeSize();
                         mateComponent = trailBlock.transform.gameObject.AddComponent<WallAssembler>();
@@ -402,8 +402,8 @@ namespace CosmicShore
                 if (IsMate(mateComponent) && mateComponent != this)
                 {
                     if (Vector3.Distance(transform.position, mateComponent.transform.position) < snapDistance
-                        && mateComponent.TrailBlock.TrailBlockProperties.TimeCreated >
-                        TrailBlock.TrailBlockProperties.TimeCreated)
+                        && mateComponent.Prism.prismProperties.TimeCreated >
+                        Prism.prismProperties.TimeCreated)
                     {
                         mateComponent.StopAllCoroutines();
                         mateComponent.ReplaceMateList(this);
@@ -414,7 +414,7 @@ namespace CosmicShore
                         (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateRight");
-                        mateComponent.TrailBlock.ActivateShield();
+                        mateComponent.Prism.ActivateShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                     }
 
@@ -422,7 +422,7 @@ namespace CosmicShore
                         (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateLeft");
-                        mateComponent.TrailBlock.MakeDangerous();
+                        mateComponent.Prism.MakeDangerous();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
                     }
                 }
@@ -469,7 +469,7 @@ namespace CosmicShore
             Vector3 targetPos = bondSite - mateLocalOffset;
 
             // choose speeds based on whether this is own team or opponent team
-            bool isOwnTeam = (mate.Mate.TrailBlock.Team == TrailBlock.Team);
+            bool isOwnTeam = (mate.Mate.Prism.Domain == Prism.Domain);
             float moveSpeed = isOwnTeam ? ownPullSpeed : opponentPullSpeed;
 
             // move towards target at a fixed speed (frame-rate independent)
@@ -500,10 +500,10 @@ namespace CosmicShore
                     BottomIsBonded = true;
                 }
                 
-                var mateTB = mate.Mate.TrailBlock;
-                if (mateTB != null && mateTB.Team != TrailBlock.Team)
+                var mateTB = mate.Mate.Prism;
+                if (mateTB != null && mateTB.Domain != Prism.Domain)
                 {
-                    mateTB.Steal(TrailBlock.PlayerName, TrailBlock.Team, true);
+                    mateTB.Steal(Prism.PlayerName, Prism.Domain, true);
                 }
             }
         }
@@ -526,7 +526,7 @@ namespace CosmicShore
             }
             else
             {
-                bool isOwnTeam = (mate.Mate.TrailBlock.Team == TrailBlock.Team);
+                bool isOwnTeam = (mate.Mate.Prism.Domain == Prism.Domain);
                 float rotSpeed = isOwnTeam ? ownRotateSpeed : opponentRotateSpeed;
 
                 mate.Mate.transform.rotation = Quaternion.Slerp(

@@ -65,7 +65,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0840df18df0bd8646b11c95e1861492d, type: 2}
+  - {fileID: 2100000, guid: 6e3e25bca3ded0448a19b3bccb8cf8eb, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -99,30 +99,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 781f426fe0d9e704184e5a73aa77535d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  implosionMaterial: {fileID: 2100000, guid: 58c6ba9d8851ffb4abe8e1cb0f26bfac, type: 2}
-  blockRenderer: {fileID: 7076137217386601628}
-  implosionCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
+  prismRenderer: {fileID: 7076137217386601628}
   implosionDuration: 2

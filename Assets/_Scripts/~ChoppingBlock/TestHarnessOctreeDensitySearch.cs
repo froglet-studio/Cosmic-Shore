@@ -20,8 +20,8 @@ public class TestHarnessOctreeDensitySearch : MonoBehaviour
         
         Cell targetNode = CellControlManager.Instance.GetNearestCell(transform.position);
 
-        Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
-        foreach (Teams t in teams)
+        Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+        foreach (Domains t in teams)
         {
             Vector3 explosionTarget = targetNode.GetExplosionTarget(t);
             Debug.Log($"Found explosion target in node {targetNode.ID} for team {t}:");

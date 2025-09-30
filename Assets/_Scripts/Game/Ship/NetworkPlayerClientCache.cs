@@ -14,7 +14,7 @@ namespace CosmicShore.Game
         // Inherits all functionality from the generic base—
         // no additional code needed here.
 
-        public static Player GetPlayerByTeam(Teams team) =>
-            ActiveInstances.FirstOrDefault(player => player.Team == team);
+        public static Player GetPlayerByTeam(Domains domain) =>
+            ActiveInstances.FirstOrDefault(player => player.Domain == domain);
     }
 }

@@ -7,8 +7,8 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// Combines behaviour of R_LocalShip and R_NetworkShip. Behaviour is
-    /// selected at runtime based on <see cref="isMultiplayerMode"/>.
+    /// Combines behaviour of R_LocalVessel and R_NetworkVessel. Behaviour is
+    /// selected at runtime based on <see cref="IsSpawned"/> in multiplayer mode.
     /// </summary>
     [RequireComponent(typeof(IVesselStatus))]
     public class VesselController : NetworkBehaviour, IVessel
@@ -57,7 +57,10 @@ namespace CosmicShore.Game
 
         public override void OnDestroy()
         {
-            OnBeforeDestroyed?.Invoke();
+            if ((!IsSpawned && !VesselStatus.Player.IsInitializedAsAI) || IsOwner)
+            {
+                OnBeforeDestroyed?.Invoke();
+            }
         }
 
         public override void OnNetworkSpawn()
@@ -94,7 +97,7 @@ namespace CosmicShore.Game
         {
             VesselStatus.Player = player;
             VesselStatus.ShipAnimation.Initialize(VesselStatus);
-            VesselStatus.TrailSpawner.Initialize(VesselStatus);
+            VesselStatus.PrismSpawner.Initialize(VesselStatus);
             
             if (IsSpawned)
             {
@@ -108,7 +111,7 @@ namespace CosmicShore.Game
             OnInitialized?.Invoke();
         }
 
-        public void PerformButtonActions(int buttonNumber)
+        /*public void PerformButtonActions(int buttonNumber)
         {
             if (VesselStatus.AutoPilotEnabled) return;
 
@@ -134,7 +137,7 @@ namespace CosmicShore.Game
                 _ => InputEvents.Button1Action
             };
             StopShipControllerActions(controlType);
-        }
+        }*/
 
         public void FlipShipUpsideDown() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
         public void FlipShipRightsideUp() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
@@ -198,7 +201,12 @@ namespace CosmicShore.Game
 
         public bool AllowClearPrismInitialization() => (IsSpawned && IsOwner) || VesselStatus.IsInitializedAsAI;
 
-        public void Destroy() => Destroy(gameObject);
+        public void Cleanup()
+        {
+            if (IsSpawned)
+                return;
+            Destroy(gameObject);   
+        }
         
         void InitializeForMultiplayerMode()
         {
@@ -209,15 +217,13 @@ namespace CosmicShore.Game
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
                     
                 // TODO - Temp disabled, for testing.
-                /*VesselStatus.ActionHandler.Initialize(VesselStatus);
-                VesselStatus.Customization.Initialize(VesselStatus);
+                /*VesselStatus.Customization.Initialize(VesselStatus);*/
 
                 if (VesselStatus.NearFieldSkimmer)
                     VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
 
                 if (VesselStatus.FarFieldSkimmer)
                     VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
-                */
                     
                 VesselStatus.VesselTransformer.Initialize(this);
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
@@ -226,11 +232,13 @@ namespace CosmicShore.Game
                     
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
+            
+            VesselStatus.ActionHandler.Initialize(VesselStatus, IsOwner);
         }
         
         void InitializeForSinglePlayerMode(bool enableAIPilot)
         {
-            VesselStatus.ActionHandler.Initialize(VesselStatus);
+            VesselStatus.ActionHandler.Initialize(VesselStatus, !VesselStatus.IsInitializedAsAI);
             VesselStatus.Customization.Initialize(VesselStatus);
 
             if (VesselStatus.NearFieldSkimmer) 
@@ -257,8 +265,6 @@ namespace CosmicShore.Game
             /// AIPilot will be initialized both in User controlled / AI Vessels
             /// Multiplayer modes will also have auto-pilot initialized
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);   
-            VesselStatus.TrailSpawner.Initialize(VesselStatus);  
-            VesselStatus.ActionHandler.ConfigureSubscriptions(subscribe: !VesselStatus.IsInitializedAsAI);
             onBottomEdgeButtonsEnabled.Raise(true);
         }
 

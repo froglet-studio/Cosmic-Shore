@@ -199,7 +199,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             var parameters = new[] {
                 new Parameter(FirebaseAnalytics.ParameterLevel, nameof(GameModes)),
                 new Parameter(FirebaseAnalytics.ParameterLevelName, data.GameMode.ToString()),
-                new Parameter(FirebaseAnalytics.ParameterCharacter, data.SelectedShipClass.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterCharacter, data.selectedVesselClass.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterQuantity, data.SelectedPlayerCount),
                 new Parameter(FirebaseAnalytics.ParameterIndex, data.SelectedIntensity)
             };
@@ -232,7 +232,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             var parameters = new [] {
                 new Parameter(FirebaseAnalytics.ParameterLevel, nameof(GameModes)),
                 new Parameter(FirebaseAnalytics.ParameterLevelName, data.GameMode.ToString()),
-                new Parameter(FirebaseAnalytics.ParameterCharacter, data.SelectedShipClass.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterCharacter, data.selectedVesselClass.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterQuantity, data.SelectedPlayerCount),
                 new Parameter(FirebaseAnalytics.ParameterIndex, data.SelectedIntensity),
                 new Parameter(FirebaseAnalytics.ParameterScore, 0) // data.HighScore)   // Get HighScore from MiniGameDataSO

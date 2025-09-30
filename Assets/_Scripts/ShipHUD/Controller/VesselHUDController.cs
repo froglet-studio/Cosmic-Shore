@@ -1,5 +1,6 @@
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
@@ -9,11 +10,13 @@ namespace CosmicShore.Game
         private VesselHUDView _view;
         private IVesselStatus _status;
         [SerializeField] private int jawResourceIndex;
-
-        private float _driftDot = 0.9999f; 
+        [SerializeField] private Vector2 blockBaseSize = new(30f, 30f);
+        private float _driftDot = 0.9999f;
 
         private TrailPool _trailPool;
         private GameObject BlockPrefab { get; set; }
+
+        private bool _pendingPoolBuild;
 
         public virtual void Initialize(IVesselStatus vesselStatus, VesselHUDView view)
         {
@@ -38,26 +41,69 @@ namespace CosmicShore.Game
             BindTrail();
             PrimeInitialUI();
         }
-        
+
+        private void OnDisable()
+        {
+            if (_actions != null)
+            {
+                _actions.OnInputEventStarted -= HandleStart;
+                _actions.OnInputEventStopped -= HandleStop;
+            }
+            if (_view != null)
+            {
+                var resources = _status?.ResourceSystem?.Resources;
+                if (resources != null &&
+                    _view.jawResourceIndex >= 0 &&
+                    _view.jawResourceIndex < resources.Count &&
+                    resources[_view.jawResourceIndex] != null)
+                {
+                    resources[_view.jawResourceIndex].OnResourceChange -= OnJawResourceChanged;
+                }
+
+                if (_view.driftTrailAction != null)
+                    _view.driftTrailAction.OnChangeDriftAltitude -= OnDriftDotChanged;
+
+                if (_view.prismSpawner != null)
+                    _view.prismSpawner.OnBlockCreated -= PrismBlockCreated;
+            }
+
+            _trailPool?.Dispose();
+            _trailPool = null;
+        }
+
+        private void LateUpdate()
+        {
+            // Smooth drift yaw each frame
+            if (_trailPool != null)
+            {
+                // Convert dot -> signed angle around Z (matches game-side feel)
+                float dot = Mathf.Clamp(_driftDot, -0.9999f, 0.9999f);
+                float angle = -Mathf.Acos(dot) * Mathf.Rad2Deg; // [0 .. -180]
+                _trailPool.SetTargetDriftAngle(angle);
+                _trailPool.Tick(Time.deltaTime);
+            }
+            
+            if (_pendingPoolBuild && _view != null && _view.trailDisplayContainer != null)
+            {
+                var r = _view.trailDisplayContainer.rect;
+                if (r.width > 1f && r.height > 1f && _trailPool != null)
+                {
+                    _pendingPoolBuild = false;
+                    _trailPool.EnsurePool();
+                }
+            }
+        }
+
         private void PrimeInitialUI()
         {
-            // silhouette visibility immediately
-            // bool show = !_status.AutoPilotEnabled && (_status.Player?.IsActive ?? true);
-            // if (_view.silhouetteParts != null)
-            //     foreach (var go in _view.silhouetteParts) if (go) go.SetActive(show);
-
-            if (_view.silhouetteContainer) _view.silhouetteContainer.localRotation = Quaternion.identity;
-
-
             var resources = _status?.ResourceSystem?.Resources;
             if (resources != null &&
                 _view.jawResourceIndex >= 0 &&
                 _view.jawResourceIndex < resources.Count &&
                 resources[_view.jawResourceIndex] != null)
             {
-
                 var normalized = 0f;
-                try { normalized = resources[_view.jawResourceIndex].CurrentAmount; } catch { /* fallback 0 */ }
+                try { normalized = resources[_view.jawResourceIndex].CurrentAmount; } catch { }
                 OnJawResourceChanged(normalized);
             }
         }
@@ -76,7 +122,7 @@ namespace CosmicShore.Game
             }
         }
 
-        #region Silhouette
+        #region Silhouette / Jaws / Drift
 
         private void BindJaws()
         {
@@ -86,14 +132,13 @@ namespace CosmicShore.Game
 
             var resources = _status?.ResourceSystem?.Resources;
             if (resources == null || _view.jawResourceIndex >= resources.Count) return;
-            
-            var res = resources[_view.jawResourceIndex]; 
+
+            var res = resources[_view.jawResourceIndex];
             res.OnResourceChange += OnJawResourceChanged;
         }
 
         private void OnJawResourceChanged(float normalized)
         {
-
             if (_view.silhouetteParts != null)
             {
                 foreach (var go in _view.silhouetteParts)
@@ -119,185 +164,91 @@ namespace CosmicShore.Game
         private void OnDriftDotChanged(float dot)
         {
             _driftDot = Mathf.Clamp(dot, -0.9999f, 0.9999f);
-            
-            // if (_status != null && _status.Player != null && _view.silhouetteParts != null)
-            // {
-            //     var show = !_status.AutoPilotEnabled && _status.Player.IsActive;
-            //     foreach (var go in _view.silhouetteParts.Where(go => go)) go.SetActive(show);
-            // }
 
             if (_view.silhouetteContainer == null) return;
-            var angleZ = Mathf.Asin(_driftDot) * Mathf.Rad2Deg;
+            var angleZ = Mathf.Asin(_driftDot) * Mathf.Rad2Deg; // little jank welcome
             _view.silhouetteContainer.localRotation = Quaternion.Euler(0, 0, angleZ);
         }
+        #endregion
+
+        #region Trail HUD
 
         public void SetBlockPrefab(GameObject prefab)
         {
-            if (_view == null) return;
+            BlockPrefab = prefab;
 
-            // _view.trailBlockPrefab = prefab;
-            BlockPrefab = prefab; 
-            
-            if (_trailPool == null && _view.trailSpawner && _view.trailDisplayContainer && BlockPrefab != null)
+            // If the spawner & container are alive, (re)bind
+            if (_trailPool == null && _view != null && _view.prismSpawner && _view.trailDisplayContainer && BlockPrefab != null)
                 BindTrail();
         }
-        
+
         private void BindTrail()
         {
             if (_view == null) return;
 
-            if (_view.trailSpawner == null) { Debug.LogWarning("HUD: no TrailSpawner"); return; }
-            if (_view.trailDisplayContainer == null) { Debug.LogWarning("HUD: no TrailDisplayContainer"); return; }
-            if (BlockPrefab == null) { Debug.LogWarning("HUD: no TrailBlockPrefab"); return; }
+            if (_view.prismSpawner == null) { Debug.LogWarning("HUD: no PrismSpawner"); return; }
+            if (_view.trailDisplayContainer == null) { Debug.LogWarning("HUD: no trailDisplayContainer"); return; }
+            if (BlockPrefab == null) { Debug.LogWarning("HUD: no trail BlockPrefab"); return; }
 
+            // Make sure the prefab’s Image preserves aspect at runtime (no need to touch the asset)
+            var img = BlockPrefab.GetComponent<Image>();
+            if (img != null) img.preserveAspect = true;
+
+            // Create vertical rows TrailPool (smoothing ~0.08s feels good)
             _trailPool = new TrailPool(
                 _view.trailDisplayContainer,
                 BlockPrefab,
-                _view.trailSpawner,
+                _view.prismSpawner,
                 _view.worldToUIScale,
                 _view.imageScale,
-                _view.swingBlocks
-            );
-            _view.trailSpawner.OnBlockCreated += OnTrailBlockCreated;
+                _view.swingBlocks,
+                smoothTime: 0.08f,
+                blockBaseSize: blockBaseSize, hardRowCap: 8);
+
+            // If rect hasn’t been laid out yet, defer EnsurePool
+            var r = _view.trailDisplayContainer.rect;
+            if (r.width > 1f && r.height > 1f)
+            {
+                _trailPool.EnsurePool();
+                _pendingPoolBuild = false;
+            }
+            else
+            {
+                _pendingPoolBuild = true; // try in LateUpdate
+            }
+
+            _view.prismSpawner.OnBlockCreated += PrismBlockCreated;
         }
 
-        private void OnTrailBlockCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
+        private void PrismBlockCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
             if (_status is { AutoPilotEnabled: true }) return;
             if (_trailPool == null) return;
-            
-            var uiScale = _trailPool.WorldToUi;
+
+            // WorldToUi + image scaling logic matches old math paths
+            var ui = _trailPool.WorldToUi;
             if (_trailPool.SwingBlocks)
             {
-                _trailPool.EnsurePool();
                 _trailPool.UpdateHead(
-                    xShift:     xShift * (scaleY / 2f) * uiScale,
-                    wavelength: wavelength * uiScale,
+                    xShift:     xShift * (scaleY / 2f) * ui,
+                    wavelength: wavelength * ui,
                     scaleX:     scaleX * scaleY * _trailPool.ImageScale,
                     scaleZ:     scaleZ * _trailPool.ImageScale,
-                    driftDot:   _view.driftTrailAction ? _driftDot : null
+                    driftDot:   _view.driftTrailAction ? _driftDot : (float?)null
                 );
             }
             else
             {
-                _trailPool.EnsurePool(scaleY);
                 _trailPool.UpdateHead(
-                    xShift:     xShift * uiScale * scaleY,
-                    wavelength: wavelength * uiScale * scaleY,
+                    xShift:     xShift * ui * scaleY,
+                    wavelength: wavelength * ui * scaleY,
                     scaleX:     scaleX * scaleY * _trailPool.ImageScale,
                     scaleZ:     scaleZ * scaleY * _trailPool.ImageScale,
-                    driftDot:   _view.driftTrailAction ? _driftDot : null
+                    driftDot:   _view.driftTrailAction ? _driftDot : (float?)null
                 );
             }
         }
 
-        private sealed class TrailPool
-        {
-            private readonly RectTransform _container;
-            private readonly GameObject _blockPrefab;
-            private readonly TrailSpawner _spawner;
-
-            public readonly float WorldToUi;
-            public readonly float ImageScale;
-            public readonly bool  SwingBlocks;
-
-            private GameObject[,] _pool;
-            private int _poolSize;
-
-            public TrailPool(RectTransform container, GameObject prefab, TrailSpawner spawner,
-                             float worldToUi, float imageScale, bool swingBlocks)
-            {
-                _container  = container;
-                _blockPrefab = prefab;
-                _spawner = spawner;
-                WorldToUi = worldToUi;
-                ImageScale = imageScale;
-                SwingBlocks = swingBlocks;
-            }
-
-            public void EnsurePool(float scaleY = 1f)
-            {
-                if (_poolSize > 0) return;
-
-                var rectWidth = _container.rect.width;
-                var denom = _spawner.MinWaveLength * WorldToUi * (SwingBlocks ? 1f : scaleY);
-                _poolSize = Mathf.Max(1, Mathf.CeilToInt(rectWidth / Mathf.Max(0.0001f, denom)));
-
-                _pool = new GameObject[_poolSize, 2];
-
-                for (int i = 0; i < _poolSize; i++)
-                {
-                    var colParent = new GameObject($"TrailCol_{i}", typeof(RectTransform)).transform as RectTransform;
-                    colParent.SetParent(_container, false);
-
-                    for (int j = 0; j < 2; j++)
-                    {
-                        var block = Object.Instantiate(_blockPrefab, _container);
-                        var blockRt = block.transform as RectTransform;
-                        blockRt.SetParent(colParent, false);
-
-                        // parent X = center + offset to the right
-                        colParent.localPosition = new Vector3(
-                            -i * _spawner.MinWaveLength * WorldToUi + (rectWidth * 0.5f), 0f, 0f);
-
-                        // block Y = ± gap (top/bottom)
-                        blockRt.localPosition = new Vector3(0f, j * 2f * _spawner.Gap - _spawner.Gap, 0f);
-                        blockRt.localScale = Vector3.zero;
-                        block.SetActive(true);
-
-                        _pool[i, j] = block;
-                    }
-                }
-            }
-
-            public void UpdateHead(float xShift, float wavelength, float scaleX, float scaleZ, float? driftDot)
-            {
-                if (_pool == null) return;
-                var rectWidth = _container.rect.width;
-
-                for (int j = 0; j < 2; j++)
-                {
-                    var head = _pool[0, j].transform as RectTransform;
-                    head.localScale    = new Vector3(scaleZ, j * 2f * scaleX - scaleX, 1f);
-                    head.parent.localPosition = new Vector3(rectWidth * 0.5f, 0f, 0f);
-                    head.localPosition  = new Vector3(0f, j * 2f * xShift - xShift, 0f);
-                }
-
-                if (driftDot.HasValue)
-                {
-                    float dot = Mathf.Clamp(driftDot.Value, -0.9999f, 0.9999f);
-                    float angle = -Mathf.Acos(dot) * Mathf.Rad2Deg; // matches old feel
-                    _pool[0, 0].transform.parent.localRotation = Quaternion.Euler(0, 0, angle);
-                }
-
-                // shift tail columns
-                for (int i = _poolSize - 1; i > 0; i--)
-                {
-                    for (int j = 0; j < 2; j++)
-                    {
-                        var cur  = _pool[i, j].transform as RectTransform;
-                        var prev = _pool[i - 1, j].transform as RectTransform;
-
-                        cur.localScale = prev.localScale;
-                        cur.localPosition = prev.localPosition;
-
-                        // update parent x to maintain spacing by current wavelength
-                        var parent = cur.parent as RectTransform;
-                        parent.localPosition = new Vector3(-i * wavelength + (rectWidth * 0.5f), 0f, 0f);
-                    }
-
-                    bool under = i < Mathf.CeilToInt(rectWidth / Mathf.Max(0.0001f, wavelength));
-                    _pool[i, 1].transform.parent.gameObject.SetActive(under);
-
-                    if (driftDot.HasValue && under)
-                    {
-                        _pool[i, 0].transform.parent.localRotation =
-                            _pool[i - 1, 0].transform.parent.localRotation;
-                    }
-                }
-            }
-        }
         #endregion
-   
     }
 }

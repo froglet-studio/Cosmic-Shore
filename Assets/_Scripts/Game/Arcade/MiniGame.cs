@@ -42,7 +42,7 @@ namespace CosmicShore.Game.Arcade
         protected List<IPlayer> Players = new();
         protected CountdownTimer countdownTimer;
 
-        List<Teams> PlayerTeams = new() { Teams.Jade, Teams.Ruby, Teams.Gold };
+        List<Domains> PlayerTeams = new() { Domains.Jade, Domains.Ruby, Domains.Gold };
         List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
         // Configuration set by player
@@ -209,7 +209,7 @@ namespace CosmicShore.Game.Arcade
                 IPlayer.InitializeData data = new()
                 {
                     vesselClass = playerShipTypeInitialized ? PlayerVesselType : defaultPlayerVesselType,
-                    Team = PlayerTeams[i],
+                    domain = PlayerTeams[i],
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
                     PlayerUUID = PlayerNames[i]
                 };
@@ -269,7 +269,7 @@ namespace CosmicShore.Game.Arcade
             /*foreach (var turnMonitor in TurnMonitors)
                 turnMonitor.PauseTurn();*/
             ActivePlayer.InputController.InputStatus.Paused = true;
-            ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
 
             yield return new WaitForSeconds(EndOfTurnDelay);
 
@@ -437,7 +437,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Vessel.Teleport(PlayerOrigin.transform);
             ActivePlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
-            ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
             ActivePlayer.Vessel.VesselStatus.ResourceSystem.Reset();
             ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);
 

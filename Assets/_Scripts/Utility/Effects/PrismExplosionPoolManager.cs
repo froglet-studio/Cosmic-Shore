@@ -8,12 +8,16 @@ namespace CosmicShore.Game
     /// </summary>
     public class PrismExplosionPoolManager : GenericPoolManager<PrismExplosion>
     {
-        public PrismExplosion Spawn(Vector3 position, Quaternion rotation, Vector3 velocity)
+        public override PrismExplosion Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var explosion = Get_(position, rotation);
             explosion.OnFinished = Release_;
-            explosion.TriggerExplosion(velocity);
             return explosion;
+        }
+        
+        public override void Release(PrismExplosion instance)
+        {
+      
         }
     }
 }

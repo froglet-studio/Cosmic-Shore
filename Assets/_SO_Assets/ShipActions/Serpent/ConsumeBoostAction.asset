@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: ConsumeBoostAction
   m_EditorClassIdentifier: 
   boostMultiplier:
-    Enabled: 1
-    Value: 1.2
+    Enabled: 0
+    Value: 3
     Min: 1.2
     Max: 2.7
     element: 4
   boostDuration: 3
   maxCharges: 4
   reloadCooldown: 3
-  reloadFillTime: 0.8
+  reloadFillTime: 2
   resourceIndex: 1
   resourceCost: 0.25

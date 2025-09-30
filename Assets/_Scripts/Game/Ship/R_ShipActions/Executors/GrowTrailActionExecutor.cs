@@ -5,7 +5,7 @@ using UnityEngine;
 public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
 {
     [Header("Scene Refs")]
-    [SerializeField] TrailSpawner spawner;
+    [SerializeField] PrismSpawner spawner;
 
     IVesselStatus _status;
     float _min;      
@@ -19,7 +19,7 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
     {
         _status = shipStatus;
         if (spawner == null)
-            spawner = shipStatus?.TrailSpawner;
+            spawner = shipStatus?.PrismSpawner;
 
         _min = spawner ? spawner.ZScaler : 1f;
     }

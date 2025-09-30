@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -8,12 +9,22 @@ namespace CosmicShore.Game
     /// </summary>
     public class PrismImplosionPoolManager : GenericPoolManager<PrismImplosion>
     {
-        public PrismImplosion Spawn(Vector3 position, Quaternion rotation, Vector3 convergencePoint, float volume = 1f)
+        public override PrismImplosion Get(Vector3 spawnPosition, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
-            var implosion = Get_(position, rotation);
-            implosion.OnFinished = Release_; // auto return when done
-            implosion.StartImplosion(convergencePoint, volume);
+            var implosion = Get_(spawnPosition, rotation);
+            implosion.OnFinished += OnFinished; // auto return when done
             return implosion;
+        }
+
+        public override void Release(PrismImplosion instance)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        void OnFinished(PrismImplosion implosion)
+        {
+            implosion.OnFinished -= OnFinished;
+            Release_(implosion);
         }
     }
 }

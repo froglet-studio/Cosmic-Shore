@@ -71,7 +71,7 @@ namespace CosmicShore
         Threat RollThreat()
         {
             Debug.LogWarning("jade volume: node.GetTeamVolume(Teams.Jade)");
-            var threats = node.GetTeamVolume(Teams.Jade) > faunaOnlyLimit ? faunaThreats : MissionData.PotentialThreats;
+            var threats = node.GetTeamVolume(Domains.Jade) > faunaOnlyLimit ? faunaThreats : MissionData.PotentialThreats;
             float totalWeight = 0f;
             foreach (Threat threat in threats)
                 totalWeight += threat.weight;
@@ -129,7 +129,7 @@ namespace CosmicShore
         {
             //yield return new WaitForSeconds(3);
 
-            var threatTeam = Teams.Gold;
+            var threatTeam = Domains.Gold;
 
             if (ThreatSpawner == null)
                 ThreatSpawner = FindAnyObjectByType<ThreatSpawner>();
@@ -148,7 +148,7 @@ namespace CosmicShore
             {
                 var threats = GenerateThreatWave(targetThreatLevel);
 
-                threatTeam = threatTeam == Teams.Gold ? Teams.Ruby : Teams.Gold;
+                threatTeam = threatTeam == Domains.Gold ? Domains.Ruby : Domains.Gold;
 
                 foreach (Threat threat in threats)
                 {

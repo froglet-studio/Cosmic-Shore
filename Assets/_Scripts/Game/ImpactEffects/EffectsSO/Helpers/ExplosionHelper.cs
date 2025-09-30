@@ -14,25 +14,28 @@ namespace CosmicShore.Game
             float minExplosionScale,
             float maxExplosionScale,
             Material overrideMaterial,
-            int resourceIndex)
+            int resourceIndex,
+            Vector3 localOffset)   // new parameter
         {
             if (impactor?.Vessel?.VesselStatus == null) return;
 
             var ss = impactor.Vessel.VesselStatus;
+            var shipTransform = ss.ShipTransform;
 
             var init = new AOEExplosion.InitializeStruct
             {
-                OwnTeam            = ss.Team,
+                OwnDomain            = ss.Domain,
                 Vessel               = ss.Vessel,
-                MaxScale           = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex),
-                OverrideMaterial   = overrideMaterial ? overrideMaterial : ss.AOEExplosionMaterial,
-                AnnonymousExplosion = false,
-                SpawnPosition      = ss.ShipTransform.position,
-                SpawnRotation      = ss.ShipTransform.rotation,
+                MaxScale             = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex),
+                OverrideMaterial     = overrideMaterial ? overrideMaterial : ss.AOEExplosionMaterial,
+                AnnonymousExplosion  = false,
+                SpawnPosition        = shipTransform.position + shipTransform.TransformDirection(localOffset),
+                SpawnRotation        = shipTransform.rotation,
             };
 
             SpawnAllAndDetonate(aoePrefabs, init);
         }
+
 
         public static void CreateExplosion(
             AOEExplosion[] aoePrefabs,
@@ -47,7 +50,7 @@ namespace CosmicShore.Game
 
             var init = new AOEExplosion.InitializeStruct
             {
-                OwnTeam            = ss.Team,
+                OwnDomain            = ss.Domain,
                 Vessel               = ss.Vessel,
                 MaxScale           = Mathf.Lerp(minExplosionScale, maxExplosionScale, proj.Charge),
                 OverrideMaterial   = ss.AOEExplosionMaterial,

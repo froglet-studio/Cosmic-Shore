@@ -11,7 +11,7 @@ namespace CosmicShore.Game
     {
         public static List<IPlayer> NppList { get; }
         VesselClassType VesselClass { get; }
-        Teams Team { get; }
+        Domains Domain { get; }
         string Name { get; }
         string PlayerUUID { get; }
         IVessel Vessel { get; }
@@ -40,13 +40,13 @@ namespace CosmicShore.Game
         /// If true -> pause input status. false -> unpause otherwise.
         /// </summary>
         void ToggleInputPause(bool toggle);
-        void Destroy();
+        void Cleanup();
 
         [System.Serializable]
         public class InitializeData
         {
             [FormerlySerializedAs("ShipClass")] [FormerlySerializedAs("ShipType")] public VesselClassType vesselClass;
-            public Teams Team;
+            [FormerlySerializedAs("Team")] public Domains domain;
             public string PlayerName;
             public string PlayerUUID;
             

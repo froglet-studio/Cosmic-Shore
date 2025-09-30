@@ -1,9 +1,10 @@
 using CosmicShore.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SpawnableFiveRings : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock trailBlock;
+    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     [SerializeField] int blocksPerRing = 12;
     [SerializeField] float ringRadius = 10f;
     [SerializeField] Vector3 scale = new Vector3(4, 4, 9);
@@ -91,7 +92,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
             // Create the block
             CreateBlock(position, nextPosition,
                         container.name + "::RING" + ringIndex + "::BLOCK::" + block,
-                        trail, scale, trailBlock, container);
+                        trail, scale, prism, container);
         }
     }
 

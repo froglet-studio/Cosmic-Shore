@@ -381,7 +381,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c3f54abda8145ecabf7c85253cab9ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   seedAssemblerExecutor: {fileID: 0}
   stationarySeedConfig: {fileID: 0}
 --- !u!1 &891036852695513002
@@ -1161,7 +1161,7 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  markerContainer: {fileID: 0}
+  nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70
   AOEPrefab: {fileID: 0}
   AOEPeriod: 0
@@ -1636,7 +1636,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailBlock: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
+  _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+    type: 2}
+  prismPrefab: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
     type: 3}
   skimmer: {fileID: 2413128156359967549}
   initialWavelength: 7
@@ -1774,7 +1776,7 @@ MonoBehaviour:
   - {fileID: 4010301292554909138}
   - {fileID: 4125835721608554647}
   - {fileID: 5978549935140177486}
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 0}
@@ -1808,6 +1810,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 7054624207099172035}
   _inputEventShipActions:
   - InputEvent: 1
@@ -1816,7 +1819,7 @@ MonoBehaviour:
   - InputEvent: 7
     ShipActions:
     - {fileID: 11400000, guid: a44fc8c7f06cd494b9b6f18cbb799779, type: 2}
-  - InputEvent: 8
+  - InputEvent: 2
     ShipActions:
     - {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
   - InputEvent: 6
@@ -1880,6 +1883,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jawResourceIndex: 0
+  blockBaseSize: {x: 30, y: 30}
   view: {fileID: 8556911474882623255}
   fireGunExecutor: {fileID: 433940516795534989}
   overheatingExecutor: {fileID: 8186488272797771781}
@@ -1914,7 +1918,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.00000017881393, y: 0.000000083406235, z: 0.0000013888232,
     w: 1}
-  m_LocalPosition: {x: -0.5779985, y: 0.22189593, z: 1.35}
+  m_LocalPosition: {x: -0.5779985, y: 0.22189593, z: 2.81}
   m_LocalScale: {x: 0.20338683, y: 0.20338687, z: 0.20338681}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3177,6 +3181,12 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7012550048087152422, guid: f0a24806a0485254389f97d4c93f7615,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 6ce06e2ec681ac742956d0e46079a199,
+        type: 3}
     - target: {fileID: 8972058528766975416, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
       propertyPath: m_Pivot.x
@@ -3404,7 +3414,7 @@ MonoBehaviour:
     image: {fileID: 664652370425840696}
   - input: 7
     image: {fileID: 3541391502095942376}
-  - input: 8
+  - input: 2
     image: {fileID: 1501352032668899679}
   - input: 6
     image: {fileID: 6366083956812878776}
@@ -3419,7 +3429,7 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   jawResourceIndex: -1
-  trailSpawner: {fileID: 874579555101021522}
+  prismSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   worldToUIScale: 8
   imageScale: 0.08

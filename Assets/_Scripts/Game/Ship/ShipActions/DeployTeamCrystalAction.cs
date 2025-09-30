@@ -98,7 +98,7 @@ namespace CosmicShore.Game
 
         void ActivateCrystal(Crystal cr)
         {
-            cr.OwnTeam = Vessel.VesselStatus.Team;
+            cr.ownDomain = Vessel.VesselStatus.Domain;
 
             var colliders = cr.GetComponentsInChildren<Collider>(true);
             foreach (var col in colliders)
