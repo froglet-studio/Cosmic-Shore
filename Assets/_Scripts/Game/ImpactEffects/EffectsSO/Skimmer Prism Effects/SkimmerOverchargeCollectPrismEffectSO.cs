@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
-using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -124,9 +123,12 @@ namespace CosmicShore.Game
             foreach (var prism in orderedPrisms)
             {
                 var dir    = (prism.transform.position - shipPos).normalized;
-                var damage = dir * (overchargeInertia * speed);
+                if (impactor)
+                {
+                    var damage = dir * (impactor.Skimmer.VesselStatus.Course.magnitude * impactor.Skimmer.VesselStatus.Speed);
 
-                prism.Prism.Damage(damage, Domains.None, status.PlayerName, devastate: true);
+                    prism.Prism.Damage(damage, Domains.None, status.PlayerName, devastate: true);
+                }
 
                 // Async delay before hitting the next prism
                 await UniTask.Delay(TimeSpan.FromSeconds(0.1f));
