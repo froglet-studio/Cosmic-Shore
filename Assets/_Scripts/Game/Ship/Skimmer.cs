@@ -78,6 +78,8 @@ namespace CosmicShore.Game
         public void ExecuteImpactOnPrism(Prism prism)
         {
             if (VesselStatus is null || (!affectSelf && prism.Domain == VesselStatus.Domain)) return;
+            if (!nudgeShardPoolManager)
+                return;
             MakeBoosters(prism);
         }
 
