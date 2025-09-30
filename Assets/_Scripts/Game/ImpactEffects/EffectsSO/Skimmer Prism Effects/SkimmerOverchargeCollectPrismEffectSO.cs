@@ -26,11 +26,10 @@ namespace CosmicShore.Game
 
         private static readonly Dictionary<SkimmerImpactor, HashSet<PrismImpactor>> hitsBySkimmer = new();
         private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers = new();
-        private IVesselStatus _vesselStatus;
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
-            if (prismImpactee.Prism.Domain == Domains.Jade)
+            if (prismImpactee.Prism.Domain == impactor.Skimmer.Domain)
             {
                 if (prismImpactee.Prism.CurrentState == BlockState.Normal)
                 {

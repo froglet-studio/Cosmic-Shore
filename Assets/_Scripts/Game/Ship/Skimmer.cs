@@ -31,6 +31,7 @@ namespace CosmicShore.Game
         [SerializeField] int resourceIndex = 0;
         
         public IVesselStatus VesselStatus { get; private set; }
+        public Domains Domain => VesselStatus.Domain;
         public bool AffectSelf => affectSelf;
 
         float _appliedScale;
