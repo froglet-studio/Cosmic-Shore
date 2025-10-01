@@ -37,7 +37,7 @@ namespace CosmicShore.Game
             }
 
             BindJaws();
-            BindDrift();
+            // BindDrift();
             BindTrail();
             PrimeInitialUI();
         }
@@ -165,7 +165,7 @@ namespace CosmicShore.Game
         {
             _driftDot = Mathf.Clamp(dot, -0.9999f, 0.9999f);
 
-            if (_view.silhouetteContainer == null) return;
+            if (!_view.silhouetteContainer) return;
             var angleZ = Mathf.Asin(_driftDot) * Mathf.Rad2Deg; // little jank welcome
             _view.silhouetteContainer.localRotation = Quaternion.Euler(0, 0, angleZ);
         }

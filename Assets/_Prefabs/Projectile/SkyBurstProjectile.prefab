@@ -4955,13 +4955,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0abdb3ebc3c413846859b59615823360, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Velocity: {x: 0, y: 0, z: 0}
-  InitialScale: {x: 0, y: 0, z: 0}
   projectileImpactor: {fileID: 2638094848372366872}
-  ProjectileTime: 0
   spike: 0
   growthRate: 1
-  friendlyFire: 0
+  friendlyFire: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!114 &2638094848372366872
 MonoBehaviour:

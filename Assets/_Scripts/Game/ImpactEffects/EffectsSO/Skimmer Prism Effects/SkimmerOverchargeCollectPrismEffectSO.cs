@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
-using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 
 namespace CosmicShore.Game

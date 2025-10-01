@@ -1137,6 +1137,8 @@ MonoBehaviour:
   modelRoot: {fileID: 6722969896632727780}
   seedAssemblerExecutor: {fileID: 8230992318499782635}
   seedWallConfig: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162, type: 2}
+  enableWatchdog: 1
+  watchdogInterval: 0.05
 --- !u!1 &3520243107353251244
 GameObject:
   m_ObjectHideFlags: 0

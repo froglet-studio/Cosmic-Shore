@@ -1918,8 +1918,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.00000017881393, y: 0.000000083406235, z: 0.0000013888232,
     w: 1}
-  m_LocalPosition: {x: -0.5779985, y: 0.22189593, z: 2.81}
-  m_LocalScale: {x: 0.20338683, y: 0.20338687, z: 0.20338681}
+  m_LocalPosition: {x: 0, y: 0, z: 4.54}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2553534810311541748}
@@ -1938,7 +1938,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   firePeriod: 0.2
   sideLength: 2
-  barrelLength: 2
+  barrelLength: 10
   projectileFactory: {fileID: 3682687894971536088}
 --- !u!1 &6990635015910708553
 GameObject:
@@ -2117,7 +2117,7 @@ Transform:
   m_GameObject: {fileID: 8290738503131457966}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 4.54}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3165,6 +3165,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4961689709815568813, guid: f0a24806a0485254389f97d4c93f7615,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5584238679742854162, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
