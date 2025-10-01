@@ -9,16 +9,7 @@ public class CloakSeedWallActionSO : ShipActionSO
 
     [Header("Vessel Visibility")]
     [SerializeField] private bool hideShipDuringCooldown = true;
-
-    [Header("Local vs Remote Visibility")]
-    [SerializeField, Range(0f, 1f)] private float localCloakAlpha = 0.2f;
-    [SerializeField] private bool remoteFullInvisible = true;
-
-    [Header("Vessel Fade")]
-    [SerializeField] private float fadeOutSeconds = 0.25f;
-    [SerializeField] private float fadeInSeconds  = 0.25f;
-    [SerializeField] private bool hardToggleIfAnyOpaqueAtZero = true;
-
+    
     [Header("Seed Wall")]
     [Tooltip("If true, action requires at least one existing trail block to plant seed on.")]
     [SerializeField] private bool requireExistingTrailBlock = true;
@@ -34,15 +25,13 @@ public class CloakSeedWallActionSO : ShipActionSO
     [SerializeField] private float  ghostBobAmplitude = 0.15f;
     [SerializeField] private float  ghostBobSpeed     = 1.2f;
     [SerializeField] private float  ghostYawSpeed     = 10f; // deg/sec
+    
+    [Header("Cloak Materials")]
+    [SerializeField] private Material shipCloakMaterial;
+    [SerializeField] private Material prismCloakMaterial;
 
-    // Expose config for the executor
     public float CooldownSeconds            => cooldownSeconds;
     public bool  HideShipDuringCooldown     => hideShipDuringCooldown;
-    public float LocalCloakAlpha            => localCloakAlpha;
-    public bool  RemoteFullInvisible        => remoteFullInvisible;
-    public float FadeOutSeconds             => fadeOutSeconds;
-    public float FadeInSeconds              => fadeInSeconds;
-    public bool  HardToggleIfAnyOpaqueAtZero=> hardToggleIfAnyOpaqueAtZero;
     public bool  RequireExistingTrailBlock  => requireExistingTrailBlock;
 
     public float    GhostLifetime        => ghostLifetime;
@@ -53,6 +42,10 @@ public class CloakSeedWallActionSO : ShipActionSO
     public float    GhostBobAmplitude    => ghostBobAmplitude;
     public float    GhostBobSpeed        => ghostBobSpeed;
     public float    GhostYawSpeed        => ghostYawSpeed;
+
+    public Material ShipCloakMaterial  => shipCloakMaterial;
+    public Material PrismCloakMaterial => prismCloakMaterial;
+
 
     public override void StartAction(ActionExecutorRegistry execs)
         => execs?.Get<CloakSeedWallActionExecutor>()?.Begin(this, ShipStatus);

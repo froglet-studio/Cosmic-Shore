@@ -23,7 +23,8 @@ namespace CosmicShore.Game
 #endif
                 return;
             }
-
+            Debug.Log($"<color=green> Resource amount changed to {_resourceAmount}");
+            
             if (_overrideAmount)
                 rs.SetResourceAmount(_resourceIndex, _resourceAmount);
             else
