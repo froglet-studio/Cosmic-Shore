@@ -12,7 +12,7 @@ namespace CosmicShore.Game
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var skimmer = impactor.Skimmer;
-            var sqrRadius = skimmer.transform.localScale.x * skimmer.transform.localScale.x / 4f;
+            var sqrRadius = skimmer.transform.localScale.x * skimmer.transform.localScale.x * .25f;
             var sqrDist   = (skimmer.transform.position - prismImpactee.Prism.transform.position).sqrMagnitude;
 
             float normalized = Mathf.InverseLerp(minSqrDistance, sqrRadius, sqrDist);

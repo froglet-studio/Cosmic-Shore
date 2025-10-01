@@ -68,7 +68,7 @@ namespace CosmicShore.Game
 
             CombinedWeight = distanceWeight * Mathf.Abs(directionWeight);
             // tick stay effects (centralized)
-            ExecuteBlockStayEffects(CombinedWeight, prismImpactor);
+            //ExecuteBlockStayEffects(CombinedWeight, prismImpactor);
         }
 
         void OnTriggerExit(Collider other)

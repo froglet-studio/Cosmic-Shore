@@ -15,6 +15,6 @@ MonoBehaviour:
   maxBlockHits: 50
   cooldownDuration: 5
   verbose: 1
-  overchargedMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
-  overchargeInertia: 30
+  overchargedMaterial: {fileID: 2100000, guid: 804667eedef1a1145aadfa69e1c519b0, type: 2}
+  ExplosionSpeed: 10
   minBlastSpeed: 15

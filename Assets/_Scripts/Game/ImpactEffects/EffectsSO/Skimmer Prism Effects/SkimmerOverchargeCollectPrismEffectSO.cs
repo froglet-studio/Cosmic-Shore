@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         [SerializeField] private float cooldownDuration = 5f;
         [SerializeField] private bool  verbose;
         [SerializeField] private Material overchargedMaterial;
-        [SerializeField] private float overchargeInertia = 70f;
+        [SerializeField] private float ExplosionSpeed = 70f;
         [SerializeField] private float minBlastSpeed     = 25f;
 
         public int MaxBlockHits => maxBlockHits;
@@ -109,6 +109,22 @@ namespace CosmicShore.Game
             BlowUpPrismsOverTime(impactor, hitSet, status).Forget();
         }
 
+        void RecursiveRaycastDestruction(Prism prism, IVesselStatus status)
+        {
+            var shipPos = status.ShipTransform.position;
+            var dir = shipPos - prism.transform.position;
+            var damage = dir * ExplosionSpeed; //TODO: use mult
+            if (Physics.Raycast(prism.transform.position, dir, out var hitInfo, dir.magnitude, LayerMask.GetMask("TrailBlocks")))
+            {
+                Prism hitPrism;
+                if (hitInfo.collider.gameObject.TryGetComponent<Prism>(out hitPrism))
+                {
+                    RecursiveRaycastDestruction(hitPrism, status);
+                }
+            }
+            prism.Damage(damage, Domains.None, status.PlayerName, devastate: true);
+        }
+
         private async UniTaskVoid BlowUpPrismsOverTime(
             SkimmerImpactor impactor, 
             HashSet<PrismImpactor> hitSet, 
@@ -123,10 +139,7 @@ namespace CosmicShore.Game
 
             foreach (var prism in orderedPrisms)
             {
-                var dir    = (prism.transform.position - shipPos).normalized;
-                var damage = dir * (overchargeInertia * speed);
-
-                prism.Prism.Damage(damage, Domains.None, status.PlayerName, devastate: true);
+                RecursiveRaycastDestruction(prism.Prism, status);
 
                 // Async delay before hitting the next prism
                 await UniTask.Delay(TimeSpan.FromSeconds(0.1f));
@@ -135,7 +148,6 @@ namespace CosmicShore.Game
             OnOvercharge?.Invoke(impactor);
             if (verbose) Debug.Log($"[SkimmerOvercharge] Overcharge triggered sequentially! ({hitSet.Count})", impactor);
         }
-
     }
 }
 
