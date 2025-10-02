@@ -15,7 +15,7 @@ public static class TeamAssigner
         // Get all valid teams (exclude None and Unassigned)
         var allTeams = Enum.GetValues(typeof(Domains))
             .Cast<Domains>()
-            .Where(t => t != Domains.None && t != Domains.Unassigned)
+            .Where(t => t != Domains.None && t != Domains.Unassigned && t != Domains.Blue)
             .ToArray();
 
         // Filter out those already assigned
