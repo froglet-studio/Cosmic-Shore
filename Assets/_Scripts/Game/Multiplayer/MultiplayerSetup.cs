@@ -81,7 +81,7 @@ namespace CosmicShore.Game
             var playerProperties = await GetPlayerProperties();
             var sessionOpts = new SessionOptions
             {
-                MaxPlayers = 4, //miniGameData.SelectedPlayerCount.Value,
+                MaxPlayers = 3, //miniGameData.SelectedPlayerCount.Value,
                 IsLocked = false,
                 IsPrivate = false,
                 PlayerProperties = playerProperties,
