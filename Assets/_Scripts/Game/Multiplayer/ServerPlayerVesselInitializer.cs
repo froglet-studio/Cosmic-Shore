@@ -72,7 +72,7 @@ namespace CosmicShore.Game
         void OnNewVesselClientAdded(IVessel _)
         {
             var session = MultiplayerSetup.Instance.ActiveSession;
-            if (session != null && session.AvailableSlots == 0)
+            if (session is { AvailableSlots: 0 })
             {
                 DebugExtensions.LogColored("[ServerPlayerVesselInitializer] All players have joined; lobby full.", Color.green);
                 OnAllPlayersSpawned?.Invoke();

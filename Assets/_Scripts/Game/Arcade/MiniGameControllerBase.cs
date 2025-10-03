@@ -42,16 +42,19 @@ namespace CosmicShore.Game.Arcade
             miniGameData.GameMode = gameMode;
         }
 
-        public void OnReadyClicked()
-        {
+        public void OnReadyClicked() =>
             OnReadyClicked_();
-        }
 
         protected virtual void OnReadyClicked_()
         {
-            _onToggleReadyButton.Raise(false);
-            countdownTimer.BeginCountdown(OnCountdownTimerEnded);
+            DisableReadyButton();
+            StartCountdownTimer();
         }
+
+        protected void StartCountdownTimer() =>
+            countdownTimer.BeginCountdown(OnCountdownTimerEnded);
+        
+        protected void DisableReadyButton() => _onToggleReadyButton.Raise(false);
         
         protected virtual void OnCountdownTimerEnded()
         {

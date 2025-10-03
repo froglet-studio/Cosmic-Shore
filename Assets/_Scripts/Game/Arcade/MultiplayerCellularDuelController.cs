@@ -1,9 +1,12 @@
 using Unity.Netcode;
+using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerCellularDuelController : MiniGameControllerBase
     {
+        private int readyClientCount;
+        
         public override void OnNetworkSpawn()
         {
             if (!IsServer)
@@ -17,6 +20,26 @@ namespace CosmicShore.Game.Arcade
                 return;
             miniGameData.OnMiniGameTurnEnd += EndTurn;
         }
+
+        protected override void OnReadyClicked_()
+        {
+            DisableReadyButton();
+            Debug.Log($"{NetworkManager.Singleton.LocalClientId} is ready!");
+            OnReadyClicked_ServerRpc();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void OnReadyClicked_ServerRpc()
+        {
+            readyClientCount++;
+            if (!readyClientCount.Equals(miniGameData.SelectedPlayerCount))
+                return;
+            OnReadyClicked_ClientRpc();
+        }
+        
+        [ClientRpc]
+        private void OnReadyClicked_ClientRpc() =>
+            StartCountdownTimer();
 
         protected override void OnCountdownTimerEnded()
         {
