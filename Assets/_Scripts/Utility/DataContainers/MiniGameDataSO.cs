@@ -23,9 +23,9 @@ namespace CosmicShore.SOAP
     {
         // Events
         public event Action OnLaunchGame;
-        public event Action OnMiniGameInitialize;
-        public event Action OnAllPlayersSpawned;
-        public event Action OnMiniGameStart;
+        public event Action OnInitialized;
+        public event Action OnClientReady;
+        public event Action OnStarted;
         public event Action OnMiniGameTurnEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
@@ -66,7 +66,7 @@ namespace CosmicShore.SOAP
 
         public void InvokeGameLaunch() => OnLaunchGame?.Invoke();
         
-        public void InvokeMiniGameInitialize()
+        public void Initialize()
         {
             PauseSystem.TogglePauseGame(false);
 
@@ -76,7 +76,7 @@ namespace CosmicShore.SOAP
             _activePlayerId = 0;
             TurnStartTime = 0f;
 
-            OnMiniGameInitialize?.Invoke();
+            OnInitialized?.Invoke();
         }
 
         public void SetupForMultiplayer()
@@ -93,16 +93,15 @@ namespace CosmicShore.SOAP
             Players.Clear();
         }
 
-        public void InvokeMiniGameStart()
+        public void StartNewGame()
         {
             IsRunning = true;
             TurnStartTime = Time.time;
 
-            SetPlayersActive(active: true);
-            OnMiniGameStart?.Invoke();
+            InvokeGameStarted();
         }
-
-        public void InvokeMiniGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
+        public void InvokeGameStarted() => OnStarted?.Invoke();
+        public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
 
         public void InvokeMiniGameEnd()
         {
@@ -110,7 +109,7 @@ namespace CosmicShore.SOAP
             OnMiniGameEnd?.Invoke();
         }
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
-        public void InvokeAllPlayersSpawned() => OnAllPlayersSpawned?.Invoke();
+        public void InvokeClientReady() => OnClientReady?.Invoke();
 
         public void ResetOnSceneChanged()
         {
@@ -202,10 +201,7 @@ namespace CosmicShore.SOAP
 
             return true;
         }
-
-        // -----------------------------------------------------------------------------------------
-        // Mutation
-
+        
         public void AddPlayer(IPlayer p)
         {
             if (p == null) return;
@@ -216,7 +212,7 @@ namespace CosmicShore.SOAP
 
             Players.Add(p);
 
-            // For Networking, replace with NetworkRoundStats as needed
+            // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
             RoundStatsList.Add(new RoundStats
             {
                 Name = p.Name,
@@ -246,19 +242,7 @@ namespace CosmicShore.SOAP
             else
                 RoundStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
         }
-
-        // -----------------------------------------------------------------------------------------
-        // Helpers (private)
-
-        IRoundStats FindByTeam(Domains domain) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Domain == domain);
-
-        IRoundStats FindByName(string name) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Name == name);
-
-        float VolumeOf(Domains domain) =>
-            FindByTeam(domain)?.VolumeRemaining ?? 0f;
-
+        
         public void SetPlayersActive(bool active)
         {
             foreach (var player in Players)
@@ -284,6 +268,44 @@ namespace CosmicShore.SOAP
                 player.ToggleAutoPilot(active && player.IsInitializedAsAI);
             }
         }
+        
+        public void SetPlayersActiveForMultiplayer(bool active)
+        {
+            foreach (var player in Players)
+            {
+                var vesselStatus = player?.Vessel?.VesselStatus;
+
+                if (vesselStatus == null)
+                {
+                    Debug.LogError("No vessel status found for player.! This should never happen!");
+                    return;
+                }
+
+                if (active)
+                {
+                    // Reset vessel state when activating for a new run
+                    player.Vessel.VesselStatus.ResourceSystem.Reset();
+                    player.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
+                }
+                
+                var p = player as Player;
+                bool toggle = p && !p.IsOwner;
+                player.ToggleStationaryMode(toggle);
+                player.ToggleInputPause(toggle);
+            }
+        }
+        
+        // -----------------------------------------------------------------------------------------
+        // Helpers (private)
+
+        IRoundStats FindByTeam(Domains domain) =>
+            RoundStatsList.FirstOrDefault(rs => rs.Domain == domain);
+
+        IRoundStats FindByName(string name) =>
+            RoundStatsList.FirstOrDefault(rs => rs.Name == name);
+
+        float VolumeOf(Domains domain) =>
+            FindByTeam(domain)?.VolumeRemaining ?? 0f;
         
         // TODO - Need to rewrite the following method.
         /*

@@ -33,8 +33,5 @@ namespace CosmicShore.Game
             var player = _playerSpawner.SpawnPlayerAndShip(data);
             _gameData.AddPlayer(player);
         }
-
-        /// <summary>Signal that all players are spawned.</summary>
-        protected void RaiseAllPlayersSpawned() => _gameData.InvokeAllPlayersSpawned();
     }
 }

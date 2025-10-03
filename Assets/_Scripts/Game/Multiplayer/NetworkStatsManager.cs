@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [RequireComponent(typeof(NetcodeHooks))]
     public class NetworkStatsManager : StatsManager
     {
         /*[SerializeField] 
@@ -15,13 +14,8 @@ namespace CosmicShore.Game
         [SerializeField]
         ScriptableEventNoParam _onGameOver;*/
         
+        [SerializeField]
         NetcodeHooks _netcodeHooks;
-
-        public override void Awake()
-        {
-            base.Awake();
-            _netcodeHooks = GetComponent<NetcodeHooks>();
-        }
 
         protected override void OnEnable()
         {

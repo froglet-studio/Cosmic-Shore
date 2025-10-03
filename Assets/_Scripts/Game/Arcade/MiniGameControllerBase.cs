@@ -1,6 +1,7 @@
 using CosmicShore.App.Systems;
 using CosmicShore.SOAP;
 using Obvious.Soap;
+using Unity.Netcode;
 using UnityEngine;
 
 
@@ -11,7 +12,7 @@ namespace CosmicShore.Game.Arcade
     /// Keeps responsibility limited to: StartGame ➜ Rounds ➜ Turns ➜ EndGame.
     /// Delegates per‑frame checks to TurnMonitorController and player logic to PlayerManager.
     /// </summary>
-    public abstract class MiniGameControllerBase : MonoBehaviour
+    public abstract class MiniGameControllerBase : NetworkBehaviour
     {
         [Header("Config")]
         [SerializeField] protected GameModes gameMode;
@@ -33,36 +34,31 @@ namespace CosmicShore.Game.Arcade
         // Gameplay state
         protected int turnsTakenThisRound;
         protected int roundsPlayed;
-        
-        protected virtual void OnEnable()
-        {
-            miniGameData.OnMiniGameTurnEnd += EndTurn;
-        }
 
         private void Start()
         {
             miniGameData.PlayerOrigins =  _playerOrigins;
             miniGameData.GameMode = gameMode;
-            miniGameData.InvokeMiniGameInitialize();
-        }
-
-        protected virtual void OnDisable() 
-        {
-            miniGameData.OnMiniGameTurnEnd -= EndTurn;
+            miniGameData.Initialize();
         }
 
         public void OnReadyClicked()
         {
+            OnReadyClicked_();
+        }
+
+        protected virtual void OnReadyClicked_()
+        {
             _onToggleReadyButton.Raise(false);
-            countdownTimer.BeginCountdown(StartNewGame);   
+            countdownTimer.BeginCountdown(OnCountdownTimerEnded);
         }
         
-        protected virtual void StartNewGame()
+        protected virtual void OnCountdownTimerEnded()
         {
             roundsPlayed = 0;
             turnsTakenThisRound = 0;
-
-            miniGameData.InvokeMiniGameStart();
+            miniGameData.SetPlayersActive(active: true);
+            miniGameData.StartNewGame();
         }
         
         protected virtual void SetupNewTurn()
@@ -83,10 +79,10 @@ namespace CosmicShore.Game.Arcade
             if (_miniGameData.Value.Players.Count > 1)
                 _onToggleReadyButton.Raise(true);
             else
-                countdownTimer.BeginCountdown(StartNewGame);*/
+                countdownTimer.BeginCountdown(OnCountdownTimerEnded);*/
         }
         
-        void EndTurn()
+        protected void EndTurn()
         {
             // miniGameData.InvokeMiniGameTurnEnd();   
             turnsTakenThisRound++;

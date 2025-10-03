@@ -27,7 +27,17 @@ namespace CosmicShore.Game.Arcade
         int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / miniGameData.SelectedIntensity : baseStraightLineLength;
         Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * miniGameData.SelectedIntensity : crystalStartPosition;
         
-        protected override void StartNewGame()
+        void OnEnable()
+        {
+            miniGameData.OnMiniGameTurnEnd += EndTurn;
+        }
+        
+        void OnDisable() 
+        {
+            miniGameData.OnMiniGameTurnEnd -= EndTurn;
+        }
+        
+        protected override void OnCountdownTimerEnded()
         {
             segmentSpawner.Seed = Random.Range(int.MinValue,int.MaxValue);
             
@@ -46,7 +56,7 @@ namespace CosmicShore.Game.Arcade
             if (gameMode == GameModes.Freestyle) 
                 FTUEEventManager.RaiseGameModeStarted(GameModes.Freestyle);
             
-            base.StartNewGame();
+            base.OnCountdownTimerEnded();
         }
 
         protected override void SetupNewTurn() 

@@ -10,6 +10,9 @@ namespace CosmicShore.Game.UI
     {
         public MiniGameHUDView View => view;
 
+        [SerializeField]
+        MiniGameDataSO gameData;
+        
         [Header("View")]
         [SerializeField] private MiniGameHUDView view;
 
@@ -33,6 +36,10 @@ namespace CosmicShore.Game.UI
 
         private void OnEnable()
         {
+            ToggleReadyButton(false);
+            
+            gameData.OnClientReady += OnClientReady;
+            
             // SO ? Controller
             onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
@@ -46,6 +53,8 @@ namespace CosmicShore.Game.UI
 
         private void OnDisable()
         {
+            gameData.OnClientReady -= OnClientReady;
+            
             onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
             // onBottomEdgeButtonsEnabled.OnEventRaised -= OnBottomEdgeButtonsEnabled;
@@ -126,6 +135,8 @@ namespace CosmicShore.Game.UI
             }
             data.Sender.SetSilhouetteReference(sil.transform, trail.transform);
         }
+        
+        private void OnClientReady() => ToggleReadyButton(true);
 
         // Public methods you may call externally:
         public void Show() => view.gameObject.SetActive(true);

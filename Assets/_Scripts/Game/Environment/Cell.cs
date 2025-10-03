@@ -79,12 +79,12 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            miniGameData.OnAllPlayersSpawned += Initialize;
+            miniGameData.OnStarted += Initialize;
         }
 
         private void OnDisable()
         {
-            miniGameData.OnAllPlayersSpawned -= Initialize;
+            miniGameData.OnStarted -= Initialize;
         }
 
         private void Initialize()

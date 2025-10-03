@@ -1,5 +1,6 @@
 ﻿using CosmicShore.App.Systems;
 using CosmicShore.Core;
+using CosmicShore.SOAP;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -12,8 +13,16 @@ namespace CosmicShore.Game
         [SerializeField] 
         ThemeManagerDataContainerSO themeManagerData;
         
+        [SerializeField]
+        protected MiniGameDataSO gameData;
+        
         [ClientRpc]
         internal void InitializeAndSetupPlayer_ClientRpc(ClientRpcParams clientRpcParams = default)
+        {
+            InitializeAndSetupPlayer();
+        }
+
+        protected virtual void InitializeAndSetupPlayer()
         {
             foreach (Player networkPlayer in Player.NppList)
             {
@@ -22,15 +31,10 @@ namespace CosmicShore.Game
 
                 networkPlayer.InitializeForMultiplayerMode(networkShip);
                 networkShip.Initialize(networkPlayer, false);
-
                 PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
-
-                bool toggle = !networkPlayer.IsOwner;
-                networkPlayer.ToggleStationaryMode(toggle);
-                networkPlayer.ToggleInputPause(toggle);
+                
+                gameData.AddPlayer(networkPlayer);
             }
-
-            PauseSystem.TogglePauseGame(false);
         }
     }
 }

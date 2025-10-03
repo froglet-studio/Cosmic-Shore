@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using CosmicShore.Soap;
+using CosmicShore.SOAP;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using Unity.Netcode;
@@ -18,7 +19,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(NetcodeHooks))]
     public class NetworkShipSpawner : MonoBehaviour
     {
-        [SerializeField] ScriptableEventNoParam OnAllClientJoined;
+        [SerializeField] MiniGameDataSO gameData;
         [SerializeField] ClientPlayerSpawner clientPlayerSpawner;
         [SerializeField, Tooltip("A collection of locations for spawning players")]
         Transform[] _playerSpawnPoints;
@@ -76,7 +77,7 @@ namespace CosmicShore.Game
             if (session != null && session.AvailableSlots == 0)
             {
                 DebugExtensions.LogColored("[NetworkShipSpawner] All players have joined; lobby full.", Color.green);
-                OnAllClientJoined?.Raise();
+                gameData.InvokeClientReady();
             }
         }
 
@@ -163,7 +164,7 @@ namespace CosmicShore.Game
                 if (!playerNetObj) continue;
 
                 var player = playerNetObj.GetComponent<Player>();
-                if (player == null) continue;
+                if (!player) continue;
 
                 if (player.Vessel != null)
                 {
@@ -208,8 +209,8 @@ namespace CosmicShore.Game
             // Position
             if (preservePosition && networkPlayer.Vessel is Component oldVesselComp)
             {
-                networkShip.transform.position = oldVesselComp.transform.position;
-                networkShip.transform.rotation = oldVesselComp.transform.rotation;
+                var oldTransform =  oldVesselComp.transform;
+                networkShip.transform.SetPositionAndRotation(oldTransform.position, oldTransform.rotation);
             }
             else
             {

@@ -21,7 +21,7 @@ namespace CosmicShore.Game.Arcade
         
         void OnEnable()
         {
-            miniGameData.OnMiniGameStart += StartMonitors;
+            miniGameData.OnStarted += StartMonitors;
             miniGameData.OnMiniGameTurnEnd += PauseMonitors;
             miniGameData.OnMiniGameEnd += StopMonitors;
         }
@@ -34,12 +34,12 @@ namespace CosmicShore.Game.Arcade
             if (!CheckEndOfTurn())
                 return;
 
-            miniGameData.InvokeMiniGameTurnConditionsMet();
+            miniGameData.InvokeGameTurnConditionsMet();
         }
 
         void OnDisable()
         {
-            miniGameData.OnMiniGameStart -= StartMonitors;
+            miniGameData.OnStarted -= StartMonitors;
             miniGameData.OnMiniGameTurnEnd -= PauseMonitors;
             miniGameData.OnMiniGameEnd -= StopMonitors;
         }

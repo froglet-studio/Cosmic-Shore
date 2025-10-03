@@ -9,7 +9,7 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            _gameData.OnMiniGameInitialize += InitializeGame;
+            _gameData.OnInitialized += InitializeGame;
         }
 
         private void Start()
@@ -20,14 +20,14 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
-            _gameData.OnMiniGameInitialize -= InitializeGame;
+            _gameData.OnInitialized -= InitializeGame;
         }
 
         void InitializeGame()
         {
             SpawnPlayerAndAddToGameData(InitializePlayerData());
             SpawnAIPlayersAndAddToGameData();
-            RaiseAllPlayersSpawned();
+            _gameData.InvokeGameStarted();
         }
 
         private IPlayer.InitializeData InitializePlayerData()

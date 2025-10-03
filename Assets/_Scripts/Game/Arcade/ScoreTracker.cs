@@ -25,13 +25,13 @@ namespace CosmicShore.Game.Arcade
 
         void OnEnable()
         {
-            miniGameData.OnMiniGameInitialize += InitializeScoringMode;
+            miniGameData.OnInitialized += InitializeScoringMode;
             miniGameData.OnMiniGameEnd += CalculateWinner;
         }
 
         void OnDisable()
         {
-            miniGameData.OnMiniGameInitialize -= InitializeScoringMode;
+            miniGameData.OnInitialized -= InitializeScoringMode;
             miniGameData.OnMiniGameEnd -= CalculateWinner;
         }
         

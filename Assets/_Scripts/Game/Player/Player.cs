@@ -62,6 +62,8 @@ namespace CosmicShore.Game
             IsInitializedAsAI = false;
             Domain = NetTeam.Value;
             Vessel = vessel;
+            ToggleStationaryMode(true);
+            ToggleInputPause(true);
         }
         
         public override void OnNetworkSpawn()

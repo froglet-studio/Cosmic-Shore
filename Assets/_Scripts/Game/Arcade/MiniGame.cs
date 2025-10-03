@@ -115,7 +115,7 @@ namespace CosmicShore.Game.Arcade
             // GameManager.OnPlayGame += InitializeGame;
             
             // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnStarted += FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused += HandleGamePaused;
             PauseSystem.OnGameResumed += HandleGameResumed;
@@ -126,7 +126,7 @@ namespace CosmicShore.Game.Arcade
             // GameManager.OnPlayGame -= InitializeGame;
             
             // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnStarted -= FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
