@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         private TrailPool _trailPool;
         private GameObject BlockPrefab { get; set; }
 
-        private bool _pendingPoolBuild;   // wait until rect has size
+        private bool _pendingPoolBuild;
 
         public virtual void Initialize(IVesselStatus vesselStatus, VesselHUDView view)
         {
@@ -82,8 +82,7 @@ namespace CosmicShore.Game
                 _trailPool.SetTargetDriftAngle(angle);
                 _trailPool.Tick(Time.deltaTime);
             }
-
-            // If container size was zero earlier, try building pool now
+            
             if (_pendingPoolBuild && _view != null && _view.trailDisplayContainer != null)
             {
                 var r = _view.trailDisplayContainer.rect;
@@ -97,8 +96,6 @@ namespace CosmicShore.Game
 
         private void PrimeInitialUI()
         {
-            if (_view.silhouetteContainer) _view.silhouetteContainer.localRotation = Quaternion.identity;
-
             var resources = _status?.ResourceSystem?.Resources;
             if (resources != null &&
                 _view.jawResourceIndex >= 0 &&

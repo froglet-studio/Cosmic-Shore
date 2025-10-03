@@ -2410,7 +2410,7 @@ MonoBehaviour:
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
-    initialAmount: 0.3
+    initialAmount: 0
   - Name: Boost
     initialResourceGainRate: 0
     resourceGainRate: 0.1
@@ -3657,6 +3657,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7719386630505466999}
     m_Modifications:
+    - target: {fileID: 139200945702124579, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4250806807686435711, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       propertyPath: m_Name
@@ -3767,6 +3772,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7567345571259705406, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       propertyPath: topJaw
@@ -3837,6 +3847,11 @@ PrefabInstance:
       propertyPath: 'silhouetteParts.Array.data[2]'
       value: 
       objectReference: {fileID: 7834992998503353775}
+    - target: {fileID: 8426153630896085836, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 4228086418629391062, guid: 3a48a770e15885e4dbc159855aebb73e, type: 3}

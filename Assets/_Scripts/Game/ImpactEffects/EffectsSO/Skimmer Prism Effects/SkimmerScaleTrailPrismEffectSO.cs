@@ -7,7 +7,7 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerScaleTrailAndCameraPrismEffect")]
     public class SkimmerScaleTrailPrismEffectSO : SkimmerPrismEffectSO
     {
-        [SerializeField] private float minDistance = 15f;
+        [SerializeField] private float minSqrDistance = 15f;
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
@@ -15,7 +15,7 @@ namespace CosmicShore.Game
             var sqrRadius = skimmer.transform.localScale.x * skimmer.transform.localScale.x / 4f;
             var sqrDist   = (skimmer.transform.position - prismImpactee.Prism.transform.position).sqrMagnitude;
 
-            float normalized = Mathf.InverseLerp(minDistance, sqrRadius, sqrDist);
+            float normalized = Mathf.InverseLerp(minSqrDistance, sqrRadius, sqrDist);
 
             skimmer.VesselStatus.PrismSpawner.SetNormalizedXScale(normalized);
 
