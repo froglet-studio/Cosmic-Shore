@@ -47,7 +47,19 @@ namespace CosmicShore.Game
                 return "No-name";
             }
         }
-        Domains Domain => Player.Domain;
+
+        Domains Domain
+        {
+            get
+            {
+                if (Player == null)
+                {
+                    Debug.LogError("No Player found to get domain!");
+                    return Domains.Jade;
+                }
+                return Player.Domain;
+            }
+        }
 
         bool Portrait { get; set; }
         ResourceSystem ResourceSystem { get; }
