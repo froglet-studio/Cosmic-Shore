@@ -46,7 +46,7 @@ namespace CosmicShore.Core
         {
             _onSceneTransition.Raise(false);
 
-            miniGameData.ResetOnSceneChanged();
+            miniGameData.ResetRuntimeData();
             
             // Delay is realtime so it still works if Time.timeScale = 0
             await UniTask.Delay(TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD), 
@@ -58,7 +58,7 @@ namespace CosmicShore.Core
         private void OnApplicationQuit()
         {
             TeamAssigner.ClearCache();
-            miniGameData.ResetData();
+            miniGameData.ResetAllData();
         }
     }
 }

@@ -1686,6 +1686,9 @@ MonoBehaviour:
     type: 2}
   _playerOrigins:
   - {fileID: 1468661147}
+  - {fileID: 1074736317}
+  - {fileID: 1268646870}
+  - {fileID: 376227340}
 --- !u!114 &1183886170
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1724,12 +1727,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  clientPlayerSpawner: {fileID: 1183886174}
-  _playerSpawnPoints:
-  - {fileID: 1468661147}
-  - {fileID: 1074736317}
-  - {fileID: 1268646870}
-  - {fileID: 376227340}
+  clientPlayerVesselInitializer: {fileID: 1183886174}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
 --- !u!114 &1183886173
@@ -1754,7 +1752,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1183886163}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c99ef62e7f9f41be9d093e4da5763590, type: 3}
+  m_Script: {fileID: 11500000, guid: fc7ff967d6770d241a956a121fdcfa63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1

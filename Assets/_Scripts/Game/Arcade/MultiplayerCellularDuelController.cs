@@ -18,27 +18,15 @@ namespace CosmicShore.Game.Arcade
             miniGameData.OnMiniGameTurnEnd += EndTurn;
         }
 
-        protected override void OnReadyClicked_()
-        {
-            if (!IsServer)
-                return;
-            base.OnReadyClicked_();
-        }
-
         protected override void OnCountdownTimerEnded()
         {
+            miniGameData.SetPlayersActiveForMultiplayer(active: true);
+
             if (!IsServer)
                 return;
-
-            OnCountdownTimerEnded_ClientRpc();
-        }
-
-        [ClientRpc]
-        void OnCountdownTimerEnded_ClientRpc()
-        {
+            
             roundsPlayed = 0;
             turnsTakenThisRound = 0;
-            miniGameData.SetPlayersActiveForMultiplayer(active: true);
             miniGameData.StartNewGame();
         }
     }

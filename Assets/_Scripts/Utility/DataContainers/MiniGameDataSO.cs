@@ -23,7 +23,7 @@ namespace CosmicShore.SOAP
     {
         // Events
         public event Action OnLaunchGame;
-        public event Action OnInitialized;
+        public event Action OnMiniGameInitialized;
         public event Action OnClientReady;
         public event Action OnStarted;
         public event Action OnMiniGameTurnEnd;
@@ -66,17 +66,11 @@ namespace CosmicShore.SOAP
 
         public void InvokeGameLaunch() => OnLaunchGame?.Invoke();
         
-        public void Initialize()
+        public void InitializeMiniGame()
         {
             PauseSystem.TogglePauseGame(false);
-
-            Players.Clear();
-            RoundStatsList.Clear();
-            PlayerOrigins = Array.Empty<Transform>();
-            _activePlayerId = 0;
-            TurnStartTime = 0f;
-
-            OnInitialized?.Invoke();
+            ResetRuntimeData();
+            OnMiniGameInitialized?.Invoke();
         }
 
         public void SetupForMultiplayer()
@@ -111,7 +105,7 @@ namespace CosmicShore.SOAP
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
         public void InvokeClientReady() => OnClientReady?.Invoke();
 
-        public void ResetOnSceneChanged()
+        public void ResetRuntimeData()
         {
             Players.Clear();
             RoundStatsList.Clear();
@@ -120,19 +114,15 @@ namespace CosmicShore.SOAP
             TurnStartTime = 0f;
         }
         
-        public void ResetData()
+        public void ResetAllData()
         {
             GameMode = GameModes.Random;
-            Players.Clear();
-            RoundStatsList.Clear();
-            PlayerOrigins = Array.Empty<Transform>();
-            _activePlayerId = 0;
-
             selectedVesselClass.Value = VesselClassType.Manta;
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
-            TurnStartTime = 0f;
+            
+            ResetRuntimeData();
         }
 
         // -----------------------------------------------------------------------------------------
@@ -281,12 +271,12 @@ namespace CosmicShore.SOAP
                     return;
                 }
 
-                if (active)
+                /*if (active)
                 {
                     // Reset vessel state when activating for a new run
                     player.Vessel.VesselStatus.ResourceSystem.Reset();
                     player.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
-                }
+                }*/
                 
                 var p = player as Player;
                 bool toggle = p && !p.IsOwner;

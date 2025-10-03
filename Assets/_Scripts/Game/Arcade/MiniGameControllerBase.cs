@@ -37,9 +37,9 @@ namespace CosmicShore.Game.Arcade
 
         private void Start()
         {
+            miniGameData.InitializeMiniGame();
             miniGameData.PlayerOrigins =  _playerOrigins;
             miniGameData.GameMode = gameMode;
-            miniGameData.Initialize();
         }
 
         public void OnReadyClicked()
