@@ -93,8 +93,13 @@ namespace CosmicShore.Game
 
         async UniTask JoinSessionAsClientById(string sessionId)
         {
+            var playerProperties = await GetPlayerProperties();
+            var sessionOpts = new JoinSessionOptions
+            {
+                PlayerProperties = playerProperties,
+            };
             Debug.Log($"[MultiplayerSetup] Joining session {sessionId}");
-            ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, new JoinSessionOptions());
+            ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, sessionOpts);
         }
 
         async UniTask<IList<ISessionInfo>> QuerySessions()

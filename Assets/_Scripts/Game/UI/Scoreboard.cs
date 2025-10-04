@@ -1,19 +1,15 @@
-using System;
-using CosmicShore.Game.Arcade;
 using System.Collections.Generic;
-using System.Linq;
-using CosmicShore.Core;
 using CosmicShore.SOAP;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.Game
 {
     public class Scoreboard : MonoBehaviour
     {
         [SerializeField]
-        MiniGameDataSO miniGameData; 
+        protected MiniGameDataSO miniGameData; 
         
         [SerializeField]
         Transform gameOverPanel;
@@ -62,15 +58,18 @@ namespace CosmicShore
             miniGameData.OnWinnerCalculated -= ShowSinglePlayerView;
         }
 
+        protected virtual bool TryGetWinner(out IRoundStats roundStats, out bool localIsWinner) =>
+            miniGameData.TryGetWinner(out roundStats, out localIsWinner);
+        
         void ShowSinglePlayerView()
         {
-            if (!miniGameData.IsLocalPlayerWinner(out IRoundStats roundStats, out bool won))
+            if (!TryGetWinner(out  IRoundStats roundStats, out bool localIsWinner))
                 return;
                 
             // Setup Banner
             BannerImage.color = SinglePlayerBannerColor;
             
-            if (!won)
+            if (!localIsWinner)
                 BannerText.text = "DEFEAT";
             else
                 BannerText.text = "WON";

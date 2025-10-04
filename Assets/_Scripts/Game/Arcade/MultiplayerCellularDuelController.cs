@@ -1,3 +1,6 @@
+using System;
+using CosmicShore.App.Systems;
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,17 +10,38 @@ namespace CosmicShore.Game.Arcade
     {
         private int readyClientCount;
         
+        protected override void Start()
+        {
+            PauseSystem.TogglePauseGame(false);
+        }
+        
         public override void OnNetworkSpawn()
         {
             if (!IsServer)
                 return;
+            
             miniGameData.OnMiniGameTurnEnd += EndTurn;
+            InitializeAfterDelay().Forget();
+        }
+        
+        private async UniTaskVoid InitializeAfterDelay()
+        {
+            try
+            {
+                // Delay for 2 seconds (scaled time by default)
+                await UniTask.Delay(1000, DelayType.UnscaledDeltaTime);
+                Initialize();
+            }
+            catch (OperationCanceledException)
+            {
+            }
         }
 
         public override void OnNetworkDespawn()
         {
             if (!IsServer)
                 return;
+            
             miniGameData.OnMiniGameTurnEnd += EndTurn;
         }
 

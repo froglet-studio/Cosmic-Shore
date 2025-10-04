@@ -3,11 +3,12 @@ using System.Threading;
 using CosmicShore.SOAP;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public abstract class TurnMonitor : MonoBehaviour
+    public abstract class TurnMonitor : NetworkBehaviour
     {
         [Header("Timing")]
         [SerializeField] protected float _updateInterval = 1f;

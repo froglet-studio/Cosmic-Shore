@@ -75,8 +75,6 @@ namespace CosmicShore.Core
             _onGameOver.OnRaised -= OutputRoundStats;*/
         }
         
-        public virtual IRoundStats GetOrCreateRoundStats(Domains domain) => new RoundStats();
-        
         public void LifeformCreated(int cellID)
         {
             if (!allowRecord) return;
@@ -400,6 +398,20 @@ namespace CosmicShore.Core
                     break;
             }
         }
+        void UpdateStatForPlayer(string playerName, Action<IRoundStats> updateAction)
+        {
+            if (!_miniGameData.TryGetRoundStats(playerName, out var roundStats))
+                return;
+
+            updateAction(roundStats);
+            
+            // TODO - Remove following code after confirmation.
+            /*if (TeamStats.TryGetValue(team, out var teamStats))
+                updateAction(teamStats);
+
+            if (PlayerStats.TryGetValue(playerName, out var playerStats))
+                updateAction(playerStats);*/
+        }
         
         /*
          
@@ -430,24 +442,8 @@ namespace CosmicShore.Core
             EnsureDictionaryEntriesExist(team, playerName);
         }
         */
-
-        
         
         // void UpdateStatForTeamAndPlayer(Teams team, string playerName, Action<IRoundStats> updateAction)
-        void UpdateStatForPlayer(string playerName, Action<IRoundStats> updateAction)
-        {
-            if (!_miniGameData.TryGetRoundStats(playerName, out var roundStats))
-                return;
-
-            updateAction(roundStats);
-            
-            // TODO - Remove following code after confirmation.
-            /*if (TeamStats.TryGetValue(team, out var teamStats))
-                updateAction(teamStats);
-
-            if (PlayerStats.TryGetValue(playerName, out var playerStats))
-                updateAction(playerStats);*/
-        }
 
         /*protected void OutputRoundStats()
         {

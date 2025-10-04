@@ -17,6 +17,7 @@ namespace CosmicShore.Game
         IVessel Vessel { get; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
+        public bool IsNetworkOwner { get; }
 
         bool IsActive { get; }
         bool AutoPilotEnabled { get; }
@@ -48,7 +49,7 @@ namespace CosmicShore.Game
             [FormerlySerializedAs("ShipClass")] [FormerlySerializedAs("ShipType")] public VesselClassType vesselClass;
             [FormerlySerializedAs("Team")] public Domains domain;
             public string PlayerName;
-            public string PlayerUUID;
+            public Transform Origin;
             
             [FormerlySerializedAs("EnableAIPilot")] [Tooltip("If true, the player-vessel will spawn as AI")]
             public bool IsAI;

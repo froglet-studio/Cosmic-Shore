@@ -1644,6 +1644,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a8eb12f3db145b49948825ed7a796cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   golfRules: 0
   scoringConfigs:
@@ -1684,11 +1685,6 @@ MonoBehaviour:
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  _playerOrigins:
-  - {fileID: 1468661147}
-  - {fileID: 1074736317}
-  - {fileID: 1268646870}
-  - {fileID: 376227340}
 --- !u!114 &1183886170
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1730,6 +1726,11 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1183886174}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
+  _playerOrigins:
+  - {fileID: 1468661147}
+  - {fileID: 1074736317}
+  - {fileID: 1268646870}
+  - {fileID: 376227340}
 --- !u!114 &1183886173
 MonoBehaviour:
   m_ObjectHideFlags: 0

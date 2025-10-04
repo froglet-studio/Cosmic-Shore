@@ -27,23 +27,25 @@ namespace CosmicShore.Game.Arcade
         
         [SerializeField] 
         protected ScriptableEventBool _onToggleReadyButton;
-        
-        [SerializeField]
-        Transform[] _playerOrigins;
 
         // Gameplay state
         protected int turnsTakenThisRound;
         protected int roundsPlayed;
 
-        private void Start()
+        protected virtual void Start()
         {
-            miniGameData.InitializeMiniGame();
-            miniGameData.PlayerOrigins =  _playerOrigins;
-            miniGameData.GameMode = gameMode;
+            PauseSystem.TogglePauseGame(false);
+            Initialize();
         }
 
         public void OnReadyClicked() =>
             OnReadyClicked_();
+        
+        protected void Initialize()
+        {
+            miniGameData.InitializeMiniGame();
+            miniGameData.GameMode = gameMode;
+        }
 
         protected virtual void OnReadyClicked_()
         {

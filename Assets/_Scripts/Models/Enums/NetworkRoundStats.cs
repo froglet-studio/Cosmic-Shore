@@ -1,8 +1,10 @@
-﻿using Unity.Collections;
+﻿using System;
+using Unity.Collections;
 using Unity.Netcode;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
+    [Serializable]
     public class NetworkRoundStats : NetworkBehaviour, IRoundStats
     {
         private readonly NetworkVariable<FixedString64Bytes> n_Name = new(

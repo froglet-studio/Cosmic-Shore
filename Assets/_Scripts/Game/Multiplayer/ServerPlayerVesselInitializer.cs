@@ -25,8 +25,11 @@ namespace CosmicShore.Game
         [SerializeField] 
         VesselPrefabContainer vesselPrefabContainer;
 
+        [SerializeField]
+        Transform[] _playerOrigins;
+        
         NetcodeHooks _netcodeHooks;
-        List<Transform> _playerSpawnPointsList = null;
+        List<Transform> _playerSpawnPointsList = new ();
         
         public Action OnAllPlayersSpawned;
 
@@ -131,13 +134,13 @@ namespace CosmicShore.Game
 
                 foreach (var clientPair in NetworkManager.Singleton.ConnectedClientsList)
                 {
-                    var target = new ClientRpcSendParams
-                    {
-                        TargetClientIds = new[] { clientId }
-                    };
-                    
                     if (clientPair.ClientId != clientId)
                     {
+                        var target = new ClientRpcSendParams
+                        {
+                            TargetClientIds = new[] { clientPair.ClientId }
+                        };
+                        
                         clientPlayerVesselInitializer.InitializePlayerAndVessel_ClientRpc(clientId, new ClientRpcParams
                         {
                             Send = target
@@ -145,6 +148,11 @@ namespace CosmicShore.Game
                     }
                     else
                     {
+                        var target = new ClientRpcSendParams
+                        {
+                            TargetClientIds = new[] { clientId }
+                        };
+                        
                         clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(new ClientRpcParams
                         {
                             Send = target
@@ -192,14 +200,14 @@ namespace CosmicShore.Game
         // ----------------------------
         private Transform GetRandomSpawnPoint()
         {
-            if (gameData.PlayerOrigins == null || gameData.PlayerOrigins.Length == 0)
+            if (_playerOrigins == null || _playerOrigins.Length == 0)
             {
                 Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
                 return null;
             }
 
             if (_playerSpawnPointsList == null || _playerSpawnPointsList.Count == 0)
-                _playerSpawnPointsList = new List<Transform>(gameData.PlayerOrigins);
+                _playerSpawnPointsList = new List<Transform>(_playerOrigins);
 
             int index = UnityEngine.Random.Range(0, _playerSpawnPointsList.Count);
             Transform spawnPoint = _playerSpawnPointsList[index];

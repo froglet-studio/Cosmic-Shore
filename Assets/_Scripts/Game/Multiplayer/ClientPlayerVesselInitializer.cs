@@ -2,6 +2,7 @@
 using CosmicShore.App.Systems;
 using CosmicShore.Core;
 using CosmicShore.SOAP;
+using CosmicShore.Utility.ClassExtensions;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -47,10 +48,24 @@ namespace CosmicShore.Game
             networkPlayer.InitializeForMultiplayerMode(networkShip);
             networkShip.Initialize(networkPlayer, false);
             PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
-                
-            gameData.AddPlayer(networkPlayer);
+            
+            
+            var roundStats = networkPlayer.gameObject.GetOrAdd<NetworkRoundStats>();
+            if (!roundStats)
+            {
+                Debug.LogError(
+                    "No network round stats found in network player!. Add a NetworkRoundStats component to the prefab!");
+                return;
+            }
+            gameData.AddPlayerInMultiplayer(networkPlayer, roundStats);
 
-            if (clientId == networkPlayer.OwnerClientId)
+            if (IsServer)
+            {
+                roundStats.Name = networkPlayer.Name;
+                roundStats.Domain = networkPlayer.Domain;
+            }
+
+            if (clientId.IsLocalClient())
                 gameData.InvokeClientReady();
         }
     }

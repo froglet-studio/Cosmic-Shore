@@ -1,20 +1,18 @@
 using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.Game.UI;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using CosmicShore.Core;
 using CosmicShore.SOAP;
+using Unity.Netcode;
 using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game.Arcade
 {
-    public class ScoreTracker : MonoBehaviour
+    public class ScoreTracker : NetworkBehaviour
     {
         [SerializeField]
-        MiniGameDataSO miniGameData;
+        protected MiniGameDataSO miniGameData;
         
         [SerializeField] bool golfRules;  // For primary scoring mode
         
@@ -23,26 +21,25 @@ namespace CosmicShore.Game.Arcade
 
         BaseScoring[] scoringArray;
 
-        void OnEnable()
+        protected virtual void OnEnable()
         {
             miniGameData.OnMiniGameInitialized += InitializeScoringMode;
-            miniGameData.OnMiniGameEnd += CalculateWinner;
+            miniGameData.OnMiniGameEnd += CalculateWinnerAndInvokeEvent;
         }
 
-        void OnDisable()
+        protected virtual void OnDisable()
         {
             miniGameData.OnMiniGameInitialized -= InitializeScoringMode;
-            miniGameData.OnMiniGameEnd -= CalculateWinner;
+            miniGameData.OnMiniGameEnd -= CalculateWinnerAndInvokeEvent;
         }
-        
-        
-        void CalculateWinner()
+
+
+        protected void CalculateWinner()
         {
             miniGameData.ResetPlayerScores();
             CalculateScores();
-            miniGameData.SortRoundStats(golfRules);
-            miniGameData.InvokeWinnerCalculated();
-
+            
+            
             /* StatsManager.Instance.ResetStats();
 
             var playerScores = scoreData.RoundStatsList;
@@ -50,16 +47,20 @@ namespace CosmicShore.Game.Arcade
             foreach (var score in playerScores)
                 StatsManager.Instance.AddPlayer(score.Team, score.Name);*/
         }
-
-        /*public int GetScore(string playerName)
-        {
-            if (!miniGameData.TryGetRoundStats(playerName, out var playerScore))
-                return 0;
-
-            return (int)playerScore.Score;
-        }*/
         
-        void InitializeScoringMode()
+        protected void CalculateWinnerAndInvokeEvent()
+        {
+            CalculateWinner();
+            SortAndInvokeResults();
+        }
+
+        protected void SortAndInvokeResults()
+        {
+            miniGameData.SortRoundStats(golfRules);
+            miniGameData.InvokeWinnerCalculated();
+        }
+        
+        protected void InitializeScoringMode()
         {
             if (scoringConfigs == null || scoringConfigs.Length == 0)
             {
@@ -107,7 +108,7 @@ namespace CosmicShore.Game.Arcade
                 scoring.CalculateScore();
         }
     }
-    
+
     [System.Serializable]
     public struct ScoringConfig
     {

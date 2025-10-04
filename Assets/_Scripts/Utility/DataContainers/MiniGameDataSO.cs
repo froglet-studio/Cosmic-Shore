@@ -6,6 +6,7 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
+using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -48,7 +49,6 @@ namespace CosmicShore.SOAP
         public bool IsMission;
         public bool IsMultiplayerMode;
         public List<IPlayer> Players = new();
-        public Transform[] PlayerOrigins;
         [SerializeReference]
         public List<IRoundStats> RoundStatsList = new();
         public Dictionary<int, CellStats> CellStatsList = new();
@@ -56,10 +56,28 @@ namespace CosmicShore.SOAP
         public float TurnStartTime;
         public bool IsRunning { get; private set; }
         
+        public IPlayer ActivePlayer { get; private set; }
+        /*{
+            get
+            {
+                if (IsMultiplayerMode)
+                {
+                    foreach (var data in Players)
+                    {
+                        if (data.IsNetworkOwner)
+                            return data;
+                    }
 
-        int _activePlayerId;
-        public IPlayer ActivePlayer =>
-            (_activePlayerId >= 0 && _activePlayerId < Players.Count) ? Players[_activePlayerId] : null;
+                    Debug.LogError("No active player found! Should never happen!");
+                    return null;
+                }
+                else
+                {
+                    return (_activePlayerId >= 0 && _activePlayerId < Players.Count) ? Players[_activePlayerId] : null;        
+                }
+            }
+        }*/
+            
 
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
@@ -68,7 +86,6 @@ namespace CosmicShore.SOAP
         
         public void InitializeMiniGame()
         {
-            PauseSystem.TogglePauseGame(false);
             ResetRuntimeData();
             OnMiniGameInitialized?.Invoke();
         }
@@ -109,8 +126,6 @@ namespace CosmicShore.SOAP
         {
             Players.Clear();
             RoundStatsList.Clear();
-            PlayerOrigins = Array.Empty<Transform>();
-            _activePlayerId = 0;
             TurnStartTime = 0f;
         }
         
@@ -169,8 +184,30 @@ namespace CosmicShore.SOAP
             float gold = VolumeOf(Domains.Gold);
             return new Vector4(jade, ruby, blue, gold);
         }
+        
+        public bool TryGetWinnerForMultiplayer(out IRoundStats roundStats, out bool won)
+        {
+            roundStats = null;
+            won = false;
+            if (RoundStatsList is null || RoundStatsList.Count == 0)
+            {
+                Debug.LogError("No round stats found to calculate winner!");
+                return false;
+            }
 
-        public bool IsLocalPlayerWinner(out IRoundStats roundStats, out bool won)
+            if (!TryGetActivePlayerStats(out IPlayer _, out roundStats))
+            {
+                Debug.LogError("No round stats of active player found!");
+                return false;   
+            }
+
+            if (roundStats.Name == RoundStatsList[0].Name)
+                won = true;
+
+            return true;
+        }
+
+        public bool TryGetWinner(out IRoundStats roundStats, out bool won)
         {
             roundStats = null;
             won = false;
@@ -201,6 +238,8 @@ namespace CosmicShore.SOAP
             if (RoundStatsList.Any(rs => rs.Name == p.Name)) return;
 
             Players.Add(p);
+            if (Players.Count == 1)
+                ActivePlayer = p;
 
             // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
             RoundStatsList.Add(new RoundStats
@@ -208,6 +247,26 @@ namespace CosmicShore.SOAP
                 Name = p.Name,
                 Domain = p.Domain
             });
+        }
+
+        public void AddPlayerInMultiplayer(IPlayer p, IRoundStats roundStats)
+        {
+            if (p == null) 
+                return;
+
+            // Avoid duplicates by Name
+            if (Players.Any(player => player.Name == p.Name)) 
+                return;
+            
+            if (RoundStatsList.Any(rs => rs.Name == p.Name)) 
+                return;
+
+            Players.Add(p);
+            if (p.IsNetworkOwner)
+                ActivePlayer = p;
+            
+            // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
+            RoundStatsList.Add(roundStats);
         }
         
         public void ResetPlayerScores()

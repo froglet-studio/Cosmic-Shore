@@ -1,4 +1,4 @@
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     [System.Serializable]
     public class RoundStats : IRoundStats

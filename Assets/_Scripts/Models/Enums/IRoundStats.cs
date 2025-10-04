@@ -1,4 +1,4 @@
-﻿namespace CosmicShore.Core
+﻿namespace CosmicShore.Game
 {
     public interface IRoundStats
     {

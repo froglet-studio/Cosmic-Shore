@@ -38,7 +38,7 @@ namespace CosmicShore.Game
                 vesselClass      = _gameData.selectedVesselClass.Value,
                 domain           = Domains.Jade,         // Default for now
                 PlayerName     = "HumanJade",        // Placeholder
-                PlayerUUID     = "HumanJade1",       // Placeholder
+                // PlayerUUID     = "HumanJade1",       // Placeholder
                 AllowSpawning  = true,
                 IsAI  = false,
             };
