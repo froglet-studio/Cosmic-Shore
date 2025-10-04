@@ -2067,8 +2067,8 @@ GameObject:
   - component: {fileID: 1628508335}
   - component: {fileID: 1628508331}
   - component: {fileID: 1628508336}
-  - component: {fileID: 1628508327}
   - component: {fileID: 1628508326}
+  - component: {fileID: 1628508337}
   - component: {fileID: 1628508334}
   - component: {fileID: 1628508333}
   m_Layer: 0
@@ -2092,25 +2092,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   monitors:
-  - {fileID: 1628508327}
---- !u!114 &1628508327
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628508325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  _updateInterval: 1
-  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
-    type: 2}
-  duration: 10
+  - {fileID: 1628508337}
 --- !u!4 &1628508330
 Transform:
   m_ObjectHideFlags: 0
@@ -2238,6 +2220,24 @@ MonoBehaviour:
   scoringConfigs:
   - Mode: 6
     Multiplier: 1
+--- !u!114 &1628508337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1628508325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30f5bd573bfc4a29891fc9a175083c37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  _updateInterval: 1
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
+    type: 2}
+  duration: 10
 --- !u!1001 &1655328213
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Netcode;
 
 namespace CosmicShore.Game.Arcade
@@ -6,13 +7,12 @@ namespace CosmicShore.Game.Arcade
     {
         protected override void UpdateTimerUI()
         {
-            UpdateTimerUI_ClientRpc();
+            FixedString32Bytes message = GetTimeToDisplay(); 
+            UpdateTimerUI_ClientRpc(message);
         }
 
         [ClientRpc]
-        private void UpdateTimerUI_ClientRpc()
-        {
-            UpdateTimerUI_2();
-        }
+        private void UpdateTimerUI_ClientRpc(FixedString32Bytes message) =>
+            UpdateTimerUI_2(message.ToString());
     }
 }
