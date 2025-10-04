@@ -480,6 +480,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 69216806}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &69216810 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5428165463410687127, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 69216806}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab5bb3a7e3f94a54c9f2436c5d375c16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &379069949
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -951,10 +963,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1527998410}
+  - component: {fileID: 1527998414}
   - component: {fileID: 1527998411}
   - component: {fileID: 1527998408}
   - component: {fileID: 1527998409}
   - component: {fileID: 1527998413}
+  - component: {fileID: 1527998415}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -974,6 +988,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a8eb12f3db145b49948825ed7a796cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   golfRules: 0
   scoringConfigs:
@@ -991,6 +1006,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _updateInterval: 1
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
@@ -1023,6 +1039,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea1f86e75b9f8534e97f42ce24675b5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   gameMode: 8
   numberOfRounds: 1
   numberOfTurnsPerRound: 1
@@ -1030,8 +1047,6 @@ MonoBehaviour:
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  _playerOrigins:
-  - {fileID: 1984950344}
 --- !u!114 &1527998413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1047,6 +1062,45 @@ MonoBehaviour:
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   monitors:
   - {fileID: 1527998409}
+--- !u!114 &1527998414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1527998405}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 3494949064
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &1527998415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1527998405}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c78a4f9731d42ceabb5b762d39084e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  volumeUI: {fileID: 69216810}
 --- !u!1001 &1666789273
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1316,13 +1370,13 @@ MonoBehaviour:
   - vesselClass: 2
     domain: 2
     PlayerName: Hostile1
-    PlayerUUID: 
+    Origin: {fileID: 0}
     IsAI: 1
     AllowSpawning: 1
   - vesselClass: 11
     domain: 2
     PlayerName: Hostile2
-    PlayerUUID: 
+    Origin: {fileID: 0}
     IsAI: 1
     AllowSpawning: 0
   _spawnAIAtStart: 0

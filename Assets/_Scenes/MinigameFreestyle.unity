@@ -768,6 +768,18 @@ PrefabInstance:
       addedObject: {fileID: 1575596405}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
+--- !u!114 &547474317 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5428165463410687127, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 547474316}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab5bb3a7e3f94a54c9f2436c5d375c16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &547474318 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5497835174634480090, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -1275,6 +1287,7 @@ GameObject:
   - component: {fileID: 1078953714}
   - component: {fileID: 1078953716}
   - component: {fileID: 1078953715}
+  - component: {fileID: 1078953718}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -1317,8 +1330,6 @@ MonoBehaviour:
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  _playerOrigins:
-  - {fileID: 1192541911}
   crystal: {fileID: 1715503258}
   crystalStartPosition: {x: 0, y: 0, z: 175.9}
   segmentSpawner: {fileID: 1020381236}
@@ -1342,6 +1353,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a8eb12f3db145b49948825ed7a796cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   golfRules: 0
   scoringConfigs:
@@ -1359,6 +1371,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _updateInterval: 1
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
@@ -1403,6 +1416,20 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &1078953718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c78a4f9731d42ceabb5b762d39084e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  volumeUI: {fileID: 547474317}
 --- !u!1 &1192541910
 GameObject:
   m_ObjectHideFlags: 0
