@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Game.IO;
 using CosmicShore.SOAP;
@@ -9,6 +10,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
+    [Serializable]
     public class Player : NetworkBehaviour, IPlayer
     { 
         [SerializeField]

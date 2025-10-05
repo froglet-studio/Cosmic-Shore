@@ -49,11 +49,11 @@ namespace CosmicShore.Game
         [System.Serializable]
         public class InitializeData
         {
-            [FormerlySerializedAs("ShipClass")] [FormerlySerializedAs("ShipType")] public VesselClassType vesselClass;
-            [FormerlySerializedAs("Team")] public Domains domain;
+            public VesselClassType vesselClass;
+            public Domains domain;
             public string PlayerName;
             
-            [FormerlySerializedAs("EnableAIPilot")] [Tooltip("If true, the player-vessel will spawn as AI")]
+            [Tooltip("If true, the player-vessel will spawn as AI")]
             public bool IsAI;
             
             [Tooltip("If true, then only this player-vessel will spawn")]

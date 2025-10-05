@@ -48,6 +48,7 @@ namespace CosmicShore.SOAP
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;
+        [SerializeReference]
         public List<IPlayer> Players = new();
         [SerializeReference]
         public List<IRoundStats> RoundStatsList = new();
