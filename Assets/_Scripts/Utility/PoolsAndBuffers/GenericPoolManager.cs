@@ -44,6 +44,8 @@ namespace CosmicShore.Core
         /// <summary>Returns an object back to the pool.</summary>
         protected void Release_(T instance)
         {
+            instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            instance.transform.SetParent(transform);
             pool.Release(instance);
         }
 
@@ -54,7 +56,7 @@ namespace CosmicShore.Core
 
         protected virtual T CreateFunc()
         {
-            var obj = Instantiate(prefab);
+            var obj = Instantiate(prefab, transform, true);
             obj.gameObject.SetActive(false);
             return obj;
         }

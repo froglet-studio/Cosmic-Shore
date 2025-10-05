@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1981306459138289011}
   - component: {fileID: 7076137217386601628}
   - component: {fileID: 6685113723044457391}
+  - component: {fileID: 7130540814290537395}
   m_Layer: 0
   m_Name: PrismImplosion
   m_TagString: FossilPrism
@@ -101,3 +102,36 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prismRenderer: {fileID: 7076137217386601628}
   implosionDuration: 2
+  growDelay: 0.25
+--- !u!114 &7130540814290537395
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d93ba61543949824db31c7cb89b4f009, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _binding: 0
+  _disableAfterSubscribing: 0
+  _eventResponses:
+  - Delay: 0
+    ScriptableEvent: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+    Response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 6685113723044457391}
+          m_TargetAssemblyTypeName: CosmicShore.Game.PrismImplosion, Assembly-CSharp
+          m_MethodName: ReturnToPool
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2

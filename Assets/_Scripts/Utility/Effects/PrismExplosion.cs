@@ -1,4 +1,7 @@
-using System.Collections;
+using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -6,6 +9,7 @@ namespace CosmicShore.Game
     /// <summary>
     /// Handles visual + positional explosion effect for prism destruction.
     /// Uses MaterialPropertyBlock to keep prefab-assigned materials intact.
+    /// UniTask-based animation with cancellation on disable.
     /// </summary>
     [RequireComponent(typeof(MeshRenderer))]
     public class PrismExplosion : MonoBehaviour
@@ -20,10 +24,12 @@ namespace CosmicShore.Game
         private MeshRenderer _renderer;
 
         private MaterialPropertyBlock _mpb;
-        private Coroutine _running;
 
-        // Callback so the pool manager can reclaim this instance
-        public System.Action<PrismExplosion> OnFinished;
+        // Pool callback (set by PoolManager)
+        public Action<PrismExplosion> OnReturnToPool;
+
+        // UniTask cancellation
+        private CancellationTokenSource _cts;
 
         // Cache shader property IDs for performance
         private static readonly int VelocityID = Shader.PropertyToID("_Velocity");
@@ -43,28 +49,27 @@ namespace CosmicShore.Game
             if (_renderer == null)
                 _renderer = GetComponent<MeshRenderer>();
 
-            // Always create a MPB instance
             _mpb = new MaterialPropertyBlock();
         }
 
         private void OnDisable()
         {
-            if (_running != null)
-            {
-                StopCoroutine(_running);
-                _running = null;
-            }
+            // Cancel any running animation and clean up overrides
+            CancelRunningTask();
 
-            if (_renderer && _mpb != null)
+            if (_renderer != null && _mpb != null)
             {
                 _mpb.Clear();
                 _renderer.SetPropertyBlock(_mpb);
             }
         }
 
+        /// <summary>
+        /// Fire the explosion animation. Safe-guards NaNs and uses UniTask.
+        /// </summary>
         public void TriggerExplosion(Vector3 velocity)
         {
-            if (!_renderer || _mpb == null)
+            if (_renderer == null || _mpb == null)
             {
                 Debug.LogError("[PrismExplosion] Missing required components, cannot trigger explosion.");
                 return;
@@ -73,13 +78,41 @@ namespace CosmicShore.Game
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * minSpeed;
 
-            if (_running != null)
-                StopCoroutine(_running);
-
-            _running = StartCoroutine(ExplosionCoroutine(velocity));
+            // Restart CTS and run new async animation
+            CancelRunningTask();
+            _cts = new CancellationTokenSource();
+            ExplosionAsync(velocity, _cts.Token).Forget();
         }
 
-        private IEnumerator ExplosionCoroutine(Vector3 velocity)
+        /// <summary>
+        /// Public method to immediately return this instance to the pool.
+        /// Also reparents under the PoolManager's transform for hierarchy cleanliness.
+        /// </summary>
+        public void ReturnToPool()
+        {
+            // Stop animation & clear overrides
+            CancelRunningTask();
+
+            if (_renderer != null && _mpb != null)
+            {
+                _mpb.Clear();
+                _renderer.SetPropertyBlock(_mpb);
+            }
+            
+            OnReturnToPool?.Invoke(this);
+        }
+
+        private void CancelRunningTask()
+        {
+            if (_cts != null)
+            {
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
+            }
+        }
+
+        private async UniTaskVoid ExplosionAsync(Vector3 velocity, CancellationToken ct)
         {
             // Clamp velocity and calculate speed
             float speed;
@@ -93,33 +126,45 @@ namespace CosmicShore.Game
             const float maxDuration = 7f;
             float duration = 0f;
 
-            while (duration <= maxDuration)
+            try
             {
-                duration += Time.deltaTime;
+                while (duration <= maxDuration)
+                {
+                    ct.ThrowIfCancellationRequested();
 
-                // Update position
-                Vector3 newPosition = initialPosition + duration * velocity;
-                if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
-                    transform.position = newPosition;
+                    duration += Time.deltaTime;
 
-                // Update shader overrides
-                _renderer.GetPropertyBlock(_mpb);
-                _mpb.SetFloat(ExplosionAmountID, speed * duration);
-                _mpb.SetFloat(OpacityID, 1f - (duration / maxDuration));
-                _renderer.SetPropertyBlock(_mpb);
+                    // Update position
+                    Vector3 newPosition = initialPosition + duration * velocity;
+                    if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
+                        transform.position = newPosition;
 
-                yield return null;
+                    // Update shader overrides
+                    _renderer.GetPropertyBlock(_mpb);
+                    _mpb.SetFloat(ExplosionAmountID, speed * duration);
+                    _mpb.SetFloat(OpacityID, 1f - (duration / maxDuration));
+                    _renderer.SetPropertyBlock(_mpb);
+
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Swallow; cleanup happens below
             }
 
             // Reset overrides
-            if (_renderer && _mpb != null)
+            if (_renderer != null && _mpb != null)
             {
                 _mpb.Clear();
                 _renderer.SetPropertyBlock(_mpb);
             }
 
-            _running = null;
-            OnFinished?.Invoke(this); // Notify pool manager
+            // Notify pool manager that we’re done (if not canceled by manual ReturnToPool)
+            if (!ct.IsCancellationRequested)
+            {
+                OnReturnToPool?.Invoke(this);
+            }
         }
     }
 }
