@@ -1,8 +1,11 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using System.Threading;
 using CosmicShore.App.Systems;
 using CosmicShore.Core;
 using CosmicShore.SOAP;
 using CosmicShore.Utility.ClassExtensions;
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -65,8 +68,20 @@ namespace CosmicShore.Game
                 roundStats.Domain = networkPlayer.Domain;
             }
 
-            if (clientId.IsLocalClient())
-                gameData.InvokeClientReady();
+            if (!clientId.IsLocalClient())
+                return;
+            
+            DelayInvokeClientReady(clientId, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+        
+        async UniTaskVoid DelayInvokeClientReady(ulong clientId, CancellationToken token)
+        {
+            await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, PlayerLoopTiming.LastPostLateUpdate ,token);
+            if (token.IsCancellationRequested)
+                return;
+            
+            gameData.InvokeClientReady();
+                
         }
     }
 }

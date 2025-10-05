@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using CosmicShore.Soap;
 using CosmicShore.SOAP;
 using Cysharp.Threading.Tasks;
@@ -7,7 +6,6 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Multiplayer.Samples.Utilities;
 using CosmicShore.Utility.ClassExtensions;
-using Obvious.Soap;
 using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
@@ -29,7 +27,6 @@ namespace CosmicShore.Game
         Transform[] _playerOrigins;
         
         NetcodeHooks _netcodeHooks;
-        List<Transform> _playerSpawnPointsList = new ();
         
         public Action OnAllPlayersSpawned;
 
@@ -47,6 +44,8 @@ namespace CosmicShore.Game
                 enabled = false;
                 return;
             }
+            
+            gameData.SetSpawnPositions(_playerOrigins);
 
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkVesselClientCache.OnNewInstanceAdded += OnNewVesselClientAdded;
@@ -77,7 +76,7 @@ namespace CosmicShore.Game
             var session = MultiplayerSetup.Instance.ActiveSession;
             if (session is { AvailableSlots: 0 })
             {
-                DebugExtensions.LogColored("[ServerPlayerVesselInitializer] All players have joined; lobby full.", Color.green);
+                // DebugExtensions.LogColored("[ServerPlayerVesselInitializer] All players have joined; lobby full.", Color.green);
                 OnAllPlayersSpawned?.Invoke();
             }
         }
@@ -187,32 +186,16 @@ namespace CosmicShore.Game
 
             var networkShip = Instantiate(shipNetworkObject);
             networkShip.SpawnWithOwnership(clientId, true);
-            
-            Transform spawnPoint = GetRandomSpawnPoint();
-            if (spawnPoint != null)
-                networkShip.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
 
-            Debug.Log($"[ServerPlayerVesselInitializer] Spawned {vesselTypeToSpawn} for client {clientId}");
-        }
-
-        // ----------------------------
-        // Spawn point picker
-        // ----------------------------
-        private Transform GetRandomSpawnPoint()
-        {
-            if (_playerOrigins == null || _playerOrigins.Length == 0)
+            /*if (!networkShip.TryGetComponent(out IVessel vessel))
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
-                return null;
+                Debug.LogError("Network Vessel must have IVessel component");
+                return;
             }
+            
+            vessel.SetPose(gameData.GetRandomSpawnPose());*/
 
-            if (_playerSpawnPointsList == null || _playerSpawnPointsList.Count == 0)
-                _playerSpawnPointsList = new List<Transform>(_playerOrigins);
-
-            int index = UnityEngine.Random.Range(0, _playerSpawnPointsList.Count);
-            Transform spawnPoint = _playerSpawnPointsList[index];
-            _playerSpawnPointsList.RemoveAt(index);
-            return spawnPoint;
+            // Debug.Log($"[ServerPlayerVesselInitializer] Spawned {vesselTypeToSpawn} for client {clientId}");
         }
     }
 }

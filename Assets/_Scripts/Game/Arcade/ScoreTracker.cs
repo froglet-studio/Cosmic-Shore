@@ -32,25 +32,10 @@ namespace CosmicShore.Game.Arcade
             miniGameData.OnMiniGameInitialized -= InitializeScoringMode;
             miniGameData.OnMiniGameEnd -= CalculateWinnerAndInvokeEvent;
         }
-
-
-        protected void CalculateWinner()
-        {
-            miniGameData.ResetPlayerScores();
-            CalculateScores();
-            
-            
-            /* StatsManager.Instance.ResetStats();
-
-            var playerScores = scoreData.RoundStatsList;
-            // Add all the players back into the reset stats dictionary so the score will update at the start of the player's turn
-            foreach (var score in playerScores)
-                StatsManager.Instance.AddPlayer(score.Team, score.Name);*/
-        }
         
-        protected void CalculateWinnerAndInvokeEvent()
+        void CalculateWinnerAndInvokeEvent()
         {
-            CalculateWinner();
+            CalculateScores();
             SortAndInvokeResults();
         }
 
@@ -96,7 +81,7 @@ namespace CosmicShore.Game.Arcade
             return newScoring;
         }
 
-        void CalculateScores()
+        protected void CalculateScores()
         {
             if (miniGameData.RoundStatsList.Count == 0)
             {
@@ -106,6 +91,13 @@ namespace CosmicShore.Game.Arcade
 
             foreach (var scoring in scoringArray)
                 scoring.CalculateScore();
+            
+            /* StatsManager.Instance.ResetStats();
+
+            var playerScores = scoreData.RoundStatsList;
+            // Add all the players back into the reset stats dictionary so the score will update at the start of the player's turn
+            foreach (var score in playerScores)
+                StatsManager.Instance.AddPlayer(score.Team, score.Name);*/
         }
     }
 

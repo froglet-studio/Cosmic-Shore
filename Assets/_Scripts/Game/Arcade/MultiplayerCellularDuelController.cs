@@ -12,7 +12,6 @@ namespace CosmicShore.Game.Arcade
         
         protected override void Start()
         {
-            PauseSystem.TogglePauseGame(false);
         }
         
         public override void OnNetworkSpawn()
@@ -60,10 +59,13 @@ namespace CosmicShore.Game.Arcade
                 return;
             OnReadyClicked_ClientRpc();
         }
-        
+
         [ClientRpc]
-        private void OnReadyClicked_ClientRpc() =>
+        private void OnReadyClicked_ClientRpc()
+        {
+            PauseSystem.TogglePauseGame(false);
             StartCountdownTimer();
+        }
 
         protected override void OnCountdownTimerEnded()
         {
@@ -75,6 +77,20 @@ namespace CosmicShore.Game.Arcade
             roundsPlayed = 0;
             turnsTakenThisRound = 0;
             miniGameData.StartNewGame();
+        }
+
+        protected override void EndGame()
+        {
+            readyClientCount = 0;
+            miniGameData.InvokeMiniGameEnd();
+            EndGame_ClientRpc();
+        }
+
+        [ClientRpc]
+        void EndGame_ClientRpc()
+        {
+            PauseSystem.TogglePauseGame(true);
+            miniGameData.SetPlayersActive(false);
         }
     }
 }

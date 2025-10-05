@@ -80,8 +80,6 @@ public class VesselTransformer : MonoBehaviour
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
-        resourceSystem.Reset();
-        VesselStatus.ResetValues();
     }
 
     protected virtual void RotateShip()
@@ -106,6 +104,12 @@ public class VesselTransformer : MonoBehaviour
                                         accumulatedRotation,
                                         LERP_AMOUNT * Time.deltaTime);
         }
+    }
+
+    public void SetPose(Pose pose)
+    {
+        ResetShipTransformer();
+        transform.SetPositionAndRotation(pose.position, pose.rotation);
     }
 
     #region Public Rotation Methods

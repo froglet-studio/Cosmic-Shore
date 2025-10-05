@@ -35,7 +35,7 @@ namespace CosmicShore.Game.Arcade
         
         private void CalculateWinnerOnServer()
         {
-            CalculateWinner();
+            CalculateScores();
             SendRoundStats_ClientRpc();
         }
         

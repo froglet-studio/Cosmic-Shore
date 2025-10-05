@@ -24,11 +24,13 @@ namespace CosmicShore.Game.UI
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
         // [SerializeField] private BoolEventChannelSO onBottomEdgeButtonsEnabled;
         [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
-
+        
         // [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
         [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
         
-        private void Reset()
+        [SerializeField] ScriptableEventNoParam OnResetForReplay;
+        
+        private void OnValidate()
         {
             // auto-assign the view if omitted
             view = GetComponent<MiniGameHUDView>();
@@ -36,9 +38,10 @@ namespace CosmicShore.Game.UI
 
         private void OnEnable()
         {
-            ToggleReadyButton(false);
+            UpdateTurnMonitorDisplay(string.Empty);
             
             gameData.OnClientReady += OnClientReady;
+            OnResetForReplay.OnRaised += ResetForReplay;
             
             // SO ? Controller
             onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
@@ -54,6 +57,7 @@ namespace CosmicShore.Game.UI
         private void OnDisable()
         {
             gameData.OnClientReady -= OnClientReady;
+            OnResetForReplay.OnRaised -= ResetForReplay;
             
             onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
@@ -95,7 +99,7 @@ namespace CosmicShore.Game.UI
             // }
         }
 
-        // � SO event handlers call into the view �
+        // � SO event handlers call into the view �D
 
         public void OnPipInitialized(PipData data)
         {
@@ -136,7 +140,13 @@ namespace CosmicShore.Game.UI
             data.Sender.SetSilhouetteReference(sil.transform, trail.transform);
         }
         
-        private void OnClientReady() => ToggleReadyButton(true);
+        private void OnClientReady() => ResetForReplay();
+        
+        void ResetForReplay()
+        {
+            ToggleReadyButton(true);
+            UpdateTurnMonitorDisplay(string.Empty);
+        }
 
         // Public methods you may call externally:
         public void Show() => view.gameObject.SetActive(true);

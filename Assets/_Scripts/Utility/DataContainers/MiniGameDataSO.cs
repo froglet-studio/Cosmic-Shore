@@ -55,30 +55,10 @@ namespace CosmicShore.SOAP
         public HashSet<Transform> SlowedShipTransforms = new();
         public float TurnStartTime;
         public bool IsRunning { get; private set; }
-        
+        public Pose[] SpawnPoses { get; private set; }
+        List<Pose> _playerSpawnPoseList = new ();
         public IPlayer ActivePlayer { get; private set; }
-        /*{
-            get
-            {
-                if (IsMultiplayerMode)
-                {
-                    foreach (var data in Players)
-                    {
-                        if (data.IsNetworkOwner)
-                            return data;
-                    }
-
-                    Debug.LogError("No active player found! Should never happen!");
-                    return null;
-                }
-                else
-                {
-                    return (_activePlayerId >= 0 && _activePlayerId < Players.Count) ? Players[_activePlayerId] : null;        
-                }
-            }
-        }*/
-            
-
+        
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
 
@@ -97,8 +77,8 @@ namespace CosmicShore.SOAP
             
             for (int i = Players.Count - 1; i >= 0; i--)
             {
-                Players[i].Vessel?.Cleanup();
-                Players[i].Cleanup();
+                Players[i].Vessel?.DestroyVessel();
+                Players[i].DestroyPlayer();
             }
             
             Players.Clear();
@@ -113,12 +93,7 @@ namespace CosmicShore.SOAP
         }
         public void InvokeGameStarted() => OnStarted?.Invoke();
         public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
-
-        public void InvokeMiniGameEnd()
-        {
-            PauseSystem.TogglePauseGame(true);
-            OnMiniGameEnd?.Invoke();
-        }
+        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
         public void InvokeClientReady() => OnClientReady?.Invoke();
 
@@ -126,6 +101,24 @@ namespace CosmicShore.SOAP
         {
             Players.Clear();
             RoundStatsList.Clear();
+            TurnStartTime = 0f;
+        }
+
+        public void ResetDataForReplay()
+        {
+            if (Players == null || Players.Count == 0)
+            {
+                Debug.LogError("Cannot Replay game mode, no player data found!");
+                return;
+            }
+
+            if (RoundStatsList == null || RoundStatsList.Count == 0)
+            {
+                Debug.LogError("Cannot Replay game mode, no round stats data found!");
+                return;
+            }
+            
+            ResetPlayerRoundStats();
             TurnStartTime = 0f;
         }
         
@@ -229,6 +222,19 @@ namespace CosmicShore.SOAP
             return true;
         }
         
+        public void SetSpawnPositions(Transform[] spawnTransforms)
+        {
+            SpawnPoses = new Pose[spawnTransforms.Length];
+            for (int i = 0, count = spawnTransforms.Length; i < count; i++)
+            {
+                SpawnPoses[i] = new Pose
+                {
+                    position = spawnTransforms[i].position,
+                    rotation = spawnTransforms[i].rotation
+                };
+            }
+        }
+        
         public void AddPlayer(IPlayer p)
         {
             if (p == null) return;
@@ -269,7 +275,7 @@ namespace CosmicShore.SOAP
             RoundStatsList.Add(roundStats);
         }
         
-        public void ResetPlayerScores()
+        void ResetPlayerRoundStats()
         {
             if (RoundStatsList is null || RoundStatsList.Count == 0)
             {
@@ -279,8 +285,7 @@ namespace CosmicShore.SOAP
             
             for (int i = 0, count = RoundStatsList.Count; i < count ; i++)
             {
-                var roundStats = RoundStatsList[i];
-                roundStats.Score = 0;
+                RoundStatsList[i].Cleanup();
             }
         }
         
@@ -304,17 +309,14 @@ namespace CosmicShore.SOAP
                     return;
                 }
 
-                if (active)
-                {
-                    // Reset vessel state when activating for a new run
-                    player.Vessel.VesselStatus.ResourceSystem.Reset();
-                    player.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
-                }
+                // player.Vessel.VesselStatus.ResourceSystem.Reset();
+                player.ResetForReplay();
 
                 // Stationary/input flags invert relative to "active"
                 player.ToggleStationaryMode(!active);
                 player.ToggleInputPause(active && player.IsInitializedAsAI);
                 player.ToggleAutoPilot(active && player.IsInitializedAsAI);
+                player.SetPoseOfVessel(GetRandomSpawnPose());
             }
         }
         
@@ -329,19 +331,34 @@ namespace CosmicShore.SOAP
                     Debug.LogError("No vessel status found for player.! This should never happen!");
                     return;
                 }
-
-                /*if (active)
-                {
-                    // Reset vessel state when activating for a new run
-                    player.Vessel.VesselStatus.ResourceSystem.Reset();
-                    player.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
-                }*/
                 
-                var p = player as Player;
-                bool toggle = p && !p.IsOwner;
+                bool toggle = !player.IsNetworkOwner;
                 player.ToggleStationaryMode(toggle);
                 player.ToggleInputPause(toggle);
+                
+                if (!active)
+                    player.ResetForReplay();
             }
+        }
+        
+        // ----------------------------
+        // Spawn point picker
+        // ----------------------------
+        Pose GetRandomSpawnPose()
+        {
+            if (SpawnPoses == null || SpawnPoses.Length == 0)
+            {
+                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                return default;
+            }
+
+            if (_playerSpawnPoseList == null || _playerSpawnPoseList.Count == 0)
+                _playerSpawnPoseList = new List<Pose>(SpawnPoses.ToList());
+
+            int index = UnityEngine.Random.Range(0, _playerSpawnPoseList.Count);
+            var spawnPoint = _playerSpawnPoseList[index];
+            _playerSpawnPoseList.RemoveAt(index);
+            return spawnPoint;
         }
         
         // -----------------------------------------------------------------------------------------

@@ -11,7 +11,12 @@ namespace CosmicShore.Game
 
         [SerializeField] 
         protected IPlayer.InitializeData[] _initializeDatas;
-
+        
+        [SerializeField] private Transform[] _spawnTransforms;
+        
+        protected void AddSpawnPosesToGameData() =>
+            _gameData.SetSpawnPositions(_spawnTransforms);
+        
         /// <summary>Spawn all AI entries allowed by the spawner and add them to game data.</summary>
         protected void SpawnAIPlayersAndAddToGameData()
         {

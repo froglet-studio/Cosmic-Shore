@@ -41,7 +41,10 @@ namespace CosmicShore.Game
         /// If true -> pause input status. false -> unpause otherwise.
         /// </summary>
         void ToggleInputPause(bool toggle);
-        void Cleanup();
+        void DestroyPlayer();
+        void ResetForReplay();
+
+        void SetPoseOfVessel(Pose pose) => Vessel.SetPose(pose);
 
         [System.Serializable]
         public class InitializeData
@@ -49,7 +52,6 @@ namespace CosmicShore.Game
             [FormerlySerializedAs("ShipClass")] [FormerlySerializedAs("ShipType")] public VesselClassType vesselClass;
             [FormerlySerializedAs("Team")] public Domains domain;
             public string PlayerName;
-            public Transform Origin;
             
             [FormerlySerializedAs("EnableAIPilot")] [Tooltip("If true, the player-vessel will spawn as AI")]
             public bool IsAI;

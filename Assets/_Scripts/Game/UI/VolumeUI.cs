@@ -1,3 +1,5 @@
+using System;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +10,8 @@ namespace CosmicShore.Game.UI
     {
         [SerializeField] float upperBound = 300000f;
 
+        [SerializeField] private ScriptableEventNoParam OnResetForReplay; 
+
         private Material _material;
         private Vector4 _colorRadii;
 
@@ -16,6 +20,23 @@ namespace CosmicShore.Game.UI
             var image = GetComponent<Image>();
             _material = new Material(image.material);
             image.material = _material;
+        }
+
+        void OnEnable()
+        {
+            OnResetForReplay.OnRaised += ResetForReplay;
+            ResetForReplay();
+        }
+
+        void OnDisable()
+        {
+            OnResetForReplay.OnRaised -= ResetForReplay;
+        }
+
+        private void ResetForReplay()
+        {
+            _colorRadii = default;
+            ApplyToMaterial();
         }
 
         /// <summary>

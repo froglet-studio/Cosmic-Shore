@@ -219,5 +219,11 @@ namespace CosmicShore.Game
         }
 
         public Quaternion GetGyroRotation() => InputController.GetGyroRotation();
+
+        public void ResetForReplay()
+        {
+            if (IsSpawned && !IsServer)
+                return;
+        }
     }
 }

@@ -111,11 +111,22 @@ namespace CosmicShore.Game
         
         public void ToggleInputPause(bool toggle) => InputController?.Pause(toggle);
 
-        public void Cleanup()
+        public void DestroyPlayer()
         {
             if (IsSpawned)
                 return;
-            Destroy(gameObject);   
+            Destroy(gameObject);
+        }
+
+        public void ResetForReplay()
+        {
+            if (IsSpawned && !IsServer)
+                return;
+            
+            InputStatus.ResetForReplay();
+            Vessel.ResetForReplay();
+            ToggleStationaryMode(true);
+            ToggleInputPause(true);
         }
         
         private void OnNetDefaultShipTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>

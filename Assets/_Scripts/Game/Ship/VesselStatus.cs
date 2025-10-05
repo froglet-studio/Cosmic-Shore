@@ -250,6 +250,8 @@ namespace CosmicShore.Game
             ChargedBoostCharge = 1f;
             Slowed = false;
             Overheating = false;
+            
+            VesselTransformer.ResetShipTransformer();
         }
     }
 }

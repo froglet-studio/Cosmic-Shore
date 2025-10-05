@@ -10,6 +10,7 @@ namespace CosmicShore.Game
         private void OnEnable()
         {
             _gameData.OnMiniGameInitialized += InitializeGame;
+            AddSpawnPosesToGameData();
         }
 
         private void Start()

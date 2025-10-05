@@ -37,6 +37,8 @@ namespace CosmicShore.Game
         // void PerformButtonActions(int buttonNumber);
         void ToggleAutoPilot(bool toggle);
         bool AllowClearPrismInitialization();
-        void Cleanup();
+        void DestroyVessel();
+        void ResetForReplay();
+        void SetPose(Pose pose);
     }
 }

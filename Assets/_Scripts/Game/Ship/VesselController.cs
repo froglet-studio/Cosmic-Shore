@@ -201,13 +201,24 @@ namespace CosmicShore.Game
 
         public bool AllowClearPrismInitialization() => (IsSpawned && IsOwner) || VesselStatus.IsInitializedAsAI;
 
-        public void Cleanup()
+        public void DestroyVessel()
         {
             if (IsSpawned)
                 return;
             Destroy(gameObject);   
         }
-        
+
+        public void ResetForReplay()
+        {
+            if (IsSpawned && !IsServer)
+                return;
+
+            VesselStatus.ResetValues();
+        }
+
+        public void SetPose(Pose pose) => 
+            VesselStatus.VesselTransformer.SetPose(pose);
+
         void InitializeForMultiplayerMode()
         {
             if (IsOwner)

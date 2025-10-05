@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.SOAP;
+using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,6 +11,9 @@ namespace CosmicShore.Game
     {
         [SerializeField]
         protected MiniGameDataSO miniGameData; 
+        
+        [SerializeField]
+        private ScriptableEventNoParam OnResetForReplay; 
         
         [SerializeField]
         Transform gameOverPanel;
@@ -43,19 +47,26 @@ namespace CosmicShore.Game
         void Awake()
         {
             // scoreTracker = FindAnyObjectByType<ScoreTracker>();
-            gameOverPanel.gameObject.SetActive(false);
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(false);
+            ResetForReplay();
         }
 
         private void OnEnable()
         {
             miniGameData.OnWinnerCalculated += ShowSinglePlayerView;
+            OnResetForReplay.OnRaised += ResetForReplay;
         }
 
         private void OnDisable()
         {
             miniGameData.OnWinnerCalculated -= ShowSinglePlayerView;
+            OnResetForReplay.OnRaised -= ResetForReplay;
+        }
+
+        private void ResetForReplay()
+        {
+            gameOverPanel.gameObject.SetActive(false);
+            MultiplayerView.gameObject.SetActive(false);
+            SingleplayerView.gameObject.SetActive(false);
         }
 
         protected virtual bool TryGetWinner(out IRoundStats roundStats, out bool localIsWinner) =>

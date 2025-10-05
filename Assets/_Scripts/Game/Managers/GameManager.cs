@@ -1,23 +1,26 @@
 using System;
+using CosmicShore.Game;
 using CosmicShore.Utilities;
 using CosmicShore.SOAP;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
+using Unity.Netcode;
 
 namespace CosmicShore.Core
 {
     [DefaultExecutionOrder(0)]
-    public class GameManager : MonoBehaviour
+    public class GameManager : NetworkBehaviour
     {
         const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = 0.5f;
 
         [SerializeField] SceneNameListSO _sceneNames;
         [SerializeField] SO_GameList AllGames;
-        [SerializeField] MiniGameDataSO miniGameData;
+        [SerializeField] protected MiniGameDataSO miniGameData;
         [SerializeField] ScriptableEventBool _onSceneTransition;
-
+        [SerializeField] private ScriptableEventNoParam onResetForReplay;
+        
         private void OnEnable()
         {
             miniGameData.OnLaunchGame += LaunchGame;
@@ -29,11 +32,20 @@ namespace CosmicShore.Core
         {
             miniGameData.OnLaunchGame -= LaunchGame;
         }
-
-        public void RestartGame() => LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
+        
+        public virtual void RestartGame()
+        {
+            // LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
+            
+            miniGameData.ResetDataForReplay();
+            PrismSpawner.NukeTheTrails();
+            InvokeOnResetForReplay();
+        }
 
         public void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
 
+        protected void InvokeOnResetForReplay() => onResetForReplay?.Raise();
+        
         void LaunchGame()
         {
             /*if (miniGameData.IsMultiplayerMode)

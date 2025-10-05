@@ -34,7 +34,6 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void Start()
         {
-            PauseSystem.TogglePauseGame(false);
             Initialize();
         }
 
@@ -49,6 +48,7 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnReadyClicked_()
         {
+            PauseSystem.TogglePauseGame(false);
             DisableReadyButton();
             StartCountdownTimer();
         }
@@ -109,26 +109,11 @@ namespace CosmicShore.Game.Arcade
             }
         }
 
-        void EndGame()
+        protected virtual void EndGame()
         {
+            PauseSystem.TogglePauseGame(true);
+            miniGameData.SetPlayersActive(false);
             miniGameData.InvokeMiniGameEnd();
         }
-        
-        // These should go to events.
-        /*void OnGamePaused()
-        {
-            if(!gameRunning || _miniGameData.Value.LocalPlayer is null) 
-                return; 
-            
-            _miniGameData.Value.LocalPlayer?.ToggleAutoPilotMode(true);
-        }
-
-        void OnGameResumed()
-        {
-            if(!gameRunning || _miniGameData.Value.LocalPlayer is null) 
-                return; 
-            
-            _miniGameData.Value.LocalPlayer?.ToggleAutoPilotMode(false);
-        }*/
     }
 }
