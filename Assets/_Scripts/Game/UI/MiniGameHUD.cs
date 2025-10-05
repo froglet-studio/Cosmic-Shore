@@ -38,6 +38,7 @@ namespace CosmicShore.Game.UI
 
         private void OnEnable()
         {
+            ToggleReadyButton(false);
             UpdateTurnMonitorDisplay(string.Empty);
             
             gameData.OnClientReady += OnClientReady;
