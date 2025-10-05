@@ -238,8 +238,7 @@ namespace CosmicShore.Game
                     
                 VesselStatus.VesselTransformer.Initialize(this);
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
-                VesselStatus.ResourceSystem.Reset();
-                VesselStatus.VesselTransformer.ResetShipTransformer();
+                VesselStatus.ResetValues();
                     
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
@@ -275,7 +274,10 @@ namespace CosmicShore.Game
             // sequential dependency.
             /// AIPilot will be initialized both in User controlled / AI Vessels
             /// Multiplayer modes will also have auto-pilot initialized
-            VesselStatus.AIPilot.Initialize(enableAIPilot, this);   
+            
+            VesselStatus.AIPilot.Initialize(enableAIPilot, this);
+            VesselStatus.ResetValues();
+            
             onBottomEdgeButtonsEnabled.Raise(true);
         }
 
