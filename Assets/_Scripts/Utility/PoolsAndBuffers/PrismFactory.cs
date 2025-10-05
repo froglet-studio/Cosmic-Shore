@@ -83,7 +83,7 @@ namespace CosmicShore.Game
         #region Public API
         GameObject SpawnExplosion(PrismEventData data)
         {
-            var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation);
+            var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
             ConfigureForTeam(obj.gameObject, data.ownDomain);
             obj.TriggerExplosion(data.Velocity);
             return obj.gameObject;
@@ -91,7 +91,7 @@ namespace CosmicShore.Game
 
         GameObject SpawnImplosion(PrismEventData data)
         {
-            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation);
+            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
             ConfigureForTeam(obj.gameObject, data.ownDomain);
             obj.StartImplosion(data.TargetTransform);
             return obj.gameObject;
@@ -99,7 +99,7 @@ namespace CosmicShore.Game
         
         GameObject SpawnGrow(PrismEventData data)
         {
-            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation);
+            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
             obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
 

@@ -10,7 +10,7 @@ namespace CosmicShore.Game
     {
         public override PrismExplosion Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
-            var explosion = Get_(position, rotation);
+            var explosion = Get_(position, rotation, parent, worldPositionStays);
             explosion.OnFinished = Release_;
             return explosion;
         }
