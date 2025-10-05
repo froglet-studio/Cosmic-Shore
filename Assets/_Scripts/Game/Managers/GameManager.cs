@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.App.Systems;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
 using CosmicShore.SOAP;
@@ -23,6 +24,7 @@ namespace CosmicShore.Core
         
         private void OnEnable()
         {
+            PauseSystem.TogglePauseGame(false);
             miniGameData.OnLaunchGame += LaunchGame;
         }
 

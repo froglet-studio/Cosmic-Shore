@@ -48,7 +48,6 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnReadyClicked_()
         {
-            PauseSystem.TogglePauseGame(false);
             DisableReadyButton();
             StartCountdownTimer();
         }
@@ -111,7 +110,6 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void EndGame()
         {
-            PauseSystem.TogglePauseGame(true);
             miniGameData.SetPlayersActive(false);
             miniGameData.InvokeMiniGameEnd();
         }

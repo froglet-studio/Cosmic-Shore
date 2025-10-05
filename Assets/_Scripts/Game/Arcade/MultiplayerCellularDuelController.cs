@@ -63,7 +63,6 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         private void OnReadyClicked_ClientRpc()
         {
-            PauseSystem.TogglePauseGame(false);
             StartCountdownTimer();
         }
 
@@ -89,7 +88,6 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         void EndGame_ClientRpc()
         {
-            PauseSystem.TogglePauseGame(true);
             miniGameData.SetPlayersActive(false);
         }
     }
