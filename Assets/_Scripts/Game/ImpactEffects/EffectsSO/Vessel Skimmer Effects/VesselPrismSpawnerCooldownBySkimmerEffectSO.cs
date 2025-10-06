@@ -11,8 +11,8 @@ namespace CosmicShore.Game
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
             var shipStatus = impactor.Vessel.VesselStatus;
-            shipStatus.PrismSpawner.PauseTrailSpawner();
-            shipStatus.PrismSpawner.RestartTrailSpawnerAfterDelay(_coolDownDuration);
+            shipStatus.VesselPrismController.PauseTrailSpawner();
+            shipStatus.VesselPrismController.RestartTrailSpawnerAfterDelay(_coolDownDuration);
         }
     }
 }

@@ -62,7 +62,7 @@ namespace CosmicShore.Game
             // if (visible)
             //     GetComponent<MeshRenderer>().material = new Material(VesselStatus.SkimmerMaterial);
 
-            _initialGap = VesselStatus.PrismSpawner.Gap;
+            _initialGap = VesselStatus.VesselPrismController.Gap;
             if (nudgeShardPoolManager) nudgeShardPoolManager.transform.parent = VesselStatus?.Player?.Transform;
         }
 

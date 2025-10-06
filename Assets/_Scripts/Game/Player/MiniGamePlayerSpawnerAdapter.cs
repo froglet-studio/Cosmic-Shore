@@ -28,7 +28,6 @@ namespace CosmicShore.Game
         {
             SpawnPlayerAndAddToGameData(InitializePlayerData());
             SpawnAIPlayersAndAddToGameData();
-            _gameData.InvokeGameStarted();
         }
 
         private IPlayer.InitializeData InitializePlayerData()

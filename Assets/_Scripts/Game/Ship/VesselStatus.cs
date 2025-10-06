@@ -16,7 +16,7 @@ namespace CosmicShore.Game
     /// Keep this class as monobehaviour, 
     /// as the network vessel status needs to be a network behaviour
     /// </remarks>
-    [RequireComponent(typeof(PrismSpawner))]
+    [RequireComponent(typeof(VesselPrismController))]
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(VesselTransformer))]
     [RequireComponent(typeof(AIPilot))]
@@ -147,13 +147,13 @@ namespace CosmicShore.Game
             }
         }
 
-        PrismSpawner prismSpawner;
-        public PrismSpawner PrismSpawner
+        VesselPrismController vesselPrismController;
+        public VesselPrismController VesselPrismController
         {
             get
             {
-                prismSpawner = prismSpawner != null ? prismSpawner : gameObject.GetOrAdd<PrismSpawner>();
-                return prismSpawner;
+                vesselPrismController = vesselPrismController != null ? vesselPrismController : gameObject.GetOrAdd<VesselPrismController>();
+                return vesselPrismController;
             }
         }
 
@@ -253,6 +253,7 @@ namespace CosmicShore.Game
 
             ResourceSystem.Reset();
             VesselTransformer.ResetShipTransformer();
+            VesselPrismController.StopSpawn();
         }
     }
 }

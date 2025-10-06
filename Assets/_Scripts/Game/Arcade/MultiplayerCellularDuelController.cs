@@ -46,7 +46,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void OnReadyClicked_()
         {
-            DisableReadyButton();
+            ToggleReadyButton(false);
             Debug.Log($"{NetworkManager.Singleton.LocalClientId} is ready!");
             OnReadyClicked_ServerRpc();
         }

@@ -15,7 +15,7 @@ namespace CosmicShore.Game
         {
             var vesselStatus = impactor.Skimmer.VesselStatus;
             var normalizedDistance = Mathf.InverseLerp(15f, sqrRadius, minMatureBlockSqrDistance);
-            vesselStatus.PrismSpawner.SetNormalizedXScale(normalizedDistance);
+            vesselStatus.VesselPrismController.SetNormalizedXScale(normalizedDistance);
 
             // if (cameraManager != null && !vesselStatus.AutoPilotEnabled) 
             //     cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);

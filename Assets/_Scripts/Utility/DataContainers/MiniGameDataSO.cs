@@ -318,6 +318,11 @@ namespace CosmicShore.SOAP
                 player.ToggleInputPause(active && player.IsInitializedAsAI);
                 player.ToggleAutoPilot(active && player.IsInitializedAsAI);
                 player.SetPoseOfVessel(GetRandomSpawnPose());
+                
+                if (active)
+                    vesselStatus.VesselPrismController.StartSpawn();
+                else
+                    vesselStatus.VesselPrismController.StopSpawn();
             }
         }
         
@@ -333,12 +338,16 @@ namespace CosmicShore.SOAP
                     return;
                 }
                 
+                player.ResetForReplay();
+                
                 bool toggle = !player.IsNetworkOwner;
                 player.ToggleStationaryMode(toggle);
                 player.ToggleInputPause(toggle);
                 
-                if (!active)
-                    player.ResetForReplay();
+                if (active)
+                    vesselStatus.VesselPrismController.StartSpawn();
+                else
+                    vesselStatus.VesselPrismController.StopSpawn();
             }
         }
         

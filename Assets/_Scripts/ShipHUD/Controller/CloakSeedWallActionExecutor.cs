@@ -29,7 +29,7 @@ namespace CosmicShore
 
         // Runtime
         IVesselStatus _status;
-        Game.PrismSpawner  _spawner;
+        Game.VesselPrismController  controller;
         ActionExecutorRegistry _registry;
 
         readonly HashSet<int> _protectedBlockIds = new();
@@ -56,11 +56,11 @@ namespace CosmicShore
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status   = shipStatus;
-            _spawner  = shipStatus?.PrismSpawner;
+            controller  = shipStatus?.VesselPrismController;
             _registry = GetComponent<ActionExecutorRegistry>();
 
-            if (_spawner != null)
-                _spawner.OnBlockSpawned += HandleBlockSpawned;
+            if (controller != null)
+                controller.OnBlockSpawned += HandleBlockSpawned;
 
             // Resolve the seed assembler executor from the registry if not wired directly.
             if (seedAssemblerExecutor == null && _registry != null)
@@ -69,8 +69,8 @@ namespace CosmicShore
 
         void OnDestroy()
         {
-            if (_spawner != null)
-                _spawner.OnBlockSpawned -= HandleBlockSpawned;
+            if (controller != null)
+                controller.OnBlockSpawned -= HandleBlockSpawned;
         }
 
         // ===== API called from SO =====
@@ -385,12 +385,12 @@ namespace CosmicShore
 
         Prism GetLatestBlock()
         {
-            var listA = _spawner?.Trail?.TrailList;
+            var listA = controller?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
             // compatibility with private Trail2 field (as in original)
-            var trail2Field = typeof(Game.PrismSpawner).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
-            var trail2 = trail2Field?.GetValue(_spawner) as Trail;
+            var trail2Field = typeof(Game.VesselPrismController).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
+            var trail2 = trail2Field?.GetValue(controller) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
             return null;

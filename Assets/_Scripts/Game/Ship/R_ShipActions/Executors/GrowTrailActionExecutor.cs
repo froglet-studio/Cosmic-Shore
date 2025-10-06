@@ -1,11 +1,13 @@
 ﻿using System.Collections;
 using CosmicShore.Game;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
 {
+    [FormerlySerializedAs("spawner")]
     [Header("Scene Refs")]
-    [SerializeField] PrismSpawner spawner;
+    [SerializeField] VesselPrismController controller;
 
     IVesselStatus _status;
     float _min;      
@@ -13,20 +15,20 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
     bool _growing;
 
     public float MinScale => _min;
-    public float CurrentScale => spawner ? spawner.ZScaler : 1f;
+    public float CurrentScale => controller ? controller.ZScaler : 1f;
 
     public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
-        if (spawner == null)
-            spawner = shipStatus?.PrismSpawner;
+        if (controller == null)
+            controller = shipStatus?.VesselPrismController;
 
-        _min = spawner ? spawner.ZScaler : 1f;
+        _min = controller ? controller.ZScaler : 1f;
     }
 
     public void Begin(GrowTrailActionSO so, IVesselStatus status)
     {
-        if (spawner == null) return;
+        if (controller == null) return;
         _growing = true;
         if (_loop != null) StopCoroutine(_loop);
         _loop = StartCoroutine(Loop(so));
@@ -45,7 +47,7 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
             yield return null;
         }
 
-        while (spawner && AnyAboveMin(so))
+        while (controller && AnyAboveMin(so))
         {
             Step(so.ShrinkRate, _min, increase:false, so);
             yield return null;
@@ -56,15 +58,15 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
 
     void Step(float rate, float limit, bool increase, GrowTrailActionSO so)
     {
-        if (spawner == null) return;
+        if (controller == null) return;
         float sign = increase ? +1f : -1f;
         float dt = Time.deltaTime * rate;
 
-        spawner.XScaler = ClampAxis(spawner.XScaler + so.WX * sign * dt, _min, so.MaxSize, increase);
-        spawner.YScaler = ClampAxis(spawner.YScaler + so.WY * sign * dt, _min, so.MaxSize, increase);
-        spawner.ZScaler = ClampAxis(spawner.ZScaler + so.WZ * sign * dt, _min, so.MaxSize, increase);
+        controller.XScaler = ClampAxis(controller.XScaler + so.WX * sign * dt, _min, so.MaxSize, increase);
+        controller.YScaler = ClampAxis(controller.YScaler + so.WY * sign * dt, _min, so.MaxSize, increase);
+        controller.ZScaler = ClampAxis(controller.ZScaler + so.WZ * sign * dt, _min, so.MaxSize, increase);
 
-        spawner.Gap += (-so.WGap * sign) * dt * 2f;
+        controller.Gap += (-so.WGap * sign) * dt * 2f;
     }
 
     float ClampAxis(float val, float min, float max, bool increase)
@@ -72,11 +74,11 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
 
     bool AnyAboveMin(GrowTrailActionSO so)
     {
-        if (!spawner) return false;
-        if (so.WX > 0f && spawner.XScaler > _min + 0.0001f) return true;
-        if (so.WY > 0f && spawner.YScaler > _min + 0.0001f) return true;
-        if (so.WZ > 0f && spawner.ZScaler > _min + 0.0001f) return true;
-        if (so.WGap > 0f) return spawner.Gap < so.MaxSize - 0.0001f; // inverted logic for gap
+        if (!controller) return false;
+        if (so.WX > 0f && controller.XScaler > _min + 0.0001f) return true;
+        if (so.WY > 0f && controller.YScaler > _min + 0.0001f) return true;
+        if (so.WZ > 0f && controller.ZScaler > _min + 0.0001f) return true;
+        if (so.WGap > 0f) return controller.Gap < so.MaxSize - 0.0001f; // inverted logic for gap
         return false;
     }
 }

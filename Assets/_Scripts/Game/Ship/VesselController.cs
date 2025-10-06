@@ -97,7 +97,7 @@ namespace CosmicShore.Game
         {
             VesselStatus.Player = player;
             VesselStatus.ShipAnimation.Initialize(VesselStatus);
-            VesselStatus.PrismSpawner.Initialize(VesselStatus);
+            VesselStatus.VesselPrismController.Initialize(VesselStatus);
             
             if (IsSpawned)
             {
@@ -110,7 +110,7 @@ namespace CosmicShore.Game
             
             OnInitialized?.Invoke();
         }
-
+        
         /*public void PerformButtonActions(int buttonNumber)
         {
             if (VesselStatus.AutoPilotEnabled) return;

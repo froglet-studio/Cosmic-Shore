@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class PrismSpawner : MonoBehaviour
+    public class VesselPrismController : MonoBehaviour
     {
         public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);
         public event BlockCreationHandler OnBlockCreated;
@@ -76,24 +76,9 @@ namespace CosmicShore.Game
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
         public event Action<Prism> OnBlockSpawned;
 
-        private void Awake()
-        {
-            ownerId = string.Empty;
-        }
-
-        private void OnEnable()
-        {
-            cts = new CancellationTokenSource();
-        }
-
         private void OnDisable()
         {
-            if (cts != null)
-            {
-                cts.Cancel();
-                cts.Dispose();
-                cts = null;
-            }
+            StopSpawn();
         }
 
         /// <summary>Initializes and starts spawning.</summary>
@@ -105,10 +90,33 @@ namespace CosmicShore.Game
             wavelength = initialWavelength;
             ownerId = this.vesselStatus.Player.PlayerUUID;
             XScaler = minBlockScale;
+        }
 
+        public void StartSpawn()
+        {
+            if (cts != null)
+                StopSpawn();
+            
+            cts = new CancellationTokenSource();
             spawnerEnabled = true;
-
+            
             _ = SpawnLoopAsync(cts.Token);
+        }
+        
+        /// <summary>
+        /// Stops ALL ongoing async operations (spawn loop, delayed restarts, lerps, charms)
+        /// and disables further spawning until re-initialized or a new CTS is created.
+        /// </summary>
+        public void StopSpawn()
+        {
+            spawnerEnabled = false;
+
+            if (cts != null)
+            {
+                cts.Cancel();
+                cts.Dispose();
+                cts = null;
+            }
         }
 
         public void ToggleBlockWaitTime(bool extended)
@@ -150,6 +158,7 @@ namespace CosmicShore.Game
             ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1f - Mathf.Abs(amount)));
             wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount));
         }
+
 
         /// <summary>Main spawn loop using UniTask.</summary>
         async UniTaskVoid SpawnLoopAsync(CancellationToken ct)

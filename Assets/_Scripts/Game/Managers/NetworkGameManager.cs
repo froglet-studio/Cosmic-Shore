@@ -21,7 +21,7 @@ namespace CosmicShore.Core
         [ClientRpc]
         void RestartGame_ClientRpc()
         {
-            PrismSpawner.NukeTheTrails();
+            VesselPrismController.NukeTheTrails();
             InvokeOnResetForReplay();
         }
     }

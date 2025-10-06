@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Arcade
             var silhouette = ActivePlayer.Vessel.VesselStatus.Silhouette;
             silhouette.Clear();
 
-            PrismSpawner.NukeTheTrails();
+            VesselPrismController.NukeTheTrails();
             Crystal.transform.position = CrystalStartPosition;
             ActivePlayer.Vessel.VesselStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, ActivePlayer.Vessel.VesselStatus.ResourceSystem.Resources[resourceIndex].MaxAmount);
         }

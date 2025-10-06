@@ -26,7 +26,7 @@ namespace CosmicShore.Game.Arcade
         void InitializeSegments()
         {
 
-            PrismSpawner.NukeTheTrails();
+            VesselPrismController.NukeTheTrails();
 
             for (int i = 0; i < IntensityLevel; i++)
             {

@@ -34,21 +34,21 @@ namespace CosmicShore.Game.Projectiles
                     await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
                 float count = 0f;
-                int currentPosition = Vessel.VesselStatus.PrismSpawner.TrailLength - 1;
+                int currentPosition = Vessel.VesselStatus.VesselPrismController.TrailLength - 1;
 
                 while (count < TunnelAmount)
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    if (currentPosition < Vessel.VesselStatus.PrismSpawner.TrailLength)
+                    if (currentPosition < Vessel.VesselStatus.VesselPrismController.TrailLength)
                     {
                         count++;
                         currentPosition++;
 
                         // sync block dimensions with inner dimensions
-                        SetBlockDimensions(Vessel.VesselStatus.PrismSpawner.TargetScale);
+                        SetBlockDimensions(Vessel.VesselStatus.VesselPrismController.TargetScale);
 
-                        var lastTwoBlocks = Vessel.VesselStatus.PrismSpawner.GetLastTwoBlocks();
+                        var lastTwoBlocks = Vessel.VesselStatus.VesselPrismController.GetLastTwoBlocks();
                         if (lastTwoBlocks != null)
                             SeedBlocks(lastTwoBlocks);
 

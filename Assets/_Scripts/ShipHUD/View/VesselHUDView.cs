@@ -30,8 +30,8 @@ namespace CosmicShore.Game
         public Image bottomJaw;
         public int jawResourceIndex = -1;
         
-        [FormerlySerializedAs("trailSpawner")] [Header("Trail / Drift Sources")]
-        public PrismSpawner prismSpawner;
+        [FormerlySerializedAs("prismSpawner")] [FormerlySerializedAs("trailSpawner")] [Header("Trail / Drift Sources")]
+        public VesselPrismController vesselPrismController;
         public DriftTrailActionExecutor driftTrailAction;
 
         

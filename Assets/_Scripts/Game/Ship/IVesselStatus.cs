@@ -81,7 +81,7 @@ namespace CosmicShore.Game
         bool Slowed { get; set; }
         bool IsStationary { get; set; }
         bool Turret { get; set; }
-        PrismSpawner PrismSpawner { get; }
+        VesselPrismController VesselPrismController { get; }
         ShipHUDContainer ShipHUDContainer { get; }
         IVesselHUDView ShipHUDView { get; set; }
         IVesselHUDController ShipHUDController { get; }
