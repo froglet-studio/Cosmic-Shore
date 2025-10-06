@@ -6,6 +6,7 @@ namespace CosmicShore.Game
 {
     public enum PrismType
     {
+        Interactive,
         Explosion,
         Implosion,
         Grow
@@ -17,6 +18,7 @@ namespace CosmicShore.Game
         private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
         
         [Header("Pool Managers")]
+        [SerializeField] private PrismInteractivePoolManager prismInteractivePool;
         [SerializeField] private PrismExplosionPoolManager explosionPool;
         [SerializeField] private PrismImplosionPoolManager implosionPool;
         // Add more later: PrismShockwavePoolManager, PrismDisintegrationPoolManager, etc.
@@ -58,6 +60,10 @@ namespace CosmicShore.Game
 
             switch (data.PrismType)
             {
+                case PrismType.Interactive:
+                    spawned = SpawnInteractive(data);
+                    break;
+                
                 case PrismType.Explosion :
                     spawned = SpawnExplosion(data);
                     break;
@@ -81,6 +87,13 @@ namespace CosmicShore.Game
         #endregion
 
         #region Helpers
+
+        GameObject SpawnInteractive(PrismEventData data)
+        {
+            var obj = prismInteractivePool?.Get(data.SpawnPosition, data.Rotation, prismInteractivePool.transform);
+            return obj ? obj.gameObject : null;
+        }
+        
         GameObject SpawnExplosion(PrismEventData data)
         {
             var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);

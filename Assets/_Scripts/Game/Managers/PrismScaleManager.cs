@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace CosmicShore.Core
 {
-    public class BlockScaleManager : AdaptiveAnimationManager<BlockScaleManager, PrismScaleAnimator, ScaleAnimationData>
+    public class PrismScaleManager : AdaptiveAnimationManager<PrismScaleManager, PrismScaleAnimator, ScaleAnimationData>
     {
         private const float COMPLETION_THRESHOLD = 0.01f;
         private readonly List<(PrismScaleAnimator block, Vector3 scale)> completionQueue =

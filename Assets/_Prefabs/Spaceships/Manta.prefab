@@ -2151,9 +2151,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
-  prismPrefab: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
-    type: 3}
   skimmer: {fileID: 874579554510349383}
+  BaseScale: {x: 20, y: 1, z: 5}
   initialWavelength: 10
   minWavelength: 10
   defaultWaitTime: 0.5

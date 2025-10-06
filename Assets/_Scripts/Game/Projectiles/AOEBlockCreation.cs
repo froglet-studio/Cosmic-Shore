@@ -1,84 +1,143 @@
-using System.Collections;
+using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using CosmicShore.Core;
+using CosmicShore.Utilities;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Projectiles
 {
     public class AOEBlockCreation : AOEExplosion
     {
-        #region Attributes for Block Creation
-        [FormerlySerializedAs("trailBlock")]
         [Header("Block Creation")]
-        [SerializeField] protected Prism prism;
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
-        [SerializeField] bool shielded = true;
+        [SerializeField] protected bool shielded = true;
 
-        [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [Header("Events")]
+        [SerializeField] private PrismEventChannelWithReturnSO _prismSpawnEvent;
 
-        private Material blockMaterial;
-        #endregion
-
-        #region Attributes for Explosion Parameters
         [Header("Block Parameters")]
-        [SerializeField] float blockCount = 8; // TODO: make int
-        [SerializeField] int ringCount = 3;
-        [SerializeField] float radius = 30f;
-        #endregion
+        [SerializeField] protected float blockCount = 8f; // TODO: int
+        [SerializeField] protected int ringCount = 3;
+        [SerializeField] protected float radius = 30f;
 
-        protected List<Trail> trails = new List<Trail>();
+        protected readonly List<Trail> trails = new();
+        protected CancellationTokenSource _cts;
 
-        /*public override void InitializeAndDetonate(IVessel vessel)
+        protected string OwnerIdBase =>
+            Vessel?.VesselStatus?.Player?.PlayerUUID ?? "UnknownOwner";
+
+        private void OnDisable() => CancelExplosion();
+
+        /// <summary>Start the AoE block creation (UniTask-based, no coroutines).</summary>
+        public virtual void BeginExplosion()
         {
-            base.InitializeAndDetonate(vessel);
-            blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Vessel.VesselStatus.Team) 
-                : _themeManagerData.GetTeamBlockMaterial(Vessel.VesselStatus.Team);
-        }*/
+            CancelExplosion();
+            _cts = new CancellationTokenSource();
+            ExplodeAsync(_cts.Token).Forget();
+        }
 
-        protected override IEnumerator ExplodeCoroutine()
+        public void CancelExplosion()
         {
-            yield return new WaitForSeconds(ExplosionDelay);
-
-            // Calculate total blocks needed
-            int totalBlocksNeeded = (int)blockCount * ringCount;
-
-            // Wait for buffer to have enough blocks
-            while (!TrailBlockBufferManager.Instance.HasAvailableBlocks(Domain, totalBlocksNeeded))
+            if (_cts != null)
             {
-                yield return new WaitForSeconds(0.1f);
-            }
-        
-            for (int ring = 0; ring < ringCount; ring++)
-            {
-                trails.Add(new Trail());
-                for (int block = 0; block < blockCount; block++)
-                    CreateRingBlock(block, ring % 2 * 0.5f, ring / 2f + 1f, ring, -ring / 2f, trails[ring]);
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
             }
         }
 
-        private void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)
+        private async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
-            var forwardDirection = transform.forward;
-            var offset = scale * radius * Mathf.Cos(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
-                         scale * radius * Mathf.Sin(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
-                         sweep * radius * forwardDirection;
-            CreateBlock(transform.position + offset, offset + tilt * radius * forwardDirection, forwardDirection, "::AOE::" + Time.time + "::" + i, trail);
+            try
+            {
+                if (ExplosionDelay > 0f)
+                    await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
+
+                for (int ring = 0; ring < ringCount; ring++)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    trails.Add(new Trail());
+
+                    for (int i = 0; i < (int)blockCount; i++)
+                    {
+                        ct.ThrowIfCancellationRequested();
+
+                        float phase = (ring % 2) * 0.5f;
+                        float scale = ring / 2f + 1f;
+                        float tilt  = ring;
+                        float sweep = -ring / 2f;
+
+                        CreateRingBlock(i, phase, scale, tilt, sweep, trails[ring]);
+                    }
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+            }
+            catch (OperationCanceledException) { /* expected */ }
         }
 
-        protected Prism CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerId, Trail trail)
+        protected void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)
         {
-            var block = TrailBlockBufferManager.Instance.GetBlock(Domain);
-            block.ownerID = Vessel.VesselStatus.Player.PlayerUUID;
-            block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
-            block.GetComponent<MeshRenderer>().material = blockMaterial;
-            block.ownerID = block.ownerID + ownerId + position;  
+            var fwd = transform.forward;
+            float angle = ((i + phase) / blockCount) * Mathf.PI * 2f;
+
+            var offset =
+                scale * radius * Mathf.Cos(angle) * transform.right +
+                scale * radius * Mathf.Sin(angle) * transform.up +
+                sweep * radius * fwd;
+
+            var pos = transform.position + offset;
+            var lookForward = offset + tilt * radius * fwd;
+            var up = fwd;
+
+            CreateBlock(pos, lookForward, up, $"::AOE::{Time.time}::{i}", trail);
+        }
+
+        /// <summary>Requests an Interactive Prism from PrismFactory via event, then configures it.</summary>
+        protected Prism CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerSuffix, Trail trail)
+        {
+            if (_prismSpawnEvent == null)
+            {
+                Debug.LogError("[AOEBlockCreation] Prism spawn event channel is not assigned.");
+                return null;
+            }
+
+            var data = new PrismEventData
+            {
+                ownDomain       = Domain,
+                Rotation        = Quaternion.LookRotation(forward, up),
+                SpawnPosition   = position,
+                Scale           = blockScale,
+                Velocity        = Vector3.zero,
+                PrismType       = PrismType.Interactive,
+                TargetTransform = null,
+                OnGrowCompleted = null
+            };
+
+            var ret = _prismSpawnEvent.RaiseEvent(data);
+            if (!ret.SpawnedObject)
+            {
+                Debug.LogWarning("[AOEBlockCreation] PrismFactory returned null. Spawn aborted.");
+                return null;
+            }
+
+            var block = ret.SpawnedObject.GetComponent<Prism>();
+            if (!block)
+            {
+                Debug.LogWarning("[AOEBlockCreation] Spawned object has no Prism component.");
+                return null;
+            }
+
+            // Ownership & unique tagging
+            block.ownerID = OwnerIdBase + ownerSuffix + position;
             block.TargetScale = blockScale;
-            block.transform.parent = PrismSpawner.TrailContainer.transform;
-            block.Trail = trail;
-            if (shielded) block.prismProperties.IsShielded = true;
-            block.Initialize(Vessel.VesselStatus.PlayerName);
+
+            if (shielded)
+                block.prismProperties.IsShielded = true;
+            
+            block.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
             trail.Add(block);
             return block;
         }

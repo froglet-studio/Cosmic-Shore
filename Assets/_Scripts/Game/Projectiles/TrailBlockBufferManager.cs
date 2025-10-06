@@ -9,6 +9,9 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Projectiles
 {
+    /// <summary>
+    /// DEPRECATED -> Check PrismFactory for spawning prisms using event channels.
+    /// </summary>
     public class TrailBlockBufferManager : Singleton<TrailBlockBufferManager>
     {
         [System.Serializable]

@@ -23,9 +23,10 @@ namespace CosmicShore.Core
             {
                 if (currentDomain != value)
                 {
-                    var oldTeam = currentDomain;
+                    var oldDomain = currentDomain;
                     currentDomain = value;
-                    OnTeamChanged?.Invoke(oldTeam, value);
+                    HandleTeamChange(oldDomain, currentDomain);
+                    OnTeamChanged?.Invoke(oldDomain, value);
                 }
             }
         }
@@ -36,16 +37,6 @@ namespace CosmicShore.Core
         {
             prism = GetComponent<Prism>();
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
-        }
-
-        private void OnEnable()
-        {
-            OnTeamChanged += HandleTeamChange;
-        }
-
-        private void OnDisable()
-        {
-            OnTeamChanged -= HandleTeamChange;
         }
 
         public void SetInitialTeam(Domains domain)

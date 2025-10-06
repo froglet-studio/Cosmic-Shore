@@ -17,7 +17,7 @@ namespace CosmicShore.Game
         
         public override void Release(PrismExplosion instance)
         {
-            instance.OnReturnToPool -= Release_;
+            instance.OnReturnToPool -= Release;
             Release_(instance);
         }
     }

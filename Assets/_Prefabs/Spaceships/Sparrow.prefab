@@ -998,6 +998,11 @@ MonoBehaviour:
   prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
   defaultCapacity: 10
   maxSize: 1000
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 20
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
 --- !u!1 &4766430080969567088
 GameObject:
   m_ObjectHideFlags: 0
@@ -1061,6 +1066,11 @@ MonoBehaviour:
   prefab: {fileID: 7613428080012511999, guid: d98b78f64251b2c42a322f4f46f197ac, type: 3}
   defaultCapacity: 5
   maxSize: 20
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 20
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
 --- !u!1 &5369736708836365734
 GameObject:
   m_ObjectHideFlags: 0
@@ -1638,9 +1648,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
-  prismPrefab: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
-    type: 3}
   skimmer: {fileID: 2413128156359967549}
+  BaseScale: {x: 2, y: 2, z: 5}
   initialWavelength: 7
   minWavelength: 7
   defaultWaitTime: 0

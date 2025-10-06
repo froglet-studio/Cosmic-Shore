@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game;
@@ -44,6 +45,8 @@ namespace CosmicShore.Core
         [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
         
         [SerializeField] PrismEventChannelWithReturnSO _onFlockSpawnedEventChannel;
+        
+        public Action<Prism> OnReturnToPool;
 
         public Domains Domain
         {
@@ -142,6 +145,15 @@ namespace CosmicShore.Core
             // Apply initial states if needed
             if (prismProperties.IsShielded) ActivateShield();
             if (prismProperties.IsDangerous) MakeDangerous();
+        }
+        
+        /// <summary>
+        /// Public method to immediately return this instance to the pool.
+        /// Also reparents under the PoolManager's transform for hierarchy cleanliness.
+        /// </summary>
+        public void ReturnToPool()
+        {
+            OnReturnToPool?.Invoke(this);
         }
 
         private void InitializePrismProperties()

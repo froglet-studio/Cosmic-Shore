@@ -4888,11 +4888,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ExplosionDuration: 2.7
   ExplosionDelay: 0
-  affectSelf: 0
-  destructive: 1
-  devastating: 1
-  shielding: 0
   height: 800
+  coneContainer: {fileID: 9218889541719856748}
 --- !u!33 &520348123677097672
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -5018,13 +5015,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosionShipEffectsSO:
-  - {fileID: 11400000, guid: d193028d71934664f819e86ecadbfb7e, type: 2}
-  - {fileID: 11400000, guid: afd81f4d056931a47a8fc5c5df243996, type: 2}
-  - {fileID: 11400000, guid: 035ba5d46da4a0342969fad5f39f060a, type: 2}
-  - {fileID: 11400000, guid: e4e63a66eb9954744b4650934a1a1084, type: 2}
-  - {fileID: 11400000, guid: 6f820921378520c41afd8e61bfffadbe, type: 2}
-  explosionPrismEffectsSO: []
   affectSelf: 0
   destructive: 1
   devastating: 1
