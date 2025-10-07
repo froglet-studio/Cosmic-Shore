@@ -81,6 +81,7 @@ namespace CosmicShore.Game
         private void OnDisable()
         {
             StopSpawn();
+            ClearTrails();
         }
 
         /// <summary>Initializes and starts spawning.</summary>
@@ -217,7 +218,7 @@ namespace CosmicShore.Game
         }
 
         /// <summary>Creates a block at offset using PrismFactory via event channel.</summary>
-        void CreateBlock(float halfGap, Trail prisms)
+        void CreateBlock(float halfGap, Trail trail)
         {
             if (_onPrismSpawnedEventChannel == null)
             {
@@ -276,8 +277,8 @@ namespace CosmicShore.Game
                 prism.prismProperties.IsShielded = true;
 
             // Add to trail & initialize
-            prisms.Add(prism);
-            prism.prismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
+            trail.Add(prism);
+            prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
 
             // Events
@@ -368,9 +369,10 @@ namespace CosmicShore.Game
             return null;
         }
 
-        public static void NukeTheTrails()
+        public void ClearTrails()
         {
-            // keep as no-op unless you want to destroy pooled instances (not recommended)
+            Trail.Clear();
+            Trail2.Clear();
         }
     }
 }

@@ -58,7 +58,7 @@ namespace CosmicShore.Game.Arcade
             if (ScaleNumberOfSegmentsWithIntensity) SegmentSpawner.NumberOfSegments = numberOfSegments;
             if (ScaleLengthWithIntensity) SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
 
-            VesselPrismController.NukeTheTrails();
+            // VesselPrismController.ClearTrails();
             if (ScaleCrystalPositionWithIntensity) Crystal.transform.position = IntensityLevel * CrystalStartPosition;
             else Crystal.transform.position = CrystalStartPosition;
 

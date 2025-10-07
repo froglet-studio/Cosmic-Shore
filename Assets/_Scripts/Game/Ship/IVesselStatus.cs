@@ -90,6 +90,6 @@ namespace CosmicShore.Game
         VesselHUDView VesselHUDView { get; set; }
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
         bool IsOwnerClient { get; }  
-        void ResetValues();
+        void ResetForPlay();
     }
 }

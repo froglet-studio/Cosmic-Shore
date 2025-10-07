@@ -70,7 +70,7 @@ namespace CosmicShore.Game.Arcade
         void ResetEnvironment() {
             segmentSpawner.NumberOfSegments   = numberOfSegments;
             segmentSpawner.StraightLineLength = straightLineLength;
-            VesselPrismController.NukeTheTrails();
+            // VesselPrismController.ClearTrails();
             crystal.transform.position = crystalStart;
             segmentSpawner.Initialize();
         }

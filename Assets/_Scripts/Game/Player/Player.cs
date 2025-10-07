@@ -124,7 +124,7 @@ namespace CosmicShore.Game
             }
 
             // Always reset the vessel and make it stationary.
-            Vessel.ResetForReplay();
+            Vessel.ResetForPlay();
             ToggleStationaryMode(true);
             ToggleActive(false);
         }

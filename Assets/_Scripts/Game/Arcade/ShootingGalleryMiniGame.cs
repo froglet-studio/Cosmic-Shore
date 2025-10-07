@@ -24,7 +24,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
-            VesselPrismController.NukeTheTrails();
+            // VesselPrismController.ClearTrails();
 
             SegmentSpawner.NumberOfSegments = 60;
             SegmentSpawner.Initialize();

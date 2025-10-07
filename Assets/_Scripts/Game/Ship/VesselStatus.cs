@@ -5,7 +5,6 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
-using CosmicShore.Utilities;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -238,8 +237,9 @@ namespace CosmicShore.Game
         public Quaternion blockRotation { get; set; }
         public bool IsOwnerClient => Vessel.IsOwnerClient;
 
-        public void ResetValues()
+        public void ResetForPlay()
         {
+            IsStationary = true;
             Boosting = false;
             ChargedBoostDischarging = false;
             Drifting = false;
@@ -254,6 +254,7 @@ namespace CosmicShore.Game
             ResourceSystem.Reset();
             VesselTransformer.ResetShipTransformer();
             VesselPrismController.StopSpawn();
+            VesselPrismController.ClearTrails();
         }
     }
 }

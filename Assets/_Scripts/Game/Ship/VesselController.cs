@@ -208,12 +208,9 @@ namespace CosmicShore.Game
             Destroy(gameObject);   
         }
 
-        public void ResetForReplay()
+        public void ResetForPlay()
         {
-            if (IsSpawned && !IsServer)
-                return;
-
-            VesselStatus.ResetValues();
+            VesselStatus.ResetForPlay();
         }
 
         public void SetPose(Pose pose) => 
@@ -238,7 +235,7 @@ namespace CosmicShore.Game
                     
                 VesselStatus.VesselTransformer.Initialize(this);
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
-                VesselStatus.ResetValues();
+                VesselStatus.ResetForPlay();
                     
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
@@ -276,7 +273,7 @@ namespace CosmicShore.Game
             /// Multiplayer modes will also have auto-pilot initialized
             
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);
-            VesselStatus.ResetValues();
+            VesselStatus.ResetForPlay();
             
             onBottomEdgeButtonsEnabled.Raise(true);
         }

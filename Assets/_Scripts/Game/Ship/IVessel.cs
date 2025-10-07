@@ -38,7 +38,7 @@ namespace CosmicShore.Game
         void ToggleAutoPilot(bool toggle);
         bool AllowClearPrismInitialization();
         void DestroyVessel();
-        void ResetForReplay();
+        void ResetForPlay();
         void SetPose(Pose pose);
     }
 }

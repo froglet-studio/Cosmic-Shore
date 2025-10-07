@@ -40,7 +40,7 @@ namespace CosmicShore.Core
             // LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
             
             miniGameData.ResetDataForReplay();
-            VesselPrismController.NukeTheTrails();
+            // VesselPrismController.ClearTrails();
             InvokeOnResetForReplay();
         }
 
