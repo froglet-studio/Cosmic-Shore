@@ -44,7 +44,7 @@ namespace CosmicShore.Core
             InvokeOnResetForReplay();
         }
 
-        public void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
+        public virtual void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
 
         protected void InvokeOnResetForReplay() => onResetForReplay?.Raise();
         
