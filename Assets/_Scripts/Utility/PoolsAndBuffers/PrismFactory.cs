@@ -122,8 +122,8 @@ namespace CosmicShore.Game
         
         GameObject SpawnInteractivePrism(PrismEventData data)
         {
-            if (dolphinPrismPool == null) { Debug.LogWarning("[PrismFactory] dolphinPrismPool not set."); return null; }
-            var prism = dolphinPrismPool.Get(data.SpawnPosition, data.Rotation, dolphinPrismPool.transform);
+            if (interactivePrismPool == null) { Debug.LogWarning("[PrismFactory] interactivePrismPool not set."); return null; }
+            var prism = interactivePrismPool.Get(data.SpawnPosition, data.Rotation, interactivePrismPool.transform);
             // if (prism) ConfigureForTeam(prism.gameObject, data.ownDomain);
             return prism ? prism.gameObject : null;
         }
