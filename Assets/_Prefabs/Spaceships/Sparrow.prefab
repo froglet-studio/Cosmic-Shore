@@ -381,7 +381,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c3f54abda8145ecabf7c85253cab9ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   seedAssemblerExecutor: {fileID: 0}
   stationarySeedConfig: {fileID: 0}
 --- !u!1 &891036852695513002
@@ -1650,6 +1650,7 @@ MonoBehaviour:
     type: 2}
   skimmer: {fileID: 2413128156359967549}
   BaseScale: {x: 2, y: 2, z: 5}
+  prismType: 2
   initialWavelength: 7
   minWavelength: 7
   defaultWaitTime: 0
@@ -1785,7 +1786,7 @@ MonoBehaviour:
   - {fileID: 4010301292554909138}
   - {fileID: 4125835721608554647}
   - {fileID: 5978549935140177486}
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 0}
@@ -3438,7 +3439,7 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   jawResourceIndex: -1
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   worldToUIScale: 8
   imageScale: 0.08

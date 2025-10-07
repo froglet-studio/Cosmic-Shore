@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class PrismInteractivePoolManager : GenericPoolManager<Prism>
+    public class InteractivePrismPoolManager : GenericPoolManager<Prism>
     {
         public override Prism Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {

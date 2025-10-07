@@ -1,6 +1,5 @@
 namespace CosmicShore.Game
 {
-    [System.Serializable]
     public class RoundStats : IRoundStats
     {
         public string Name { get; set; }

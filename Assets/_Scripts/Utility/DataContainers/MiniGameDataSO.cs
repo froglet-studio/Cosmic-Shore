@@ -48,9 +48,7 @@ namespace CosmicShore.SOAP
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;
-        [SerializeReference]
         public List<IPlayer> Players = new();
-        [SerializeReference]
         public List<IRoundStats> RoundStatsList = new();
         public Dictionary<int, CellStats> CellStatsList = new();
         public HashSet<Transform> SlowedShipTransforms = new();
@@ -254,6 +252,8 @@ namespace CosmicShore.SOAP
                 Name = p.Name,
                 Domain = p.Domain
             });
+            
+            p.ResetForPlay();
         }
 
         public void AddPlayerInMultiplayer(IPlayer p, IRoundStats roundStats)
@@ -274,6 +274,8 @@ namespace CosmicShore.SOAP
             
             // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
             RoundStatsList.Add(roundStats);
+            
+            p.ResetForPlay();
         }
         
         void ResetPlayerRoundStats()
@@ -311,13 +313,14 @@ namespace CosmicShore.SOAP
                 }
 
                 // player.Vessel.VesselStatus.ResourceSystem.Reset();
-                player.ResetForReplay();
+                player.ResetForPlay();
 
                 // Stationary/input flags invert relative to "active"
                 player.ToggleStationaryMode(!active);
                 player.ToggleInputPause(active && player.IsInitializedAsAI);
                 player.ToggleAutoPilot(active && player.IsInitializedAsAI);
                 player.SetPoseOfVessel(GetRandomSpawnPose());
+                player.ToggleActive(active);
                 
                 if (active)
                     vesselStatus.VesselPrismController.StartSpawn();
@@ -338,11 +341,12 @@ namespace CosmicShore.SOAP
                     return;
                 }
                 
-                player.ResetForReplay();
+                player.ResetForPlay();
                 
                 bool toggle = !player.IsNetworkOwner;
                 player.ToggleStationaryMode(toggle);
                 player.ToggleInputPause(toggle);
+                player.ToggleActive(active);
                 
                 if (active)
                     vesselStatus.VesselPrismController.StartSpawn();

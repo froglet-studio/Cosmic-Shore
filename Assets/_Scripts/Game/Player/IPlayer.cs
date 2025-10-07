@@ -42,7 +42,7 @@ namespace CosmicShore.Game
         /// </summary>
         void ToggleInputPause(bool toggle);
         void DestroyPlayer();
-        void ResetForReplay();
+        void ResetForPlay();
 
         void SetPoseOfVessel(Pose pose) => Vessel.SetPose(pose);
 

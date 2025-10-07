@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [Serializable]
     public class Player : NetworkBehaviour, IPlayer
     { 
         [SerializeField]
@@ -53,9 +52,6 @@ namespace CosmicShore.Game
             if (!IsInitializedAsAI)
                 InputController.Initialize();
             Vessel = vessel;
-            // Keep players stationary at initialize
-            ToggleStationaryMode(true);
-            ToggleInputPause(true);
         }
 
         /// <summary>
@@ -67,8 +63,6 @@ namespace CosmicShore.Game
             Domain = NetTeam.Value;
             Name = NetName.Value.ToString();
             Vessel = vessel;
-            ToggleStationaryMode(true);
-            ToggleInputPause(true);
         }
         
         public override void OnNetworkSpawn()
@@ -120,15 +114,19 @@ namespace CosmicShore.Game
             Destroy(gameObject);
         }
 
-        public void ResetForReplay()
+        public void ResetForPlay()
         {
-            if (IsSpawned && !IsServer)
-                return;
-            
-            InputStatus.ResetForReplay();
+            // If we're the owner OR not yet spawned, reset input and pause it.
+            if (IsOwner || !IsSpawned)
+            {
+                InputStatus.ResetForReplay();
+                ToggleInputPause(true);
+            }
+
+            // Always reset the vessel and make it stationary.
             Vessel.ResetForReplay();
             ToggleStationaryMode(true);
-            ToggleInputPause(true);
+            ToggleActive(false);
         }
         
         private void OnNetDefaultShipTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>

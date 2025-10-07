@@ -2153,6 +2153,7 @@ MonoBehaviour:
     type: 2}
   skimmer: {fileID: 874579554510349383}
   BaseScale: {x: 20, y: 1, z: 5}
+  prismType: 3
   initialWavelength: 10
   minWavelength: 10
   defaultWaitTime: 0.5
@@ -2287,7 +2288,7 @@ MonoBehaviour:
   - {fileID: 4010301292554909138}
   - {fileID: 4125835721608554647}
   - {fileID: 5978549935140177486}
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 0}
@@ -4052,7 +4053,7 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   jawResourceIndex: -1
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   worldToUIScale: 6
   imageScale: 0.08

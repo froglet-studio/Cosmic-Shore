@@ -73,7 +73,8 @@ namespace CosmicShore.Game
 
         void OnTriggerExit(Collider other)
         {
-            if (skimmer?.VesselStatus == null) return;
+            if (!isInitialized)
+                return;
 
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
@@ -92,6 +93,9 @@ namespace CosmicShore.Game
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
+            if (!isInitialized)
+                return;
+            
             switch (impactee)
             {
                 case VesselImpactor shipImpactor:

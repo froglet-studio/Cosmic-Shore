@@ -24,6 +24,8 @@ namespace CosmicShore.Game
         [Header("Base Scale (used instead of prefab)")]
         [SerializeField] private Vector3 BaseScale = new Vector3(10f, 5f, 5f);
 
+        [SerializeField] private PrismType prismType;
+
         [Header("Wave Settings")]
         [SerializeField] float initialWavelength = 4f;
         [SerializeField] float minWavelength = 1f;
@@ -242,7 +244,7 @@ namespace CosmicShore.Game
                 Rotation      = rot,
                 SpawnPosition = pos,
                 Scale         = scale,
-                PrismType     = PrismType.Interactive
+                PrismType     = prismType
             });
 
             if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism))
@@ -312,7 +314,7 @@ namespace CosmicShore.Game
                     Rotation      = rot,
                     SpawnPosition = pos,
                     Scale         = scale,
-                    PrismType     = PrismType.Interactive
+                    PrismType     = prismType
                 });
 
                 if (!ret2.SpawnedObject || !ret2.SpawnedObject.TryGetComponent(out Prism prism))
