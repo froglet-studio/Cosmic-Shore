@@ -9,6 +9,10 @@ namespace CosmicShore.Game.Arcade
     {
         private int readyClientCount;
         
+        protected override void Start()
+        {
+        }
+        
         public override void OnNetworkSpawn()
         {
             if (!IsServer)
