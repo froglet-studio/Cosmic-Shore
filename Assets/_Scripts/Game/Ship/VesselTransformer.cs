@@ -49,10 +49,7 @@ public class VesselTransformer : MonoBehaviour
 
     public virtual void Initialize(IVessel vessel)
     {
-        MinimumSpeed = DefaultMinimumSpeed;
-        ThrottleScaler = DefaultThrottleScaler;
-        accumulatedRotation = transform.rotation;
-        
+        ResetShipTransformer();
         Vessel = vessel;
         isInitialized = true;
     }
@@ -62,13 +59,12 @@ public class VesselTransformer : MonoBehaviour
         if (!isInitialized)
             return;
         
+        if (VesselStatus.IsStationary)
+            return;
+        
         VesselStatus.blockRotation = transform.rotation;
 
         RotateShip();
-
-        if (VesselStatus.IsStationary)
-            return;
-
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
 
@@ -80,6 +76,8 @@ public class VesselTransformer : MonoBehaviour
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
+        speed = 0;
+        velocityShift = Vector3.zero;
     }
 
     protected virtual void RotateShip()
@@ -108,7 +106,6 @@ public class VesselTransformer : MonoBehaviour
 
     public void SetPose(Pose pose)
     {
-        ResetShipTransformer();
         transform.SetPositionAndRotation(pose.position, pose.rotation);
     }
 

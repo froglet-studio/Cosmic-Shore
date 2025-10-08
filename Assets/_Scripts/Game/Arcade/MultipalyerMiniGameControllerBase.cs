@@ -1,5 +1,6 @@
 using System;
 using Cysharp.Threading.Tasks;
+using Unity.Netcode;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -40,11 +41,6 @@ namespace CosmicShore.Game.Arcade
             miniGameData.OnSessionStarted -= SubscribeToSessionEvents;
         }
 
-        public virtual void OnClickReturnToMainMenu()
-        {
-            
-        }
-
         private void SubscribeToSessionEvents()
         {
             miniGameData.ActiveSession.Deleted += UnsubscribeFromSessionEvents;
@@ -74,46 +70,30 @@ namespace CosmicShore.Game.Arcade
                 // ignore
             }
         }
-
-        // ---------- Small helpers for subclasses ----------
-
-        void SetPlayersActiveForMultiplayer(bool active) =>
-            miniGameData.SetPlayersActiveForMultiplayer(active);
-
-        void ResetRoundCountersServerOnly()
-        {
-            if (!IsServer)
-                return;
-            
-            roundsPlayed = 0;
-            turnsTakenThisRound = 0;
-        }
-
-        /// <summary>
-        /// Starts a new game on server only (safe for server-gated game flow).
-        /// </summary>
-        void StartNewGameServerOnly()
-        {
-            if (IsServer)
-                miniGameData.StartNewGameServerOnly();
-        }
-
-        /// <summary>
-        /// Starts a new game on any side (use only if your StartNewGame is replicated/authority-safe).
-        /// </summary>
-        void StartNewGameAllSides() => miniGameData.StartNewGame();
         
         protected override void OnCountdownTimerEnded()
         {
-            SetPlayersActiveForMultiplayer(true);
-            StartNewGameAllSides();
+            miniGameData.SetPlayersActiveForMultiplayer();
+            miniGameData.StartNewGame();
             
             // Matches your original Duel behavior: only server starts the game and resets counters.
             if (!IsServer)
                 return;
 
-            ResetRoundCountersServerOnly();
-            StartNewGameServerOnly();
+            roundsPlayed = 0;
+            turnsTakenThisRound = 0;
+        }
+        
+        protected override void EndGame()
+        {
+            EndGame_ClientRpc();
+        }
+        
+        [ClientRpc]
+        private void EndGame_ClientRpc()
+        {
+            miniGameData.InvokeMiniGameEnd();
+            miniGameData.ResetPlayers();
         }
     }
 }

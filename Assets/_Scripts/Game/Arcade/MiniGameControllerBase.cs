@@ -87,12 +87,8 @@ namespace CosmicShore.Game.Arcade
             else 
                 SetupNewTurn();
         }
-        
-        protected virtual void EndGame()
-        {
-            miniGameData.SetPlayersActive(false);
-            miniGameData.InvokeMiniGameEnd();
-        }
+
+        protected abstract void EndGame();
 
         void EndRound()
         {

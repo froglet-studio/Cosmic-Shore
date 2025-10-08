@@ -9,7 +9,7 @@ namespace CosmicShore.Game.Arcade
     {
         private int readyClientCount;
         
-        public override void OnClickReturnToMainMenu()
+        public void OnClickReturnToMainMenu()
         {
             CloseSession_ServerRpc();
         }
@@ -26,13 +26,6 @@ namespace CosmicShore.Game.Arcade
             // Debug.Log($"{NetworkManager.Singleton.LocalClientId} is ready!");
             OnReadyClicked_ServerRpc();
         }
-        
-        protected override void EndGame()
-        {
-            readyClientCount = 0;
-            miniGameData.InvokeMiniGameEnd();
-            EndGame_ClientRpc();
-        }
 
         [ServerRpc(RequireOwnership = false)]
         private void OnReadyClicked_ServerRpc()
@@ -41,6 +34,7 @@ namespace CosmicShore.Game.Arcade
             if (!readyClientCount.Equals(miniGameData.SelectedPlayerCount))
                 return;
 
+            readyClientCount = 0;
             OnReadyClicked_ClientRpc();
         }
 
@@ -48,12 +42,6 @@ namespace CosmicShore.Game.Arcade
         private void OnReadyClicked_ClientRpc()
         {
             StartCountdownTimer();
-        }
-
-        [ClientRpc]
-        private void EndGame_ClientRpc()
-        {
-            miniGameData.SetPlayersActiveForMultiplayer(false);
         }
     }
 }

@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Models.Enums;
 using Obvious.Soap;
+using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -26,7 +27,6 @@ namespace CosmicShore.SOAP
         public event Action OnSessionStarted;
         public event Action OnMiniGameInitialized;
         public event Action OnClientReady;
-        public event Action OnGameStartedInServer;
         public event Action OnGameStarted;
         public event Action OnMiniGameTurnEnd;
         public event Action OnMiniGameEnd;
@@ -91,11 +91,6 @@ namespace CosmicShore.SOAP
             TurnStartTime = Time.time;
 
             InvokeGameStarted();
-        }
-
-        public void StartNewGameServerOnly()
-        {
-            OnGameStartedInServer?.Invoke();
         }
         
         public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
@@ -232,6 +227,12 @@ namespace CosmicShore.SOAP
         
         public void SetSpawnPositions(Transform[] spawnTransforms)
         {
+            if (spawnTransforms == null)
+            {
+                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                return;
+            }
+            
             SpawnPoses = new Pose[spawnTransforms.Length];
             for (int i = 0, count = spawnTransforms.Length; i < count; i++)
             {
@@ -241,6 +242,15 @@ namespace CosmicShore.SOAP
                     rotation = spawnTransforms[i].rotation
                 };
             }
+            
+            if (SpawnPoses == null || SpawnPoses.Length == 0)
+            {
+                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                return;
+            }
+
+            _playerSpawnPoseList?.Clear();
+            _playerSpawnPoseList = new List<Pose>(SpawnPoses.ToList());
         }
         
         public void AddPlayer(IPlayer p)
@@ -309,7 +319,7 @@ namespace CosmicShore.SOAP
                 RoundStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
         }
         
-        public void SetPlayersActive(bool active)
+        public void SetPlayersActive()
         {
             foreach (var player in Players)
             {
@@ -321,24 +331,40 @@ namespace CosmicShore.SOAP
                     return;
                 }
 
-                // player.Vessel.VesselStatus.ResourceSystem.Reset();
-                player.ResetForPlay();
-
-                // Stationary/input flags invert relative to "active"
-                player.ToggleStationaryMode(!active);
-                player.ToggleInputPause(active && player.IsInitializedAsAI);
-                player.ToggleAutoPilot(active && player.IsInitializedAsAI);
+                player.ToggleStationaryMode(false);
+                player.ToggleInputPause(player.IsInitializedAsAI);
+                player.ToggleAutoPilot(player.IsInitializedAsAI);
                 player.SetPoseOfVessel(GetRandomSpawnPose());
-                player.ToggleActive(active);
-                
-                if (active)
-                    vesselStatus.VesselPrismController.StartSpawn();
-                else
-                    vesselStatus.VesselPrismController.StopSpawn();
+                player.ToggleActive(true);
+                vesselStatus.VesselPrismController.StartSpawn();
             }
         }
         
-        public void SetPlayersActiveForMultiplayer(bool active)
+        public void SetPlayersActiveForMultiplayer()
+        {
+            foreach (var player in Players)
+            {
+                var vesselStatus = player?.Vessel?.VesselStatus;
+
+                if (vesselStatus == null)
+                {
+                    Debug.LogError("No vessel status found for player.! This should never happen!");
+                    return;
+                }
+                
+                bool isOwner = player.IsNetworkOwner;
+                player.ToggleStationaryMode(false);
+                player.ToggleInputPause(!isOwner);
+                player.ToggleActive(true);
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    player.SetPoseOfVessel(GetRandomSpawnPose());
+                }
+                vesselStatus.VesselPrismController.StartSpawn();
+            }
+        }
+
+        public void ResetPlayers()
         {
             foreach (var player in Players)
             {
@@ -351,16 +377,6 @@ namespace CosmicShore.SOAP
                 }
                 
                 player.ResetForPlay();
-                
-                bool toggle = !player.IsNetworkOwner;
-                player.ToggleStationaryMode(toggle);
-                player.ToggleInputPause(toggle);
-                player.ToggleActive(active);
-                
-                if (active)
-                    vesselStatus.VesselPrismController.StartSpawn();
-                else
-                    vesselStatus.VesselPrismController.StopSpawn();
             }
         }
         
@@ -387,30 +403,18 @@ namespace CosmicShore.SOAP
 
             return (removedPlayers + removedStats) > 0;
         }
-
-        /// <summary>
-        /// Force the spawn-pose picker to rebuild next time (so it rebalances after a player leaves).
-        /// </summary>
-        public void ClearSpawnPoseCache()
-        {
-            // Make sure next GetRandomSpawnPose() rebuilds from SpawnPoses
-            _playerSpawnPoseList?.Clear();
-        }
         
         // ----------------------------
         // Spawn point picker
         // ----------------------------
         Pose GetRandomSpawnPose()
         {
-            if (SpawnPoses == null || SpawnPoses.Length == 0)
-            {
-                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
-                return default;
-            }
-
             if (_playerSpawnPoseList == null || _playerSpawnPoseList.Count == 0)
-                _playerSpawnPoseList = new List<Pose>(SpawnPoses.ToList());
-
+            {
+                _playerSpawnPoseList = new List<Pose>(SpawnPoses.Length);
+                _playerSpawnPoseList = SpawnPoses.ToList();
+            }
+            
             int index = UnityEngine.Random.Range(0, _playerSpawnPoseList.Count);
             var spawnPoint = _playerSpawnPoseList[index];
             _playerSpawnPoseList.RemoveAt(index);

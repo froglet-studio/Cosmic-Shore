@@ -7,7 +7,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerFreestyleController : MultipalyerMiniGameControllerBase
     {
-        public override void OnClickReturnToMainMenu()
+        public void OnClickReturnToMainMenu()
         {
             OnClickReturnToMainMenuAsync().Forget();
         }
@@ -18,9 +18,13 @@ namespace CosmicShore.Game.Arcade
             await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, PlayerLoopTiming.LastPostLateUpdate ,this.GetCancellationTokenOnDestroy());
             MultiplayerSetup.Instance.LeaveSession().Forget();
         }
-        
+
         [ServerRpc(RequireOwnership = false)]
-        void RemovePlayer_ServerRpc(string playerName) => RemovePlayer_ClientRpc(playerName);
+        void RemovePlayer_ServerRpc(string playerName)
+        {
+            RemovePlayer_ClientRpc(playerName);
+        }
+            
 
         /// <summary>
         /// All clients remove the same player locally to stay in sync with the server.

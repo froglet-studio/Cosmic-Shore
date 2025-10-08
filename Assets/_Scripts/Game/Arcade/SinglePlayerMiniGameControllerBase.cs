@@ -22,8 +22,14 @@ namespace CosmicShore.Game.Arcade
         {
             roundsPlayed = 0;
             turnsTakenThisRound = 0;
-            miniGameData.SetPlayersActive(active: true);
+            miniGameData.SetPlayersActive();
             miniGameData.StartNewGame();
+        }
+        
+        protected override void EndGame()
+        {
+            miniGameData.InvokeMiniGameEnd();
+            miniGameData.ResetPlayers();
         }
     }
 }
