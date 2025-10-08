@@ -9,6 +9,17 @@ namespace CosmicShore.Game.Arcade
     {
         private int readyClientCount;
         
+        public override void OnClickReturnToMainMenu()
+        {
+            CloseSession_ServerRpc();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void CloseSession_ServerRpc()
+        {
+            MultiplayerSetup.Instance.LeaveSession().Forget();
+        }
+        
         protected override void OnReadyClicked_()
         {
             ToggleReadyButton(false);
