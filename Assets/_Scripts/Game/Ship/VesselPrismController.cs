@@ -153,6 +153,8 @@ namespace CosmicShore.Game
             if (Mathf.Approximately(Xscale, normalized)) return;
             Xscale = Mathf.Min(normalized, 1f);
             float newScale = Mathf.Max(minBlockScale, maxBlockScale * Xscale);
+            
+            if (cts != null)
             _ = LerpXScalerAsync(XScaler, newScale, 1.5f, cts.Token);
         }
 
