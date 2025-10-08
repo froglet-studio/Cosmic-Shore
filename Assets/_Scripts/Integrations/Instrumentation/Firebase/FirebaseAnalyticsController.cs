@@ -27,7 +27,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private void OnEnable()
         {
-            // TODO - Subscribe to OnStarted and OnMiniGameEnd To LogEvent
+            // TODO - Subscribe to OnGameStarted and OnMiniGameEnd To LogEvent
         }
 
         private void Start()
@@ -39,7 +39,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private void OnDisable()
         {
-            // TODO - Unsubscribe from OnStarted and OnMiniGameEnd To LogEvent
+            // TODO - Unsubscribe from OnGameStarted and OnMiniGameEnd To LogEvent
             
             _dependencyResolved -= InitializeFirebaseAnalytics;
             if(UserActionSystem.Instance) UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;

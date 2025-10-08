@@ -1,15 +1,6 @@
 namespace CosmicShore.Game.Arcade
 {
-    public class CellularDuelController : MiniGameControllerBase 
+    public class CellularDuelController : SinglePlayerMiniGameControllerBase 
     {
-        private void OnEnable()
-        {
-            miniGameData.OnMiniGameTurnEnd += EndTurn;
-        }
-        
-        private void OnDisable() 
-        {
-            miniGameData.OnMiniGameTurnEnd -= EndTurn;
-        }
     }
 }

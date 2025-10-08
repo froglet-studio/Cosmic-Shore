@@ -71,7 +71,6 @@ namespace CosmicShore.Core
 
         private void OnApplicationQuit()
         {
-            TeamAssigner.ClearCache();
             miniGameData.ResetAllData();
         }
     }

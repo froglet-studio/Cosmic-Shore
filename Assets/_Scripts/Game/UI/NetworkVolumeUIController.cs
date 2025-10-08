@@ -17,7 +17,7 @@ namespace CosmicShore.Game.UI
         {
             if (IsServer)
             {
-                miniGameData.OnStarted += OnMiniGameStart_Server;
+                miniGameData.OnGameStarted += OnMiniGameStart_Server;
                 miniGameData.OnMiniGameTurnEnd += OnMiniGameTurnEnd_Server;
             }
 
@@ -32,7 +32,7 @@ namespace CosmicShore.Game.UI
         {
             if (IsServer)
             {
-                miniGameData.OnStarted -= OnMiniGameStart_Server;
+                miniGameData.OnGameStarted -= OnMiniGameStart_Server;
                 miniGameData.OnMiniGameTurnEnd -= OnMiniGameTurnEnd_Server;
             }
         }

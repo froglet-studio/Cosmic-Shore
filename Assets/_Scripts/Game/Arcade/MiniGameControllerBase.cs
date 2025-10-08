@@ -31,20 +31,16 @@ namespace CosmicShore.Game.Arcade
         // Gameplay state
         protected int turnsTakenThisRound;
         protected int roundsPlayed;
-
-        protected virtual void Start()
-        {
-            ToggleReadyButton(true);
-            Initialize();
-        }
-
+        
         public void OnReadyClicked() =>
             OnReadyClicked_();
         
         protected void Initialize()
         {
             miniGameData.InitializeMiniGame();
-            miniGameData.GameMode = gameMode;
+            
+            // GameMode should already be assigned when user chooses in main menu
+            miniGameData.GameMode = gameMode;   
         }
 
         protected virtual void OnReadyClicked_()
@@ -58,13 +54,7 @@ namespace CosmicShore.Game.Arcade
         
         protected void ToggleReadyButton(bool enable) => _onToggleReadyButton.Raise(enable);
         
-        protected virtual void OnCountdownTimerEnded()
-        {
-            roundsPlayed = 0;
-            turnsTakenThisRound = 0;
-            miniGameData.SetPlayersActive(active: true);
-            miniGameData.StartNewGame();
-        }
+        protected abstract void OnCountdownTimerEnded();
         
         protected virtual void SetupNewTurn()
         {
@@ -97,6 +87,12 @@ namespace CosmicShore.Game.Arcade
             else 
                 SetupNewTurn();
         }
+        
+        protected virtual void EndGame()
+        {
+            miniGameData.SetPlayersActive(false);
+            miniGameData.InvokeMiniGameEnd();
+        }
 
         void EndRound()
         {
@@ -107,12 +103,6 @@ namespace CosmicShore.Game.Arcade
             {
                 SetupNewTurn();
             }
-        }
-
-        protected virtual void EndGame()
-        {
-            miniGameData.SetPlayersActive(false);
-            miniGameData.InvokeMiniGameEnd();
         }
     }
 }

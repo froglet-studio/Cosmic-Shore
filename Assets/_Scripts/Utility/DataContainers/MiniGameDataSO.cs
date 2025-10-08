@@ -26,7 +26,8 @@ namespace CosmicShore.SOAP
         public event Action OnLaunchGame;
         public event Action OnMiniGameInitialized;
         public event Action OnClientReady;
-        public event Action OnStarted;
+        public event Action OnGameStartedInServer;
+        public event Action OnGameStarted;
         public event Action OnMiniGameTurnEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
@@ -90,7 +91,13 @@ namespace CosmicShore.SOAP
 
             InvokeGameStarted();
         }
-        public void InvokeGameStarted() => OnStarted?.Invoke();
+
+        public void StartNewGameServerOnly()
+        {
+            OnGameStartedInServer?.Invoke();
+        }
+        
+        public void InvokeGameStarted() => OnGameStarted?.Invoke();
         public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();

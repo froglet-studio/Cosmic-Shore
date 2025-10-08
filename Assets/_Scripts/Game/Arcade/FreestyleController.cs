@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>Concrete mini‑game that spawns a trail course of segments and a crystal pickup.</summary>
-    public class FreestyleController : MiniGameControllerBase
+    public class FreestyleController : SinglePlayerMiniGameControllerBase
     {
         [Header("Course Settings")]
         [SerializeField] Crystal crystal;
@@ -26,16 +26,6 @@ namespace CosmicShore.Game.Arcade
         int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * miniGameData.SelectedIntensity : baseNumberOfSegments;
         int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / miniGameData.SelectedIntensity : baseStraightLineLength;
         Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * miniGameData.SelectedIntensity : crystalStartPosition;
-        
-        void OnEnable()
-        {
-            miniGameData.OnMiniGameTurnEnd += EndTurn;
-        }
-        
-        void OnDisable() 
-        {
-            miniGameData.OnMiniGameTurnEnd -= EndTurn;
-        }
         
         protected override void OnCountdownTimerEnded()
         {

@@ -14,13 +14,13 @@ namespace CosmicShore.Game.UI
 
         void OnEnable()
         {
-            miniGameData.OnStarted += OnMiniGameStart;
+            miniGameData.OnGameStarted += OnMiniGameStart;
             miniGameData.OnMiniGameTurnEnd += OnMiniGameTurnEnd;
         }
 
         void OnDisable()
         {
-            miniGameData.OnStarted -= OnMiniGameStart;
+            miniGameData.OnGameStarted -= OnMiniGameStart;
             miniGameData.OnMiniGameTurnEnd -= OnMiniGameTurnEnd;
             _active = false;
             _running = false;

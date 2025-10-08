@@ -5,49 +5,22 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MultiplayerCellularDuelController : MiniGameControllerBase
+    public class MultiplayerCellularDuelController : MultipalyerMiniGameControllerBase
     {
         private int readyClientCount;
         
-        protected override void Start()
-        {
-        }
-        
-        public override void OnNetworkSpawn()
-        {
-            if (!IsServer)
-                return;
-            
-            miniGameData.OnMiniGameTurnEnd += EndTurn;
-            InitializeAfterDelay().Forget();
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            if (!IsServer)
-                return;
-            
-            miniGameData.OnMiniGameTurnEnd += EndTurn;
-        }
-        
-        private async UniTaskVoid InitializeAfterDelay()
-        {
-            try
-            {
-                // Delay for 2 seconds (scaled time by default)
-                await UniTask.Delay(1000, DelayType.UnscaledDeltaTime);
-                Initialize();
-            }
-            catch (OperationCanceledException)
-            {
-            }
-        }
-
         protected override void OnReadyClicked_()
         {
             ToggleReadyButton(false);
-            Debug.Log($"{NetworkManager.Singleton.LocalClientId} is ready!");
+            // Debug.Log($"{NetworkManager.Singleton.LocalClientId} is ready!");
             OnReadyClicked_ServerRpc();
+        }
+        
+        protected override void EndGame()
+        {
+            readyClientCount = 0;
+            miniGameData.InvokeMiniGameEnd();
+            EndGame_ClientRpc();
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -56,6 +29,7 @@ namespace CosmicShore.Game.Arcade
             readyClientCount++;
             if (!readyClientCount.Equals(miniGameData.SelectedPlayerCount))
                 return;
+
             OnReadyClicked_ClientRpc();
         }
 
@@ -65,29 +39,10 @@ namespace CosmicShore.Game.Arcade
             StartCountdownTimer();
         }
 
-        protected override void OnCountdownTimerEnded()
-        {
-            miniGameData.SetPlayersActiveForMultiplayer(active: true);
-
-            if (!IsServer)
-                return;
-            
-            roundsPlayed = 0;
-            turnsTakenThisRound = 0;
-            miniGameData.StartNewGame();
-        }
-
-        protected override void EndGame()
-        {
-            readyClientCount = 0;
-            miniGameData.InvokeMiniGameEnd();
-            EndGame_ClientRpc();
-        }
-
         [ClientRpc]
-        void EndGame_ClientRpc()
+        private void EndGame_ClientRpc()
         {
-            miniGameData.SetPlayersActive(false);
+            miniGameData.SetPlayersActiveForMultiplayer(false);
         }
     }
 }
