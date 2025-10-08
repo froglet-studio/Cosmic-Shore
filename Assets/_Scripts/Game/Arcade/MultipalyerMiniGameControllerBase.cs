@@ -25,6 +25,9 @@ namespace CosmicShore.Game.Arcade
                 return;
 
             miniGameData.OnMiniGameTurnEnd += EndTurn;
+            miniGameData.OnSessionStarted += SubscribeToSessionEvents;
+            
+            
             InitializeAfterDelay().Forget();
         }
 
@@ -34,7 +37,27 @@ namespace CosmicShore.Game.Arcade
                 return;
 
             miniGameData.OnMiniGameTurnEnd -= EndTurn;
+            miniGameData.OnSessionStarted -= SubscribeToSessionEvents;
         }
+
+        public virtual void OnClickReturnToMainMenu()
+        {
+            
+        }
+
+        private void SubscribeToSessionEvents()
+        {
+            miniGameData.ActiveSession.Deleted += UnsubscribeFromSessionEvents;
+            miniGameData.ActiveSession.PlayerLeaving += OnPlayerLeavingFromSession;
+        }
+
+        private void UnsubscribeFromSessionEvents()
+        {
+            miniGameData.ActiveSession.Deleted -= UnsubscribeFromSessionEvents;
+            miniGameData.ActiveSession.PlayerLeaving -= OnPlayerLeavingFromSession;
+        }
+
+        void OnPlayerLeavingFromSession(string clientId) {}
 
         /// <summary>
         /// Runs Initialize() after a small, unscaled delay (server only).

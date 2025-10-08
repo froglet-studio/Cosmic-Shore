@@ -2,18 +2,13 @@
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-
 using Cysharp.Threading.Tasks;
-
 using Unity.Netcode;
-
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
-
 using CosmicShore.SOAP;
 using CosmicShore.Utilities;
-using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 
 namespace CosmicShore.Game
@@ -26,14 +21,12 @@ namespace CosmicShore.Game
     /// - Client: leaves session.
     /// - Uses a guard flag so our own leave doesn't re-trigger logic via NGO callbacks.
     /// </summary>
-    public class MultiplayerSetup : SingletonNetwork<MultiplayerSetup>
+    public class MultiplayerSetup : Singleton<MultiplayerSetup>
     {
-        const string PLAYER_NAME_PROPERTY_KEY = "playerName";
+        public const string PLAYER_NAME_PROPERTY_KEY = "playerName";
 
         [SerializeField] private MiniGameDataSO miniGameData;
         [SerializeField] private ScriptableEventNoParam OnActiveSessionEnd;
-
-        public ISession ActiveSession { get; private set; }
 
         // Guard to avoid double-handling when our own LeaveAsync/DeleteAsync triggers NGO disconnect
         private bool _leaving;
@@ -79,8 +72,6 @@ namespace CosmicShore.Game
                 NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
             }
         }
-
-        public void Leave() => LeaveSession().Forget();
         
         // --------------------------
         // Session Bootstrapping
@@ -107,8 +98,9 @@ namespace CosmicShore.Game
                 PlayerProperties = playerProperties,
             }.WithRelayNetwork();
 
-            ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
-            Debug.Log($"[MultiplayerSetup] Created session {ActiveSession.Id}");
+            miniGameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
+            miniGameData.InvokeSessionStarted();
+            Debug.Log($"[MultiplayerSetup] Created session {miniGameData.ActiveSession.Id}");
         }
 
         private async UniTask JoinSessionAsClientById(string sessionId)
@@ -121,7 +113,7 @@ namespace CosmicShore.Game
             };
 
             Debug.Log($"[MultiplayerSetup] Joining session {sessionId}");
-            ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
+            miniGameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
         }
 
         private async UniTask<IList<ISessionInfo>> QuerySessions()
@@ -198,7 +190,7 @@ namespace CosmicShore.Game
         /// - Return to main menu.
         /// This leaves everything clean so the player can create/join again later in this runtime.
         /// </summary>
-        async UniTask LeaveSession()
+        public async UniTask LeaveSession()
         {
             if (_leaving)
                 return;
@@ -207,17 +199,17 @@ namespace CosmicShore.Game
 
             try
             {
-                if (ActiveSession != null)
+                if (miniGameData.ActiveSession != null)
                 {
-                    if (ActiveSession.IsHost)
+                    if (miniGameData.ActiveSession.IsHost)
                     {
                         // End session for everyone; clients will receive disconnect and return to menu.
-                        await ActiveSession.AsHost().DeleteAsync();
+                        await miniGameData.ActiveSession.AsHost().DeleteAsync();
                         Debug.Log("[MultiplayerSetup] Host deleted session.");
                     }
                     else
                     {
-                        await ActiveSession.LeaveAsync();
+                        await miniGameData.ActiveSession.LeaveAsync();
                         Debug.Log("[MultiplayerSetup] Client left session.");
                     }
                 }
@@ -228,7 +220,7 @@ namespace CosmicShore.Game
             }
             finally
             {
-                ActiveSession = null;
+                miniGameData.ActiveSession = null;
 
                 // Local transport cleanup
                 if (NetworkManager.Singleton)

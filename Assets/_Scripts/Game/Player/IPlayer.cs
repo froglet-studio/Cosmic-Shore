@@ -9,8 +9,6 @@ namespace CosmicShore.Game
 {
     public interface IPlayer : ITransform
     {
-        public static List<IPlayer> NppList { get; }
-        VesselClassType VesselClass { get; }
         Domains Domain { get; }
         string Name { get; }
         string PlayerUUID { get; }

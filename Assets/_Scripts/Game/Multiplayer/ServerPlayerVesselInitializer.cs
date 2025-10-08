@@ -46,7 +46,7 @@ namespace CosmicShore.Game
             }
             
             gameData.SetSpawnPositions(_playerOrigins);
-
+            
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkVesselClientCache.OnNewInstanceAdded += OnNewVesselClientAdded;
         }
@@ -73,7 +73,7 @@ namespace CosmicShore.Game
         // ----------------------------
         void OnNewVesselClientAdded(IVessel _)
         {
-            var session = MultiplayerSetup.Instance.ActiveSession;
+            var session = gameData.ActiveSession;
             if (session is { AvailableSlots: 0 })
             {
                 // DebugExtensions.LogColored("[ServerPlayerVesselInitializer] All players have joined; lobby full.", Color.green);

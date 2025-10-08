@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.App.Systems;
 using CosmicShore.Core;
 using CosmicShore.Game;
-using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
-using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
+using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.Serialization;
+using IPlayer = CosmicShore.Game.IPlayer;
 
 namespace CosmicShore.SOAP
 {
@@ -24,6 +23,7 @@ namespace CosmicShore.SOAP
     {
         // Events
         public event Action OnLaunchGame;
+        public event Action OnSessionStarted;
         public event Action OnMiniGameInitialized;
         public event Action OnClientReady;
         public event Action OnGameStartedInServer;
@@ -58,6 +58,7 @@ namespace CosmicShore.SOAP
         public Pose[] SpawnPoses { get; private set; }
         List<Pose> _playerSpawnPoseList = new ();
         public IPlayer ActivePlayer { get; private set; }
+        public ISession ActiveSession { get; set; }
         
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
@@ -97,6 +98,7 @@ namespace CosmicShore.SOAP
             OnGameStartedInServer?.Invoke();
         }
         
+        public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
         public void InvokeGameStarted() => OnGameStarted?.Invoke();
         public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
@@ -360,6 +362,39 @@ namespace CosmicShore.SOAP
                 else
                     vesselStatus.VesselPrismController.StopSpawn();
             }
+        }
+        
+        /// <summary>
+        /// Remove a player (by display name) from Players & RoundStatsList and fix ActivePlayer if needed.
+        /// </summary>
+        public bool RemovePlayerData(string playerName)
+        {
+            if (string.IsNullOrEmpty(playerName))
+                return false;
+
+            // Remove from Players
+            int removedPlayers = Players.RemoveAll(p => p != null && p.Name == playerName);
+
+            // Remove from RoundStats
+            int removedStats = RoundStatsList.RemoveAll(rs => rs != null && rs.Name == playerName);
+
+            // Fix ActivePlayer if it was the removed one
+            if (ActivePlayer != null && ActivePlayer.Name == playerName)
+                ActivePlayer = Players.Count > 0 ? Players[0] : null;
+
+            // Optional: also stop their vessel spawning if any dangling reference exists (defensive)
+            // No-op here because Players list holds the references.
+
+            return (removedPlayers + removedStats) > 0;
+        }
+
+        /// <summary>
+        /// Force the spawn-pose picker to rebuild next time (so it rebalances after a player leaves).
+        /// </summary>
+        public void ClearSpawnPoseCache()
+        {
+            // Make sure next GetRandomSpawnPose() rebuilds from SpawnPoses
+            _playerSpawnPoseList?.Clear();
         }
         
         // ----------------------------
