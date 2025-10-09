@@ -330,11 +330,10 @@ namespace CosmicShore.SOAP
                     Debug.LogError("No vessel status found for player.! This should never happen!");
                     return;
                 }
-
+                
                 player.ToggleStationaryMode(false);
                 player.ToggleInputPause(player.IsInitializedAsAI);
                 player.ToggleAutoPilot(player.IsInitializedAsAI);
-                player.SetPoseOfVessel(GetRandomSpawnPose());
                 player.ToggleActive(true);
                 vesselStatus.VesselPrismController.StartSpawn();
             }
@@ -356,10 +355,6 @@ namespace CosmicShore.SOAP
                 player.ToggleStationaryMode(false);
                 player.ToggleInputPause(!isOwner);
                 player.ToggleActive(true);
-                if (NetworkManager.Singleton.IsServer)
-                {
-                    player.SetPoseOfVessel(GetRandomSpawnPose());
-                }
                 vesselStatus.VesselPrismController.StartSpawn();
             }
         }
@@ -377,6 +372,11 @@ namespace CosmicShore.SOAP
                 }
                 
                 player.ResetForPlay();
+                
+                if (NetworkManager.Singleton.IsConnectedClient &&
+                    !player.IsNetworkOwner)
+                    continue;
+                player.SetPoseOfVessel(GetRandomSpawnPose());
             }
         }
         
@@ -451,7 +451,7 @@ namespace CosmicShore.SOAP
             localPlayer.Transform.SetPositionAndRotation(activePlayerOrigin.position, activePlayerOrigin.rotation);
             localPlayer.InputController.InputStatus.Paused = true;
             localPlayer.Vessel.Teleport(activePlayerOrigin);
-            localPlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
+            localPlayer.Vessel.VesselStatus.VesselTransformer.ResetTransformer();
             // ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
             localPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
             // ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);

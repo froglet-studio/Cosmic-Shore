@@ -4,6 +4,7 @@ namespace CosmicShore.Game.Arcade
     {
         void OnEnable()
         {
+            DomainAssigner.Initialize();
             miniGameData.OnMiniGameTurnEnd += EndTurn;
         }
         

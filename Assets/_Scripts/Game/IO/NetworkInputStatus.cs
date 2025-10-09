@@ -18,22 +18,6 @@ namespace CosmicShore.Game
         public InputController InputController { get; set; }
 
         //–––––––––––––––––––––––––––––––––––––––––
-        // “Are we currently using the network vars?”
-        bool _isNetwork = false;
-
-        public override void OnNetworkSpawn()
-        {
-            base.OnNetworkSpawn();
-            _isNetwork = true;
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            base.OnNetworkDespawn();
-            _isNetwork = false;
-        }
-
-        //–––––––––––––––––––––––––––––––––––––––––
         // Local fallbacks
         float   _xSumLocal,   _ySumLocal,   _xDiffLocal,   _yDiffLocal,   _throttleLocal;
         bool    _idleLocal,   _pausedLocal, _gyroLocal,    _invertYLocal, _invertThrotLocal,
@@ -73,157 +57,188 @@ namespace CosmicShore.Game
         readonly NetworkVariable<Vector3> n_3dPos  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         //–––––––––––––––––––––––––––––––––––––––––
-        // Properties switch on _isNetwork
+        // Properties switch on IsSpawned
         public float XSum
         {
-            get => _isNetwork ? n_xSum.Value   : _xSumLocal;
-            set { if (_isNetwork && IsOwner) n_xSum.Value = value; else _xSumLocal = value; }
+            get => IsSpawned ? n_xSum.Value   : _xSumLocal;
+            set { if (IsSpawned && IsOwner) n_xSum.Value = value; else _xSumLocal = value; }
         }
 
         public float YSum
         {
-            get => _isNetwork ? n_ySum.Value   : _ySumLocal;
-            set { if (_isNetwork && IsOwner) n_ySum.Value = value; else _ySumLocal = value; }
+            get => IsSpawned ? n_ySum.Value   : _ySumLocal;
+            set { if (IsSpawned && IsOwner) n_ySum.Value = value; else _ySumLocal = value; }
         }
 
         public float XDiff
         {
-            get => _isNetwork ? n_xDiff.Value  : _xDiffLocal;
-            set { if (_isNetwork && IsOwner) n_xDiff.Value= value; else _xDiffLocal = value; }
+            get => IsSpawned ? n_xDiff.Value  : _xDiffLocal;
+            set { if (IsSpawned && IsOwner) n_xDiff.Value= value; else _xDiffLocal = value; }
         }
 
         public float YDiff
         {
-            get => _isNetwork ? n_yDiff.Value  : _yDiffLocal;
-            set { if (_isNetwork && IsOwner) n_yDiff.Value= value; else _yDiffLocal = value; }
+            get => IsSpawned ? n_yDiff.Value  : _yDiffLocal;
+            set { if (IsSpawned && IsOwner) n_yDiff.Value= value; else _yDiffLocal = value; }
         }
 
         public float Throttle
         {
-            get => _isNetwork ? n_throt.Value  : _throttleLocal;
-            set { if (_isNetwork && IsOwner) n_throt.Value= value; else _throttleLocal = value; }
+            get => IsSpawned ? n_throt.Value  : _throttleLocal;
+            set { if (IsSpawned && IsOwner) n_throt.Value= value; else _throttleLocal = value; }
         }
 
         public bool Idle
         {
-            get => _isNetwork ? n_idle.Value   : _idleLocal;
-            set { if (_isNetwork && IsOwner) n_idle.Value = value; else _idleLocal = value; }
+            get => IsSpawned ? n_idle.Value   : _idleLocal;
+            set { if (IsSpawned && IsOwner) n_idle.Value = value; else _idleLocal = value; }
         }
 
         public bool Paused
         {
-            get => _isNetwork ? n_paused.Value : _pausedLocal;
-            set { if (_isNetwork && IsOwner) n_paused.Value = value; else _pausedLocal = value; }
+            get => IsSpawned ? n_paused.Value : _pausedLocal;
+            set { if (IsSpawned && IsOwner) n_paused.Value = value; else _pausedLocal = value; }
         }
 
         public bool IsGyroEnabled
         {
-            get => _isNetwork ? n_gyro.Value   : _gyroLocal;
-            set { if (_isNetwork && IsOwner) n_gyro.Value   = value; else _gyroLocal = value; }
+            get => IsSpawned ? n_gyro.Value   : _gyroLocal;
+            set { if (IsSpawned && IsOwner) n_gyro.Value   = value; else _gyroLocal = value; }
         }
 
         public bool InvertYEnabled
         {
-            get => _isNetwork ? n_invY.Value   : _invertYLocal;
-            set { if (_isNetwork && IsOwner) n_invY.Value   = value; else _invertYLocal = value; }
+            get => IsSpawned ? n_invY.Value   : _invertYLocal;
+            set { if (IsSpawned && IsOwner) n_invY.Value   = value; else _invertYLocal = value; }
         }
 
         public bool InvertThrottleEnabled
         {
-            get => _isNetwork ? n_invT.Value   : _invertThrotLocal;
-            set { if (_isNetwork && IsOwner) n_invT.Value   = value; else _invertThrotLocal = value; }
+            get => IsSpawned ? n_invT.Value   : _invertThrotLocal;
+            set { if (IsSpawned && IsOwner) n_invT.Value   = value; else _invertThrotLocal = value; }
         }
 
         public bool OneTouchLeft
         {
-            get => _isNetwork ? n_one.Value    : _oneTouchLocal;
-            set { if (_isNetwork && IsOwner) n_one.Value    = value; else _oneTouchLocal = value; }
+            get => IsSpawned ? n_one.Value    : _oneTouchLocal;
+            set { if (IsSpawned && IsOwner) n_one.Value    = value; else _oneTouchLocal = value; }
         }
 
         public bool CommandStickControls
         {
-            get => _isNetwork ? n_cmd.Value    : _cmdStickLocal;
-            set { if (_isNetwork && IsOwner) n_cmd.Value    = value; else _cmdStickLocal = value; }
+            get => IsSpawned ? n_cmd.Value    : _cmdStickLocal;
+            set { if (IsSpawned && IsOwner) n_cmd.Value    = value; else _cmdStickLocal = value; }
         }
 
         public Vector2 RightJoystickHome
         {
-            get => _isNetwork ? n_rHome.Value  : _rHomeLocal;
-            set { if (_isNetwork && IsOwner) n_rHome.Value  = value; else _rHomeLocal = value; }
+            get => IsSpawned ? n_rHome.Value  : _rHomeLocal;
+            set { if (IsSpawned && IsOwner) n_rHome.Value  = value; else _rHomeLocal = value; }
         }
 
         public Vector2 LeftJoystickHome
         {
-            get => _isNetwork ? n_lHome.Value  : _lHomeLocal;
-            set { if (_isNetwork && IsOwner) n_lHome.Value  = value; else _lHomeLocal = value; }
+            get => IsSpawned ? n_lHome.Value  : _lHomeLocal;
+            set { if (IsSpawned && IsOwner) n_lHome.Value  = value; else _lHomeLocal = value; }
         }
 
         public Vector2 RightClampedPosition
         {
-            get => _isNetwork ? n_rClamp.Value : _rClampLocal;
-            set { if (_isNetwork && IsOwner) n_rClamp.Value = value; else _rClampLocal = value; }
+            get => IsSpawned ? n_rClamp.Value : _rClampLocal;
+            set { if (IsSpawned && IsOwner) n_rClamp.Value = value; else _rClampLocal = value; }
         }
 
         public Vector2 LeftClampedPosition
         {
-            get => _isNetwork ? n_lClamp.Value : _lClampLocal;
-            set { if (_isNetwork && IsOwner) n_lClamp.Value = value; else _lClampLocal = value; }
+            get => IsSpawned ? n_lClamp.Value : _lClampLocal;
+            set { if (IsSpawned && IsOwner) n_lClamp.Value = value; else _lClampLocal = value; }
         }
 
         public Vector2 RightJoystickStart
         {
-            get => _isNetwork ? n_rStart.Value : _rStartLocal;
-            set { if (_isNetwork && IsOwner) n_rStart.Value = value; else _rStartLocal = value; }
+            get => IsSpawned ? n_rStart.Value : _rStartLocal;
+            set { if (IsSpawned && IsOwner) n_rStart.Value = value; else _rStartLocal = value; }
         }
 
         public Vector2 LeftJoystickStart
         {
-            get => _isNetwork ? n_lStart.Value : _lStartLocal;
-            set { if (_isNetwork && IsOwner) n_lStart.Value = value; else _lStartLocal = value; }
+            get => IsSpawned ? n_lStart.Value : _lStartLocal;
+            set { if (IsSpawned && IsOwner) n_lStart.Value = value; else _lStartLocal = value; }
         }
 
         public Vector2 RightNormalizedJoystickPosition
         {
-            get => _isNetwork ? n_rNorm.Value  : _rNormLocal;
-            set { if (_isNetwork && IsOwner) n_rNorm.Value  = value; else _rNormLocal = value; }
+            get => IsSpawned ? n_rNorm.Value  : _rNormLocal;
+            set { if (IsSpawned && IsOwner) n_rNorm.Value  = value; else _rNormLocal = value; }
         }
 
         public Vector2 LeftNormalizedJoystickPosition
         {
-            get => _isNetwork ? n_lNorm.Value  : _lNormLocal;
-            set { if (_isNetwork && IsOwner) n_lNorm.Value  = value; else _lNormLocal = value; }
+            get => IsSpawned ? n_lNorm.Value  : _lNormLocal;
+            set { if (IsSpawned && IsOwner) n_lNorm.Value  = value; else _lNormLocal = value; }
         }
 
         public Vector2 EasedRightJoystickPosition
         {
-            get => _isNetwork ? n_rEased.Value : _rEasedLocal;
-            set { if (_isNetwork && IsOwner) n_rEased.Value = value; else _rEasedLocal = value; }
+            get => IsSpawned ? n_rEased.Value : _rEasedLocal;
+            set { if (IsSpawned && IsOwner) n_rEased.Value = value; else _rEasedLocal = value; }
         }
 
         public Vector2 EasedLeftJoystickPosition
         {
-            get => _isNetwork ? n_lEased.Value : _lEasedLocal;
-            set { if (_isNetwork && IsOwner) n_lEased.Value = value; else _lEasedLocal = value; }
+            get => IsSpawned ? n_lEased.Value : _lEasedLocal;
+            set { if (IsSpawned && IsOwner) n_lEased.Value = value; else _lEasedLocal = value; }
         }
 
         public Vector2 SingleTouchValue
         {
-            get => _isNetwork ? n_single.Value: _singleTouchLocal;
-            set { if (_isNetwork && IsOwner) n_single.Value= value; else _singleTouchLocal = value; }
+            get => IsSpawned ? n_single.Value: _singleTouchLocal;
+            set { if (IsSpawned && IsOwner) n_single.Value= value; else _singleTouchLocal = value; }
         }
 
         public Vector3 ThreeDPosition
         {
-            get => _isNetwork ? n_3dPos.Value  : _threeDLocal;
-            set { if (_isNetwork && IsOwner) n_3dPos.Value  = value; else _threeDLocal = value; }
+            get => IsSpawned ? n_3dPos.Value  : _threeDLocal;
+            set { if (IsSpawned && IsOwner) n_3dPos.Value  = value; else _threeDLocal = value; }
         }
 
         public Quaternion GetGyroRotation() => InputController.GetGyroRotation();
 
         public void ResetForReplay()
         {
-            if (IsSpawned && !IsServer)
+            // Non-owners shouldn't modify replicated state
+            if (base.IsSpawned && !IsOwner)
                 return;
+
+            // Reset scalar inputs
+            XSum = 0f;
+            YSum = 0f;
+            XDiff = 0f;
+            YDiff = 0f;
+            Throttle = 0f;
+
+            // Reset booleans
+            Idle = true;
+            Paused = true;
+            /*IsGyroEnabled = false;
+            InvertYEnabled = false;
+            InvertThrottleEnabled = false;
+            OneTouchLeft = false;
+            CommandStickControls = false;*/
+
+            // Reset joystick / touch vectors
+            RightJoystickHome = Vector2.zero;
+            LeftJoystickHome = Vector2.zero;
+            RightClampedPosition = Vector2.zero;
+            LeftClampedPosition = Vector2.zero;
+            RightJoystickStart = Vector2.zero;
+            LeftJoystickStart = Vector2.zero;
+            RightNormalizedJoystickPosition = Vector2.zero;
+            LeftNormalizedJoystickPosition = Vector2.zero;
+            EasedRightJoystickPosition = Vector2.zero;
+            EasedLeftJoystickPosition = Vector2.zero;
+            SingleTouchValue = Vector2.zero;
+            ThreeDPosition = Vector3.zero;
         }
     }
 }

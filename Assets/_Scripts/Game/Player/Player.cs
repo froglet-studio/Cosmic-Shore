@@ -83,7 +83,7 @@ namespace CosmicShore.Game
 
             if (IsServer)
             {
-                NetTeam.Value = TeamAssigner.AssignRandomTeam();
+                NetTeam.Value = DomainAssigner.GetAvailableDomain();
             }
         }
         
@@ -116,17 +116,16 @@ namespace CosmicShore.Game
 
         public void ResetForPlay()
         {
-            // If we're the owner OR not yet spawned, reset input and pause it.
-            if (IsOwner || !IsSpawned)
-            {
-                InputStatus.ResetForReplay();
-                ToggleInputPause(true);
-            }
-
             // Always reset the vessel and make it stationary.
             Vessel.ResetForPlay();
             ToggleStationaryMode(true);
             ToggleActive(false);
+            
+            if (IsSpawned && !IsOwner)
+                return;
+                
+            InputStatus.ResetForReplay();
+            ToggleInputPause(true);
         }
         
         private void OnNetDefaultShipTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>

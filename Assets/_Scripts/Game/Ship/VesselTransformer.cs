@@ -8,19 +8,16 @@ public class VesselTransformer : MonoBehaviour
 {
     protected const float LERP_AMOUNT = 1.5f;
 
-    [SerializeField]
-    MiniGameDataSO miniGameData;
-
-    [SerializeField]
-    protected bool toggleManualThrottle;
+    [SerializeField] private MiniGameDataSO miniGameData;
+    [SerializeField] protected bool toggleManualThrottle;
 
     #region Vessel
     protected IVessel Vessel;
-    protected IVesselStatus VesselStatus => Vessel.VesselStatus;
-    protected ResourceSystem resourceSystem => Vessel.VesselStatus.ResourceSystem;
+    protected IVesselStatus VesselStatus => Vessel?.VesselStatus;
+    protected ResourceSystem ResourceSystem => VesselStatus?.ResourceSystem;
     #endregion
 
-    protected IInputStatus InputStatus => VesselStatus.InputStatus;
+    protected IInputStatus InputStatus => VesselStatus?.InputStatus;
 
     protected float speed;
     protected Quaternion accumulatedRotation;
@@ -35,91 +32,115 @@ public class VesselTransformer : MonoBehaviour
     public float PitchScaler = 130f;
     public float YawScaler = 130f;
     public float RollScaler = 130f;
-    public float RotationThrottleScaler = 0;
+    public float RotationThrottleScaler = 0f;
 
-    List<ShipThrottleModifier> ThrottleModifiers = new();
-    List<ShipVelocityModifier> VelocityModifiers = new();
-    float speedModifierMax = 6f;
-    float velocityModifierMax = 100;
-    protected float throttleMultiplier = 1;
+    private readonly List<ShipThrottleModifier> ThrottleModifiers = new();
+    private readonly List<ShipVelocityModifier> VelocityModifiers = new();
+
+    private float speedModifierMax = 6f;
+    private float velocityModifierMax = 100f;
+    protected float throttleMultiplier = 1f;
     public float SpeedMultiplier => throttleMultiplier;
-    protected Vector3 velocityShift = Vector3.zero;
 
+    protected Vector3 velocityShift = Vector3.zero;
     private bool isInitialized;
 
+    // ----------------------------- Initialization -----------------------------
     public virtual void Initialize(IVessel vessel)
     {
-        ResetShipTransformer();
-        Vessel = vessel;
+        this.Vessel = vessel;
+        ResetTransformer();
         isInitialized = true;
     }
-    
+
+    // ----------------------------- Update Loop -----------------------------
     protected virtual void Update()
     {
-        if (!isInitialized)
+        if (!isInitialized || VesselStatus == null || VesselStatus.IsStationary)
             return;
-        
-        if (VesselStatus.IsStationary)
-            return;
-        
+
         VesselStatus.blockRotation = transform.rotation;
 
         RotateShip();
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
-
         MoveShip();
     }
 
-    public void ResetShipTransformer()
+    // ----------------------------- Reset State -----------------------------
+    public void ResetTransformer()
     {
+        // Core speed/rotation
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
-        accumulatedRotation = transform.rotation;
-        speed = 0;
+        speed = 0f;
+        throttleMultiplier = 1f;
+
+        // Rotation — reset to face forward
+        accumulatedRotation = Quaternion.identity;
+        transform.rotation = Quaternion.identity;
+
+        // Movement
         velocityShift = Vector3.zero;
+
+        // Remove lingering modifiers and states
+        ThrottleModifiers.Clear();
+        VelocityModifiers.Clear();
+
+        /*if (miniGameData != null)
+            miniGameData.SlowedShipTransforms.Remove(transform);*/
+
+        // Reset vessel animation/state safely
+        if (VesselStatus != null)
+        {
+            VesselStatus.Speed = 0f;
+            VesselStatus.Course = transform.forward;
+            VesselStatus.Slowed = false;
+
+            VesselStatus.ShipAnimation?.StopFlareEngine();
+            VesselStatus.ShipAnimation?.StopFlareBody();
+        }
     }
 
+    // ----------------------------- Rotation Logic -----------------------------
     protected virtual void RotateShip()
     {
-
+        // Apply rotational inputs
         Roll();
         Yaw();
         Pitch();
 
-        if (InputStatus.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
+        if (InputStatus != null && InputStatus.IsGyroEnabled)
         {
-            // Updates GameObjects blockRotation from input device's gyroscope
             transform.rotation = Quaternion.Slerp(
-                                        transform.rotation,
-                                        accumulatedRotation * InputStatus.GetGyroRotation(),
-                                        LERP_AMOUNT * Time.deltaTime);
+                transform.rotation,
+                accumulatedRotation * InputStatus.GetGyroRotation(),
+                LERP_AMOUNT * Time.deltaTime);
         }
         else
         {
             transform.rotation = Quaternion.Slerp(
-                                        transform.rotation,
-                                        accumulatedRotation,
-                                        LERP_AMOUNT * Time.deltaTime);
+                transform.rotation,
+                accumulatedRotation,
+                LERP_AMOUNT * Time.deltaTime);
         }
     }
 
+    // ----------------------------- Public Controls -----------------------------
     public void SetPose(Pose pose)
     {
         transform.SetPositionAndRotation(pose.position, pose.rotation);
+        accumulatedRotation = pose.rotation;
     }
 
-    #region Public Rotation Methods
     public void FlatSpinShip(float YAngle)
     {
-        accumulatedRotation = Quaternion.AngleAxis(
-                            180,
-                            transform.up) * accumulatedRotation;
+        accumulatedRotation = Quaternion.AngleAxis(180, transform.up) * accumulatedRotation;
     }
 
     public void SpinShip(Vector3 newDirection)
     {
-        transform.localRotation = Quaternion.LookRotation(newDirection);
+        accumulatedRotation = Quaternion.LookRotation(newDirection);
     }
 
     public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
@@ -131,50 +152,49 @@ public class VesselTransformer : MonoBehaviour
     {
         accumulatedRotation = Quaternion.AngleAxis(angle, axis) * accumulatedRotation;
     }
-    #endregion
 
-    #region Public translation Methods
-    public void TranslateShip(Vector3 nudgeVector)
+    // ----------------------------- Movement Logic -----------------------------
+    protected virtual void Pitch()
     {
-        transform.position += nudgeVector;
-    }
-
-    public void ModifyVelocity(Vector3 amount, float duration)
-    {
-        VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0));
-    }
-    #endregion
-
-    protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
-    {
+        if (InputStatus == null) return;
         accumulatedRotation = Quaternion.AngleAxis(
-                            InputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
-                            transform.right) * accumulatedRotation;
+            InputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
+            transform.right) * accumulatedRotation;
     }
 
-    protected virtual void Yaw()  // TODO: test replacing these AngleAxis calls with eulerangles
+    protected virtual void Yaw()
     {
+        if (InputStatus == null) return;
         accumulatedRotation = Quaternion.AngleAxis(
-                            InputStatus.XSum * (speed * RotationThrottleScaler + YawScaler)  * Time.deltaTime,
-                            transform.up) * accumulatedRotation;
+            InputStatus.XSum * (speed * RotationThrottleScaler + YawScaler) * Time.deltaTime,
+            transform.up) * accumulatedRotation;
     }
 
     protected virtual void Roll()
     {
+        if (InputStatus == null) return;
         accumulatedRotation = Quaternion.AngleAxis(
-                            InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
-                            transform.forward) * accumulatedRotation;
+            InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
+            transform.forward) * accumulatedRotation;
     }
 
     protected virtual void MoveShip()
     {
+        if (VesselStatus == null || InputStatus == null) return;
+
         float boostAmount = 1f;
-        if (VesselStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the vessel data still thinks we are boosting
-        {
-            boostAmount = Vessel.VesselStatus.BoostMultiplier;
-        }
-        if (VesselStatus.ChargedBoostDischarging) boostAmount *= VesselStatus.ChargedBoostCharge;
-        speed = Mathf.Lerp(speed, InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
+        if (VesselStatus.Boosting)
+            boostAmount = VesselStatus.BoostMultiplier;
+
+        if (VesselStatus.ChargedBoostDischarging)
+            boostAmount *= VesselStatus.ChargedBoostCharge;
+
+        // Smooth throttle speed calculation
+        speed = Mathf.Lerp(
+            speed,
+            InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed,
+            LERP_AMOUNT * Time.deltaTime);
+
         speed *= throttleMultiplier;
 
         if (toggleManualThrottle)
@@ -182,19 +202,24 @@ public class VesselTransformer : MonoBehaviour
 
         VesselStatus.Speed = speed;
 
-        VesselStatus.Course = VesselStatus.Drifting ? (speed * VesselStatus.Course + velocityShift).normalized : transform.forward;
+        // If drifting, keep direction; otherwise, go straight
+        VesselStatus.Course = VesselStatus.Drifting
+            ? (speed * VesselStatus.Course + velocityShift).normalized
+            : transform.forward;
 
         transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;
     }
 
+    // ----------------------------- Modifiers -----------------------------
     public void ModifyThrottle(float amount, float duration)
     {
         ThrottleModifiers.Add(new ShipThrottleModifier(amount, duration, 0));
     }
 
-    void ApplyThrottleModifiers()
+    private void ApplyThrottleModifiers()
     {
-        float accumulatedThrottleModification = 1;
+        float accumulatedThrottleModification = 1f;
+
         for (int i = ThrottleModifiers.Count - 1; i >= 0; i--)
         {
             var modifier = ThrottleModifiers[i];
@@ -207,35 +232,41 @@ public class VesselTransformer : MonoBehaviour
                 if (ThrottleModifiers.Count == 0)
                 {
                     VesselStatus.Slowed = false;
-                    miniGameData.SlowedShipTransforms.Remove(transform);
+                    miniGameData?.SlowedShipTransforms.Remove(transform);
                 }
             }
-            else if (modifier.initialValue < 1) // multiplicative for debuff and additive for buff 
+            else if (modifier.initialValue < 1f)
             {
                 accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
                 VesselStatus.Slowed = true;
-                miniGameData.SlowedShipTransforms.Add(transform);
+                miniGameData?.SlowedShipTransforms.Add(transform);
             }
             else
-                accumulatedThrottleModification += Mathf.Lerp(modifier.initialValue - 1, 0f, modifier.elapsedTime / modifier.duration);
+            {
+                accumulatedThrottleModification += Mathf.Lerp(modifier.initialValue - 1f, 0f, modifier.elapsedTime / modifier.duration);
+            }
         }
 
-        accumulatedThrottleModification = Mathf.Min(accumulatedThrottleModification, speedModifierMax);
-        if (accumulatedThrottleModification < 0f)
+        accumulatedThrottleModification = Mathf.Clamp(accumulatedThrottleModification, 0f, speedModifierMax);
+
+        if (accumulatedThrottleModification < 0.001f)
         {
             VesselStatus.Slowed = false;
-            miniGameData.SlowedShipTransforms.Remove(transform);
+            miniGameData?.SlowedShipTransforms.Remove(transform);
         }
-        throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0);
-        if (throttleMultiplier > 1)
-            Vessel.VesselStatus.ShipAnimation.FlareEngine();
+
+        throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0f);
+
+        if (throttleMultiplier > 1f)
+            VesselStatus.ShipAnimation?.FlareEngine();
         else
-            Vessel.VesselStatus.ShipAnimation.StopFlareEngine();
+            VesselStatus.ShipAnimation?.StopFlareEngine();
     }
 
-    void ApplyVelocityModifiers()
+    private void ApplyVelocityModifiers()
     {
-        Vector3 accumulatedVelocityModification = Vector3.zero;
+        Vector3 accumulatedVelocity = Vector3.zero;
+
         for (int i = VelocityModifiers.Count - 1; i >= 0; i--)
         {
             var modifier = VelocityModifiers[i];
@@ -245,24 +276,26 @@ public class VesselTransformer : MonoBehaviour
             if (modifier.elapsedTime >= modifier.duration)
                 VelocityModifiers.RemoveAt(i);
             else
-                accumulatedVelocityModification += ((Mathf.Cos(modifier.elapsedTime * Mathf.PI / modifier.duration)/2) + 1) * modifier.initialValue; // cosine interpolation
+                accumulatedVelocity += ((Mathf.Cos(modifier.elapsedTime * Mathf.PI / modifier.duration) / 2) + 1) * modifier.initialValue;
         }
 
-        velocityShift = Mathf.Min(accumulatedVelocityModification.magnitude, velocityModifierMax) * accumulatedVelocityModification.normalized;
+        velocityShift = Mathf.Min(accumulatedVelocity.magnitude, velocityModifierMax) * accumulatedVelocity.normalized;
 
-        var sqrMagnitude = velocityShift.sqrMagnitude;
+        var sqrMag = velocityShift.sqrMagnitude;
 
-        if (sqrMagnitude > .01f)
-            Vessel.VesselStatus.ShipAnimation.FlareBody(sqrMagnitude/4000);
+        if (sqrMag > 0.01f)
+            VesselStatus.ShipAnimation?.FlareBody(sqrMag / 4000);
         else
-            Vessel.VesselStatus.ShipAnimation.StopFlareBody();
+            VesselStatus.ShipAnimation?.StopFlareBody();
     }
 
-    // TODO - Should not access hangar like this.
-    // Use different way!
-    /*private void OnDisable()
+    public void TranslateShip(Vector3 nudgeVector)
     {
-        
-        // Hangar.Instance.SlowedShipTransforms.Remove(transform);
-    }*/
+        transform.position += nudgeVector;
+    }
+
+    public void ModifyVelocity(Vector3 amount, float duration)
+    {
+        VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0));
+    }
 }

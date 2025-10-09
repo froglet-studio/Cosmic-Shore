@@ -20,11 +20,11 @@ namespace CosmicShore.Game.Arcade
         
         public override void OnNetworkSpawn()
         {
-            TeamAssigner.ClearCache();
-            
             if (!IsServer)
                 return;
 
+            DomainAssigner.Initialize();
+            
             miniGameData.OnMiniGameTurnEnd += EndTurn;
             miniGameData.OnSessionStarted += SubscribeToSessionEvents;
             

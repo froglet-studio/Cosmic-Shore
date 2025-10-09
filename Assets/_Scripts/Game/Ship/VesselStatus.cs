@@ -252,7 +252,7 @@ namespace CosmicShore.Game
             Overheating = false;
 
             ResourceSystem.Reset();
-            VesselTransformer.ResetShipTransformer();
+            VesselTransformer.ResetTransformer();
             VesselPrismController.StopSpawn();
             VesselPrismController.ClearTrails();
         }
