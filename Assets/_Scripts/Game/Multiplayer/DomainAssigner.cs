@@ -24,7 +24,7 @@ public static class DomainAssigner
         var chosen = availableDomains[idx];
 
         // Mark it as used
-        availableDomains.Remove(chosen);
+        availableDomains.RemoveAt(idx);
 
         Debug.Log($"[DomainAssigner] ✅ Assigned unique domain: {chosen}");
         return chosen;

@@ -109,19 +109,17 @@ namespace CosmicShore.SOAP
 
         public void ResetDataForReplay()
         {
-            if (Players == null || Players.Count == 0)
-            {
-                Debug.LogError("Cannot Replay game mode, no player data found!");
-                return;
-            }
-
             if (RoundStatsList == null || RoundStatsList.Count == 0)
             {
                 Debug.LogError("Cannot Replay game mode, no round stats data found!");
                 return;
             }
             
-            ResetPlayerRoundStats();
+            for (int i = 0, count = RoundStatsList.Count; i < count ; i++)
+            {
+                RoundStatsList[i].Cleanup();
+            }
+            
             TurnStartTime = 0f;
         }
         
@@ -134,6 +132,8 @@ namespace CosmicShore.SOAP
             SelectedIntensity.Value = 1;
             
             ResetRuntimeData();
+            
+            DomainAssigner.Initialize();
         }
 
         // -----------------------------------------------------------------------------------------
@@ -295,20 +295,6 @@ namespace CosmicShore.SOAP
             RoundStatsList.Add(roundStats);
             
             p.ResetForPlay();
-        }
-        
-        void ResetPlayerRoundStats()
-        {
-            if (RoundStatsList is null || RoundStatsList.Count == 0)
-            {
-                Debug.LogError("This should never happen!");
-                return;
-            }
-            
-            for (int i = 0, count = RoundStatsList.Count; i < count ; i++)
-            {
-                RoundStatsList[i].Cleanup();
-            }
         }
         
         public void SortRoundStats(bool golfRules)

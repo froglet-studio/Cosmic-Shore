@@ -22,8 +22,6 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsServer)
                 return;
-
-            DomainAssigner.Initialize();
             
             miniGameData.OnMiniGameTurnEnd += EndTurn;
             miniGameData.OnSessionStarted += SubscribeToSessionEvents;
