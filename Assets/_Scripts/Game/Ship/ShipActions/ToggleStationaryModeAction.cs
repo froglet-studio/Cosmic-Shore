@@ -32,24 +32,24 @@ public class ToggleStationaryModeAction : ShipAction
             {
                 if (seedAssembler.StartSeed())
                 {
-                    Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
+                    Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
                     seedAssembler.BeginBonding();
                 }
                 else
                 {
-                    Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
+                    Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
                 }
             }
             else
             {
-                Vessel.VesselStatus.PrismSpawner.RestartTrailSpawnerAfterDelay(0);
+                Vessel.VesselStatus.VesselPrismController.RestartTrailSpawnerAfterDelay(0);
                 seedAssembler.StopSeedCompletely(); 
             }
         }
         else
         {
-            if (isOn) Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
-            else      Vessel.VesselStatus.PrismSpawner.RestartTrailSpawnerAfterDelay(0);
+            if (isOn) Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
+            else      Vessel.VesselStatus.VesselPrismController.RestartTrailSpawnerAfterDelay(0);
         }
     }
     

@@ -1,6 +1,9 @@
-using System.Collections;
+using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using CosmicShore.Core;
+using CosmicShore.Utilities;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -8,125 +11,191 @@ namespace CosmicShore.Game.Projectiles
 {
     public class AOERadialBlocks : AOEConicExplosion
     {
-        ElementalFloat depthScale = new(1f);  // Scale both ray radius and block size, in the z direction.
-        [SerializeField] float growthRate = .05f;
+        // Scale both ray radius and block size, in the z direction (kept from your original)
+        private ElementalFloat depthScale = new(1f);
 
-        [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [SerializeField] private float growthRate = .05f;
 
-        #region Attributes for Block Creation
-        [FormerlySerializedAs("trailBlock")]
+        [Header("Events")]
+        [SerializeField] private PrismEventChannelWithReturnSO _prismSpawnEvent; // PrismFactory event channel
+
+        #region Block Creation
         [Header("Block Creation")]
-        [SerializeField] protected Prism prism;
-        [SerializeField] protected Vector3 baseBlockScale = new Vector3(10f, 5f, 5f);
-        [SerializeField] bool shielded = true;
-        private Material blockMaterial;
+        [SerializeField] private Vector3 baseBlockScale = new Vector3(10f, 5f, 5f);
+        [SerializeField] private bool shielded = true;
         #endregion
 
-        #region Attributes for Explosion Parameters
+        #region Explosion Parameters
         [Header("Explosion Parameters")]
-        [SerializeField] float SecondaryExplosionDelay = 0.3f;
-        [SerializeField] int numberOfRays = 16;
-        [SerializeField] int blocksPerRay = 5;
-        [SerializeField] float maxRadius = 50f;
-        [SerializeField] float minRadius = 10f;
-        [SerializeField] float raySpread = 15f; // Spread angle in degrees
-        [SerializeField] AnimationCurve scaleCurve = AnimationCurve.Linear(0, 1, 1, 0.5f);
+        [SerializeField] private float SecondaryExplosionDelay = 0.3f;
+        [SerializeField] private int numberOfRays = 16;
+        [SerializeField] private int blocksPerRay = 5;
+        [SerializeField] private float maxRadius = 50f;
+        [SerializeField] private float minRadius = 10f;
+        [SerializeField] private float raySpread = 15f;             // spread angle in degrees
+        [SerializeField] private AnimationCurve scaleCurve = null;  // defaults to linear if null
         #endregion
 
-        Vector3 rayDirection;
-        protected List<Trail> trails = new List<Trail>();
+        private Vector3 rayDirection;
+        private readonly List<Trail> trails = new();
+        private CancellationTokenSource _cts;
+
+        private string OwnerIdBase => Vessel?.VesselStatus?.Player?.PlayerUUID ?? "UnknownOwner";
 
         public override void Initialize(InitializeStruct initStruct)
         {
             base.Initialize(initStruct);
             rayDirection = SpawnRotation * Vector3.forward;
+            scaleCurve ??= AnimationCurve.Linear(0, 1, 1, 0.5f);
         }
 
-        // TODO - Check this out, to divide it to Initialize and Detonate methods
-        /*public override void InitializeAndDetonate(IVessel vessel)
+        private void OnDisable()
         {
-            base.InitializeAndDetonate(vessel);
-            blockMaterial = shielded ? _themeManagerData.GetTeamShieldedBlockMaterial(Vessel.VesselStatus.Team)
-                : _themeManagerData.GetTeamBlockMaterial(Vessel.VesselStatus.Team);
+            CancelExplosion();
+        }
 
-            baseBlockScale.z *= depthScale.Value;
-            maxRadius *= depthScale.Value;
-            BindElementalFloats(Vessel);
-        }*/
-
-        protected override IEnumerator ExplodeCoroutine()
+        /// <summary>
+        /// Start the radial block burst (UniTask-based, no coroutines).
+        /// </summary>
+        public void BeginExplosion()
         {
-            StartCoroutine(base.ExplodeCoroutine());
-            yield return new WaitForSeconds(ExplosionDelay + SecondaryExplosionDelay);
+            CancelExplosion();
+            _cts = new CancellationTokenSource();
+            ExplodeAsync(_cts.Token).Forget();
+        }
 
-            // Calculate total blocks needed
-            int totalBlocksNeeded = numberOfRays * blocksPerRay;
-
-            // Wait for buffer to have enough blocks
-            while (!TrailBlockBufferManager.Instance.HasAvailableBlocks(Domain, totalBlocksNeeded))
+        /// <summary>
+        /// Cancel current sequence.
+        /// </summary>
+        public void CancelExplosion()
+        {
+            if (_cts != null)
             {
-                Debug.Log($"AOERadialBlocks: Waiting for blocks: {totalBlocksNeeded}");
-                yield return new WaitForSeconds(0.1f);
-            }
-
-            for (int ray = 0; ray < numberOfRays; ray++)
-            {
-                trails.Add(new Trail());
-                CreateRay(ray, trails[ray]);
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
             }
         }
 
-        private void CreateRay(int rayIndex, Trail trail)
+        // ---------------- Internals ----------------
+
+        private async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
-            float angleStep = 360f / numberOfRays;
-            float rayAngle = rayIndex * angleStep;
-
-            for (int block = 0; block < blocksPerRay; block++)
+            try
             {
-                float t = (float)block / (blocksPerRay - 1);
-                float radius = Random.Range(minRadius, maxRadius);
+                // Wait for primary + secondary delay before creating rays
+                float totalDelay = Mathf.Max(0f, ExplosionDelay) + Mathf.Max(0f, SecondaryExplosionDelay);
+                if (totalDelay > 0f)
+                    await UniTask.Delay(TimeSpan.FromSeconds(totalDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
-                // Create a rotation that evenly spreads around rayDirection
-                float spread = raySpread;
-                float rotationAroundRay = Random.Range(0f, 360f);
+                // Create trails and rays
+                for (int ray = 0; ray < numberOfRays; ray++)
+                {
+                    ct.ThrowIfCancellationRequested();
 
-                // Create a rotation from rayDirection to the spread vector
-                Quaternion spreadRotation = Quaternion.AngleAxis(spread, Vector3.Cross(rayDirection, Vector3.up).normalized);
-                Quaternion rotationAround = Quaternion.AngleAxis(rotationAroundRay, rayDirection);
+                    trails.Add(new Trail());
+                    CreateRay(ray, trails[ray], ct);
 
-                // Combine the rotations
+                    // Yield a frame between rays to smooth spikes
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // expected on cancel/disable
+            }
+        }
+
+        private void CreateRay(int rayIndex, Trail trail, CancellationToken ct)
+        {
+            float angleStep = 360f / Mathf.Max(1, numberOfRays);
+            float rayAngle = rayIndex * angleStep; // kept for future use if needed
+
+            for (int b = 0; b < blocksPerRay; b++)
+            {
+                if (ct.IsCancellationRequested) return;
+
+                // Choose random radius within band, scale & size follow curve
+                float radius = UnityEngine.Random.Range(minRadius, maxRadius);
+                float tNorm = Mathf.InverseLerp(0f, maxRadius, radius);
+                float scaleMultiplier = (scaleCurve != null) ? scaleCurve.Evaluate(tNorm) : 1f;
+                Vector3 blockScale = baseBlockScale * scaleMultiplier;
+
+                // Spread a bit around the main ray direction
+                float spreadDeg = raySpread;
+                float rotationAroundRayDeg = UnityEngine.Random.Range(0f, 360f);
+
+                // spread axis: perpendicular to rayDirection (fallback if rayDirection//up)
+                Vector3 axis = Vector3.Cross(rayDirection, Vector3.up);
+                if (axis.sqrMagnitude < 1e-6f) axis = Vector3.Cross(rayDirection, Vector3.right);
+                axis.Normalize();
+
+                Quaternion spreadRotation = Quaternion.AngleAxis(spreadDeg, axis);
+                Quaternion rotationAround = Quaternion.AngleAxis(rotationAroundRayDeg, rayDirection);
                 Vector3 spreadDirection = rotationAround * spreadRotation * rayDirection;
 
                 Vector3 position = transform.position + spreadDirection * radius;
-                float scaleMultiplier = scaleCurve.Evaluate(radius / maxRadius);
-                Vector3 blockScale = baseBlockScale * scaleMultiplier;
 
-                CreateBlock(position, spreadDirection, transform.up, $"::Radial::{rayIndex}::{block}", trail, blockScale);
+                // Up vector: align with transform’s up to keep a stable roll
+                Vector3 up = transform.up;
+
+                CreateBlock(position, spreadDirection, up, $"::Radial::{rayIndex}::{b}", trail, blockScale);
             }
         }
 
-        protected Prism CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string blockId, Trail trail, Vector3 scale)
+        /// <summary>
+        /// Requests an Interactive Prism via PrismFactory (event channel) and configures it.
+        /// </summary>
+        private Prism CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string blockId, Trail trail, Vector3 scale)
         {
-            var block = TrailBlockBufferManager.Instance.GetBlock(Domain);
-            //block.ownerID = Vessel.Player.PlayerUUID;
-            block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
-            block.GetComponent<MeshRenderer>().material = blockMaterial;
-            block.ownerID = block.ownerID + blockId + position;
+            if (_prismSpawnEvent == null)
+            {
+                Debug.LogError("[AOERadialBlocks] Prism spawn event channel is not assigned.");
+                return null;
+            }
+
+            var data = new PrismEventData
+            {
+                ownDomain       = Domain,
+                Rotation        = Quaternion.LookRotation(forward, up),
+                SpawnPosition   = position,
+                Scale           = scale,                  // per-block scale
+                Velocity        = Vector3.zero,
+                PrismType       = PrismType.Interactive,  // interactive prism
+                TargetTransform = null,
+                OnGrowCompleted = null
+            };
+
+            var ret = _prismSpawnEvent.RaiseEvent(data);
+            if (!ret.SpawnedObject)
+            {
+                Debug.LogWarning("[AOERadialBlocks] PrismFactory returned null. Spawn aborted.");
+                return null;
+            }
+
+            var block = ret.SpawnedObject.GetComponent<Prism>();
+            if (!block)
+            {
+                Debug.LogWarning("[AOERadialBlocks] Spawned object has no Prism component.");
+                return null;
+            }
+
+            // Ownership tag & unique id
+            block.ownerID = OwnerIdBase + blockId + position;
+
+            // Growth & shield
             block.TargetScale = scale;
-            //block.transform.parent = TrailSpawner.TrailContainer.transform;
-            block.Trail = trail;
-            block.growthRate = growthRate;
+            block.growthRate  = growthRate;
             if (shielded) block.prismProperties.IsShielded = true;
-            block.Initialize(Vessel.VesselStatus.PlayerName);
+            
+            // Initialize gameplay side
+            block.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
+
+            // Register with trail
+            block.Trail = trail;
             trail.Add(block);
+
             return block;
         }
-
-        /*public override void SetPositionAndRotation(Vector3 position, Quaternion rotation)
-        {
-            base.SetPositionAndRotation(position, rotation);
-            rayDirection = rotation * Vector3.forward;
-        }*/
     }
 }

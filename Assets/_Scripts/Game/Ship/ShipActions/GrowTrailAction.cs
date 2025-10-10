@@ -9,13 +9,13 @@ public class GrowTrailAction : GrowActionBase
     [SerializeField] float ZWeight;
     [SerializeField] float GapWeight;
 
-    PrismSpawner spawner;
+    VesselPrismController controller;
     private string scalingDimension;
 
     public override void Initialize(IVessel vessel)
     {
         base.Initialize(vessel);
-        spawner = target.GetComponent<PrismSpawner>();
+        controller = target.GetComponent<VesselPrismController>();
 
         // Determine the scaling dimension
         scalingDimension = DetermineScalingDimension();
@@ -41,10 +41,10 @@ public class GrowTrailAction : GrowActionBase
     {
         while (growing && ShouldContinueScaling(true))
         {
-            spawner.XScaler += Time.deltaTime * growRate * XWeight;
-            spawner.YScaler += Time.deltaTime * growRate * YWeight;
-            spawner.ZScaler += Time.deltaTime * growRate * ZWeight;
-            spawner.Gap -= Time.deltaTime * growRate * GapWeight * 2; // if gap weight is negative it shrinks blocks both sides
+            controller.XScaler += Time.deltaTime * growRate * XWeight;
+            controller.YScaler += Time.deltaTime * growRate * YWeight;
+            controller.ZScaler += Time.deltaTime * growRate * ZWeight;
+            controller.Gap -= Time.deltaTime * growRate * GapWeight * 2; // if gap weight is negative it shrinks blocks both sides
 
             yield return null;
         }
@@ -55,13 +55,13 @@ public class GrowTrailAction : GrowActionBase
         switch (scalingDimension)
         {
             case "X":
-                return isGrowing ? spawner.XScaler < maxSize.Value : spawner.XScaler > MinSize;
+                return isGrowing ? controller.XScaler < maxSize.Value : controller.XScaler > MinSize;
             case "Y":
-                return isGrowing ? spawner.YScaler < maxSize.Value : spawner.YScaler > MinSize;
+                return isGrowing ? controller.YScaler < maxSize.Value : controller.YScaler > MinSize;
             case "Z":
-                return isGrowing ? spawner.ZScaler < maxSize.Value : spawner.ZScaler > MinSize;
+                return isGrowing ? controller.ZScaler < maxSize.Value : controller.ZScaler > MinSize;
             case "Gap":
-                return isGrowing ? spawner.Gap > MinSize : spawner.Gap < maxSize.Value;
+                return isGrowing ? controller.Gap > MinSize : controller.Gap < maxSize.Value;
         }
         return false;
     }
@@ -70,10 +70,10 @@ public class GrowTrailAction : GrowActionBase
     {
         while (ShouldContinueScaling(false))
         {
-            spawner.XScaler -= Time.deltaTime * shrinkRate.Value * XWeight;
-            spawner.YScaler -= Time.deltaTime * shrinkRate.Value * YWeight;
-            spawner.ZScaler -= Time.deltaTime * shrinkRate.Value * ZWeight;
-            spawner.Gap += Time.deltaTime * shrinkRate.Value * GapWeight * 2;
+            controller.XScaler -= Time.deltaTime * shrinkRate.Value * XWeight;
+            controller.YScaler -= Time.deltaTime * shrinkRate.Value * YWeight;
+            controller.ZScaler -= Time.deltaTime * shrinkRate.Value * ZWeight;
+            controller.Gap += Time.deltaTime * shrinkRate.Value * GapWeight * 2;
 
             yield return null;
         }

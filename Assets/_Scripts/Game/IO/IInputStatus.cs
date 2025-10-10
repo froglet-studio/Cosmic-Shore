@@ -46,6 +46,7 @@ namespace CosmicShore.Game
         Vector3 ThreeDPosition { get; set; }
 
         Quaternion GetGyroRotation();
+        void ResetForReplay();
     }
 
 }

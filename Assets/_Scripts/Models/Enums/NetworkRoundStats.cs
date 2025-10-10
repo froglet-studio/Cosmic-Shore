@@ -1,7 +1,8 @@
-﻿using Unity.Collections;
+﻿using System;
+using Unity.Collections;
 using Unity.Netcode;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game
 {
     public class NetworkRoundStats : NetworkBehaviour, IRoundStats
     {

@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>Concrete mini‑game that spawns a trail course of segments and a crystal pickup.</summary>
-    public class FreestyleController : MiniGameControllerBase
+    public class FreestyleController : SinglePlayerMiniGameControllerBase
     {
         [Header("Course Settings")]
         [SerializeField] Crystal crystal;
@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Arcade
         int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / miniGameData.SelectedIntensity : baseStraightLineLength;
         Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * miniGameData.SelectedIntensity : crystalStartPosition;
         
-        protected override void StartNewGame()
+        protected override void OnCountdownTimerEnded()
         {
             segmentSpawner.Seed = Random.Range(int.MinValue,int.MaxValue);
             
@@ -43,10 +43,7 @@ namespace CosmicShore.Game.Arcade
             if (resetEnvironmentOnEachTurn) 
                 ResetEnvironment();
             
-            if (gameMode == GameModes.Freestyle) 
-                FTUEEventManager.RaiseGameModeStarted(GameModes.Freestyle);
-            
-            base.StartNewGame();
+            base.OnCountdownTimerEnded();
         }
 
         protected override void SetupNewTurn() 
@@ -60,7 +57,7 @@ namespace CosmicShore.Game.Arcade
         void ResetEnvironment() {
             segmentSpawner.NumberOfSegments   = numberOfSegments;
             segmentSpawner.StraightLineLength = straightLineLength;
-            PrismSpawner.NukeTheTrails();
+            // VesselPrismController.ClearTrails();
             crystal.transform.position = crystalStart;
             segmentSpawner.Initialize();
         }

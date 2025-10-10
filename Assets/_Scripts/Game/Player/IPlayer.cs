@@ -9,14 +9,13 @@ namespace CosmicShore.Game
 {
     public interface IPlayer : ITransform
     {
-        public static List<IPlayer> NppList { get; }
-        VesselClassType VesselClass { get; }
         Domains Domain { get; }
         string Name { get; }
         string PlayerUUID { get; }
         IVessel Vessel { get; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
+        public bool IsNetworkOwner { get; }
 
         bool IsActive { get; }
         bool AutoPilotEnabled { get; }
@@ -40,17 +39,19 @@ namespace CosmicShore.Game
         /// If true -> pause input status. false -> unpause otherwise.
         /// </summary>
         void ToggleInputPause(bool toggle);
-        void Cleanup();
+        void DestroyPlayer();
+        void ResetForPlay();
+
+        void SetPoseOfVessel(Pose pose) => Vessel.SetPose(pose);
 
         [System.Serializable]
         public class InitializeData
         {
-            [FormerlySerializedAs("ShipClass")] [FormerlySerializedAs("ShipType")] public VesselClassType vesselClass;
-            [FormerlySerializedAs("Team")] public Domains domain;
+            public VesselClassType vesselClass;
+            public Domains domain;
             public string PlayerName;
-            public string PlayerUUID;
             
-            [FormerlySerializedAs("EnableAIPilot")] [Tooltip("If true, the player-vessel will spawn as AI")]
+            [Tooltip("If true, the player-vessel will spawn as AI")]
             public bool IsAI;
             
             [Tooltip("If true, then only this player-vessel will spawn")]

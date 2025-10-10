@@ -12,9 +12,10 @@ namespace CosmicShore
     /// </summary>
     public class SeedAssemblerActionExecutor : ShipActionExecutorBase
     {
+        [FormerlySerializedAs("prismSpawner")]
         [FormerlySerializedAs("trailSpawner")]
         [Header("Scene Refs")]
-        [SerializeField] private Game.PrismSpawner prismSpawner;
+        [SerializeField] private Game.VesselPrismController vesselPrismController;
 
         // Runtime
         IVesselStatus _status;
@@ -31,8 +32,8 @@ namespace CosmicShore
         {
             _status = shipStatus;
             _resources = shipStatus?.ResourceSystem;
-            if (prismSpawner == null)
-                prismSpawner = shipStatus?.PrismSpawner;
+            if (vesselPrismController == null)
+                vesselPrismController = shipStatus?.VesselPrismController;
         }
 
         /// <summary>
@@ -42,7 +43,7 @@ namespace CosmicShore
         /// </summary>
         public bool StartSeed(SeedWallActionSO so, IVesselStatus status)
         {
-            if (so == null || status == null || _resources == null || prismSpawner == null)
+            if (so == null || status == null || _resources == null || vesselPrismController == null)
                 return false;
 
             // resource check
@@ -105,13 +106,13 @@ namespace CosmicShore
 
         Prism GetLatestBlock()
         {
-            var listA = prismSpawner?.Trail?.TrailList;
+            var listA = vesselPrismController?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
             // In case you keep a secondary trail internally (compat with older code)
-            var trail2Field = typeof(Game.PrismSpawner).GetField("Trail2",
+            var trail2Field = typeof(Game.VesselPrismController).GetField("Trail2",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var trail2 = trail2Field?.GetValue(prismSpawner) as Trail;
+            var trail2 = trail2Field?.GetValue(vesselPrismController) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
             return null;

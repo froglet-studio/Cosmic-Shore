@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Arcade
             spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
 
 
-            PrismSpawner.NukeTheTrails();
+            // VesselPrismController.ClearTrails();
             Crystal.transform.position = CrystalStartPosition;
 
 

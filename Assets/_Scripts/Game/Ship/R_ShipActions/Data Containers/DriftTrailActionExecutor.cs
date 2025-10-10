@@ -9,14 +9,14 @@ public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
 
     IVessel _ship;
     IVesselStatus _status;
-    PrismSpawner prismSpawner;
+    VesselPrismController vesselPrismController;
     Coroutine _loop;
 
     public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
         _ship = shipStatus.Vessel;
-        prismSpawner = _status.PrismSpawner;
+        vesselPrismController = _status.VesselPrismController;
     }
 
     public void Begin(DriftTrailActionSO so, IVessel ship, IVesselStatus status)
@@ -28,7 +28,7 @@ public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
     public void End(DriftTrailActionSO so, IVessel ship, IVesselStatus status)
     {
         if (_loop != null) { StopCoroutine(_loop); _loop = null; }
-        prismSpawner?.SetDotProduct(1f);
+        vesselPrismController?.SetDotProduct(1f);
         if (!_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1f);
     }
 
@@ -38,7 +38,7 @@ public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
         {
             var driftAltitude = Vector3.Dot(_status.Course, _ship.Transform.forward);
             if (!_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
-            prismSpawner?.SetDotProduct(driftAltitude);
+            vesselPrismController?.SetDotProduct(driftAltitude);
             yield return new WaitForSeconds(0.05f);
         }
     }

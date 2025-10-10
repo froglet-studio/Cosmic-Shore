@@ -57,7 +57,7 @@ namespace CosmicShore.Game
 
         public override void OnDestroy()
         {
-            if ((!IsSpawned && !VesselStatus.Player.IsInitializedAsAI) || IsOwner)
+            if ((!IsSpawned && VesselStatus.Player is { IsInitializedAsAI: false }) || IsOwner)
             {
                 OnBeforeDestroyed?.Invoke();
             }
@@ -97,7 +97,7 @@ namespace CosmicShore.Game
         {
             VesselStatus.Player = player;
             VesselStatus.ShipAnimation.Initialize(VesselStatus);
-            VesselStatus.PrismSpawner.Initialize(VesselStatus);
+            VesselStatus.VesselPrismController.Initialize(VesselStatus);
             
             if (IsSpawned)
             {
@@ -110,7 +110,7 @@ namespace CosmicShore.Game
             
             OnInitialized?.Invoke();
         }
-
+        
         /*public void PerformButtonActions(int buttonNumber)
         {
             if (VesselStatus.AutoPilotEnabled) return;
@@ -201,13 +201,21 @@ namespace CosmicShore.Game
 
         public bool AllowClearPrismInitialization() => (IsSpawned && IsOwner) || VesselStatus.IsInitializedAsAI;
 
-        public void Cleanup()
+        public void DestroyVessel()
         {
             if (IsSpawned)
                 return;
             Destroy(gameObject);   
         }
-        
+
+        public void ResetForPlay()
+        {
+            VesselStatus.ResetForPlay();
+        }
+
+        public void SetPose(Pose pose) => 
+            VesselStatus.VesselTransformer.SetPose(pose);
+
         void InitializeForMultiplayerMode()
         {
             if (IsOwner)
@@ -227,8 +235,7 @@ namespace CosmicShore.Game
                     
                 VesselStatus.VesselTransformer.Initialize(this);
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
-                VesselStatus.ResourceSystem.Reset();
-                VesselStatus.VesselTransformer.ResetShipTransformer();
+                VesselStatus.ResetForPlay();
                     
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
@@ -264,7 +271,10 @@ namespace CosmicShore.Game
             // sequential dependency.
             /// AIPilot will be initialized both in User controlled / AI Vessels
             /// Multiplayer modes will also have auto-pilot initialized
-            VesselStatus.AIPilot.Initialize(enableAIPilot, this);   
+            
+            VesselStatus.AIPilot.Initialize(enableAIPilot, this);
+            VesselStatus.ResetForPlay();
+            
             onBottomEdgeButtonsEnabled.Raise(true);
         }
 

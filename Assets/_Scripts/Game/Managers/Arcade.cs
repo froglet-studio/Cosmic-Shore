@@ -59,17 +59,15 @@ namespace CosmicShore.Core
             miniGameData.IsTraining = false;
             miniGameData.IsMission = true;
             miniGameData.IsMultiplayerMode = false;
+            miniGameData.GameMode = gameMode;
+            miniGameData.SelectedPlayerCount.Value = 1;
+            miniGameData.SelectedIntensity.Value = intensity;
             miniGameData.SceneName = MissionLookup[gameMode].SceneName;
             miniGameData.InvokeGameLaunch();
             
             /*MiniGame.PlayerCaptain = captain;
             MiniGame.PlayerShipType = captain.Vessel.Class;
-            MiniGame.ResourceCollection = CaptainManager.Instance.GetCaptainByName(captain.Name).ResourceLevels;
-            MiniGame.IntensityLevel = intensity;
-            MiniGame.NumberOfPlayers = 1;
-            MiniGame.IsDailyChallenge = false;
-            MiniGame.IsTraining = false;
-            MiniGame.IsMission = true;
+
 
             // TODO - Not in hanger, but do this in MiniGameData, or PlayerSpawner
             Hangar.Instance.SetAiIntensityLevel(intensity);
@@ -90,6 +88,8 @@ namespace CosmicShore.Core
             miniGameData.IsDailyChallenge = isDailyChallenge;
             miniGameData.IsTraining = false;
             miniGameData.IsMission = false;
+            miniGameData.GameMode = gameMode;
+            
             miniGameData.IsMultiplayerMode = SO_Game.IsMultiplayerModes(gameMode);
             miniGameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
             miniGameData.InvokeGameLaunch();
@@ -175,14 +175,5 @@ namespace CosmicShore.Core
         {
             return ArcadeGames.Games.Where(x => x.DisplayName == displayName).FirstOrDefault();
         }
-
-        /*IEnumerator LaunchGameCoroutine(string sceneName)
-        {
-            _onStartSceneTransition.Raise();
-
-            yield return new WaitForSecondsRealtime(.5f);
-
-            SceneManager.LoadScene(sceneName);
-        }*/
     }
 }

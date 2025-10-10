@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.App.Systems;
 using CosmicShore.Core;
 using CosmicShore.Game;
-using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using Obvious.Soap;
+using Unity.Netcode;
+using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.Serialization;
+using IPlayer = CosmicShore.Game.IPlayer;
 
 namespace CosmicShore.SOAP
 {
@@ -23,9 +24,10 @@ namespace CosmicShore.SOAP
     {
         // Events
         public event Action OnLaunchGame;
-        public event Action OnMiniGameInitialize;
-        public event Action OnAllPlayersSpawned;
-        public event Action OnMiniGameStart;
+        public event Action OnSessionStarted;
+        public event Action OnMiniGameInitialized;
+        public event Action OnClientReady;
+        public event Action OnGameStarted;
         public event Action OnMiniGameTurnEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
@@ -48,35 +50,25 @@ namespace CosmicShore.SOAP
         public bool IsMission;
         public bool IsMultiplayerMode;
         public List<IPlayer> Players = new();
-        public Transform[] PlayerOrigins;
-        [SerializeReference]
         public List<IRoundStats> RoundStatsList = new();
         public Dictionary<int, CellStats> CellStatsList = new();
         public HashSet<Transform> SlowedShipTransforms = new();
         public float TurnStartTime;
         public bool IsRunning { get; private set; }
+        public Pose[] SpawnPoses { get; private set; }
+        List<Pose> _playerSpawnPoseList = new ();
+        public IPlayer ActivePlayer { get; private set; }
+        public ISession ActiveSession { get; set; }
         
-
-        int _activePlayerId;
-        public IPlayer ActivePlayer =>
-            (_activePlayerId >= 0 && _activePlayerId < Players.Count) ? Players[_activePlayerId] : null;
-
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
 
         public void InvokeGameLaunch() => OnLaunchGame?.Invoke();
         
-        public void InvokeMiniGameInitialize()
+        public void InitializeMiniGame()
         {
-            PauseSystem.TogglePauseGame(false);
-
-            Players.Clear();
-            RoundStatsList.Clear();
-            PlayerOrigins = Array.Empty<Transform>();
-            _activePlayerId = 0;
-            TurnStartTime = 0f;
-
-            OnMiniGameInitialize?.Invoke();
+            ResetRuntimeData();
+            OnMiniGameInitialized?.Invoke();
         }
 
         public void SetupForMultiplayer()
@@ -86,54 +78,62 @@ namespace CosmicShore.SOAP
             
             for (int i = Players.Count - 1; i >= 0; i--)
             {
-                Players[i].Vessel?.Cleanup();
-                Players[i].Cleanup();
+                Players[i].Vessel?.DestroyVessel();
+                Players[i].DestroyPlayer();
             }
             
             Players.Clear();
         }
 
-        public void InvokeMiniGameStart()
+        public void StartNewGame()
         {
             IsRunning = true;
             TurnStartTime = Time.time;
 
-            SetPlayersActive(active: true);
-            OnMiniGameStart?.Invoke();
+            InvokeGameStarted();
         }
-
-        public void InvokeMiniGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
-
-        public void InvokeMiniGameEnd()
-        {
-            PauseSystem.TogglePauseGame(true);
-            OnMiniGameEnd?.Invoke();
-        }
+        
+        public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
+        public void InvokeGameStarted() => OnGameStarted?.Invoke();
+        public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
+        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
-        public void InvokeAllPlayersSpawned() => OnAllPlayersSpawned?.Invoke();
+        public void InvokeClientReady() => OnClientReady?.Invoke();
 
-        public void ResetOnSceneChanged()
+        public void ResetRuntimeData()
         {
             Players.Clear();
             RoundStatsList.Clear();
-            PlayerOrigins = Array.Empty<Transform>();
-            _activePlayerId = 0;
+            TurnStartTime = 0f;
+        }
+
+        public void ResetDataForReplay()
+        {
+            if (RoundStatsList == null || RoundStatsList.Count == 0)
+            {
+                Debug.LogError("Cannot Replay game mode, no round stats data found!");
+                return;
+            }
+            
+            for (int i = 0, count = RoundStatsList.Count; i < count ; i++)
+            {
+                RoundStatsList[i].Cleanup();
+            }
+            
             TurnStartTime = 0f;
         }
         
-        public void ResetData()
+        public void ResetAllData()
         {
             GameMode = GameModes.Random;
-            Players.Clear();
-            RoundStatsList.Clear();
-            PlayerOrigins = Array.Empty<Transform>();
-            _activePlayerId = 0;
-
             selectedVesselClass.Value = VesselClassType.Manta;
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
-            TurnStartTime = 0f;
+            
+            ResetRuntimeData();
+            
+            DomainAssigner.Initialize();
         }
 
         // -----------------------------------------------------------------------------------------
@@ -180,8 +180,8 @@ namespace CosmicShore.SOAP
             float gold = VolumeOf(Domains.Gold);
             return new Vector4(jade, ruby, blue, gold);
         }
-
-        public bool IsLocalPlayerWinner(out IRoundStats roundStats, out bool won)
+        
+        public bool TryGetWinnerForMultiplayer(out IRoundStats roundStats, out bool won)
         {
             roundStats = null;
             won = false;
@@ -203,9 +203,56 @@ namespace CosmicShore.SOAP
             return true;
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Mutation
+        public bool TryGetWinner(out IRoundStats roundStats, out bool won)
+        {
+            roundStats = null;
+            won = false;
+            if (RoundStatsList is null || RoundStatsList.Count == 0)
+            {
+                Debug.LogError("No round stats found to calculate winner!");
+                return false;
+            }
 
+            if (!TryGetActivePlayerStats(out IPlayer _, out roundStats))
+            {
+                Debug.LogError("No round stats of active player found!");
+                return false;   
+            }
+
+            if (roundStats.Name == RoundStatsList[0].Name)
+                won = true;
+
+            return true;
+        }
+        
+        public void SetSpawnPositions(Transform[] spawnTransforms)
+        {
+            if (spawnTransforms == null)
+            {
+                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                return;
+            }
+            
+            SpawnPoses = new Pose[spawnTransforms.Length];
+            for (int i = 0, count = spawnTransforms.Length; i < count; i++)
+            {
+                SpawnPoses[i] = new Pose
+                {
+                    position = spawnTransforms[i].position,
+                    rotation = spawnTransforms[i].rotation
+                };
+            }
+            
+            if (SpawnPoses == null || SpawnPoses.Length == 0)
+            {
+                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                return;
+            }
+
+            _playerSpawnPoseList?.Clear();
+            _playerSpawnPoseList = new List<Pose>(SpawnPoses.ToList());
+        }
+        
         public void AddPlayer(IPlayer p)
         {
             if (p == null) return;
@@ -215,28 +262,39 @@ namespace CosmicShore.SOAP
             if (RoundStatsList.Any(rs => rs.Name == p.Name)) return;
 
             Players.Add(p);
+            if (Players.Count == 1)
+                ActivePlayer = p;
 
-            // For Networking, replace with NetworkRoundStats as needed
+            // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
             RoundStatsList.Add(new RoundStats
             {
                 Name = p.Name,
                 Domain = p.Domain
             });
-        }
-        
-        public void ResetPlayerScores()
-        {
-            if (RoundStatsList is null || RoundStatsList.Count == 0)
-            {
-                Debug.LogError("This should never happen!");
-                return;
-            }
             
-            for (int i = 0, count = RoundStatsList.Count; i < count ; i++)
-            {
-                var roundStats = RoundStatsList[i];
-                roundStats.Score = 0;
-            }
+            p.ResetForPlay();
+        }
+
+        public void AddPlayerInMultiplayer(IPlayer p, IRoundStats roundStats)
+        {
+            if (p == null) 
+                return;
+
+            // Avoid duplicates by Name
+            if (Players.Any(player => player.Name == p.Name)) 
+                return;
+            
+            if (RoundStatsList.Any(rs => rs.Name == p.Name)) 
+                return;
+
+            Players.Add(p);
+            if (p.IsNetworkOwner)
+                ActivePlayer = p;
+            
+            // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
+            RoundStatsList.Add(roundStats);
+            
+            p.ResetForPlay();
         }
         
         public void SortRoundStats(bool golfRules)
@@ -246,7 +304,109 @@ namespace CosmicShore.SOAP
             else
                 RoundStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
         }
+        
+        public void SetPlayersActive()
+        {
+            foreach (var player in Players)
+            {
+                var vesselStatus = player?.Vessel?.VesselStatus;
 
+                if (vesselStatus == null)
+                {
+                    Debug.LogError("No vessel status found for player.! This should never happen!");
+                    return;
+                }
+                
+                player.ToggleStationaryMode(false);
+                player.ToggleInputPause(player.IsInitializedAsAI);
+                player.ToggleAutoPilot(player.IsInitializedAsAI);
+                player.ToggleActive(true);
+                vesselStatus.VesselPrismController.StartSpawn();
+            }
+        }
+        
+        public void SetPlayersActiveForMultiplayer()
+        {
+            foreach (var player in Players)
+            {
+                var vesselStatus = player?.Vessel?.VesselStatus;
+
+                if (vesselStatus == null)
+                {
+                    Debug.LogError("No vessel status found for player.! This should never happen!");
+                    return;
+                }
+                
+                bool isOwner = player.IsNetworkOwner;
+                player.ToggleStationaryMode(false);
+                player.ToggleInputPause(!isOwner);
+                player.ToggleActive(true);
+                vesselStatus.VesselPrismController.StartSpawn();
+            }
+        }
+
+        public void ResetPlayers()
+        {
+            foreach (var player in Players)
+            {
+                var vesselStatus = player?.Vessel?.VesselStatus;
+
+                if (vesselStatus == null)
+                {
+                    Debug.LogError("No vessel status found for player.! This should never happen!");
+                    return;
+                }
+                
+                player.ResetForPlay();
+                
+                if (NetworkManager.Singleton.IsConnectedClient &&
+                    !player.IsNetworkOwner)
+                    continue;
+                player.SetPoseOfVessel(GetRandomSpawnPose());
+            }
+        }
+        
+        /// <summary>
+        /// Remove a player (by display name) from Players & RoundStatsList and fix ActivePlayer if needed.
+        /// </summary>
+        public bool RemovePlayerData(string playerName)
+        {
+            if (string.IsNullOrEmpty(playerName))
+                return false;
+
+            // Remove from Players
+            int removedPlayers = Players.RemoveAll(p => p != null && p.Name == playerName);
+
+            // Remove from RoundStats
+            int removedStats = RoundStatsList.RemoveAll(rs => rs != null && rs.Name == playerName);
+
+            // Fix ActivePlayer if it was the removed one
+            if (ActivePlayer != null && ActivePlayer.Name == playerName)
+                ActivePlayer = Players.Count > 0 ? Players[0] : null;
+
+            // Optional: also stop their vessel spawning if any dangling reference exists (defensive)
+            // No-op here because Players list holds the references.
+
+            return (removedPlayers + removedStats) > 0;
+        }
+        
+        // ----------------------------
+        // Spawn point picker
+        // ----------------------------
+        Pose GetRandomSpawnPose()
+        {
+            if (_playerSpawnPoseList == null || _playerSpawnPoseList.Count == 0)
+            {
+                _playerSpawnPoseList = new List<Pose>(SpawnPoses.Length);
+                _playerSpawnPoseList = SpawnPoses.ToList();
+            }
+            
+            int index = UnityEngine.Random.Range(0, _playerSpawnPoseList.Count);
+            var spawnPoint = _playerSpawnPoseList[index];
+            _playerSpawnPoseList.RemoveAt(index);
+            return spawnPoint;
+        }
+        
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
 
@@ -258,32 +418,6 @@ namespace CosmicShore.SOAP
 
         float VolumeOf(Domains domain) =>
             FindByTeam(domain)?.VolumeRemaining ?? 0f;
-
-        public void SetPlayersActive(bool active)
-        {
-            foreach (var player in Players)
-            {
-                var vesselStatus = player?.Vessel?.VesselStatus;
-
-                if (vesselStatus == null)
-                {
-                    Debug.LogError("No vessel status found for player.! This should never happen!");
-                    return;
-                }
-
-                if (active)
-                {
-                    // Reset vessel state when activating for a new run
-                    player.Vessel.VesselStatus.ResourceSystem.Reset();
-                    player.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
-                }
-
-                // Stationary/input flags invert relative to "active"
-                player.ToggleStationaryMode(!active);
-                player.ToggleInputPause(active && player.IsInitializedAsAI);
-                player.ToggleAutoPilot(active && player.IsInitializedAsAI);
-            }
-        }
         
         // TODO - Need to rewrite the following method.
         /*
@@ -303,7 +437,7 @@ namespace CosmicShore.SOAP
             localPlayer.Transform.SetPositionAndRotation(activePlayerOrigin.position, activePlayerOrigin.rotation);
             localPlayer.InputController.InputStatus.Paused = true;
             localPlayer.Vessel.Teleport(activePlayerOrigin);
-            localPlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
+            localPlayer.Vessel.VesselStatus.VesselTransformer.ResetTransformer();
             // ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
             localPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
             // ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);

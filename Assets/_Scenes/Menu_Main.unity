@@ -21165,6 +21165,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 665302836}
   m_CullTransparentMesh: 1
+--- !u!1 &673228693
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 673228694}
+  m_Layer: 0
+  m_Name: 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &673228694
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 673228693}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1943945029}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &675951142
 GameObject:
   m_ObjectHideFlags: 0
@@ -51977,6 +52008,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1561211487}
   m_CullTransparentMesh: 1
+--- !u!1 &1564324324
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1564324325}
+  m_Layer: 0
+  m_Name: 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1564324325
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1564324324}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1943945029}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1565783685
 GameObject:
   m_ObjectHideFlags: 0
@@ -64813,6 +64875,39 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1940086309}
   m_CullTransparentMesh: 1
+--- !u!1 &1943945028
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1943945029}
+  m_Layer: 0
+  m_Name: Spawn Points
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1943945029
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1943945028}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1564324325}
+  - {fileID: 673228694}
+  m_Father: {fileID: 2996404617579086753}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1944843498
 GameObject:
   m_ObjectHideFlags: 0
@@ -73163,7 +73258,7 @@ MonoBehaviour:
   DailyChallengeCard: {fileID: 353572116}
   ArcadeGameConfigureModal: {fileID: 1847035622}
   RespectInventoryForGameSelection: 0
-  _selectedShipClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
+  selectedVesselClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
   _selectedPlayerCount: {fileID: 11400000, guid: 15256dcf0be30b4489190913d1f305db,
     type: 2}
@@ -80175,7 +80270,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1943945029}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
         type: 3}
@@ -80204,17 +80303,18 @@ MonoBehaviour:
   _playerSpawner: {fileID: 2996404617579086752}
   _initializeDatas:
   - vesselClass: 2
-    Team: 2
+    domain: 2
     PlayerName: Hostile1
-    PlayerUUID: 
     IsAI: 1
     AllowSpawning: 1
   - vesselClass: 11
-    Team: 2
+    domain: 2
     PlayerName: Hostile2
-    PlayerUUID: 
     IsAI: 0
     AllowSpawning: 0
+  _spawnTransforms:
+  - {fileID: 1564324325}
+  - {fileID: 673228694}
 --- !u!114 &2996404617579086752 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5327798040277661720, guid: a51d3a28670d8e64fbdb568abd6769e2,
@@ -80227,6 +80327,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05f25773e3ee4abc86fa268757d3f4ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!4 &2996404617579086753 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3703864389556654163, guid: a51d3a28670d8e64fbdb568abd6769e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 2996404617579086749}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &3016169605549964998
 MonoBehaviour:
   m_ObjectHideFlags: 0

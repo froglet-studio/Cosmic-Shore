@@ -39,8 +39,8 @@ namespace CosmicShore.Game
         float _sqrRadius;
         float _initialGap;
         float _boosterTimer;
-        
-        public bool IsInitialized { get; private set; }
+
+        public bool IsInitialized => VesselStatus is { Player: { IsActive: true } };
 
         void Update()
         {
@@ -50,7 +50,6 @@ namespace CosmicShore.Game
 
         public void Initialize(IVesselStatus vesselStatus)
         {
-            IsInitialized = true;
             VesselStatus = vesselStatus;
             
             _sweetSpot = transform.localScale.x / 4f;
@@ -62,7 +61,7 @@ namespace CosmicShore.Game
             // if (visible)
             //     GetComponent<MeshRenderer>().material = new Material(VesselStatus.SkimmerMaterial);
 
-            _initialGap = VesselStatus.PrismSpawner.Gap;
+            _initialGap = VesselStatus.VesselPrismController.Gap;
             if (nudgeShardPoolManager) nudgeShardPoolManager.transform.parent = VesselStatus?.Player?.Transform;
         }
 

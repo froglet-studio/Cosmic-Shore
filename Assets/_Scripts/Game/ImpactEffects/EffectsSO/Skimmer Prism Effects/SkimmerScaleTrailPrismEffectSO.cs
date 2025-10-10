@@ -17,7 +17,7 @@ namespace CosmicShore.Game
 
             float normalized = Mathf.InverseLerp(minSqrDistance, sqrRadius, sqrDist);
 
-            skimmer.VesselStatus.PrismSpawner.SetNormalizedXScale(normalized);
+            skimmer.VesselStatus?.VesselPrismController?.SetNormalizedXScale(normalized);
 
             // var camManager = CameraManager.Instance;
             // if (camManager != null && !skimmer.Ship.ShipStatus.AutoPilotEnabled)

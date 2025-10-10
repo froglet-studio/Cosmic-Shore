@@ -1,4 +1,4 @@
-﻿namespace CosmicShore.Core
+﻿namespace CosmicShore.Game
 {
     public interface IRoundStats
     {
@@ -34,6 +34,26 @@
         float Button1AbilityActiveTime { get; set; }
         float Button2AbilityActiveTime { get; set; }
         float Button3AbilityActiveTime { get; set; }
+
+        public void Cleanup()
+        {
+            // ints default to 0, floats to 0f
+            Score = 0;
+
+            BlocksCreated = BlocksDestroyed = BlocksRestored =
+                PrismStolen = PrismsRemaining =
+                    FriendlyPrismsDestroyed = HostilePrismsDestroyed =
+                        CrystalsCollected = OmniCrystalsCollected = ElementalCrystalsCollected =
+                            SkimmerShipCollisions = 0;
+
+            VolumeCreated = VolumeDestroyed = VolumeRestored =
+                VolumeStolen = VolumeRemaining =
+                    FriendlyVolumeDestroyed = HostileVolumeDestroyed =
+                        ChargeCrystalValue = MassCrystalValue = SpaceCrystalValue = TimeCrystalValue =
+                            FullSpeedStraightAbilityActiveTime = RightStickAbilityActiveTime =
+                                LeftStickAbilityActiveTime = FlipAbilityActiveTime =
+                                    Button1AbilityActiveTime = Button2AbilityActiveTime = Button3AbilityActiveTime = 0f;
+        }
     }
 
 }

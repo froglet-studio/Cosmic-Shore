@@ -17,7 +17,7 @@ namespace CosmicShore
         [SerializeField] int shieldResourceIndex = 0;
         [SerializeField] float wallsPerFullResource = 4f;
 
-        Game.PrismSpawner _spawner;
+        Game.VesselPrismController controller;
         Assembler _activeAssembler;
         IVesselStatus vesselStatus;
         Prism _activeSeedBlock;
@@ -27,7 +27,7 @@ namespace CosmicShore
         public void Initialize(IVessel vessel)
         {
             vesselStatus = vessel.VesselStatus;
-            _spawner    = vesselStatus.PrismSpawner;
+            controller    = vesselStatus.VesselPrismController;
         }
 
         public bool StartSeed()
@@ -44,7 +44,7 @@ namespace CosmicShore
 
             rs.ChangeResourceAmount(shieldResourceIndex, -cost);
 
-            var trailBlockGO = _spawner?.Trail?.TrailList?.LastOrDefault()?.gameObject;
+            var trailBlockGO = controller?.Trail?.TrailList?.LastOrDefault()?.gameObject;
             if (trailBlockGO == null || assemblerPrefab == null) return false;
 
             _activeSeedBlock = trailBlockGO.GetComponent<Prism>();

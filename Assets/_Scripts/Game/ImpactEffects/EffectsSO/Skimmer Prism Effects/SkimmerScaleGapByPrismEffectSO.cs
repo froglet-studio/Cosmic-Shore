@@ -11,7 +11,7 @@ namespace CosmicShore.Game
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var skimmerVesselStatus = impactor.Skimmer.VesselStatus;
-            skimmerVesselStatus.PrismSpawner.Gap = Mathf.Lerp(initialGap, skimmerVesselStatus.PrismSpawner.MinimumGap, impactor.CombinedWeight);
+            skimmerVesselStatus.VesselPrismController.Gap = Mathf.Lerp(initialGap, skimmerVesselStatus.VesselPrismController.MinimumGap, impactor.CombinedWeight);
         }
     }
 }

@@ -10,7 +10,7 @@ namespace CosmicShore
     public class SeedWallAction : ShipAction
     {
         [SerializeField] float enhancementsPerFullAmmo = 3;
-        Game.PrismSpawner spawner;
+        Game.VesselPrismController controller;
 
         [SerializeField] int resourceIndex = 0;
         float resourceCost;
@@ -18,7 +18,7 @@ namespace CosmicShore
         public override void Initialize(IVessel vessel)
         {
             base.Initialize(vessel);
-            spawner = Vessel.VesselStatus.PrismSpawner;
+            controller = Vessel.VesselStatus.VesselPrismController;
             resourceCost = ResourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
         }
 
@@ -27,7 +27,7 @@ namespace CosmicShore
             if (ResourceSystem.Resources[resourceIndex].CurrentAmount > resourceCost)
             {
                 ResourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
-                var BlockObject = spawner.Trail.TrailList.Last().gameObject;
+                var BlockObject = controller.Trail.TrailList.Last().gameObject;
                 BlockObject.GetComponent<Prism>().ActivateSuperShield();
                 var assembler = BlockObject.AddComponent<GyroidAssembler>();
                 assembler.Depth = 50;

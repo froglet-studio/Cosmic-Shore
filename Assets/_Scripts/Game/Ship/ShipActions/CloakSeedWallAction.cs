@@ -44,7 +44,7 @@ namespace CosmicShore
         [SerializeField] private Transform modelRoot; 
         
         private readonly HashSet<int> _protectedBlockIds = new();
-        private Game.PrismSpawner _spawner;
+        private Game.VesselPrismController controller;
         private Coroutine _runRoutine;
 
         private GameObject _ghostGo;
@@ -65,8 +65,8 @@ namespace CosmicShore
         public override void Initialize(IVessel vessel)
         {
             base.Initialize(vessel);
-            _spawner = Vessel?.VesselStatus?.PrismSpawner;
-            _spawner.OnBlockSpawned += HandleBlockSpawned;
+            controller = Vessel?.VesselStatus?.VesselPrismController;
+            controller.OnBlockSpawned += HandleBlockSpawned;
 
             // Initialize the shared seeding action
             if (seedAssemblerAction != null)
@@ -324,11 +324,11 @@ namespace CosmicShore
 
         private Prism GetLatestBlock()
         {
-            var listA = _spawner?.Trail?.TrailList;
+            var listA = controller?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
-            var trail2Field = typeof(Game.PrismSpawner).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
-            var trail2 = trail2Field?.GetValue(_spawner) as Trail;
+            var trail2Field = typeof(Game.VesselPrismController).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
+            var trail2 = trail2Field?.GetValue(controller) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
             return null;

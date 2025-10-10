@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [RequireComponent(typeof(NetcodeHooks))]
     public class NetworkStatsManager : StatsManager
     {
         /*[SerializeField] 
@@ -15,13 +14,8 @@ namespace CosmicShore.Game
         [SerializeField]
         ScriptableEventNoParam _onGameOver;*/
         
+        [SerializeField]
         NetcodeHooks _netcodeHooks;
-
-        public override void Awake()
-        {
-            base.Awake();
-            _netcodeHooks = GetComponent<NetcodeHooks>();
-        }
 
         protected override void OnEnable()
         {
@@ -42,24 +36,13 @@ namespace CosmicShore.Game
 
         private void OnNetworkSpawn()
         {
-            if (!_netcodeHooks.IsServer)
-                allowRecord = false;
-        }
-
-        public override IRoundStats GetOrCreateRoundStats(Domains domain)
-        {
-            var player = NetworkPlayerClientCache.GetPlayerByTeam(domain);
-            if (!player)
+            if (_netcodeHooks.IsServer)
             {
-                Debug.LogError($"NetworkStatsManager: No player found for team {domain}.");
-                return null;
+                allowRecord = true;
+                return;
             }
 
-            if (player.gameObject.TryGetComponent(out NetworkRoundStats roundStats)) 
-                return roundStats;
-            
-            Debug.LogError($"NetworkStatsManager: No NetworkRoundStats found for player on team {domain}.");
-            return null;
+            allowRecord = false;
         }
     }
 }

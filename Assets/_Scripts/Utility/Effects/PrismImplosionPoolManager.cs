@@ -11,20 +11,15 @@ namespace CosmicShore.Game
     {
         public override PrismImplosion Get(Vector3 spawnPosition, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
-            var implosion = Get_(spawnPosition, rotation);
-            implosion.OnFinished += OnFinished; // auto return when done
+            var implosion = Get_(spawnPosition, rotation, parent, worldPositionStays);
+            implosion.OnReturnToPool += Release; // auto return when done
             return implosion;
         }
 
         public override void Release(PrismImplosion instance)
         {
-            throw new System.NotImplementedException();
-        }
-
-        void OnFinished(PrismImplosion implosion)
-        {
-            implosion.OnFinished -= OnFinished;
-            Release_(implosion);
+            instance.OnReturnToPool -= Release;
+            Release_(instance);
         }
     }
 }

@@ -5,7 +5,6 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
-using CosmicShore.Utilities;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -16,7 +15,7 @@ namespace CosmicShore.Game
     /// Keep this class as monobehaviour, 
     /// as the network vessel status needs to be a network behaviour
     /// </remarks>
-    [RequireComponent(typeof(PrismSpawner))]
+    [RequireComponent(typeof(VesselPrismController))]
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(VesselTransformer))]
     [RequireComponent(typeof(AIPilot))]
@@ -147,13 +146,13 @@ namespace CosmicShore.Game
             }
         }
 
-        PrismSpawner prismSpawner;
-        public PrismSpawner PrismSpawner
+        VesselPrismController vesselPrismController;
+        public VesselPrismController VesselPrismController
         {
             get
             {
-                prismSpawner = prismSpawner != null ? prismSpawner : gameObject.GetOrAdd<PrismSpawner>();
-                return prismSpawner;
+                vesselPrismController = vesselPrismController != null ? vesselPrismController : gameObject.GetOrAdd<VesselPrismController>();
+                return vesselPrismController;
             }
         }
 
@@ -238,8 +237,9 @@ namespace CosmicShore.Game
         public Quaternion blockRotation { get; set; }
         public bool IsOwnerClient => Vessel.IsOwnerClient;
 
-        public void ResetValues()
+        public void ResetForPlay()
         {
+            IsStationary = true;
             Boosting = false;
             ChargedBoostDischarging = false;
             Drifting = false;
@@ -250,6 +250,11 @@ namespace CosmicShore.Game
             ChargedBoostCharge = 1f;
             Slowed = false;
             Overheating = false;
+
+            ResourceSystem.Reset();
+            VesselTransformer.ResetTransformer();
+            VesselPrismController.StopSpawn();
+            VesselPrismController.ClearTrails();
         }
     }
 }

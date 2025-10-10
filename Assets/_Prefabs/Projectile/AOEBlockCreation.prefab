@@ -47,15 +47,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ExplosionDuration: 2
   ExplosionDelay: 0.2
-  affectSelf: 0
-  destructive: 1
-  devastating: 0
-  shielding: 0
-  trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
-    type: 3}
   blockScale: {x: 6, y: 4, z: 2}
   shielded: 0
-  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  _prismSpawnEvent: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
   blockCount: 8
   ringCount: 4
   radius: 12
@@ -71,8 +65,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosionShipEffectsSO: []
-  explosionPrismEffectsSO: []
   affectSelf: 0
   destructive: 1
   devastating: 0

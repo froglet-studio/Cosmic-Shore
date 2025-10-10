@@ -1469,7 +1469,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a7e910f952c49aa97c14ff5ec2fe1be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawner: {fileID: 874579555101021522}
+  controller: {fileID: 874579555101021522}
 --- !u!1 &4634953772157888635
 GameObject:
   m_ObjectHideFlags: 0
@@ -1532,7 +1532,7 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   jawResourceIndex: -1
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   worldToUIScale: 2
   imageScale: 0.02
@@ -2226,9 +2226,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
-  prismPrefab: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
-    type: 3}
   skimmer: {fileID: 874579554510349383}
+  BaseScale: {x: 3, y: 3, z: 0.5}
+  prismType: 5
   initialWavelength: 5
   minWavelength: 5
   defaultWaitTime: 0.8
@@ -2360,7 +2360,7 @@ MonoBehaviour:
   - {fileID: 6936285373394276089}
   - {fileID: 2343904303954125754}
   - {fileID: 1562349306234984412}
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 0}

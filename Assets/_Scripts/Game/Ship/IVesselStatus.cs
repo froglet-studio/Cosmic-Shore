@@ -47,7 +47,19 @@ namespace CosmicShore.Game
                 return "No-name";
             }
         }
-        Domains Domain => Player.Domain;
+
+        Domains Domain
+        {
+            get
+            {
+                if (Player == null)
+                {
+                    Debug.LogError("No Player found to get domain!");
+                    return Domains.Jade;
+                }
+                return Player.Domain;
+            }
+        }
 
         bool Portrait { get; set; }
         ResourceSystem ResourceSystem { get; }
@@ -69,7 +81,7 @@ namespace CosmicShore.Game
         bool Slowed { get; set; }
         bool IsStationary { get; set; }
         bool Turret { get; set; }
-        PrismSpawner PrismSpawner { get; }
+        VesselPrismController VesselPrismController { get; }
         ShipHUDContainer ShipHUDContainer { get; }
         IVesselHUDView ShipHUDView { get; set; }
         IVesselHUDController ShipHUDController { get; }
@@ -78,6 +90,6 @@ namespace CosmicShore.Game
         VesselHUDView VesselHUDView { get; set; }
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
         bool IsOwnerClient { get; }  
-        void ResetValues();
+        void ResetForPlay();
     }
 }

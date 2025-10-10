@@ -23,6 +23,12 @@ namespace CosmicShore.Core
             block.prismProperties.Index = (ushort) trailBlockIndices.Count;
         }
 
+        public void Clear()
+        {
+            TrailList.Clear();
+            trailBlockIndices.Clear();
+        }
+
         public int GetBlockIndex(Prism block)
         {
             return trailBlockIndices[block];

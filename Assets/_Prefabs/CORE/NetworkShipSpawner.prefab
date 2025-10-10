@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2520350284
+  GlobalObjectIdHash: 4262369952
   InScenePlacedSourceGlobalObjectIdHash: 1066882345
   DeferredDespawnTick: 0
   Ownership: 1
@@ -85,7 +85,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OnAllClientJoined: {fileID: 11400000, guid: 9b22d3442c2c72a4eafd0e396a9848bf, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   clientPlayerSpawner: {fileID: 8874896592346530446}
   _playerSpawnPoints:
   - {fileID: 0}
@@ -94,7 +94,6 @@ MonoBehaviour:
   - {fileID: 0}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
-  _mainMenuSceneName: Menu_Main
 --- !u!114 &8874896592346530446
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109,3 +108,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

@@ -9,7 +9,8 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            _gameData.OnMiniGameInitialize += InitializeGame;
+            _gameData.OnMiniGameInitialized += InitializeGame;
+            AddSpawnPosesToGameData();
         }
 
         private void Start()
@@ -20,14 +21,13 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
-            _gameData.OnMiniGameInitialize -= InitializeGame;
+            _gameData.OnMiniGameInitialized -= InitializeGame;
         }
 
         void InitializeGame()
         {
             SpawnPlayerAndAddToGameData(InitializePlayerData());
             SpawnAIPlayersAndAddToGameData();
-            RaiseAllPlayersSpawned();
         }
 
         private IPlayer.InitializeData InitializePlayerData()
@@ -38,7 +38,7 @@ namespace CosmicShore.Game
                 vesselClass      = _gameData.selectedVesselClass.Value,
                 domain           = Domains.Jade,         // Default for now
                 PlayerName     = "HumanJade",        // Placeholder
-                PlayerUUID     = "HumanJade1",       // Placeholder
+                // PlayerUUID     = "HumanJade1",       // Placeholder
                 AllowSpawning  = true,
                 IsAI  = false,
             };

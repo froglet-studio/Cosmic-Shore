@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1391623351
+  GlobalObjectIdHash: 2911939617
   InScenePlacedSourceGlobalObjectIdHash: 2911939617
   DeferredDespawnTick: 0
   Ownership: 1
@@ -70,7 +70,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8c61f782db244c468ebf6a9644a063b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  sceneNames: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  OnLoadMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
+  OnActiveSessionEnd: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}

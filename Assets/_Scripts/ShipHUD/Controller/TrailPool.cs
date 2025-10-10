@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     {
         private readonly RectTransform _container;
         private readonly GameObject _blockPrefab;
-        private readonly PrismSpawner _spawner;
+        private readonly VesselPrismController controller;
 
         public GameObject Prefab => _blockPrefab;
         public readonly float WorldToUi;
@@ -30,13 +30,13 @@ namespace CosmicShore.Game
 
         public float TargetDriftAngle => _targetAngleDeg;
 
-        public TrailPool(RectTransform container, GameObject prefab, PrismSpawner spawner,
+        public TrailPool(RectTransform container, GameObject prefab, VesselPrismController controller,
             float worldToUi, float imageScale, bool swingBlocks, float smoothTime, Vector2 blockBaseSize,
             int hardRowCap = 8)
         {
             _container   = container;
             _blockPrefab = prefab;
-            _spawner     = spawner;
+            this.controller     = controller;
             WorldToUi    = worldToUi;
             ImageScale   = imageScale;
             SwingBlocks  = swingBlocks;
@@ -106,7 +106,7 @@ namespace CosmicShore.Game
             var rect = _container.rect;
             if (rect.height < 1f) return; // defer until layout
 
-            float denom   = _spawner.MinWaveLength * WorldToUi * (SwingBlocks ? 1f : Mathf.Max(0.0001f, scaleY));
+            float denom   = controller.MinWaveLength * WorldToUi * (SwingBlocks ? 1f : Mathf.Max(0.0001f, scaleY));
             int desired   = Mathf.Max(1, Mathf.CeilToInt(rect.height / Mathf.Max(0.0001f, denom)));
             _poolSize     = Mathf.Clamp(desired, 1, _hardRowCap);
 
@@ -123,7 +123,7 @@ namespace CosmicShore.Game
                 // position row downwards; we yaw rows in Tick()
                 rowParent.localPosition = new Vector3(
                     0f,
-                    -i * _spawner.MinWaveLength * WorldToUi + (rect.height * 0.5f),
+                    -i * controller.MinWaveLength * WorldToUi + (rect.height * 0.5f),
                     0f);
                 rowParent.localRotation = Quaternion.identity;
 
@@ -141,7 +141,7 @@ namespace CosmicShore.Game
                     SetChildWorldZ(blockRt, -90f);  // lock world Z
 
                     // left/right along X by Gap; vertically centered
-                    blockRt.localPosition = new Vector3(j * 2f * _spawner.Gap - _spawner.Gap, 0f, 0f);
+                    blockRt.localPosition = new Vector3(j * 2f * controller.Gap - controller.Gap, 0f, 0f);
                     blockRt.localScale    = Vector3.zero;
 
                     AddIgnoreLayout(block);

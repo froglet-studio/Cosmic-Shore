@@ -2,13 +2,13 @@
 using CosmicShore.Game;
 using UnityEngine;
 using UnityEngine.Serialization;
-using PrismSpawner = CosmicShore.Game.PrismSpawner;
 
 public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
 {
+    [FormerlySerializedAs("prismSpawner")]
     [FormerlySerializedAs("trailSpawner")]
     [Header("Scene Refs")]
-    [SerializeField] private PrismSpawner prismSpawner;
+    [SerializeField] private VesselPrismController vesselPrismController;
 
     [Header("Seeding")]
     [SerializeField] private SeedAssemblerActionExecutor seedAssemblerExecutor;
@@ -25,8 +25,8 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
         _registry = GetComponent<ActionExecutorRegistry>();
 
         // Auto-resolve missing refs
-        if (prismSpawner == null)
-            prismSpawner = shipStatus?.PrismSpawner;
+        if (vesselPrismController == null)
+            vesselPrismController = shipStatus?.VesselPrismController;
 
         if (seedAssemblerExecutor == null && _registry != null)
             seedAssemblerExecutor = _registry.Get<SeedAssemblerActionExecutor>();
@@ -50,22 +50,22 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
                 else
                     seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status); 
 
-                prismSpawner?.PauseTrailSpawner();
+                vesselPrismController?.PauseTrailSpawner();
 
                 if (seeded)
                     seedAssemblerExecutor.BeginBonding();
             }
             else
             {
-                prismSpawner?.RestartTrailSpawnerAfterDelay(0);
+                vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
                 seedAssemblerExecutor.StopSeedCompletely();
             }
         }
         else
         {
             // Non-Serpent modes: just pause/resume trail spawner
-            if (isOn) prismSpawner?.PauseTrailSpawner();
-            else      prismSpawner?.RestartTrailSpawnerAfterDelay(0);
+            if (isOn) vesselPrismController?.PauseTrailSpawner();
+            else      vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
         }
     }
 }

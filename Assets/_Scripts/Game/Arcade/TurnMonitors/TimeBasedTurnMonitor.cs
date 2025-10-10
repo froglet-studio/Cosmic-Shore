@@ -23,10 +23,13 @@ namespace CosmicShore.Game.Arcade
             UpdateTimerUI();
         }
 
-        void UpdateTimerUI()
-        {
-            var message = ((int)duration - (int)elapsedTime).ToString();
+        protected virtual void UpdateTimerUI() =>
+            UpdateTimerUI_2(GetTimeToDisplay());
+
+        protected void UpdateTimerUI_2(string message) =>
             onUpdateTurnMonitorDisplay?.Raise(message);
-        }
+        
+        protected string GetTimeToDisplay() => 
+            ((int)duration - (int)elapsedTime).ToString();
     }
 }

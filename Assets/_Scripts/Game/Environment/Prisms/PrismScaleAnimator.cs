@@ -34,11 +34,11 @@ namespace CosmicShore.Core
                     isScaling = value;
                     if (isScaling)
                     {
-                        BlockScaleManager.Instance?.OnBlockStartScaling(this);
+                        PrismScaleManager.Instance?.OnBlockStartScaling(this);
                     }
                     else
                     {
-                        BlockScaleManager.Instance?.OnBlockStopScaling(this);
+                        PrismScaleManager.Instance?.OnBlockStopScaling(this);
                     }
                 }
             }
@@ -83,18 +83,18 @@ namespace CosmicShore.Core
         
         private void TryRegisterWithManager()
         {
-            if (BlockScaleManager.Instance != null && !isRegistered)
+            if (PrismScaleManager.Instance != null && !isRegistered)
             {
-                BlockScaleManager.Instance.RegisterAnimator(this);
+                PrismScaleManager.Instance.RegisterAnimator(this);
                 isRegistered = true;
             }
         }
 
         private void OnDisable()
         {
-            if (BlockScaleManager.Instance != null && isRegistered)
+            if (PrismScaleManager.Instance != null && isRegistered)
             {
-                BlockScaleManager.Instance.UnregisterAnimator(this);
+                PrismScaleManager.Instance.UnregisterAnimator(this);
                 isRegistered = false;
             }
         }
@@ -200,9 +200,9 @@ namespace CosmicShore.Core
 
         private void OnDestroy()
         {
-            if (BlockScaleManager.Instance != null && isRegistered)
+            if (PrismScaleManager.Instance != null && isRegistered)
             {
-                BlockScaleManager.Instance.UnregisterAnimator(this);
+                PrismScaleManager.Instance.UnregisterAnimator(this);
                 isRegistered = false;
             }
         }

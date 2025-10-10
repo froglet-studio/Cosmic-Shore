@@ -1,25 +1,30 @@
 using System;
+using CosmicShore.App.Systems;
+using CosmicShore.Game;
 using CosmicShore.Utilities;
 using CosmicShore.SOAP;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
+using Unity.Netcode;
 
 namespace CosmicShore.Core
 {
     [DefaultExecutionOrder(0)]
-    public class GameManager : MonoBehaviour
+    public class GameManager : NetworkBehaviour
     {
         const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = 0.5f;
 
         [SerializeField] SceneNameListSO _sceneNames;
         [SerializeField] SO_GameList AllGames;
-        [SerializeField] MiniGameDataSO miniGameData;
+        [SerializeField] protected MiniGameDataSO miniGameData;
         [SerializeField] ScriptableEventBool _onSceneTransition;
-
+        [SerializeField] private ScriptableEventNoParam onResetForReplay;
+        
         private void OnEnable()
         {
+            PauseSystem.TogglePauseGame(false);
             miniGameData.OnLaunchGame += LaunchGame;
         }
 
@@ -29,11 +34,20 @@ namespace CosmicShore.Core
         {
             miniGameData.OnLaunchGame -= LaunchGame;
         }
+        
+        public virtual void RestartGame()
+        {
+            // LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
+            
+            miniGameData.ResetDataForReplay();
+            // VesselPrismController.ClearTrails();
+            InvokeOnResetForReplay();
+        }
 
-        public void RestartGame() => LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
+        public virtual void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
 
-        public void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
-
+        protected void InvokeOnResetForReplay() => onResetForReplay?.Raise();
+        
         void LaunchGame()
         {
             /*if (miniGameData.IsMultiplayerMode)
@@ -46,7 +60,7 @@ namespace CosmicShore.Core
         {
             _onSceneTransition.Raise(false);
 
-            miniGameData.ResetOnSceneChanged();
+            miniGameData.ResetRuntimeData();
             
             // Delay is realtime so it still works if Time.timeScale = 0
             await UniTask.Delay(TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD), 
@@ -57,8 +71,7 @@ namespace CosmicShore.Core
 
         private void OnApplicationQuit()
         {
-            TeamAssigner.ClearCache();
-            miniGameData.ResetData();
+            miniGameData.ResetAllData();
         }
     }
 }

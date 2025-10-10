@@ -47,6 +47,11 @@ MonoBehaviour:
   prefab: {fileID: 8847271546380689597, guid: d2af5f5040e134141a94c2b496074a65, type: 3}
   defaultCapacity: 10
   maxSize: 30
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 20
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
 --- !u!1 &1878660672777590133
 GameObject:
   m_ObjectHideFlags: 0
@@ -496,9 +501,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
-  prismPrefab: {fileID: 4563009547826722997, guid: 7b267f607ed6bde46908cd599dd95472,
-    type: 3}
   skimmer: {fileID: 708149374973573223}
+  BaseScale: {x: 20, y: 5, z: 5}
+  prismType: 4
   initialWavelength: 8
   minWavelength: 8
   defaultWaitTime: 0.5
@@ -621,7 +626,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   silhouetteParts:
   - {fileID: 5229348401851143220}
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 0}
@@ -655,6 +660,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 9105512684531825410}
   _inputEventShipActions:
   - InputEvent: 3
@@ -1194,7 +1200,7 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   jawResourceIndex: -1
-  prismSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   worldToUIScale: 6
   imageScale: 0.08

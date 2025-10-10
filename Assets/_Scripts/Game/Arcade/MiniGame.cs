@@ -115,7 +115,7 @@ namespace CosmicShore.Game.Arcade
             // GameManager.OnPlayGame += InitializeGame;
             
             // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnGameStarted += FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused += HandleGamePaused;
             PauseSystem.OnGameResumed += HandleGameResumed;
@@ -126,7 +126,7 @@ namespace CosmicShore.Game.Arcade
             // GameManager.OnPlayGame -= InitializeGame;
             
             // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnGameStarted -= FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
@@ -211,7 +211,7 @@ namespace CosmicShore.Game.Arcade
                     vesselClass = playerShipTypeInitialized ? PlayerVesselType : defaultPlayerVesselType,
                     domain = PlayerTeams[i],
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
-                    PlayerUUID = PlayerNames[i]
+                    // PlayerUUID = PlayerNames[i]
                 };
                 
                 // TODO - Player spawning and initializations are done using PlayerSpawner now!
@@ -269,7 +269,7 @@ namespace CosmicShore.Game.Arcade
             /*foreach (var turnMonitor in TurnMonitors)
                 turnMonitor.PauseTurn();*/
             ActivePlayer.InputController.InputStatus.Paused = true;
-            ActivePlayer.Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
 
             yield return new WaitForSeconds(EndOfTurnDelay);
 
@@ -424,33 +424,33 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void SetupTurn()
         {
-            ReadyNextPlayer();
+            /*ReadyNextPlayer();
 
             // Wait for player ready before activating turn monitor (only really relevant for time based monitor)
-            /*foreach (var turnMonitor in TurnMonitors)
+            foreach (var turnMonitor in TurnMonitors)
             {
                 turnMonitor.NewTurn(Players[activePlayerId].PlayerName);
                 turnMonitor.PauseTurn();
-            }*/
+            }
 
             ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
             ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Vessel.Teleport(PlayerOrigin.transform);
-            ActivePlayer.Vessel.VesselStatus.VesselTransformer.ResetShipTransformer();
-            ActivePlayer.Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.VesselTransformer.ResetTransformer();
+            ActivePlayer.Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
             ActivePlayer.Vessel.VesselStatus.ResourceSystem.Reset();
             ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);
 
-            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Vessel.VesselStatus.CameraFollowTarget);
+            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Vessel.VesselStatus.CameraFollowTarget);
 
             // For single player games, don't require the extra button press
             if (Players.Count > 1)
                 ReadyButton.gameObject.SetActive(true);
             else
-                StartCoroutine(StartCountdownTimerCoroutine());
+                StartCoroutine(StartCountdownTimerCoroutine());*/
         }
 
-        protected void ReadyNextPlayer()
+        /*protected void ReadyNextPlayer()
         {
             RemainingPlayersActivePlayerIndex++;
             RemainingPlayersActivePlayerIndex %= RemainingPlayers.Count;
@@ -462,7 +462,7 @@ namespace CosmicShore.Game.Arcade
                 Debug.Log($"PlayerUUID: {player.PlayerUUID}");
                 player.ToggleGameObject(player.PlayerUUID == ActivePlayer.PlayerUUID);
             }
-        }
+        }*/
 
         IEnumerator StartCountdownTimerCoroutine()
         {

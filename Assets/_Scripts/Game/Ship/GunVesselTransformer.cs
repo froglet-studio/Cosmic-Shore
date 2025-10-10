@@ -82,9 +82,10 @@ public class GunVesselTransformer : VesselTransformer
     }
     void SlideActions()
     {
+        var rs = VesselStatus.ResourceSystem;
         // TODO: should this be pulled out as an action type?
-        if (trailFollower.AttachedPrism.prismProperties.IsShielded) resourceSystem.ChangeResourceAmount(ammoIndex, rechargeRate * 2 * Time.deltaTime);
-        else resourceSystem.ChangeResourceAmount(ammoIndex, rechargeRate * Time.deltaTime);
+        if (trailFollower.AttachedPrism.prismProperties.IsShielded) rs.ChangeResourceAmount(ammoIndex, rechargeRate * 2 * Time.deltaTime);
+        else rs.ChangeResourceAmount(ammoIndex, rechargeRate * Time.deltaTime);
     }
 
     public void FinalBlockSlideEffects()

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.SOAP;
+using Unity.Netcode;
 using UnityEngine;
 
 
@@ -9,7 +10,7 @@ namespace CosmicShore.Game.Arcade
     /// <summary>
     /// Single responsibility: own a list of TurnMonitor and expose a clean API.
     /// </summary>
-    public class TurnMonitorController : MonoBehaviour 
+    public class TurnMonitorController : NetworkBehaviour 
     {
         [SerializeField]
         MiniGameDataSO miniGameData;
@@ -19,11 +20,9 @@ namespace CosmicShore.Game.Arcade
 
         bool isRunning;
         
-        void OnEnable()
+        protected virtual void OnEnable()
         {
-            miniGameData.OnMiniGameStart += StartMonitors;
-            miniGameData.OnMiniGameTurnEnd += PauseMonitors;
-            miniGameData.OnMiniGameEnd += StopMonitors;
+            SubscribeToEvents();
         }
 
         void Update()
@@ -34,12 +33,24 @@ namespace CosmicShore.Game.Arcade
             if (!CheckEndOfTurn())
                 return;
 
-            miniGameData.InvokeMiniGameTurnConditionsMet();
+            miniGameData.InvokeGameTurnConditionsMet();
         }
 
-        void OnDisable()
+        protected virtual void OnDisable()
         {
-            miniGameData.OnMiniGameStart -= StartMonitors;
+            UnsubscribeFromEvents();   
+        }
+        
+        protected void SubscribeToEvents()
+        {
+            miniGameData.OnGameStarted += StartMonitors;
+            miniGameData.OnMiniGameTurnEnd += PauseMonitors;
+            miniGameData.OnMiniGameEnd += StopMonitors;
+        }
+
+        protected void UnsubscribeFromEvents()
+        {
+            miniGameData.OnGameStarted -= StartMonitors;
             miniGameData.OnMiniGameTurnEnd -= PauseMonitors;
             miniGameData.OnMiniGameEnd -= StopMonitors;
         }

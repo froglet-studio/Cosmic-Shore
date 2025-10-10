@@ -63,8 +63,8 @@ namespace CosmicShore.Game
                 if (_view.driftTrailAction != null)
                     _view.driftTrailAction.OnChangeDriftAltitude -= OnDriftDotChanged;
 
-                if (_view.prismSpawner != null)
-                    _view.prismSpawner.OnBlockCreated -= PrismBlockCreated;
+                if (_view.vesselPrismController != null)
+                    _view.vesselPrismController.OnBlockCreated -= VesselPrismCreated;
             }
 
             _trailPool?.Dispose();
@@ -178,7 +178,7 @@ namespace CosmicShore.Game
             BlockPrefab = prefab;
 
             // If the spawner & container are alive, (re)bind
-            if (_trailPool == null && _view != null && _view.prismSpawner && _view.trailDisplayContainer && BlockPrefab != null)
+            if (_trailPool == null && _view != null && _view.vesselPrismController && _view.trailDisplayContainer && BlockPrefab != null)
                 BindTrail();
         }
 
@@ -186,7 +186,7 @@ namespace CosmicShore.Game
         {
             if (_view == null) return;
 
-            if (_view.prismSpawner == null) { Debug.LogWarning("HUD: no PrismSpawner"); return; }
+            if (_view.vesselPrismController == null) { Debug.LogWarning("HUD: no PrismSpawner"); return; }
             if (_view.trailDisplayContainer == null) { Debug.LogWarning("HUD: no trailDisplayContainer"); return; }
             if (BlockPrefab == null) { Debug.LogWarning("HUD: no trail BlockPrefab"); return; }
 
@@ -198,7 +198,7 @@ namespace CosmicShore.Game
             _trailPool = new TrailPool(
                 _view.trailDisplayContainer,
                 BlockPrefab,
-                _view.prismSpawner,
+                _view.vesselPrismController,
                 _view.worldToUIScale,
                 _view.imageScale,
                 _view.swingBlocks,
@@ -217,10 +217,10 @@ namespace CosmicShore.Game
                 _pendingPoolBuild = true; // try in LateUpdate
             }
 
-            _view.prismSpawner.OnBlockCreated += PrismBlockCreated;
+            _view.vesselPrismController.OnBlockCreated += VesselPrismCreated;
         }
 
-        private void PrismBlockCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
+        private void VesselPrismCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
             if (_status is { AutoPilotEnabled: true }) return;
             if (_trailPool == null) return;

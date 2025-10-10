@@ -1,19 +1,19 @@
-using System;
-using CosmicShore.Game.Arcade;
 using System.Collections.Generic;
-using System.Linq;
-using CosmicShore.Core;
 using CosmicShore.SOAP;
+using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.Game
 {
     public class Scoreboard : MonoBehaviour
     {
         [SerializeField]
-        MiniGameDataSO miniGameData; 
+        protected MiniGameDataSO miniGameData; 
+        
+        [SerializeField]
+        private ScriptableEventNoParam OnResetForReplay; 
         
         [SerializeField]
         Transform gameOverPanel;
@@ -47,30 +47,40 @@ namespace CosmicShore
         void Awake()
         {
             // scoreTracker = FindAnyObjectByType<ScoreTracker>();
-            gameOverPanel.gameObject.SetActive(false);
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(false);
+            ResetForReplay();
         }
 
         private void OnEnable()
         {
             miniGameData.OnWinnerCalculated += ShowSinglePlayerView;
+            OnResetForReplay.OnRaised += ResetForReplay;
         }
 
         private void OnDisable()
         {
             miniGameData.OnWinnerCalculated -= ShowSinglePlayerView;
+            OnResetForReplay.OnRaised -= ResetForReplay;
         }
 
+        private void ResetForReplay()
+        {
+            gameOverPanel.gameObject.SetActive(false);
+            MultiplayerView.gameObject.SetActive(false);
+            SingleplayerView.gameObject.SetActive(false);
+        }
+
+        protected virtual bool TryGetWinner(out IRoundStats roundStats, out bool localIsWinner) =>
+            miniGameData.TryGetWinner(out roundStats, out localIsWinner);
+        
         void ShowSinglePlayerView()
         {
-            if (!miniGameData.IsLocalPlayerWinner(out IRoundStats roundStats, out bool won))
+            if (!TryGetWinner(out  IRoundStats roundStats, out bool localIsWinner))
                 return;
                 
             // Setup Banner
             BannerImage.color = SinglePlayerBannerColor;
             
-            if (!won)
+            if (!localIsWinner)
                 BannerText.text = "DEFEAT";
             else
                 BannerText.text = "WON";

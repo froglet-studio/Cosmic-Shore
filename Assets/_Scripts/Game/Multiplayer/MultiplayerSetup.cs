@@ -1,28 +1,28 @@
 ﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
+using Unity.Netcode;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
-using Cysharp.Threading.Tasks;
-using Unity.Netcode;
-using System.Collections.Generic;
 using CosmicShore.SOAP;
 using CosmicShore.Utilities;
-using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 
 namespace CosmicShore.Game
 {
-    public class MultiplayerSetup : SingletonNetwork<MultiplayerSetup>
+    public class MultiplayerSetup : Singleton<MultiplayerSetup>
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
+        const string GAME_MODE_PROPERTY_KEY = "gameMode";
+        const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
 
-        [SerializeField] MiniGameDataSO miniGameData;
-        [SerializeField] ScriptableEventNoParam OnLoadMainMenu;
+        [SerializeField] private MiniGameDataSO miniGameData;
+        [SerializeField] private ScriptableEventNoParam OnActiveSessionEnd;
 
-        ISession _activeSession;
-        public ISession ActiveSession { get; private set; }
+        private bool _leaving;
 
         private void OnEnable()
         {
@@ -36,11 +36,12 @@ namespace CosmicShore.Game
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
         }
 
-        async void Start()
+        private async void Start()
         {
             try
             {
                 await UnityServices.InitializeAsync();
+
                 if (!AuthenticationService.Instance.IsSignedIn)
                     await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
@@ -60,51 +61,92 @@ namespace CosmicShore.Game
         {
             if (NetworkManager.Singleton)
             {
-                if (IsHost)
-                {
-                    NetworkManager.Singleton.Shutdown();
-                }
+                NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
             }
         }
 
-        async UniTaskVoid ExecuteMultiplayerSetup()
+        // --------------------------
+        // Session Bootstrapping
+        // --------------------------
+
+        private async UniTaskVoid ExecuteMultiplayerSetup()
         {
             var sessions = await QuerySessions();
+
             if (sessions != null && sessions.Any())
-                await JoinSessionAsClientById(sessions.First().Id);
+            {
+                var matchedSession = sessions.FirstOrDefault();
+                if (matchedSession != null)
+                    await JoinSessionAsClientById(matchedSession.Id);
+                else
+                    await StartSessionAsHost();
+            }
             else
+            {
                 await StartSessionAsHost();
+            }
         }
 
-        async UniTask StartSessionAsHost()
+        private async UniTask StartSessionAsHost()
         {
             var playerProperties = await GetPlayerProperties();
+            var sessionProperties = GetSessionProperties();
+
+            // Add game mode as session metadata
             var sessionOpts = new SessionOptions
             {
-                MaxPlayers = 4, //miniGameData.SelectedPlayerCount.Value,
+                MaxPlayers = miniGameData.SelectedPlayerCount.Value,
                 IsLocked = false,
                 IsPrivate = false,
                 PlayerProperties = playerProperties,
+                SessionProperties = sessionProperties
             }.WithRelayNetwork();
 
-            ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
-            Debug.Log($"[MultiplayerSetup] Created session {ActiveSession.Id}");
+            miniGameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
+            miniGameData.InvokeSessionStarted();
+
+            Debug.Log($"[MultiplayerSetup] Created session {miniGameData.ActiveSession.Id} with GameMode = {miniGameData.GameMode}");
         }
 
-        async UniTask JoinSessionAsClientById(string sessionId)
+        private async UniTask JoinSessionAsClientById(string sessionId)
         {
+            var playerProperties = await GetPlayerProperties();
+
+            var joinOpts = new JoinSessionOptions
+            {
+                PlayerProperties = playerProperties
+            };
+
             Debug.Log($"[MultiplayerSetup] Joining session {sessionId}");
-            ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, new JoinSessionOptions());
+            miniGameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
         }
 
-        async UniTask<IList<ISessionInfo>> QuerySessions()
+        // --------------------------
+        // Query Sessions (filtered by GameMode)
+        // --------------------------
+        private async UniTask<IList<ISessionInfo>> QuerySessions()
         {
-            var results = await MultiplayerService.Instance.QuerySessionsAsync(new QuerySessionsOptions());
+            var gameModeString = miniGameData.GameMode.ToString();
+            var maxPlayers = miniGameData.SelectedPlayerCount.Value.ToString();
+
+            var filterOption1 = new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal);
+            var filterOption2 = new FilterOption(FilterField.StringIndex2, maxPlayers, FilterOperation.Equal);
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.Add(filterOption1);
+            queryOptions.FilterOptions.Add(filterOption2);
+
+            var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+            Debug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
             return results.Sessions;
         }
 
-        void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
-                                          NetworkManager.ConnectionApprovalResponse response)
+        // --------------------------
+        // NGO Connection Hooks
+        // --------------------------
+
+        private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
+                                                  NetworkManager.ConnectionApprovalResponse response)
         {
             response.Approved = true;
             response.CreatePlayerObject = true;
@@ -113,29 +155,94 @@ namespace CosmicShore.Game
             response.PlayerPrefabHash = null;
         }
 
-        void OnClientDisconnect(ulong clientId)
+        private void OnClientDisconnect(ulong clientId)
         {
-            if (!NetworkManager.Singleton)
+            if (NetworkManager.Singleton == null)
                 return;
-            
-            NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
-            
-            // host always = 0
-            if (!NetworkManager.Singleton.IsHost && clientId == NetworkManager.Singleton.LocalClientId)
+
+            if (_leaving)
+                return;
+
+            if (NetworkManager.Singleton.IsHost)
             {
-                Debug.Log("[MultiplayerSetup] Host disconnected, returning to menu.");
-                OnLoadMainMenu?.Raise();
+                if (clientId != NetworkManager.Singleton.LocalClientId)
+                {
+                    Debug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                }
+                return;
+            }
+
+            if (clientId == NetworkManager.Singleton.LocalClientId)
+            {
+                Debug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
+                OnActiveSessionEnd?.Raise();
             }
         }
 
-        async UniTask<Dictionary<string, PlayerProperty>> GetPlayerProperties()
+        // --------------------------
+        // Player Properties
+        // --------------------------
+        private async UniTask<Dictionary<string, PlayerProperty>> GetPlayerProperties()
         {
             var playerName = await AuthenticationService.Instance.GetPlayerNameAsync();
+
             return new Dictionary<string, PlayerProperty>
             {
-                { PLAYER_NAME_PROPERTY_KEY, new PlayerProperty(playerName, VisibilityPropertyOptions.Member) }
+                { PLAYER_NAME_PROPERTY_KEY, new PlayerProperty(playerName, VisibilityPropertyOptions.Member) },
             };
+        }
+
+        private Dictionary<string, SessionProperty> GetSessionProperties()
+        {
+            string gameMode = miniGameData.GameMode.ToString();
+            string maxPlayers = miniGameData.SelectedPlayerCount.Value.ToString();
+            return new Dictionary<string, SessionProperty>
+            {
+                { GAME_MODE_PROPERTY_KEY, new SessionProperty(gameMode, VisibilityPropertyOptions.Public, PropertyIndex.String1)},
+                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
+            };
+        }
+
+        // --------------------------
+        // Public Leave Entry Point
+        // --------------------------
+        public async UniTask LeaveSession()
+        {
+            if (_leaving)
+                return;
+
+            _leaving = true;
+
+            try
+            {
+                if (miniGameData.ActiveSession != null)
+                {
+                    if (miniGameData.ActiveSession.IsHost)
+                    {
+                        await miniGameData.ActiveSession.AsHost().DeleteAsync();
+                        Debug.Log("[MultiplayerSetup] Host deleted session.");
+                    }
+                    else
+                    {
+                        await miniGameData.ActiveSession.LeaveAsync();
+                        Debug.Log("[MultiplayerSetup] Client left session.");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[MultiplayerSetup] LeaveSession error: {e.Message}");
+            }
+            finally
+            {
+                miniGameData.ActiveSession = null;
+
+                if (NetworkManager.Singleton)
+                    NetworkManager.Singleton.Shutdown();
+
+                OnActiveSessionEnd?.Raise();
+                _leaving = false;
+            }
         }
     }
 }

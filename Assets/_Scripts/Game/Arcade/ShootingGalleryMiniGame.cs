@@ -24,13 +24,13 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
-            PrismSpawner.NukeTheTrails();
+            // VesselPrismController.ClearTrails();
 
             SegmentSpawner.NumberOfSegments = 60;
             SegmentSpawner.Initialize();
 
             Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Vessel.VesselStatus.PrismSpawner.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
 
             FormRing();
         }
