@@ -10,70 +10,79 @@ using UnityEngine;
 namespace CosmicShore
 {
     /// <summary>
-    /// Runtime executor for Cloak + Seed Wall.
-    /// Lives on the ship under ActionExecutorRegistry.
+    /// Cloak + Seed Wall executor (material-swap, sharedMaterials, low-alloc).
+    /// Uses VesselPrismController instead of PrismSpawner.
     /// </summary>
     public class CloakSeedWallActionExecutor : ShipActionExecutorBase
     {
         // ===== HUD / external subscribers =====
         public event Action OnCloakStarted;
         public event Action OnCloakEnded;
-        public event Action<float> OnFadeProgress; // 0..1 during fade out/in
 
         [Header("Scene Refs")]
         [SerializeField] private SkinnedMeshRenderer skinnedMeshRenderer;
         [SerializeField] private Transform modelRoot;
         [Tooltip("If your seed is a separate action/executor, we call into it via the registry.")]
-        [SerializeField] private SeedAssemblerActionExecutor seedAssemblerExecutor; 
+        [SerializeField] private SeedAssemblerActionExecutor seedAssemblerExecutor;
         [SerializeField] private SeedWallActionSO seedWallConfig;
 
-        // Runtime
-        IVesselStatus _status;
-        Game.VesselPrismController  controller;
-        ActionExecutorRegistry _registry;
+        [Header("Perf/Robustness")] [SerializeField]
+        private bool enableWatchdog;
+        [SerializeField] private float watchdogInterval  = 0.25f;
 
-        readonly HashSet<int> _protectedBlockIds = new();
+        private IVesselStatus _status;
+        private VesselPrismController _controller;
+        private ActionExecutorRegistry _registry;
 
-        CloakSeedWallActionSO _so;
-        Coroutine _runRoutine;
-        bool _cloakActive;
-        float _cooldownEndTime;
+        private CloakSeedWallActionSO _so;
+        private Coroutine _runRoutine;
+        private bool _cloakActive;
+        private float _cooldownEndTime;
 
-        // Ghost
-        GameObject _ghostGo;
-        Coroutine  _ghostFollowRoutine;
-        Vector3    _ghostAnchorPos;
-        Transform  _followTf;
-        bool       _rendererWasHardDisabled;
+        private GameObject _ghostGo;
+        private Coroutine _ghostFollowRoutine;
+        private Vector3 _ghostAnchorPos;
+        private Transform _followTf;
 
-        // Shader IDs
-        static readonly int IDColor      = Shader.PropertyToID("_Color");
-        static readonly int IDBaseColor  = Shader.PropertyToID("_BaseColor");
-        static readonly int IDColor1     = Shader.PropertyToID("Color1");
-        static readonly int IDColor2     = Shader.PropertyToID("Color2");
-        static readonly int IDColorMult  = Shader.PropertyToID("ColorMultiplier");
+        private Material[] _originalShipMats;
+
+        private readonly Dictionary<Renderer, Material[]> _cloakedPrismRenderers = new(256);
+        private readonly Dictionary<Prism, Renderer[]> _prismRenderers = new(256);
+        private readonly Dictionary<int, Material[]> _cloakArrayBySlots = new(16);
+
+        private readonly HashSet<int> _protectedBlockIds = new();
+        private float _watchdogTimer;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
-            _status   = shipStatus;
-            controller  = shipStatus?.VesselPrismController;
-            _registry = GetComponent<ActionExecutorRegistry>();
+            _status     = shipStatus;
+            _controller = shipStatus?.VesselPrismController;
+            _registry   = GetComponent<ActionExecutorRegistry>();
 
-            if (controller != null)
-                controller.OnBlockSpawned += HandleBlockSpawned;
+            if (_controller != null)
+                _controller.OnBlockSpawned += HandleBlockSpawned;
 
-            // Resolve the seed assembler executor from the registry if not wired directly.
             if (seedAssemblerExecutor == null && _registry != null)
                 seedAssemblerExecutor = _registry.Get<SeedAssemblerActionExecutor>();
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
-            if (controller != null)
-                controller.OnBlockSpawned -= HandleBlockSpawned;
+            if (_controller != null)
+                _controller.OnBlockSpawned -= HandleBlockSpawned;
         }
 
-        // ===== API called from SO =====
+        private void Update()
+        {
+            if (!_cloakActive || !enableWatchdog) return;
+
+            _watchdogTimer += Time.deltaTime;
+            if (_watchdogTimer >= watchdogInterval)
+            {
+                _watchdogTimer = 0f;
+                ReapplyCloakIfNeeded();
+            }
+        }
 
         public void Begin(CloakSeedWallActionSO so, IVesselStatus status)
         {
@@ -92,72 +101,57 @@ namespace CosmicShore
 
         public void End()
         {
-            // This action is time-boxed (cooldown); explicit stop is usually a no-op.
-            // You could allow early-cancel here if needed:
-            // if (_runRoutine != null) { StopCoroutine(_runRoutine); _runRoutine = null; CleanupGhost(); ForceFadeInIfNeeded(); }
+            // Optional manual cancel (not used). Could early-restore here if needed.
         }
 
         // ===== Core routine =====
-
-        IEnumerator Run()
+        private IEnumerator Run()
         {
-            if (seedAssemblerExecutor != null && seedAssemblerExecutor.StartSeed(seedWallConfig, _status))
+            if (seedAssemblerExecutor && seedAssemblerExecutor.StartSeed(seedWallConfig, _status))
             {
                 var seed = seedAssemblerExecutor.ActiveSeedBlock;
-                if (seed != null) _protectedBlockIds.Add(seed.GetInstanceID());
+                if (seed) _protectedBlockIds.Add(seed.GetInstanceID());
                 seedAssemblerExecutor.BeginBonding();
             }
 
-            // 2) Get seed block / latest block and create ghost at anchor
             var seedBlock = seedAssemblerExecutor?.ActiveSeedBlock ?? GetLatestBlock();
-            if (seedBlock != null && skinnedMeshRenderer != null)
-                CreateGhostAt(seedBlock.transform.position, seedBlock.transform.rotation);
+            if (seedBlock && skinnedMeshRenderer)
+                CreateGhostAt(seedBlock.transform.position);
 
-            // 3) Fade out ship (optional)
-            if (_so.HideShipDuringCooldown)
-                yield return FadeShipOut();
+            ApplyShipCloakMaterials();
+            CloakExistingPrisms();
 
-            // 4) Cloak active window
-            var wait = Mathf.Max(0.01f, _so.CooldownSeconds);
+            var wait     = Mathf.Max(0.01f, _so.CooldownSeconds);
             var lifetime = _so.GhostLifetime > 0f ? _so.GhostLifetime : wait;
 
-            _cloakActive      = true;
-            _cooldownEndTime  = Time.time + wait;
+            _cloakActive     = true;
+            _cooldownEndTime = Time.time + wait;
             OnCloakStarted?.Invoke();
 
-            // schedule ghost destroy if lifetime set
-            if (lifetime > 0f && _ghostGo != null)
+            if (lifetime > 0f && _ghostGo)
                 StartCoroutine(DestroyAfter(_ghostGo, lifetime));
 
-            float t = 0f;
-            while (t < wait)
-            {
-                t += Time.deltaTime;
+            while (Time.time < _cooldownEndTime)
                 yield return null;
-            }
 
             _cloakActive = false;
             OnCloakEnded?.Invoke();
 
-            // 5) Cleanup ghost and fade back in
             CleanupGhost();
-            if (_so.HideShipDuringCooldown)
-                yield return FadeShipIn();
+            RestoreShipMaterials();
+            RestoreAllPrismMaterials();
 
-            // 6) Stop seed
-            if (seedAssemblerExecutor != null)
+            if (seedAssemblerExecutor)
                 seedAssemblerExecutor.StopSeedCompletely();
 
             _runRoutine = null;
         }
-
-        // ===== Trail handling during cloak =====
-
-        void HandleBlockSpawned(Prism block)
+        
+        private void HandleBlockSpawned(Prism block)
         {
-            if (!_cloakActive || block == null) return;
+            if (!_cloakActive || !block) return;
             if (_protectedBlockIds.Contains(block.GetInstanceID())) return;
-            if (block.GetComponent<Assembler>() != null) return;
+            if (block.GetComponent<Assembler>()) return;
 
             var remaining = _cooldownEndTime - Time.time;
             if (remaining > 0f)
@@ -168,21 +162,21 @@ namespace CosmicShore
                     block.waitTime = target;
             }
 
-            block.SetTransparency(true);
+            StartCoroutine(ApplyPrismCloakNextFrame(block));
+        }
 
-            // hide visuals of freshly spawned blocks until cloak ends
-            var r = block.GetComponentInChildren<Renderer>(true);
-            if (r != null) r.enabled = false;
+        private IEnumerator ApplyPrismCloakNextFrame(Prism p)
+        {
+            yield return null;
+            if (_cloakActive) ApplyPrismCloakTo(p);
         }
 
         // ===== Ghost =====
-
-        void CreateGhostAt(Vector3 seedPos, Quaternion seedRot)
+        private void CreateGhostAt(Vector3 anchorPos)
         {
-            if (skinnedMeshRenderer == null) return;
+            if (!skinnedMeshRenderer) return;
 
             var baked = new Mesh();
-            // do NOT bake scale; we’ll set scale manually from model
             skinnedMeshRenderer.BakeMesh(baked, true);
 
             _ghostGo = new GameObject("ShipGhost");
@@ -190,7 +184,7 @@ namespace CosmicShore
             var mr = _ghostGo.AddComponent<MeshRenderer>();
             mf.sharedMesh = baked;
 
-            if (_so.GhostMaterialOverride != null)
+            if (_so.GhostMaterialOverride)
             {
                 mr.material = new Material(_so.GhostMaterialOverride);
             }
@@ -198,224 +192,222 @@ namespace CosmicShore
             {
                 var live  = skinnedMeshRenderer.materials;
                 var ghost = new Material[live.Length];
-                for (int i = 0; i < live.Length; i++)
-                    ghost[i] = new Material(live[i]);
+                for (int i = 0; i < live.Length; i++) ghost[i] = new Material(live[i]);
                 mr.materials = ghost;
-                for (int i = 0; i < mr.materials.Length; i++)
-                    SetMaterialAlpha(mr.materials[i], 1f);
             }
 
-            _ghostAnchorPos = seedPos;
-            _followTf       = GetShipFollowTransform();
+            _ghostAnchorPos = anchorPos;
+            _followTf       = _status?.ShipTransform;
 
-            var finalRot = ComputeGhostRotation() * Quaternion.Euler(_so.GhostEulerOffset);
-            _ghostGo.transform.SetPositionAndRotation(_ghostAnchorPos, finalRot);
+            var shipTf = _followTf;
+            var up     = shipTf ? shipTf.up : Vector3.up;
+            var toShip = (shipTf ? shipTf.position : (anchorPos + Vector3.forward)) - anchorPos;
+            var baseRot = toShip.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(toShip.normalized, up)
+                                                      : (shipTf ? shipTf.rotation : Quaternion.identity);
 
-            // scale = model root scale * multiplier (fallback to 1)
-            var baseScale = modelRoot != null ? modelRoot.lossyScale : Vector3.one;
+            _ghostGo.transform.SetPositionAndRotation(_ghostAnchorPos, baseRot * Quaternion.Euler(_so.GhostEulerOffset));
+
+            var baseScale = modelRoot ? modelRoot.lossyScale : Vector3.one;
             var s = Mathf.Max(0.0001f, _so.GhostScaleMultiplier);
-            _ghostGo.transform.localScale = new Vector3(baseScale.x * s, baseScale.y * s, baseScale.z * s);
+            _ghostGo.transform.localScale = baseScale * s;
 
             if (_ghostFollowRoutine != null) StopCoroutine(_ghostFollowRoutine);
             _ghostFollowRoutine = StartCoroutine(GhostFollow());
         }
 
-        void CleanupGhost()
+        private void CleanupGhost()
         {
             if (_ghostFollowRoutine != null)
             {
                 StopCoroutine(_ghostFollowRoutine);
                 _ghostFollowRoutine = null;
             }
-            if (_ghostGo != null)
+
+            if (_ghostGo)
             {
                 Destroy(_ghostGo);
                 _ghostGo = null;
             }
         }
 
-        IEnumerator GhostFollow()
+        private IEnumerator GhostFollow()
         {
             float t = 0f;
-            while (_ghostGo != null)
+            while (_ghostGo)
             {
-                _ghostGo.transform.position = _ghostAnchorPos;
-
-                if (_followTf != null)
-                {
-                    var baseRot = _followTf.rotation;
-                    var offsetQ = Quaternion.Euler(_so.GhostEulerOffset);
-                    _ghostGo.transform.rotation = baseRot * offsetQ;
-                }
-
+                // anchored position (with optional bob)
+                var pos = _ghostAnchorPos;
                 if (_so.GhostIdleMotion)
                 {
                     t += Time.deltaTime;
-                    var bob = Mathf.Sin(t * _so.GhostBobSpeed) * _so.GhostBobAmplitude;
-                    _ghostGo.transform.position = _ghostAnchorPos + new Vector3(0, bob, 0);
-                    _ghostGo.transform.Rotate(Vector3.up, _so.GhostYawSpeed * Time.deltaTime, Space.World);
+                    pos.y += Mathf.Sin(t * _so.GhostBobSpeed) * _so.GhostBobAmplitude;
+                }
+                _ghostGo.transform.position = pos;
+
+                // smoothly face the current ship position (no parenting)
+                var shipTf = _status?.ShipTransform;
+                if (shipTf)
+                {
+                    var toShip = shipTf.position - _ghostGo.transform.position;
+                    if (toShip.sqrMagnitude > 1e-6f)
+                    {
+                        var target = Quaternion.LookRotation(toShip.normalized, shipTf.up)
+                                   * Quaternion.Euler(_so.GhostEulerOffset);
+                        _ghostGo.transform.rotation = Quaternion.Slerp(_ghostGo.transform.rotation, target, 8f * Time.deltaTime);
+                    }
                 }
 
+                _ghostGo.transform.Rotate(Vector3.up, _so.GhostYawSpeed * Time.deltaTime, Space.World);
+
                 yield return null;
             }
         }
 
-        IEnumerator DestroyAfter(GameObject go, float seconds)
+        private IEnumerator DestroyAfter(GameObject go, float seconds)
         {
             yield return new WaitForSeconds(seconds);
-            if (go != null) Destroy(go);
+            if (go) Destroy(go);
         }
 
-        // ===== Fade =====
-
-        IEnumerator FadeShipOut()
+        // ===== Material swap (Ship) =====
+        private void ApplyShipCloakMaterials()
         {
-            if (!_so.HideShipDuringCooldown || skinnedMeshRenderer == null) yield break;
+            if (!_so || !_so.ShipCloakMaterial || !skinnedMeshRenderer) return;
 
-            var targetAlpha = IsLocalPlayerShip()
-                ? _so.LocalCloakAlpha
-                : (_so.RemoteFullInvisible ? 0f : _so.LocalCloakAlpha);
+            if (_originalShipMats == null || _originalShipMats.Length == 0)
+                _originalShipMats = skinnedMeshRenderer.sharedMaterials; // cache shared (no instancing)
 
-            var mats = skinnedMeshRenderer.materials;
-            var anyAlphaCapable = mats.Any(MaterialSupportsAlpha);
-            var anyOpaque = mats.Any(m => m && m.GetTag("RenderType", false, "Opaque") == "Opaque");
-
-            if (anyAlphaCapable)
-                yield return FadeAlpha(mats, GetCurrentAlpha(mats, 1f), targetAlpha, Mathf.Max(0.01f, _so.FadeOutSeconds), true);
-
-            if (Mathf.Approximately(targetAlpha, 0f) && anyOpaque && _so.HardToggleIfAnyOpaqueAtZero)
-            {
-                skinnedMeshRenderer.enabled = false;
-                _rendererWasHardDisabled = true;
-            }
+            int slots = Mathf.Max(1, _originalShipMats.Length);
+            skinnedMeshRenderer.sharedMaterials = GetCloakArray(slots, _so.ShipCloakMaterial);
         }
 
-        IEnumerator FadeShipIn()
+        private void RestoreShipMaterials()
         {
-            if (!_so.HideShipDuringCooldown || skinnedMeshRenderer == null) yield break;
-
-            var mats = skinnedMeshRenderer.materials;
-
-            if (_rendererWasHardDisabled)
-            {
-                skinnedMeshRenderer.enabled = true;
-                _rendererWasHardDisabled = false;
-            }
-
-            var anyAlphaCapable = mats.Any(MaterialSupportsAlpha);
-            if (anyAlphaCapable)
-                yield return FadeAlpha(mats, GetCurrentAlpha(mats, 1f), 1f, Mathf.Max(0.01f, _so.FadeInSeconds), false);
+            if (!skinnedMeshRenderer || _originalShipMats == null) return;
+            skinnedMeshRenderer.sharedMaterials = _originalShipMats;
+            _originalShipMats = null;
         }
 
-        float GetCurrentAlpha(Material[] mats, float defaultAlpha)
+        // ===== Material swap (Prisms) =====
+        private void CloakExistingPrisms()
         {
-            foreach (var m in mats)
-            {
-                if (m == null) continue;
-                if (m.HasProperty(IDBaseColor)) return m.GetColor(IDBaseColor).a;
-                if (m.HasProperty(IDColor))     return m.GetColor(IDColor).a;
-                if (m.HasProperty(IDColor1))    return m.GetColor(IDColor1).a;
-                if (m.HasProperty(IDColor2))    return m.GetColor(IDColor2).a;
-                if (m.HasProperty(IDColorMult)) return m.GetFloat(IDColorMult);
-            }
-            return defaultAlpha;
-        }
+            if (_controller == null || !_so || !_so.PrismCloakMaterial) return;
 
-        IEnumerator FadeAlpha(Material[] mats, float from, float to, float duration, bool isFadingOut)
-        {
-            float t = 0f;
-            while (t < duration)
-            {
-                var a = Mathf.Lerp(from, to, t / duration);
-                foreach (var m in mats)
-                    if (m != null) SetMaterialAlpha(m, a);
+            CloakList(_controller.Trail?.TrailList);
 
-                OnFadeProgress?.Invoke(isFadingOut ? (1f - (t / duration)) : (t / duration));
-                t += Time.deltaTime;
-                yield return null;
-            }
+            // compatibility with private Trail2 field (matches earlier pattern)
+            var trail2Field = typeof(VesselPrismController).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
+            var trail2 = trail2Field?.GetValue(_controller) as Trail;
+            if (trail2 != null) CloakList(trail2.TrailList);
+            return;
 
-            foreach (var m in mats)
-                if (m != null) SetMaterialAlpha(m, to);
-
-            OnFadeProgress?.Invoke(isFadingOut ? 0f : 1f);
-        }
-
-        static bool MaterialSupportsAlpha(Material m)
-        {
-            return m && (m.HasProperty(IDBaseColor) || m.HasProperty(IDColor) ||
-                         m.HasProperty(IDColor1) || m.HasProperty(IDColor2) ||
-                         m.HasProperty(IDColorMult) || m.HasProperty("_MainTex"));
-        }
-
-        static void SetMaterialAlpha(Material m, float alpha)
-        {
-            if (m == null) return;
-
-            // Try common properties in priority order
-            if (m.HasProperty(IDBaseColor))
+            void CloakList(List<Prism> list)
             {
-                var c = m.GetColor(IDBaseColor); c.a = alpha; m.SetColor(IDBaseColor, c); return;
-            }
-            if (m.HasProperty(IDColor))
-            {
-                var c = m.GetColor(IDColor); c.a = alpha; m.SetColor(IDColor, c); return;
-            }
-            if (m.HasProperty(IDColor1))
-            {
-                var c = m.GetColor(IDColor1); c.a = alpha; m.SetColor(IDColor1, c); return;
-            }
-            if (m.HasProperty(IDColor2))
-            {
-                var c = m.GetColor(IDColor2); c.a = alpha; m.SetColor(IDColor2, c); return;
-            }
-            if (m.HasProperty(IDColorMult))
-            {
-                m.SetFloat(IDColorMult, alpha); return;
-            }
-
-            // Fallback: if it has _Color at all
-            if (m.HasProperty("_Color"))
-            {
-                var c = m.GetColor("_Color"); c.a = alpha; m.SetColor("_Color", c);
+                if (list == null) return;
+                for (int i = 0; i < list.Count; i++)
+                    ApplyPrismCloakTo(list[i]);
             }
         }
 
-        // ===== Utils =====
-
-        Prism GetLatestBlock()
+        private void ApplyPrismCloakTo(Prism prism)
         {
-            var listA = controller?.Trail?.TrailList;
+            if (!_so || !_so.PrismCloakMaterial || !prism) return;
+
+            if (!_prismRenderers.TryGetValue(prism, out var renderers) || renderers == null || renderers.Length == 0)
+            {
+                renderers = prism.GetComponentsInChildren<Renderer>(true);
+                _prismRenderers[prism] = renderers;
+            }
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var r = renderers[i];
+                if (!r) continue;
+
+                if (!_cloakedPrismRenderers.ContainsKey(r))
+                    _cloakedPrismRenderers[r] = r.sharedMaterials; // cache originals (shared)
+
+                int slots = r.sharedMaterials?.Length ?? 1;
+                r.sharedMaterials = GetCloakArray(slots, _so.PrismCloakMaterial);
+            }
+        }
+
+        private void RestoreAllPrismMaterials()
+        {
+            if (_cloakedPrismRenderers.Count > 0)
+            {
+                foreach (var kv in _cloakedPrismRenderers)
+                {
+                    var r = kv.Key;
+                    if (!r) continue;
+                    var originals = kv.Value;
+                    if (originals != null) r.sharedMaterials = originals;
+                }
+                _cloakedPrismRenderers.Clear();
+            }
+
+            _prismRenderers.Clear();
+            _protectedBlockIds.Clear();
+        }
+        
+        private void ReapplyCloakIfNeeded()
+        {
+            if (!_so) return;
+
+            // Ship
+            if (skinnedMeshRenderer && _originalShipMats != null && _so.ShipCloakMaterial)
+            {
+                var mats = skinnedMeshRenderer.sharedMaterials;
+                if (!AllAreCloak(mats, _so.ShipCloakMaterial))
+                    skinnedMeshRenderer.sharedMaterials = GetCloakArray(_originalShipMats.Length, _so.ShipCloakMaterial);
+            }
+
+            // Prisms
+            if (_so.PrismCloakMaterial)
+            {
+                foreach (var kv in _cloakedPrismRenderers)
+                {
+                    var r = kv.Key;
+                    if (!r) continue;
+                    var mats = r.sharedMaterials;
+                    if (!AllAreCloak(mats, _so.PrismCloakMaterial))
+                    {
+                        int slots = mats?.Length ?? 1;
+                        r.sharedMaterials = GetCloakArray(slots, _so.PrismCloakMaterial);
+                    }
+                }
+            }
+        }
+
+        // ===== Helpers =====
+        private Material[] GetCloakArray(int slots, Material cloak)
+        {
+            if (slots <= 0) slots = 1;
+            if (_cloakArrayBySlots.TryGetValue(slots, out var arr)) return arr;
+
+            var a = new Material[slots];
+            for (int i = 0; i < slots; i++) a[i] = cloak;
+            _cloakArrayBySlots[slots] = a;
+            return a;
+        }
+
+        private static bool AllAreCloak(Material[] mats, Material cloak)
+        {
+            if (mats == null || mats.Length == 0) return false;
+            for (int i = 0; i < mats.Length; i++) if (mats[i] != cloak) return false;
+            return true;
+            }
+
+        private Prism GetLatestBlock()
+        {
+            var listA = _controller?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
-            // compatibility with private Trail2 field (as in original)
-            var trail2Field = typeof(Game.VesselPrismController).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
-            var trail2 = trail2Field?.GetValue(controller) as Trail;
+            var trail2Field = typeof(VesselPrismController).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
+            var trail2 = trail2Field?.GetValue(_controller) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
             return null;
-        }
-
-        Transform GetShipFollowTransform()
-        {
-            return _status?.ShipTransform != null ? _status.ShipTransform : null;
-        }
-
-        bool IsLocalPlayerShip()
-        {
-            return _status != null && _status.IsOwnerClient;
-        }
-
-        Quaternion ComputeGhostRotation()
-        {
-            var shipTf = _status?.ShipTransform;
-            var shipUp = shipTf ? shipTf.up : Vector3.up;
-            var course = _status?.Course ?? Vector3.zero;
-
-            if (course.sqrMagnitude > 0.0001f)
-                return Quaternion.LookRotation(course.normalized, shipUp);
-
-            return shipTf ? shipTf.rotation : Quaternion.identity;
         }
     }
 }
