@@ -13,22 +13,15 @@ using Obvious.Soap;
 
 namespace CosmicShore.Game
 {
-    /// <summary>
-    /// Minimal, robust session setup with clean leave for both host & clients.
-    /// - Do NOT call LeaveSession() from OnClientDisconnect (prevents cycles).
-    /// - Centralized teardown in LeaveSession().
-    /// - Host: deletes session (simple & predictable).
-    /// - Client: leaves session.
-    /// - Uses a guard flag so our own leave doesn't re-trigger logic via NGO callbacks.
-    /// </summary>
     public class MultiplayerSetup : Singleton<MultiplayerSetup>
     {
-        public const string PLAYER_NAME_PROPERTY_KEY = "playerName";
+        const string PLAYER_NAME_PROPERTY_KEY = "playerName";
+        const string GAME_MODE_PROPERTY_KEY = "gameMode";
+        const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
 
         [SerializeField] private MiniGameDataSO miniGameData;
         [SerializeField] private ScriptableEventNoParam OnActiveSessionEnd;
 
-        // Guard to avoid double-handling when our own LeaveAsync/DeleteAsync triggers NGO disconnect
         private bool _leaving;
 
         private void OnEnable()
@@ -72,7 +65,7 @@ namespace CosmicShore.Game
                 NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
             }
         }
-        
+
         // --------------------------
         // Session Bootstrapping
         // --------------------------
@@ -80,27 +73,40 @@ namespace CosmicShore.Game
         private async UniTaskVoid ExecuteMultiplayerSetup()
         {
             var sessions = await QuerySessions();
+
             if (sessions != null && sessions.Any())
-                await JoinSessionAsClientById(sessions.First().Id);
+            {
+                var matchedSession = sessions.FirstOrDefault();
+                if (matchedSession != null)
+                    await JoinSessionAsClientById(matchedSession.Id);
+                else
+                    await StartSessionAsHost();
+            }
             else
+            {
                 await StartSessionAsHost();
+            }
         }
 
         private async UniTask StartSessionAsHost()
         {
             var playerProperties = await GetPlayerProperties();
+            var sessionProperties = GetSessionProperties();
 
+            // Add game mode as session metadata
             var sessionOpts = new SessionOptions
             {
                 MaxPlayers = miniGameData.SelectedPlayerCount.Value,
                 IsLocked = false,
                 IsPrivate = false,
                 PlayerProperties = playerProperties,
+                SessionProperties = sessionProperties
             }.WithRelayNetwork();
 
             miniGameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
             miniGameData.InvokeSessionStarted();
-            Debug.Log($"[MultiplayerSetup] Created session {miniGameData.ActiveSession.Id}");
+
+            Debug.Log($"[MultiplayerSetup] Created session {miniGameData.ActiveSession.Id} with GameMode = {miniGameData.GameMode}");
         }
 
         private async UniTask JoinSessionAsClientById(string sessionId)
@@ -109,16 +115,29 @@ namespace CosmicShore.Game
 
             var joinOpts = new JoinSessionOptions
             {
-                PlayerProperties = playerProperties,
+                PlayerProperties = playerProperties
             };
 
             Debug.Log($"[MultiplayerSetup] Joining session {sessionId}");
             miniGameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
         }
 
+        // --------------------------
+        // Query Sessions (filtered by GameMode)
+        // --------------------------
         private async UniTask<IList<ISessionInfo>> QuerySessions()
         {
-            var results = await MultiplayerService.Instance.QuerySessionsAsync(new QuerySessionsOptions());
+            var gameModeString = miniGameData.GameMode.ToString();
+            var maxPlayers = miniGameData.SelectedPlayerCount.Value.ToString();
+
+            var filterOption1 = new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal);
+            var filterOption2 = new FilterOption(FilterField.StringIndex2, maxPlayers, FilterOperation.Equal);
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.Add(filterOption1);
+            queryOptions.FilterOptions.Add(filterOption2);
+
+            var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+            Debug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
             return results.Sessions;
         }
 
@@ -141,26 +160,21 @@ namespace CosmicShore.Game
             if (NetworkManager.Singleton == null)
                 return;
 
-            // If we're currently performing a self-initiated leave, ignore disconnect noise.
             if (_leaving)
                 return;
 
-            // HOST: a client disconnected; keep running.
             if (NetworkManager.Singleton.IsHost)
             {
                 if (clientId != NetworkManager.Singleton.LocalClientId)
                 {
                     Debug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
-                    // Optional: notify gameplay systems/UI here
                 }
                 return;
             }
 
-            // CLIENT: if the local client got disconnected, host is gone / connection lost → go to menu.
             if (clientId == NetworkManager.Singleton.LocalClientId)
             {
                 Debug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
-                // DO NOT call LeaveSession() here to avoid cycles.
                 OnActiveSessionEnd?.Raise();
             }
         }
@@ -168,28 +182,30 @@ namespace CosmicShore.Game
         // --------------------------
         // Player Properties
         // --------------------------
-
         private async UniTask<Dictionary<string, PlayerProperty>> GetPlayerProperties()
         {
             var playerName = await AuthenticationService.Instance.GetPlayerNameAsync();
+
             return new Dictionary<string, PlayerProperty>
             {
-                { PLAYER_NAME_PROPERTY_KEY, new PlayerProperty(playerName, VisibilityPropertyOptions.Member) }
+                { PLAYER_NAME_PROPERTY_KEY, new PlayerProperty(playerName, VisibilityPropertyOptions.Member) },
+            };
+        }
+
+        private Dictionary<string, SessionProperty> GetSessionProperties()
+        {
+            string gameMode = miniGameData.GameMode.ToString();
+            string maxPlayers = miniGameData.SelectedPlayerCount.Value.ToString();
+            return new Dictionary<string, SessionProperty>
+            {
+                { GAME_MODE_PROPERTY_KEY, new SessionProperty(gameMode, VisibilityPropertyOptions.Public, PropertyIndex.String1)},
+                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
             };
         }
 
         // --------------------------
         // Public Leave Entry Point
         // --------------------------
-
-        /// <summary>
-        /// Centralized, safe leave:
-        /// - Host: Delete session (simple/consistent).
-        /// - Client: Leave session.
-        /// - Shutdown NGO once.
-        /// - Return to main menu.
-        /// This leaves everything clean so the player can create/join again later in this runtime.
-        /// </summary>
         public async UniTask LeaveSession()
         {
             if (_leaving)
@@ -203,7 +219,6 @@ namespace CosmicShore.Game
                 {
                     if (miniGameData.ActiveSession.IsHost)
                     {
-                        // End session for everyone; clients will receive disconnect and return to menu.
                         await miniGameData.ActiveSession.AsHost().DeleteAsync();
                         Debug.Log("[MultiplayerSetup] Host deleted session.");
                     }
@@ -222,13 +237,10 @@ namespace CosmicShore.Game
             {
                 miniGameData.ActiveSession = null;
 
-                // Local transport cleanup
                 if (NetworkManager.Singleton)
                     NetworkManager.Singleton.Shutdown();
 
-                // Back to menu UI/flow
                 OnActiveSessionEnd?.Raise();
-
                 _leaving = false;
             }
         }

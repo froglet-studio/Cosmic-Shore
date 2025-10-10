@@ -15,7 +15,6 @@ namespace CosmicShore.Game.Arcade
     public abstract class MiniGameControllerBase : NetworkBehaviour
     {
         [Header("Config")]
-        [SerializeField] protected GameModes gameMode;
         [SerializeField] protected int numberOfRounds = int.MaxValue;
         [SerializeField] protected int numberOfTurnsPerRound = 1;
         
@@ -38,9 +37,6 @@ namespace CosmicShore.Game.Arcade
         protected void Initialize()
         {
             miniGameData.InitializeMiniGame();
-            
-            // GameMode should already be assigned when user chooses in main menu
-            miniGameData.GameMode = gameMode;   
         }
 
         protected virtual void OnReadyClicked_()
