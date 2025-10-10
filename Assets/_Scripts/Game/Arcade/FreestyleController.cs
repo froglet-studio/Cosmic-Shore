@@ -43,9 +43,6 @@ namespace CosmicShore.Game.Arcade
             if (resetEnvironmentOnEachTurn) 
                 ResetEnvironment();
             
-            if (gameMode == GameModes.Freestyle) 
-                FTUEEventManager.RaiseGameModeStarted(GameModes.Freestyle);
-            
             base.OnCountdownTimerEnded();
         }
 
