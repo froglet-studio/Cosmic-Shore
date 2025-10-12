@@ -223,9 +223,6 @@ namespace CosmicShore.Game
                 if (!VesselStatus.CameraFollowTarget) 
                     VesselStatus.CameraFollowTarget = transform;
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
-                    
-                // TODO - Temp disabled, for testing.
-                /*VesselStatus.Customization.Initialize(VesselStatus);*/
 
                 if (VesselStatus.NearFieldSkimmer)
                     VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
@@ -240,6 +237,7 @@ namespace CosmicShore.Game
                 onBottomEdgeButtonsEnabled.Raise(true);
             }
             
+            VesselStatus.Customization.Initialize(VesselStatus);
             VesselStatus.ActionHandler.Initialize(VesselStatus, IsOwner);
         }
         

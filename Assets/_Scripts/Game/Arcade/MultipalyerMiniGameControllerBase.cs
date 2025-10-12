@@ -16,7 +16,7 @@ namespace CosmicShore.Game.Arcade
         /// <summary>
         /// Delay (ms) before Initialize() is called after NetworkSpawn (server only).
         /// </summary>
-        protected virtual int InitDelayMs => 1000;
+        int initDelayMs => 1000;
         
         public override void OnNetworkSpawn()
         {
@@ -25,7 +25,6 @@ namespace CosmicShore.Game.Arcade
             
             miniGameData.OnMiniGameTurnEnd += EndTurn;
             miniGameData.OnSessionStarted += SubscribeToSessionEvents;
-            
             
             InitializeAfterDelay().Forget();
         }
@@ -60,7 +59,7 @@ namespace CosmicShore.Game.Arcade
         {
             try
             {
-                await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                await UniTask.Delay(initDelayMs, DelayType.UnscaledDeltaTime);
                 Initialize();
             }
             catch (OperationCanceledException)
@@ -71,8 +70,8 @@ namespace CosmicShore.Game.Arcade
         
         protected override void OnCountdownTimerEnded()
         {
-            miniGameData.SetPlayersActiveForMultiplayer();
-            miniGameData.StartNewGame();
+            miniGameData.StartNewGame(); // For this client only.
+            OnCountdownTimerEnded_ServerRpc();
             
             // Matches your original Duel behavior: only server starts the game and resets counters.
             if (!IsServer)
@@ -80,6 +79,18 @@ namespace CosmicShore.Game.Arcade
 
             roundsPlayed = 0;
             turnsTakenThisRound = 0;
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void OnCountdownTimerEnded_ServerRpc()
+        {
+            OnCountdownTimerEnded_ClientRpc();
+        }
+
+        [ClientRpc]
+        void OnCountdownTimerEnded_ClientRpc()
+        {
+            miniGameData.SetPlayersActiveForMultiplayer();
         }
         
         protected override void EndGame()
