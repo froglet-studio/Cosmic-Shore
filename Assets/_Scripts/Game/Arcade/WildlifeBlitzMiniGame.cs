@@ -4,8 +4,8 @@ namespace CosmicShore.Game.Arcade
 {
     public class WildlifeBlitzMiniGame : MiniGame
     {
-        [SerializeField] Crystal Crystal;
-        [SerializeField] Vector3 CrystalStartPosition;
+        // [SerializeField] Crystal Crystal;
+        // [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] Cell node;
 
         [SerializeField] SO_CellType Intensity1Cell;
@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade
             base.SetupTurn();
 
             // VesselPrismController.ClearTrails();
-            Crystal.transform.position = CrystalStartPosition;
+            // Crystal.transform.position = CrystalStartPosition;
 
         }
     }

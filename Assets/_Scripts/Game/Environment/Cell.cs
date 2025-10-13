@@ -94,7 +94,7 @@ namespace CosmicShore.Game
             membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
             nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
             SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
-            SnowChanger.Initialize(Crystal);
+            SnowChanger.Initialize(Crystal.transform, Crystal.sphereRadius);
             SnowChanger.SetOrigin(transform.position);
 
             teamVolumes.Add(Domains.Jade, 0);

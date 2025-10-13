@@ -60,7 +60,7 @@ namespace CosmicShore.Game
 
                 // Make sure it builds its lattice right away (Crystal can be null)
                 sc.SetOrigin(pos);
-                sc.Initialize(null);
+                sc.Initialize(null, 1);
 
                 // if (aimAtTarget)
                 // {

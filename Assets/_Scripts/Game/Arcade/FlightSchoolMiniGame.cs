@@ -4,7 +4,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class FlightSchoolMiniGame : MiniGame
     {
-        [SerializeField] Crystal Crystal;
+        // [SerializeField] Crystal Crystal;
         [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] Vector3 CrystalStartScale = Vector3.one;
         [SerializeField] SegmentSpawner SegmentSpawner;
@@ -13,9 +13,9 @@ namespace CosmicShore.Game.Arcade
         {
             base.Start();
 
-            Crystal.transform.position = CrystalStartPosition;
+            /*Crystal.transform.position = CrystalStartPosition;
             Crystal.transform.localScale = CrystalStartScale;
-            Crystal.SetOrigin(CrystalStartPosition);
+            Crystal.SetOrigin(CrystalStartPosition);*/
 
             SegmentSpawner.Seed = new System.Random().Next();
             SegmentSpawner.NumberOfSegments = IntensityLevel * 2 - 1;
@@ -46,7 +46,7 @@ namespace CosmicShore.Game.Arcade
         protected override void SetupTurn()
         {
             base.SetupTurn();
-            Crystal.transform.position = CrystalStartPosition;
+            // Crystal.transform.position = CrystalStartPosition;
             ActivePlayer.Vessel.DisableSkimmer();
         }
     }

@@ -6,13 +6,13 @@ namespace CosmicShore.Game.Arcade
     // TODO - DEPRECATED SCRIPT, Use FreestyleController instead
     public class CourseMiniGame : MiniGame
     {
-        [SerializeField] Crystal Crystal;
-        [SerializeField] Vector3 CrystalStartPosition;
+        // [SerializeField] Crystal Crystal;
+        // [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] SegmentSpawner SegmentSpawner;
         [SerializeField] int numberOfSegments = 10;
         [SerializeField] int straightLineLength = 400;
         [SerializeField] bool ResetTrails = true;
-        [SerializeField] bool ScaleCrystalPositionWithIntensity; 
+        // [SerializeField] bool ScaleCrystalPositionWithIntensity; 
         [SerializeField] bool ScaleLengthWithIntensity = true;
         [SerializeField] bool ScaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] SpawnableHelix helix;
@@ -37,10 +37,10 @@ namespace CosmicShore.Game.Arcade
                 InitializeTrails();
             }
 
-            if (gameMode == GameModes.Freestyle)
+            /*if (gameMode == GameModes.Freestyle)
             {
                 FTUEEventManager.RaiseGameModeStarted(GameModes.Freestyle);
-            }
+            }*/
         }
 
         protected override void SetupTurn()
@@ -59,8 +59,8 @@ namespace CosmicShore.Game.Arcade
             if (ScaleLengthWithIntensity) SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
 
             // VesselPrismController.ClearTrails();
-            if (ScaleCrystalPositionWithIntensity) Crystal.transform.position = IntensityLevel * CrystalStartPosition;
-            else Crystal.transform.position = CrystalStartPosition;
+            /*if (ScaleCrystalPositionWithIntensity) Crystal.transform.position = IntensityLevel * CrystalStartPosition;
+            else Crystal.transform.position = CrystalStartPosition;*/
 
             SegmentSpawner.Initialize();
         }
