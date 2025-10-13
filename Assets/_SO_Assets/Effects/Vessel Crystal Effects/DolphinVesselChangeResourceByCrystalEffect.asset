@@ -15,4 +15,4 @@ MonoBehaviour:
   _change:
     _resourceIndex: 0
     _resourceAmount: 0
-    _overrideAmount: 0
+    _overrideAmount: 1

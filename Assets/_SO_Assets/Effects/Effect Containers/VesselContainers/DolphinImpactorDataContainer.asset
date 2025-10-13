@@ -13,10 +13,7 @@ MonoBehaviour:
   m_Name: DolphinImpactorDataContainer
   m_EditorClassIdentifier: 
   vesselPrismEffects:
-  - {fileID: 11400000, guid: 222210e40a351d5258b1ce66220b8453, type: 2}
   - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
-  - {fileID: 11400000, guid: f64dc3a063825374387ffbce03d4a06a, type: 2}
-  - {fileID: 11400000, guid: ac862d73e3ada036cb8a50fe6bb55e81, type: 2}
   - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
   vesselCrystalEffects:
   - {fileID: 11400000, guid: 8fdf52ab1fa182748bd5f3a54a309d64, type: 2}
