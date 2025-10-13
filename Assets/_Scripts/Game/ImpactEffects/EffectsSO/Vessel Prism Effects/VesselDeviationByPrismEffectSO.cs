@@ -1,50 +1,44 @@
-﻿using System.Collections.Generic;
+﻿using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "VesselDeviationByPrismEffect",
+    [CreateAssetMenu(
+        fileName = "VesselDeviationByPrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselDeviationByPrismEffectSO")]
     public class VesselDeviationByPrismEffectSO : VesselPrismEffectSO
     {
-        [Header("Deviation")]
-        [SerializeField] private float deviationAngle;  
-        [Range(0.05f, 0.95f)]
-        [SerializeField] private float slerpBlend;     
+        [Header("Lateral Bounce")]
+        [SerializeField] private float lateralSpeed = 5f;   
+        [SerializeField] private float accelScale  = 15f;    
+        [SerializeField, Tooltip("If true, choose left or right randomly each hit.")]
+        private bool randomizeLeftRight = true;
 
-        [SerializeField] private float cooldownSeconds;
-
-        private static readonly Dictionary<int, float> _lastAppliedAt = new();
-
-        public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
+        public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
-            var status = impactor?.Vessel?.VesselStatus;
-            if (status == null || status.IsStationary) return;
+            if (vesselImpactor?.Vessel == null) return;
 
-            var t = status.ShipTransform;
-            if (t == null) return;
+            IVesselStatus vesselStatus = vesselImpactor.Vessel.VesselStatus;
+            if (vesselStatus == null || vesselStatus.IsStationary) return;
 
-            var id = t.GetInstanceID();
-            var now = Time.time;
-            if (_lastAppliedAt.TryGetValue(id, out float lastTime))
-            {
-                if (now - lastTime < Mathf.Max(0f, cooldownSeconds)) return;
-            }
-            _lastAppliedAt[id] = now;
+            Transform shipTransform = vesselStatus.ShipTransform;
+            if (shipTransform == null) return;
 
-            var sign = (Random.value < 0.5f) ? -1f : 1f;
-            var angle = deviationAngle * sign;
+            Transform prismTf = prismImpactee.Prism.prismProperties.prism.transform;
+            var cross   = Vector3.Cross(shipTransform.forward, prismTf.forward);
+            var normal  = Quaternion.AngleAxis(90f, cross) * prismTf.forward;
+            
+            var reflectRight = Vector3.Reflect(shipTransform.right, normal).normalized;
+            var reflectUp    = Vector3.Reflect(shipTransform.up,    normal).normalized;
 
-            /*if (scaleAngleBySpeed)
-            {
-                float k = Mathf.Clamp01(speedForFullAngle > 0f ? status.Speed / speedForFullAngle : 1f);
-                angle *= k;
-            }*/
+            Vector3 lateralDir = reflectRight;
+            if (randomizeLeftRight && Random.value < 0.5f)
+                lateralDir = -lateralDir;
 
-            var target = Quaternion.AngleAxis(angle, t.up) * t.rotation;
+            var newForward = Vector3.Cross(reflectUp, lateralDir).normalized;
 
-            var blend = Mathf.Clamp01(slerpBlend);
-            t.rotation = Quaternion.Slerp(t.rotation, target, blend);
+            vesselStatus.VesselTransformer.GentleSpinShip(newForward, reflectUp, 1f);
+            vesselStatus.VesselTransformer.ModifyVelocity(lateralDir * lateralSpeed, Time.deltaTime * accelScale);
         }
     }
 }
