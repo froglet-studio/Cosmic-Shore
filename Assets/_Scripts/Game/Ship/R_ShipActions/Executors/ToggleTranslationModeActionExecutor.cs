@@ -32,14 +32,14 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
             seedAssemblerExecutor = _registry.Get<SeedAssemblerActionExecutor>();
     }
 
-    public void Toggle(ToggleStationaryModeActionSO so, IVessel ship, IVesselStatus status)
+    public void Toggle(ToggleTranslationModeActionSO so, IVessel ship, IVesselStatus status)
     {
         if (!so || status == null) return;
 
         status.IsTranslationRestricted = !status.IsTranslationRestricted;
         bool isOn = status.IsTranslationRestricted;
 
-        if (so.StationaryMode == ToggleStationaryModeActionSO.Mode.Serpent && seedAssemblerExecutor)
+        if (so.StationaryMode == ToggleTranslationModeActionSO.Mode.Serpent && seedAssemblerExecutor)
         {
             if (isOn)
             {
