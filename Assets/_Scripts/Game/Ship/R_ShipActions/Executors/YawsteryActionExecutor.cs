@@ -174,7 +174,7 @@ public sealed class YawsteryActionExecutor : ShipActionExecutorBase
     void ApplyYawThisFrame(float intensity01)
     {
         if (vesselTransformer == null || _status == null || _ship == null) return;
-        if (_status.IsStationary) return;
+        if (_status.IsTranslationRestricted) return;
 
         float speedFactor = Mathf.Pow(1f + Mathf.Max(0f, _status.Speed) * 0.01f, _so.SpeedExp);
         float yawPerSec = _so.MaxYawDegPerSec * Mathf.Max(0.0f, _so.SpeedScale) * speedFactor;

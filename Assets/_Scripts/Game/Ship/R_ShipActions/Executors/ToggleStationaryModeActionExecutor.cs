@@ -34,21 +34,16 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
 
     public void Toggle(ToggleStationaryModeActionSO so, IVessel ship, IVesselStatus status)
     {
-        if (so == null || status == null) return;
+        if (!so || status == null) return;
 
-        status.IsStationary = !status.IsStationary;
-        bool isOn = status.IsStationary;
+        status.IsTranslationRestricted = !status.IsTranslationRestricted;
+        bool isOn = status.IsTranslationRestricted;
 
-        if (so.StationaryMode == ToggleStationaryModeActionSO.Mode.Serpent && seedAssemblerExecutor != null)
+        if (so.StationaryMode == ToggleStationaryModeActionSO.Mode.Serpent && seedAssemblerExecutor)
         {
             if (isOn)
             {
-                bool seeded;
-
-                if (stationarySeedConfig)
-                    seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status);
-                else
-                    seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status); 
+                var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status); 
 
                 vesselPrismController?.PauseTrailSpawner();
 
@@ -63,7 +58,6 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
         }
         else
         {
-            // Non-Serpent modes: just pause/resume trail spawner
             if (isOn) vesselPrismController?.PauseTrailSpawner();
             else      vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
         }
