@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9bc2ac2270e40ad953884c85aada2d1, type: 3}
+  m_Name: NotificationSettings
+  m_EditorClassIdentifier: 
+  startY: 80
+  showY: 0
+  exitY: 80
+  inDuration: 0.2
+  holdDuration: 1.25
+  outDuration: 0.2
+  useUnscaledTime: 1
+  inEase: 9
+  outEase: 8
+  fade: 1
+  startAlpha: 0
+  endAlpha: 1
+  scale: 0
+  startScale: {x: 0.98, y: 0.98, z: 0.98}
+  endScale: {x: 1, y: 1, z: 1}
+  maxQueue: 3

@@ -3,7 +3,7 @@ using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
 
-public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
+public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
 {
     [Header("Scene Refs")]
     [SerializeField] private VesselPrismController vesselPrismController;
@@ -13,7 +13,7 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
     [SerializeField] private SeedWallActionSO stationarySeedConfig;
 
     [Header("Events")]
-    [SerializeField] private ScriptableEventBool stationaryModeChanged; // <- NEW
+    [SerializeField] private ScriptableEventBool stationaryModeChanged;
 
     IVessel _ship;
     IVesselStatus _status;
@@ -37,7 +37,7 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
         if (!so || status == null) return;
 
         status.IsTranslationRestricted = !status.IsTranslationRestricted;
-        bool isOn = status.IsTranslationRestricted;
+        var isOn = status.IsTranslationRestricted;
 
         if (so.StationaryMode == ToggleTranslationModeActionSO.Mode.Serpent && seedAssemblerExecutor)
         {
@@ -55,8 +55,16 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
         }
         else
         {
-            if (isOn) vesselPrismController?.PauseTrailSpawner();
-            else      vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
+            if (isOn)
+            {
+                CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Prism Guns Activated");
+                vesselPrismController?.PauseTrailSpawner();
+            }
+            else
+            {
+                CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Auto Guns Activated");
+                vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
+            }
         }
 
         stationaryModeChanged?.Raise(isOn);
