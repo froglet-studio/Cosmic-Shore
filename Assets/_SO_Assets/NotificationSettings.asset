@@ -12,12 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9bc2ac2270e40ad953884c85aada2d1, type: 3}
   m_Name: NotificationSettings
   m_EditorClassIdentifier: 
-  startY: 80
-  showY: 0
-  exitY: 80
-  inDuration: 0.2
-  holdDuration: 1.25
-  outDuration: 0.2
+  inFrom: 0
+  outTo: 0
+  inPadding: 24
+  outPadding: 24
+  inDuration: 0.3
+  holdDuration: 3
+  outDuration: 0.3
   useUnscaledTime: 1
   inEase: 9
   outEase: 8
