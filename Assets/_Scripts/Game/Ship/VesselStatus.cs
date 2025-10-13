@@ -225,6 +225,7 @@ namespace CosmicShore.Game
         public bool SingleStickControls { get; set; }
         public bool LiveProjectiles { get; set; }
         public bool IsStationary { get; set; }
+        public bool IsTranslationRestricted { get; set; }
         public bool AlignmentEnabled { get; set; }
         public bool Slowed { get; set; }
         public bool Overheating { get; set; }
