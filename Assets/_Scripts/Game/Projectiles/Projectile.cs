@@ -127,7 +127,7 @@ namespace CosmicShore.Game.Projectiles
             if (_factory != null)
                 _factory.ReturnProjectile(this);
             else
-                Destroy(gameObject); // fallback in case factory missing
+                Destroy(gameObject);
         }
         #endregion
     }

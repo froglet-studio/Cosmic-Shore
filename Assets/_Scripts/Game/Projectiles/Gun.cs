@@ -63,7 +63,7 @@ namespace CosmicShore.Game.Projectiles
                     break;
             }
 
-            StartCoroutine(CooldownCoroutine());
+            if (!ignoreCooldown) StartCoroutine(CooldownCoroutine());
         }
 
         public void StopProjectile()
@@ -155,10 +155,10 @@ namespace CosmicShore.Game.Projectiles
 
             Quaternion rotation = Quaternion.LookRotation(direction);
 
-            var projectile = projectileFactory.GetProjectile(energy, spawnPos, rotation,
-                containerTransform != null ? containerTransform : null);
+            var projectile = projectileFactory.GetProjectile(energy, spawnPos, rotation, null);
+                // containerTransform != null ? containerTransform : null);
 
-            if (projectile == null)
+            if (!projectile)
             {
                 Debug.LogError($"Gun.FireSingle - Failed to spawn projectile of charge {projectile.Charge}");
                 return;
@@ -179,6 +179,7 @@ namespace CosmicShore.Game.Projectiles
             yield return new WaitForSeconds(firePeriod);
             _onCooldown = false;
         }
+
         #endregion
     }
 }

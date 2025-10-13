@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ammoIndex: 0
   ammoCost: 0
-  inherit: 1
+  inherit: 0
   projectileScale: 1
   firingRate: 30
   projectileTime: 0.3

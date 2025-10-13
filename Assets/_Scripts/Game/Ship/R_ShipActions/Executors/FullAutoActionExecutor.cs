@@ -26,7 +26,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     public void Begin(FullAutoActionSO so)
     {
-        if (_loop != null || gun == null) return;
+        if (_loop != null || !gun) return;
         _loop = StartCoroutine(FireLoop(so));
     }
 
@@ -39,33 +39,31 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     IEnumerator FireLoop(FullAutoActionSO so)
     {
-        float interval = 1f / Mathf.Max(0.01f, so.FiringRate);
+        float dt = 1f / Mathf.Max(0.01f, so.FiringRate);
+        float acc = 0f;
+
         while (true)
         {
-            var res = _resources.Resources[so.AmmoIndex];
-            if (res.CurrentAmount >= so.AmmoCost)
+            acc += Time.deltaTime;
+            while (acc >= dt)
             {
-                var mz = (muzzles != null && muzzles.Length > 0) ? muzzles : new[] { gun.transform };
-                foreach (var t in mz)
+                var res = _resources.Resources[so.AmmoIndex];
+                if (res.CurrentAmount >= so.AmmoCost)
                 {
-                    Vector3 inheritVel = Vector3.zero;
-                    if (so.Inherit)
-                        inheritVel = _status.Attached ? t.forward : _status.Course;
+                    var inheritVel = so.Inherit ? _status.Course * _status.Speed : Vector3.zero;
 
-                    gun.FireGun(
-                        t,
-                        so.SpeedValue.Value,
-                        inheritVel * _status.Speed,
-                        so.ProjectileScale,
-                        true,
-                        so.ProjectileTime,
-                        0,
-                        so.FiringPattern,
-                        so.Energy);
+                    // fire both muzzles in the SAME tick
+                    for (int i = 0; i < muzzles.Length; i++)
+                        gun.FireGun(muzzles[i], so.SpeedValue.Value, inheritVel,
+                            so.ProjectileScale, true, so.ProjectileTime, 0, so.FiringPattern, so.Energy);
+
+                    _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
                 }
-                _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
+
+                acc -= dt;
             }
-            yield return new WaitForSeconds(interval);
+
+            yield return null;
         }
     }
 }
