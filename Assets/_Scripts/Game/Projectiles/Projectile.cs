@@ -1,5 +1,7 @@
-using System.Collections;
+using System;
+using System.Threading;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 
 namespace CosmicShore.Game.Projectiles
@@ -27,9 +29,11 @@ namespace CosmicShore.Game.Projectiles
         public IVesselStatus VesselStatus { get; private set; }
 
         private MeshRenderer meshRenderer;
-        private Coroutine moveCoroutine;
 
-        // New: Factory reference instead of PoolManager
+        // Replaces Coroutine
+        private CancellationTokenSource _moveCts;
+
+        // Factory reference
         private ProjectileFactory _factory;
 
         private void Awake()
@@ -54,13 +58,8 @@ namespace CosmicShore.Game.Projectiles
             OwnDomain = ownDomain;
             VesselStatus = vesselStatus;
             Charge = charge;
-
-            if (TryGetComponent(out Gun gun) && VesselStatus != null)
-            {
-                gun.Initialize(VesselStatus);
-            }
         }
-        
+
         public void SetType(ProjectileType type) => Type = type;
         #endregion
 
@@ -77,45 +76,65 @@ namespace CosmicShore.Game.Projectiles
             if (spike)
             {
                 transform.localScale = new Vector3(0.4f, 0.4f, 2f);
-                GetComponent<MeshRenderer>().material.SetFloat("_Opacity", 0.5f);
+                /*if (meshRenderer == null)
+                    meshRenderer = GetComponent<MeshRenderer>();*/
+                meshRenderer.material.SetFloat("_Opacity", 0.5f);
             }
 
-            if (moveCoroutine != null)
-                StopCoroutine(moveCoroutine);
+            Stop(); // Stop any running movement before starting a new one
 
-            moveCoroutine = StartCoroutine(MoveProjectileCoroutine(projectileTime));
+            _moveCts = new CancellationTokenSource();
+            MoveProjectileAsync(projectileTime, _moveCts.Token).Forget();
         }
 
-        private IEnumerator MoveProjectileCoroutine(float projectileTime)
+        private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
         {
             float elapsedTime = 0f;
-            while (elapsedTime < projectileTime)
-            {
-                // Calculate movement this frame
-                Vector3 moveDistance = Velocity * (Time.deltaTime * Mathf.Cos(elapsedTime * Mathf.PI / (2 * projectileTime)));
-                transform.position += moveDistance;
+            var t = transform; // cache for speed
+            var useSpike = spike && meshRenderer;
+            var mat = useSpike ? meshRenderer.material : null;
 
-                if (spike)
+            try
+            {
+                while (elapsedTime < projectileTime && !token.IsCancellationRequested)
                 {
-                    float percentRemaining = elapsedTime / projectileTime;
-                    if (percentRemaining > 0.9f && meshRenderer != null)
-                        meshRenderer.material.SetFloat("_Opacity", 1 - Mathf.Pow(percentRemaining, 4));
+                    float deltaTime = Time.deltaTime;
+
+                    // smoother trajectory tapering using cosine falloff
+                    float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
+                    t.position += Velocity * (deltaTime * factor);
+
+                    if (useSpike)
+                    {
+                        float percentRemaining = elapsedTime / projectileTime;
+                        if (percentRemaining > 0.9f)
+                            mat.SetFloat("_Opacity", 1f - Mathf.Pow(percentRemaining, 4f));
+                    }
+
+                    elapsedTime += deltaTime;
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
                 }
 
-                elapsedTime += Time.deltaTime;
-                yield return null;
+                projectileImpactor.ExecuteEndEffects();
+                ReturnToFactory();
             }
-
-            projectileImpactor.ExecuteEndEffects();
-            ReturnToFactory();
+            catch (OperationCanceledException)
+            {
+                // expected when stopped manually
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Projectile] Move loop error: {ex}");
+            }
         }
 
         public void Stop()
         {
-            if (moveCoroutine != null)
+            if (_moveCts != null)
             {
-                StopCoroutine(moveCoroutine);
-                moveCoroutine = null;
+                _moveCts.Cancel();
+                _moveCts.Dispose();
+                _moveCts = null;
             }
         }
         #endregion
@@ -124,7 +143,7 @@ namespace CosmicShore.Game.Projectiles
         public void ReturnToFactory()
         {
             Stop();
-            if (_factory != null)
+            if (_factory)
                 _factory.ReturnProjectile(this);
             else
                 Destroy(gameObject);

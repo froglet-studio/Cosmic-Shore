@@ -16,7 +16,7 @@ MonoBehaviour:
   ammoCost: 0
   inherit: 0
   projectileScale: 1
-  firingRate: 30
+  firingRate: 40
   projectileTime: 0.3
   firingPattern: 0
   energy: 0

@@ -62,7 +62,7 @@ namespace CosmicShore.Game.Projectiles
 
         public void ReturnProjectile(Projectile projectile)
         {
-            if (projectile == null) return;
+            if (!projectile) return;
             
             if (!_pools.TryGetValue(projectile.Type, out var pool))
             {

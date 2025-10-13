@@ -155,8 +155,8 @@ namespace CosmicShore.Game.Projectiles
 
             Quaternion rotation = Quaternion.LookRotation(direction);
 
-            var projectile = projectileFactory.GetProjectile(energy, spawnPos, rotation, null);
-                // containerTransform != null ? containerTransform : null);
+            var projectile = projectileFactory.GetProjectile(energy, spawnPos, rotation,
+                containerTransform ? containerTransform : null);
 
             if (!projectile)
             {
