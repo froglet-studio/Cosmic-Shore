@@ -95,7 +95,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
             _status.BoostMultiplier = BoostMultiplierFrom(so, v);
             _status.Boosting = true;
 
-            OnDischargeProgress?.Invoke(v);
+            OnDischargeProgress?.Invoke(v / so.MaxNormalizedCharge);
 
             AddUnits(so, -perTick);
             yield return new WaitForSeconds(so.TickSeconds);
@@ -130,8 +130,11 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         units = Mathf.Clamp(units, 0f, so.MaxNormalizedCharge);
 
         var res = _resources.Resources[so.BoostResourceIndex];
-        res.CurrentAmount = (so.MaxNormalizedCharge > 0f) ? (units / so.MaxNormalizedCharge) : 0f;
+        float normalized = (so.MaxNormalizedCharge > 0f) ? (units / so.MaxNormalizedCharge) : 0f;
+        res.CurrentAmount = normalized;
+        OnChargeProgress?.Invoke(units);
     }
+
 
     void AddUnits(ChargeBoostActionSO so, float delta) => SetUnits(so, GetUnits(so) + delta);
 
