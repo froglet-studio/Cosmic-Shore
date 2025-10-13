@@ -72,7 +72,7 @@ public class ChargedFireGunAction : ShipAction
                 ResourceSystem.ChangeResourceAmount(AmmoResourceIndex, -ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
 
                 Vector3 inheritedDirection;
-                if (VesselStatus.Attached || VesselStatus.IsStationary) inheritedDirection = transform.forward;
+                if (VesselStatus.Attached || VesselStatus.IsTranslationRestricted) inheritedDirection = transform.forward;
                 else inheritedDirection = VesselStatus.Course;
 
                 // TODO: WIP magic numbers
