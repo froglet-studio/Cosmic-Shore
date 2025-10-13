@@ -336,6 +336,9 @@ namespace CosmicShore.SOAP
                     Debug.LogError("No vessel status found for player.! This should never happen!");
                     return;
                 }
+
+                if (!vesselStatus.IsStationary)
+                    continue;
                 
                 bool isOwner = player.IsNetworkOwner;
                 player.ToggleStationaryMode(false);
