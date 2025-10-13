@@ -37,7 +37,7 @@ namespace CosmicShore.Game
             }
 
             BindJaws();
-            // BindDrift();
+            BindDrift();
             BindTrail();
             PrimeInitialUI();
         }
@@ -73,10 +73,8 @@ namespace CosmicShore.Game
 
         private void LateUpdate()
         {
-            // Smooth drift yaw each frame
             if (_trailPool != null)
             {
-                // Convert dot -> signed angle around Z (matches game-side feel)
                 float dot = Mathf.Clamp(_driftDot, -0.9999f, 0.9999f);
                 float angle = -Mathf.Acos(dot) * Mathf.Rad2Deg; // [0 .. -180]
                 _trailPool.SetTargetDriftAngle(angle);
@@ -134,6 +132,7 @@ namespace CosmicShore.Game
             if (resources == null || _view.jawResourceIndex >= resources.Count) return;
 
             var res = resources[_view.jawResourceIndex];
+            
             res.OnResourceChange += OnJawResourceChanged;
         }
 

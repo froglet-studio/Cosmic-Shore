@@ -26,7 +26,6 @@ namespace CosmicShore.Game
             if (view == null || view.chargeSteps == null || view.chargeSteps.Count == 0)
                 return;
 
-            _stepsMinusOne = Mathf.Max(0, view.chargeSteps.Count - 1);
 
             if (chargeBoostExecutor != null)
             {
@@ -44,19 +43,6 @@ namespace CosmicShore.Game
 
             // start empty
             SetSpriteIndex(0);
-        }
-
-        private void OnDestroy()
-        {
-            if (chargeBoostExecutor == null) return;
-
-            chargeBoostExecutor.OnChargeStarted     -= SetFromUnits;
-            chargeBoostExecutor.OnChargeProgress    -= SetFromUnits;
-            chargeBoostExecutor.OnChargeEnded       -= () => SetSpriteIndex(_stepsMinusOne);
-
-            chargeBoostExecutor.OnDischargeStarted  -= SetFromUnits;
-            chargeBoostExecutor.OnDischargeProgress -= u => SetFromUnits(u);
-            chargeBoostExecutor.OnDischargeEnded    -= () => SetSpriteIndex(0);
         }
 
         void SetFromUnits(float units)
