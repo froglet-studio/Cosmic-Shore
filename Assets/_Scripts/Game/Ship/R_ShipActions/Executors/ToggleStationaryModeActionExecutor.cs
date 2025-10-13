@@ -1,19 +1,20 @@
 ﻿using CosmicShore;
 using CosmicShore.Game;
+using Obvious.Soap;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
 {
-    [FormerlySerializedAs("prismSpawner")]
-    [FormerlySerializedAs("trailSpawner")]
     [Header("Scene Refs")]
     [SerializeField] private VesselPrismController vesselPrismController;
 
     [Header("Seeding")]
     [SerializeField] private SeedAssemblerActionExecutor seedAssemblerExecutor;
     [SerializeField] private SeedWallActionSO stationarySeedConfig;
-    
+
+    [Header("Events")]
+    [SerializeField] private ScriptableEventBool stationaryModeChanged; // <- NEW
+
     IVessel _ship;
     IVesselStatus _status;
     ActionExecutorRegistry _registry;
@@ -24,7 +25,6 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
         _ship     = shipStatus?.Vessel;
         _registry = GetComponent<ActionExecutorRegistry>();
 
-        // Auto-resolve missing refs
         if (vesselPrismController == null)
             vesselPrismController = shipStatus?.VesselPrismController;
 
@@ -43,12 +43,9 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
         {
             if (isOn)
             {
-                var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status); 
-
+                var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status);
                 vesselPrismController?.PauseTrailSpawner();
-
-                if (seeded)
-                    seedAssemblerExecutor.BeginBonding();
+                if (seeded) seedAssemblerExecutor.BeginBonding();
             }
             else
             {
@@ -61,5 +58,7 @@ public sealed class ToggleStationaryModeActionExecutor : ShipActionExecutorBase
             if (isOn) vesselPrismController?.PauseTrailSpawner();
             else      vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
         }
+
+        stationaryModeChanged?.Raise(isOn);
     }
 }
