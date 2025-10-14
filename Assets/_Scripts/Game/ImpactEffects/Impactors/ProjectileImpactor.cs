@@ -72,7 +72,7 @@ namespace CosmicShore.Game
                     }
                     break;
             }
-            Projectile.ReturnToFactory();
+            //Projectile.ReturnToFactory();
         }
 
         private void OnValidate()
