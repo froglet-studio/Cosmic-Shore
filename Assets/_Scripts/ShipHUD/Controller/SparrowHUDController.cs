@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,6 +22,9 @@ namespace CosmicShore.Game
         [Header("Drain animation")]
         [SerializeField] private float drainSpeed = 0.04f;
 
+        [Header("Events")]
+        [SerializeField] private ScriptableEventBool stationaryModeChanged; 
+
         Coroutine _heatFillLoop;
         Coroutine _drainLoop;
 
@@ -29,18 +33,21 @@ namespace CosmicShore.Game
             base.Initialize(vesselStatus, baseView);
             view = view != null ? view : baseView as SparrowHUDView;
 
-            if (view != null && !view.isActiveAndEnabled) 
+            if (view != null && !view.isActiveAndEnabled)
                 view.gameObject.SetActive(true);
 
-            if (overheatingExecutor != null)
-            {
-                overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
-                overheatingExecutor.OnOverheated         += OnOverheated;
-                overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
-                overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
+            if (stationaryModeChanged != null)
+                stationaryModeChanged.OnRaised += HandleStationaryModeChanged;
 
-                ApplyBoostVisual(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
-            }
+            HandleStationaryModeChanged(vesselStatus.IsTranslationRestricted);
+
+            if (overheatingExecutor == null) return;
+            overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
+            overheatingExecutor.OnOverheated         += OnOverheated;
+            overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
+            overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
+
+            ApplyBoostVisual(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
         }
 
         private void OnDestroy()
@@ -52,93 +59,64 @@ namespace CosmicShore.Game
                 overheatingExecutor.OnHeatDecayStarted   -= OnHeatDecayStarted;
                 overheatingExecutor.OnHeatDecayCompleted -= OnHeatDecayCompleted;
             }
+            if (stationaryModeChanged != null)
+                stationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
+
             StopHeatFillLoop();
             StopDrainLoop();
         }
 
-        void OnHeatBuildStarted()
+        private void HandleStationaryModeChanged(bool isStationary)
         {
-            StopDrainLoop();
-            StartHeatFillLoop();
-        }
+            if (!view || !view.weaponModeIcon || view.weaponModeIcons == null || view.weaponModeIcons.Length < 2)
+                return;
 
-        void OnOverheated()
-        {
-            StopHeatFillLoop();
-            StopDrainLoop();
-            ApplyBoostVisual(1f, overheated: true);
-        }
-
-        void OnHeatDecayStarted()
-        {
-            StopHeatFillLoop();
-            StartDrainLoop();
-        }
-
-        void OnHeatDecayCompleted()
-        {
-            StopHeatFillLoop();
-            StopDrainLoop();
-            ApplyBoostVisual(0f, overheated: false);
-        }
-
-        void StartHeatFillLoop()
-        {
-            StopHeatFillLoop();
-            _heatFillLoop = StartCoroutine(HeatFillRoutine());
-        }
-
-        void StopHeatFillLoop()
-        {
-            if (_heatFillLoop != null)
+            int idx = isStationary ? 1 : 0;
+            var sprite = view.weaponModeIcons[idx];
+            if (sprite != null)
             {
-                StopCoroutine(_heatFillLoop);
-                _heatFillLoop = null;
+                view.weaponModeIcon.sprite = sprite;
+                view.weaponModeIcon.enabled = true;
             }
         }
+
+        void OnHeatBuildStarted() { StopDrainLoop(); StartHeatFillLoop(); }
+        void OnOverheated() { StopHeatFillLoop(); StopDrainLoop(); ApplyBoostVisual(1f, true); }
+        void OnHeatDecayStarted() { StopHeatFillLoop(); StartDrainLoop(); }
+        void OnHeatDecayCompleted() { StopHeatFillLoop(); StopDrainLoop(); ApplyBoostVisual(0f, false); }
+
+        void StartHeatFillLoop() { StopHeatFillLoop(); _heatFillLoop = StartCoroutine(HeatFillRoutine()); }
+        void StopHeatFillLoop() { if (_heatFillLoop != null) { StopCoroutine(_heatFillLoop); _heatFillLoop = null; } }
 
         IEnumerator HeatFillRoutine()
         {
             var img = view?.boostFill;
-            if (img == null || overheatingExecutor == null) yield break;
+            if (!img || !overheatingExecutor) yield break;
 
             while (true)
             {
                 float heat = Mathf.Clamp01(overheatingExecutor.Heat01);
                 bool  hot  = overheatingExecutor.IsOverheating;
-
                 ApplyBoostVisual(heat, hot);
                 yield return new WaitForSeconds(0.05f);
             }
         }
 
-        void StartDrainLoop()
-        {
-            StopDrainLoop();
-            _drainLoop = StartCoroutine(DrainToZeroRoutine());
-        }
-
-        void StopDrainLoop()
-        {
-            if (_drainLoop != null)
-            {
-                StopCoroutine(_drainLoop);
-                _drainLoop = null;
-            }
-        }
+        void StartDrainLoop() { StopDrainLoop(); _drainLoop = StartCoroutine(DrainToZeroRoutine()); }
+        void StopDrainLoop() { if (_drainLoop != null) { StopCoroutine(_drainLoop); _drainLoop = null; } }
 
         IEnumerator DrainToZeroRoutine()
         {
             var img = view?.boostFill;
-            if (img == null) yield break;
+            if (!img) yield break;
 
             while (img.fillAmount > 0f)
             {
                 float next = Mathf.MoveTowards(img.fillAmount, 0f, drainSpeed * Time.deltaTime);
-                ApplyBoostVisual(next, overheated: false);
+                ApplyBoostVisual(next, false);
                 yield return null;
             }
-            ApplyBoostVisual(0f, overheated: false);
+            ApplyBoostVisual(0f, false);
         }
 
         void ApplyBoostVisual(float shown01, bool overheated)
@@ -164,7 +142,7 @@ namespace CosmicShore.Game
             int maxState = view.missileIcons.Length - 1;
             int state = Mathf.Clamp(Mathf.RoundToInt(Mathf.Clamp01(ammo01) * maxState), 0, maxState);
             var sprite = view.missileIcons[state];
-            if (sprite) 
+            if (sprite)
                 view.missileIcon.sprite = sprite;
             view.missileIcon.enabled = true;
         }

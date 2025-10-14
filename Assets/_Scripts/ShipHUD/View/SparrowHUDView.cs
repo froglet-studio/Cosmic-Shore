@@ -10,6 +10,10 @@ namespace CosmicShore.Game
         public Image missileIcon;
 
         [Header("Boost")]
-        public Image  boostFill;        
+        public Image boostFill;
+
+        [Header("Weapon Mode")]
+        public Image weaponModeIcon;       
+        public Sprite[] weaponModeIcons = new Sprite[2];
     }
 }

@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14eaab96dccf42969fabc5b1fe7e97df, type: 3}
   m_Name: ChargeBoostAction
   m_EditorClassIdentifier: 
-  maxBoostMultiplier: 4
+  maxBoostMultiplier: 2
   maxNormalizedCharge: 1
   chargeTimeToFull: 4
   dischargeTimeToEmpty: 2
-  tickSeconds: 4
+  tickSeconds: 0.1
   boostResourceIndex: 1
   rechargeCooldownSeconds: 4
   verbose: 0

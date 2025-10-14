@@ -12,10 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccff787dc643e6d48a46c1b58af79d00, type: 3}
   m_Name: GameVesselData
   m_EditorClassIdentifier: 
-  GameMode: 0
-  SelectedShipClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d, type: 2}
+  selectedVesselClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
+    type: 2}
+  VesselClassSelectedIndex: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
+    type: 2}
   SelectedPlayerCount: {fileID: 11400000, guid: 15256dcf0be30b4489190913d1f305db,
     type: 2}
   SelectedIntensity: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  PlayerOrigins: []
-  TurnStartTime: 0
+  PlayerCaptain: {fileID: 0}
+  ResourceCollection:
+    Mass: 0.5
+    Charge: 0.5
+    Space: 0.5
+    Time: 0.5
+  SceneName: MinigameFreestyle
+  GameMode: 0
+  IsDailyChallenge: 0
+  IsTraining: 0
+  IsMission: 0
+  IsMultiplayerMode: 0
+  TurnStartTime: 21.451122

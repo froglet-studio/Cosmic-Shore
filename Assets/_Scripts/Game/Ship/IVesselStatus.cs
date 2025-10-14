@@ -80,6 +80,7 @@ namespace CosmicShore.Game
         bool SingleStickControls { get; set; }
         bool Slowed { get; set; }
         bool IsStationary { get; set; }
+        bool IsTranslationRestricted { get; set; }
         bool Turret { get; set; }
         VesselPrismController VesselPrismController { get; }
         ShipHUDContainer ShipHUDContainer { get; }

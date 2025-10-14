@@ -62,6 +62,10 @@ public class VesselTransformer : MonoBehaviour
         VesselStatus.blockRotation = transform.rotation;
 
         RotateShip();
+        
+        if(VesselStatus.IsTranslationRestricted)
+            return;
+        
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
         MoveShip();

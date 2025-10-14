@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 [CreateAssetMenu(fileName = "ToggleStationaryModeAction", menuName = "ScriptableObjects/Vessel Actions/Toggle Stationary Mode")]
-public class ToggleStationaryModeActionSO : ShipActionSO
+public class ToggleTranslationModeActionSO : ShipActionSO
 {
     public enum Mode { Sparrow, Serpent }
 
@@ -11,7 +11,7 @@ public class ToggleStationaryModeActionSO : ShipActionSO
     public Mode StationaryMode => mode;
 
     public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<ToggleStationaryModeActionExecutor>()?.Toggle(this, Ship, ShipStatus);
+        => execs?.Get<ToggleTranslationModeActionExecutor>()?.Toggle(this, Ship, ShipStatus);
 
     public override void StopAction(ActionExecutorRegistry execs)
     {

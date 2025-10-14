@@ -15,42 +15,42 @@ namespace CosmicShore.Game
 
         public override void Execute(ProjectileImpactor impactor, ImpactorBase impactee)
         {
-            if (!impactor || !impactor.Projectile || aoePrefabs == null || aoePrefabs.Length == 0)
-                return;
+            if (!impactor || !impactor.Projectile || aoePrefabs == null || aoePrefabs.Length == 0) return;
 
-            var projectile = impactor.Projectile;
-            var status     = projectile.VesselStatus;
-            var pos        = projectile.transform.position;
-            var rot        = projectile.transform.rotation;
-
-            if (faceExitVelocity && projectile.Velocity.sqrMagnitude > 1e-6f)
-                rot = Quaternion.LookRotation(projectile.Velocity.normalized, Vector3.up);
+            var p   = impactor.Projectile;
+            var pos = p.transform.position;
+            var rot = faceExitVelocity && p.Velocity.sqrMagnitude > 1e-6f
+                ? Quaternion.LookRotation(p.Velocity.normalized, Vector3.up)
+                : p.transform.rotation;
 
             foreach (var aoePrefab in aoePrefabs)
             {
                 if (!aoePrefab) continue;
 
-                var spawned = Object.Instantiate(aoePrefab, pos, rot);
+                var spawned = Instantiate(aoePrefab, pos, rot);
+                spawned.transform.SetParent(null, true);             // ensure root
+                spawned.transform.position = pos;                    // double-sure – no parent offsets
+                spawned.transform.rotation = rot;
 
-                var team     = status?.Domain ?? Domains.None;
-                var vessel   = status?.Vessel; 
-                var mat      = status?.AOEExplosionMaterial;
-
+                var status = p.VesselStatus;
                 spawned.Initialize(new AOEExplosion.InitializeStruct
                 {
-                    OwnDomain             = team,
-                    Vessel              = vessel,  
-                    MaxScale            = Mathf.Lerp(minExplosionScale, maxExplosionScale, Mathf.Clamp01(projectile.Charge)),
-                    OverrideMaterial    = mat,    
+                    OwnDomain          = status?.Domain ?? Domains.None,
+                    Vessel             = status?.Vessel,
+                    MaxScale           = Mathf.Lerp(minExplosionScale, maxExplosionScale, Mathf.Clamp01(p.Charge)),
+                    OverrideMaterial   = status?.AOEExplosionMaterial,
                     AnnonymousExplosion = false,
-                    SpawnPosition       = pos,
-                    SpawnRotation       = rot
+                    SpawnPosition      = pos,
+                    SpawnRotation      = rot
                 });
 
                 spawned.Detonate();
+#if UNITY_EDITOR
+                Debug.Log($"DetonateEndEffect: spawned {spawned.name} parent={spawned.transform.parent?.name ?? "null"} at {pos}");
+#endif
             }
-            Debug.Log("Detonating End Effect");
-            projectile.ReturnToFactory();
+            // p.ReturnToFactory();
         }
+
     }
 }

@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Threading;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
@@ -7,13 +9,19 @@ using CosmicShore.Game.Projectiles;
 public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 {
     [Header("Scene Refs")]
-    [SerializeField] Gun gun;
-    [SerializeField] Transform[] muzzles;
+    [SerializeField] private Gun gun;
+    [SerializeField] private Transform[] muzzles;
 
-    IVesselStatus _status;
-    ResourceSystem _resources;
-    Coroutine _loop;
+    private IVesselStatus _status;
+    private ResourceSystem _resources;
 
+    private CancellationTokenSource _cts;
+
+    void OnDisable()
+    {
+        End();
+    }
+    
     public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
@@ -26,46 +34,92 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     public void Begin(FullAutoActionSO so)
     {
-        if (_loop != null || gun == null) return;
-        _loop = StartCoroutine(FireLoop(so));
+        if (_cts != null || !gun) return;
+
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(
+            this.GetCancellationTokenOnDestroy());
+        
+        FireLoopAsync(so, _cts.Token).Forget(); // Fire and forget with cancellation
     }
 
     public void End()
     {
-        if (_loop == null) return;
-        StopCoroutine(_loop);
-        _loop = null;
+        if (_cts == null) return;
+
+        _cts.Cancel();
+        _cts.Dispose();
+        _cts = null;
     }
 
-    IEnumerator FireLoop(FullAutoActionSO so)
+    private async UniTaskVoid FireLoopAsync(FullAutoActionSO so, CancellationToken token)
     {
         float interval = 1f / Mathf.Max(0.01f, so.FiringRate);
-        while (true)
-        {
-            var res = _resources.Resources[so.AmmoIndex];
-            if (res.CurrentAmount >= so.AmmoCost)
-            {
-                var mz = (muzzles != null && muzzles.Length > 0) ? muzzles : new[] { gun.transform };
-                foreach (var t in mz)
-                {
-                    Vector3 inheritVel = Vector3.zero;
-                    if (so.Inherit)
-                        inheritVel = _status.Attached ? t.forward : _status.Course;
 
-                    gun.FireGun(
-                        t,
-                        so.SpeedValue.Value,
-                        inheritVel * _status.Speed,
-                        so.ProjectileScale,
-                        true,
-                        so.ProjectileTime,
-                        0,
-                        so.FiringPattern,
-                        so.Energy);
+        var ammoIndex = so.AmmoIndex;
+        var ammoCost = so.AmmoCost;
+        var inherit = so.Inherit;
+        var projectileScale = so.ProjectileScale;
+        var projectileTime = so.ProjectileTime;
+        var firingPattern = so.FiringPattern;
+        var energy = so.Energy;
+        var speedValue = so.SpeedValue.Value;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                // Check resource before firing
+                var res = _resources.Resources[ammoIndex];
+                if (res.CurrentAmount >= ammoCost)
+                {
+                    var inheritVel = inherit ? _status.Course * _status.Speed : Vector3.zero;
+
+                    for (int i = 0, count = muzzles.Length; i < count; i++)
+                    {
+                        if (!gun || !gun.gameObject)
+                        {
+                            Debug.LogError("No active gun found!");
+                            return;
+                        }
+
+                        if (!gun.isActiveAndEnabled)
+                        {
+                            Debug.LogError("No active gun found!");
+                            continue;
+                        }
+                        
+                        gun.FireGun(
+                            muzzles[i],
+                            speedValue,
+                            inheritVel,
+                            projectileScale,
+                            true,
+                            projectileTime,
+                            0,
+                            firingPattern,
+                            energy
+                        );
+                    }
+
+                    _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
                 }
-                _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
+
+                // wait exactly for interval duration
+                await UniTask.Delay(TimeSpan.FromSeconds(interval),
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.PreLateUpdate,
+                    token);
             }
-            yield return new WaitForSeconds(interval);
+        }
+        catch (OperationCanceledException)
+        {
+            // normal stop
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[FullAutoActionExecutor] Loop error: {e}");
         }
     }
+
+
 }
