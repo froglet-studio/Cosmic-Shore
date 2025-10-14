@@ -62,12 +62,9 @@ namespace CosmicShore.Game.Projectiles
 
         public void ReturnProjectile(Projectile projectile)
         {
-            if (!projectile) return;
-            
             if (!_pools.TryGetValue(projectile.Type, out var pool))
             {
                 Debug.LogError($"No pool registered for ProjectileType: {projectile.Type}");
-                Destroy(projectile.gameObject); // fallback
                 return;
             }
 

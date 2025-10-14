@@ -51,6 +51,11 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
+        private void OnDestroy()
+        {
+            Debug.LogError("Projectile destroyed! Should not happen! Should return to pool!");
+        }
+
         #region Initialization
         public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge)
         {
@@ -67,8 +72,8 @@ namespace CosmicShore.Game.Projectiles
         public bool DisallowImpactOnPrism(Domains trailBlockDomain) => !friendlyFire && trailBlockDomain == OwnDomain;
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
-
-        #region Lifecycle
+        
+        
         public void LaunchProjectile(float projectileTime)
         {
             ProjectileTime = projectileTime;
@@ -83,7 +88,8 @@ namespace CosmicShore.Game.Projectiles
 
             Stop(); // Stop any running movement before starting a new one
 
-            _moveCts = new CancellationTokenSource();
+            _moveCts = CancellationTokenSource.CreateLinkedTokenSource(
+                this.GetCancellationTokenOnDestroy());
             MoveProjectileAsync(projectileTime, _moveCts.Token).Forget();
         }
 
@@ -112,7 +118,7 @@ namespace CosmicShore.Game.Projectiles
                     }
 
                     elapsedTime += deltaTime;
-                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                    await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
                 }
 
                 projectileImpactor.ExecuteEndEffects();
@@ -127,27 +133,26 @@ namespace CosmicShore.Game.Projectiles
                 Debug.LogError($"[Projectile] Move loop error: {ex}");
             }
         }
-
-        public void Stop()
-        {
-            if (_moveCts != null)
-            {
-                _moveCts.Cancel();
-                _moveCts.Dispose();
-                _moveCts = null;
-            }
-        }
-        #endregion
-
-        #region Return
+        
         public void ReturnToFactory()
         {
             Stop();
             if (_factory)
                 _factory.ReturnProjectile(this);
             else
-                Destroy(gameObject);
+            {
+                Debug.LogError("No projectile factory found to release projectile!, this shouldn't happen!");
+            }
         }
-        #endregion
+
+        void Stop()
+        {
+            if (_moveCts == null) 
+                return;
+            
+            _moveCts.Cancel();
+            _moveCts.Dispose();
+            _moveCts = null;
+        }
     }
 }

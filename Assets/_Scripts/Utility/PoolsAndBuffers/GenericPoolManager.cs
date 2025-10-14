@@ -50,7 +50,7 @@ namespace CosmicShore.Core
 
             if (enableBufferMaintenance)
             {
-                maintenanceCts = new CancellationTokenSource();
+                maintenanceCts = CancellationTokenSource.CreateLinkedTokenSource(this.destroyCancellationToken);
                 BufferMaintenanceAsync(maintenanceCts.Token).Forget();
             }
         }
@@ -84,6 +84,12 @@ namespace CosmicShore.Core
         protected T Get_(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var instance = pool.Get();
+            if (!instance)
+            {
+                Debug.LogError($"Pool doesn't contain {nameof(T)}.");
+                return default;
+            }
+            
             instance.transform.SetPositionAndRotation(position, rotation);
             if (parent) instance.transform.SetParent(parent, worldPositionStays);
             return instance;
@@ -92,6 +98,12 @@ namespace CosmicShore.Core
         /// <summary>Returns an object back to the pool.</summary>
         protected void Release_(T instance)
         {
+            if (!instance)
+            {
+                Debug.LogError($"{nameof(T)} is null!.");
+                return;
+            }
+            
             instance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             instance.transform.SetParent(transform);
             pool.Release(instance);
@@ -101,7 +113,7 @@ namespace CosmicShore.Core
         public void Clear() => pool.Clear();
 
         /// <summary>Ensure the pool has at least 'count' INACTIVE items immediately (no frame budgeting).</summary>
-        public void Prewarm(int count)
+        void Prewarm(int count)
         {
             if (count <= 0) return;
 
@@ -118,7 +130,7 @@ namespace CosmicShore.Core
         public void EnsureBuffer(int count) => Prewarm(count);
 
         /// <summary>Number of inactive objects ready to serve.</summary>
-        public int CountInactive => pool != null ? pool.CountInactive : 0;
+        int CountInactive => pool?.CountInactive ?? 0;
 
         // ---------------- ObjectPool Callbacks ----------------
 
@@ -147,10 +159,9 @@ namespace CosmicShore.Core
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    // If target is zero or maintenance disabled, idle cheaply
                     if (!enableBufferMaintenance || bufferSizeTarget <= 0)
                     {
-                        await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                        await UniTask.Yield(PlayerLoopTiming.EarlyUpdate, ct);
                         continue;
                     }
 
@@ -159,7 +170,7 @@ namespace CosmicShore.Core
                     if (inactive < bufferSizeTarget)
                     {
                         float fullness = Mathf.Clamp01((float)inactive / bufferSizeTarget);
-                        float rate = Mathf.Lerp(maxInstantiateRate, baseInstantiateRate, fullness); // fast when empty, slow when full
+                        float rate = Mathf.Lerp(maxInstantiateRate, baseInstantiateRate, fullness);
                         float interval = (rate <= 0f) ? float.MaxValue : 1f / rate;
 
                         instantiateTimer += Time.deltaTime;
@@ -175,18 +186,14 @@ namespace CosmicShore.Core
                             addsThisFrame++;
                         }
                     }
-                    else
-                    {
-                        // Buffer at/above target; bleed off accumulated timer to avoid a burst later.
-                        instantiateTimer = 0f;
-                    }
+                    else instantiateTimer = 0f;
 
-                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                    await UniTask.Yield(PlayerLoopTiming.EarlyUpdate, ct); // 🔁 shifted to safer timing
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
-                // Swallow; shutting down.
+                Debug.Log($"Pool Maintainence task cancelled: {e}");
             }
         }
     }

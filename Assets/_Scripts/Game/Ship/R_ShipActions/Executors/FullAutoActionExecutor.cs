@@ -36,7 +36,9 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     {
         if (_cts != null || !gun) return;
 
-        _cts = new CancellationTokenSource();
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(
+            this.GetCancellationTokenOnDestroy());
+        
         FireLoopAsync(so, _cts.Token).Forget(); // Fire and forget with cancellation
     }
 
@@ -52,7 +54,6 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     private async UniTaskVoid FireLoopAsync(FullAutoActionSO so, CancellationToken token)
     {
         float interval = 1f / Mathf.Max(0.01f, so.FiringRate);
-        float elapsed = 0f;
 
         var ammoIndex = so.AmmoIndex;
         var ammoCost = so.AmmoCost;
@@ -67,43 +68,47 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         {
             while (!token.IsCancellationRequested)
             {
-                elapsed += Time.deltaTime;
-
-                if (elapsed < interval)
-                {
-                    await UniTask.Yield(PlayerLoopTiming.Update, token);
-                    continue;
-                }
-
-                elapsed -= interval;
-
+                // Check resource before firing
                 var res = _resources.Resources[ammoIndex];
-                if (res.CurrentAmount < ammoCost)
+                if (res.CurrentAmount >= ammoCost)
                 {
-                    await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
-                    continue;
+                    var inheritVel = inherit ? _status.Course * _status.Speed : Vector3.zero;
+
+                    for (int i = 0, count = muzzles.Length; i < count; i++)
+                    {
+                        if (!gun || !gun.gameObject)
+                        {
+                            Debug.LogError("No active gun found!");
+                            return;
+                        }
+
+                        if (!gun.isActiveAndEnabled)
+                        {
+                            Debug.LogError("No active gun found!");
+                            continue;
+                        }
+                        
+                        gun.FireGun(
+                            muzzles[i],
+                            speedValue,
+                            inheritVel,
+                            projectileScale,
+                            true,
+                            projectileTime,
+                            0,
+                            firingPattern,
+                            energy
+                        );
+                    }
+
+                    _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
                 }
 
-                var inheritVel = inherit ? _status.Course * _status.Speed : Vector3.zero;
-
-                for (int i = 0; i < muzzles.Length; i++)
-                {
-                    gun.FireGun(
-                        muzzles[i],
-                        speedValue,
-                        inheritVel,
-                        projectileScale,
-                        true,
-                        projectileTime,
-                        0,
-                        firingPattern,
-                        energy
-                    );
-                }
-
-                _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
-
-                await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
+                // wait exactly for interval duration
+                await UniTask.Delay(TimeSpan.FromSeconds(interval),
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.PreLateUpdate,
+                    token);
             }
         }
         catch (OperationCanceledException)
@@ -115,5 +120,6 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
             Debug.LogError($"[FullAutoActionExecutor] Loop error: {e}");
         }
     }
+
 
 }

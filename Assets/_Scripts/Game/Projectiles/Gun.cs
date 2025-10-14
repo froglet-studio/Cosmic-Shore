@@ -68,7 +68,12 @@ namespace CosmicShore.Game.Projectiles
 
         public void StopProjectile()
         {
-            _lastProjectile?.Stop();
+            if (!_lastProjectile)
+            {
+                Debug.LogError("Last projectile not found!");
+                return;
+            }
+            _lastProjectile.ReturnToFactory();
         }
 
         public void DetonateProjectile()
