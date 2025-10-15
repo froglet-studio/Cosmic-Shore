@@ -15,9 +15,6 @@ namespace CosmicShore.Game
     {
         [SerializeField] public int ID;
 
-        [Tooltip("TODO -> Remove from here, CrystalManager will spawn the crystal")]
-        [SerializeField] Crystal Crystal;
-
         [SerializeField] List<SO_CellType> CellTypes;
         SO_CellType cellType;
         public SO_CellType CellType 
