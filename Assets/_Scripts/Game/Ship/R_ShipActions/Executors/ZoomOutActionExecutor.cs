@@ -5,8 +5,9 @@ using CosmicShore.Game.CameraSystem;
 [DefaultExecutionOrder(-1000)]
 public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 {
-    [Header("Optional refs (auto-resolved if null)")]
-    [SerializeField] private GrowTrailActionExecutor   trailProvider;
+    [Header("Optional refs (auto-resolved if null)")] [SerializeField]
+    private GrowTrailActionExecutor trailProvider;
+
     [SerializeField] private GrowSkimmerActionExecutor skimmerProvider;
 
     private IVesselStatus _status;
@@ -15,16 +16,22 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     private bool _active;
     private bool _retracting;
 
-    private float _baseScale;    
-    private float _baseDistance; 
+    private float _baseScale;
+    private float _baseDistance;
 
     [SerializeField] private float farClipPadding = 1.3f;
     [SerializeField] private float maxDistanceAbs = 10000f;
     private float _lastScale;
-    
-    private enum State { Idle, Expanding, Retracting }
+
+    private enum State
+    {
+        Idle,
+        Expanding,
+        Retracting
+    }
+
     private State _state = State.Idle;
-    
+
     public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
@@ -39,23 +46,21 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
         var provider = Provider();
         if (provider == null) return;
 
-        float currentScale = Mathf.Max(provider.CurrentScale, 0.0001f);
-        float currentZ     = _controller.GetCameraDistance();
+        if (_state == State.Idle)
+        {
+            _baseScale = Mathf.Max(provider.CurrentScale, 0.0001f);
+            _baseDistance = _controller.GetCameraDistance();
+            _lastScale = _baseScale;
+        }
 
-        _baseScale    = currentScale;
-        _baseDistance = ( _state == State.Idle && _controller.NeutralOffsetZ != 0f )
-            ? _controller.NeutralOffsetZ   
-            : currentZ;               
-
-        _lastScale = _baseScale; 
-        _state     = State.Expanding;
-        _active    = true;
+        _state = State.Expanding;
+        _active = true;
         _retracting = false;
     }
 
     public void End()
     {
-        if (_controller == null || _so == null)
+        if (_controller == null || !_so)
         {
             _active = false;
             _retracting = false;
@@ -64,10 +69,13 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
             return;
         }
 
+        if (_state == State.Retracting) return;
+
+        _state = State.Retracting;
+        _active = true;
         _retracting = true;
-        _active     = true;
-        _state      = State.Retracting;
     }
+
     private IScaleProvider Provider()
     {
         if (!_so) return null;
@@ -101,8 +109,10 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
             : Mathf.Max(rawScale, _lastScale - 0.0001f);
         _lastScale = currentScale;
 
-        float ratio = currentScale / _baseScale;
-        float target = _baseDistance * ratio;
+        float currentRatio = currentScale / Mathf.Max(_baseScale, 0.0001f);
+
+        // float ratio = currentScale / _baseScale;
+        float target = _baseDistance * currentRatio;
 
         if (!Mathf.Approximately(Mathf.Sign(target), Mathf.Sign(_baseDistance)))
             target = -Mathf.Abs(target);
@@ -119,12 +129,12 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
                 c.Camera.farClipPlane = need * farClipPadding;
         }
 
-        if (_state == State.Retracting && Mathf.Abs(ratio - 1f) <= 0.0025f)
+        if (_state == State.Retracting && Mathf.Abs(currentRatio - 1f) <= 0.0025f)
         {
             _controller.SetCameraDistance(_baseDistance);
 
             var p = Provider();
-            if (p is GrowSkimmerActionExecutor g && g != null)
+            if (p is GrowSkimmerActionExecutor g && g)
                 g.ResetToMinScale();
 
             _retracting = false;
@@ -133,5 +143,4 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
             _so = null;
         }
     }
-
 }

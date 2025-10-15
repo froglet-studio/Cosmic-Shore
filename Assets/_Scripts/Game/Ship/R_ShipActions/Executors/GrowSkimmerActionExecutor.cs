@@ -12,10 +12,12 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
     float _intensity;          
     Coroutine _loop;
     bool _growing;
-
+    float _worldScaleZ;
+    
+    public float WorldScaleZ => _worldScaleZ;
+    public float CurrentScale => _worldScaleZ;
     public float MinScale => _minWorldZ;
-    public float CurrentScale => (skimmerRoot ? skimmerRoot.lossyScale.z : 1f);
-
+    
     public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
@@ -23,6 +25,7 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
             skimmerRoot = shipStatus?.ShipTransform;
 
         _minWorldZ = skimmerRoot ? skimmerRoot.lossyScale.z : 1f;
+        _worldScaleZ = _minWorldZ;
     }
 
     public void Begin(GrowSkimmerActionSO so, IVesselStatus status)
@@ -73,15 +76,20 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
         _loop = null;
     }
 
-    void StepSize(float rate, float limit, bool increase)
-    {
-        float parentZ = (skimmerRoot && skimmerRoot.parent) ? skimmerRoot.parent.lossyScale.z : 1f;
-        float worldZ = skimmerRoot.lossyScale.z;
-        worldZ += (increase ? +1f : -1f) * rate * Time.deltaTime;
-        worldZ = increase ? Mathf.Min(worldZ, limit) : Mathf.Max(worldZ, limit);
-        float localZ = worldZ / parentZ;
-        var s = skimmerRoot.localScale; s = Vector3.one * localZ; skimmerRoot.localScale = s;
-    }
+void StepSize(float rate, float limit, bool increase)
+{
+    if (!skimmerRoot) return;
+    float parentZ = (skimmerRoot.parent ? skimmerRoot.parent.lossyScale.z : 1f);
+    float worldZ  = _worldScaleZ <= 0f ? skimmerRoot.lossyScale.z : _worldScaleZ;
+
+    worldZ += (increase ? +1f : -1f) * rate * Time.deltaTime;
+    worldZ = increase ? Mathf.Min(worldZ, limit) : Mathf.Max(worldZ, limit);
+    _worldScaleZ = worldZ;
+
+    float localZ = worldZ / parentZ;
+    skimmerRoot.localScale = Vector3.one * localZ;
+}
+
 
     void SetWorldZ(float worldZ)
     {
