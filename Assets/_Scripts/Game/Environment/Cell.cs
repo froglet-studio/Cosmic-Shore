@@ -15,6 +15,7 @@ namespace CosmicShore.Game
     {
         [SerializeField] public int ID;
 
+        [Tooltip("TODO -> Remove from here, CrystalManager will spawn the crystal")]
         [SerializeField] Crystal Crystal;
 
         [SerializeField] List<SO_CellType> CellTypes;
@@ -45,24 +46,22 @@ namespace CosmicShore.Game
 
         [SerializeField] bool hasRandomFloraAndFauna;
 
-        [SerializeField]
-        ScriptableEventNoParam OnCellItemsUpdated;
+        /*[SerializeField]
+        ScriptableEventNoParam OnCellItemsUpdated;*/
         
         [SerializeField]
         MiniGameDataSO miniGameData;
 
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new Dictionary<Domains, BlockCountDensityGrid>();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new Dictionary<Domains, BlockVolumeDensityGrid>();
-        public List<CellItem> CellItems { get; private set; }
+        // public List<CellItem> CellItems { get; private set; }
 
         Dictionary<Domains, float> teamVolumes = new Dictionary<Domains, float>();
 
-        int _itemsAdded;
+        // int _itemsAdded;
 
         void Awake()
         {
-            CellItems = new List<CellItem>();
-
             if (cellType == null)
             {
                 AssignCellType();
@@ -94,7 +93,8 @@ namespace CosmicShore.Game
             membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
             nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
             SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
-            SnowChanger.Initialize(Crystal.transform, Crystal.sphereRadius);
+            // SnowChanger.Initialize(crystalManager.GetCrystalTransform(), crystalManager.GetSphereRadius());
+            SnowChanger.Initialize();
             SnowChanger.SetOrigin(transform.position);
 
             teamVolumes.Add(Domains.Jade, 0);
@@ -102,7 +102,8 @@ namespace CosmicShore.Game
             teamVolumes.Add(Domains.Gold, 0);
             teamVolumes.Add(Domains.Blue, 0);
 
-            Crystal.SetOrigin(transform.position);
+            // Crystal.SetOrigin(transform.position);
+            CrystalManager.Instance.SetOrigin(transform.position);
 
             if (cellType != null)
             {
@@ -112,8 +113,9 @@ namespace CosmicShore.Game
                 }
                 SpawnLife();
             }
-            TryInitializeAndAdd(Crystal);
-            Crystal.gameObject.SetActive(true);
+            // TryInitializeAndAdd(crystalManager.Crystal);
+            // Crystal.gameObject.SetActive(true);
+            // crystalManager.ToggleCrstalActive(true);
         }
 
         void AssignCellType() 
@@ -222,7 +224,7 @@ namespace CosmicShore.Game
             return countGrids[domain].FindDensestRegion();
         }
 
-        public bool TryInitializeAndAdd(CellItem item)
+        /*public bool TryInitializeAndAdd(CellItem item)
         {
             if (item.Id != 0)
                 return false;
@@ -243,11 +245,11 @@ namespace CosmicShore.Game
             OnCellItemsUpdated.Raise();
 
             return true;
-        }
+        }*/
 
-        public void UpdateItem() => OnCellItemsUpdated.Raise();
+        // public void UpdateItem() => OnCellItemsUpdated.Raise();
 
-        public CellItem GetClosestItem(Vector3 position)
+        /*public CellItem GetClosestItem(Vector3 position)
         {
             float minDistance = Mathf.Infinity;
             CellItem closestItem = null;
@@ -263,12 +265,12 @@ namespace CosmicShore.Game
             }
 
             return closestItem;
-        }
+        }*/
 
-        public CellItem GetCrystal()
+        /*public CellItem GetCrystal()
         {
             return Crystal;
-        }
+        }*/
 
         public bool ContainsPosition(Vector3 position)
         {
@@ -325,7 +327,7 @@ namespace CosmicShore.Game
                     return Teams.None;
             }
         }*/
-
+        
         IEnumerator SpawnFlora(FloraConfiguration floraConfiguration, bool spawnJade = true)
         {
             for (int i = 0; i < floraConfiguration.initialSpawnCount - 1; i++)
@@ -366,7 +368,7 @@ namespace CosmicShore.Game
                 {
                     var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
                     newPopulation.domain = controllingTeamStat.Item1; // ControllingTeam;
-                    newPopulation.Goal = Crystal.transform.position;
+                    newPopulation.Goal = CrystalManager.Instance.GetCrystalTransform().position;
                     yield return new WaitForSeconds(baseFaunaSpawnTime);
                 }
                 else

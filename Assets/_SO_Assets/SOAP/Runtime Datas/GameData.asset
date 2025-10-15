@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ccff787dc643e6d48a46c1b58af79d00, type: 3}
-  m_Name: GameVesselData
+  m_Name: GameData
   m_EditorClassIdentifier: 
   selectedVesselClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
@@ -31,4 +31,4 @@ MonoBehaviour:
   IsTraining: 0
   IsMission: 0
   IsMultiplayerMode: 0
-  TurnStartTime: 21.451122
+  TurnStartTime: 0

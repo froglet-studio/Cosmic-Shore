@@ -36,9 +36,10 @@ namespace CosmicShore.Game
             OnCellItemsUpdated.OnRaised -= ChangeSnowSize;
         }
 
-        public void Initialize(Transform ct, float sphereRadius)
+        // public void Initialize(Transform ct, float sphereRadius)
+        public void Initialize()
         {
-            crystalTransform = ct;
+            crystalTransform = CrystalManager.Instance.GetCrystalTransform();
             origin = newOrigin;
             var crystalSize = crystalTransform.localScale;
             shardsX = (int)(crystalSize.x / shardDistance);
@@ -50,7 +51,7 @@ namespace CosmicShore.Game
             shardsZ = (int)(crystalSize.z / shardDistance);*/
             
             if (crystalTransform)
-                sphereDiameter = sphereScaler * sphereRadius; // this.crystalTransform.GetComponent<Crystal>().sphereRadius;
+                sphereDiameter = sphereScaler * CrystalManager.Instance.GetSphereRadius(); // this.crystalTransform.GetComponent<Crystal>().SphereRadius;
             crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1];
             for (int x = -shardsX;
                  x <= shardsX;

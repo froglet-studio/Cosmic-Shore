@@ -14,8 +14,9 @@ namespace CosmicShore
         {
             for (int i = 0; i < Drones; i++)
             {
-                crystal = FindAnyObjectByType<Crystal>().transform;
-                boidController.SpawnDrone(crystal, false);
+                // crystal = FindAnyObjectByType<Crystal>().transform;
+                var crystalTransform = CrystalManager.Instance.GetCrystalTransform();
+                boidController.SpawnDrone(crystalTransform, false);
             }
         }
 

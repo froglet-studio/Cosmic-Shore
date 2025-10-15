@@ -124,7 +124,7 @@ namespace CosmicShore.Game.AI
             if (activeCell == null)
                 activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
 
-            var cellItems = activeCell.CellItems;
+            var cellItems = CrystalManager.Instance.CellItems;  // activeCell.CellItems;
             float MinDistance = Mathf.Infinity;
             CellItem closestItem = null;
 

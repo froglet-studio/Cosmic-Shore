@@ -41378,6 +41378,7 @@ GameObject:
   - component: {fileID: 1243749158}
   - component: {fileID: 1243749159}
   - component: {fileID: 1243749160}
+  - component: {fileID: 1243749161}
   m_Layer: 0
   m_Name: Environment
   m_TagString: Untagged
@@ -41434,6 +41435,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cells:
   - {fileID: 1422060011}
+--- !u!114 &1243749161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1243749157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c544786819e4cfc82c4931d974ffb1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
+    type: 3}
+  crystalStartPosition: {x: 0, y: 0, z: 0}
+  scaleCrystalPositionWithIntensity: 0
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
 --- !u!1 &1245639255
 GameObject:
   m_ObjectHideFlags: 0
@@ -51797,6 +51816,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Crystal
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790470, guid: fced5b15da3ad1d41b4e3b7385609e37,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}

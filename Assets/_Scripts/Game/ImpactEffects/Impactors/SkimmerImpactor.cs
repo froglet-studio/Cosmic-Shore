@@ -36,11 +36,12 @@ namespace CosmicShore.Game
         {
             if (!isInitialized)
                 return;
-
-            // Crystal: vacuum (delegate to Skimmer helper so it uses its settings)
-            if (other.TryGetComponent<Crystal>(out var crystal))
+            
+            if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal))
             {
-                skimmer.TryVacuumCrystal(crystal); // uses Skimmer's vaccumAmount + flag
+                // NEW -> Vaccum logic transferred from skimmer to crystal, to reduce crystal dependency
+                crystal.Vacuum(transform.position, skimmer.VaccumAmount);
+                // skimmer.TryVacuumCrystal(crystal);
                 // no return; a Crystal may also have a TrailBlock? (unlikely, safe to continue)
             }
 

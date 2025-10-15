@@ -43,7 +43,7 @@ namespace CosmicShore.Game
                 mine.transform.SetParent(null, true);
             }
 
-            crystal.CrystalRespawn();
+            crystal.Respawn();
         }
     }
 }
