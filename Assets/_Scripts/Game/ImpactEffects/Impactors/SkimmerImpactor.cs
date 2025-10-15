@@ -53,22 +53,22 @@ namespace CosmicShore.Game
             StartSkimIfNeeded(prism.ownerID);
 
             // choose “mature & nearest” block per your old logic
-            if (Time.time - prism.prismProperties.TimeCreated <= 4f) return;
-
-            // distance from skimmer to this block
+            // if (Time.time - prism.prismProperties.TimeCreated <= 4f) return;
+            bool isMature = (Time.time - prism.prismProperties.TimeCreated) > 0.25f;
+            
             float sqrDistance = (skimmer.transform.position - other.transform.position).sqrMagnitude;
 
-            // compute weights on-the-fly (same formula you had)
             float scale = skimmer.transform.localScale.x;
-            float sqrSweetSpot = (scale * scale) / 16f;
-            float sigma = (sqrSweetSpot) / 2.355f; // since FWHM = sqrSweetSpot
+            float sqrSweetSpot = scale * scale / 16f;
+            float sigma = sqrSweetSpot / 2.355f; 
 
             float distanceWeight = Skimmer.ComputeGaussian(sqrDistance, sqrSweetSpot, sigma);
             float directionWeight = Vector3.Dot(skimmer.VesselStatus.Transform.forward, prism.transform.forward);
 
-            CombinedWeight = distanceWeight * Mathf.Abs(directionWeight);
+            float maturityFactor = isMature ? 1f : 0.35f;
+            CombinedWeight = maturityFactor * distanceWeight * Mathf.Abs(directionWeight);
             // tick stay effects (centralized)
-            //ExecuteBlockStayEffects(CombinedWeight, prismImpactor);
+            ExecuteBlockStayEffects(CombinedWeight, prismImpactor);
         }
 
         void OnTriggerExit(Collider other)
@@ -80,13 +80,12 @@ namespace CosmicShore.Game
             var prism = prismImpactor.Prism;
             if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
-            if (!_skimStartTimes.ContainsKey(prism.ownerID)) return;
+            if (!_skimStartTimes.Remove(prism.ownerID)) return;
 
-            _skimStartTimes.Remove(prism.ownerID);
             ActivelySkimmingBlockCount = Mathf.Max(0, ActivelySkimmingBlockCount - 1);
 
-            if (ActivelySkimmingBlockCount < 1)
-                ExecuteBlockStayEffects(0f, prismImpactor); // stop effects when no longer skimming anything
+            // if (ActivelySkimmingBlockCount < 1)
+            //     ExecuteBlockStayEffects(0f, prismImpactor); // stop effects when no longer skimming anything
         }
 
         // ------------------------------------------------------------------
