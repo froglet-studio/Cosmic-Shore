@@ -457,7 +457,7 @@ MonoBehaviour:
   _name: Squirrel
   vesselType: 6
   _nearFieldSkimmer: {fileID: 708149374973573223}
-  _farFieldSkimmer: {fileID: 708149374973573223}
+  _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 1878660672777590133}
 --- !u!114 &7686683633640807837
 MonoBehaviour:
@@ -502,7 +502,7 @@ MonoBehaviour:
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
   skimmer: {fileID: 708149374973573223}
-  BaseScale: {x: 20, y: 5, z: 5}
+  BaseScale: {x: 10, y: 2.5, z: 2.5}
   prismType: 4
   initialWavelength: 8
   minWavelength: 8
@@ -534,9 +534,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Resources:
-  - Name: Energy
+  - Name: Boost
     initialResourceGainRate: 0
-    resourceGainRate: -0.015
+    resourceGainRate: 0
     maxAmount: 1
     initialAmount: 0
   ChargeTestHarness: 0
@@ -1600,31 +1600,31 @@ PrefabInstance:
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[1]'
       value: 
-      objectReference: {fileID: 11400000, guid: 9fdfa3e5cb6a248429871209d7826175,
+      objectReference: {fileID: 11400000, guid: 7eca7b054e4b5384abdd56fec25bf26c,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[2]'
       value: 
-      objectReference: {fileID: 11400000, guid: 5b541da6f9beb3f4ebf8ca70b4d105d1,
+      objectReference: {fileID: 11400000, guid: 9fdfa3e5cb6a248429871209d7826175,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[3]'
       value: 
-      objectReference: {fileID: 11400000, guid: f3e8b93db3d90b44d85bf3db01e3bb7b,
+      objectReference: {fileID: 11400000, guid: 5b541da6f9beb3f4ebf8ca70b4d105d1,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[4]'
       value: 
-      objectReference: {fileID: 11400000, guid: 3f439898422b370429bc97c8b3c814d9,
+      objectReference: {fileID: 11400000, guid: f3e8b93db3d90b44d85bf3db01e3bb7b,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[5]'
       value: 
-      objectReference: {fileID: 11400000, guid: 7eca7b054e4b5384abdd56fec25bf26c,
+      objectReference: {fileID: 11400000, guid: 3f439898422b370429bc97c8b3c814d9,
         type: 2}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

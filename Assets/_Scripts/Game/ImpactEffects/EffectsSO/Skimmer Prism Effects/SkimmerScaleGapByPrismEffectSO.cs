@@ -11,7 +11,9 @@ namespace CosmicShore.Game
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var skimmerVesselStatus = impactor.Skimmer.VesselStatus;
-            skimmerVesselStatus.VesselPrismController.Gap = Mathf.Lerp(initialGap, skimmerVesselStatus.VesselPrismController.MinimumGap, impactor.CombinedWeight);
+            skimmerVesselStatus.VesselPrismController.Gap = Mathf.Lerp(skimmerVesselStatus.VesselPrismController.Gap, skimmerVesselStatus.VesselPrismController.MinimumGap, impactor.CombinedWeight);
+            Debug.Log($"<color=blue> We are getting called context Gaped" );
+
         }
     }
 }

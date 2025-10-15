@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9fe38b6843b843c9b2503db9edfde502, type: 3}
   m_Name: SkimmerAlignPrismEffect
   m_EditorClassIdentifier: 
-  velocityNudgeStrength: 4
-  alignSpeedFactor: 15
+  lockGain: 1
+  turnSpeed: 10
+  stickiness: 6

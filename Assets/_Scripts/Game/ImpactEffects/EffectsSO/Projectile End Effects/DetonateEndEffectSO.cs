@@ -28,8 +28,8 @@ namespace CosmicShore.Game
                 if (!aoePrefab) continue;
 
                 var spawned = Instantiate(aoePrefab, pos, rot);
-                spawned.transform.SetParent(null, true);             // ensure root
-                spawned.transform.position = pos;                    // double-sure – no parent offsets
+                spawned.transform.SetParent(null, true);            
+                spawned.transform.position = pos;                   
                 spawned.transform.rotation = rot;
 
                 var status = p.VesselStatus;
@@ -45,11 +45,8 @@ namespace CosmicShore.Game
                 });
 
                 spawned.Detonate();
-#if UNITY_EDITOR
-                Debug.Log($"DetonateEndEffect: spawned {spawned.name} parent={spawned.transform.parent?.name ?? "null"} at {pos}");
-#endif
             }
-            // p.ReturnToFactory();
+            //p.ReturnToFactory();
         }
 
     }
