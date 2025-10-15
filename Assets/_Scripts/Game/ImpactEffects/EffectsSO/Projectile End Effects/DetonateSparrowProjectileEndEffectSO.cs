@@ -9,8 +9,8 @@ namespace CosmicShore.Game
     {
         public override void Execute(ProjectileImpactor impactor, ImpactorBase impactee)
         {
-            // var projectile = impactor.Projectile;
-            // projectile.ReturnToFactory();
+            var projectile = impactor.Projectile;
+            projectile.ReturnToFactory();
         }
     }
 }
