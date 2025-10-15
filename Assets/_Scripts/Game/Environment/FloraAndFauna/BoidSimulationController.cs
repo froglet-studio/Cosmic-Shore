@@ -208,7 +208,7 @@ public class BoidSImulationController : MonoBehaviour
         }
 
         // Iterate through all NodeItems in the node to find the closest TrailBlock
-        IList<CellItem> cellItems = containingNode.CellItems;
+        IList<CellItem> cellItems = CrystalManager.Instance.CellItems;  // containingNode.CellItems;
         Prism closestBlock = null;
         float closestDistance = float.MaxValue;
 

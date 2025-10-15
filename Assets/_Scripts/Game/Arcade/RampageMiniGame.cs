@@ -4,8 +4,8 @@ namespace CosmicShore.Game.Arcade
 {
     public class RampageMiniGame : MiniGame
     {
-        [SerializeField] Crystal Crystal;
-        [SerializeField] Vector3 CrystalStartPosition;
+        // [SerializeField] Crystal Crystal;
+        // [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] SegmentSpawner SegmentSpawner;
         [SerializeField] SpawnableEllipsoid spawnableEllipsoid;
         int maxDifficulty = 4;
@@ -31,7 +31,7 @@ namespace CosmicShore.Game.Arcade
             spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
 
             // VesselPrismController.ClearTrails();
-            Crystal.transform.position = CrystalStartPosition;
+            // Crystal.transform.position = CrystalStartPosition;
 
             SegmentSpawner.Initialize();
         }

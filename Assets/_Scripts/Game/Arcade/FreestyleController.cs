@@ -5,16 +5,18 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Arcade
 {
-    /// <summary>Concrete mini‑game that spawns a trail course of segments and a crystal pickup.</summary>
+    /// <summary>Concrete mini‑game that spawns a trail course of segments and a crystal pickup.
+    /// </summary>
     public class FreestyleController : SinglePlayerMiniGameControllerBase
     {
-        [Header("Course Settings")]
+        /*[Header("Course Settings")]
         [SerializeField] Crystal crystal;
-        [SerializeField] Vector3 crystalStartPosition;
+        [SerializeField] Vector3 crystalStartPosition;*/
+        
         [SerializeField] SegmentSpawner segmentSpawner;
         [SerializeField] int baseNumberOfSegments = 10;
         [SerializeField] int baseStraightLineLength = 400;
-        [FormerlySerializedAs("resetTrailsEachTurn")] [SerializeField] bool resetEnvironmentOnEachTurn = true;
+        [SerializeField] bool resetEnvironmentOnEachTurn = true;
         [SerializeField] bool scaleCrystalPositionWithIntensity = true;
         [SerializeField] bool scaleLengthWithIntensity = true;
         [SerializeField] bool scaleSegmentsWithIntensity = true;
@@ -25,7 +27,8 @@ namespace CosmicShore.Game.Arcade
 
         int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * miniGameData.SelectedIntensity : baseNumberOfSegments;
         int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / miniGameData.SelectedIntensity : baseStraightLineLength;
-        Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * miniGameData.SelectedIntensity : crystalStartPosition;
+        
+        // Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * miniGameData.SelectedIntensity : crystalStartPosition;
         
         protected override void OnCountdownTimerEnded()
         {
@@ -58,7 +61,7 @@ namespace CosmicShore.Game.Arcade
             segmentSpawner.NumberOfSegments   = numberOfSegments;
             segmentSpawner.StraightLineLength = straightLineLength;
             // VesselPrismController.ClearTrails();
-            crystal.transform.position = crystalStart;
+            // crystal.transform.position = crystalStart;
             segmentSpawner.Initialize();
         }
     }

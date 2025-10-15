@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
@@ -22,8 +23,11 @@ namespace CosmicShore.Game
         const int MinimumSpaceBetweenCurrentAndLastSpawnPos = 100;
         
         #region Inspector Fields
-        [SerializeField] public CrystalProperties crystalProperties;
-        [SerializeField] public float sphereRadius = 100;
+        [SerializeField] 
+        public CrystalProperties crystalProperties;
+        
+        [SerializeField] float sphereRadius = 100;
+        public float SphereRadius => sphereRadius;
 
         [SerializeField] protected GameObject SpentCrystalPrefab;
 
@@ -41,7 +45,8 @@ namespace CosmicShore.Game
         public List<CrystalModelData> CrystalModels => crystalModels;
         
         Material tempMaterial;
-        Vector3 origin = Vector3.zero;
+        Vector3 _lastSpawnPosition;
+        public Vector3 Origin { get; private set; } = Vector3.zero;
 
         protected virtual void Start()
         {
@@ -74,42 +79,56 @@ namespace CosmicShore.Game
 //             // TODO : Pass only vessel status
 //             Explode(vessel);
 //             PlayExplosionAudio();
-//             CrystalRespawn();
+//             Respawn();
 //         }
 
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
-        private Vector3 _lastSpawnPosition;
-        
-        public void CrystalRespawn()
+        public void DeactivateModels()
         {
-            if (!allowRespawnOnImpact)
-            {
-                cell?.TryRemoveItem(this);    
-                Destroy(gameObject);
-                return;
-            }
-            
             foreach (var model in crystalModels)
             {
                 model.model.SetActive(true);
                 model.model.GetComponent<FadeIn>().StartFadeIn();
             }
-                
-                
+        }
+        
+        public void Respawn()
+        {
+            if (!allowRespawnOnImpact)
+            {
+                // cell?.TryRemoveItem(this);
+                CrystalManager.Instance.TryRemoveItem(this);
+                Destroy(gameObject);
+                return;
+            }
+
+            DeactivateModels();
+            ChangeSpawnPosition();
+            // cell.UpdateItem();
+            CrystalManager.Instance.UpdateItem();
+        }
+
+        void ChangeSpawnPosition()
+        {
             Vector3 spawnPos;
             do
             {
-                spawnPos = Random.insideUnitSphere * sphereRadius + origin;
+                spawnPos = Random.insideUnitSphere * SphereRadius + Origin;
             } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);
-                
-                
+            
             transform.SetPositionAndRotation(spawnPos, Random.rotation);
             collider.enabled = true;
-            cell.UpdateItem();
-            origin = transform.position;
+            // Origin = transform.position;
             _lastSpawnPosition = spawnPos;
-  
+        }
+
+        public void Vacuum(Vector3 newPosition, float vaccumAmount)
+        {
+            transform.position = Vector3.MoveTowards(
+                transform.position,
+                newPosition,
+                vaccumAmount * Time.deltaTime / transform.lossyScale.x);
         }
 
         //the following is a public method that can be called to grow the crystal
@@ -171,10 +190,7 @@ namespace CosmicShore.Game
             AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
         }
 
-        public void SetOrigin(Vector3 origin)
-        {
-            this.origin = origin;
-        }
+        public void SetOrigin(Vector3 o) => Origin = o; 
 
         public void ActivateCrystal()
         {

@@ -146,7 +146,7 @@ public class CameraManager : Singleton<CameraManager>
     void LookAtCrystal()
     {
         if (mainMenuCamera)
-            mainMenuCamera.LookAt = CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
+            mainMenuCamera.LookAt = CrystalManager.Instance.GetCrystalTransform(); // CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
     }
 
 

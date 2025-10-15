@@ -51,8 +51,9 @@ namespace CosmicShore.Game
         }
 
 
-        public void AddItem(CellItem item)
+        /*public void AddItem(CellItem item)
         {
+            CrystalManager.Instance.TryInitializeAndAdd(item);
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(item.transform.position)))
             {
                 cell.TryInitializeAndAdd(item);
@@ -62,6 +63,7 @@ namespace CosmicShore.Game
 
         public void RemoveItem(CellItem item)
         {
+            CrystalManager.Instance.TryRemoveItem(item);
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(item.transform.position)))
             {
                 cell.TryRemoveItem(item);
@@ -71,12 +73,13 @@ namespace CosmicShore.Game
 
         public void UpdateItem(CellItem item)
         {
+            CrystalManager.Instance.UpdateItem();
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(item.transform.position)))
             {
                 cell.UpdateItem();
                 break;
             }
-        }
+        }*/
 
         public void StealBlock(Domains domain, PrismProperties blockProperties)
         {

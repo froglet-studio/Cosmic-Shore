@@ -5,8 +5,8 @@ namespace CosmicShore.Game.Arcade
 {
     public class MazeMiniGame : MiniGame
     {
-        [SerializeField] Crystal Crystal;
-        [SerializeField] Vector3 CrystalStartPosition;
+        // [SerializeField] Crystal Crystal;
+        // [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] SegmentSpawner SegmentSpawner;
 
 

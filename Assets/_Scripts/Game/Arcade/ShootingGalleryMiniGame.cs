@@ -7,7 +7,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class ShootingGalleryMiniGame : MiniGame
     {
-        [SerializeField] Crystal Crystal;
+        // [SerializeField] Crystal Crystal;
         [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] SegmentSpawner SegmentSpawner;
 
@@ -29,7 +29,7 @@ namespace CosmicShore.Game.Arcade
             SegmentSpawner.NumberOfSegments = 60;
             SegmentSpawner.Initialize();
 
-            Crystal.transform.position = CrystalStartPosition;
+            // Crystal.transform.position = CrystalStartPosition;
             ActivePlayer.Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
 
             FormRing();

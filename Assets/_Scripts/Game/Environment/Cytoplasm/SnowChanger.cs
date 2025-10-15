@@ -6,7 +6,7 @@ namespace CosmicShore.Game
     public class SnowChanger : MonoBehaviour
     {
         [SerializeField] GameObject snow;
-        [SerializeField] Vector3 crystalSize = new Vector3(500, 500, 500);
+        // [SerializeField] Vector3 crystalSize = new Vector3(500, 500, 500);
         [SerializeField] int shardDistance = 100;
 
         [Header("Optional Fields")] [SerializeField]
@@ -15,7 +15,7 @@ namespace CosmicShore.Game
         [SerializeField] Vector3 targetAxis;
         [SerializeField] Vector3 newOrigin;
         [SerializeField] ScriptableEventNoParam OnCellItemsUpdated;
-        Crystal _crystal;
+        Transform crystalTransform;
         GameObject[,,] crystalLattice;
         readonly float nodeScaler = 10;
         readonly float nodeSize = .25f;
@@ -36,14 +36,22 @@ namespace CosmicShore.Game
             OnCellItemsUpdated.OnRaised -= ChangeSnowSize;
         }
 
-        public void Initialize(Crystal crystal)
+        // public void Initialize(Transform ct, float sphereRadius)
+        public void Initialize()
         {
-            _crystal = crystal;
+            crystalTransform = CrystalManager.Instance.GetCrystalTransform();
             origin = newOrigin;
+            var crystalSize = crystalTransform.localScale;
             shardsX = (int)(crystalSize.x / shardDistance);
             shardsY = (int)(crystalSize.y / shardDistance);
             shardsZ = (int)(crystalSize.z / shardDistance);
-            if (_crystal != null) sphereDiameter = sphereScaler * _crystal.GetComponent<Crystal>().sphereRadius;
+            
+            /*shardsX = (int)(crystalSize.x / shardDistance);
+            shardsY = (int)(crystalSize.y / shardDistance);
+            shardsZ = (int)(crystalSize.z / shardDistance);*/
+            
+            if (crystalTransform)
+                sphereDiameter = sphereScaler * CrystalManager.Instance.GetSphereRadius(); // this.crystalTransform.GetComponent<Crystal>().SphereRadius;
             crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1];
             for (int x = -shardsX;
                  x <= shardsX;
@@ -78,13 +86,13 @@ namespace CosmicShore.Game
                     {
                         var shard = crystalLattice[x, y, z];
                         float normalizedDistance;
-                        if (_crystal != null)
+                        if (crystalTransform != null)
                         {
                             float clampedDistance =
-                                Mathf.Clamp((shard.transform.position - _crystal.transform.position).magnitude, 0,
+                                Mathf.Clamp((shard.transform.position - crystalTransform.transform.position).magnitude, 0,
                                     sphereDiameter);
                             normalizedDistance = clampedDistance / sphereDiameter;
-                            shard.transform.LookAt(_crystal.transform);
+                            shard.transform.LookAt(crystalTransform.transform);
                         }
                         else
                         {

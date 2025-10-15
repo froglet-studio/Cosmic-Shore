@@ -13,7 +13,9 @@ namespace CosmicShore.Game
 
         [Header("Skim / Crystal")]
         [SerializeField] float vaccumAmount = 80f;
+        public float VaccumAmount =>  vaccumAmount;
         [SerializeField] bool vacuumCrystal = true;
+        public bool AllowVaccumCrystal => vacuumCrystal;
         [SerializeField] bool affectSelf = true;
 
         [Header("FX / Viz")]
@@ -80,15 +82,16 @@ namespace CosmicShore.Game
             MakeBoosters(prism);
         }
 
-        public void TryVacuumCrystal(Crystal crystal)
+        // TODO - Remove it later, this logic is transferred to skimmer impactor and crystal
+        /*public void TryVacuumCrystal(Crystal crystal)
         {
-            if (!vacuumCrystal || crystal == null) return;
+            if (!vacuumCrystal || !crystal) return;
 
             crystal.transform.position = Vector3.MoveTowards(
                 crystal.transform.position,
                 transform.position,
                 vaccumAmount * Time.deltaTime / crystal.transform.lossyScale.x);
-        }
+        }*/
         
         void ApplyScaleIfChanged()
         {

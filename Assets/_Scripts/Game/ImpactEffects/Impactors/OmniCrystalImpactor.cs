@@ -72,7 +72,7 @@ namespace CosmicShore.Game
                 Crystal.PlayExplosionAudio();
             }
 
-            Crystal.CrystalRespawn();
+            Crystal.Respawn();
         }
     }
 }

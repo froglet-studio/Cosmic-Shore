@@ -16,11 +16,11 @@ namespace CosmicShore.Game
         [FormerlySerializedAs("OwnTeam")] public Domains ownDomain = Domains.None;
         public ItemType ItemType = ItemType.Buff;
 
-        protected Cell cell;
+        // protected Cell cell;
         
-        public void Initialize(int newId, Cell cell)
+        public void Initialize(int newId) // , Cell cell)
         {
-            this.cell = cell;
+            // this.cell = cell;
             Id = newId;
         }
     }

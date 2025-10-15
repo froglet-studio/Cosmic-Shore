@@ -5,7 +5,7 @@ namespace CosmicShore.Game.Arcade
     public class DartMiniGame : MiniGame
     {
         [SerializeField] SpawnableDartBoard DartBoard;
-        [SerializeField] Crystal Crystal;
+        // [SerializeField] Crystal Crystal;
         [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] SegmentSpawner SegmentSpawner;
 
@@ -28,7 +28,7 @@ namespace CosmicShore.Game.Arcade
             silhouette.Clear();
 
             // VesselPrismController.ClearTrails();
-            Crystal.transform.position = CrystalStartPosition;
+            // Crystal.transform.position = CrystalStartPosition;
             ActivePlayer.Vessel.VesselStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, ActivePlayer.Vessel.VesselStatus.ResourceSystem.Resources[resourceIndex].MaxAmount);
         }
     }
