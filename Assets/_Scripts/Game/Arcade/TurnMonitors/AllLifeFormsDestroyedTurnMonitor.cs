@@ -20,7 +20,7 @@ namespace CosmicShore.Game.Arcade
         public override bool CheckForEndOfTurn()
         {
             // Check if any life forms exist in the current node
-            return miniGameData.CellStatsList[cellID].LifeFormsInCell <= 0;
+            return gameData.CellStatsList[cellID].LifeFormsInCell <= 0;
             // If we get here, all life forms have been destroyed
         }
 
@@ -37,7 +37,7 @@ namespace CosmicShore.Game.Arcade
 
         void UpdateUI()
         {
-            string message = (miniGameData.CellStatsList[cellID].LifeFormsInCell).ToString();
+            string message = (gameData.CellStatsList[cellID].LifeFormsInCell).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }
     }

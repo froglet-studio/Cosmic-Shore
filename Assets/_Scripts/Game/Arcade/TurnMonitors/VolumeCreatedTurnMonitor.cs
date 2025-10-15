@@ -35,7 +35,7 @@ namespace CosmicShore.Game.Arcade
 
         public override bool CheckForEndOfTurn()
         {
-            return miniGameData.RoundStatsList.Any(roundStats => roundStats.VolumeCreated > amount);
+            return gameData.RoundStatsList.Any(roundStats => roundStats.VolumeCreated > amount);
             // return StatsManager.Instance.TeamStats[team].VolumeCreated > Amount;
         }
         
@@ -53,7 +53,7 @@ namespace CosmicShore.Game.Arcade
                 onUpdateTurnMonitorDisplay.Raise(message);
             }*/
 
-            string message = ((int)((amount - miniGameData.RoundStatsList[0].VolumeCreated) / volumeUnitConverstion)).ToString();
+            string message = ((int)((amount - gameData.RoundStatsList[0].VolumeCreated) / volumeUnitConverstion)).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }
     }

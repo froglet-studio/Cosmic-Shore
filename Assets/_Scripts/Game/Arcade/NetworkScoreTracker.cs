@@ -16,8 +16,8 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer)
                 return;
             
-            miniGameData.OnMiniGameInitialized += InitializeScoringMode;
-            miniGameData.OnMiniGameEnd += CalculateWinnerOnServer;
+            gameData.OnMiniGameInitialized += InitializeScoringMode;
+            gameData.OnMiniGameEnd += CalculateWinnerOnServer;
         }
 
         public override void OnNetworkDespawn()
@@ -25,8 +25,8 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer)
                 return;
             
-            miniGameData.OnMiniGameInitialized -= InitializeScoringMode;
-            miniGameData.OnMiniGameEnd -= CalculateWinnerOnServer;
+            gameData.OnMiniGameInitialized -= InitializeScoringMode;
+            gameData.OnMiniGameEnd -= CalculateWinnerOnServer;
         }
 
         protected override void OnDisable()

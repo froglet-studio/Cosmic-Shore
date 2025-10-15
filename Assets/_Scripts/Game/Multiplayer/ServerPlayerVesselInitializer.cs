@@ -17,7 +17,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(NetcodeHooks))]
     public class ServerPlayerVesselInitializer : MonoBehaviour
     {
-        [SerializeField] MiniGameDataSO gameData;
+        [SerializeField] GameDataSO gameData;
         [FormerlySerializedAs("clientPlayerSpawner")] [SerializeField] 
         ClientPlayerVesselInitializer clientPlayerVesselInitializer;
         [SerializeField] 

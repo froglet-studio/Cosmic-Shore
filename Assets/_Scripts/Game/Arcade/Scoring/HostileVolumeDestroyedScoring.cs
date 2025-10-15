@@ -6,13 +6,13 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class HostileVolumeDestroyedScoring : BaseScoring
     {
-        public HostileVolumeDestroyedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        public HostileVolumeDestroyedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
         public override void CalculateScore()
         {
-            foreach (var playerScore in miniGameData.RoundStatsList)
+            foreach (var playerScore in GameData.RoundStatsList)
             {
-                if (!miniGameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                 {
                     Debug.LogError($"Didn't find RoundStats for player: {playerScore.Name}");
                     return;

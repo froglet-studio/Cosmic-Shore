@@ -3,12 +3,13 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 using CosmicShore.Game;
 using CosmicShore.SOAP;
+using UnityEngine.Serialization;
 
 public class VesselTransformer : MonoBehaviour
 {
     protected const float LERP_AMOUNT = 1.5f;
 
-    [SerializeField] private MiniGameDataSO miniGameData;
+    [FormerlySerializedAs("miniGameData")] [SerializeField] private GameDataSO gameData;
     [SerializeField] protected bool toggleManualThrottle;
 
     #region Vessel
@@ -236,14 +237,14 @@ public class VesselTransformer : MonoBehaviour
                 if (ThrottleModifiers.Count == 0)
                 {
                     VesselStatus.Slowed = false;
-                    miniGameData?.SlowedShipTransforms.Remove(transform);
+                    gameData?.SlowedShipTransforms.Remove(transform);
                 }
             }
             else if (modifier.initialValue < 1f)
             {
                 accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
                 VesselStatus.Slowed = true;
-                miniGameData?.SlowedShipTransforms.Add(transform);
+                gameData?.SlowedShipTransforms.Add(transform);
             }
             else
             {
@@ -256,7 +257,7 @@ public class VesselTransformer : MonoBehaviour
         if (accumulatedThrottleModification < 0.001f)
         {
             VesselStatus.Slowed = false;
-            miniGameData?.SlowedShipTransforms.Remove(transform);
+            gameData?.SlowedShipTransforms.Remove(transform);
         }
 
         throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0f);

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections;
 using CosmicShore.Game;
 using CosmicShore.SOAP;
+using UnityEngine.Serialization;
 
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
 public struct Entity
@@ -24,8 +25,8 @@ public struct Entity
 
 public class BoidSImulationController : MonoBehaviour
 {
-    [SerializeField]
-    MiniGameDataSO miniGameData;
+    [FormerlySerializedAs("miniGameData")] [SerializeField]
+    GameDataSO gameData;
     
     public ComputeShader boidSimulationShader;
     public Prism boidPrefab;
@@ -186,7 +187,7 @@ public class BoidSImulationController : MonoBehaviour
 
     private Vector4 CalculateTeamWeights()
     {
-        Vector4 teamVolumes = miniGameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
+        Vector4 teamVolumes = gameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
         float totalVolume = teamVolumes.x + teamVolumes.y + teamVolumes.z + teamVolumes.w;
         return new Vector4(
             totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero

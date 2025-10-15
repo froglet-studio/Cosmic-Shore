@@ -3,6 +3,7 @@ using UnityEngine;
 using TMPro;
 using CosmicShore.Core;
 using CosmicShore.SOAP;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.UI
 {
@@ -10,12 +11,12 @@ namespace CosmicShore.Game.UI
     {
         [SerializeField] TMP_Text currentScoreText;
         
-        [SerializeField] MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField] GameDataSO gameData;
 
         void Update()
         {
             // Use MiniGameData instead of StatsManager
-            var roundStats = miniGameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
+            var roundStats = gameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
 
             float Vol(Domains t) => roundStats.FirstOrDefault(rs => rs.Domain == t)?.VolumeRemaining ?? 0f;
 

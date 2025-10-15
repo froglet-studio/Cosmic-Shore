@@ -9,8 +9,8 @@ namespace CosmicShore
 {
     public abstract class Population : MonoBehaviour, ITeamAssignable
     {
-        [SerializeField]
-        MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        GameDataSO gameData;
         
         [FormerlySerializedAs("Team")] public Domains domain;
         [SerializeField] float goalUpdateInterval = 5f;
@@ -27,8 +27,8 @@ namespace CosmicShore
 
         void CalculateTeamWeights()
         {
-            Vector4 teamVolumes = miniGameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
-            float totalVolume = miniGameData.GetTotalVolume();
+            Vector4 teamVolumes = gameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
+            float totalVolume = gameData.GetTotalVolume();
 
             //Weights = new List<float>
             //{

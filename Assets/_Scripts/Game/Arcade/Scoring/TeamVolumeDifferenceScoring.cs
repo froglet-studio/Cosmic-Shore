@@ -9,17 +9,17 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class TeamVolumeDifferenceScoring : BaseScoring
     {
-        public TeamVolumeDifferenceScoring(MiniGameDataSO scoreData, float scoreMultiplier) : base(scoreData, scoreMultiplier) { }
+        public TeamVolumeDifferenceScoring(GameDataSO scoreData, float scoreMultiplier) : base(scoreData, scoreMultiplier) { }
 
         public override void CalculateScore()
         {
-            var sorted = miniGameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
+            var sorted = GameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
             if (sorted == null || sorted.Count == 0) return;
 
             // last element (descending list) has the smallest volume
             float minVol = sorted[^1].VolumeRemaining;
 
-            foreach (var ps in miniGameData.RoundStatsList)
+            foreach (var ps in GameData.RoundStatsList)
             {
                 float rel = Mathf.Max(0f, ps.VolumeRemaining - minVol); // relative to last place
                 ps.Score += rel * scoreMultiplier;                      // accumulate like before

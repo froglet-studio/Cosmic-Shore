@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Arcade
         
         async UniTaskVoid OnClickReturnToMainMenuAsync()
         {
-            RemovePlayer_ServerRpc(miniGameData.ActivePlayer.Name);
+            RemovePlayer_ServerRpc(gameData.ActivePlayer.Name);
             await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, PlayerLoopTiming.LastPostLateUpdate ,this.GetCancellationTokenOnDestroy());
             MultiplayerSetup.Instance.LeaveSession().Forget();
         }
@@ -32,10 +32,10 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         void RemovePlayer_ClientRpc(string playerName)
         {
-            if (string.IsNullOrEmpty(playerName) || miniGameData == null)
+            if (string.IsNullOrEmpty(playerName) || gameData == null)
                 return;
 
-            bool removed = miniGameData.RemovePlayerData(playerName);
+            bool removed = gameData.RemovePlayerData(playerName);
             if (removed)
             {
                 Debug.Log($"[Freestyle][Client] Removed player '{playerName}'.");

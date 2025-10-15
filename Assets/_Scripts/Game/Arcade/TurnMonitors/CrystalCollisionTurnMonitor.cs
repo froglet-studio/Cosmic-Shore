@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Arcade
 
         public override bool CheckForEndOfTurn()
         {
-            if (!miniGameData.TryGetActivePlayerStats(out IPlayer _, out IRoundStats roundStats))
+            if (!gameData.TryGetActivePlayerStats(out IPlayer _, out IRoundStats roundStats))
                 return false;
 
             return roundStats.OmniCrystalsCollected >= CrystalCollisions;

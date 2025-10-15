@@ -4,13 +4,13 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class VolumeCreatedScoring : BaseScoring
     {
-        public VolumeCreatedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        public VolumeCreatedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
         public override void CalculateScore()
         {
-            foreach (var playerScore in miniGameData.RoundStatsList)
+            foreach (var playerScore in GameData.RoundStatsList)
             {
-                if (!miniGameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                     return;
 
                 playerScore.Score += roundStats.VolumeCreated * scoreMultiplier;

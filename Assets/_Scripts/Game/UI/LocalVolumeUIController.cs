@@ -1,12 +1,13 @@
 using CosmicShore.SOAP;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.UI
 {
     public class LocalVolumeUIController : MonoBehaviour
     {
-        [SerializeField] MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField] GameDataSO gameData;
         [SerializeField] VolumeUI volumeUI;
 
         private bool _active;
@@ -14,25 +15,25 @@ namespace CosmicShore.Game.UI
 
         void OnEnable()
         {
-            miniGameData.OnGameStarted += OnMiniGameStart;
-            miniGameData.OnMiniGameTurnEnd += OnMiniGameTurnEnd;
+            gameData.OnGameStarted += GameStart;
+            gameData.OnMiniGameTurnEnd += GameTurnEnd;
         }
 
         void OnDisable()
         {
-            miniGameData.OnGameStarted -= OnMiniGameStart;
-            miniGameData.OnMiniGameTurnEnd -= OnMiniGameTurnEnd;
+            gameData.OnGameStarted -= GameStart;
+            gameData.OnMiniGameTurnEnd -= GameTurnEnd;
             _active = false;
             _running = false;
         }
 
-        private void OnMiniGameStart()
+        private void GameStart()
         {
             _active = true;
             if (!_running) RunVolumeUpdater().Forget();
         }
 
-        private void OnMiniGameTurnEnd()
+        private void GameTurnEnd()
         {
             _active = false;
         }
@@ -42,9 +43,9 @@ namespace CosmicShore.Game.UI
             _running = true;
             while (_active && this)
             {
-                if (volumeUI && miniGameData)
+                if (volumeUI && gameData)
                 {
-                    var teamVolumes = miniGameData.GetTeamVolumes();
+                    var teamVolumes = gameData.GetTeamVolumes();
                     volumeUI.UpdateVolumes(teamVolumes);
                 }
 

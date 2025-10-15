@@ -11,8 +11,8 @@ namespace CosmicShore.Game.Arcade
 {
     public class ScoreTracker : NetworkBehaviour
     {
-        [SerializeField]
-        protected MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        protected GameDataSO gameData;
         
         [SerializeField] bool golfRules;  // For primary scoring mode
         
@@ -23,14 +23,14 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnEnable()
         {
-            miniGameData.OnMiniGameInitialized += InitializeScoringMode;
-            miniGameData.OnMiniGameEnd += CalculateWinnerAndInvokeEvent;
+            gameData.OnMiniGameInitialized += InitializeScoringMode;
+            gameData.OnMiniGameEnd += CalculateWinnerAndInvokeEvent;
         }
 
         protected virtual void OnDisable()
         {
-            miniGameData.OnMiniGameInitialized -= InitializeScoringMode;
-            miniGameData.OnMiniGameEnd -= CalculateWinnerAndInvokeEvent;
+            gameData.OnMiniGameInitialized -= InitializeScoringMode;
+            gameData.OnMiniGameEnd -= CalculateWinnerAndInvokeEvent;
         }
         
         void CalculateWinnerAndInvokeEvent()
@@ -41,8 +41,8 @@ namespace CosmicShore.Game.Arcade
 
         protected void SortAndInvokeResults()
         {
-            miniGameData.SortRoundStats(golfRules);
-            miniGameData.InvokeWinnerCalculated();
+            gameData.SortRoundStats(golfRules);
+            gameData.InvokeWinnerCalculated();
         }
         
         protected void InitializeScoringMode()
@@ -65,17 +65,17 @@ namespace CosmicShore.Game.Arcade
         {
             BaseScoring newScoring = mode switch
             {
-                ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(miniGameData, multiplier),
-                ScoringModes.VolumeCreated => new VolumeCreatedScoring(miniGameData, multiplier),
-                ScoringModes.TimePlayed => new TimePlayedScoring(miniGameData, multiplier),
-                ScoringModes.TurnsPlayed => new TurnsPlayedScoring(miniGameData, multiplier),
-                ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(miniGameData, multiplier),
-                ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(miniGameData, multiplier, true),
-                ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(miniGameData, multiplier),
-                ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(miniGameData, multiplier),
-                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(miniGameData, multiplier, CrystalsCollectedScoring.CrystalType.Omni),
-                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(miniGameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental),
-                ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(miniGameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental, true),
+                ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(gameData, multiplier),
+                ScoringModes.VolumeCreated => new VolumeCreatedScoring(gameData, multiplier),
+                ScoringModes.TimePlayed => new TimePlayedScoring(gameData, multiplier),
+                ScoringModes.TurnsPlayed => new TurnsPlayedScoring(gameData, multiplier),
+                ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(gameData, multiplier),
+                ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(gameData, multiplier, true),
+                ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(gameData, multiplier),
+                ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier),
+                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier, CrystalsCollectedScoring.CrystalType.Omni),
+                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental),
+                ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(gameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental, true),
                 _ => throw new ArgumentException($"Unknown scoring mode: {mode}")
             };
             return newScoring;
@@ -83,7 +83,7 @@ namespace CosmicShore.Game.Arcade
 
         protected void CalculateScores()
         {
-            if (miniGameData.RoundStatsList.Count == 0)
+            if (gameData.RoundStatsList.Count == 0)
             {
                 Debug.LogError("This should never happen!");
                 return;

@@ -6,6 +6,7 @@ using CosmicShore.Core;
 using CosmicShore.SOAP;
 using Obvious.Soap;
 using Unity.Services.Matchmaker.Models;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 
@@ -46,8 +47,8 @@ namespace CosmicShore.Game
         /*[SerializeField]
         ScriptableEventNoParam OnCellItemsUpdated;*/
         
-        [SerializeField]
-        MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        GameDataSO gameData;
 
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new Dictionary<Domains, BlockCountDensityGrid>();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new Dictionary<Domains, BlockVolumeDensityGrid>();
@@ -75,12 +76,12 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            miniGameData.OnGameStarted += Initialize;
+            gameData.OnGameStarted += Initialize;
         }
 
         private void OnDisable()
         {
-            miniGameData.OnGameStarted -= Initialize;
+            gameData.OnGameStarted -= Initialize;
         }
 
         private void Initialize()
@@ -335,7 +336,7 @@ namespace CosmicShore.Game
             }
             while (true)
             {
-                var controllingVolume = miniGameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item2; // GetTeamVolume(ControllingTeam);
+                var controllingVolume = gameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item2; // GetTeamVolume(ControllingTeam);
                 if (controllingVolume < floraSpawnVolumeCeiling)
                 {
                     var newFlora = Instantiate(floraConfiguration.Flora, transform.position, Quaternion.identity);
@@ -358,7 +359,7 @@ namespace CosmicShore.Game
             yield return new WaitForSeconds(initialFaunaSpawnWaitTime);
             while (true)
             {
-                var controllingTeamStat = miniGameData.GetControllingTeamStatsBasedOnVolumeRemaining();
+                var controllingTeamStat = gameData.GetControllingTeamStatsBasedOnVolumeRemaining();
                 var controllingVolume = controllingTeamStat.Item2; // GetTeamVolume(ControllingTeam);
                 var period = baseFaunaSpawnTime * faunaSpawnVolumeThreshold / controllingVolume; //TODO: use this to adjust spawn rate
                 if (controllingVolume > faunaSpawnVolumeThreshold)

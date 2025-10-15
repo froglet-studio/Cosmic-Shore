@@ -25,7 +25,7 @@ namespace CosmicShore.Core
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
 
-        [SerializeField] private MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField] private GameDataSO gameData;
         
         // [SerializeField] ScriptableEventArcadeData OnArcadeMultiplayerModeSelected;
         
@@ -53,17 +53,17 @@ namespace CosmicShore.Core
 
         public void LaunchMission(GameModes gameMode, SO_Captain captain, int intensity)
         {
-            miniGameData.PlayerCaptain = captain;
-            miniGameData.ResourceCollection = CaptainManager.Instance.GetCaptainByName(captain.Name).ResourceLevels;
-            miniGameData.IsDailyChallenge = false;
-            miniGameData.IsTraining = false;
-            miniGameData.IsMission = true;
-            miniGameData.IsMultiplayerMode = false;
-            miniGameData.GameMode = gameMode;
-            miniGameData.SelectedPlayerCount.Value = 1;
-            miniGameData.SelectedIntensity.Value = intensity;
-            miniGameData.SceneName = MissionLookup[gameMode].SceneName;
-            miniGameData.InvokeGameLaunch();
+            gameData.PlayerCaptain = captain;
+            gameData.ResourceCollection = CaptainManager.Instance.GetCaptainByName(captain.Name).ResourceLevels;
+            gameData.IsDailyChallenge = false;
+            gameData.IsTraining = false;
+            gameData.IsMission = true;
+            gameData.IsMultiplayerMode = false;
+            gameData.GameMode = gameMode;
+            gameData.SelectedPlayerCount.Value = 1;
+            gameData.SelectedIntensity.Value = intensity;
+            gameData.SceneName = MissionLookup[gameMode].SceneName;
+            gameData.InvokeGameLaunch();
             
             /*MiniGame.PlayerCaptain = captain;
             MiniGame.PlayerShipType = captain.Vessel.Class;
@@ -84,15 +84,15 @@ namespace CosmicShore.Core
 
         public void LaunchArcadeGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
-            miniGameData.ResourceCollection = shipResources;
-            miniGameData.IsDailyChallenge = isDailyChallenge;
-            miniGameData.IsTraining = false;
-            miniGameData.IsMission = false;
-            miniGameData.GameMode = gameMode;
+            gameData.ResourceCollection = shipResources;
+            gameData.IsDailyChallenge = isDailyChallenge;
+            gameData.IsTraining = false;
+            gameData.IsMission = false;
+            gameData.GameMode = gameMode;
             
-            miniGameData.IsMultiplayerMode = SO_Game.IsMultiplayerModes(gameMode);
-            miniGameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
-            miniGameData.InvokeGameLaunch();
+            gameData.IsMultiplayerMode = SO_Game.IsMultiplayerModes(gameMode);
+            gameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
+            gameData.InvokeGameLaunch();
 
             /*MiniGame.PlayerShipType = vessel;
             MiniGame.ResourceCollection = shipResources;
@@ -135,13 +135,13 @@ namespace CosmicShore.Core
 
         public void LaunchTrainingGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
-            miniGameData.ResourceCollection = shipResources;
-            miniGameData.IsDailyChallenge = isDailyChallenge;
-            miniGameData.IsTraining = !isDailyChallenge;
-            miniGameData.IsMission = false;
-            miniGameData.IsMultiplayerMode = false;
-            miniGameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
-            miniGameData.InvokeGameLaunch();
+            gameData.ResourceCollection = shipResources;
+            gameData.IsDailyChallenge = isDailyChallenge;
+            gameData.IsTraining = !isDailyChallenge;
+            gameData.IsMission = false;
+            gameData.IsMultiplayerMode = false;
+            gameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
+            gameData.InvokeGameLaunch();
             
             /*MiniGame.PlayerShipType = vessel;
             MiniGame.ResourceCollection = shipResources;

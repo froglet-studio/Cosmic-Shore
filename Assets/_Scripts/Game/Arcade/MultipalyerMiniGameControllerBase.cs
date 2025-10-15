@@ -23,8 +23,8 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer)
                 return;
             
-            miniGameData.OnMiniGameTurnEnd += EndTurn;
-            miniGameData.OnSessionStarted += SubscribeToSessionEvents;
+            gameData.OnMiniGameTurnEnd += EndTurn;
+            gameData.OnSessionStarted += SubscribeToSessionEvents;
             
             InitializeAfterDelay().Forget();
         }
@@ -34,20 +34,20 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer)
                 return;
 
-            miniGameData.OnMiniGameTurnEnd -= EndTurn;
-            miniGameData.OnSessionStarted -= SubscribeToSessionEvents;
+            gameData.OnMiniGameTurnEnd -= EndTurn;
+            gameData.OnSessionStarted -= SubscribeToSessionEvents;
         }
 
         private void SubscribeToSessionEvents()
         {
-            miniGameData.ActiveSession.Deleted += UnsubscribeFromSessionEvents;
-            miniGameData.ActiveSession.PlayerLeaving += OnPlayerLeavingFromSession;
+            gameData.ActiveSession.Deleted += UnsubscribeFromSessionEvents;
+            gameData.ActiveSession.PlayerLeaving += OnPlayerLeavingFromSession;
         }
 
         private void UnsubscribeFromSessionEvents()
         {
-            miniGameData.ActiveSession.Deleted -= UnsubscribeFromSessionEvents;
-            miniGameData.ActiveSession.PlayerLeaving -= OnPlayerLeavingFromSession;
+            gameData.ActiveSession.Deleted -= UnsubscribeFromSessionEvents;
+            gameData.ActiveSession.PlayerLeaving -= OnPlayerLeavingFromSession;
         }
 
         void OnPlayerLeavingFromSession(string clientId) {}
@@ -70,7 +70,7 @@ namespace CosmicShore.Game.Arcade
         
         protected override void OnCountdownTimerEnded()
         {
-            miniGameData.StartNewGame(); // For this client only.
+            gameData.StartNewGame(); // For this client only.
             OnCountdownTimerEnded_ServerRpc();
             
             // Matches your original Duel behavior: only server starts the game and resets counters.
@@ -90,7 +90,7 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
-            miniGameData.SetPlayersActiveForMultiplayer();
+            gameData.SetPlayersActiveForMultiplayer();
         }
         
         protected override void EndGame()
@@ -101,8 +101,8 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         private void EndGame_ClientRpc()
         {
-            miniGameData.InvokeMiniGameEnd();
-            miniGameData.ResetPlayers();
+            gameData.InvokeMiniGameEnd();
+            gameData.ResetPlayers();
         }
     }
 }

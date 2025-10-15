@@ -3,6 +3,7 @@ using CosmicShore.SOAP;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game.Arcade
@@ -21,8 +22,8 @@ namespace CosmicShore.Game.Arcade
         [Header("Scene References")]
         [SerializeField] CountdownTimer countdownTimer;
         
-        [SerializeField] 
-        protected MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField] 
+        protected GameDataSO gameData;
         
         [SerializeField] 
         protected ScriptableEventBool _onToggleReadyButton;
@@ -36,7 +37,7 @@ namespace CosmicShore.Game.Arcade
         
         protected void Initialize()
         {
-            miniGameData.InitializeMiniGame();
+            gameData.InitializeMiniGame();
         }
 
         protected virtual void OnReadyClicked_()

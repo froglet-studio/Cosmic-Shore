@@ -7,13 +7,14 @@ using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
     public class Player : NetworkBehaviour, IPlayer
     { 
-        [SerializeField]
-        MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        GameDataSO gameData;
         
         public static List<IPlayer> NppList { get; } = new();
 
@@ -76,7 +77,7 @@ namespace CosmicShore.Game
             
             if (IsOwner)
             {
-                NetDefaultShipType.Value = miniGameData.selectedVesselClass.Value;
+                NetDefaultShipType.Value = gameData.selectedVesselClass.Value;
                 InputController.Initialize();
                 NetName.Value = AuthenticationService.Instance.PlayerName;
             }

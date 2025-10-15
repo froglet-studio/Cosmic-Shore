@@ -18,9 +18,9 @@ namespace CosmicShore.SOAP
     /// It connects MiniGameBase with GameManager, StatsManager, TurnMonitor, Aracade, MultiplayerSetup and others.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "scriptable_variable_" + nameof(MiniGameDataSO),
-        menuName = "ScriptableObjects/DataContainers/" + nameof(MiniGameDataSO))]
-    public class MiniGameDataSO : ScriptableObject
+        fileName = "scriptable_variable_" + nameof(GameDataSO),
+        menuName = "ScriptableObjects/DataContainers/" + nameof(GameDataSO))]
+    public class GameDataSO : ScriptableObject
     {
         // Events
         public event Action OnLaunchGame;

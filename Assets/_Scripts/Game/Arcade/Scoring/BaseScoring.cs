@@ -10,11 +10,11 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         protected float scoreMultiplier;
 
-        protected MiniGameDataSO miniGameData;
+        protected GameDataSO GameData;
         
-        protected BaseScoring(MiniGameDataSO data, float scoreMultiplier = 145.65f)
+        protected BaseScoring(GameDataSO data, float scoreMultiplier = 145.65f)
         {
-            miniGameData = data;
+            GameData = data;
             this.scoreMultiplier = scoreMultiplier;
         }
 
@@ -32,7 +32,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         protected bool TryGetRoundStats(string playerName, out IRoundStats roundStats)
         {
             roundStats = null;
-            if (miniGameData.TryGetRoundStats(playerName, out roundStats)) 
+            if (GameData.TryGetRoundStats(playerName, out roundStats)) 
                 return true;
             
             Debug.LogError($"Didn't find RoundStats for player: {playerName}");

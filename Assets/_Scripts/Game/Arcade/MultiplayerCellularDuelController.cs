@@ -31,7 +31,7 @@ namespace CosmicShore.Game.Arcade
         private void OnReadyClicked_ServerRpc()
         {
             readyClientCount++;
-            if (!readyClientCount.Equals(miniGameData.SelectedPlayerCount))
+            if (!readyClientCount.Equals(gameData.SelectedPlayerCount))
                 return;
 
             readyClientCount = 0;

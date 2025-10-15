@@ -4,7 +4,7 @@ namespace CosmicShore.Game.Arcade
     {
         void OnEnable()
         {
-            miniGameData.OnMiniGameTurnEnd += EndTurn;
+            gameData.OnMiniGameTurnEnd += EndTurn;
         }
         
         void Start()
@@ -15,21 +15,21 @@ namespace CosmicShore.Game.Arcade
         
         void OnDisable() 
         {
-            miniGameData.OnMiniGameTurnEnd -= EndTurn;
+            gameData.OnMiniGameTurnEnd -= EndTurn;
         }
         
         protected override void OnCountdownTimerEnded()
         {
             roundsPlayed = 0;
             turnsTakenThisRound = 0;
-            miniGameData.SetPlayersActive();
-            miniGameData.StartNewGame();
+            gameData.SetPlayersActive();
+            gameData.StartNewGame();
         }
         
         protected override void EndGame()
         {
-            miniGameData.InvokeMiniGameEnd();
-            miniGameData.ResetPlayers();
+            gameData.InvokeMiniGameEnd();
+            gameData.ResetPlayers();
         }
     }
 }

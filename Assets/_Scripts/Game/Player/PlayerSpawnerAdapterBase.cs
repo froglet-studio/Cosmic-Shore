@@ -6,7 +6,7 @@ namespace CosmicShore.Game
 {
     public abstract class PlayerSpawnerAdapterBase : MonoBehaviour
     {
-        [SerializeField] protected MiniGameDataSO _gameData;
+        [SerializeField] protected GameDataSO _gameData;
         [SerializeField] protected PlayerSpawner _playerSpawner;
 
         [SerializeField] 

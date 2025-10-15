@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -13,8 +14,8 @@ namespace CosmicShore.Game.Arcade
         [Header("Timing")]
         [SerializeField] protected float _updateInterval = 1f;
         
-        [SerializeField]
-        protected MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        protected GameDataSO gameData;
 
         [Header("UI/Event")]
         [SerializeField] protected ScriptableEventString onUpdateTurnMonitorDisplay;

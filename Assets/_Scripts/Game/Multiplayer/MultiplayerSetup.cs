@@ -10,6 +10,7 @@ using Unity.Services.Multiplayer;
 using CosmicShore.SOAP;
 using CosmicShore.Utilities;
 using Obvious.Soap;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
@@ -19,7 +20,7 @@ namespace CosmicShore.Game
         const string GAME_MODE_PROPERTY_KEY = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
 
-        [SerializeField] private MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField] private GameDataSO gameData;
         [SerializeField] private ScriptableEventNoParam OnActiveSessionEnd;
 
         private bool _leaving;
@@ -45,9 +46,9 @@ namespace CosmicShore.Game
                 if (!AuthenticationService.Instance.IsSignedIn)
                     await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
-                if (miniGameData.IsMultiplayerMode)
+                if (gameData.IsMultiplayerMode)
                 {
-                    miniGameData.SetupForMultiplayer();
+                    gameData.SetupForMultiplayer();
                     ExecuteMultiplayerSetup().Forget();
                 }
             }
@@ -96,17 +97,17 @@ namespace CosmicShore.Game
             // Add game mode as session metadata
             var sessionOpts = new SessionOptions
             {
-                MaxPlayers = miniGameData.SelectedPlayerCount.Value,
+                MaxPlayers = gameData.SelectedPlayerCount.Value,
                 IsLocked = false,
                 IsPrivate = false,
                 PlayerProperties = playerProperties,
                 SessionProperties = sessionProperties
             }.WithRelayNetwork();
 
-            miniGameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
-            miniGameData.InvokeSessionStarted();
+            gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
+            gameData.InvokeSessionStarted();
 
-            Debug.Log($"[MultiplayerSetup] Created session {miniGameData.ActiveSession.Id} with GameMode = {miniGameData.GameMode}");
+            Debug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
         }
 
         private async UniTask JoinSessionAsClientById(string sessionId)
@@ -119,7 +120,7 @@ namespace CosmicShore.Game
             };
 
             Debug.Log($"[MultiplayerSetup] Joining session {sessionId}");
-            miniGameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
+            gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
         }
 
         // --------------------------
@@ -127,8 +128,8 @@ namespace CosmicShore.Game
         // --------------------------
         private async UniTask<IList<ISessionInfo>> QuerySessions()
         {
-            var gameModeString = miniGameData.GameMode.ToString();
-            var maxPlayers = miniGameData.SelectedPlayerCount.Value.ToString();
+            var gameModeString = gameData.GameMode.ToString();
+            var maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
 
             var filterOption1 = new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal);
             var filterOption2 = new FilterOption(FilterField.StringIndex2, maxPlayers, FilterOperation.Equal);
@@ -194,8 +195,8 @@ namespace CosmicShore.Game
 
         private Dictionary<string, SessionProperty> GetSessionProperties()
         {
-            string gameMode = miniGameData.GameMode.ToString();
-            string maxPlayers = miniGameData.SelectedPlayerCount.Value.ToString();
+            string gameMode = gameData.GameMode.ToString();
+            string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
             return new Dictionary<string, SessionProperty>
             {
                 { GAME_MODE_PROPERTY_KEY, new SessionProperty(gameMode, VisibilityPropertyOptions.Public, PropertyIndex.String1)},
@@ -215,16 +216,16 @@ namespace CosmicShore.Game
 
             try
             {
-                if (miniGameData.ActiveSession != null)
+                if (gameData.ActiveSession != null)
                 {
-                    if (miniGameData.ActiveSession.IsHost)
+                    if (gameData.ActiveSession.IsHost)
                     {
-                        await miniGameData.ActiveSession.AsHost().DeleteAsync();
+                        await gameData.ActiveSession.AsHost().DeleteAsync();
                         Debug.Log("[MultiplayerSetup] Host deleted session.");
                     }
                     else
                     {
-                        await miniGameData.ActiveSession.LeaveAsync();
+                        await gameData.ActiveSession.LeaveAsync();
                         Debug.Log("[MultiplayerSetup] Client left session.");
                     }
                 }
@@ -235,7 +236,7 @@ namespace CosmicShore.Game
             }
             finally
             {
-                miniGameData.ActiveSession = null;
+                gameData.ActiveSession = null;
 
                 if (NetworkManager.Singleton)
                     NetworkManager.Singleton.Shutdown();

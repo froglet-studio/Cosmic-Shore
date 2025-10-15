@@ -11,7 +11,7 @@ namespace CosmicShore.Game.UI
         public MiniGameHUDView View => view;
 
         [SerializeField]
-        MiniGameDataSO gameData;
+        GameDataSO gameData;
         
         [Header("View")]
         [SerializeField] private MiniGameHUDView view;

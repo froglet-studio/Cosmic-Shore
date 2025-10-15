@@ -2,12 +2,13 @@ using CosmicShore.SOAP;
 using Unity.Netcode;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.UI
 {
     public class NetworkVolumeUIController : NetworkBehaviour
     {
-        [SerializeField] MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField] GameDataSO gameData;
         [SerializeField] VolumeUI volumeUI;
 
         private bool _active;
@@ -17,8 +18,8 @@ namespace CosmicShore.Game.UI
         {
             if (IsServer)
             {
-                miniGameData.OnGameStarted += OnMiniGameStart_Server;
-                miniGameData.OnMiniGameTurnEnd += OnMiniGameTurnEnd_Server;
+                gameData.OnGameStarted += GameStartServer;
+                gameData.OnMiniGameTurnEnd += GameTurnEndServer;
             }
 
             if (IsClient)
@@ -32,8 +33,8 @@ namespace CosmicShore.Game.UI
         {
             if (IsServer)
             {
-                miniGameData.OnGameStarted -= OnMiniGameStart_Server;
-                miniGameData.OnMiniGameTurnEnd -= OnMiniGameTurnEnd_Server;
+                gameData.OnGameStarted -= GameStartServer;
+                gameData.OnMiniGameTurnEnd -= GameTurnEndServer;
             }
         }
 
@@ -42,7 +43,7 @@ namespace CosmicShore.Game.UI
             // Wait a small moment to ensure MiniGameData is initialized
             await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
 
-            if (miniGameData.IsRunning)
+            if (gameData.IsRunning)
             {
                 // Request the current state from server
                 RequestSyncFromServer_ServerRpc();
@@ -51,13 +52,13 @@ namespace CosmicShore.Game.UI
 
         #region --- SERVER HANDLERS ---
 
-        private void OnMiniGameStart_Server()
+        private void GameStartServer()
         {
             _active = true;
-            SendActiveState_ClientRpc(true, miniGameData.GetTeamVolumes());
+            SendActiveState_ClientRpc(true, gameData.GetTeamVolumes());
         }
 
-        private void OnMiniGameTurnEnd_Server()
+        private void GameTurnEndServer()
         {
             _active = false;
             SendActiveState_ClientRpc(false, Vector4.zero);
@@ -67,7 +68,7 @@ namespace CosmicShore.Game.UI
         private void RequestSyncFromServer_ServerRpc(ServerRpcParams rpcParams = default)
         {
             var senderId = rpcParams.Receive.SenderClientId;
-            SendActiveState_SingleClientRpc(senderId, _active, miniGameData.GetTeamVolumes());
+            SendActiveState_SingleClientRpc(senderId, _active, gameData.GetTeamVolumes());
         }
 
         #endregion
@@ -106,9 +107,9 @@ namespace CosmicShore.Game.UI
 
             while (_active && this != null)
             {
-                if (miniGameData != null && volumeUI != null)
+                if (gameData != null && volumeUI != null)
                 {
-                    var teamVolumes = miniGameData.GetTeamVolumes();
+                    var teamVolumes = gameData.GetTeamVolumes();
                     volumeUI.UpdateVolumes(teamVolumes);
                 }
 

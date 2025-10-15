@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
@@ -18,28 +19,28 @@ namespace CosmicShore.Core
 
         [SerializeField] SceneNameListSO _sceneNames;
         [SerializeField] SO_GameList AllGames;
-        [SerializeField] protected MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField] protected GameDataSO gameData;
         [SerializeField] ScriptableEventBool _onSceneTransition;
         [SerializeField] private ScriptableEventNoParam onResetForReplay;
         
         private void OnEnable()
         {
             PauseSystem.TogglePauseGame(false);
-            miniGameData.OnLaunchGame += LaunchGame;
+            gameData.OnLaunchGame += LaunchGame;
         }
 
         private void Start() => _onSceneTransition.Raise(true);
 
         private void OnDisable()
         {
-            miniGameData.OnLaunchGame -= LaunchGame;
+            gameData.OnLaunchGame -= LaunchGame;
         }
         
         public virtual void RestartGame()
         {
             // LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
             
-            miniGameData.ResetDataForReplay();
+            gameData.ResetDataForReplay();
             // VesselPrismController.ClearTrails();
             InvokeOnResetForReplay();
         }
@@ -53,14 +54,14 @@ namespace CosmicShore.Core
             /*if (miniGameData.IsMultiplayerMode)
                 return;*/
 
-            LoadSceneAsync(miniGameData.SceneName).Forget();
+            LoadSceneAsync(gameData.SceneName).Forget();
         }
 
         private async UniTaskVoid LoadSceneAsync(string sceneName)
         {
             _onSceneTransition.Raise(false);
 
-            miniGameData.ResetRuntimeData();
+            gameData.ResetRuntimeData();
             
             // Delay is realtime so it still works if Time.timeScale = 0
             await UniTask.Delay(TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD), 
@@ -71,7 +72,7 @@ namespace CosmicShore.Core
 
         private void OnApplicationQuit()
         {
-            miniGameData.ResetAllData();
+            gameData.ResetAllData();
         }
     }
 }

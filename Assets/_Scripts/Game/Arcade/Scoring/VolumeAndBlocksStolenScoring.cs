@@ -8,7 +8,7 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         private readonly bool trackBlocks;
 
-        public VolumeAndBlocksStolenScoring(MiniGameDataSO data, float scoreNormalizationQuotient, bool trackBlocks = false) 
+        public VolumeAndBlocksStolenScoring(GameDataSO data, float scoreNormalizationQuotient, bool trackBlocks = false) 
             : base(data, scoreNormalizationQuotient)
         {
             this.trackBlocks = trackBlocks;
@@ -16,7 +16,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         
         public override void CalculateScore()
         {
-            foreach (var playerScore in miniGameData.RoundStatsList)
+            foreach (var playerScore in GameData.RoundStatsList)
             {
                 if (!TryGetRoundStats(playerScore.Name, out IRoundStats roundStats))
                     return;

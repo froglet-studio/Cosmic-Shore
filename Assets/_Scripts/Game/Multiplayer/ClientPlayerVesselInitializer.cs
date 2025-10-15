@@ -19,7 +19,7 @@ namespace CosmicShore.Game
         ThemeManagerDataContainerSO themeManagerData;
         
         [SerializeField]
-        protected MiniGameDataSO gameData;
+        protected GameDataSO gameData;
         
         [ClientRpc]
         internal void InitializeAllPlayersAndVessels_ClientRpc(ClientRpcParams clientRpcParams = default)

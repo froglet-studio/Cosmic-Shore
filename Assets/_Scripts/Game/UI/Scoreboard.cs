@@ -3,14 +3,15 @@ using CosmicShore.SOAP;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
     public class Scoreboard : MonoBehaviour
     {
-        [SerializeField]
-        protected MiniGameDataSO miniGameData; 
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        protected GameDataSO gameData; 
         
         [SerializeField]
         private ScriptableEventNoParam OnResetForReplay; 
@@ -52,13 +53,13 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            miniGameData.OnWinnerCalculated += ShowSinglePlayerView;
+            gameData.OnWinnerCalculated += ShowSinglePlayerView;
             OnResetForReplay.OnRaised += ResetForReplay;
         }
 
         private void OnDisable()
         {
-            miniGameData.OnWinnerCalculated -= ShowSinglePlayerView;
+            gameData.OnWinnerCalculated -= ShowSinglePlayerView;
             OnResetForReplay.OnRaised -= ResetForReplay;
         }
 
@@ -70,7 +71,7 @@ namespace CosmicShore.Game
         }
 
         protected virtual bool TryGetWinner(out IRoundStats roundStats, out bool localIsWinner) =>
-            miniGameData.TryGetWinner(out roundStats, out localIsWinner);
+            gameData.TryGetWinner(out roundStats, out localIsWinner);
         
         void ShowSinglePlayerView()
         {
@@ -128,7 +129,7 @@ namespace CosmicShore.Game
             }
 
             // Populate scores
-            var playerScores = miniGameData.RoundStatsList;
+            var playerScores = gameData.RoundStatsList;
 
             // Populate rows with player scores
             for (var i=0; i<playerScores.Count; i++)

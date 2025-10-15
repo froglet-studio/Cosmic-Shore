@@ -3,6 +3,7 @@ using System.Linq;
 using CosmicShore.SOAP;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 namespace CosmicShore.Game.Arcade
@@ -12,8 +13,8 @@ namespace CosmicShore.Game.Arcade
     /// </summary>
     public class TurnMonitorController : NetworkBehaviour 
     {
-        [SerializeField]
-        MiniGameDataSO miniGameData;
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        GameDataSO gameData;
         
         [SerializeField] 
         List<TurnMonitor> monitors;
@@ -33,7 +34,7 @@ namespace CosmicShore.Game.Arcade
             if (!CheckEndOfTurn())
                 return;
 
-            miniGameData.InvokeGameTurnConditionsMet();
+            gameData.InvokeGameTurnConditionsMet();
         }
 
         protected virtual void OnDisable()
@@ -43,16 +44,16 @@ namespace CosmicShore.Game.Arcade
         
         protected void SubscribeToEvents()
         {
-            miniGameData.OnGameStarted += StartMonitors;
-            miniGameData.OnMiniGameTurnEnd += PauseMonitors;
-            miniGameData.OnMiniGameEnd += StopMonitors;
+            gameData.OnGameStarted += StartMonitors;
+            gameData.OnMiniGameTurnEnd += PauseMonitors;
+            gameData.OnMiniGameEnd += StopMonitors;
         }
 
         protected void UnsubscribeFromEvents()
         {
-            miniGameData.OnGameStarted -= StartMonitors;
-            miniGameData.OnMiniGameTurnEnd -= PauseMonitors;
-            miniGameData.OnMiniGameEnd -= StopMonitors;
+            gameData.OnGameStarted -= StartMonitors;
+            gameData.OnMiniGameTurnEnd -= PauseMonitors;
+            gameData.OnMiniGameEnd -= StopMonitors;
         }
 
         void StartMonitors()

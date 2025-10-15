@@ -25,8 +25,8 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float helixIntensityScaling = 1.3f;
         
 
-        int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * miniGameData.SelectedIntensity : baseNumberOfSegments;
-        int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / miniGameData.SelectedIntensity : baseStraightLineLength;
+        int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * gameData.SelectedIntensity : baseNumberOfSegments;
+        int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / gameData.SelectedIntensity : baseStraightLineLength;
         
         // Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * miniGameData.SelectedIntensity : crystalStartPosition;
         
@@ -40,7 +40,7 @@ namespace CosmicShore.Game.Arcade
 
             if (helix)
             {
-                helix.firstOrderRadius = helix.secondOrderRadius = miniGameData.SelectedIntensity.Value / helixIntensityScaling;
+                helix.firstOrderRadius = helix.secondOrderRadius = gameData.SelectedIntensity.Value / helixIntensityScaling;
             }
             
             if (resetEnvironmentOnEachTurn) 

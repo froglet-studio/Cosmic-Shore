@@ -9,6 +9,7 @@ using Firebase.Analytics;
 using System;
 using Obvious.Soap;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {
@@ -20,8 +21,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private static Action _dependencyResolved;
         
-        [SerializeField]
-        MiniGameDataSO _miniGameData;
+        [FormerlySerializedAs("_miniGameData")] [SerializeField]
+        GameDataSO gameData;
         
         #region Firebase Analytics Controller Initialization and Enabling
 
@@ -191,7 +192,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         #region Mini Game Events
 
-        void LogEventMiniGameStart(MiniGameDataSO data)
+        void LogEventMiniGameStart(GameDataSO data)
         {
             if (!_analyticsEnabled) return;
             
@@ -224,7 +225,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             
         }
         
-        void LogEventMiniGameEnd(MiniGameDataSO data)
+        void LogEventMiniGameEnd(GameDataSO data)
         {
             if (!_analyticsEnabled) return;
             

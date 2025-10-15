@@ -16,7 +16,7 @@ namespace CosmicShore.Game.Arcade.Scoring
             Elemental
         }
 
-        public CrystalsCollectedScoring(MiniGameDataSO scoreData, float scoreMultiplier = 145.65f, CrystalType type = CrystalType.All, bool ScaleWithSize = false) 
+        public CrystalsCollectedScoring(GameDataSO scoreData, float scoreMultiplier = 145.65f, CrystalType type = CrystalType.All, bool ScaleWithSize = false) 
             : base(scoreData, scoreMultiplier)
         {
             crystalType = type;
@@ -25,7 +25,7 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         public override void CalculateScore()
         {
-            foreach (var playerScore in miniGameData.RoundStatsList)
+            foreach (var playerScore in GameData.RoundStatsList)
             {
                 if (!TryGetRoundStats(playerScore.Name, out IRoundStats roundStats))
                     return;
