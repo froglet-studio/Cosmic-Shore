@@ -26,14 +26,14 @@ namespace CosmicShore.Core
         private void OnEnable()
         {
             PauseSystem.TogglePauseGame(false);
-            gameData.OnLaunchGame += LaunchGame;
+            gameData.OnLaunchGameScene += LaunchGameScene;
         }
 
         private void Start() => _onSceneTransition.Raise(true);
 
         private void OnDisable()
         {
-            gameData.OnLaunchGame -= LaunchGame;
+            gameData.OnLaunchGameScene -= LaunchGameScene;
         }
         
         public virtual void RestartGame()
@@ -49,7 +49,7 @@ namespace CosmicShore.Core
 
         protected void InvokeOnResetForReplay() => onResetForReplay?.Raise();
         
-        void LaunchGame()
+        void LaunchGameScene()
         {
             /*if (miniGameData.IsMultiplayerMode)
                 return;*/

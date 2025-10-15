@@ -53,46 +53,8 @@ namespace CosmicShore.Game
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
         }
 
-//         public virtual void ExecuteCommonVesselImpact(IVessel vessel)
-//         {
-//             if (OwnTeam != Teams.None && OwnTeam != vessel.VesselStatus.Team)
-//                 return;
-//
-//             if (allowVesselImpactEffect)
-//             {
-//                 // TODO - This class should not modify AIPilot's properties directly.
-//                 /*if (vessel.VesselStatus.AIPilot != null)
-//                 {
-//                     AIPilot aiPilot = vessel.VesselStatus.AIPilot;
-//
-//                     aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-//                     aiPilot.throttle = aiPilot.defaultThrottle;
-//                 }*/
-//             }
-//
-//             // TODO - Add Event channels here rather than calling singletons directly.
-//             if (StatsManager.Instance != null)
-//                 StatsManager.Instance.CrystalCollected(vessel, crystalProperties);
-//
-//             // TODO - Handled from R_CrystalImpactor.cs
-//             // PerformCrystalImpactEffects(crystalProperties, vessel);
-//             // TODO : Pass only vessel status
-//             Explode(vessel);
-//             PlayExplosionAudio();
-//             Respawn();
-//         }
-
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
-        public void DeactivateModels()
-        {
-            foreach (var model in crystalModels)
-            {
-                model.model.SetActive(true);
-                model.model.GetComponent<FadeIn>().StartFadeIn();
-            }
-        }
-        
         public void Respawn()
         {
             if (!allowRespawnOnImpact)
@@ -107,6 +69,15 @@ namespace CosmicShore.Game
             ChangeSpawnPosition();
             // cell.UpdateItem();
             CrystalManager.Instance.UpdateItem();
+        }
+        
+        void DeactivateModels()
+        {
+            foreach (var model in crystalModels)
+            {
+                model.model.SetActive(true);
+                model.model.GetComponent<FadeIn>().StartFadeIn();
+            }
         }
 
         void ChangeSpawnPosition()

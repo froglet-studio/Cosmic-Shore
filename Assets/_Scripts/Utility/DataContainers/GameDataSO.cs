@@ -23,9 +23,9 @@ namespace CosmicShore.SOAP
     public class GameDataSO : ScriptableObject
     {
         // Events
-        public event Action OnLaunchGame;
+        public event Action OnLaunchGameScene;
         public event Action OnSessionStarted;
-        public event Action OnMiniGameInitialized;
+        public event Action OnInitializeGame;
         public event Action OnClientReady;
         public event Action OnGameStarted;
         public event Action OnMiniGameTurnEnd;
@@ -63,12 +63,12 @@ namespace CosmicShore.SOAP
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
 
-        public void InvokeGameLaunch() => OnLaunchGame?.Invoke();
+        public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
         
         public void InitializeMiniGame()
         {
             ResetRuntimeData();
-            OnMiniGameInitialized?.Invoke();
+            OnInitializeGame?.Invoke();
         }
 
         public void SetupForMultiplayer()
