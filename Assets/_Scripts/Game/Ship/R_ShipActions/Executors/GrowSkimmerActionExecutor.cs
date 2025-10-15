@@ -89,4 +89,11 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
         float localZ = worldZ / parentZ;
         skimmerRoot.localScale = Vector3.one * localZ;
     }
+    
+    public void ResetToMinScale()
+    {
+        if (!skimmerRoot) return;
+        SetWorldZ(MinScale);
+    }
+
 }

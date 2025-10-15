@@ -20,10 +20,8 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
     [SerializeField] private float farClipPadding = 1.3f;
     [SerializeField] private float maxDistanceAbs = 10000f;
-
-    const float ScaleEpsilon = 0.0025f;
-    const float DistEpsilon  = 0.0005f;
     private float _lastScale;
+    
     private enum State { Idle, Expanding, Retracting }
     private State _state = State.Idle;
     
@@ -41,7 +39,6 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
         var provider = Provider();
         if (provider == null) return;
 
-        // REBASE every time Begin is called:
         float currentScale = Mathf.Max(provider.CurrentScale, 0.0001f);
         float currentZ     = _controller.GetCameraDistance();
 
@@ -96,10 +93,8 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
         _controller ??= CameraManager.Instance?.GetActiveController();
         if (_controller == null) return;
 
-        // read latest scale after growth/shrink for this frame
         float rawScale = Mathf.Max(provider.CurrentScale, 0.0001f);
 
-        // monotonic guard (direction depends on state)
         bool shrinking = (_state == State.Retracting);
         float currentScale = shrinking
             ? Mathf.Min(rawScale, _lastScale + 0.0001f)
@@ -127,6 +122,11 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
         if (_state == State.Retracting && Mathf.Abs(ratio - 1f) <= 0.0025f)
         {
             _controller.SetCameraDistance(_baseDistance);
+
+            var p = Provider();
+            if (p is GrowSkimmerActionExecutor g && g != null)
+                g.ResetToMinScale();
+
             _retracting = false;
             _active = false;
             _state = State.Idle;
