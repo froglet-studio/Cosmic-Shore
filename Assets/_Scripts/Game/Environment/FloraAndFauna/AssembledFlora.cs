@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Game;
+using CosmicShore.SOAP;
 using UnityEngine;
 
 namespace CosmicShore
@@ -32,7 +33,7 @@ namespace CosmicShore
                 assembler = healthPrism.GetComponent<Assembler>();
             }
         }
-
+        
         /// <summary>
         /// The max recursion depth of the assembler
         /// </summary>
@@ -47,7 +48,6 @@ namespace CosmicShore
 
         int spawnedItemCount = 0;
         Assembler assembler;
-        CrystalManager crystalManager = CrystalManager.Instance;
 
         public static class AssemblerFactory
         {
@@ -167,7 +167,7 @@ namespace CosmicShore
         public override void Plant()
         {
             assembler = CreateNewAssembler();
-            transform.position = crystalManager.GetCrystalTransform().transform.position + 200 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius 
+            transform.position = cellData.CrystalTransform.position + 200 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius 
         }
 
         public Assembler CreateNewAssembler()

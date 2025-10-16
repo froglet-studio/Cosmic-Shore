@@ -41,18 +41,17 @@ namespace CosmicShore
         }
 
         private int spawnedItemCount = 0;
-        private CrystalManager crystalManager = CrystalManager.Instance;
 
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell);
             if (isCrystaltropic)
             {
-                goal = crystalManager.GetCrystalTransform().position; // cell.GetCrystal().transform.position;
+                goal = cellData.CrystalTransform.position; // cell.GetCrystal().transform.position;
             }
             //activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
             SeedBranches(); // add more truncks
-            transform.rotation = Quaternion.LookRotation(crystalManager.GetCrystalTransform().position); // cell.GetCrystal().transform.position
+            transform.rotation = Quaternion.LookRotation(cellData.CrystalTransform.position); // cell.GetCrystal().transform.position
         }
 
         void SeedBranches()
@@ -130,7 +129,7 @@ namespace CosmicShore
         public override void Plant()
         {
             if (plantAroundCrystal) 
-                transform.position = crystalManager.GetCrystalTransform().position + (plantRadius * Random.onUnitSphere);
+                transform.position = cellData.CrystalTransform.position + (plantRadius * Random.onUnitSphere);
         }
 
         void ScaleAndPositionBranch(ref Branch newBranch, Branch branch)

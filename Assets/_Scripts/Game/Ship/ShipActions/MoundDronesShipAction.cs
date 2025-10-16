@@ -1,12 +1,14 @@
 using CosmicShore.Game;
+using CosmicShore.SOAP;
 using UnityEngine;
 
 namespace CosmicShore
 {
     public class MoundDronesShipAction : ShipAction
     {
+        [SerializeField]
+        CellDataSO cellData;
         [SerializeField] GameObject dronePrefab;
-        Transform crystal;
         [SerializeField] int Drones = 5;
         [SerializeField] BoidController boidController;
 
@@ -15,8 +17,7 @@ namespace CosmicShore
             for (int i = 0; i < Drones; i++)
             {
                 // crystal = FindAnyObjectByType<Crystal>().transform;
-                var crystalTransform = CrystalManager.Instance.GetCrystalTransform();
-                boidController.SpawnDrone(crystalTransform, false);
+                boidController.SpawnDrone(cellData.CrystalTransform, false);
             }
         }
 
