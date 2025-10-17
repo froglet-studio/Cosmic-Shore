@@ -2,6 +2,7 @@ using CosmicShore;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
+using CosmicShore.SOAP;
 using CosmicShore.Utilities;
 using Obvious.Soap;
 using Unity.Cinemachine;
@@ -11,6 +12,9 @@ using UnityEngine.SceneManagement;
 
 public class CameraManager : Singleton<CameraManager>
 {
+    [SerializeField]
+    CellDataSO cellData;
+    
     [SerializeField]
     SceneNameListSO _sceneNameList;
     
@@ -146,7 +150,7 @@ public class CameraManager : Singleton<CameraManager>
     void LookAtCrystal()
     {
         if (mainMenuCamera)
-            mainMenuCamera.LookAt = CrystalManager.Instance.GetCrystalTransform(); // CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
+            mainMenuCamera.LookAt = cellData.CrystalTransform; // CellControlManager.Instance.GetNearestCell(Vector3.zero).GetCrystal().transform;
     }
 
 

@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
 using System;
+using CosmicShore.SOAP;
 using Obvious.Soap;
 
 namespace CosmicShore.Game.AI
@@ -16,6 +17,9 @@ namespace CosmicShore.Game.AI
 
     public class AIPilot : MonoBehaviour
     {
+        [SerializeField]
+        CellDataSO cellData;
+        
         [SerializeField] float skillLevel = 1;
 
         [SerializeField] float defaultThrottleHigh = .6f;
@@ -124,7 +128,7 @@ namespace CosmicShore.Game.AI
             if (activeCell == null)
                 activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
 
-            var cellItems = CrystalManager.Instance.CellItems;  // activeCell.CellItems;
+            var cellItems = cellData.CellItems;  // activeCell.CellItems;
             float MinDistance = Mathf.Infinity;
             CellItem closestItem = null;
 

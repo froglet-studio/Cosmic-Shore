@@ -46,12 +46,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c32cb4248375d24aa7cec7ed296ec3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthBlock: {fileID: 2524554444701443284}
+  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  healthPrism: {fileID: 2524554444701443284}
   spindle: {fileID: 894794680508841619}
   healthBlocksForMaturity: 1
   minHealthBlocks: 0
   shieldPeriod: 0
-  Team: 0
+  domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}

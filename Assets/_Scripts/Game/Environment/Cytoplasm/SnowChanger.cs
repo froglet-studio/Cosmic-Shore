@@ -1,3 +1,4 @@
+using CosmicShore.SOAP;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -5,6 +6,9 @@ namespace CosmicShore.Game
 {
     public class SnowChanger : MonoBehaviour
     {
+        [SerializeField]
+        CellDataSO cellData;
+        
         [SerializeField] GameObject snow;
         // [SerializeField] Vector3 crystalSize = new Vector3(500, 500, 500);
         [SerializeField] int shardDistance = 100;
@@ -12,10 +16,8 @@ namespace CosmicShore.Game
         [Header("Optional Fields")] [SerializeField]
         bool lookAt;
 
-        [SerializeField] Vector3 targetAxis;
-        [SerializeField] Vector3 newOrigin;
-        [SerializeField] ScriptableEventNoParam OnCellItemsUpdated;
-        Transform crystalTransform;
+        // [SerializeField] Vector3 newOrigin;
+        // Transform crystalTransform;
         GameObject[,,] crystalLattice;
         readonly float nodeScaler = 10;
         readonly float nodeSize = .25f;
@@ -25,37 +27,34 @@ namespace CosmicShore.Game
         int shardsZ;
         float sphereDiameter;
         Vector3 origin = Vector3.zero;
+        Vector3 targetAxis;
 
         void OnEnable()
         {
-            OnCellItemsUpdated.OnRaised += ChangeSnowSize;
+            cellData.OnCellItemsUpdated.OnRaised += ChangeSnowSize;
         }
 
         void OnDisable()
         {
-            OnCellItemsUpdated.OnRaised -= ChangeSnowSize;
+            cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowSize;
         }
 
         // public void Initialize(Transform ct, float sphereRadius)
         public void Initialize()
         {
-            crystalTransform = CrystalManager.Instance.GetCrystalTransform();
-            origin = newOrigin;
-            var crystalSize = crystalTransform.localScale;
+            // crystalTransform = CrystalManager.Instance.GetCrystalTransform();
+            // origin = newOrigin;
+            /*var crystalSize = cellData.CrystalRadius;
+
             shardsX = (int)(crystalSize.x / shardDistance);
-            shardsY = (int)(crystalSize.y / shardDistance);
-            shardsZ = (int)(crystalSize.z / shardDistance);
-            
-            /*shardsX = (int)(crystalSize.x / shardDistance);
             shardsY = (int)(crystalSize.y / shardDistance);
             shardsZ = (int)(crystalSize.z / shardDistance);*/
             
-            if (crystalTransform)
-                sphereDiameter = sphereScaler * CrystalManager.Instance.GetSphereRadius(); // this.crystalTransform.GetComponent<Crystal>().SphereRadius;
+            sphereDiameter = sphereScaler * cellData.CrystalRadius; // this.crystalTransform.GetComponent<Crystal>().SphereRadius;
+            shardsX = shardsY = shardsZ = (int)(sphereDiameter / shardDistance);
+            
             crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1];
-            for (int x = -shardsX;
-                 x <= shardsX;
-                 x++)
+            for (int x = -shardsX; x <= shardsX; x++)
             {
                 for (int y = -shardsY; y <= shardsY; y++)
                 {
@@ -86,13 +85,13 @@ namespace CosmicShore.Game
                     {
                         var shard = crystalLattice[x, y, z];
                         float normalizedDistance;
-                        if (crystalTransform != null)
+                        if (cellData.CrystalTransform)
                         {
                             float clampedDistance =
-                                Mathf.Clamp((shard.transform.position - crystalTransform.transform.position).magnitude, 0,
+                                Mathf.Clamp((shard.transform.position - cellData.CrystalTransform.position).magnitude, 0,
                                     sphereDiameter);
                             normalizedDistance = clampedDistance / sphereDiameter;
-                            shard.transform.LookAt(crystalTransform.transform);
+                            shard.transform.LookAt(cellData.CrystalTransform);
                         }
                         else
                         {
@@ -114,6 +113,6 @@ namespace CosmicShore.Game
             }
         }
 
-        public void SetOrigin(Vector3 origin) => this.origin = origin;
+        public void SetOrigin(Vector3 o) => origin = o;
     }
 }

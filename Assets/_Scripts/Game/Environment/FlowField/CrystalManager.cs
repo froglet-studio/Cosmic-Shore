@@ -1,55 +1,53 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.SOAP;
-using CosmicShore.Utilities;
 using Obvious.Soap;
+using Unity.Netcode;
 using UnityEngine;
+
 
 namespace CosmicShore.Game
 {
-    public class CrystalManager : SingletonNetwork<CrystalManager>
+    public class CrystalManager : NetworkBehaviour
     {
-        [SerializeField] GameDataSO gameData;
+        [SerializeField]
+        GameDataSO gameData;
+        
+        [SerializeField]
+        CellDataSO cellData;
+        
         [SerializeField] Crystal crystalPrefab;
         [SerializeField] bool scaleCrystalPositionWithIntensity;
         [SerializeField] IntVariable intensityLevelData;
-        [SerializeField] ScriptableEventNoParam OnCellItemsUpdated;
-        
-        public List<CellItem> CellItems { get; private set; }
         
         Crystal crystal;
         int _itemsAdded;
-        
-        void OnEnable()
+
+        private void OnEnable()
         {
-            gameData.OnGameStarted += Initialize;
+            gameData.OnGameStarted += OnGameStarted;
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
-            gameData.OnGameStarted -= Initialize;
+            gameData.OnGameStarted -= OnGameStarted;
+        }
+
+        private void OnGameStarted()
+        {
+            cellData.CellItems = new List<CellItem>();
+            Spawn();
         }
         
-        public void SetOrigin(Vector3 position) => crystal.SetOrigin(position);
-        public Transform GetCrystalTransform() => crystal.transform;
-        public float GetSphereRadius() => crystal.SphereRadius;
-        public void UpdateItem() => OnCellItemsUpdated.Raise();
-
         public bool TryRemoveItem(CellItem item)
         {
-            if (!CellItems.Contains(item))
+            if (!cellData.CellItems.Contains(item))
                 return false;
             
-            CellItems.Remove(item);
-            OnCellItemsUpdated.Raise();
+            cellData.CellItems.Remove(item);
+            cellData.OnCellItemsUpdated.Raise();
 
             return true;
-        }
-        
-        void Initialize()
-        {
-            CellItems = new List<CellItem>();
-            Spawn();
         }
         
         bool TryInitializeAndAdd(CellItem item)
@@ -62,17 +60,19 @@ namespace CosmicShore.Game
             
             // item.Initialize(++_itemsAdded, this);
             item.Initialize(++_itemsAdded);
-            CellItems.Add(item);
-            OnCellItemsUpdated.Raise();
-
+            cellData.CellItems.Add(item);
+            cellData.OnCellItemsUpdated.Raise();
             return true;
         }
 
         void Spawn()
         {
-            crystal = Instantiate(crystalPrefab, Vector3.zero, Quaternion.identity, transform);
-            crystal.transform.position = scaleCrystalPositionWithIntensity ? crystal.Origin * intensityLevelData : crystal.transform.position;
+            var spawnPos = scaleCrystalPositionWithIntensity ? cellData.CellTransform.position * intensityLevelData : Vector3.one * 10; // 10 unit forward if none
+            crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
+            crystal.InjectDependencies(this);
+            cellData.Crystal = crystal;
             TryInitializeAndAdd(crystal);
+            cellData.OnCrystalSpawned.Raise();
         }
     }
 }
