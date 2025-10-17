@@ -1317,8 +1317,6 @@ MonoBehaviour:
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  crystal: {fileID: 0}
-  crystalStartPosition: {x: 0, y: 0, z: 175.9}
   segmentSpawner: {fileID: 1020381236}
   baseNumberOfSegments: 10
   baseStraightLineLength: 400
@@ -1378,7 +1376,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  monitors: []
+  monitors:
+  - {fileID: 1078953715}
 --- !u!114 &1078953717
 MonoBehaviour:
   m_ObjectHideFlags: 0

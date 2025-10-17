@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ae1249c9fae468193c829ce33b497fa, type: 3}
+  m_Name: MiniGamePrefabLibrary
+  m_EditorClassIdentifier: 
+  dependencySpawnerPrefab: {fileID: 100000, guid: 92e6244855ae437cbcb05e8b36f01cec,
+    type: 3}
+  miniGameCameraPrefab: {fileID: 5247650485044281825, guid: 061f308768b5b564bbb0f130d1a8f02e,
+    type: 3}
+  environmentPrefab: {fileID: 7189935840736488786, guid: 2cc10bcacaf3fe24c8960fbadcc9cc93,
+    type: 3}
+  gameCanvasPrefab: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  playerSpawnerPrefab: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
+    type: 3}
+  shipSpawnerPrefab: {fileID: 0}
+  defaultMiniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
+    type: 2}
+  defaultProfile: {fileID: 11400000, guid: fa6b2087db6711c48b98177687bb5141, type: 2}
