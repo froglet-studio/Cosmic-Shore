@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.SOAP;
+using Unity.Collections;
 using UnityEngine;
 
 
@@ -20,8 +21,6 @@ namespace CosmicShore.Game
 
     public class Crystal : CellItem
     {
-        const int MinimumSpaceBetweenCurrentAndLastSpawnPos = 100;
-        
         #region Inspector Fields
         [SerializeField]
         CellDataSO cellData;
@@ -48,7 +47,7 @@ namespace CosmicShore.Game
         public List<CrystalModelData> CrystalModels => crystalModels;
         
         Material tempMaterial;
-        Vector3 _lastSpawnPosition;
+        // Vector3 _lastSpawnPosition;
         CrystalManager crystalManager;
         // public Vector3 Origin { get; private set; } = Vector3.zero;
 
@@ -61,23 +60,35 @@ namespace CosmicShore.Game
         
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
+        public struct ExplodeParams
+        {
+            public Vector3 Course;
+            public float Speed;
+            public FixedString64Bytes PlayerName;
+        }
+
+        public void NotifyManagerToExplodeCrystal(ExplodeParams explodeParams) =>
+            crystalManager.ExplodeCrystal(explodeParams);
+        
         public void Respawn()
         {
             if (!allowRespawnOnImpact)
             {
-                // cell?.TryRemoveItem(this);
-                crystalManager.TryRemoveItem(this);
-                Destroy(gameObject);
+                DestroyCrystal();
                 return;
             }
 
-            DeactivateModels();
-            ChangeSpawnPosition();
-            // cell.UpdateItem();
-            cellData.OnCellItemsUpdated.Raise();
+            crystalManager.RespawnCrystal();
+        }
+
+        void DestroyCrystal()
+        {
+            // cell?.TryRemoveItem(this);
+            crystalManager.TryRemoveItem(this);
+            Destroy(gameObject);
         }
         
-        void DeactivateModels()
+        public void DeactivateModels()
         {
             foreach (var model in crystalModels)
             {
@@ -86,18 +97,18 @@ namespace CosmicShore.Game
             }
         }
 
-        void ChangeSpawnPosition()
+        public void MoveToNewPos(Vector3 newPos)
         {
-            Vector3 spawnPos;
+            /*Vector3 spawnPos;
             do
             {
                 spawnPos = Random.insideUnitSphere * SphereRadius + cellData.CellTransform.position;
-            } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);
+            } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);*/
             
-            transform.SetPositionAndRotation(spawnPos, Random.rotation);
+            transform.SetPositionAndRotation(newPos, Quaternion.identity);
             collider.enabled = true;
             // Origin = transform.position;
-            _lastSpawnPosition = spawnPos;
+           //  _lastSpawnPosition = newPos;
         }
 
         public void Vacuum(Vector3 newPosition, float vaccumAmount)
@@ -133,14 +144,16 @@ namespace CosmicShore.Game
 
             transform.localScale = targetScaleVector;
         }
-
-        public void Explode(IVesselStatus vesselStatus)
+        
+        public void Explode(ExplodeParams explodeParams)
         {
+            if (!collider.enabled)
+                return;
+            
             collider.enabled = false;
             
-            for (var i = 0; i < crystalModels.Count; i++)
+            foreach (var modelData in crystalModels)
             {
-                var modelData = crystalModels[i];
                 var model = modelData.model;
 
                 tempMaterial = new Material(modelData.explodingMaterial);
@@ -157,11 +170,14 @@ namespace CosmicShore.Game
                     var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                     spentAnimator.timer = thisAnimator.timer;
                 }
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(vesselStatus.Course * vesselStatus.Speed, tempMaterial, vesselStatus.Player.Name);
+                spentCrystal.GetComponent<Impact>()?.HandleImpact(
+                    explodeParams.Course * explodeParams.Speed, tempMaterial, explodeParams.PlayerName.ToString());
             }
+            
+            PlayExplosionAudio();
         }
 
-        public void PlayExplosionAudio()
+        void PlayExplosionAudio()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
             AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);

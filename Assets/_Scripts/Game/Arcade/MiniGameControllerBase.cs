@@ -35,10 +35,7 @@ namespace CosmicShore.Game.Arcade
         public void OnReadyClicked() =>
             OnReadyClicked_();
         
-        protected void Initialize()
-        {
-            gameData.InitializeMiniGame();
-        }
+        protected void InitializeGame() => gameData.InitializeGame();
 
         protected virtual void OnReadyClicked_()
         {
