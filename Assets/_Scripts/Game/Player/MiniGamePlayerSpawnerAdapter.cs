@@ -5,7 +5,8 @@ namespace CosmicShore.Game
 {
     public class MiniGamePlayerSpawnerAdapter : PlayerSpawnerAdapterBase
     {
-        [SerializeField] private bool _spawnAIAtStart = false;
+        // [SerializeField] private bool _spawnAIAtStart = false;
+        [SerializeField] private bool _spawnDefaultPlayerAndAI;
 
         private void OnEnable()
         {
@@ -15,7 +16,7 @@ namespace CosmicShore.Game
 
         private void Start()
         {
-            if (_spawnAIAtStart)
+            if (_spawnDefaultPlayerAndAI)
                 SpawnAIPlayersAndAddToGameData();
         }
 

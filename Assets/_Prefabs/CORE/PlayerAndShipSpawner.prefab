@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5327798040277661720}
   - component: {fileID: 8975221766650826670}
   m_Layer: 0
-  m_Name: Player and Ship Spawner
+  m_Name: PlayerAndShipSpawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

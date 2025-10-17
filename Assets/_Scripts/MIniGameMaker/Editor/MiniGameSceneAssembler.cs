@@ -1,8 +1,12 @@
-﻿using Unity.Netcode;
+﻿using System;
+using System.Linq;
+using System.Reflection;
+using Unity.Netcode;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace CosmicShore.Tools.MiniGameMaker
 {
@@ -15,7 +19,8 @@ namespace CosmicShore.Tools.MiniGameMaker
             public string controllerClassName;
         }
 
-        public static Result CreateAndSave(string sceneName,
+        public static Result CreateAndSave(
+            string sceneName,
             MiniGamePrefabLibrarySO lib,
             bool draft,
             out string assetPath,
@@ -46,17 +51,16 @@ namespace CosmicShore.Tools.MiniGameMaker
             game.transform.rotation = Quaternion.identity;
             game.transform.localScale = Vector3.one;
 
-            var net = Undo.AddComponent<NetworkObject>(game);
+            Undo.AddComponent<NetworkObject>(game);
 
-            // Generate controller
-// Generate controller file
+            // 3a) Generate controller file & attach desired components
             string folderPath = $"Assets/_Game/MiniGames/{sceneName}";
             string controllerPath = MiniGameControllerCodegen.Generate(sceneName, folderPath);
             AssetDatabase.ImportAsset(controllerPath);
 
             string controllerFullName = $"CosmicShore.Game.MiniGames.{Sanitize(sceneName)}Controller";
 
-// Components we want on Game
+            // Components we want on Game
             string[] wantedTypes =
             {
                 controllerFullName,
@@ -81,7 +85,6 @@ namespace CosmicShore.Tools.MiniGameMaker
                 }
             }
 
-
             // 3b) Children: SpawnPoints/1/2
             var spRoot = new GameObject("SpawnPoints");
             Undo.RegisterCreatedObjectUndo(spRoot, "Create SpawnPoints");
@@ -96,20 +99,68 @@ namespace CosmicShore.Tools.MiniGameMaker
                 sp2.transform.position = new Vector3(5, 0, 0);
             }
 
-            // 4) Locked camera/env/canvas
-            TryInstantiateLocked(lib?.miniGameCameraPrefab, "MiniGameMainCamera", scene);
+            // 4) Locked camera/env/canvas (consistent names)
+            TryInstantiateLocked(lib?.miniGameCameraPrefab, "MiniGameCamera", scene);
             TryInstantiateLocked(lib?.environmentPrefab, "Environment", scene);
             TryInstantiateLocked(lib?.gameCanvasPrefab, "GameCanvas", scene);
 
-            // 5) Visible spawners
+            // 5) Visible spawners (combined Player & Ship spawner)
             TryInstantiateConfig(lib?.playerSpawnerPrefab, "PlayerAndShipSpawner", scene);
-            // TryInstantiateConfig(lib?.shipSpawnerPrefab, "ShipSpawner", scene);
-            
+
+            // 5a) Ensure & configure MiniGamePlayerSpawnerAdapter on PlayerAndShipSpawner
+            var spawnerGO = SceneManager.GetActiveScene()
+                                        .GetRootGameObjects()
+                                        .FirstOrDefault(r => r.name == "PlayerAndShipSpawner");
+            if (spawnerGO)
+            {
+                // ensure the adapter exists
+                var adapter = GetOrAdd(spawnerGO, "CosmicShore.Game.MiniGamePlayerSpawnerAdapter");
+
+                // profile (may be null)
+                var profileLocal = lib ? lib.defaultProfile : null;
+
+                // assign _gameData (from Profile first, else from provider)
+                var gameData = profileLocal ? profileLocal.miniGameData
+                                            : (CosmicShore.SOAP.MiniGameDataSO)FindProviderObject("MiniGameDataProvider", "miniGameData");
+                SetPrivObj(adapter, "_gameData", gameData);
+
+                var playerSpawnerType = TypeResolver.FindType("CosmicShore.Game.PlayerSpawner");
+                Component playerSpawner = null;
+                if (playerSpawnerType != null)
+                {
+                    playerSpawner = spawnerGO.GetComponent(playerSpawnerType);
+                }
+                SetPrivObj(adapter, "_playerSpawner", playerSpawner);
+
+
+                // assign _spawnTransforms from Game/SpawnPoints children
+                var gameGO = GameObject.Find("Game");
+                Transform[] spawnXs = Array.Empty<Transform>();
+                if (gameGO)
+                {
+                    var spr = gameGO.transform.Find("SpawnPoints");
+                    if (spr) spawnXs = spr.Cast<Transform>().ToArray();
+                }
+                SetPrivArray(adapter, "_spawnTransforms", spawnXs);
+
+                // assign initialize datas and flag from Profile
+                if (profileLocal)
+                {
+                    SetPrivObj(adapter, "_spawnDefaultPlayerAndAI", profileLocal.spawnDefaultPlayerAndAI);
+                    SetPrivObj(adapter, "_initializeDatas", profileLocal.initializeDatas);
+                }
+
+                EditorUtility.SetDirty(spawnerGO);
+                EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+            }
+
+            // 5b) Wire other components from providers (MiniGameData / VolumeUI etc.)
             AutoWire(game);
-            
-            var profile = lib is not null ? lib.defaultProfile : null;
+
+            // 5c) Apply profile to scoring/turn/ui
+            var profile = lib ? lib.defaultProfile : null;
             ApplyProfile(game, profile);
-            
+
             // 6) Save scene (unless Draft)
             if (!draft)
             {
@@ -128,7 +179,6 @@ namespace CosmicShore.Tools.MiniGameMaker
             var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             go.name = name;
             Undo.RegisterCreatedObjectUndo(go, $"Create {name}");
-            // Locked = user hidden in Overview; not actually hideFlags, so it stays visible in Hierarchy
         }
 
         private static void TryInstantiateConfig(GameObject prefab, string name, Scene scene)
@@ -187,7 +237,6 @@ namespace CosmicShore.Tools.MiniGameMaker
                 var sp = so.FindProperty(fieldName);
                 if (sp != null && sp.objectReferenceValue) return sp.objectReferenceValue;
             }
-
             return null;
         }
 
@@ -209,8 +258,7 @@ namespace CosmicShore.Tools.MiniGameMaker
             }
         }
 
-        private static void EnsureListContainsComponent(GameObject go, string listOwnerType, string listProp,
-            Component item)
+        private static void EnsureListContainsComponent(GameObject go, string listOwnerType, string listProp, Component item)
         {
             if (!item) return;
             var t = TypeResolver.FindType(listOwnerType);
@@ -252,34 +300,56 @@ namespace CosmicShore.Tools.MiniGameMaker
             }
         }
 
-        // in MiniGameSceneAssembler.cs
+        // === Profile application ===
 
         private static void ApplyProfile(GameObject game, MiniGameProfileSO profile)
         {
             if (!profile) return;
 
-            // 1) Components on Game
+            // Game components
             SetSerializedRefOn(game, "CosmicShore.Game.Arcade.ScoreTracker", "miniGameData", profile.miniGameData);
             SetBoolOn(game, "CosmicShore.Game.Arcade.ScoreTracker", "golfRules", profile.golfRules);
             SetArrayOn(game, "CosmicShore.Game.Arcade.ScoreTracker", "scoringConfigs", profile.scoringConfigs);
 
-            SetSerializedRefOn(game, "CosmicShore.Game.Arcade.TurnMonitorController", "miniGameData",
-                profile.miniGameData);
+            SetSerializedRefOn(game, "CosmicShore.Game.Arcade.TurnMonitorController", "miniGameData", profile.miniGameData);
             SetFloatOn(game, "CosmicShore.Game.Arcade.TimeBasedTurnMonitor", "duration", profile.turnDurationSeconds);
 
-            SetSerializedRefOn(game, "CosmicShore.Game.UI.LocalVolumeUIController", "miniGameData",
-                profile.miniGameData);
+            SetSerializedRefOn(game, "CosmicShore.Game.UI.LocalVolumeUIController", "miniGameData", profile.miniGameData);
 
-            // 2) Optionally push events into MiniGameDataSO (by field name match)
+            // Optional: push scriptable events into MiniGameDataSO by type/name compatibility
             TryAssignEventsIntoData(profile.miniGameData, profile.eventsToAssign);
+
+            // Also attempt to push into Adapter (if already on spawner)
+            var spawnerGO = SceneManager.GetActiveScene().GetRootGameObjects().FirstOrDefault(r => r.name == "PlayerAndShipSpawner");
+            if (spawnerGO)
+            {
+                var adapter = spawnerGO.GetComponent(TypeResolver.FindType("CosmicShore.Game.MiniGamePlayerSpawnerAdapter"));
+                if (adapter)
+                {
+                    SetPrivObj(adapter, "_gameData", profile.miniGameData);
+                    SetPrivObj(adapter, "_spawnDefaultPlayerAndAI", profile.spawnDefaultPlayerAndAI);
+                    SetPrivObj(adapter, "_initializeDatas", profile.initializeDatas);
+
+                    // ensure spawn transforms exist
+                    var gameGO = GameObject.Find("Game");
+                    if (gameGO)
+                    {
+                        var spr = gameGO.transform.Find("SpawnPoints");
+                        if (spr)
+                        {
+                            var arr = spr.Cast<Transform>().ToArray();
+                            if (arr.Length > 0) SetPrivArray(adapter, "_spawnTransforms", arr);
+                        }
+                    }
+                    EditorUtility.SetDirty(spawnerGO);
+                }
+            }
         }
 
         private static void SetBoolOn(GameObject go, string fullType, string prop, bool value)
         {
-            var t = TypeResolver.FindType(fullType);
-            if (t == null) return;
-            var c = go.GetComponent(t);
-            if (!c) return;
+            var t = TypeResolver.FindType(fullType); if (t == null) return;
+            var c = go.GetComponent(t); if (!c) return;
             var so = new SerializedObject(c);
             var p = so.FindProperty(prop);
             if (p != null && p.propertyType == SerializedPropertyType.Boolean)
@@ -291,10 +361,8 @@ namespace CosmicShore.Tools.MiniGameMaker
 
         private static void SetFloatOn(GameObject go, string fullType, string prop, float value)
         {
-            var t = TypeResolver.FindType(fullType);
-            if (t == null) return;
-            var c = go.GetComponent(t);
-            if (!c) return;
+            var t = TypeResolver.FindType(fullType); if (t == null) return;
+            var c = go.GetComponent(t); if (!c) return;
             var so = new SerializedObject(c);
             var p = so.FindProperty(prop);
             if (p != null && p.propertyType == SerializedPropertyType.Float)
@@ -307,10 +375,8 @@ namespace CosmicShore.Tools.MiniGameMaker
         private static void SetArrayOn(GameObject go, string fullType, string prop, Object[] values)
         {
             if (values == null) return;
-            var t = TypeResolver.FindType(fullType);
-            if (t == null) return;
-            var c = go.GetComponent(t);
-            if (!c) return;
+            var t = TypeResolver.FindType(fullType); if (t == null) return;
+            var c = go.GetComponent(t); if (!c) return;
             var so = new SerializedObject(c);
             var p = so.FindProperty(prop);
             if (p != null && p.isArray)
@@ -322,7 +388,7 @@ namespace CosmicShore.Tools.MiniGameMaker
             }
         }
 
-// Tries to assign known ScriptableEvent-like assets into the MiniGameDataSO by matching field names/types
+        // Tries to assign known ScriptableEvent-like assets into the MiniGameDataSO by matching field names/types
         private static void TryAssignEventsIntoData(Object miniGameData, Object[] events)
         {
             if (!miniGameData || events == null || events.Length == 0) return;
@@ -332,7 +398,6 @@ namespace CosmicShore.Tools.MiniGameMaker
             foreach (var ev in events)
             {
                 if (!ev) continue;
-                // naive pass: find first null field of the same type and assign
                 it.Reset();
                 bool enterChildren = true;
                 while (it.Next(enterChildren))
@@ -341,13 +406,12 @@ namespace CosmicShore.Tools.MiniGameMaker
                     if (it.propertyType != SerializedPropertyType.ObjectReference) continue;
                     if (it.objectReferenceValue != null) continue;
 
-                    var targetFieldType = it.serializedObject.targetObject.GetType()
-                        .GetField(it.name,
-                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
-                            System.Reflection.BindingFlags.NonPublic)
-                        ?.FieldType;
+                    var targetFieldInfo = it.serializedObject.targetObject.GetType()
+                        .GetField(it.name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
+                    var targetFieldType = targetFieldInfo?.FieldType;
                     if (targetFieldType == null) continue;
+
                     if (targetFieldType.IsAssignableFrom(ev.GetType()))
                     {
                         it.objectReferenceValue = ev;
@@ -356,6 +420,28 @@ namespace CosmicShore.Tools.MiniGameMaker
                     }
                 }
             }
+        }
+
+        // === reflection helpers (editor-only, minimal) ===
+        static void SetPrivObj(object target, string fieldName, object value)
+        {
+            if (target == null) return;
+            var f = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            if (f != null) f.SetValue(target, value);
+        }
+
+        static void SetPrivArray(object target, string fieldName, Array array)
+        {
+            SetPrivObj(target, fieldName, array);
+        }
+
+        static Component GetOrAdd(GameObject go, string fullTypeName)
+        {
+            var t = TypeResolver.FindType(fullTypeName);
+            if (t == null) return null;
+            var c = go.GetComponent(t);
+            if (!c) c = Undo.AddComponent(go, t);
+            return c;
         }
     }
 }

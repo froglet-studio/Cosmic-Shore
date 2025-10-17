@@ -448,7 +448,7 @@ namespace CosmicShore.Tools.MiniGameMaker
             info.hasMiniGameCamera = roots.Any(r => r.name == "MiniGameMainCamera");
             info.hasEnvironment = roots.Any(r => r.name == "Environment");
             info.hasGameCanvas = roots.Any(r => r.name == "GameCanvas");
-            info.hasPlayerSpawner = roots.Any(r => r.name == "PlayerandShipSpawner");
+            info.hasPlayerSpawner = roots.Any(r => r.name == "PlayerAndShipSpawner");
             // info.hasShipSpawner = roots.Any(r => r.name == "ShipSpawner");
 
             // Spawn points

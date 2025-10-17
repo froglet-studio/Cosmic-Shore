@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿// Assets/_Tools/.../Editor/Data/MiniGameProfileSO.cs
+using UnityEngine;
+using CosmicShore.Game; // for IPlayer
 
 namespace CosmicShore.Tools.MiniGameMaker
 {
@@ -6,16 +8,20 @@ namespace CosmicShore.Tools.MiniGameMaker
     public sealed class MiniGameProfileSO : ScriptableObject
     {
         [Header("Core Data")]
-        public ScriptableObject miniGameData; // MiniGameDataSO
+        public CosmicShore.SOAP.MiniGameDataSO miniGameData;
 
         [Header("Scoring")]
         public bool golfRules;
-        public ScriptableObject[] scoringConfigs; // use your ScoringConfig[] if the editor asm can reference it
+        public ScriptableObject[] scoringConfigs;
 
         [Header("Turn")]
         public float turnDurationSeconds = 60f;
 
+        [Header("Spawner")]
+        public bool spawnDefaultPlayerAndAI;            
+        public IPlayer.InitializeData[] initializeDatas; 
+
         [Header("Events (optional)")]
-        public ScriptableObject[] eventsToAssign; // e.g., ScriptableEvent assets
+        public ScriptableObject[] eventsToAssign;
     }
 }
