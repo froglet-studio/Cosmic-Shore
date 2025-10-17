@@ -68,8 +68,12 @@ namespace CosmicShore.Game
 
             if (shipStatus.VesselType != VesselClassType.Manta)
             {
-                Crystal.Explode(shipStatus);
-                Crystal.PlayExplosionAudio();
+                Crystal.NotifyManagerToExplodeCrystal(new Crystal.ExplodeParams
+                {
+                    Course = shipStatus.Course,
+                    Speed = shipStatus.Speed,
+                    PlayerName = shipStatus.PlayerName,
+                });
             }
 
             Crystal.Respawn();

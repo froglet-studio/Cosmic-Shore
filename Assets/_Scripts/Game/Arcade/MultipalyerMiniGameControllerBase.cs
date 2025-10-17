@@ -20,11 +20,11 @@ namespace CosmicShore.Game.Arcade
         
         public override void OnNetworkSpawn()
         {
-            if (!IsServer)
-                return;
-            
-            gameData.OnMiniGameTurnEnd += EndTurn;
-            gameData.OnSessionStarted += SubscribeToSessionEvents;
+            if (IsServer)
+            {
+                gameData.OnMiniGameTurnEnd += EndTurn;
+                gameData.OnSessionStarted += SubscribeToSessionEvents;    
+            }
             
             InitializeAfterDelay().Forget();
         }
@@ -60,7 +60,7 @@ namespace CosmicShore.Game.Arcade
             try
             {
                 await UniTask.Delay(initDelayMs, DelayType.UnscaledDeltaTime);
-                Initialize();
+                InitializeGame();
             }
             catch (OperationCanceledException)
             {
@@ -77,6 +77,7 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer)
                 return;
 
+            // reset this only in server one time
             roundsPlayed = 0;
             turnsTakenThisRound = 0;
         }

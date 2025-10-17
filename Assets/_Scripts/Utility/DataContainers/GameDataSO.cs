@@ -65,7 +65,7 @@ namespace CosmicShore.SOAP
 
         public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
         
-        public void InitializeMiniGame()
+        public void InitializeGame()
         {
             ResetRuntimeData();
             OnInitializeGame?.Invoke();

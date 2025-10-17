@@ -4,39 +4,33 @@ using CosmicShore.SOAP;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 
 namespace CosmicShore.Game
 {
-    public class CrystalManager : NetworkBehaviour
+    public abstract class CrystalManager : NetworkBehaviour
     {
-        [SerializeField]
-        GameDataSO gameData;
+        const int MIN_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS = 100;
         
         [SerializeField]
-        CellDataSO cellData;
+        protected GameDataSO gameData;
         
-        [SerializeField] Crystal crystalPrefab;
+        [SerializeField]
+        protected CellDataSO cellData;
+        
+        [SerializeField] 
+        protected Crystal crystalPrefab;
         [SerializeField] bool scaleCrystalPositionWithIntensity;
         [SerializeField] IntVariable intensityLevelData;
         
-        Crystal crystal;
         int _itemsAdded;
+        
+        Vector3 lastSpawnPos;
 
-        private void OnEnable()
-        {
-            gameData.OnGameStarted += OnGameStarted;
-        }
-
-        private void OnDisable()
-        {
-            gameData.OnGameStarted -= OnGameStarted;
-        }
-
-        private void OnGameStarted()
+        void Awake()
         {
             cellData.CellItems = new List<CellItem>();
-            Spawn();
         }
         
         public bool TryRemoveItem(CellItem item)
@@ -50,7 +44,7 @@ namespace CosmicShore.Game
             return true;
         }
         
-        bool TryInitializeAndAdd(CellItem item)
+        protected bool TryInitializeAndAdd(CellItem item)
         {
             if (item.Id != 0)
             {
@@ -64,15 +58,34 @@ namespace CosmicShore.Game
             cellData.OnCellItemsUpdated.Raise();
             return true;
         }
+        
+        protected abstract void Spawn(Vector3 spawnPos);
 
-        void Spawn()
+        protected Vector3 CalculateSpawnPos() => 
+            scaleCrystalPositionWithIntensity ? cellData.CellTransform.position * intensityLevelData : Vector3.forward * 30; // 30 unit forward if none
+
+        protected Vector3 CalculateNewSpawnPos()
         {
-            var spawnPos = scaleCrystalPositionWithIntensity ? cellData.CellTransform.position * intensityLevelData : Vector3.one * 10; // 10 unit forward if none
-            crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
-            crystal.InjectDependencies(this);
-            cellData.Crystal = crystal;
-            TryInitializeAndAdd(crystal);
-            cellData.OnCrystalSpawned.Raise();
+            Vector3 spawnPos;
+            do
+            {
+                spawnPos = Random.insideUnitSphere * cellData.CrystalRadius + cellData.CellTransform.position;
+            } while (Vector3.SqrMagnitude(lastSpawnPos - spawnPos) <= MIN_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS);
+            
+            lastSpawnPos = spawnPos;
+            return spawnPos;
+        }
+
+        public abstract void RespawnCrystal();
+
+        public abstract void ExplodeCrystal(Crystal.ExplodeParams explodeParams);
+
+        protected void UpdateCrystalPos(Vector3 newPos)
+        {
+            var crystal = cellData.Crystal;
+            crystal.DeactivateModels();
+            crystal.MoveToNewPos(newPos);
+            cellData.OnCellItemsUpdated.Raise();
         }
     }
 }

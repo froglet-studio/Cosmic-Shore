@@ -8,6 +8,7 @@ namespace CosmicShore.Game
 
         void InitializeGame()
         {
+            _gameData.InitializeGame();
             AddSpawnPosesToGameData();
             SpawnAIPlayersAndAddToGameData();
             _gameData.SetPlayersActive();
