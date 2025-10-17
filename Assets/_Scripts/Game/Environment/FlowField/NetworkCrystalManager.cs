@@ -17,13 +17,13 @@ namespace CosmicShore.Game
         
         public override void OnNetworkSpawn()
         {
-            gameData.OnInitializeGame += OnInitializeGameInServer;
+            gameData.OnInitializeGame += OnInitializeGame;
             gameData.OnGameStarted += OnGameStartedInServer;
         }
 
         public override void OnNetworkDespawn()
         {
-            gameData.OnInitializeGame -= OnInitializeGameInServer;
+            gameData.OnInitializeGame -= OnInitializeGame;
             gameData.OnGameStarted -= OnGameStartedInServer;
             n_SpawnPos.OnValueChanged -= OnSpawnPosChanged;
         }
@@ -66,7 +66,7 @@ namespace CosmicShore.Game
         void RespawnCrystal_ServerRpc() =>
             n_SpawnPos.Value = CalculateNewSpawnPos();
         
-        void OnInitializeGameInServer()
+        void OnInitializeGame()
         {
             if (IsServer)
                 n_SpawnPos.Value = CalculateSpawnPos();
