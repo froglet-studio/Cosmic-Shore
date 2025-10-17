@@ -9,7 +9,6 @@ public abstract class Flora : LifeForm
     [SerializeField] protected float growPeriod = 3f;
     [SerializeField] public float PlantPeriod = 15f;
     [SerializeField] float stunDuration = 1f;
-    
     protected bool isGrowing = true;
 
     public abstract void Grow();

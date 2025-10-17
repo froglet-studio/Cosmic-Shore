@@ -1,8 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.SOAP;
+using Obvious.Soap;
+using Unity.Services.Matchmaker.Models;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
@@ -14,23 +17,18 @@ namespace CosmicShore.Game
         [SerializeField] public int ID;
 
         [SerializeField] List<SO_CellType> CellTypes;
-        
-        [SerializeField]
-        CellDataSO cellData;
-        SO_CellType cellType => cellData.CellType;
-        
-        /*SO_CellType cellType;
-        public SO_CellType CellType
-        {
+        SO_CellType cellType;
+        public SO_CellType CellType 
+        { 
             get => cellType;
-            set
+            set 
             {
                 cellType = value;
                 AssignCellType();
-            }
-        }*/
+            } 
+        }
 
-        // SnowChanger SnowChanger;
+        SnowChanger SnowChanger;
         GameObject membrane;
         GameObject nucleus; // TODO: Use radius to spawn/move crystal
 
@@ -62,13 +60,10 @@ namespace CosmicShore.Game
 
         void Awake()
         {
-            /*if (cellType == null)
+            if (cellType == null)
             {
                 AssignCellType();
-            }*/
-
-            cellData.Cell = this;
-            AssignCellType();
+            }
 
             // TODO: handle Blue?
             Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };  // TODO: Store this as a constant somewhere (where?).
@@ -82,38 +77,31 @@ namespace CosmicShore.Game
         private void OnEnable()
         {
             gameData.OnGameStarted += Initialize;
-            cellData.OnCrystalSpawned.OnRaised += OnCrystalSpawnedInCell;
         }
 
         private void OnDisable()
         {
             gameData.OnGameStarted -= Initialize;
-            cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawnedInCell;
-            cellData.ResetRuntimeData();
         }
 
-        void Initialize()
+        private void Initialize()
         {
             normalizeWeights();
 
-            var cellType = cellData.CellType;
             membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
             nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
-            
-            // CrystalManager.Instance.Initialize();
+            SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
             // SnowChanger.Initialize(crystalManager.GetCrystalTransform(), crystalManager.GetSphereRadius());
-            
-            // TODO - Remove execution dependency of initializationbetween CrystalManager and SnowChanger
-            /*SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
             SnowChanger.Initialize();
-            SnowChanger.SetOrigin(transform.position);*/
+            SnowChanger.SetOrigin(transform.position);
 
             teamVolumes.Add(Domains.Jade, 0);
             teamVolumes.Add(Domains.Ruby, 0);
             teamVolumes.Add(Domains.Gold, 0);
             teamVolumes.Add(Domains.Blue, 0);
 
-            /*Crystal.SetOrigin(transform.position);
+            // Crystal.SetOrigin(transform.position);
+            CrystalManager.Instance.SetOrigin(transform.position);
 
             if (cellType != null)
             {
@@ -123,28 +111,19 @@ namespace CosmicShore.Game
                 }
                 SpawnLife();
             }
-            TryInitializeAndAdd(crystalManager.Crystal);
-            Crystal.gameObject.SetActive(true);
-            crystalManager.ToggleCrstalActive(true);*/
-        }
-        
-        void OnCrystalSpawnedInCell()
-        {
-            foreach (var modifier in cellType.CellModifiers)
-            {
-                modifier.Apply(this);
-            }
-            SpawnLife();
+            // TryInitializeAndAdd(crystalManager.Crystal);
+            // Crystal.gameObject.SetActive(true);
+            // crystalManager.ToggleCrstalActive(true);
         }
 
         void AssignCellType() 
         {
-            if (CellTypes is { Count: > 0 })
+            if (CellTypes != null && CellTypes.Count > 0)
             {
-                cellData.CellType = CellTypes[Random.Range(0, CellTypes.Count)];
+                cellType = CellTypes[Random.Range(0, CellTypes.Count)];
             }
 
-            if (!cellData.CellType)
+            if (cellType == null)
             {
                 Debug.LogError("Cell type is not assigned. Please assign a valid cell type.");
             }
@@ -152,8 +131,6 @@ namespace CosmicShore.Game
 
         void SpawnLife()
         {
-            var cellType = cellData.CellType;
-            
             if (cellType.SupportedFlora.Count > 0)
             {
                 for (int i = 0; i < FloraTypeCount; i++)
@@ -389,7 +366,7 @@ namespace CosmicShore.Game
                 {
                     var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
                     newPopulation.domain = controllingTeamStat.Item1; // ControllingTeam;
-                    newPopulation.Goal = cellData.CrystalTransform.position;
+                    newPopulation.Goal = CrystalManager.Instance.GetCrystalTransform().position;
                     yield return new WaitForSeconds(baseFaunaSpawnTime);
                 }
                 else

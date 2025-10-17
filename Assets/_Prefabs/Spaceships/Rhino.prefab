@@ -2196,7 +2196,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -2284,7 +2284,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
   skillLevel: 1
   defaultThrottleHigh: 0.6
   defaultThrottleLow: 0.3
@@ -2343,7 +2342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e2b2fc27f243834da1f923916ab85ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   trailViewerMaterial: {fileID: 2100000, guid: d9c5732e6a43fbd40b2c9fe615ed746e, type: 2}
 --- !u!114 &4796952059166273496
 MonoBehaviour:

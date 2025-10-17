@@ -79,9 +79,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ownDomain: -1
+  OwnTeam: -1
   ItemType: 1
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
   crystalProperties:
     crystal: {fileID: 6588436222817790495}
     fuelAmount: 0.5

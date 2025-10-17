@@ -2,9 +2,9 @@ using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.SOAP;
+using System.Linq;
 using UnityEngine;
-
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
@@ -23,9 +23,6 @@ namespace CosmicShore.Game
         const int MinimumSpaceBetweenCurrentAndLastSpawnPos = 100;
         
         #region Inspector Fields
-        [SerializeField]
-        CellDataSO cellData;
-        
         [SerializeField] 
         public CrystalProperties crystalProperties;
         
@@ -49,16 +46,13 @@ namespace CosmicShore.Game
         
         Material tempMaterial;
         Vector3 _lastSpawnPosition;
-        CrystalManager crystalManager;
-        // public Vector3 Origin { get; private set; } = Vector3.zero;
+        public Vector3 Origin { get; private set; } = Vector3.zero;
 
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
         }
 
-        public void InjectDependencies(CrystalManager cm) => crystalManager = cm;
-        
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
         public void Respawn()
@@ -66,7 +60,7 @@ namespace CosmicShore.Game
             if (!allowRespawnOnImpact)
             {
                 // cell?.TryRemoveItem(this);
-                crystalManager.TryRemoveItem(this);
+                CrystalManager.Instance.TryRemoveItem(this);
                 Destroy(gameObject);
                 return;
             }
@@ -74,7 +68,7 @@ namespace CosmicShore.Game
             DeactivateModels();
             ChangeSpawnPosition();
             // cell.UpdateItem();
-            cellData.OnCellItemsUpdated.Raise();
+            CrystalManager.Instance.UpdateItem();
         }
         
         void DeactivateModels()
@@ -91,7 +85,7 @@ namespace CosmicShore.Game
             Vector3 spawnPos;
             do
             {
-                spawnPos = Random.insideUnitSphere * SphereRadius + cellData.CellTransform.position;
+                spawnPos = Random.insideUnitSphere * SphereRadius + Origin;
             } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);
             
             transform.SetPositionAndRotation(spawnPos, Random.rotation);
@@ -166,6 +160,8 @@ namespace CosmicShore.Game
             AudioSource audioSource = GetComponent<AudioSource>();
             AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
         }
+
+        public void SetOrigin(Vector3 o) => Origin = o; 
 
         public void ActivateCrystal()
         {

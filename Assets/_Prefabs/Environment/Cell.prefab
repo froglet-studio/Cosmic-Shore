@@ -44,10 +44,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ID: 0
+  ID: Cell1
+  Crystal: {fileID: 0}
   CellTypes:
   - {fileID: 11400000, guid: 36999bb97c4204943bec39ef90cf958c, type: 2}
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
   FloraTypeCount: 3
   spawnJade: 1
   FaunaTypeCount: 3
@@ -56,4 +56,5 @@ MonoBehaviour:
   faunaSpawnVolumeThreshold: 10000
   baseFaunaSpawnTime: 300
   hasRandomFloraAndFauna: 0
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
+  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

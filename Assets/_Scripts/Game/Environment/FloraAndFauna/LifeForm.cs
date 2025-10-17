@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Game;
-using CosmicShore.SOAP;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -14,9 +13,6 @@ namespace CosmicShore
 {
     public abstract class LifeForm : MonoBehaviour, ITeamAssignable
     {
-        [SerializeField]
-        protected CellDataSO cellData;
-        
         [FormerlySerializedAs("healthBlock")] [SerializeField] protected HealthPrism healthPrism;
         [SerializeField] protected Spindle spindle;
         [SerializeField] int healthBlocksForMaturity = 1;

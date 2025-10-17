@@ -28,9 +28,6 @@ public class BoidSImulationController : MonoBehaviour
     [FormerlySerializedAs("miniGameData")] [SerializeField]
     GameDataSO gameData;
     
-    [SerializeField]
-    CellDataSO cellData;
-    
     public ComputeShader boidSimulationShader;
     public Prism boidPrefab;
     public int numberOfBoids = 100;
@@ -155,7 +152,9 @@ public class BoidSImulationController : MonoBehaviour
 
     private void SwapBuffers()
     {
-        (readBuffer, writeBuffer) = (writeBuffer, readBuffer);
+        var temp = readBuffer;
+        readBuffer = writeBuffer;
+        writeBuffer = temp;
 
         boidSimulationShader.SetBuffer(kernel, "entityBufferRead", readBuffer);
         boidSimulationShader.SetBuffer(kernel, "entityBufferWrite", writeBuffer);
@@ -210,7 +209,7 @@ public class BoidSImulationController : MonoBehaviour
         }
 
         // Iterate through all NodeItems in the node to find the closest TrailBlock
-        IList<CellItem> cellItems = cellData.CellItems;  // containingNode.CellItems;
+        IList<CellItem> cellItems = CrystalManager.Instance.CellItems;  // containingNode.CellItems;
         Prism closestBlock = null;
         float closestDistance = float.MaxValue;
 
