@@ -1481,6 +1481,12 @@ PrefabInstance:
       propertyPath: Crystal
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: 'CellTypes.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 94ca015ece81b954ea5b6cf14a4cf3eb,
+        type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_Name
@@ -2094,7 +2100,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  numberOfRounds: 1
+  numberOfRounds: 2
   numberOfTurnsPerRound: 1
   countdownTimer: {fileID: 256752124}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -2242,7 +2248,6 @@ MonoBehaviour:
   AllGames: {fileID: 11400000, guid: 23306534ee610414c99a9b7bf3d92995, type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
-  onResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!114 &1628508340
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2258,6 +2263,24 @@ MonoBehaviour:
   _binding: 0
   _disableAfterSubscribing: 0
   _eventResponses:
+  - Delay: 0
+    ScriptableEvent: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
+    Response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1628508331}
+          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.MultipalyerMiniGameControllerBase,
+            Assembly-CSharp
+          m_MethodName: OnClickReturnToMainMenu
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
   - Delay: 0
     ScriptableEvent: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}
     Response:
@@ -2295,24 +2318,6 @@ MonoBehaviour:
         - m_Target: {fileID: 1628508339}
           m_TargetAssemblyTypeName: CosmicShore.Core.NetworkGameManager, Assembly-CSharp
           m_MethodName: RestartGame
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-    Response:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1628508331}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.MultipalyerMiniGameControllerBase,
-            Assembly-CSharp
-          m_MethodName: OnClickReturnToMainMenu
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
