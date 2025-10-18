@@ -34,7 +34,7 @@ namespace CosmicShore.SOAP
 
         
         // Local player config / state
-        [FormerlySerializedAs("SelectedShipClass")] public VesselClassTypeVariable selectedVesselClass;
+        public VesselClassTypeVariable selectedVesselClass;
         public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
