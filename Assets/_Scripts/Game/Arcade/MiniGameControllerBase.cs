@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Arcade
         public void OnReadyClicked() =>
             OnReadyClicked_();
         
-        protected virtual void InitializeGame() => gameData.InitializeGame();
+        protected void InitializeGame() => gameData.InitializeGame();
 
         protected virtual void OnReadyClicked_()
         {
@@ -100,6 +100,12 @@ namespace CosmicShore.Game.Arcade
             {
                 SetupNewRound();
             }
+        }
+        
+        protected void OnResetForReplay()
+        {
+            roundsPlayed = 0;
+            SetupNewRound();
         }
     }
 }

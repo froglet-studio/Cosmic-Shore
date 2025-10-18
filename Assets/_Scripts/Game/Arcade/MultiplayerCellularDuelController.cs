@@ -27,8 +27,20 @@ namespace CosmicShore.Game.Arcade
             OnReadyClicked_ServerRpc();
         }
 
+        protected override void SetupNewRound()
+        {
+            SetupNewRound_ClientRpc();
+            base.SetupNewRound();
+        }
+
+        [ClientRpc]
+        void SetupNewRound_ClientRpc()
+        {
+            ToggleReadyButton(true);
+        }
+
         [ServerRpc(RequireOwnership = false)]
-        private void OnReadyClicked_ServerRpc()
+        void OnReadyClicked_ServerRpc()
         {
             readyClientCount++;
             if (!readyClientCount.Equals(gameData.SelectedPlayerCount))
@@ -39,7 +51,7 @@ namespace CosmicShore.Game.Arcade
         }
 
         [ClientRpc]
-        private void OnReadyClicked_ClientRpc()
+        void OnReadyClicked_ClientRpc()
         {
             StartCountdownTimer();
         }

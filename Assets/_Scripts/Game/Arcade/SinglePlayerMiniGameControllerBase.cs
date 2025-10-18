@@ -19,12 +19,6 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
         }
-
-        protected override void InitializeGame()
-        {
-            roundsPlayed = 0;
-            base.InitializeGame();
-        }
         
         protected override void OnCountdownTimerEnded()
         {
@@ -41,12 +35,6 @@ namespace CosmicShore.Game.Arcade
         protected override void EndGame()
         {
             gameData.InvokeMiniGameEnd();
-        }
-        
-        void OnResetForReplay()
-        {
-            roundsPlayed = 0;
-            SetupNewRound();
         }
     }
 }

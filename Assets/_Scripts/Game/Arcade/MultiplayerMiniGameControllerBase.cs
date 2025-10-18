@@ -23,7 +23,8 @@ namespace CosmicShore.Game.Arcade
             if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
-                gameData.OnSessionStarted += SubscribeToSessionEvents;    
+                gameData.OnSessionStarted += SubscribeToSessionEvents;
+                gameData.OnResetForReplay.OnRaised += OnResetForReplay;
             }
             
             InitializeAfterDelay().Forget();
@@ -36,15 +37,16 @@ namespace CosmicShore.Game.Arcade
 
             gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
             gameData.OnSessionStarted -= SubscribeToSessionEvents;
+            gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
         }
 
-        private void SubscribeToSessionEvents()
+        void SubscribeToSessionEvents()
         {
             gameData.ActiveSession.Deleted += UnsubscribeFromSessionEvents;
             gameData.ActiveSession.PlayerLeaving += OnPlayerLeavingFromSession;
         }
 
-        private void UnsubscribeFromSessionEvents()
+        void UnsubscribeFromSessionEvents()
         {
             gameData.ActiveSession.Deleted -= UnsubscribeFromSessionEvents;
             gameData.ActiveSession.PlayerLeaving -= OnPlayerLeavingFromSession;
@@ -78,8 +80,7 @@ namespace CosmicShore.Game.Arcade
                 return;
 
             // reset this only in server one time
-            roundsPlayed = 0;
-            turnsTakenThisRound = 0;
+            // turnsTakenThisRound = 0;
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -93,6 +94,21 @@ namespace CosmicShore.Game.Arcade
         {
             gameData.SetPlayersActiveForMultiplayer();
         }
+
+        protected override void EndTurn()
+        {
+            EndTurn_ClientRpc();
+            base.EndTurn();
+        }
+
+        [ClientRpc]
+        void EndTurn_ClientRpc()
+        {
+            if (!IsServer)
+                gameData.InvokeGameTurnConditionsMet();
+            
+            gameData.ResetPlayers();
+        }
         
         protected override void EndGame()
         {
@@ -100,10 +116,9 @@ namespace CosmicShore.Game.Arcade
         }
         
         [ClientRpc]
-        private void EndGame_ClientRpc()
+        void EndGame_ClientRpc()
         {
             gameData.InvokeMiniGameEnd();
-            gameData.ResetPlayers();
         }
     }
 }
