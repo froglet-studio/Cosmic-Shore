@@ -19,9 +19,9 @@ namespace CosmicShore.Core
 
         [SerializeField] SceneNameListSO _sceneNames;
         [SerializeField] SO_GameList AllGames;
-        [FormerlySerializedAs("miniGameData")] [SerializeField] protected GameDataSO gameData;
+        [SerializeField] protected GameDataSO gameData;
         [SerializeField] ScriptableEventBool _onSceneTransition;
-        [SerializeField] private ScriptableEventNoParam onResetForReplay;
+        
         
         private void OnEnable()
         {
@@ -47,7 +47,7 @@ namespace CosmicShore.Core
 
         public virtual void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
 
-        protected void InvokeOnResetForReplay() => onResetForReplay?.Raise();
+        protected void InvokeOnResetForReplay() => gameData.OnResetForReplay?.Raise();
         
         void LaunchGameScene()
         {

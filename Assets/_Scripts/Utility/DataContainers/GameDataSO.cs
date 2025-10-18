@@ -27,10 +27,12 @@ namespace CosmicShore.SOAP
         public event Action OnSessionStarted;
         public event Action OnInitializeGame;
         public event Action OnClientReady;
-        public event Action OnGameStarted;
-        public event Action OnMiniGameTurnEnd;
+        public event Action OnTurnStarted;
+        public ScriptableEventNoParam OnMiniGameTurnEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
+        
+        public ScriptableEventNoParam OnResetForReplay;
 
         
         // Local player config / state
@@ -85,17 +87,17 @@ namespace CosmicShore.SOAP
             Players.Clear();
         }
 
-        public void StartNewGame()
+        public void StartTurn()
         {
             IsRunning = true;
             TurnStartTime = Time.time;
 
-            InvokeGameStarted();
+            InvokeTurnStarted();
         }
         
         public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
-        public void InvokeGameStarted() => OnGameStarted?.Invoke();
-        public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Invoke();
+        public void InvokeTurnStarted() => OnTurnStarted?.Invoke();
+        public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Raise();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
         public void InvokeClientReady() => OnClientReady?.Invoke();
@@ -156,12 +158,6 @@ namespace CosmicShore.SOAP
             player = ActivePlayer;
             roundStats = player != null ? FindByName(player.Name) : null;
             return player != null && roundStats != null;
-        }
-
-        public bool TryGetRoundStats(Domains domain, out IRoundStats roundStats)
-        {
-            roundStats = FindByTeam(domain);
-            return roundStats != null;
         }
 
         public bool TryGetRoundStats(string playerName, out IRoundStats roundStats)
@@ -362,8 +358,7 @@ namespace CosmicShore.SOAP
                 
                 player.ResetForPlay();
                 
-                if (NetworkManager.Singleton.IsConnectedClient &&
-                    !player.IsNetworkOwner)
+                if (IsMultiplayerMode && !player.IsNetworkOwner)
                     continue;
                 player.SetPoseOfVessel(GetRandomSpawnPose());
             }

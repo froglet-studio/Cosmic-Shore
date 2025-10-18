@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccff787dc643e6d48a46c1b58af79d00, type: 3}
   m_Name: GameData
   m_EditorClassIdentifier: 
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+  OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   selectedVesselClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
   VesselClassSelectedIndex: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,

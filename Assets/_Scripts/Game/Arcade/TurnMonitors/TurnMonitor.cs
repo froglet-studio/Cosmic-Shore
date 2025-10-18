@@ -21,7 +21,6 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] protected ScriptableEventString onUpdateTurnMonitorDisplay;
 
         bool isRunning;
-        bool isPaused;
 
         CancellationTokenSource _cts;
         
@@ -34,13 +33,12 @@ namespace CosmicShore.Game.Arcade
 
             _cts = new CancellationTokenSource();
             isRunning = true;
-            isPaused = false;
             _ = RunLoopAsync(_cts.Token);
         }
 
         private void Update()
         {
-            if (isPaused)
+            if (!isRunning) 
                 return;
             
             // End-of-turn check
@@ -49,7 +47,7 @@ namespace CosmicShore.Game.Arcade
             
             RestrictedUpdate();
             OnTurnEnded();
-            Pause(); // exits loop on next iteration
+            // Pause(); // exits loop on next iteration
         }
 
         /// <summary>Stops the monitor loop (safe to call multiple times).</summary>
@@ -68,10 +66,10 @@ namespace CosmicShore.Game.Arcade
         }
 
         /// <summary>Pauses periodic updates until Resume() is called.</summary>
-        public void Pause()  => isPaused = true;
+        public void Pause()  => isRunning = false;
 
         /// <summary>Resumes periodic updates if paused.</summary>
-        public void Resume() => isPaused = false;
+        public void Resume() => isRunning = true;
 
         /// <summary>
         /// Stops, clears state, and (optionally) restarts.
@@ -107,10 +105,10 @@ namespace CosmicShore.Game.Arcade
                 while (!token.IsCancellationRequested && isRunning)
                 {
                     // Pause gate
-                    if (isPaused)
+                    if (!isRunning)
                     {
                         // Wait until unpaused or cancelled
-                        await UniTask.WaitUntil(() => !isPaused, cancellationToken: token);
+                        await UniTask.WaitUntil(() => isRunning, cancellationToken: token);
                         if (token.IsCancellationRequested) break;
                     }
 

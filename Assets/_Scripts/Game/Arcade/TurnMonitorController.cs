@@ -34,6 +34,12 @@ namespace CosmicShore.Game.Arcade
             if (!CheckEndOfTurn())
                 return;
 
+            OnTurnEnded();
+        }
+
+        void OnTurnEnded()
+        {
+            isRunning = false;
             gameData.InvokeGameTurnConditionsMet();
         }
 
@@ -44,16 +50,18 @@ namespace CosmicShore.Game.Arcade
         
         protected void SubscribeToEvents()
         {
-            gameData.OnGameStarted += StartMonitors;
-            gameData.OnMiniGameTurnEnd += PauseMonitors;
-            gameData.OnMiniGameEnd += StopMonitors;
+            gameData.OnTurnStarted += StartMonitors;
+            // gameData.OnMiniGameTurnEnd += PauseMonitors;
+            gameData.OnMiniGameTurnEnd.OnRaised += StopMonitors;
+            // gameData.OnMiniGameEnd += StopMonitors;
         }
 
         protected void UnsubscribeFromEvents()
         {
-            gameData.OnGameStarted -= StartMonitors;
-            gameData.OnMiniGameTurnEnd -= PauseMonitors;
-            gameData.OnMiniGameEnd -= StopMonitors;
+            gameData.OnTurnStarted -= StartMonitors;
+            // gameData.OnMiniGameTurnEnd -= PauseMonitors;
+            gameData.OnMiniGameTurnEnd.OnRaised -= StopMonitors;
+            // gameData.OnMiniGameEnd -= StopMonitors;
         }
 
         void StartMonitors()
@@ -64,24 +72,12 @@ namespace CosmicShore.Game.Arcade
                 m.StartMonitor();
         }
 
-        void PauseMonitors()
+        void StopMonitors()
         {
             isRunning = false;
             
-            foreach(var m in monitors) 
-                m.Pause();
-        }
-
-        void StopMonitors()
-        {
             foreach(var m in monitors)
                 m.StopMonitor();
-        }
-
-        void ResumeMonitors()
-        {
-            foreach(var m in monitors) 
-                m.Resume();
         }
 
         bool CheckEndOfTurn() => monitors.Any(m => m.CheckForEndOfTurn());

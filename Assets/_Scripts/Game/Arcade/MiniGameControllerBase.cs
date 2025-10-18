@@ -22,12 +22,13 @@ namespace CosmicShore.Game.Arcade
         [Header("Scene References")]
         [SerializeField] CountdownTimer countdownTimer;
         
-        [FormerlySerializedAs("miniGameData")] [SerializeField] 
+        [SerializeField] 
         protected GameDataSO gameData;
         
         [SerializeField] 
         protected ScriptableEventBool _onToggleReadyButton;
-
+        
+        
         // Gameplay state
         protected int turnsTakenThisRound;
         protected int roundsPlayed;
@@ -35,7 +36,7 @@ namespace CosmicShore.Game.Arcade
         public void OnReadyClicked() =>
             OnReadyClicked_();
         
-        protected void InitializeGame() => gameData.InitializeGame();
+        protected virtual void InitializeGame() => gameData.InitializeGame();
 
         protected virtual void OnReadyClicked_()
         {
@@ -70,8 +71,14 @@ namespace CosmicShore.Game.Arcade
             else
                 countdownTimer.BeginCountdown(OnCountdownTimerEnded);*/
         }
+
+        protected virtual void SetupNewRound()
+        {
+            turnsTakenThisRound = 0;
+            SetupNewTurn();
+        }
         
-        protected void EndTurn()
+        protected virtual void EndTurn()
         {
             // miniGameData.InvokeMiniGameTurnEnd();   
             turnsTakenThisRound++;
@@ -91,7 +98,7 @@ namespace CosmicShore.Game.Arcade
                 EndGame();
             else
             {
-                SetupNewTurn();
+                SetupNewRound();
             }
         }
     }

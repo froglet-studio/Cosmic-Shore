@@ -4,32 +4,49 @@ namespace CosmicShore.Game.Arcade
     {
         void OnEnable()
         {
-            gameData.OnMiniGameTurnEnd += EndTurn;
+            gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
+            gameData.OnResetForReplay.OnRaised += OnResetForReplay;
         }
         
         void Start()
         {
-            ToggleReadyButton(true);
             InitializeGame();
+            SetupNewRound();
         }
         
         void OnDisable() 
         {
-            gameData.OnMiniGameTurnEnd -= EndTurn;
+            gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
+            gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
+        }
+
+        protected override void InitializeGame()
+        {
+            roundsPlayed = 0;
+            base.InitializeGame();
         }
         
         protected override void OnCountdownTimerEnded()
         {
-            roundsPlayed = 0;
-            turnsTakenThisRound = 0;
             gameData.SetPlayersActive();
-            gameData.StartNewGame();
+            gameData.StartTurn();
+        }
+
+        protected override void EndTurn()
+        {
+            gameData.ResetPlayers();
+            base.EndTurn();
         }
         
         protected override void EndGame()
         {
             gameData.InvokeMiniGameEnd();
-            gameData.ResetPlayers();
+        }
+        
+        void OnResetForReplay()
+        {
+            roundsPlayed = 0;
+            SetupNewRound();
         }
     }
 }

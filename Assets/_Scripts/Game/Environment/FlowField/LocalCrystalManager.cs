@@ -6,14 +6,16 @@ namespace CosmicShore.Game
     {
         private void OnEnable()
         {
-            gameData.OnGameStarted += OnGameStarted;
+            gameData.OnTurnStarted += TurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
         }
 
         private void OnDisable()
         {
-            gameData.OnGameStarted -= OnGameStarted;
+            gameData.OnTurnStarted -= TurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
         }
-   
+
         public override void RespawnCrystal() =>
             UpdateCrystalPos(CalculateNewSpawnPos());
 
@@ -29,6 +31,11 @@ namespace CosmicShore.Game
             cellData.OnCrystalSpawned.Raise();
         }
         
-        void OnGameStarted() => Spawn(CalculateSpawnPos());
+        void TurnStarted() => Spawn(CalculateSpawnPos());
+        
+        void OnTurnEnded()
+        {
+            cellData.Crystal.DestroyCrystal();
+        }
     }
 }

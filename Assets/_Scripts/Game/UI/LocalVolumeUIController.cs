@@ -15,19 +15,19 @@ namespace CosmicShore.Game.UI
 
         void OnEnable()
         {
-            gameData.OnGameStarted += GameStart;
-            gameData.OnMiniGameTurnEnd += GameTurnEnd;
+            gameData.OnTurnStarted += TurnStart;
+            gameData.OnMiniGameTurnEnd.OnRaised += GameTurnEnd;
         }
 
         void OnDisable()
         {
-            gameData.OnGameStarted -= GameStart;
-            gameData.OnMiniGameTurnEnd -= GameTurnEnd;
+            gameData.OnTurnStarted -= TurnStart;
+            gameData.OnMiniGameTurnEnd.OnRaised -= GameTurnEnd;
             _active = false;
             _running = false;
         }
 
-        private void GameStart()
+        private void TurnStart()
         {
             _active = true;
             if (!_running) RunVolumeUpdater().Forget();

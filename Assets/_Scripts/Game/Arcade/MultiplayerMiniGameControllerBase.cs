@@ -22,7 +22,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (IsServer)
             {
-                gameData.OnMiniGameTurnEnd += EndTurn;
+                gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
                 gameData.OnSessionStarted += SubscribeToSessionEvents;    
             }
             
@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer)
                 return;
 
-            gameData.OnMiniGameTurnEnd -= EndTurn;
+            gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
             gameData.OnSessionStarted -= SubscribeToSessionEvents;
         }
 
@@ -70,7 +70,7 @@ namespace CosmicShore.Game.Arcade
         
         protected override void OnCountdownTimerEnded()
         {
-            gameData.StartNewGame(); // For this client only.
+            gameData.StartTurn(); // For this client only.
             OnCountdownTimerEnded_ServerRpc();
             
             // Matches your original Duel behavior: only server starts the game and resets counters.

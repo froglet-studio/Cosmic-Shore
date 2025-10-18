@@ -81,7 +81,7 @@ namespace CosmicShore.Game
             crystalManager.RespawnCrystal();
         }
 
-        void DestroyCrystal()
+        public void DestroyCrystal()
         {
             // cell?.TryRemoveItem(this);
             crystalManager.TryRemoveItem(this);

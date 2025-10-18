@@ -12,7 +12,7 @@ namespace CosmicShore.Game
             AddSpawnPosesToGameData();
             SpawnAIPlayersAndAddToGameData();
             _gameData.SetPlayersActive();
-            _gameData.InvokeGameStarted();
+            _gameData.InvokeTurnStarted();
         }
     }
 }

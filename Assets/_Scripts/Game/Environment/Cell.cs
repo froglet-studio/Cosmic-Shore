@@ -81,13 +81,13 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            gameData.OnGameStarted += Initialize;
+            gameData.OnInitializeGame += Initialize;
             cellData.OnCrystalSpawned.OnRaised += OnCrystalSpawnedInCell;
         }
 
         private void OnDisable()
         {
-            gameData.OnGameStarted -= Initialize;
+            gameData.OnInitializeGame -= Initialize;
             cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawnedInCell;
             cellData.ResetRuntimeData();
         }
@@ -244,54 +244,6 @@ namespace CosmicShore.Game
         {
             return countGrids[domain].FindDensestRegion();
         }
-
-        /*public bool TryInitializeAndAdd(CellItem item)
-        {
-            if (item.Id != 0)
-                return false;
-            
-            item.Initialize(++_itemsAdded, this);
-            CellItems.Add(item);
-            OnCellItemsUpdated.Raise();
-
-            return true;
-        }
-
-        public bool TryRemoveItem(CellItem item)
-        {
-            if (!CellItems.Contains(item))
-                return false;
-            
-            CellItems.Remove(item);
-            OnCellItemsUpdated.Raise();
-
-            return true;
-        }*/
-
-        // public void UpdateItem() => OnCellItemsUpdated.Raise();
-
-        /*public CellItem GetClosestItem(Vector3 position)
-        {
-            float minDistance = Mathf.Infinity;
-            CellItem closestItem = null;
-
-            foreach (var item in CellItems)
-            {
-                var distance = Vector3.Distance(item.transform.position, position);
-                if (distance < minDistance)
-                {
-                    closestItem = item;
-                    minDistance = distance;
-                }
-            }
-
-            return closestItem;
-        }*/
-
-        /*public CellItem GetCrystal()
-        {
-            return Crystal;
-        }*/
 
         public bool ContainsPosition(Vector3 position)
         {
