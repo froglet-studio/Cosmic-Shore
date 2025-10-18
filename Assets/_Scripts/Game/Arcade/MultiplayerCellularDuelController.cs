@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MultiplayerCellularDuelController : MultipalyerMiniGameControllerBase
+    public class MultiplayerCellularDuelController : MultiplayerMiniGameControllerBase
     {
         private int readyClientCount;
         

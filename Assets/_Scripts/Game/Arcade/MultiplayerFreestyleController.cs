@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MultiplayerFreestyleController : MultipalyerMiniGameControllerBase
+    public class MultiplayerFreestyleController : MultiplayerMiniGameControllerBase
     {
         public void OnClickReturnToMainMenu()
         {

@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Arcade
     /// - Delayed Initialize() pattern
     /// - Small helpers for common actions
     /// </summary>
-    public abstract class MultipalyerMiniGameControllerBase : MiniGameControllerBase
+    public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
         /// <summary>
         /// Delay (ms) before Initialize() is called after NetworkSpawn (server only).
