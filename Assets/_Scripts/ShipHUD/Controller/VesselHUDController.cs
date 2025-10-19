@@ -42,14 +42,16 @@ namespace CosmicShore.Game
             PrimeInitialUI();
         }
 
-        private void OnDisable()
+        public void TearDown()
         {
-            if (_actions != null)
+            if (_actions)
             {
                 _actions.OnInputEventStarted -= HandleStart;
-                _actions.OnInputEventStopped -= HandleStop;
+                _actions.OnInputEventStopped  -= HandleStop;
+                _actions = null;
             }
-            if (_view != null)
+
+            if (_view)
             {
                 var resources = _status?.ResourceSystem?.Resources;
                 if (resources != null &&
@@ -60,15 +62,21 @@ namespace CosmicShore.Game
                     resources[_view.jawResourceIndex].OnResourceChange -= OnJawResourceChanged;
                 }
 
-                if (_view.driftTrailAction != null)
+                if (_view.driftTrailAction)
                     _view.driftTrailAction.OnChangeDriftAltitude -= OnDriftDotChanged;
 
-                if (_view.vesselPrismController != null)
+                if (_view.vesselPrismController)
                     _view.vesselPrismController.OnBlockCreated -= VesselPrismCreated;
             }
 
             _trailPool?.Dispose();
             _trailPool = null;
+            _pendingPoolBuild = false;
+        }
+
+        public void ReInitialize(IVesselStatus status, VesselHUDView view)
+        {
+            Initialize(status, view);
         }
 
         private void LateUpdate()
@@ -81,7 +89,7 @@ namespace CosmicShore.Game
                 _trailPool.Tick(Time.deltaTime);
             }
             
-            if (_pendingPoolBuild && _view != null && _view.trailDisplayContainer != null)
+            if (_pendingPoolBuild && _view && _view.trailDisplayContainer != null)
             {
                 var r = _view.trailDisplayContainer.rect;
                 if (r.width > 1f && r.height > 1f && _trailPool != null)

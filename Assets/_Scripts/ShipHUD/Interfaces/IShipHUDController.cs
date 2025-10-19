@@ -6,5 +6,7 @@ namespace CosmicShore.Game
     {
         void Initialize(IVesselStatus status, VesselHUDView view);
         void SetBlockPrefab(GameObject block);
+        void TearDown();
+        void ReInitialize(IVesselStatus status, VesselHUDView view);
     }
 }

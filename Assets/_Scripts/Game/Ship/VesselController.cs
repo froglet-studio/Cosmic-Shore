@@ -218,13 +218,12 @@ namespace CosmicShore.Game
 
         public void ChangePlayer(IPlayer player)
         {
+            VesselStatus.ShipHUDController.TearDown();
             VesselStatus.Player = player;
-            
-            if (!player.IsInitializedAsAI)
-            {
-                VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
-                VesselStatus.VesselCameraCustomizer.Initialize(this);
-            }
+
+            if (player.IsInitializedAsAI) return;
+            VesselStatus.ShipHUDController.ReInitialize(VesselStatus, VesselStatus.VesselHUDView);
+            VesselStatus.VesselCameraCustomizer.RetargetAndApply(this);
         }
 
         void InitializeForMultiplayerMode()

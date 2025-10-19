@@ -61,5 +61,19 @@ namespace CosmicShore
                 Debug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");
             }
         }
+        
+        public void RetargetAndApply(IVessel vessel)
+        {
+            this.vessel = vessel;
+
+            OnInitializePlayerCamera?.Raise(vessel.VesselStatus.CameraFollowTarget);
+
+            var active = CameraManager.Instance?.GetActiveController();
+            if (active != null)
+            {
+                Configure(active);
+            }
+        }
+
     }
 }
