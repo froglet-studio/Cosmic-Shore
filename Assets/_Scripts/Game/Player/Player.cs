@@ -23,7 +23,7 @@ namespace CosmicShore.Game
         public NetworkVariable<Domains> NetTeam = new();
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); 
 
-        public VesselClassType VesselClass { get; private set; } // => InitializeData.ShipClass;   
+        // public VesselClassType VesselClass { get; private set; } // => InitializeData.ShipClass;   
         public Domains Domain { get; private set; } // => InitializeData.Team;
         public string Name { get; private set; } // => InitializeData.PlayerName;
         public string PlayerUUID => Name;
@@ -47,11 +47,12 @@ namespace CosmicShore.Game
         {
             InitializeData = data;
             IsInitializedAsAI = InitializeData.IsAI;
-            VesselClass = InitializeData.vesselClass;
+            // VesselClass = InitializeData.vesselClass;
             Domain = InitializeData.domain;
             Name = InitializeData.PlayerName;
+            InputController.Initialize();
             if (!IsInitializedAsAI)
-                InputController.Initialize();
+                ToggleInputPause(true);
             Vessel = vessel;
         }
 
@@ -71,8 +72,8 @@ namespace CosmicShore.Game
             NppList.Add(this);
             gameObject.name = "Player_" + OwnerClientId;
             
-            NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
-            NetTeam.OnValueChanged += OnNetTeamValueChanged;
+            // NetDefaultShipType.OnValueChanged += OnNetDefaultVesselTypeValueChanged;
+            NetTeam.OnValueChanged += OnNetTeamDomainChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
             
             if (IsOwner)
@@ -92,8 +93,8 @@ namespace CosmicShore.Game
         {
             NppList.Remove(this);
 
-            NetDefaultShipType.OnValueChanged -= OnNetDefaultShipTypeValueChanged;
-            NetTeam.OnValueChanged -= OnNetTeamValueChanged;
+            // NetDefaultShipType.OnValueChanged -= OnNetDefaultVesselTypeValueChanged;
+            NetTeam.OnValueChanged -= OnNetTeamDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
         }
 
@@ -128,11 +129,23 @@ namespace CosmicShore.Game
             InputStatus.ResetForReplay();
             ToggleInputPause(true);
         }
+
+        public void ChangeVessel(IVessel vessel)
+        {
+            Vessel = vessel;
+
+            if (IsSpawned && !IsOwner)
+                return;
+            
+            NetDefaultShipType.Value = Vessel.VesselStatus.VesselType;
+        }
         
-        private void OnNetDefaultShipTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>
-            VesselClass = newValue;
+        public void SetAsAI(bool isAI) => IsInitializedAsAI = isAI;
         
-        private void OnNetTeamValueChanged(Domains previousValue, Domains newValue) =>
+        /*private void OnNetDefaultVesselTypeValueChanged(VesselClassType previousValue, VesselClassType newValue) =>
+            VesselClass = newValue;*/
+        
+        private void OnNetTeamDomainChanged(Domains previousValue, Domains newValue) =>
             Domain = newValue;
         
         private void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>

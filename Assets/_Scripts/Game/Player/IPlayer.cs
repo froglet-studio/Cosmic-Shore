@@ -16,7 +16,6 @@ namespace CosmicShore.Game
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
         public bool IsNetworkOwner { get; }
-
         bool IsActive { get; }
         bool AutoPilotEnabled { get; }
         /// <summary>
@@ -41,8 +40,9 @@ namespace CosmicShore.Game
         void ToggleInputPause(bool toggle);
         void DestroyPlayer();
         void ResetForPlay();
-
         void SetPoseOfVessel(Pose pose) => Vessel.SetPose(pose);
+        void ChangeVessel(IVessel vessel);
+        void SetAsAI(bool isAI);
 
         [System.Serializable]
         public class InitializeData

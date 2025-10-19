@@ -216,6 +216,17 @@ namespace CosmicShore.Game
         public void SetPose(Pose pose) => 
             VesselStatus.VesselTransformer.SetPose(pose);
 
+        public void ChangePlayer(IPlayer player)
+        {
+            VesselStatus.Player = player;
+            
+            if (!player.IsInitializedAsAI)
+            {
+                VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
+                VesselStatus.VesselCameraCustomizer.Initialize(this);
+            }
+        }
+
         void InitializeForMultiplayerMode()
         {
             if (IsOwner)

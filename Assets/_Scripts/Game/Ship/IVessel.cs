@@ -40,5 +40,6 @@ namespace CosmicShore.Game
         void DestroyVessel();
         void ResetForPlay();
         void SetPose(Pose pose);
+        void ChangePlayer(IPlayer player);
     }
 }
