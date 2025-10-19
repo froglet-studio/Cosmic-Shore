@@ -35,7 +35,7 @@ namespace CosmicShore.Game
         void AssignCaptain(SO_Captain captain);
         void BindElementalFloat(string name, Element element);
         // void PerformButtonActions(int buttonNumber);
-        void ToggleAutoPilot(bool toggle);
+        void ToggleAIPilot(bool toggle);
         bool AllowClearPrismInitialization();
         void DestroyVessel();
         void ResetForPlay();

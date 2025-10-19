@@ -51,8 +51,8 @@ namespace CosmicShore.Game
             Domain = InitializeData.domain;
             Name = InitializeData.PlayerName;
             InputController.Initialize();
-            if (!IsInitializedAsAI)
-                ToggleInputPause(true);
+            // if (!IsInitializedAsAI)
+            ToggleInputPause(true);
             Vessel = vessel;
         }
 
@@ -105,9 +105,9 @@ namespace CosmicShore.Game
         
         public void ToggleStationaryMode(bool toggle) => Vessel.VesselStatus.IsStationary = toggle;
 
-        public void ToggleAutoPilot(bool toggle) => Vessel.ToggleAutoPilot(toggle);
+        public void ToggleAIPilot(bool toggle) => Vessel.ToggleAIPilot(toggle);
         
-        public void ToggleInputPause(bool toggle) => InputController?.Pause(toggle);
+        public void ToggleInputPause(bool toggle) => InputController.Pause(toggle);
 
         public void DestroyPlayer()
         {
@@ -122,6 +122,9 @@ namespace CosmicShore.Game
             Vessel.ResetForPlay();
             ToggleStationaryMode(true);
             ToggleActive(false);
+
+            if (IsInitializedAsAI)
+                ToggleAIPilot(false);
             
             if (IsSpawned && !IsOwner)
                 return;
@@ -134,10 +137,8 @@ namespace CosmicShore.Game
         {
             Vessel = vessel;
 
-            if (IsSpawned && !IsOwner)
-                return;
-            
-            NetDefaultShipType.Value = Vessel.VesselStatus.VesselType;
+            if (IsSpawned && IsOwner)
+                NetDefaultShipType.Value = Vessel.VesselStatus.VesselType;
         }
         
         public void SetAsAI(bool isAI) => IsInitializedAsAI = isAI;

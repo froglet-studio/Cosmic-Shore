@@ -33,7 +33,7 @@ namespace CosmicShore.Game
         /// If true -> start auto pilot mode, false -> stop auto pilot mode
         /// </summary>
         /// <param name="toggle"></param>
-        void ToggleAutoPilot(bool toggle);
+        void ToggleAIPilot(bool toggle);
         /// <summary>
         /// If true -> pause input status. false -> unpause otherwise.
         /// </summary>

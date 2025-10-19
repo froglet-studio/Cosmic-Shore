@@ -102,7 +102,7 @@ namespace CosmicShore.Game.Arcade
             }
         }
         
-        protected void OnResetForReplay()
+        protected virtual void OnResetForReplay()
         {
             roundsPlayed = 0;
             SetupNewRound();

@@ -315,7 +315,7 @@ namespace CosmicShore.SOAP
                 
                 player.ToggleStationaryMode(false);
                 player.ToggleInputPause(player.IsInitializedAsAI);
-                player.ToggleAutoPilot(player.IsInitializedAsAI);
+                player.ToggleAIPilot(player.IsInitializedAsAI);
                 player.ToggleActive(true);
                 vesselStatus.VesselPrismController.StartSpawn();
             }

@@ -191,7 +191,7 @@ namespace CosmicShore.Game
         public void StopShipControllerActions(InputEvents controlType) =>
                 VesselStatus.ActionHandler.StopShipControllerActions(controlType);
 
-        public void ToggleAutoPilot(bool toggle)
+        public void ToggleAIPilot(bool toggle)
         {
             if (toggle)
                 VesselStatus.AIPilot.StartAIPilot();
