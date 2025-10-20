@@ -28,9 +28,9 @@ namespace CosmicShore.Game
                 if (!aoePrefab) continue;
 
                 var spawned = Instantiate(aoePrefab, pos, rot);
-                spawned.transform.SetParent(null, true);            
-                spawned.transform.position = pos;                   
-                spawned.transform.rotation = rot;
+                // spawned.transform.SetParent(null, true);            
+                // spawned.transform.position = pos;                   
+                // spawned.transform.rotation = rot;
 
                 var status = p.VesselStatus;
                 spawned.Initialize(new AOEExplosion.InitializeStruct
@@ -46,7 +46,7 @@ namespace CosmicShore.Game
 
                 spawned.Detonate();
             }
-            //p.ReturnToFactory();
+            p.ReturnToFactory();
         }
 
     }

@@ -122,7 +122,7 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 projectileImpactor.ExecuteEndEffects();
-                ReturnToFactory();
+                // ReturnToFactory();
             }
             catch (OperationCanceledException)
             {
