@@ -17,11 +17,22 @@ namespace CosmicShore.Game
         private GameObject BlockPrefab { get; set; }
 
         private bool _pendingPoolBuild;
+        
+        private bool IsLocalOwner =>
+            _status is { IsOwnerClient: true };
 
         public virtual void Initialize(IVesselStatus vesselStatus, VesselHUDView view)
         {
             _status = vesselStatus;
-            _view   = view;
+            _view = view;
+
+            if (!IsLocalOwner)
+            {
+                if (_view)
+                    _view.gameObject.SetActive(false);
+            
+                return;
+            }
 
             if (_status.AutoPilotEnabled)
             {
@@ -115,6 +126,7 @@ namespace CosmicShore.Game
         private void Toggle(InputEvents ev, bool on)
         {
             if (!_view) return;
+            if (!IsLocalOwner) return; 
 
             for (var i = 0; i < _view.highlights.Count; i++)
             {
@@ -122,6 +134,7 @@ namespace CosmicShore.Game
                     _view.highlights[i].image.enabled = on;
             }
         }
+
 
         #region Silhouette / Jaws / Drift
 

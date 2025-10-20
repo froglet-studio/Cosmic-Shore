@@ -217,6 +217,9 @@ namespace CosmicShore.Game
             VesselStatus.ActionHandler.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.Initialize(this);
             
+            if (VesselStatus.VesselHUDView)
+                VesselStatus.VesselHUDView.gameObject.SetActive(false);
+            
             if (!IsOwner) 
                 return;
             
@@ -229,7 +232,11 @@ namespace CosmicShore.Game
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
 
             VesselStatus.VesselTransformer.ToggleActive(true);
-            VesselStatus.ActionHandler.ToggleSubscription(true);        
+            VesselStatus.ActionHandler.ToggleSubscription(true);  
+            
+            if (VesselStatus.VesselHUDView)
+                VesselStatus.VesselHUDView.gameObject.SetActive(true);
+            
             VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
             onBottomEdgeButtonsEnabled.Raise(true);
         }
