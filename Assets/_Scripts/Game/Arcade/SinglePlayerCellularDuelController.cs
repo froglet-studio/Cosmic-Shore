@@ -1,6 +1,6 @@
 namespace CosmicShore.Game.Arcade
 {
-    public class CellularDuelController : SinglePlayerMiniGameControllerBase 
+    public class SinglePlayerCellularDuelController : SinglePlayerMiniGameControllerBase 
     {
         protected override void OnResetForReplay()
         {
