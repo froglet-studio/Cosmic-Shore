@@ -41,7 +41,7 @@ namespace CosmicShore.Game
             }
 
             _actions = vesselStatus.ActionHandler;
-            if (_actions != null)
+            if (_actions)
             {
                 _actions.OnInputEventStarted += HandleStart;
                 _actions.OnInputEventStopped += HandleStop;
@@ -94,16 +94,14 @@ namespace CosmicShore.Game
                 _trailPool.SetTargetDriftAngle(angle);
                 _trailPool.Tick(Time.deltaTime);
             }
+
+            if (!_pendingPoolBuild || !_view || !_view.trailDisplayContainer) return;
             
-            if (_pendingPoolBuild && _view && _view.trailDisplayContainer != null)
-            {
-                var r = _view.trailDisplayContainer.rect;
-                if (r.width > 1f && r.height > 1f && _trailPool != null)
-                {
-                    _pendingPoolBuild = false;
-                    _trailPool.EnsurePool();
-                }
-            }
+            var r = _view.trailDisplayContainer.rect;
+            
+            if (!(r.width > 1f) || !(r.height > 1f) || _trailPool == null) return;
+            _pendingPoolBuild = false;
+            _trailPool.EnsurePool();
         }
 
         private void PrimeInitialUI()
@@ -130,7 +128,7 @@ namespace CosmicShore.Game
 
             for (var i = 0; i < _view.highlights.Count; i++)
             {
-                if (_view.highlights[i].input == ev && _view.highlights[i].image != null)
+                if (_view.highlights[i].input == ev && _view.highlights[i].image)
                     _view.highlights[i].image.enabled = on;
             }
         }
@@ -140,8 +138,8 @@ namespace CosmicShore.Game
 
         private void BindJaws()
         {
-            if (_view == null) return;
-            if (_view.topJaw == null || _view.bottomJaw == null) return;
+            if (!_view) return;
+            if (!_view.topJaw || !_view.bottomJaw) return;
             if (_view.jawResourceIndex < 0) return;
 
             var resources = _status?.ResourceSystem?.Resources;
@@ -156,8 +154,7 @@ namespace CosmicShore.Game
         {
             if (_view.silhouetteParts != null)
             {
-                foreach (var go in _view.silhouetteParts)
-                    if (go) go.SetActive(true);
+                foreach (var go in _view.silhouetteParts.Where(go => go)) go.SetActive(true);
             }
 
             if (_view.topJaw)    _view.topJaw.rectTransform.localRotation    = Quaternion.Euler(0, 0,  21f * normalized);
@@ -170,8 +167,8 @@ namespace CosmicShore.Game
 
         private void BindDrift()
         {
-            if (_view == null) return;
-            if (_view.driftTrailAction == null) return;
+            if (!_view) return;
+            if (!_view.driftTrailAction) return;
 
             _view.driftTrailAction.OnChangeDriftAltitude += OnDriftDotChanged;
         }
@@ -192,22 +189,19 @@ namespace CosmicShore.Game
         {
             BlockPrefab = prefab;
 
-            // If the spawner & container are alive, (re)bind
             if (_trailPool == null && _view != null && _view.vesselPrismController && _view.trailDisplayContainer && BlockPrefab != null)
                 BindTrail();
         }
 
         private void BindTrail()
         {
-            if (_view == null) return;
+            if (!_view) return;
 
-            if (_view.vesselPrismController == null) { Debug.LogWarning("HUD: no PrismSpawner"); return; }
-            if (_view.trailDisplayContainer == null) { Debug.LogWarning("HUD: no trailDisplayContainer"); return; }
-            if (BlockPrefab == null) { Debug.LogWarning("HUD: no trail BlockPrefab"); return; }
+            if (!BlockPrefab) { Debug.LogWarning("HUD: no trail BlockPrefab"); return; }
 
             // Make sure the prefab’s Image preserves aspect at runtime (no need to touch the asset)
             var img = BlockPrefab.GetComponent<Image>();
-            if (img != null) img.preserveAspect = true;
+            if (img) img.preserveAspect = true;
 
             // Create vertical rows TrailPool (smoothing ~0.08s feels good)
             _trailPool = new TrailPool(
@@ -222,7 +216,7 @@ namespace CosmicShore.Game
 
             // If rect hasn’t been laid out yet, defer EnsurePool
             var r = _view.trailDisplayContainer.rect;
-            if (r.width > 1f && r.height > 1f)
+            if (r is { width: > 1f, height: > 1f })
             {
                 _trailPool.EnsurePool();
                 _pendingPoolBuild = false;
