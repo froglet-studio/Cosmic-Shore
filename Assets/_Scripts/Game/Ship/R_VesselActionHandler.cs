@@ -52,12 +52,17 @@ namespace CosmicShore.Game
             UnsubscribeFromInputEvents();
         }
 
-        public void Initialize(IVesselStatus v, bool subscribeToInputEvents)
+        public void ToggleSubscription(bool subscribe)
+        {
+            if (subscribe)
+                SubscribeToInputEvents();
+            else
+                UnsubscribeFromInputEvents();
+        }
+
+        public void Initialize(IVesselStatus v)
         {
             vesselStatus = v;
-
-            if (subscribeToInputEvents)
-                SubscribeToInputEvents();
 
             if (_executors)
                 _executors.InitializeAll(vesselStatus);
@@ -114,11 +119,9 @@ namespace CosmicShore.Game
             {
                 if (IsOwner)
                     SendButtonPressed_ServerRpc(ie); // Only owner can send
-                return; // Non-host clients do nothing directly
             }
-
-            // Singleplayer
-            PerformShipControllerActions(ie);
+            else
+                PerformShipControllerActions(ie); // Singleplayer
         }
         
         [ServerRpc]
@@ -142,11 +145,9 @@ namespace CosmicShore.Game
             {
                 if (IsOwner)
                     SendButtonReleased_ServerRpc(ie);
-                return; // Non-host clients do nothing directly
             }
-
-            // Singleplayer
-            StopShipControllerActions(ie);
+            else
+                StopShipControllerActions(ie);    // Singleplayer
         }
         
         [ServerRpc]

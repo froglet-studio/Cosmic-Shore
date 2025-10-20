@@ -39,6 +39,7 @@ namespace CosmicShore.Game
 
         public Transform Transform => transform;
         public bool IsNetworkOwner => IsSpawned && IsOwner;
+        public bool IsNetworkClient => IsSpawned && !IsOwner;
         
         IPlayer.InitializeData InitializeData;
         

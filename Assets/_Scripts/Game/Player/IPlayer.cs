@@ -16,6 +16,7 @@ namespace CosmicShore.Game
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
         public bool IsNetworkOwner { get; }
+        public bool IsNetworkClient { get; }
         bool IsActive { get; }
         bool AutoPilotEnabled { get; }
         /// <summary>

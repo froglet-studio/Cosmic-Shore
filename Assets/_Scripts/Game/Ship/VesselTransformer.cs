@@ -44,20 +44,12 @@ public class VesselTransformer : MonoBehaviour
     public float SpeedMultiplier => throttleMultiplier;
 
     protected Vector3 velocityShift = Vector3.zero;
-    private bool isInitialized;
-
-    // ----------------------------- Initialization -----------------------------
-    public virtual void Initialize(IVessel vessel)
-    {
-        this.Vessel = vessel;
-        ResetTransformer();
-        isInitialized = true;
-    }
+    private bool isActive;
 
     // ----------------------------- Update Loop -----------------------------
     protected virtual void Update()
     {
-        if (!isInitialized || VesselStatus == null || VesselStatus.IsStationary)
+        if (!isActive || VesselStatus == null || VesselStatus.IsStationary)
             return;
 
         VesselStatus.blockRotation = transform.rotation;
@@ -71,6 +63,15 @@ public class VesselTransformer : MonoBehaviour
         ApplyVelocityModifiers();
         MoveShip();
     }
+    
+    // ----------------------------- Initialization -----------------------------
+    public virtual void Initialize(IVessel vessel)
+    {
+        this.Vessel = vessel;
+        ResetTransformer();
+    }
+    
+    public void ToggleActive(bool active) => isActive = active;
 
     // ----------------------------- Reset State -----------------------------
     public void ResetTransformer()
@@ -102,8 +103,8 @@ public class VesselTransformer : MonoBehaviour
             VesselStatus.Course = transform.forward;
             VesselStatus.Slowed = false;
 
-            VesselStatus.ShipAnimation?.StopFlareEngine();
-            VesselStatus.ShipAnimation?.StopFlareBody();
+            VesselStatus.ShipAnimation.StopFlareEngine();
+            VesselStatus.ShipAnimation.StopFlareBody();
         }
     }
 

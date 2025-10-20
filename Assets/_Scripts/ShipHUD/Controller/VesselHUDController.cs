@@ -74,11 +74,6 @@ namespace CosmicShore.Game
             _pendingPoolBuild = false;
         }
 
-        public void ReInitialize(IVesselStatus status, VesselHUDView view)
-        {
-            Initialize(status, view);
-        }
-
         private void LateUpdate()
         {
             if (_trailPool != null)

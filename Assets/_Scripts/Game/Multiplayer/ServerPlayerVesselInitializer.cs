@@ -86,6 +86,11 @@ namespace CosmicShore.Game
         // ----------------------------
         private void OnClientConnected(ulong clientId)
         {
+            SpawnVesselAndInitializeWithPlayer(clientId);
+        }
+        
+        void SpawnVesselAndInitializeWithPlayer(ulong clientId)
+        {
             Debug.Log($"[ServerPlayerVesselInitializer] Client {clientId} connected → syncing vessels.");
 
             // Then spawn their own vessel after 2s

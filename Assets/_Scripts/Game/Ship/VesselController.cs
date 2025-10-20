@@ -111,37 +111,6 @@ namespace CosmicShore.Game
             OnInitialized?.Invoke();
         }
         
-        /*public void PerformButtonActions(int buttonNumber)
-        {
-            if (VesselStatus.AutoPilotEnabled) return;
-
-            var controlType = buttonNumber switch
-            {
-                1 => InputEvents.Button1Action,
-                2 => InputEvents.Button2Action,
-                3 => InputEvents.Button3Action,
-                _ => InputEvents.Button1Action
-            };
-            PerformShipControllerActions(controlType);
-        }
-
-        public void StopButtonActions(int buttonNumber)
-        {
-            if (VesselStatus.AutoPilotEnabled) return;
-
-            var controlType = buttonNumber switch
-            {
-                1 => InputEvents.Button1Action,
-                2 => InputEvents.Button2Action,
-                3 => InputEvents.Button3Action,
-                _ => InputEvents.Button1Action
-            };
-            StopShipControllerActions(controlType);
-        }*/
-
-        public void FlipShipUpsideDown() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
-        public void FlipShipRightsideUp() => VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
-        
         public Transform Transform => transform;
 
         public void Teleport(Transform targetTransform) =>
@@ -221,39 +190,53 @@ namespace CosmicShore.Game
             VesselStatus.ShipHUDController.TearDown();
             VesselStatus.Player = player;
 
-            if (player.IsInitializedAsAI) return;
-            VesselStatus.ShipHUDController.ReInitialize(VesselStatus, VesselStatus.VesselHUDView);
+            if (player.IsInitializedAsAI || player.IsNetworkClient)
+            {
+                if (player.IsInitializedAsAI)
+                    VesselStatus.VesselTransformer.ToggleActive(true);
+                if (player.IsNetworkClient)
+                    VesselStatus.VesselTransformer.ToggleActive(false);
+                VesselStatus.ActionHandler.ToggleSubscription(false);
+                return;
+            }
+            
+            VesselStatus.VesselTransformer.ToggleActive(true);
+            VesselStatus.ActionHandler.ToggleSubscription(true);
+            VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
             VesselStatus.VesselCameraCustomizer.RetargetAndApply(this);
         }
 
         void InitializeForMultiplayerMode()
         {
-            if (IsOwner)
-            {
-                if (!VesselStatus.CameraFollowTarget) 
-                    VesselStatus.CameraFollowTarget = transform;
-                VesselStatus.VesselCameraCustomizer.Initialize(this);
-
-                if (VesselStatus.NearFieldSkimmer)
-                    VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
-
-                if (VesselStatus.FarFieldSkimmer)
-                    VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
-                    
-                VesselStatus.VesselTransformer.Initialize(this);
-                VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
-                VesselStatus.ResetForPlay();
-                    
-                onBottomEdgeButtonsEnabled.Raise(true);
-            }
+            VesselStatus.ResetForPlay();
+            
+            if (!VesselStatus.CameraFollowTarget) 
+                VesselStatus.CameraFollowTarget = transform;
             
             VesselStatus.Customization.Initialize(VesselStatus);
-            VesselStatus.ActionHandler.Initialize(VesselStatus, IsOwner);
+            VesselStatus.ActionHandler.Initialize(VesselStatus);
+            VesselStatus.VesselTransformer.Initialize(this);
+            
+            if (!IsOwner) 
+                return;
+            
+            VesselStatus.VesselCameraCustomizer.Initialize(this);
+
+            if (VesselStatus.NearFieldSkimmer)
+                VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
+
+            if (VesselStatus.FarFieldSkimmer)
+                VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
+
+            VesselStatus.VesselTransformer.ToggleActive(true);
+            VesselStatus.ActionHandler.ToggleSubscription(true);        
+            VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
+            onBottomEdgeButtonsEnabled.Raise(true);
         }
         
         void InitializeForSinglePlayerMode(bool enableAIPilot)
         {
-            VesselStatus.ActionHandler.Initialize(VesselStatus, !VesselStatus.IsInitializedAsAI);
+            VesselStatus.ActionHandler.Initialize(VesselStatus);
             VesselStatus.Customization.Initialize(VesselStatus);
 
             if (VesselStatus.NearFieldSkimmer) 
@@ -262,14 +245,16 @@ namespace CosmicShore.Game
             if (VesselStatus.FarFieldSkimmer) 
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
                 
-            if (VesselStatus.CameraFollowTarget == null) 
+            if (!VesselStatus.CameraFollowTarget) 
                 VesselStatus.CameraFollowTarget = transform;
 
             VesselStatus.Silhouette.Initialize(this);
             VesselStatus.VesselTransformer.Initialize(this);
+            VesselStatus.VesselTransformer.ToggleActive(true);
                 
             if (!enableAIPilot)
             {
+                VesselStatus.ActionHandler.ToggleSubscription(true);
                 VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
             }
