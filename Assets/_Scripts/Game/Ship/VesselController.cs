@@ -16,8 +16,8 @@ namespace CosmicShore.Game
         public event Action OnInitialized;
         public event Action OnBeforeDestroyed;
         
-        [Header("Event Channels")]
-        [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
+        /*[Header("Event Channels")]
+        [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;*/
         
         IVesselStatus vesselStatus;
         public IVesselStatus VesselStatus
@@ -249,7 +249,7 @@ namespace CosmicShore.Game
                 VesselStatus.VesselHUDView.Show();
             }
             
-            onBottomEdgeButtonsEnabled.Raise(true);
+            // onBottomEdgeButtonsEnabled.Raise(true);
         }
         
         void InitializeForSinglePlayerMode(bool enableAIPilot)
@@ -291,7 +291,7 @@ namespace CosmicShore.Game
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);
             VesselStatus.ResetForPlay();
             
-            onBottomEdgeButtonsEnabled.Raise(true);
+            // onBottomEdgeButtonsEnabled.Raise(true);
         }
 
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;

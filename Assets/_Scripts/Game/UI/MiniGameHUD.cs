@@ -19,7 +19,7 @@ namespace CosmicShore.Game.UI
         
         [SerializeField] ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] ScriptableEventInt onQueenDroneSpawned;
-        [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
+        // [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
         [SerializeField] ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] ScriptableEventNoParam OnResetForReplay;
         
@@ -44,11 +44,11 @@ namespace CosmicShore.Game.UI
             // SO ? Controller
             onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
-            onBottomEdgeButtonsEnabled.OnRaised += OnBottomEdgeButtonsEnabled;
+            // onBottomEdgeButtonsEnabled.OnRaised += OnBottomEdgeButtonsEnabled;
             onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
 
             // View ? Controller
-            view.Initialize(this);
+            // view.Initialize(this);
         }
 
         private void OnDisable()
@@ -60,7 +60,7 @@ namespace CosmicShore.Game.UI
             
             onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
-            onBottomEdgeButtonsEnabled.OnRaised -= OnBottomEdgeButtonsEnabled;
+            // onBottomEdgeButtonsEnabled.OnRaised -= OnBottomEdgeButtonsEnabled;
             onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
         }
 
@@ -81,41 +81,6 @@ namespace CosmicShore.Game.UI
             view.UpdateScoreUI(score.ToString(CultureInfo.InvariantCulture));
         }
 
-        // IMiniGameHUDController
-        public void OnButtonPressed(int buttonNumber)
-        {
-            // switch (buttonNumber)
-            // {
-            //     case 1:
-            //         onButton1Pressed.RaiseEvent(InputEvents.Button1Action);
-            //         break;
-            //     case 2:
-            //         onButton2Pressed.RaiseEvent(InputEvents.Button2Action);
-            //         break;
-            //     case 3:
-            //         onButton3Pressed.RaiseEvent(InputEvents.Button3Action);
-            //         break;
-            // }
-        }
-
-        public void OnButtonReleased(int buttonNumber)
-        {
-            // switch (buttonNumber)
-            // {
-            //     case 1:
-            //         onButton1Released.RaiseEvent(InputEvents.Button1Action);
-            //         break;
-            //     case 2:
-            //         onButton2Released.RaiseEvent(InputEvents.Button2Action);
-            //         break;
-            //     case 3:
-            //         onButton3Released.RaiseEvent(InputEvents.Button3Action);
-            //         break;
-            // }
-        }
-
-        // � SO event handlers call into the view �D
-
         public void OnPipInitialized(PipData data)
         {
             view.Pip.SetActive(data.IsActive);
@@ -135,10 +100,10 @@ namespace CosmicShore.Game.UI
             view.RightNumberDisplay.text = count.ToString();
         }
 
-        private void OnBottomEdgeButtonsEnabled(bool enabled)
+        /*private void OnBottomEdgeButtonsEnabled(bool enabled)
         {
             view.ButtonPanel.PositionButtons(enabled);
-        }
+        }*/
 
         private void OnSilhouetteInitialized(SilhouetteData data)
         {

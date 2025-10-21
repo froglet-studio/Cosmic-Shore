@@ -16,7 +16,7 @@ namespace CosmicShore.Game.UI
     {
         [Header("Common Elements")]
         [SerializeField] private MiniGameType miniGameType;
-        public MiniGameType MiniGameHUDType => miniGameType;
+        // public MiniGameType MiniGameHUDType => miniGameType;
 
         [SerializeField] private TMP_Text scoreDisplay;
         [SerializeField] private TMP_Text leftNumberDisplay;
@@ -30,12 +30,12 @@ namespace CosmicShore.Game.UI
         [SerializeField] private GameObject trailDisplay;
         [SerializeField] private ButtonPanel buttonPanel;
 
-        [Header("Bottom Buttons")]
+        /*[Header("Bottom Buttons")]
         [SerializeField] private GameObject button1;
         [SerializeField] private GameObject button2;
-        [SerializeField] private GameObject button3;
+        [SerializeField] private GameObject button3;*/
 
-        [Header("Button Events (Inspector Assignable)")]
+        /*[Header("Button Events (Inspector Assignable)")]
         public UnityEvent OnButton1Pressed;
         public UnityEvent OnButton2Pressed;
         public UnityEvent OnButton3Pressed;
@@ -69,21 +69,21 @@ namespace CosmicShore.Game.UI
             if (button1 != null && button1.TryGetComponent<Button>(out var btn1)) btn1.onClick.RemoveAllListeners();
             if (button2 != null && button2.TryGetComponent<Button>(out var btn2)) btn2.onClick.RemoveAllListeners();
             if (button3 != null && button3.TryGetComponent<Button>(out var btn3)) btn3.onClick.RemoveAllListeners();
-        }
+        }*/
         
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public TMP_Text LeftNumberDisplay => leftNumberDisplay;
         public TMP_Text RightNumberDisplay => rightNumberDisplay;
         public TMP_Text RoundTimeDisplay => roundTimeDisplay;
-        public Image CountdownDisplay => countdownDisplay;
+        // public Image CountdownDisplay => countdownDisplay;
         public Button ReadyButton => readyButton;
-        public CountdownTimer CountdownTimer => countdownTimer; // <-- ADDED
+        // public CountdownTimer CountdownTimer => countdownTimer; // <-- ADDED
         public GameObject Pip => pip;
         public GameObject Silhouette => silhouette;
         public GameObject TrailDisplay => trailDisplay;
-        public ButtonPanel ButtonPanel => buttonPanel;
+        /*public ButtonPanel ButtonPanel => buttonPanel;
         public GameObject Button1 => button1;
         public GameObject Button2 => button2;
-        public GameObject Button3 => button3;
+        public GameObject Button3 => button3;*/
     }
 }
