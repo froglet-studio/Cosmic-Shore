@@ -8,29 +8,16 @@ namespace CosmicShore.Game
 {
     public class NetworkStatsManager : StatsManager
     {
-        /*[SerializeField] 
-        ScriptableEventNoParam _onPlayGame;
-        
-        [SerializeField]
-        ScriptableEventNoParam _onGameOver;*/
-        
         [SerializeField]
         NetcodeHooks _netcodeHooks;
 
-        protected override void OnEnable()
+        void OnEnable()
         {
-            // _onPlayGame.OnRaised += ResetStats;
-            // _onGameOver.OnRaised += OutputRoundStats;
-
-
             _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
         }
 
-        protected override void OnDisable()
+        void OnDisable()
         {
-            // _onPlayGame.OnRaised -= ResetStats;
-            // _onGameOver.OnRaised -= OutputRoundStats;
-
             _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
         }
 
