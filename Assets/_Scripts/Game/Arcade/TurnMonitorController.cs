@@ -50,7 +50,7 @@ namespace CosmicShore.Game.Arcade
         
         protected void SubscribeToEvents()
         {
-            gameData.OnTurnStarted += StartMonitors;
+            gameData.OnMiniGmaeTurnStarted.OnRaised += StartMonitors;
             // gameData.OnMiniGameTurnEnd += PauseMonitors;
             gameData.OnMiniGameTurnEnd.OnRaised += StopMonitors;
             // gameData.OnMiniGameEnd += StopMonitors;
@@ -58,7 +58,7 @@ namespace CosmicShore.Game.Arcade
 
         protected void UnsubscribeFromEvents()
         {
-            gameData.OnTurnStarted -= StartMonitors;
+            gameData.OnMiniGmaeTurnStarted.OnRaised -= StartMonitors;
             // gameData.OnMiniGameTurnEnd -= PauseMonitors;
             gameData.OnMiniGameTurnEnd.OnRaised -= StopMonitors;
             // gameData.OnMiniGameEnd -= StopMonitors;

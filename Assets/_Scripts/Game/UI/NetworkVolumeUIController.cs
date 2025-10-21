@@ -18,7 +18,7 @@ namespace CosmicShore.Game.UI
         {
             if (IsServer)
             {
-                gameData.OnTurnStarted += TurnStartServer;
+                gameData.OnMiniGmaeTurnStarted.OnRaised += MiniGmaeTurnStartServer;
                 gameData.OnMiniGameTurnEnd.OnRaised += GameTurnEndServer;
             }
 
@@ -33,7 +33,7 @@ namespace CosmicShore.Game.UI
         {
             if (IsServer)
             {
-                gameData.OnTurnStarted -= TurnStartServer;
+                gameData.OnMiniGmaeTurnStarted.OnRaised -= MiniGmaeTurnStartServer;
                 gameData.OnMiniGameTurnEnd.OnRaised -= GameTurnEndServer;
             }
         }
@@ -52,7 +52,7 @@ namespace CosmicShore.Game.UI
 
         #region --- SERVER HANDLERS ---
 
-        private void TurnStartServer()
+        private void MiniGmaeTurnStartServer()
         {
             _active = true;
             SendActiveState_ClientRpc(true, gameData.GetTeamVolumes());

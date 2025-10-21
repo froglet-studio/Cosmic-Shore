@@ -70,8 +70,8 @@ namespace CosmicShore.Game.UI
             if (button2 != null && button2.TryGetComponent<Button>(out var btn2)) btn2.onClick.RemoveAllListeners();
             if (button3 != null && button3.TryGetComponent<Button>(out var btn3)) btn3.onClick.RemoveAllListeners();
         }
-
-        public TMP_Text ScoreDisplay => scoreDisplay;
+        
+        public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public TMP_Text LeftNumberDisplay => leftNumberDisplay;
         public TMP_Text RightNumberDisplay => rightNumberDisplay;
         public TMP_Text RoundTimeDisplay => roundTimeDisplay;

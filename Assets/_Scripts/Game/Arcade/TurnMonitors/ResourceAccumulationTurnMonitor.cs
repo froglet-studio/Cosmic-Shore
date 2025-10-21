@@ -13,7 +13,7 @@ namespace CosmicShore.Game.Arcade
 
         public override bool CheckForEndOfTurn()
         {
-            // return Game.ActivePlayer.Vessel.VesselStatus.ResourceSystem.Resources[resourceIndex].CurrentAmount / Game.ActivePlayer.Vessel.VesselStatus.ResourceSystem.Resources[resourceIndex].MaxAmount >= percent / 100;
+            // return Game.LocalPlayer.Vessel.VesselStatus.ResourceSystem.Resources[resourceIndex].CurrentAmount / Game.LocalPlayer.Vessel.VesselStatus.ResourceSystem.Resources[resourceIndex].MaxAmount >= percent / 100;
             return true;    // TEMP
         }
     }

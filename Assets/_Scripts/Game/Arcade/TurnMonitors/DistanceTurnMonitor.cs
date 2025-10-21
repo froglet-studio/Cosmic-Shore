@@ -25,7 +25,7 @@ namespace CosmicShore
 
         protected override void RestrictedUpdate()
         { 
-            float speed = 0f; // game.ActivePlayer.Vessel.VesselStatus.Speed;
+            float speed = 0f; // game.LocalPlayer.Vessel.VesselStatus.Speed;
             distanceTraveled += speed * Time.deltaTime;
             UpdateUI();
         }

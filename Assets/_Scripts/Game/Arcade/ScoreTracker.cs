@@ -20,22 +20,40 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] ScoringConfig[] scoringConfigs;
 
         BaseScoring[] scoringArray;
+        
+        protected bool calculateScoring;
 
         protected virtual void OnEnable()
         {
             gameData.OnInitializeGame += InitializeScoringMode;
+            gameData.OnMiniGmaeTurnStarted.OnRaised += OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd += CalculateWinnerAndInvokeEvent;
+        }
+
+        protected virtual void Update()
+        {
+            if (!calculateScoring)
+                return;
+            
+            CalculateScores();
         }
 
         protected virtual void OnDisable()
         {
             gameData.OnInitializeGame -= InitializeScoringMode;
+            gameData.OnMiniGmaeTurnStarted.OnRaised -= OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd -= CalculateWinnerAndInvokeEvent;
         }
-        
+
+        protected void OnTurnStarted() => calculateScoring = true;
+
+        protected void OnTurnEnded() => calculateScoring = false;
+
         void CalculateWinnerAndInvokeEvent()
         {
-            CalculateScores();
+            // CalculateScores();
             SortAndInvokeResults();
         }
 
@@ -90,14 +108,7 @@ namespace CosmicShore.Game.Arcade
             }
 
             foreach (var scoring in scoringArray)
-                scoring.CalculateScore();
-            
-            /* StatsManager.Instance.ResetStats();
-
-            var playerScores = scoreData.RoundStatsList;
-            // Add all the players back into the reset stats dictionary so the score will update at the start of the player's turn
-            foreach (var score in playerScores)
-                StatsManager.Instance.AddPlayer(score.Team, score.Name);*/
+                scoring.CalculateScore(); 
         }
     }
 
@@ -108,6 +119,13 @@ namespace CosmicShore.Game.Arcade
         public float Multiplier; //0.00686f for volume
     }
 }
+
+
+
+
+
+
+
 
         // TODO - scoring.CalculateScore need to be done when scoring is needed, rather than running on update for more realtime sync.
         /*IEnumerator UpdateScoreDisplayCoroutine()

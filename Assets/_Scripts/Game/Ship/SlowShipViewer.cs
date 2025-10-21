@@ -34,8 +34,8 @@ namespace CosmicShore
             lineRenderer.SetPosition(0, transform.position);
             lineRenderer.enabled = false;
 
-            // TODO - Can't have ActivePlayer as static
-            // if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Vessel.VesselStatus == vesselStatus)
+            // TODO - Can't have LocalPlayer as static
+            // if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.LocalPlayer && Player.LocalPlayer.Vessel.VesselStatus == vesselStatus)
             {
                 var distance = float.PositiveInfinity;
                 foreach (var shipTransform in gameData.SlowedShipTransforms)

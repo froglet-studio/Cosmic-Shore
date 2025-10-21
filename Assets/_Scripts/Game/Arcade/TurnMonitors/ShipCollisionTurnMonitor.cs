@@ -13,10 +13,10 @@ namespace CosmicShore.Game.Arcade
 
         public override bool CheckForEndOfTurn()
         {
-            /*if (!StatsManager.Instance.PlayerStats.ContainsKey(Game.ActivePlayer.PlayerName))
+            /*if (!StatsManager.Instance.PlayerStats.ContainsKey(Game.LocalPlayer.PlayerName))
                 return false;
 
-            return StatsManager.Instance.PlayerStats[Game.ActivePlayer.PlayerName].SkimmerShipCollisions >= Collisions;*/
+            return StatsManager.Instance.PlayerStats[Game.LocalPlayer.PlayerName].SkimmerShipCollisions >= Collisions;*/
 
             return true;        // TEMP
         }
@@ -35,7 +35,7 @@ namespace CosmicShore.Game.Arcade
 
         void UpdateUI()
         {
-            var message = ""; //TEMP - ((int)((hostileShip.Vessel.Transform.position - Game.ActivePlayer.Vessel.Transform.position).magnitude/10f)).ToString();
+            var message = ""; //TEMP - ((int)((hostileShip.Vessel.Transform.position - Game.LocalPlayer.Vessel.Transform.position).magnitude/10f)).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }
     }

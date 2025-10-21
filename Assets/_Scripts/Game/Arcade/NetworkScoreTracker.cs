@@ -17,6 +17,8 @@ namespace CosmicShore.Game.Arcade
                 return;
             
             gameData.OnInitializeGame += InitializeScoringMode;
+            gameData.OnMiniGmaeTurnStarted.OnRaised += OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd += CalculateWinnerOnServer;
         }
 
@@ -26,7 +28,20 @@ namespace CosmicShore.Game.Arcade
                 return;
             
             gameData.OnInitializeGame -= InitializeScoringMode;
+            gameData.OnMiniGmaeTurnStarted.OnRaised -= OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd -= CalculateWinnerOnServer;
+        }
+        
+        protected override void Update()
+        {
+            if (!IsServer)
+                return;
+            
+            if (!calculateScoring)
+                return;
+            
+            CalculateScores();
         }
 
         protected override void OnDisable()

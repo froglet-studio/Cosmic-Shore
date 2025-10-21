@@ -14,23 +14,23 @@ namespace CosmicShore
         /*private void Start()
         {
             game = GetComponent<MiniGame>();    
-            if (game != null && game.ActivePlayer != null)
+            if (game != null && game.LocalPlayer != null)
             {
-                playerTeam = game.ActivePlayer.Team;
+                playerTeam = game.LocalPlayer.Team;
             }
         }*/
 
         public override bool CheckForEndOfTurn()
         {
             // return monitoredNode.ControllingTeam() != playerTeam;
-            return gameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item1 == gameData.ActivePlayer.Domain;
+            return gameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item1 == gameData.LocalPlayer.Domain;
         }
 
         /*public override void StartMonitor()
         {
-            if (game != null && game.ActivePlayer != null)
+            if (game != null && game.LocalPlayer != null)
             {
-                playerTeam = game.ActivePlayer.Team;
+                playerTeam = game.LocalPlayer.Team;
             }
             base.StartMonitor();
         }*/

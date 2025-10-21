@@ -1,3 +1,4 @@
+using System.Globalization;
 using CosmicShore.SOAP;
 using CosmicShore.Utilities;
 using Obvious.Soap;
@@ -8,8 +9,6 @@ namespace CosmicShore.Game.UI
     [RequireComponent(typeof(MiniGameHUDView))]
     public class MiniGameHUD : MonoBehaviour, IMiniGameHUDController
     {
-        public MiniGameHUDView View => view;
-
         [SerializeField]
         GameDataSO gameData;
         
@@ -17,18 +16,14 @@ namespace CosmicShore.Game.UI
         [SerializeField] private MiniGameHUDView view;
 
         [Header("Event Channels")]
-
-        // [SerializeField] private IntEventChannelSO onMoundDroneSpawned;
-        [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
-        // [SerializeField] private IntEventChannelSO onQueenDroneSpawned;
-        [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
-        // [SerializeField] private BoolEventChannelSO onBottomEdgeButtonsEnabled;
+        
+        [SerializeField] ScriptableEventInt onMoundDroneSpawned;
+        [SerializeField] ScriptableEventInt onQueenDroneSpawned;
         [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
-        
-        // [SerializeField] private SilhouetteEventChannelSO onSilhouetteInitialized;
-        [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
-        
+        [SerializeField] ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] ScriptableEventNoParam OnResetForReplay;
+        
+        IRoundStats localRoundStats;
         
         private void OnValidate()
         {
@@ -42,12 +37,13 @@ namespace CosmicShore.Game.UI
             UpdateTurnMonitorDisplay(string.Empty);
             
             gameData.OnClientReady += OnClientReady;
+            gameData.OnMiniGmaeTurnStarted.OnRaised += OnMiniGameTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised += OnMiniGameTurnEnd;
             OnResetForReplay.OnRaised += ResetForReplay;
             
             // SO ? Controller
             onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
-            // onBottomEdgeButtonsEnabled.OnEventRaised += OnBottomEdgeButtonsEnabled;
             onBottomEdgeButtonsEnabled.OnRaised += OnBottomEdgeButtonsEnabled;
             onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
 
@@ -58,13 +54,31 @@ namespace CosmicShore.Game.UI
         private void OnDisable()
         {
             gameData.OnClientReady -= OnClientReady;
+            gameData.OnMiniGmaeTurnStarted.OnRaised -= OnMiniGameTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised -= OnMiniGameTurnEnd;
             OnResetForReplay.OnRaised -= ResetForReplay;
             
             onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
-            // onBottomEdgeButtonsEnabled.OnEventRaised -= OnBottomEdgeButtonsEnabled;
             onBottomEdgeButtonsEnabled.OnRaised -= OnBottomEdgeButtonsEnabled;
             onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
+        }
+
+        void OnMiniGameTurnStarted()
+        {
+            localRoundStats = gameData.LocalRoundStats;
+            localRoundStats.OnScoreChanged += UpdateScoreUI;
+        }
+
+        void OnMiniGameTurnEnd()
+        {
+            localRoundStats.OnScoreChanged -= UpdateScoreUI;
+        }
+
+        void UpdateScoreUI()
+        {
+            var score = (int)localRoundStats.Score;
+            view.UpdateScoreUI(score.ToString(CultureInfo.InvariantCulture));
         }
 
         // IMiniGameHUDController

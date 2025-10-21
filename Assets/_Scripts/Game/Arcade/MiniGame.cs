@@ -89,7 +89,7 @@ namespace CosmicShore.Game.Arcade
             // EndGameScreen = GameCanvas.EndGameScreen;
             HUD = GameCanvas.MiniGameHUD;
             // ReadyButton = HUD.View.ReadyButton;
-            countdownTimer = HUD.View.CountdownTimer;
+            // countdownTimer = HUD.View.CountdownTimer;
             // ScoreTracker.GameCanvas = GameCanvas;
 
             /*foreach (var turnMonitor in TurnMonitors)
@@ -115,7 +115,7 @@ namespace CosmicShore.Game.Arcade
             // GameManager.OnPlayGame += InitializeGame;
             
             // TODO - Replaced in MiniGameControllerBase
-            // OnTurnStarted += FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnMiniGmaeTurnStarted += FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused += HandleGamePaused;
             PauseSystem.OnGameResumed += HandleGameResumed;
@@ -126,7 +126,7 @@ namespace CosmicShore.Game.Arcade
             // GameManager.OnPlayGame -= InitializeGame;
             
             // TODO - Replaced in MiniGameControllerBase
-            // OnTurnStarted -= FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnMiniGmaeTurnStarted -= FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
@@ -254,8 +254,8 @@ namespace CosmicShore.Game.Arcade
 
             /*if (EnableTrails)
             {
-                ActivePlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
-                ActivePlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+                LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
+                LocalPlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
             }*/
         }
 
@@ -433,15 +433,15 @@ namespace CosmicShore.Game.Arcade
                 turnMonitor.PauseTurn();
             }
 
-            ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
-            ActivePlayer.InputController.InputStatus.Paused = true;
-            ActivePlayer.Vessel.Teleport(PlayerOrigin.transform);
-            ActivePlayer.Vessel.VesselStatus.VesselTransformer.ResetTransformer();
-            ActivePlayer.Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
-            ActivePlayer.Vessel.VesselStatus.ResourceSystem.Reset();
-            ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);
+            LocalPlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
+            LocalPlayer.InputController.InputStatus.Paused = true;
+            LocalPlayer.Vessel.Teleport(PlayerOrigin.transform);
+            LocalPlayer.Vessel.VesselStatus.VesselTransformer.ResetTransformer();
+            LocalPlayer.Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
+            LocalPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
+            LocalPlayer.Vessel.SetResourceLevels(ResourceCollection);
 
-            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Vessel.VesselStatus.CameraFollowTarget);
+            CameraManager.Instance.SetupGamePlayCameras(LocalPlayer.Vessel.VesselStatus.CameraFollowTarget);
 
             // For single player games, don't require the extra button press
             if (Players.Count > 1)
@@ -455,12 +455,12 @@ namespace CosmicShore.Game.Arcade
             RemainingPlayersActivePlayerIndex++;
             RemainingPlayersActivePlayerIndex %= RemainingPlayers.Count;
             activePlayerId = RemainingPlayers[RemainingPlayersActivePlayerIndex];
-            ActivePlayer = Players[activePlayerId];
+            LocalPlayer = Players[activePlayerId];
 
             foreach (var player in Players)
             {
                 Debug.Log($"PlayerUUID: {player.PlayerUUID}");
-                player.ToggleGameObject(player.PlayerUUID == ActivePlayer.PlayerUUID);
+                player.ToggleGameObject(player.PlayerUUID == LocalPlayer.PlayerUUID);
             }
         }*/
 

@@ -26,8 +26,8 @@ namespace CosmicShore.Game.UI
 
         IEnumerator InitializeCoroutine()
         {
-            // TODO - Can't have ActivePlayer as static, find other way! Use Player Ready event!
-            // yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Vessel != null && Player.ActivePlayer.Vessel != null && Player.ActivePlayer.Vessel.VesselStatus.InputController != null);
+            // TODO - Can't have LocalPlayer as static, find other way! Use Player Ready event!
+            // yield return new WaitUntil(() => Player.LocalPlayer != null && Player.LocalPlayer.Vessel != null && Player.LocalPlayer.Vessel != null && Player.LocalPlayer.Vessel.VesselStatus.InputController != null);
             // TEMP
             yield return null;
             enabled = false;
@@ -39,8 +39,8 @@ namespace CosmicShore.Game.UI
         {
             if (!playerReady) return;
 
-            // TODO - Can't have ActivePlayer as static
-            // if (Player.ActivePlayer.Vessel.VesselStatus.InputController.Portrait)
+            // TODO - Can't have LocalPlayer as static
+            // if (Player.LocalPlayer.Vessel.VesselStatus.InputController.Portrait)
             if (true) // TEMP
             {
                 // Set the anchorMin and anchorMax values to center the RectTransform

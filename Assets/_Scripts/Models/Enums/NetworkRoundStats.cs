@@ -6,6 +6,8 @@ namespace CosmicShore.Game
 {
     public class NetworkRoundStats : NetworkBehaviour, IRoundStats
     {
+        public event Action OnScoreChanged;
+        
         private readonly NetworkVariable<FixedString64Bytes> n_Name = new(
             readPerm: NetworkVariableReadPermission.Everyone,
             writePerm: NetworkVariableWritePermission.Server);
@@ -32,7 +34,11 @@ namespace CosmicShore.Game
         public float Score
         {
             get => n_Score.Value;
-            set => n_Score.Value = value;
+            set
+            {
+                n_Score.Value = value;
+                OnScoreChanged?.Invoke();
+            }
         }
         
         private readonly NetworkVariable<int> n_BlocksCreated = new(

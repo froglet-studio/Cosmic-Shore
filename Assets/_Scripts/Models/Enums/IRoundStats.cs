@@ -1,7 +1,11 @@
-﻿namespace CosmicShore.Game
+﻿using System;
+
+namespace CosmicShore.Game
 {
     public interface IRoundStats
     {
+        public event Action OnScoreChanged;
+        
         string Name { get; set; }
         Domains Domain { get; set; }
         float Score { get; set; }

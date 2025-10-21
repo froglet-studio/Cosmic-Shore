@@ -27,7 +27,7 @@ namespace CosmicShore.SOAP
         public event Action OnSessionStarted;
         public event Action OnInitializeGame;
         public event Action OnClientReady;
-        public event Action OnTurnStarted;
+        public ScriptableEventNoParam OnMiniGmaeTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
@@ -59,7 +59,8 @@ namespace CosmicShore.SOAP
         public bool IsRunning { get; private set; }
         public Pose[] SpawnPoses { get; private set; }
         List<Pose> _playerSpawnPoseList = new ();
-        public IPlayer ActivePlayer { get; private set; }
+        public IPlayer LocalPlayer { get; private set; }
+        public IRoundStats LocalRoundStats { get; private set; }
         public ISession ActiveSession { get; set; }
         
         // -----------------------------------------------------------------------------------------
@@ -96,7 +97,7 @@ namespace CosmicShore.SOAP
         }
         
         public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
-        public void InvokeTurnStarted() => OnTurnStarted?.Invoke();
+        public void InvokeTurnStarted() => OnMiniGmaeTurnStarted?.Raise();
         public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Raise();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
@@ -155,7 +156,7 @@ namespace CosmicShore.SOAP
 
         public bool TryGetActivePlayerStats(out IPlayer player, out IRoundStats roundStats)
         {
-            player = ActivePlayer;
+            player = LocalPlayer;
             roundStats = player != null ? FindByName(player.Name) : null;
             return player != null && roundStats != null;
         }
@@ -258,15 +259,24 @@ namespace CosmicShore.SOAP
             if (RoundStatsList.Any(rs => rs.Name == p.Name)) return;
 
             Players.Add(p);
-            if (Players.Count == 1)
-                ActivePlayer = p;
-
-            // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
-            RoundStatsList.Add(new RoundStats
+            
+            var roundStats = new RoundStats
             {
                 Name = p.Name,
                 Domain = p.Domain
-            });
+            };
+            RoundStatsList.Add(roundStats);
+            
+            if (!p.IsInitializedAsAI || p.IsNetworkOwner)
+            {
+                if (LocalPlayer != null)
+                {
+                    Debug.LogError("Local Player is already present!");
+                    return;
+                }
+                LocalPlayer = p;
+                LocalRoundStats = roundStats;
+            }
             
             p.ResetForPlay();
         }
@@ -285,7 +295,7 @@ namespace CosmicShore.SOAP
 
             Players.Add(p);
             if (p.IsNetworkOwner)
-                ActivePlayer = p;
+                LocalPlayer = p;
             
             // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
             RoundStatsList.Add(roundStats);
@@ -368,7 +378,7 @@ namespace CosmicShore.SOAP
         }
         
         /// <summary>
-        /// Remove a player (by display name) from Players & RoundStatsList and fix ActivePlayer if needed.
+        /// Remove a player (by display name) from Players & RoundStatsList and fix LocalPlayer if needed.
         /// </summary>
         public bool RemovePlayerData(string playerName)
         {
@@ -381,9 +391,9 @@ namespace CosmicShore.SOAP
             // Remove from RoundStats
             int removedStats = RoundStatsList.RemoveAll(rs => rs != null && rs.Name == playerName);
 
-            // Fix ActivePlayer if it was the removed one
-            if (ActivePlayer != null && ActivePlayer.Name == playerName)
-                ActivePlayer = Players.Count > 0 ? Players[0] : null;
+            // Fix LocalPlayer if it was the removed one
+            if (LocalPlayer != null && LocalPlayer.Name == playerName)
+                LocalPlayer = Players.Count > 0 ? Players[0] : null;
 
             // Optional: also stop their vessel spawning if any dangling reference exists (defensive)
             // No-op here because Players list holds the references.
@@ -454,11 +464,11 @@ namespace CosmicShore.SOAP
             localPlayer.InputController.InputStatus.Paused = true;
             localPlayer.Vessel.Teleport(activePlayerOrigin);
             localPlayer.Vessel.VesselStatus.VesselTransformer.ResetTransformer();
-            // ActivePlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
+            // LocalPlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
             localPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
-            // ActivePlayer.Vessel.SetResourceLevels(ResourceCollection);
+            // LocalPlayer.Vessel.SetResourceLevels(ResourceCollection);
 
-            // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Vessel.VesselStatus.CameraFollowTarget);
+            // CameraManager.Instance.SetupGamePlayCameras(LocalPlayer.Vessel.VesselStatus.CameraFollowTarget);
             
             foreach (var player in Players)
             {
@@ -475,7 +485,7 @@ namespace CosmicShore.SOAP
         {
             LocalPlayer.ToggleStationaryMode(false);
             LocalPlayer.InputController.InputStatus.Paused = false;
-            // ActivePlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
+            // LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
         }
 
 

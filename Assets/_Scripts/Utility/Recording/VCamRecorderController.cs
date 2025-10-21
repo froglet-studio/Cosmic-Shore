@@ -19,7 +19,7 @@ namespace CosmicShore.Utility.Recording
         IEnumerator LateStartCoroutine() 
         {
             yield return new WaitForSeconds(3);
-            //specialCamera.Follow = specialCamera.LookAt = game.ActivePlayer.Vessel.transform;
+            //specialCamera.Follow = specialCamera.LookAt = game.LocalPlayer.Vessel.transform;
             specialCamera.Follow = specialCamera.LookAt = player.Vessel.Transform;        
         }
     }

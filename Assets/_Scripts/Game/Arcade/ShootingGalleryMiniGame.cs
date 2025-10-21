@@ -69,7 +69,7 @@ namespace CosmicShore.Game.Arcade
         {
             var Block = Instantiate(prism);
             Block.ChangeTeam(ActivePlayer.Domain);
-            // Block.ownerID = ActivePlayer.PlayerUUID;
+            // Block.ownerID = LocalPlayer.PlayerUUID;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
             // Block.ownerID = Block.ownerID + position;
             Block.TargetScale = blockScale;

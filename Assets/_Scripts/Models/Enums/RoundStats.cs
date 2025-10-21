@@ -1,10 +1,23 @@
+using System;
+
 namespace CosmicShore.Game
 {
     public class RoundStats : IRoundStats
     {
+        public event Action OnScoreChanged;
+        
         public string Name { get; set; }
         public Domains Domain { get; set; }
-        public float Score { get; set; }
+        float score;
+        public float Score
+        {
+            get => score;
+            set
+            {
+                score = value;
+                OnScoreChanged?.Invoke();
+            }
+        }
         public int BlocksCreated { get; set; }
         public int BlocksDestroyed { get; set; }
         public int BlocksRestored { get; set; }
