@@ -39,5 +39,8 @@ namespace CosmicShore.Game
         public float worldToUIScale = 2f;
         public float imageScale = 0.02f;
         public bool swingBlocks;
+        
+        public void Show() => gameObject.SetActive(true);
+        public void Hide() => gameObject.SetActive(false);
     }
 }

@@ -197,12 +197,20 @@ namespace CosmicShore.Game
                 if (player.IsNetworkClient)
                     VesselStatus.VesselTransformer.ToggleActive(false);
                 VesselStatus.ActionHandler.ToggleSubscription(false);
+                if (VesselStatus.VesselHUDView)
+                    VesselStatus.VesselHUDView.Hide();
                 return;
             }
-            
+
+            if (VesselStatus.VesselHUDView)
+            {
+                // VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
+                VesselStatus.VesselHUDView.Show();
+            }
+                
             VesselStatus.VesselTransformer.ToggleActive(true);
             VesselStatus.ActionHandler.ToggleSubscription(true);
-            VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
+            
             VesselStatus.VesselCameraCustomizer.RetargetAndApply(this);
         }
 
@@ -216,9 +224,10 @@ namespace CosmicShore.Game
             VesselStatus.Customization.Initialize(VesselStatus);
             VesselStatus.ActionHandler.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.Initialize(this);
+            VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
             
             if (VesselStatus.VesselHUDView)
-                VesselStatus.VesselHUDView.gameObject.SetActive(false);
+                VesselStatus.VesselHUDView.Hide();
             
             if (!IsOwner) 
                 return;
@@ -232,12 +241,14 @@ namespace CosmicShore.Game
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
 
             VesselStatus.VesselTransformer.ToggleActive(true);
-            VesselStatus.ActionHandler.ToggleSubscription(true);  
-            
+            VesselStatus.ActionHandler.ToggleSubscription(true);
+
             if (VesselStatus.VesselHUDView)
-                VesselStatus.VesselHUDView.gameObject.SetActive(true);
+            {
+                // VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
+                VesselStatus.VesselHUDView.Show();
+            }
             
-            VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
             onBottomEdgeButtonsEnabled.Raise(true);
         }
         
@@ -258,12 +269,17 @@ namespace CosmicShore.Game
             VesselStatus.Silhouette.Initialize(this);
             VesselStatus.VesselTransformer.Initialize(this);
             VesselStatus.VesselTransformer.ToggleActive(true);
-                
+            VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
+            
             if (!enableAIPilot)
             {
                 VesselStatus.ActionHandler.ToggleSubscription(true);
-                VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
+                VesselStatus.VesselHUDView.Show();   
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
+            }
+            else
+            {
+                VesselStatus.VesselHUDView.Hide();    
             }
             
             // TODO - Currently AIPilot's update should run only after SingleStickVesselTransformer
