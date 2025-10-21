@@ -1,6 +1,6 @@
 namespace CosmicShore.Game.Arcade
 {
-    public class SinglePlayerMiniGameControllerBase : MiniGameControllerBase
+    public abstract class SinglePlayerMiniGameControllerBase : MiniGameControllerBase
     {
         void OnEnable()
         {
