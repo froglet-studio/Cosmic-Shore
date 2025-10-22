@@ -31,9 +31,9 @@ namespace CosmicShore.Game
                 case VesselImpactor vesselImpactee:
                     if (vesselImpactee.Vessel.VesselStatus.Domain == explosion.Domain && !affectSelf)
                         break;
-
+                    
+                    if (!explosionImpactorDataContainer) return;
                     var vesselExplosionEffects = explosionImpactorDataContainer.vesselExplosionEffects;
-                    // ExecuteEffect(shipImpactee, explosionShipEffects);
                     if(!DoesEffectExist(vesselExplosionEffects)) return;
                     foreach (var effect in vesselExplosionEffects)
                     {
@@ -42,9 +42,9 @@ namespace CosmicShore.Game
                     break;
                 
                 case PrismImpactor prismImpactee:
-                    var explosionPrismEffects = explosionImpactorDataContainer.explosionPrismEffects;
                     ExecuteCommonPrismCommands(prismImpactee.Prism, impactVector);
-                    // ExecuteEffect(prismImpactee, explosionPrismEffects);
+                    if (!explosionImpactorDataContainer) return;
+                    var explosionPrismEffects = explosionImpactorDataContainer.explosionPrismEffects;
                     if(!DoesEffectExist(explosionPrismEffects)) return;
                     foreach (var effect in explosionPrismEffects)
                     {
