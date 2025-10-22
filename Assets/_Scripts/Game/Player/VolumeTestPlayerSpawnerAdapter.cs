@@ -1,19 +1,13 @@
-using System;
-using UnityEngine;
-
 namespace CosmicShore.Game
 {
-    public class MainMenuPlayerSpawnerAdapter : PlayerSpawnerAdapterBase
+    public class VolumeTestPlayerSpawnerAdapter : PlayerSpawnerAdapterBase
     {
-        private void Start() => InitializeGame();
-
-        void InitializeGame()
+        private void Start()
         {
             _gameData.InitializeGame();
             AddSpawnPosesToGameData();
             SpawnDefaultPlayersAndAddToGameData();
             _gameData.SetPlayersActive();
-            _gameData.InvokeTurnStarted();
         }
     }
 }

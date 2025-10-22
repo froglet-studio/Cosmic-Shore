@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         private void Start()
         {
             if (_spawnAIAtStart)
-                SpawnAIPlayersAndAddToGameData();
+                SpawnDefaultPlayersAndAddToGameData();
         }
 
         private void OnDisable()
@@ -26,8 +26,8 @@ namespace CosmicShore.Game
 
         void InitializeGame()
         {
-            SpawnPlayerAndAddToGameData(InitializePlayerData());
-            SpawnAIPlayersAndAddToGameData();
+            SpawnCustomPlayerAndAddToGameData(InitializePlayerData());
+            SpawnDefaultPlayersAndAddToGameData();
         }
 
         private IPlayer.InitializeData InitializePlayerData()
