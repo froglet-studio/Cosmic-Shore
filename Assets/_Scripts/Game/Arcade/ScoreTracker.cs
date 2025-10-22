@@ -104,6 +104,7 @@ namespace CosmicShore.Game.Arcade
             if (gameData.RoundStatsList.Count == 0)
             {
                 Debug.LogError("This should never happen!");
+                calculateScoring = false;
                 return;
             }
 
