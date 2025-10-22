@@ -49,6 +49,8 @@ namespace CosmicShore.Game.Arcade
 
         protected override void SetupNewTurn() 
         {
+            ToggleReadyButton(true);
+            
             if(resetEnvironmentOnEachTurn) 
                 ResetEnvironment();
             
