@@ -52,11 +52,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ExplosionDuration: 3
   ExplosionDelay: 0.2
-  _shipImpactEffects: []
-  affectSelf: 0
-  destructive: 0
-  devastating: 0
-  shielding: 0
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -170,11 +165,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosion: {fileID: 5915562654621825366}
-  explosionShipEffectsSO:
-  - {fileID: 11400000, guid: 035ba5d46da4a0342969fad5f39f060a, type: 2}
-  - {fileID: 11400000, guid: e4e63a66eb9954744b4650934a1a1084, type: 2}
-  explosionPrismEffectsSO: []
+  explosionImpactorDataContainer: {fileID: 11400000, guid: 2ac3ab88ee3d77a45845d83a9b185baa,
+    type: 2}
+  affectSelf: 0
+  destructive: 1
+  devastating: 0
+  shielding: 0
 --- !u!114 &-8960277768126443594
 MonoBehaviour:
   m_ObjectHideFlags: 0

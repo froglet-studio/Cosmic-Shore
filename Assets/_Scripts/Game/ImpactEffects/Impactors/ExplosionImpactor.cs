@@ -7,36 +7,42 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(AOEExplosion))]
     public class ExplosionImpactor : ImpactorBase
     {
-        VesselExplosionEffectSO[] shipAOEEffects;
+        [SerializeField] private ExplosionImpactorDataContainerSO explosionImpactorDataContainer;
         
-        ExplosionPrismEffectSO[] explosionPrismEffects;
-        
-        [SerializeField] bool affectSelf = false;
+        [SerializeField] bool affectSelf;
         [SerializeField] bool destructive = true;
-        [SerializeField] bool devastating = false;
-        [SerializeField] bool shielding = false;
+        [SerializeField] bool devastating;
+        [SerializeField] bool shielding;
 
         AOEExplosion explosion;
-        public AOEExplosion Explosion => explosion ??= GetComponent<AOEExplosion>();
+        
+
+        void Awake()
+        {
+            explosion ??= GetComponent<AOEExplosion>();
+        }
         
         protected override void AcceptImpactee(IImpactor impactee)
         {    
-            var impactVector = Explosion.CalculateImpactVector(impactee.Transform.position);
+            var impactVector = explosion.CalculateImpactVector(impactee.Transform.position);
             
             switch (impactee)
             {
-                case VesselImpactor shipImpactee:
-                    if (shipImpactee.Vessel.VesselStatus.Domain == Explosion.Domain && !affectSelf)
+                case VesselImpactor vesselImpactee:
+                    if (vesselImpactee.Vessel.VesselStatus.Domain == explosion.Domain && !affectSelf)
                         break;
+
+                    var vesselExplosionEffects = explosionImpactorDataContainer.vesselExplosionEffects;
                     // ExecuteEffect(shipImpactee, explosionShipEffects);
-                    if(!DoesEffectExist(shipAOEEffects)) return;
-                    foreach (var effect in shipAOEEffects)
+                    if(!DoesEffectExist(vesselExplosionEffects)) return;
+                    foreach (var effect in vesselExplosionEffects)
                     {
-                        effect.Execute(shipImpactee, this);
+                        effect.Execute(vesselImpactee, this);
                     }
                     break;
                 
                 case PrismImpactor prismImpactee:
+                    var explosionPrismEffects = explosionImpactorDataContainer.explosionPrismEffects;
                     ExecuteCommonPrismCommands(prismImpactee.Prism, impactVector);
                     // ExecuteEffect(prismImpactee, explosionPrismEffects);
                     if(!DoesEffectExist(explosionPrismEffects)) return;
@@ -50,25 +56,25 @@ namespace CosmicShore.Game
         
         void ExecuteCommonPrismCommands(Prism prism, Vector3 impactVector)
         {
-            if ((prism.Domain != Explosion.Domain || affectSelf) && prism.prismProperties.IsSuperShielded)
+            if ((prism.Domain != explosion.Domain || affectSelf) && prism.prismProperties.IsSuperShielded)
             {
                 prism.DeactivateShields();
                 Destroy(gameObject);    // TODO: This seems wrong...
             } 
-            if ((prism.Domain == Explosion.Domain && !affectSelf) || !destructive)
+            if ((prism.Domain == explosion.Domain && !affectSelf) || !destructive)
             {
-                if (shielding && prism.Domain == Explosion.Domain)
+                if (shielding && prism.Domain == explosion.Domain)
                     prism.ActivateShield();
                 else 
                     prism.ActivateShield(2f);
                 return;
             }
             
-            if (Explosion.AnonymousExplosion) // Vessel Status will be null here
+            if (explosion.AnonymousExplosion) // Vessel Status will be null here
                 prism.Damage(impactVector, Domains.None, "🔥GuyFawkes🔥", devastating);
             else
             {
-                var shipStatus = Explosion.Vessel.VesselStatus;
+                var shipStatus = explosion.Vessel.VesselStatus;
                 prism.Damage(impactVector, shipStatus.Domain, shipStatus.Player.Name, devastating);
             }
         }
