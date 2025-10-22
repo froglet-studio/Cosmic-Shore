@@ -294,11 +294,12 @@ namespace CosmicShore.SOAP
                 return;
 
             Players.Add(p);
-            if (p.IsNetworkOwner)
-                LocalPlayer = p;
-            
-            // For Networking, replace with NetworkRoundStats as needed, adding it to the Player Prefab
             RoundStatsList.Add(roundStats);
+            if (p.IsNetworkOwner)
+            {
+                LocalPlayer = p;
+                LocalRoundStats = roundStats;
+            }
             
             p.ResetForPlay();
         }
