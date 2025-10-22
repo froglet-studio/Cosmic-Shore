@@ -1684,7 +1684,7 @@ MonoBehaviour:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 1870184177}
   _initializeDatas:
-  - vesselClass: 3
+  - vesselClass: 11
     domain: 2
     PlayerName: Hostile1
     IsAI: 1
