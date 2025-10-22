@@ -45,7 +45,7 @@ namespace CosmicShore.Game.Projectiles
         public override void Initialize(InitializeStruct initStruct)
         {
             base.Initialize(initStruct);
-            rayDirection = SpawnRotation * Vector3.forward;
+            rayDirection = transform.forward; // transform.rotation * Vector3.forward;
             scaleCurve ??= AnimationCurve.Linear(0, 1, 1, 0.5f);
         }
 

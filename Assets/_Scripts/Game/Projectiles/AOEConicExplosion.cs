@@ -10,8 +10,8 @@ namespace CosmicShore.Game.Projectiles
 
         public override void Initialize(InitializeStruct initStruct)
         {
-            SpawnPosition = initStruct.SpawnPosition;
-            SpawnRotation = initStruct.SpawnRotation;
+            // SpawnPosition = initStruct.SpawnPosition;
+            // SpawnRotation = initStruct.SpawnRotation;
             
             AnonymousExplosion = initStruct.AnnonymousExplosion;
             Vessel = initStruct.Vessel;
@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Projectiles
             
             if (!coneContainer)
                 coneContainer = new GameObject("AOEContainer");
-            coneContainer.transform.SetPositionAndRotation(SpawnPosition, SpawnRotation);
+            coneContainer.transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);
             transform.SetParent(coneContainer.transform, false);
         }
 

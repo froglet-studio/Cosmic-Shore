@@ -11,16 +11,11 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
 
-        /*[SerializeField] private bool affectSelf = false;
-        [SerializeField] private bool destructive = true;
-        [SerializeField] private bool devastating = false;
-        [SerializeField] bool shielding = false;*/
-
         protected Vector3 MaxScaleVector;
         protected float Inertia = 70;
         protected float speed;
-        protected Vector3 SpawnPosition;
-        protected Quaternion SpawnRotation;
+        // protected Vector3 SpawnPosition;
+        // protected Quaternion SpawnRotation;
 
         // Material and Team
         public Material Material { get; protected set; }
@@ -31,8 +26,9 @@ namespace CosmicShore.Game.Projectiles
         
         public virtual void Initialize(InitializeStruct initStruct)
         {
-            SpawnPosition = initStruct.SpawnPosition;
-            SpawnRotation = initStruct.SpawnRotation;
+            // SpawnPosition = initStruct.SpawnPosition;
+            // SpawnRotation = initStruct.SpawnRotation;
+            transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);
             
             AnonymousExplosion = initStruct.AnnonymousExplosion;
             Vessel = initStruct.Vessel;
@@ -58,45 +54,6 @@ namespace CosmicShore.Game.Projectiles
         public void Detonate() => StartCoroutine(ExplodeCoroutine());
 
         public Vector3 CalculateImpactVector(Vector3 impacteePosition) => (impacteePosition - transform.position).normalized * speed * Inertia ;
-        
-        // Deprecated - Moved to R_ExplosionImpactor.cs
-        /*protected virtual void OnTriggerEnter(Collider other)
-        {
-            var impactVector = (other.transform.position - transform.position).normalized * speed * Inertia ;
-
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock))
-            {
-                if ((trailBlock.Team != Team || affectSelf) && trailBlock.PrismProperties.IsSuperShielded)
-                {
-                    trailBlock.DeactivateShields();
-                    Destroy(gameObject);    // TODO: This seems wrong...
-                } 
-                if ((trailBlock.Team == Team && !affectSelf) || !destructive)
-                {
-                    if (shielding && trailBlock.Team == Team)
-                        trailBlock.ActivateShield();
-                    else 
-                        trailBlock.ActivateShield(2f);
-                    return;
-                }
-
-                if (AnonymousExplosion)
-                    trailBlock.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
-                else
-                    trailBlock.Damage(impactVector, Vessel.VesselStatus.Team, Vessel.VesselStatus.Player.PlayerName, devastating);
-            }
-            else if (other.TryGetComponent<IVesselStatus>(out var vesselStatus))
-            {
-                if (vesselStatus.Team == Team && !affectSelf)
-                    return;
-
-                PerformShipImpactEffects(vesselStatus, impactVector);
-            }
-            else
-            {
-                Debug.Log("AOEExplosion.OnTriggerEnter - not a vessel or a trail block: " + other.name);
-            }
-        }*/
 
         protected virtual IEnumerator ExplodeCoroutine()
         {
@@ -117,24 +74,6 @@ namespace CosmicShore.Game.Projectiles
 
             Destroy(gameObject);
         }
-
-        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        /*protected virtual void PerformShipImpactEffects(IVesselStatus vesselStatus, Vector3 impactVector)
-        {
-            var castedEffects = _shipImpactEffects.Cast<R_IImpactEffect>();
-
-            ShipHelper.ExecuteImpactEffect(
-                castedEffects,
-                new ImpactEffectData(vesselStatus, null, impactVector)
-            );
-        }
-
-        public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
-        {
-            transform.SetPositionAndRotation(position, rotation);
-        }*/
-
-
 
         public struct InitializeStruct
         {
