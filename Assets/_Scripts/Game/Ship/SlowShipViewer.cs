@@ -15,14 +15,10 @@ namespace CosmicShore
         [SerializeField] Material trailViewerMaterial;
 
         LineRenderer lineRenderer;
-        IVesselStatus vesselStatus;
         Transform target;
         
         void Start()
         {
-            enabled = false;        // TEMP disabled
-            
-            vesselStatus = GetComponent<IVesselStatus>();  
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.material = trailViewerMaterial;
             lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
