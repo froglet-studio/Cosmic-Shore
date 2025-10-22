@@ -295,4 +295,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EndOfRoundStatContainers: []
-  _miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _netcodeHooks: {fileID: 0}
