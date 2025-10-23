@@ -39,6 +39,19 @@ namespace CosmicShore.Game.Projectiles
         // Factory reference
         private ProjectileFactory _factory;
 
+        private bool _poolParentCaptured;
+        private bool _detachOnLaunch;   
+        private bool _detachedThisFlight; 
+
+        private void OnEnable()
+        {
+            if (!_poolParentCaptured)
+            {
+                _pooledParent = transform.parent;
+                _poolParentCaptured = true;
+            }
+        }
+        
         private void Awake()
         {
             InitialScale = transform.localScale;
@@ -63,12 +76,13 @@ namespace CosmicShore.Game.Projectiles
         }*/
 
         #region Initialization
-        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge)
+        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false) 
         {
             _factory = factory;
             OwnDomain = ownDomain;
             VesselStatus = vesselStatus;
             Charge = charge;
+            _detachOnLaunch = detachOnLaunch;
         }
 
         public void SetType(ProjectileType type) => Type = type;
@@ -83,6 +97,16 @@ namespace CosmicShore.Game.Projectiles
         {
             ProjectileTime = projectileTime;
 
+            if (_detachOnLaunch && transform.parent)
+            {
+                transform.SetParent(null, true); 
+                _detachedThisFlight = true;
+            }
+            else
+            {
+                _detachedThisFlight = false;
+            }
+            
             // === DETACH when spawned if it's a spike ===
             if (spike)
             {
@@ -143,23 +167,17 @@ namespace CosmicShore.Game.Projectiles
         {
             Stop();
 
-            // === RE-ATTACH to pooled parent when coming back (if it was detached) ===
-            if (spike && transform.parent == null && _pooledParent != null)
+            // Only reattach if we had detached for this flight
+            if (_detachedThisFlight && _pooledParent != null && transform.parent == null)
             {
-                // no need to keep world space now; it'll be pooled/inactive
                 transform.SetParent(_pooledParent, false);
                 transform.localPosition = Vector3.zero;
                 transform.localRotation = Quaternion.identity;
+                transform.localScale    = Vector3.one; // or InitialScale
             }
 
-            if (_factory)
-            {
-                _factory.ReturnProjectile(this);
-            }
-            else
-            {
-                Debug.LogError("No projectile factory found to release projectile!, this shouldn't happen!");
-            }
+            if (_factory) _factory.ReturnProjectile(this);
+            else Debug.LogError("No projectile factory found to release projectile!");
         }
 
         void Stop()

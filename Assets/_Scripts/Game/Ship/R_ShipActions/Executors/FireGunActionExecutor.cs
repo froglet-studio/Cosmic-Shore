@@ -16,20 +16,17 @@ public class FireGunActionExecutor : ShipActionExecutorBase
     IVesselStatus _status;
     ResourceSystem _resources;
     FireGunActionSO _soRef;
-
+    readonly bool _detachFromContainer = true;
+    
     public float Ammo01
     {
         get
         {
             if (!_resources || _resources.Resources == null) return 0f;
-
             var index = _soRef ? _soRef.AmmoIndex : 0;
-
             if (index < 0 || index >= _resources.Resources.Count) return 0f;
-
             var res = _resources.Resources[index];
             if (res == null || res.MaxAmount <= 0f) return 0f;
-
             return Mathf.Clamp01(res.CurrentAmount / res.MaxAmount);
         }
     }
@@ -54,11 +51,11 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
         _soRef = so;
         _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
-        var inheritedVelocity = /*status.Attached ? gun.transform.forward : */ status.Course;
+        var inheritedVelocity = status.Course;
 
         OnGunFired?.Invoke();
         gun.FireGun(projectileContainer, so.Speed, inheritedVelocity * status.Speed, so.ProjectileScale, true,
             so.ProjectileTime.Value, 0,
-            FiringPatterns.Default, so.Energy);
+            FiringPatterns.Default, so.Energy, detachAfterSpawn:_detachFromContainer);
     }
 }
