@@ -186,7 +186,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gunContainer: {fileID: 9219397688819371261}
   gunTransforms: []
-  projectileContainer: {fileID: 4311740880586632102}
   ammoIndex: 0
   ammoCost: 0
   inherit: 0
@@ -287,8 +286,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _firePeriod: 0.2
-  _poolManager: {fileID: 0}
+  firePeriod: 0.2
+  sideLength: 2
+  barrelLength: 2
+  projectileFactory: {fileID: 0}
 --- !u!114 &4048476215688099286
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2007,6 +2008,7 @@ GameObject:
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
+  - component: {fileID: -4942641259518273024}
   - component: {fileID: 9172589084772723142}
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
@@ -2049,11 +2051,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 0}
   _shipHUDController: {fileID: 0}
-  _shipHUDView: {fileID: 0}
+  _vesselHUDView: {fileID: 0}
   shipHUDContainer: {fileID: 0}
   boostMultiplier: 4
   _name: 
-  _shipType: 0
+  vesselType: 0
   _nearFieldSkimmer: {fileID: 0}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 0}
@@ -2069,6 +2071,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 0}
   toggleManualThrottle: 0
   MinimumSpeed: 10
   ThrottleScaler: 50
@@ -2096,6 +2099,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 0}
   toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -2123,9 +2127,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailBlock: {fileID: 4563009547826722997, guid: 7876e358d6fbe8a4a8d917570122579c,
-    type: 3}
+  _onPrismSpawnedEventChannel: {fileID: 0}
   skimmer: {fileID: 874579554510349383}
+  BaseScale: {x: 10, y: 5, z: 5}
+  prismType: 0
   initialWavelength: 2
   minWavelength: 2
   defaultWaitTime: 1
@@ -2176,6 +2181,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cellData: {fileID: 0}
   skillLevel: 1
   defaultThrottleHigh: 0.9
   defaultThrottleLow: 0.2
@@ -2193,6 +2199,7 @@ MonoBehaviour:
   drift: 0
   abilities: []
   OnCellItemsUpdated: {fileID: 0}
+  actionExecutorRegistry: {fileID: 0}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2274,7 +2281,7 @@ MonoBehaviour:
   - {fileID: 4010301292554909138}
   - {fileID: 4125835721608554647}
   - {fileID: 5978549935140177486}
-  trailSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 1, y: 1, z: 1}
   topJaw: {fileID: 0}
@@ -2295,6 +2302,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   settings: {fileID: 0}
   OnInitializePlayerCamera: {fileID: 0}
+--- !u!114 &-4942641259518273024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 2886429627
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2307,6 +2339,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  _executors: {fileID: 0}
   _inputEventShipActions: []
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 0}
@@ -2629,7 +2663,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7727118938416471421}
-  - component: {fileID: 4311740880586632102}
   m_Layer: 0
   m_Name: ProjectilePool
   m_TagString: Untagged
@@ -2652,22 +2685,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6846568673238505883}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4311740880586632102
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7113592867435310030}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _configDatas:
-  - prefab: {fileID: 7877928849292311340, guid: dfaf0d694cb864748887b79fb4435061,
-      type: 3}
-    size: 1000
 --- !u!1 &7418954139309595168
 GameObject:
   m_ObjectHideFlags: 0
