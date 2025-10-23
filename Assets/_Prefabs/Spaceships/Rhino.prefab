@@ -897,7 +897,7 @@ GameObject:
   m_Icon: {fileID: 2488908585195742037, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &465566354238419221
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2160,8 +2160,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
-    type: 2}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
