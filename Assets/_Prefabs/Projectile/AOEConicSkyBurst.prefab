@@ -4886,7 +4886,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29c7270b521a36b41a544f515c98162f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ExplosionDuration: 0.1
+  ExplosionDuration: 50
   ExplosionDelay: 0
   height: 90
   coneContainer: {fileID: 3504896582959173953}
@@ -5049,7 +5049,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  affectSelf: 1
+  explosionImpactorDataContainer: {fileID: 0}
+  affectSelf: 0
   destructive: 1
   devastating: 1
   shielding: 0

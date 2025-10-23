@@ -30,6 +30,9 @@ namespace CosmicShore.Game.Projectiles
 
         private MeshRenderer meshRenderer;
 
+        // NEW: remember pooled parent so we can restore it
+        private Transform _pooledParent;
+
         // Replaces Coroutine
         private CancellationTokenSource _moveCts;
 
@@ -39,6 +42,9 @@ namespace CosmicShore.Game.Projectiles
         private void Awake()
         {
             InitialScale = transform.localScale;
+
+            // cache whatever parent it has in the pool (ship container or pool root)
+            _pooledParent = transform.parent;
         }
 
         private void Start()
@@ -72,17 +78,21 @@ namespace CosmicShore.Game.Projectiles
         public bool DisallowImpactOnPrism(Domains trailBlockDomain) => !friendlyFire && trailBlockDomain == OwnDomain;
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
-        
-        
+
         public void LaunchProjectile(float projectileTime)
         {
             ProjectileTime = projectileTime;
 
+            // === DETACH when spawned if it's a spike ===
+            if (spike)
+            {
+                // keep world position/rotation
+                transform.SetParent(null, true);
+            }
+
             if (spike)
             {
                 transform.localScale = new Vector3(0.4f, 0.4f, 2f);
-                /*if (meshRenderer == null)
-                    meshRenderer = GetComponent<MeshRenderer>();*/
                 meshRenderer.material.SetFloat("_Opacity", 0.5f);
             }
 
@@ -96,7 +106,7 @@ namespace CosmicShore.Game.Projectiles
         private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
         {
             float elapsedTime = 0f;
-            var t = transform; // cache for speed
+            var t = transform; // cache
             var useSpike = spike && meshRenderer;
             var mat = useSpike ? meshRenderer.material : null;
 
@@ -105,8 +115,6 @@ namespace CosmicShore.Game.Projectiles
                 while (elapsedTime < projectileTime && !token.IsCancellationRequested)
                 {
                     float deltaTime = Time.deltaTime;
-
-                    // smoother trajectory tapering using cosine falloff
                     float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
                     t.position += Velocity * (deltaTime * factor);
 
@@ -122,23 +130,32 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 projectileImpactor.ExecuteEndEffects();
-                // ReturnToFactory();
+                // ReturnToFactory(); // handled by end effects (delayed)
             }
-            catch (OperationCanceledException)
-            {
-                // expected when stopped manually
-            }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 Debug.LogError($"[Projectile] Move loop error: {ex}");
             }
         }
-        
+
         public void ReturnToFactory()
         {
             Stop();
+
+            // === RE-ATTACH to pooled parent when coming back (if it was detached) ===
+            if (spike && transform.parent == null && _pooledParent != null)
+            {
+                // no need to keep world space now; it'll be pooled/inactive
+                transform.SetParent(_pooledParent, false);
+                transform.localPosition = Vector3.zero;
+                transform.localRotation = Quaternion.identity;
+            }
+
             if (_factory)
+            {
                 _factory.ReturnProjectile(this);
+            }
             else
             {
                 Debug.LogError("No projectile factory found to release projectile!, this shouldn't happen!");
@@ -147,9 +164,8 @@ namespace CosmicShore.Game.Projectiles
 
         void Stop()
         {
-            if (_moveCts == null) 
-                return;
-            
+            if (_moveCts == null) return;
+
             _moveCts.Cancel();
             _moveCts.Dispose();
             _moveCts = null;

@@ -1652,8 +1652,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
-    type: 2}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3810,7 +3808,7 @@ MonoBehaviour:
     image: {fileID: 1501352032668899679}
   - input: 6
     image: {fileID: 6366083956812878776}
-  silhouetteContainer: {fileID: 0}
+  silhouetteContainer: {fileID: 4894037493201937865}
   trailDisplayContainer: {fileID: 984136479509543851}
   silhouetteParts:
   - {fileID: 322268676704545573}
