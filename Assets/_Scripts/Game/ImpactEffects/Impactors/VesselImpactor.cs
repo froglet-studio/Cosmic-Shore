@@ -6,12 +6,6 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IVessel))]
     public class VesselImpactor : ImpactorBase
     {
-        // [FormerlySerializedAs("shipPrismEffects")] [SerializeField]
-        // VesselPrismEffectSO[] vesselPrismEffects;
-        //
-        // [FormerlySerializedAs("vesselOmniCrystalEffects")] [FormerlySerializedAs("shipOmniCrystalEffects")] [SerializeField]
-        // VesselCrystalEffectSO[] vesselCrystalEffects;
-
         [SerializeField] VesselImpactorDataContainerSO vesselImpactorDataContainerSO;
         
         public IVessel Vessel { get; private set; }
@@ -26,7 +20,6 @@ namespace CosmicShore.Game
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
-                   // ExecuteEffect(impactee, vesselPrismEffects);
                    if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
                    foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
                    {
@@ -34,7 +27,6 @@ namespace CosmicShore.Game
                    }
                    break;
                 case OmniCrystalImpactor omniCrystalImpactee:
-                    //ExecuteEffect(impactee, vesselCrystalEffects);
                     if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
                     foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
                     {
