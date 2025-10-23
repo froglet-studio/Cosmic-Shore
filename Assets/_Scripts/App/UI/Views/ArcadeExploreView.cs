@@ -140,7 +140,7 @@ namespace CosmicShore.App.UI.Views
             }
         }
         
-        public void SetPlayerCount(int playerCount)
+        /*public void SetPlayerCount(int playerCount)
         {
             Debug.Log($"SetPlayerCount: {playerCount}");
 
@@ -149,9 +149,9 @@ namespace CosmicShore.App.UI.Views
             // TODO - Remove static properties from MiniGame
             // notify the mini game engine that this is the number of players
             // MiniGame.NumberOfPlayers = playerCount;
-        }
+        }*/
 
-        public void SetIntensity(int intensity)
+        /*public void SetIntensity(int intensity)
         {
             Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
 
@@ -160,7 +160,7 @@ namespace CosmicShore.App.UI.Views
             // Hangar.Instance.SetAiIntensityLevel(intensity);
             // notify the mini game engine that this is the difficulty
             // MiniGame.IntensityLevel = intensity;
-        }
+        }*/
 
         public void PlaySelectedGame()
         {

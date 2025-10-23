@@ -31,7 +31,6 @@ RectTransform:
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 9218587489318853438}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -110,7 +109,6 @@ RectTransform:
   m_Children:
   - {fileID: 5102579136117813076}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -187,6 +185,8 @@ MonoBehaviour:
   ColorInactive:
     serializedVersion: 2
     rgba: 4286611584
+  selectedPlayerCount: {fileID: 11400000, guid: 15256dcf0be30b4489190913d1f305db,
+    type: 2}
 --- !u!114 &611885214
 MonoBehaviour:
   m_ObjectHideFlags: 0
