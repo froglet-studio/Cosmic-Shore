@@ -62,7 +62,7 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
             }
             else
             {
-                CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Auto Guns Activated");
+                CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Prism Guns Deactivated");
                 vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
             }
         }
