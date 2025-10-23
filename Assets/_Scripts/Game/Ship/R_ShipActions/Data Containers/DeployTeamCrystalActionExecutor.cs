@@ -10,7 +10,6 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
     [SerializeField] private Crystal crystalPrefab;
 
     Crystal _ghostCrystal;
-    Coroutine _followRoutine;
     float _lastUseTime = -Mathf.Infinity;
 
     IVessel _ship;
@@ -24,57 +23,28 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
 
     public void Begin(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
     {
-        if (Time.time - _lastUseTime < so.Cooldown)
-        {
-            float remaining = so.Cooldown - (Time.time - _lastUseTime);
-            Debug.Log($"[DeployTeamCrystal] Cooldown – {remaining:F1}s left");
-            return;
-        }
-        if (_ghostCrystal != null || crystalPrefab == null) return;
+        if (_ghostCrystal || !crystalPrefab) return;
 
-        Vector3 pos = GetSpawnPoint(so, ship, status);
-        Quaternion rot = Quaternion.LookRotation(ship.Transform.forward, ship.Transform.up);
+        // Parent directly to the ship
+        _ghostCrystal = Instantiate(crystalPrefab, ship.Transform);
+        _ghostCrystal.transform.localPosition = new Vector3(0f, 0f, so.ForwardOffset);
+        _ghostCrystal.transform.localRotation = Quaternion.identity;
 
-        _ghostCrystal = Instantiate(crystalPrefab, pos, rot);
         PrepareGhost(_ghostCrystal, so);
-        _followRoutine = StartCoroutine(FollowShip(so, ship));
     }
 
     public void Commit(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
     {
-        if (_ghostCrystal == null) return;
+        if (!_ghostCrystal) return;
 
-        if (_followRoutine != null) { StopCoroutine(_followRoutine); _followRoutine = null; }
+        // Detach before activation so it stays in world space
+        _ghostCrystal.transform.SetParent(null, true);
 
         ActivateCrystal(_ghostCrystal, status);
         _ghostCrystal = null;
 
         _lastUseTime = Time.time;
         Debug.Log($"[DeployTeamCrystal] Crystal deployed. Cooldown started ({so.Cooldown}s)");
-    }
-
-    Vector3 GetSpawnPoint(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
-    {
-        Vector3 pos = ship.Transform.position + ship.Transform.forward * so.ForwardOffset;
-
-        if (so.RayMask.value != 0 &&
-            Physics.Raycast(ship.Transform.position, ship.Transform.forward,
-                out RaycastHit hit, so.ForwardOffset, so.RayMask, QueryTriggerInteraction.Ignore))
-        {
-            pos = hit.point;
-        }
-        return pos;
-    }
-
-    IEnumerator FollowShip(DeployTeamCrystalActionSO so, IVessel ship)
-    {
-        while (_ghostCrystal != null)
-        {
-            _ghostCrystal.transform.SetPositionAndRotation(
-                GetSpawnPoint(so, ship, _status),
-                Quaternion.LookRotation(ship.Transform.forward, ship.Transform.up));
-            yield return null;
-        }
     }
 
     void PrepareGhost(Crystal cr, DeployTeamCrystalActionSO so)
@@ -87,7 +57,7 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
         {
             fade.enabled = false;
             var r = fade.gameObject.GetComponent<Renderer>();
-            if (r != null && r.material != null) r.material.SetFloat(Opacity, so.FadeValue);
+            if (r && r.material) r.material.SetFloat(Opacity, so.FadeValue);
         }
     }
 
