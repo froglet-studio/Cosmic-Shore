@@ -59,10 +59,12 @@ namespace CosmicShore.App.UI.Modals
 
             // Populate configuration using loadout or default
             var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
-            SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
+            //SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
             // SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
+            
+            SetIntensity(SelectedGame.MinIntensity);
             SetPlayerCount(SelectedGame.MinPlayers);
-
+            
             var index = loadout.VesselType == VesselClassType.Random ? 0 : ShipSelectionView.Models.IndexOf(ShipSelectionView.Models.Where(x => (x as SO_Ship).Class == loadout.VesselType).FirstOrDefault());
             if (index == -1) index = 0;
 

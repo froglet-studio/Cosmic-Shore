@@ -75,35 +75,35 @@ namespace CosmicShore.Game
 
         public void PerformShipControllerActions(InputEvents controlType)
         {
-            if (!HasAction(controlType))
-                return;
-            
+            if (!HasAction(controlType)) return;
+
             _inputAbilityStartTimes[controlType] = Time.time;
 
             var actions = _shipControlActions[controlType];
             foreach (var t in actions)
                 t.StartAction(_executors);
-
-            OnInputEventStarted?.Invoke(controlType);
         }
+
 
         public void StopShipControllerActions(InputEvents controlType)
         {
-            if (!HasAction(controlType))
-                return;
+            if (!HasAction(controlType)) return;
+
+            // Only compute duration if we actually tracked a start time
+            float duration = 0f;
+            if (_inputAbilityStartTimes.TryGetValue(controlType, out var start))
+                duration = Time.time - start;
 
             onAbilityExecuted.Raise(new AbilityStats
             {
                 PlayerName = vesselStatus.PlayerName,
                 ControlType = controlType,
-                Duration = Time.time - _inputAbilityStartTimes[controlType]
+                Duration = duration
             });
 
             var actions = _shipControlActions[controlType];
             for (int i = 0; i < actions.Count; i++)
-                actions[i].StopAction(_executors);    // <-- pass the registry to the SO
-
-            OnInputEventStopped?.Invoke(controlType);
+                actions[i].StopAction(_executors);
         }
 
         bool HasAction(InputEvents inputEvent)
@@ -111,18 +111,19 @@ namespace CosmicShore.Game
         
         void OnButtonPressed(InputEvents ie)
         {
-            // Skip if autopilot
-            if (vesselStatus.AutoPilotEnabled)
-                return;
+            if (vesselStatus.AutoPilotEnabled) return;
+            OnInputEventStarted?.Invoke(ie);
 
             if (IsSpawned)
             {
-                if (IsOwner)
-                    SendButtonPressed_ServerRpc(ie); // Only owner can send
+                if (IsOwner) SendButtonPressed_ServerRpc(ie);
             }
             else
-                PerformShipControllerActions(ie); // Singleplayer
+            {
+                PerformShipControllerActions(ie);
+            }
         }
+
         
         [ServerRpc]
         private void SendButtonPressed_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
@@ -137,18 +138,20 @@ namespace CosmicShore.Game
         
         void OnButtonReleased(InputEvents ie)
         {
-            // Skip if autopilot
-            if (vesselStatus.AutoPilotEnabled)
-                return;
+            if (vesselStatus.AutoPilotEnabled) return;
+
+            OnInputEventStopped?.Invoke(ie);
 
             if (IsSpawned)
             {
-                if (IsOwner)
-                    SendButtonReleased_ServerRpc(ie);
+                if (IsOwner) SendButtonReleased_ServerRpc(ie);
             }
             else
-                StopShipControllerActions(ie);    // Singleplayer
+            {
+                StopShipControllerActions(ie); 
+            }
         }
+
         
         [ServerRpc]
         private void SendButtonReleased_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
