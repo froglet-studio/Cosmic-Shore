@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.Core.Visuals;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -17,6 +18,8 @@ namespace CosmicShore.Game
         [SerializeField] private Material overchargedMaterial;
         [SerializeField] private float ExplosionSpeed = 70f;
         [SerializeField] private float minBlastSpeed     = 25f;
+        [SerializeField, Min(0f)] private float materialBlendDuration = 0.6f;
+        [SerializeField] private bool appendOverchargedMaterial = true;
 
         public int MaxBlockHits => maxBlockHits;
 
@@ -49,7 +52,6 @@ namespace CosmicShore.Game
             if (cooldownTimers.TryGetValue(impactor, out var cooldownEnd) && Time.time < cooldownEnd)
                 return;
 
-            // If already full/ready, ignore more hits until controller confirms
             if (readySet.Contains(impactor)) return;
 
             // Collect unique hits
@@ -62,7 +64,11 @@ namespace CosmicShore.Game
             if (!hitSet.Add(prismImpactee)) return;
 
             var rend = prismImpactee ? prismImpactee.GetComponent<Renderer>() : null;
-            if (rend && overchargedMaterial) rend.material = overchargedMaterial;
+            if (rend && overchargedMaterial)
+            {
+                MaterialBlendUtility.BeginBlend(
+                    rend, overchargedMaterial, materialBlendDuration, appendOverchargedMaterial);
+            }
 
             var rawCount = hitSet.Count;
             var clamped  = Mathf.Min(rawCount, maxBlockHits);
@@ -77,7 +83,7 @@ namespace CosmicShore.Game
 
         public void ConfirmOvercharge(SkimmerImpactor impactor)
         {
-            if (impactor == null) return;
+            if (!impactor) return;
 
             if (!hitsBySkimmer.TryGetValue(impactor, out var hitSet) || hitSet.Count == 0)
             {
@@ -104,7 +110,6 @@ namespace CosmicShore.Game
             var status = impactor?.Skimmer?.VesselStatus;
             if (status == null) return;
 
-            // Fire and forget async task
             BlowUpPrismsOverTime(impactor, hitSet, status).Forget();
         }
 
@@ -145,8 +150,8 @@ namespace CosmicShore.Game
             }
 
             OnOvercharge?.Invoke(impactor);
-            if (verbose) Debug.Log($"[SkimmerOvercharge] Overcharge triggered sequentially! ({hitSet.Count})", impactor);
         }
     }
 }
+
 
