@@ -27,7 +27,6 @@ namespace CosmicShore.Game
 
         private bool _leaving;
 
-        // Cache NetworkManager once; use this everywhere instead of NetworkManager.Singleton
         private NetworkManager networkManager;
 
         public override void Awake()
@@ -84,22 +83,61 @@ namespace CosmicShore.Game
 
         private async UniTaskVoid ExecuteMultiplayerSetup()
         {
+            // Query sessions for this game mode & player count
             var sessions = await QuerySessions();
 
-            if (sessions != null && sessions.Any())
-            {
-                var matchedSession = sessions.FirstOrDefault();
-                if (matchedSession != null)
-                    await JoinSessionAsClientById(matchedSession.Id);
-                else
-                    await StartSessionAsHost();
-            }
-            else
-            {
-                await StartSessionAsHost();
-            }
+            // Filter to sessions that look joinable
+            var candidates = sessions?
+                .Where(IsJoinableSessionInfo)
+                .OrderBy(s => s.Created) // older first; tweak if you like
+                .ToList() ?? new List<ISessionInfo>();
+
+            // Try to join the first joinable; if race-filled, keep trying others
+            if (candidates.Count > 0 && await TryJoinFirstAvailable(candidates))
+                return;
+
+            // Nothing joinable → create a fresh host session
+            await StartSessionAsHost();
         }
-        
+
+        // Try join loop that handles race conditions (session fills between query and join)
+        private async UniTask<bool> TryJoinFirstAvailable(IList<ISessionInfo> candidates)
+        {
+            foreach (var s in candidates)
+            {
+                try
+                {
+                    await JoinSessionAsClientById(s.Id);
+                    return true;
+                }
+                catch (SessionException sx)
+                {
+                    // Known cases to skip and try next: full/locked/deleted/etc.
+                    Debug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
+                    continue;
+                }
+            }
+            return false;
+        }
+
+        // Decide if a session is joinable based on info
+        private bool IsJoinableSessionInfo(ISessionInfo info)
+        {
+            if (info == null) return false;
+
+            // Defensive: prefer sessions that are not private/locked and have room
+            var hasRoom   = (info.MaxPlayers > 0) && (info.AvailableSlots > 0);
+            var notLocked = !info.IsLocked;
+            var notPrivate= !info.HasPassword;
+
+            return hasRoom && notLocked && notPrivate;
+        }
+
         private async UniTask StartSessionAsHost()
         {
             var playerProperties  = await GetPlayerProperties();
@@ -107,11 +145,11 @@ namespace CosmicShore.Game
 
             var sessionOpts = new SessionOptions
             {
-                MaxPlayers       = gameData.SelectedPlayerCount.Value,
-                IsLocked         = false,
-                IsPrivate        = false,
-                PlayerProperties = playerProperties,
-                SessionProperties= sessionProperties
+                MaxPlayers        = gameData.SelectedPlayerCount.Value,
+                IsLocked          = false,
+                IsPrivate         = false,
+                PlayerProperties  = playerProperties,
+                SessionProperties = sessionProperties
             }.WithRelayNetwork();
 
             gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
@@ -157,11 +195,11 @@ namespace CosmicShore.Game
         private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
                                                   NetworkManager.ConnectionApprovalResponse response)
         {
-            response.Approved          = true;
-            response.CreatePlayerObject= true;
-            response.Position          = Vector3.zero;
-            response.Rotation          = Quaternion.identity;
-            response.PlayerPrefabHash  = null;
+            response.Approved           = true;
+            response.CreatePlayerObject = true;
+            response.Position           = Vector3.zero;
+            response.Rotation           = Quaternion.identity;
+            response.PlayerPrefabHash   = null;
         }
 
         private void OnClientDisconnect(ulong clientId)
@@ -169,7 +207,6 @@ namespace CosmicShore.Game
             if (networkManager == null) return;
             if (_leaving)               return;
 
-            // Host: a client disconnected; keep running.
             if (networkManager.IsHost)
             {
                 if (clientId != networkManager.LocalClientId)
@@ -179,7 +216,6 @@ namespace CosmicShore.Game
                 return;
             }
 
-            // Client: if we got disconnected (host left / transport error), go to menu.
             if (clientId == networkManager.LocalClientId)
             {
                 Debug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
@@ -202,8 +238,8 @@ namespace CosmicShore.Game
 
         private Dictionary<string, SessionProperty> GetSessionProperties()
         {
-            string gameMode  = gameData.GameMode.ToString();
-            string maxPlayers= gameData.SelectedPlayerCount.Value.ToString();
+            string gameMode   = gameData.GameMode.ToString();
+            string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
             return new Dictionary<string, SessionProperty>
             {
                 { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
@@ -255,7 +291,7 @@ namespace CosmicShore.Game
         // --------------------------
         // Transport Failure Handler
         // --------------------------
-        async void OnTransportFailure()
+        private async void OnTransportFailure()
         {
             try
             {
@@ -273,10 +309,7 @@ namespace CosmicShore.Game
                 if (networkManager != null)
                     networkManager.Shutdown();
 
-                // Let transport release
                 await UniTask.Delay(500);
-
-                // Go back to menu (or trigger your own retry logic here)
                 OnActiveSessionEnd?.Raise();
             }
             catch (Exception e)
