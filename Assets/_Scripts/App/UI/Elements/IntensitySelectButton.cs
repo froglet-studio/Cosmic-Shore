@@ -1,3 +1,4 @@
+using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,6 +26,8 @@ namespace CosmicShore
         [SerializeField] Color32 IntensityColorActive;
         [SerializeField] Color32 IntensityColorInactive;
 
+        [SerializeField] private IntVariable selectedIntensityCount;
+        
         Sprite IntensitySpriteActive;
         Sprite IntensitySpriteInactive;
         public int Intensity { get; private set; }
@@ -36,6 +39,7 @@ namespace CosmicShore
         public void Select()
         {
             OnSelect?.Invoke(Intensity);
+            selectedIntensityCount.Value = Intensity;
         }
 
         public void SetIntensityLevel(int intensity)

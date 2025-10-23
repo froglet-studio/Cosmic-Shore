@@ -9,7 +9,7 @@ public class FireBarrageAction : ShipAction
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gunContainer;
     List<Gun> guns = new();
-    [SerializeField] PoolManager projectileContainer;
+    // [SerializeField] PoolManager projectileContainer;
 
     [SerializeField] int ammoIndex = 0;
     [SerializeField] float ammoCost = .03f;
@@ -63,7 +63,7 @@ public class FireBarrageAction : ShipAction
                         else inheritedVelocity = VesselStatus.Course;
                     }
                     else inheritedVelocity = Vector3.zero;
-                    gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
+                    // gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                 }
             }
              

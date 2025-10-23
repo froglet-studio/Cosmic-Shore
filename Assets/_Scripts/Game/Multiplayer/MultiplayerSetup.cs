@@ -17,24 +17,34 @@ namespace CosmicShore.Game
     public class MultiplayerSetup : Singleton<MultiplayerSetup>
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
-        const string GAME_MODE_PROPERTY_KEY = "gameMode";
+        const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
 
-        [FormerlySerializedAs("miniGameData")] [SerializeField] private GameDataSO gameData;
+        [FormerlySerializedAs("miniGameData")] 
+        [SerializeField] private GameDataSO gameData;
+
         [SerializeField] private ScriptableEventNoParam OnActiveSessionEnd;
 
         private bool _leaving;
 
-        private void OnEnable()
+        private NetworkManager networkManager;
+
+        public override void Awake()
         {
-            if (!NetworkManager.Singleton)
+            networkManager = NetworkManager.Singleton; // or NetworkManager.Instance if you’ve wrapped it
+            if (networkManager == null)
             {
                 Debug.LogError("[MultiplayerSetup] NetworkManager missing in scene!");
-                return;
             }
+        }
 
-            NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnect;
+        private void OnEnable()
+        {
+            if (networkManager == null) return;
+
+            networkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+            networkManager.OnClientDisconnectCallback += OnClientDisconnect;
+            networkManager.OnTransportFailure         += OnTransportFailure;
         }
 
         private async void Start()
@@ -60,11 +70,11 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
-            if (NetworkManager.Singleton)
-            {
-                NetworkManager.Singleton.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnect;
-            }
+            if (networkManager == null) return;
+
+            networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+            networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+            networkManager.OnTransportFailure         -= OnTransportFailure;
         }
 
         // --------------------------
@@ -73,34 +83,72 @@ namespace CosmicShore.Game
 
         private async UniTaskVoid ExecuteMultiplayerSetup()
         {
+            // Query sessions for this game mode & player count
             var sessions = await QuerySessions();
 
-            if (sessions != null && sessions.Any())
+            // Filter to sessions that look joinable
+            var candidates = sessions?
+                .Where(IsJoinableSessionInfo)
+                .OrderBy(s => s.Created) // older first; tweak if you like
+                .ToList() ?? new List<ISessionInfo>();
+
+            // Try to join the first joinable; if race-filled, keep trying others
+            if (candidates.Count > 0 && await TryJoinFirstAvailable(candidates))
+                return;
+
+            // Nothing joinable → create a fresh host session
+            await StartSessionAsHost();
+        }
+
+        // Try join loop that handles race conditions (session fills between query and join)
+        private async UniTask<bool> TryJoinFirstAvailable(IList<ISessionInfo> candidates)
+        {
+            foreach (var s in candidates)
             {
-                var matchedSession = sessions.FirstOrDefault();
-                if (matchedSession != null)
-                    await JoinSessionAsClientById(matchedSession.Id);
-                else
-                    await StartSessionAsHost();
+                try
+                {
+                    await JoinSessionAsClientById(s.Id);
+                    return true;
+                }
+                catch (SessionException sx)
+                {
+                    // Known cases to skip and try next: full/locked/deleted/etc.
+                    Debug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
+                    continue;
+                }
             }
-            else
-            {
-                await StartSessionAsHost();
-            }
+            return false;
+        }
+
+        // Decide if a session is joinable based on info
+        private bool IsJoinableSessionInfo(ISessionInfo info)
+        {
+            if (info == null) return false;
+
+            // Defensive: prefer sessions that are not private/locked and have room
+            var hasRoom   = (info.MaxPlayers > 0) && (info.AvailableSlots > 0);
+            var notLocked = !info.IsLocked;
+            var notPrivate= !info.HasPassword;
+
+            return hasRoom && notLocked && notPrivate;
         }
 
         private async UniTask StartSessionAsHost()
         {
-            var playerProperties = await GetPlayerProperties();
+            var playerProperties  = await GetPlayerProperties();
             var sessionProperties = GetSessionProperties();
 
-            // Add game mode as session metadata
             var sessionOpts = new SessionOptions
             {
-                MaxPlayers = gameData.SelectedPlayerCount.Value,
-                IsLocked = false,
-                IsPrivate = false,
-                PlayerProperties = playerProperties,
+                MaxPlayers        = gameData.SelectedPlayerCount.Value,
+                IsLocked          = false,
+                IsPrivate         = false,
+                PlayerProperties  = playerProperties,
                 SessionProperties = sessionProperties
             }.WithRelayNetwork();
 
@@ -129,13 +177,11 @@ namespace CosmicShore.Game
         private async UniTask<IList<ISessionInfo>> QuerySessions()
         {
             var gameModeString = gameData.GameMode.ToString();
-            var maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
+            var maxPlayers     = gameData.SelectedPlayerCount.Value.ToString();
 
-            var filterOption1 = new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal);
-            var filterOption2 = new FilterOption(FilterField.StringIndex2, maxPlayers, FilterOperation.Equal);
             var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(filterOption1);
-            queryOptions.FilterOptions.Add(filterOption2);
+            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
+            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
 
             var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
             Debug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
@@ -149,31 +195,28 @@ namespace CosmicShore.Game
         private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
                                                   NetworkManager.ConnectionApprovalResponse response)
         {
-            response.Approved = true;
+            response.Approved           = true;
             response.CreatePlayerObject = true;
-            response.Position = Vector3.zero;
-            response.Rotation = Quaternion.identity;
-            response.PlayerPrefabHash = null;
+            response.Position           = Vector3.zero;
+            response.Rotation           = Quaternion.identity;
+            response.PlayerPrefabHash   = null;
         }
 
         private void OnClientDisconnect(ulong clientId)
         {
-            if (NetworkManager.Singleton == null)
-                return;
+            if (networkManager == null) return;
+            if (_leaving)               return;
 
-            if (_leaving)
-                return;
-
-            if (NetworkManager.Singleton.IsHost)
+            if (networkManager.IsHost)
             {
-                if (clientId != NetworkManager.Singleton.LocalClientId)
+                if (clientId != networkManager.LocalClientId)
                 {
                     Debug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
                 }
                 return;
             }
 
-            if (clientId == NetworkManager.Singleton.LocalClientId)
+            if (clientId == networkManager.LocalClientId)
             {
                 Debug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
                 OnActiveSessionEnd?.Raise();
@@ -195,11 +238,11 @@ namespace CosmicShore.Game
 
         private Dictionary<string, SessionProperty> GetSessionProperties()
         {
-            string gameMode = gameData.GameMode.ToString();
+            string gameMode   = gameData.GameMode.ToString();
             string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
             return new Dictionary<string, SessionProperty>
             {
-                { GAME_MODE_PROPERTY_KEY, new SessionProperty(gameMode, VisibilityPropertyOptions.Public, PropertyIndex.String1)},
+                { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
                 { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
             };
         }
@@ -209,8 +252,7 @@ namespace CosmicShore.Game
         // --------------------------
         public async UniTask LeaveSession()
         {
-            if (_leaving)
-                return;
+            if (_leaving) return;
 
             _leaving = true;
 
@@ -238,11 +280,41 @@ namespace CosmicShore.Game
             {
                 gameData.ActiveSession = null;
 
-                if (NetworkManager.Singleton)
-                    NetworkManager.Singleton.Shutdown();
+                if (networkManager != null)
+                    networkManager.Shutdown();
 
                 OnActiveSessionEnd?.Raise();
                 _leaving = false;
+            }
+        }
+
+        // --------------------------
+        // Transport Failure Handler
+        // --------------------------
+        private async void OnTransportFailure()
+        {
+            try
+            {
+                Debug.LogWarning("[Net] Transport failure. Recreating session/join…");
+                if (gameData.ActiveSession != null)
+                {
+                    if (gameData.ActiveSession.IsHost)
+                        await gameData.ActiveSession.AsHost().DeleteAsync();
+                    else
+                        await gameData.ActiveSession.LeaveAsync();
+
+                    gameData.ActiveSession = null;
+                }
+
+                if (networkManager != null)
+                    networkManager.Shutdown();
+
+                await UniTask.Delay(500);
+                OnActiveSessionEnd?.Raise();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[Net] Transport failure handling error: {e}");
             }
         }
     }

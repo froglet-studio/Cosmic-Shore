@@ -30,9 +30,7 @@ namespace CosmicShore.App.UI.Views
         [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
         [SerializeField] bool RespectInventoryForGameSelection = false;
 
-        [FormerlySerializedAs("_selectedShipClassType")] [SerializeField] VesselClassTypeVariable selectedVesselClassType;
-        [SerializeField] IntVariable _selectedPlayerCount;
-        [SerializeField] IntVariable _selectedIntensity;
+        [SerializeField] VesselClassTypeVariable selectedVesselClassType;
         
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
@@ -138,28 +136,6 @@ namespace CosmicShore.App.UI.Views
                     //MiniGame.ShipResources = captain.InitialResourceLevels;
                     MiniGame.ResourceCollection = captain.InitialResourceLevels;
             }
-        }
-        
-        public void SetPlayerCount(int playerCount)
-        {
-            Debug.Log($"SetPlayerCount: {playerCount}");
-
-            _selectedPlayerCount.Value = playerCount;
-            
-            // TODO - Remove static properties from MiniGame
-            // notify the mini game engine that this is the number of players
-            // MiniGame.NumberOfPlayers = playerCount;
-        }
-
-        public void SetIntensity(int intensity)
-        {
-            Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
-
-            _selectedIntensity.Value = intensity;
-            // TODO - Remove Hangar dependency and also remove static properties from MiniGame
-            // Hangar.Instance.SetAiIntensityLevel(intensity);
-            // notify the mini game engine that this is the difficulty
-            // MiniGame.IntensityLevel = intensity;
         }
 
         public void PlaySelectedGame()

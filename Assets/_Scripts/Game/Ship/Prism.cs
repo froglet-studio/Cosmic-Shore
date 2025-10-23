@@ -44,7 +44,7 @@ namespace CosmicShore.Core
         
         [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
         
-        [SerializeField] PrismEventChannelWithReturnSO _onFlockSpawnedEventChannel;
+        [FormerlySerializedAs("_onFlockSpawnedEventChannel")] [SerializeField] PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
         
         public Action<Prism> OnReturnToPool;
 
@@ -317,7 +317,7 @@ namespace CosmicShore.Core
             SetupDestruction(domain, playerName, devastate);
 
             // Spawn explosion object
-            var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
+            var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
                 ownDomain  = Domain,
                 SpawnPosition = transform.position,
@@ -349,7 +349,7 @@ namespace CosmicShore.Core
             SetupDestruction(domain, playerName, devastate);
 
             // Spawn implosion object
-            var returnData = _onFlockSpawnedEventChannel.RaiseEvent(new PrismEventData
+            var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
                 ownDomain  = Domain,
                 SpawnPosition = transform.position,

@@ -20,7 +20,7 @@ namespace CosmicShore
         [SerializeField]
         Transform[] gunTransforms;
 
-        [SerializeField] PoolManager projectileContainer;
+        // [SerializeField] PoolManager projectileContainer;
 
         [SerializeField] int ammoIndex = 0;
         [SerializeField] float ammoCost = .03f;

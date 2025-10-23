@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.Core;
 using CosmicShore.Utilities;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -12,6 +13,8 @@ namespace CosmicShore.Game
         [SerializeField]
         ScriptableEventCrystalStats OnCrystalCollected;
 
+        bool isImpacting;
+        
         protected virtual void Awake()
         {
             base.Awake();
@@ -19,6 +22,13 @@ namespace CosmicShore.Game
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
+            if (isImpacting)
+                return;
+            
+            isImpacting = true;
+            
+            WaitForImpact().Forget();
+            
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
@@ -77,6 +87,12 @@ namespace CosmicShore.Game
             }
 
             Crystal.Respawn();
+        }
+        
+        async UniTask WaitForImpact()
+        {
+            await UniTask.NextFrame();
+            isImpacting = false;
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +18,8 @@ namespace CosmicShore
         [SerializeField] Color32 ColorActive;
         [SerializeField] Color32 ColorInactive;
 
+        [SerializeField] private IntVariable selectedPlayerCount;
+
         Sprite PlayerCountSpriteActive;
         Sprite PlayerCountpriteInactive;
         public int Count { get; private set;  }
@@ -27,6 +30,7 @@ namespace CosmicShore
         public void Select()
         {
             OnSelect?.Invoke(Count);
+            selectedPlayerCount.Value = Count;
         }
 
         public void SetPlayerCount(int count)

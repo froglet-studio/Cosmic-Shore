@@ -33,7 +33,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
   MinPlayers: 2
   MaxPlayers: 2
-  MinIntensity: 2
+  MinIntensity: 1
   MaxIntensity: 2
   CallToActionTargetType: 429
   ViewUserAction: 0

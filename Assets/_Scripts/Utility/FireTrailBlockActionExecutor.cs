@@ -10,7 +10,7 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
     [Header("Scene Refs")]
     [SerializeField] private Prism prismPrefab; 
     [SerializeField] private Transform muzzle;           
-    [SerializeField] private PoolManager pool;     
+    // [SerializeField] private PoolManager pool;     
 
     IVesselStatus _status;
     Coroutine _loop;
@@ -49,7 +49,7 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
         if (prismPrefab == null || muzzle == null) return;
 
         Prism blockInstance = null;
-        if (pool != null)
+        /*if (pool != null)
         {
             var go = pool.SpawnFromPool(prismPrefab.tag, muzzle.position, muzzle.rotation);
             blockInstance = go?.GetComponent<Prism>();
@@ -57,8 +57,11 @@ public sealed class FireTrailBlockActionExecutor : ShipActionExecutorBase
         else
         {
             blockInstance = Instantiate(prismPrefab, muzzle.position, muzzle.rotation);
-        }
+        }*/
 
+        // ADDED TO REMOVE POOL
+        blockInstance = Instantiate(prismPrefab, muzzle.position, muzzle.rotation);
+        
         if (blockInstance == null) return;
 
         blockInstance.TargetScale *= so.ProjectileScale;

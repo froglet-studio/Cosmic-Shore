@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _aoePrefabs:
   - {fileID: 5915562654621825366, guid: d568a14301490e54280955b50673f884, type: 3}
-  _minExplosionScale: 50
-  _maxExplosionScale: 400
+  _minExplosionScale: 200
+  _maxExplosionScale: 500
   _resourceIndex: 0
   _aoeExplosionMaterial: {fileID: 0}
   _spawnOffset: {x: 0, y: 0, z: -5}
