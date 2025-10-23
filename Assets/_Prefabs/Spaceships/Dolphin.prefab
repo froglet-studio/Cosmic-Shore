@@ -2307,8 +2307,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
-    type: 2}
 --- !u!114 &945558687787062591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3557,7 +3555,8 @@ PrefabInstance:
       propertyPath: m_Radius
       value: 0.55
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7751815150560592194, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
