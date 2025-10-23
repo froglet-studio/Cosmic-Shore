@@ -51,10 +51,10 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        private void OnDestroy()
+        /*private void OnDestroy()
         {
             Debug.LogError("Projectile destroyed! Should not happen! Should return to pool!");
-        }
+        }*/
 
         #region Initialization
         public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge)
