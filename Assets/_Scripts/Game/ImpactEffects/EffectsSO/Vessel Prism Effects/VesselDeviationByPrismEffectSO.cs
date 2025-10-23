@@ -26,7 +26,7 @@ namespace CosmicShore.Game
 
             Transform prismTf = prismImpactee.Prism.prismProperties.prism.transform;
             var cross   = Vector3.Cross(shipTransform.forward, prismTf.forward);
-            var normal  = Quaternion.AngleAxis(90f, cross) * prismTf.forward;
+            var normal  = Quaternion.AngleAxis(15f, cross) * prismTf.forward;
             
             var reflectRight = Vector3.Reflect(shipTransform.right, normal).normalized;
             var reflectUp    = Vector3.Reflect(shipTransform.up,    normal).normalized;
