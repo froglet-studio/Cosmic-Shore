@@ -86,7 +86,6 @@ namespace CosmicShore.Game
         public Transform CameraFollowTarget { get; set; }
         public Transform ShipTransform => Vessel.Transform;
         public IPlayer Player { get; set; }
-        public IInputStatus InputStatus => Player.InputStatus;
         public Material AOEExplosionMaterial { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material ShipMaterial { get; set; }
@@ -113,24 +112,6 @@ namespace CosmicShore.Game
             {
                 customization = customization != null ? customization : gameObject.GetOrAdd<VesselCustomization>();
                 return customization;
-            }
-        }
-
-        InputController _inputController;
-        public InputController InputController
-        {
-            get
-            {
-                if (_inputController == null)
-                {
-                    if (Player == null)
-                    {
-                        Debug.LogError($"No player found to get input controller!");
-                        return null;
-                    }
-                    _inputController = Player.InputController;
-                }
-                return _inputController;
             }
         }
 

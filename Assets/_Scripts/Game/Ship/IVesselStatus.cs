@@ -31,8 +31,8 @@ namespace CosmicShore.Game
         bool Drifting { get; set; }
         Transform CameraFollowTarget { get; set; }
         bool GunsActive { get; set; }
-        InputController InputController { get; }
-        IInputStatus InputStatus { get; }
+        InputController InputController => Player.InputController;
+        IInputStatus InputStatus => Player.InputStatus;
         bool LiveProjectiles { get; set; }
         bool Overheating { get; set; }
         IPlayer Player { get; set; }
