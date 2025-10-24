@@ -63,7 +63,7 @@ namespace CosmicShore.Game
 
         bool Portrait { get; set; }
         ResourceSystem ResourceSystem { get; }
-        ShipAnimation ShipAnimation { get; }
+        VesselAnimation VesselAnimation { get; }
         VesselCameraCustomizer VesselCameraCustomizer { get; }
         List<GameObject> ShipGeometries { get; set; }
         Transform ShipTransform { get;}

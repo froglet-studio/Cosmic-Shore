@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    class BufoAnimation : ShipAnimation
+    class BufoAnimation : VesselAnimation
     {
         [SerializeField] Transform Fusilage;
         [SerializeField] Transform ThrusterTopRight;

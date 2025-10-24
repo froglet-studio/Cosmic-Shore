@@ -103,8 +103,8 @@ public class VesselTransformer : MonoBehaviour
             VesselStatus.Course = transform.forward;
             VesselStatus.Slowed = false;
 
-            VesselStatus.ShipAnimation.StopFlareEngine();
-            VesselStatus.ShipAnimation.StopFlareBody();
+            VesselStatus.VesselAnimation.StopFlareEngine();
+            VesselStatus.VesselAnimation.StopFlareBody();
         }
     }
 
@@ -264,9 +264,9 @@ public class VesselTransformer : MonoBehaviour
         throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0f);
 
         if (throttleMultiplier > 1f)
-            VesselStatus.ShipAnimation?.FlareEngine();
+            VesselStatus.VesselAnimation?.FlareEngine();
         else
-            VesselStatus.ShipAnimation?.StopFlareEngine();
+            VesselStatus.VesselAnimation?.StopFlareEngine();
     }
 
     private void ApplyVelocityModifiers()
@@ -290,9 +290,9 @@ public class VesselTransformer : MonoBehaviour
         var sqrMag = velocityShift.sqrMagnitude;
 
         if (sqrMag > 0.01f)
-            VesselStatus.ShipAnimation?.FlareBody(sqrMag / 4000);
+            VesselStatus.VesselAnimation?.FlareBody(sqrMag / 4000);
         else
-            VesselStatus.ShipAnimation?.StopFlareBody();
+            VesselStatus.VesselAnimation?.StopFlareBody();
     }
 
     public void TranslateShip(Vector3 nudgeVector)

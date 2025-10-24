@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    public class RiptideAnimation : ShipAnimation
+    public class RiptideAnimation : VesselAnimation
     {
         [SerializeField] Transform DriftHandle;
         [SerializeField] Transform Chassis;

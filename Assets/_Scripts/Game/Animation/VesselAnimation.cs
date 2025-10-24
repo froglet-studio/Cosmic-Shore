@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    public abstract class ShipAnimation : MonoBehaviour
+    public abstract class VesselAnimation : MonoBehaviour
     {
         [SerializeField] public SkinnedMeshRenderer SkinnedMeshRenderer;
         [SerializeField] bool SaveNewPositions; // TODO: remove after all models have shape keys support
@@ -53,10 +53,10 @@ namespace CosmicShore.Game.Animation
             {
                 for (var i = 0; i < Transforms.Count; i++)
                 {
-                    // Debug.LogWarningFormat("{0} - {1} - index: {2}", "ShipAnimation" , nameof(Idle), i.ToString());
-                    // Debug.LogWarningFormat("{0} - {1} - transform value: {2}", "ShipAnimation" , nameof(Idle), Transforms[i]);
-                    // Debug.LogWarningFormat("{0} - {1} - transform value: {2}", "ShipAnimation" , nameof(Idle), InitialRotations[i].ToString());
-                    // Debug.LogWarningFormat("{0} - {1} - initial rotations max index: {2}", "ShipAnimation" , nameof(Idle), InitialRotations.Count.ToString());
+                    // Debug.LogWarningFormat("{0} - {1} - index: {2}", "VesselAnimation" , nameof(Idle), i.ToString());
+                    // Debug.LogWarningFormat("{0} - {1} - transform value: {2}", "VesselAnimation" , nameof(Idle), Transforms[i]);
+                    // Debug.LogWarningFormat("{0} - {1} - transform value: {2}", "VesselAnimation" , nameof(Idle), InitialRotations[i].ToString());
+                    // Debug.LogWarningFormat("{0} - {1} - initial rotations max index: {2}", "VesselAnimation" , nameof(Idle), InitialRotations.Count.ToString());
                     if (i < InitialRotations.Count)
                     {
                         ResetAnimation(Transforms[i], InitialRotations[i]);

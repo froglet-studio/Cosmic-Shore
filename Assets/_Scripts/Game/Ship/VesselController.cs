@@ -93,7 +93,7 @@ namespace CosmicShore.Game
         public void Initialize(IPlayer player, bool enableAIPilot)
         {
             VesselStatus.Player = player;
-            VesselStatus.ShipAnimation.Initialize(VesselStatus);
+            VesselStatus.VesselAnimation.Initialize(VesselStatus);
             VesselStatus.VesselPrismController.Initialize(VesselStatus);
             
             if (IsSpawned)

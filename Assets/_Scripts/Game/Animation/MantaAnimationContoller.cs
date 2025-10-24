@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    class MantaAnimationContoller : ShipAnimation
+    class MantaAnimationContoller : VesselAnimation
     {
         [SerializeField] Animator animator;
         [SerializeField] bool hasBoost = false;

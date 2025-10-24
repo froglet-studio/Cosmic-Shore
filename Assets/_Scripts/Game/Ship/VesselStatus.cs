@@ -21,15 +21,13 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(AIPilot))]
     [RequireComponent(typeof(Silhouette))]
     [RequireComponent(typeof(VesselCameraCustomizer))]
-    [RequireComponent(typeof(ShipAnimation))]
+    [RequireComponent(typeof(VesselAnimation))]
     [RequireComponent(typeof(R_VesselActionHandler))]
     [RequireComponent(typeof(VesselCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
     {
-        public event Action<IVesselStatus> OnShipInitialized;
-        
         [SerializeField, RequireInterface(typeof(IVessel))]
         UnityEngine.Object _shipInstance;
         public IVessel Vessel
@@ -136,13 +134,13 @@ namespace CosmicShore.Game
             }
         }
 
-        ShipAnimation _shipAnimation;
-        public ShipAnimation ShipAnimation
+        VesselAnimation vesselAnimation;
+        public VesselAnimation VesselAnimation
         {
             get
             {
-                _shipAnimation = _shipAnimation != null ? _shipAnimation : gameObject.GetOrAdd<ShipAnimation>();
-                return _shipAnimation;
+                vesselAnimation = vesselAnimation != null ? vesselAnimation : gameObject.GetOrAdd<VesselAnimation>();
+                return vesselAnimation;
             }
         }
 

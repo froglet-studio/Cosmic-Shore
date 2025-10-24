@@ -2,7 +2,7 @@
 
 namespace CosmicShore.Game.Animation
 {
-    class SingleStickAnimationController : ShipAnimation
+    class SingleStickAnimationController : VesselAnimation
     {
         [SerializeField] Animator animator;
 

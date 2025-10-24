@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    class MantaAnimationTemp : ShipAnimation
+    class MantaAnimationTemp : VesselAnimation
     {
         [SerializeField] Transform Fusilage;
         [SerializeField] Transform LeftWing;
