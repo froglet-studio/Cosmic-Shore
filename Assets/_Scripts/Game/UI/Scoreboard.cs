@@ -73,7 +73,7 @@ namespace CosmicShore.Game
         protected virtual bool TryGetWinner(out IRoundStats roundStats, out bool localIsWinner) =>
             gameData.TryGetWinner(out roundStats, out localIsWinner);
         
-        void ShowSinglePlayerView()
+        protected virtual void ShowSinglePlayerView()
         {
             if (!TryGetWinner(out  IRoundStats roundStats, out bool localIsWinner))
                 return;
