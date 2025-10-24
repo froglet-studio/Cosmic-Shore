@@ -15,10 +15,7 @@ namespace CosmicShore.Game
     {
         public event Action OnInitialized;
         public event Action OnBeforeDestroyed;
-        
-        /*[Header("Event Channels")]
-        [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;*/
-        
+
         IVesselStatus vesselStatus;
         public IVesselStatus VesselStatus
         {
@@ -204,7 +201,6 @@ namespace CosmicShore.Game
 
             if (VesselStatus.VesselHUDView)
             {
-                // VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
                 VesselStatus.VesselHUDView.Show();
             }
                 
@@ -245,11 +241,8 @@ namespace CosmicShore.Game
 
             if (VesselStatus.VesselHUDView)
             {
-                // VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
                 VesselStatus.VesselHUDView.Show();
             }
-            
-            // onBottomEdgeButtonsEnabled.Raise(true);
         }
         
         void InitializeForSinglePlayerMode(bool enableAIPilot)
@@ -285,13 +278,11 @@ namespace CosmicShore.Game
             // TODO - Currently AIPilot's update should run only after SingleStickVesselTransformer
             // sets SingleStickControls to true/false. Try finding a solution to remove this
             // sequential dependency.
-            /// AIPilot will be initialized both in User controlled / AI Vessels
-            /// Multiplayer modes will also have auto-pilot initialized
+            // AIPilot will be initialized both in User controlled / AI Vessels
+            // Multiplayer modes will also have auto-pilot initialized
             
             VesselStatus.AIPilot.Initialize(enableAIPilot, this);
             VesselStatus.ResetForPlay();
-            
-            // onBottomEdgeButtonsEnabled.Raise(true);
         }
 
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
