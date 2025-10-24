@@ -30,7 +30,6 @@ namespace CosmicShore
         public void Select()
         {
             OnSelect?.Invoke(Count);
-            selectedPlayerCount.Value = Count;
         }
 
         public void SetPlayerCount(int count)
@@ -46,6 +45,7 @@ namespace CosmicShore
             {
                 BorderImage.sprite = BorderSpriteSelected;
                 MeepleImage.sprite = PlayerCountSpriteActive;
+                selectedPlayerCount.Value = Count;
             }
             else
             {
