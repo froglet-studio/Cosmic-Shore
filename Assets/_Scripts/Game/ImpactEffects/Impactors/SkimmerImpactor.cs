@@ -39,8 +39,8 @@ namespace CosmicShore.Game
             
             if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal))
             {
-                // NEW -> Vaccum logic transferred from skimmer to crystal, to reduce crystal dependency
-                crystal.Vacuum(transform.position, skimmer.VaccumAmount);
+                // NEW -> Vacuum logic transferred from skimmer to crystal, to reduce crystal dependency
+                // crystal.Vacuum(transform.position, skimmer.VacuumAmount);
                 // skimmer.TryVacuumCrystal(crystal);
                 // no return; a Crystal may also have a TrailBlock? (unlikely, safe to continue)
             }
@@ -59,6 +59,7 @@ namespace CosmicShore.Game
             
             float sqrDistance = (skimmer.transform.position - other.transform.position).sqrMagnitude;
 
+            return; 
             float scale = skimmer.transform.localScale.x;
             float sqrSweetSpot = scale * scale / 16f;
             float sigma = sqrSweetSpot / 2.355f; 

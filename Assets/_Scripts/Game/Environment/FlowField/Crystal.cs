@@ -111,12 +111,12 @@ namespace CosmicShore.Game
            //  _lastSpawnPosition = newPos;
         }
 
-        public void Vacuum(Vector3 newPosition, float vaccumAmount)
+        public void Vacuum(Vector3 newPosition, float vacuumAmount)
         {
             transform.position = Vector3.MoveTowards(
                 transform.position,
                 newPosition,
-                vaccumAmount * Time.deltaTime / transform.lossyScale.x);
+                vacuumAmount * Time.deltaTime / transform.lossyScale.x);
         }
 
         //the following is a public method that can be called to grow the crystal
