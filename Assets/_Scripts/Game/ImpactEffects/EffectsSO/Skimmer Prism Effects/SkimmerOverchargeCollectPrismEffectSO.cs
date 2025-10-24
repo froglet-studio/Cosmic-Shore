@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         [SerializeField] private float cooldownDuration = 5f;
         [SerializeField] private bool  verbose;
         [SerializeField] private Material overchargedMaterial;
-        [SerializeField] private float ExplosionSpeed = 70f;
+        [SerializeField] private float explosionSpeed = 70f;
         [SerializeField] private float minBlastSpeed     = 25f;
         [SerializeField, Min(0f)] private float materialBlendDuration = 0.6f;
         [SerializeField] private bool appendOverchargedMaterial = true;
@@ -24,13 +24,13 @@ namespace CosmicShore.Game
         public int MaxBlockHits => maxBlockHits;
 
         public event Action<SkimmerImpactor,int,int> OnCountChanged;
-        public event Action<SkimmerImpactor>         OnReadyToOvercharge; // NEW
+        public event Action<SkimmerImpactor>         OnReadyToOvercharge;
         public event Action<SkimmerImpactor,float>   OnCooldownStarted;
         public event Action<SkimmerImpactor>         OnOvercharge;
 
         private static readonly Dictionary<SkimmerImpactor, HashSet<PrismImpactor>> hitsBySkimmer = new();
         private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers   = new();
-        private static readonly HashSet<SkimmerImpactor> readySet                  = new(); // NEW: prevent double-ready
+        private static readonly HashSet<SkimmerImpactor> readySet                  = new();
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
@@ -117,7 +117,7 @@ namespace CosmicShore.Game
         {
             var shipPos = status.ShipTransform.position;
             var dir = shipPos - prism.transform.position;
-            var damage = dir * ExplosionSpeed; //TODO: use mult
+            var damage = dir * explosionSpeed; //TODO: use mult
             if (Physics.Raycast(prism.transform.position, dir, out var hitInfo, dir.magnitude, LayerMask.GetMask("TrailBlocks")))
             {
                 Prism hitPrism;
