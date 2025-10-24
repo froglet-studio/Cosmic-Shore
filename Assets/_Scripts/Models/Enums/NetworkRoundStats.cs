@@ -7,6 +7,7 @@ namespace CosmicShore.Game
     public class NetworkRoundStats : NetworkBehaviour, IRoundStats
     {
         public event Action OnScoreChanged;
+        public event Action<IRoundStats> OnVolumeCreatedChanged;
         
         private readonly NetworkVariable<FixedString64Bytes> n_Name = new(
             readPerm: NetworkVariableReadPermission.Everyone,
@@ -110,7 +111,11 @@ namespace CosmicShore.Game
         public float VolumeCreated
         {
             get => n_VolumeCreated.Value;
-            set => n_VolumeCreated.Value = value;
+            set
+            {
+                n_VolumeCreated.Value = value;
+                OnVolumeCreatedChanged?.Invoke(this);
+            }
         }
 
         private readonly NetworkVariable<float> n_VolumeDestroyed = new(

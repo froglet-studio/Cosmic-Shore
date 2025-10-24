@@ -21,7 +21,17 @@ namespace CosmicShore.Game.Arcade.Scoring
                 playerScore.Score += roundStats.HostileVolumeDestroyed * scoreMultiplier;
             }
         }
-        
+
+        public override void Subscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void Unsubscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+
         /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {
             if (StatsManager.Instance.PlayerStats.TryGetValue(playerName, out var roundStats))

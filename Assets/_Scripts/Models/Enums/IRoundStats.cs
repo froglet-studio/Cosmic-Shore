@@ -5,6 +5,7 @@ namespace CosmicShore.Game
     public interface IRoundStats
     {
         public event Action OnScoreChanged;
+        public event Action<IRoundStats> OnVolumeCreatedChanged;
         
         string Name { get; set; }
         Domains Domain { get; set; }

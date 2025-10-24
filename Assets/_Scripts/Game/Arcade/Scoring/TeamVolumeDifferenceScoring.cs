@@ -25,7 +25,17 @@ namespace CosmicShore.Game.Arcade.Scoring
                 ps.Score += rel * scoreMultiplier;                      // accumulate like before
             }
         }
-        
+
+        public override void Subscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void Unsubscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+
         /*public override void CalculateScore()
         {
             float Vol(Teams t) => miniGameData.TryGetRoundStats(t, out var s) ? s.VolumeRemaining : 0f;
