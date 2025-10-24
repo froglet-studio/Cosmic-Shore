@@ -218,7 +218,7 @@ namespace CosmicShore.Game
             Throttle = 0f;
 
             // Reset booleans
-            Idle = true;
+            // Idle = true;
             Paused = true;
             /*IsGyroEnabled = false;
             InvertYEnabled = false;
