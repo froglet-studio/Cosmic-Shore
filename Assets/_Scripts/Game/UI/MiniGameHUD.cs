@@ -10,7 +10,7 @@ namespace CosmicShore.Game.UI
     public class MiniGameHUD : MonoBehaviour, IMiniGameHUDController
     {
         [SerializeField]
-        GameDataSO gameData;
+        protected GameDataSO gameData;
         
         [Header("View")]
         [SerializeField] private MiniGameHUDView view;
@@ -19,7 +19,6 @@ namespace CosmicShore.Game.UI
         
         [SerializeField] ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] ScriptableEventInt onQueenDroneSpawned;
-        // [SerializeField] protected ScriptableEventBool onBottomEdgeButtonsEnabled;
         [SerializeField] ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] ScriptableEventNoParam OnResetForReplay;
         
@@ -41,14 +40,9 @@ namespace CosmicShore.Game.UI
             gameData.OnMiniGameTurnEnd.OnRaised += OnMiniGameTurnEnd;
             OnResetForReplay.OnRaised += ResetForReplay;
             
-            // SO ? Controller
             onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
-            // onBottomEdgeButtonsEnabled.OnRaised += OnBottomEdgeButtonsEnabled;
             onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
-
-            // View ? Controller
-            // view.Initialize(this);
         }
 
         private void OnDisable()
@@ -60,7 +54,6 @@ namespace CosmicShore.Game.UI
             
             onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
-            // onBottomEdgeButtonsEnabled.OnRaised -= OnBottomEdgeButtonsEnabled;
             onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
         }
 
