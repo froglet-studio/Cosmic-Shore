@@ -164,6 +164,8 @@ namespace CosmicShore.SOAP
         public bool TryGetRoundStats(string playerName, out IRoundStats roundStats)
         {
             roundStats = FindByName(playerName);
+            if  (roundStats is null)
+                Debug.LogError($"No round stats found for player {playerName}!");
             return roundStats != null;
         }
 
@@ -176,28 +178,6 @@ namespace CosmicShore.SOAP
             float blue = VolumeOf(Domains.Blue);
             float gold = VolumeOf(Domains.Gold);
             return new Vector4(jade, ruby, blue, gold);
-        }
-        
-        public bool TryGetWinnerForMultiplayer(out IRoundStats roundStats, out bool won)
-        {
-            roundStats = null;
-            won = false;
-            if (RoundStatsList is null || RoundStatsList.Count == 0)
-            {
-                Debug.LogError("No round stats found to calculate winner!");
-                return false;
-            }
-
-            if (!TryGetActivePlayerStats(out IPlayer _, out roundStats))
-            {
-                Debug.LogError("No round stats of active player found!");
-                return false;   
-            }
-
-            if (roundStats.Name == RoundStatsList[0].Name)
-                won = true;
-
-            return true;
         }
 
         public bool TryGetWinner(out IRoundStats roundStats, out bool won)
@@ -215,7 +195,7 @@ namespace CosmicShore.SOAP
                 Debug.LogError("No round stats of active player found!");
                 return false;   
             }
-
+            
             if (roundStats.Name == RoundStatsList[0].Name)
                 won = true;
 

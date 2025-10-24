@@ -14,7 +14,17 @@ namespace CosmicShore.Game.Arcade.Scoring
                 playerScore.Score += (Time.time - GameData.TurnStartTime) * scoreMultiplier;
             }
         }
-        
+
+        public override void Subscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void Unsubscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+
 
         /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {

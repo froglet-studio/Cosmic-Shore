@@ -21,15 +21,13 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(AIPilot))]
     [RequireComponent(typeof(Silhouette))]
     [RequireComponent(typeof(VesselCameraCustomizer))]
-    [RequireComponent(typeof(ShipAnimation))]
+    [RequireComponent(typeof(VesselAnimation))]
     [RequireComponent(typeof(R_VesselActionHandler))]
     [RequireComponent(typeof(VesselCustomization))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
     {
-        public event Action<IVesselStatus> OnShipInitialized;
-        
         [SerializeField, RequireInterface(typeof(IVessel))]
         UnityEngine.Object _shipInstance;
         public IVessel Vessel
@@ -88,7 +86,6 @@ namespace CosmicShore.Game
         public Transform CameraFollowTarget { get; set; }
         public Transform ShipTransform => Vessel.Transform;
         public IPlayer Player { get; set; }
-        public IInputStatus InputStatus => Player.InputStatus;
         public Material AOEExplosionMaterial { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material ShipMaterial { get; set; }
@@ -118,31 +115,13 @@ namespace CosmicShore.Game
             }
         }
 
-        InputController _inputController;
-        public InputController InputController
+        VesselAnimation vesselAnimation;
+        public VesselAnimation VesselAnimation
         {
             get
             {
-                if (_inputController == null)
-                {
-                    if (Player == null)
-                    {
-                        Debug.LogError($"No player found to get input controller!");
-                        return null;
-                    }
-                    _inputController = Player.InputController;
-                }
-                return _inputController;
-            }
-        }
-
-        ShipAnimation _shipAnimation;
-        public ShipAnimation ShipAnimation
-        {
-            get
-            {
-                _shipAnimation = _shipAnimation != null ? _shipAnimation : gameObject.GetOrAdd<ShipAnimation>();
-                return _shipAnimation;
+                vesselAnimation = vesselAnimation != null ? vesselAnimation : gameObject.GetOrAdd<VesselAnimation>();
+                return vesselAnimation;
             }
         }
 

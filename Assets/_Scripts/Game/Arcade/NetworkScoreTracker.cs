@@ -1,59 +1,39 @@
-using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
-using UnityEngine;
+
 
 namespace CosmicShore.Game.Arcade
 {
-    public class NetworkScoreTracker : ScoreTracker
+    public class NetworkScoreTracker : BaseScoreTracker
     {
-        protected override void OnEnable()
-        {
-        }
-
         public override void OnNetworkSpawn()
         {
             if (!IsServer)
                 return;
-            
+
             gameData.OnInitializeGame += InitializeScoringMode;
             gameData.OnMiniGmaeTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd += CalculateWinnerOnServer;
+            OnClickToMainMenu.OnRaised += OnTurnEnded;
         }
 
         public override void OnNetworkDespawn()
         {
             if (!IsServer)
                 return;
-            
+
             gameData.OnInitializeGame -= InitializeScoringMode;
             gameData.OnMiniGmaeTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd -= CalculateWinnerOnServer;
-        }
-        
-        protected override void Update()
-        {
-            if (!IsServer)
-                return;
-            
-            if (!calculateScoring)
-                return;
-            
-            CalculateScores();
+            OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
 
-        protected override void OnDisable()
-        {
-        }
-        
         private void CalculateWinnerOnServer()
         {
-            CalculateScores();
             SendRoundStats_ClientRpc();
         }
-        
+
         [ClientRpc]
         private void SendRoundStats_ClientRpc()
         {

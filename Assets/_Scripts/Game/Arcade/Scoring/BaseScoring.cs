@@ -29,6 +29,9 @@ namespace CosmicShore.Game.Arcade.Scoring
         /// </summary>
         public abstract void CalculateScore();
 
+        public abstract void Subscribe();
+        public abstract void Unsubscribe();
+        
         protected bool TryGetRoundStats(string playerName, out IRoundStats roundStats)
         {
             roundStats = null;

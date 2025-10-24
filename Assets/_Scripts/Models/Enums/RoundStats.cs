@@ -5,6 +5,7 @@ namespace CosmicShore.Game
     public class RoundStats : IRoundStats
     {
         public event Action OnScoreChanged;
+        public event Action<IRoundStats> OnVolumeCreatedChanged;
         
         public string Name { get; set; }
         public Domains Domain { get; set; }
@@ -25,7 +26,16 @@ namespace CosmicShore.Game
         public int PrismsRemaining { get; set; }
         public int FriendlyPrismsDestroyed { get; set; }
         public int HostilePrismsDestroyed { get; set; }
-        public float VolumeCreated { get; set; }
+        float volumeCreated;
+        public float VolumeCreated
+        {
+            get => volumeCreated;
+            set
+            {
+                volumeCreated = value;
+                OnVolumeCreatedChanged?.Invoke(this);
+            }
+        }
         public float VolumeDestroyed { get; set; }
         public float VolumeRestored { get; set; }
         public float VolumeStolen { get; set; }

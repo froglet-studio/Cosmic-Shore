@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    class DolphinAnimation : ShipAnimation
+    class DolphinAnimation : VesselAnimation
     {
         [SerializeField] Transform Fusilage;
         [SerializeField] Transform LeftWing;

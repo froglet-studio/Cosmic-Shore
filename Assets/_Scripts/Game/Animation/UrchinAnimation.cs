@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace CosmicShore.Game.Animation
 {
-    class UrchinAnimation : ShipAnimation
+    class UrchinAnimation : VesselAnimation
     {
         [SerializeField] Transform Body;
         [SerializeField] Transform JetBottomLeft;

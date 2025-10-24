@@ -6,6 +6,31 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         public VolumeCreatedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
+        public override void Subscribe()
+        {
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                roundStats.OnVolumeCreatedChanged += UpdateScore;
+            }
+        }
+
+        public override void Unsubscribe()
+        {
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                roundStats.OnVolumeCreatedChanged += UpdateScore;
+            }
+        }
+
+        void UpdateScore(IRoundStats roundStats) =>
+            roundStats.Score = roundStats.VolumeCreated * scoreMultiplier;
+        
         public override void CalculateScore()
         {
             foreach (var playerScore in GameData.RoundStatsList)
@@ -16,20 +41,5 @@ namespace CosmicShore.Game.Arcade.Scoring
                 playerScore.Score += roundStats.VolumeCreated * scoreMultiplier;
             }
         }
-
-        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
-        {
-            if (StatsManager.Instance.PlayerStats.TryGetValue(playerName, out var roundStats))
-                return currentScore + roundStats.VolumeCreated * ScoreMultiplier;
-            return currentScore;
-        }
-
-        public override float EndTurnScore(string playerName, float currentScore, float turnStartTime)
-        {
-            // var score = CalculateScore(playerName, currentScore, turnStartTime);
-            var score = CalculateScore(playerName, currentScore);
-            StatsManager.Instance.ResetStats();
-            return score;
-        }*/
     }
 }
