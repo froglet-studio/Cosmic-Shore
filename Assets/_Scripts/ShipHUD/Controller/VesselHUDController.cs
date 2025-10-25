@@ -94,21 +94,21 @@ namespace CosmicShore.Game
 
         private void LateUpdate()
         {
-            if (_trailPool != null)
-            {
-                float dot = Mathf.Clamp(_driftDot, -0.9999f, 0.9999f);
-                float angle = -Mathf.Acos(dot) * Mathf.Rad2Deg; // [0 .. -180]
-                _trailPool.SetTargetDriftAngle(angle);
-                _trailPool.Tick(Time.deltaTime);
-            }
-        
-            if (_pendingPoolBuild && _view && _view.trailDisplayContainer != null) return;
-        
-            var r = _view.trailDisplayContainer.rect;
-        
-            if (!(r.width > 1f) || !(r.height > 1f) || _trailPool == null) return;
-            _pendingPoolBuild = false;
-            _trailPool.EnsurePool();
+            // if (_trailPool != null)
+            // {
+            //     float dot = Mathf.Clamp(_driftDot, -0.9999f, 0.9999f);
+            //     float angle = -Mathf.Acos(dot) * Mathf.Rad2Deg; // [0 .. -180]
+            //     _trailPool.SetTargetDriftAngle(angle);
+            //     _trailPool.Tick(Time.deltaTime);
+            // }
+            //
+            // if (_pendingPoolBuild && _view && _view.trailDisplayContainer != null) return;
+            //
+            // var r = _view.trailDisplayContainer.rect;
+            //
+            // if (!(r.width > 1f) || !(r.height > 1f) || _trailPool == null) return;
+            // _pendingPoolBuild = false;
+            // _trailPool.EnsurePool();
         }
 
         private void PrimeInitialUI()
