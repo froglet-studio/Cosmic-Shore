@@ -24,7 +24,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                     return;
 
-                roundStats.OnVolumeCreatedChanged += UpdateScore;
+                roundStats.OnVolumeCreatedChanged -= UpdateScore;
             }
         }
 
