@@ -60,13 +60,13 @@ namespace CosmicShore.Game
                     "No network round stats found in network player!. Add a NetworkRoundStats component to the prefab!");
                 return;
             }
-            gameData.AddPlayerInMultiplayer(networkPlayer, roundStats);
+            gameData.AddPlayer(networkPlayer);
 
-            if (IsServer)
+            /*if (IsServer)
             {
                 roundStats.Name = networkPlayer.Name;
                 roundStats.Domain = networkPlayer.Domain;
-            }
+            }*/
 
             if (!clientId.IsLocalClient())
                 return;

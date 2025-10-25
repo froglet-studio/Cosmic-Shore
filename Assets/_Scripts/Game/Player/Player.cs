@@ -31,18 +31,36 @@ namespace CosmicShore.Game
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
         public bool IsInitializedAsAI { get; private set; }
 
-        readonly InputController _inputController;
-        public InputController InputController =>
-            _inputController != null ? _inputController : gameObject.GetOrAdd<InputController>();
+        private InputController _inputController;
+        public InputController InputController
+        {
+            get
+            {
+                if (!_inputController)
+                    _inputController = gameObject.GetOrAdd<InputController>();
+                return _inputController;
+            }
+        }
+
+        private RoundStats _roundStats;
+        public IRoundStats RoundStats
+        {
+            get
+            {
+                if (!_roundStats)
+                    _roundStats = gameObject.GetOrAdd<RoundStats>();
+                return _roundStats;
+            }
+        }
         public IInputStatus InputStatus => InputController.InputStatus;
 
         public Transform Transform => transform;
         public bool IsNetworkOwner => IsSpawned && IsOwner;
         public bool IsNetworkClient => IsSpawned && !IsOwner;
-        
+        public bool IsLocalPlayer => IsNetworkOwner || (!IsInitializedAsAI && !IsNetworkClient);
+       
         IPlayer.InitializeData InitializeData;
         
-
         public void InitializeForSinglePlayerMode(IPlayer.InitializeData data, IVessel vessel)
         {
             InitializeData = data;
@@ -52,6 +70,8 @@ namespace CosmicShore.Game
             InputController.Initialize();
             ToggleInputPause(true);
             Vessel = vessel;
+            RoundStats.Name = Name;
+            RoundStats.Domain = Domain;
         }
 
         /// <summary>
@@ -63,6 +83,12 @@ namespace CosmicShore.Game
             Domain = NetTeam.Value;
             Name = NetName.Value.ToString();
             Vessel = vessel;
+
+            if (!IsServer) 
+                return;
+            
+            RoundStats.Name = Name;
+            RoundStats.Domain = Domain;
         }
         
         public override void OnNetworkSpawn()

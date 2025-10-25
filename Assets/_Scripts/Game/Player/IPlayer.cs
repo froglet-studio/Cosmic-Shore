@@ -15,6 +15,7 @@ namespace CosmicShore.Game
         IVessel Vessel { get; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
+        IRoundStats RoundStats { get; }
         public bool IsNetworkOwner { get; }
         public bool IsNetworkClient { get; }
         bool IsActive { get; }
@@ -22,7 +23,7 @@ namespace CosmicShore.Game
         /// If true, it means that this played was marked as AI at initialization
         /// </summary>
         bool IsInitializedAsAI { get; }
-        bool IsLocalPlayer => IsNetworkOwner || (!IsInitializedAsAI && !IsNetworkClient);
+        bool IsLocalPlayer { get; }
         void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
         void ToggleActive(bool active);
         void ToggleGameObject(bool toggle);
