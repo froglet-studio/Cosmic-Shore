@@ -51,22 +51,7 @@ namespace CosmicShore.Game
             networkPlayer.InitializeForMultiplayerMode(networkShip);
             networkShip.Initialize(networkPlayer, false);
             PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
-            
-            
-            var roundStats = networkPlayer.gameObject.GetOrAdd<NetworkRoundStats>();
-            if (!roundStats)
-            {
-                Debug.LogError(
-                    "No network round stats found in network player!. Add a NetworkRoundStats component to the prefab!");
-                return;
-            }
-            gameData.AddPlayerInMultiplayer(networkPlayer, roundStats);
-
-            if (IsServer)
-            {
-                roundStats.Name = networkPlayer.Name;
-                roundStats.Domain = networkPlayer.Domain;
-            }
+            gameData.AddPlayer(networkPlayer);
 
             if (!clientId.IsLocalClient())
                 return;

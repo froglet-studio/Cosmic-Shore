@@ -161,11 +161,15 @@ namespace CosmicShore.SOAP
             return player != null && roundStats != null;
         }
 
+        /// <summary>
+        /// Can be true or false
+        /// </summary>
+        /// <returns>
+        /// true if roundstats found, false other wise
+        /// </returns>
         public bool TryGetRoundStats(string playerName, out IRoundStats roundStats)
         {
             roundStats = FindByName(playerName);
-            if  (roundStats is null)
-                Debug.LogError($"No round stats found for player {playerName}!");
             return roundStats != null;
         }
 
@@ -229,39 +233,8 @@ namespace CosmicShore.SOAP
             _playerSpawnPoseList?.Clear();
             _playerSpawnPoseList = new List<Pose>(SpawnPoses.ToList());
         }
-        
+
         public void AddPlayer(IPlayer p)
-        {
-            if (p == null) return;
-
-            // Avoid duplicates by Name
-            if (Players.Any(player => player.Name == p.Name)) return;
-            if (RoundStatsList.Any(rs => rs.Name == p.Name)) return;
-
-            Players.Add(p);
-            
-            var roundStats = new RoundStats
-            {
-                Name = p.Name,
-                Domain = p.Domain
-            };
-            RoundStatsList.Add(roundStats);
-            
-            if (!p.IsInitializedAsAI || p.IsNetworkOwner)
-            {
-                if (LocalPlayer != null)
-                {
-                    Debug.LogError("Local Player is already present!");
-                    return;
-                }
-                LocalPlayer = p;
-                LocalRoundStats = roundStats;
-            }
-            
-            p.ResetForPlay();
-        }
-
-        public void AddPlayerInMultiplayer(IPlayer p, IRoundStats roundStats)
         {
             if (p == null) 
                 return;
@@ -274,11 +247,12 @@ namespace CosmicShore.SOAP
                 return;
 
             Players.Add(p);
-            RoundStatsList.Add(roundStats);
-            if (p.IsNetworkOwner)
+            
+            RoundStatsList.Add(p.RoundStats);
+            if (p.IsLocalPlayer)
             {
                 LocalPlayer = p;
-                LocalRoundStats = roundStats;
+                LocalRoundStats = p.RoundStats;
             }
             
             p.ResetForPlay();
@@ -325,10 +299,7 @@ namespace CosmicShore.SOAP
                 }
 
                 if (!vesselStatus.IsStationary)
-                {
-                    Debug.LogError("This should never happen!");
                     continue;
-                }
                 
                 bool isOwner = player.IsNetworkOwner;
                 player.ToggleStationaryMode(false);

@@ -189,7 +189,7 @@ namespace CosmicShore.Game.IO
             Gamepad.current != null;
 
         IInputStatus TryAddInputStatus() =>
-            gameObject.GetOrAdd<NetworkInputStatus>();
+            gameObject.GetOrAdd<InputStatus>();
 
     }
 }

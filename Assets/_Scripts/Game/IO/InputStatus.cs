@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class NetworkInputStatus : NetworkBehaviour, IInputStatus
+    public class InputStatus : NetworkBehaviour, IInputStatus
     {
         //–––––––––––––––––––––––––––––––––––––––––
         // Inspector-driven events & controller (unchanged)
