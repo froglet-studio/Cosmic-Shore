@@ -35,11 +35,7 @@ namespace CosmicShore.Game
         public float Score
         {
             get => n_Score.Value;
-            set
-            {
-                n_Score.Value = value;
-                OnScoreChanged?.Invoke();
-            }
+            set => n_Score.Value = value;
         }
         
         private readonly NetworkVariable<int> n_BlocksCreated = new(
@@ -111,11 +107,7 @@ namespace CosmicShore.Game
         public float VolumeCreated
         {
             get => n_VolumeCreated.Value;
-            set
-            {
-                n_VolumeCreated.Value = value;
-                OnVolumeCreatedChanged?.Invoke(this);
-            }
+            set => n_VolumeCreated.Value = value;
         }
 
         private readonly NetworkVariable<float> n_VolumeDestroyed = new(
@@ -306,5 +298,23 @@ namespace CosmicShore.Game
             get => n_Button3AbilityActiveTime.Value;
             set => n_Button3AbilityActiveTime.Value = value;
         }
+        
+        public override void OnNetworkSpawn()
+        {
+            n_Score.OnValueChanged += OnNetworkScoreChanged;
+            n_VolumeCreated.OnValueChanged += OnNetworkVolumeCreated;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            n_Score.OnValueChanged -= OnNetworkScoreChanged;
+            n_VolumeCreated.OnValueChanged -= OnNetworkVolumeCreated;
+        }
+
+        private void OnNetworkVolumeCreated(float previousValue, float newValue) =>
+            OnVolumeCreatedChanged?.Invoke(this);
+
+        void OnNetworkScoreChanged(float oldScore, float newScore) =>
+            OnScoreChanged?.Invoke();
     }
 }
