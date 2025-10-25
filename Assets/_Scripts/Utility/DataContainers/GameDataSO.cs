@@ -161,11 +161,15 @@ namespace CosmicShore.SOAP
             return player != null && roundStats != null;
         }
 
+        /// <summary>
+        /// Can be true or false
+        /// </summary>
+        /// <returns>
+        /// true if roundstats found, false other wise
+        /// </returns>
         public bool TryGetRoundStats(string playerName, out IRoundStats roundStats)
         {
             roundStats = FindByName(playerName);
-            if  (roundStats is null)
-                Debug.LogError($"No round stats found for player {playerName}!");
             return roundStats != null;
         }
 
