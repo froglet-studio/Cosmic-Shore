@@ -11,6 +11,7 @@ namespace CosmicShore.Game
         // Events
         public event Action OnScoreChanged;
         public event Action<IRoundStats> OnVolumeCreatedChanged;
+        public event Action<IRoundStats> OnVolumeDestroyedChanged;
 
         //–––––––––––––––––––––––––––––––––––––––––
         // Local fallback fields (offline / not spawned)
@@ -125,7 +126,20 @@ namespace CosmicShore.Game
         public int FriendlyPrismsDestroyed { get => IsSpawned ? n_FriendlyPrismsDestroyed.Value : _friendlyPrismsDestroyedLocal; set { if (IsSpawned && IsServer) n_FriendlyPrismsDestroyed.Value = value; else _friendlyPrismsDestroyedLocal = value; } }
         public int HostilePrismsDestroyed { get => IsSpawned ? n_HostilePrismsDestroyed.Value : _hostilePrismsDestroyedLocal; set { if (IsSpawned && IsServer) n_HostilePrismsDestroyed.Value = value; else _hostilePrismsDestroyedLocal = value; } }
 
-        public float VolumeDestroyed { get => IsSpawned ? n_VolumeDestroyed.Value : _volumeDestroyedLocal; set { if (IsSpawned && IsServer) n_VolumeDestroyed.Value = value; else _volumeDestroyedLocal = value; } }
+        public float VolumeDestroyed
+        {
+            get => IsSpawned ? n_VolumeDestroyed.Value : _volumeDestroyedLocal;
+            set
+            {
+                if (IsSpawned && IsServer) 
+                    n_VolumeDestroyed.Value = value;
+                else
+                {
+                    _volumeDestroyedLocal = value;
+                    OnVolumeDestroyedChanged?.Invoke(this);
+                }
+            }
+        }
         public float VolumeRestored { get => IsSpawned ? n_VolumeRestored.Value : _volumeRestoredLocal; set { if (IsSpawned && IsServer) n_VolumeRestored.Value = value; else _volumeRestoredLocal = value; } }
         public float VolumeStolen { get => IsSpawned ? n_VolumeStolen.Value : _volumeStolenLocal; set { if (IsSpawned && IsServer) n_VolumeStolen.Value = value; else _volumeStolenLocal = value; } }
         public float VolumeRemaining { get => IsSpawned ? n_VolumeRemaining.Value : _volumeRemainingLocal; set { if (IsSpawned && IsServer) n_VolumeRemaining.Value = value; else _volumeRemainingLocal = value; } }
@@ -158,16 +172,19 @@ namespace CosmicShore.Game
         {
             n_Score.OnValueChanged += OnNetworkScoreChanged;
             n_VolumeCreated.OnValueChanged += OnNetworkVolumeCreated;
+            n_VolumeDestroyed.OnValueChanged += OnNetworkVolumeDestroyed;
         }
 
         public override void OnNetworkDespawn()
         {
             n_Score.OnValueChanged -= OnNetworkScoreChanged;
             n_VolumeCreated.OnValueChanged -= OnNetworkVolumeCreated;
+            n_VolumeDestroyed.OnValueChanged -= OnNetworkVolumeDestroyed;
         }
 
         void OnNetworkScoreChanged(float oldVal, float newVal) => OnScoreChanged?.Invoke();
         void OnNetworkVolumeCreated(float oldVal, float newVal) => OnVolumeCreatedChanged?.Invoke(this);
+        void OnNetworkVolumeDestroyed(float oldVal, float newVal) => OnVolumeDestroyedChanged?.Invoke(this);
 
         //–––––––––––––––––––––––––––––––––––––––––
         // Reset Method (same pattern as InputStatus)
@@ -178,6 +195,7 @@ namespace CosmicShore.Game
 
             Score = 0f;
             VolumeCreated = 0f;
+            VolumeDestroyed = 0;
 
             BlocksCreated = 0;
             BlocksDestroyed = 0;
@@ -186,7 +204,6 @@ namespace CosmicShore.Game
             PrismsRemaining = 0;
             FriendlyPrismsDestroyed = 0;
             HostilePrismsDestroyed = 0;
-            VolumeDestroyed = 0;
             VolumeRestored = 0;
             VolumeStolen = 0;
             VolumeRemaining = 0;

@@ -8,9 +8,10 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         public HostileVolumeDestroyedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
+        float lastVolumeDestroyed;
         public override void CalculateScore()
         {
-            foreach (var playerScore in GameData.RoundStatsList)
+            /*foreach (var playerScore in GameData.RoundStatsList)
             {
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                 {
@@ -19,17 +20,36 @@ namespace CosmicShore.Game.Arcade.Scoring
                 }
                 
                 playerScore.Score += roundStats.HostileVolumeDestroyed * scoreMultiplier;
-            }
+            }*/
         }
 
         public override void Subscribe()
         {
-            throw new System.NotImplementedException();
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                roundStats.OnVolumeDestroyedChanged += UpdateScore;
+            }
         }
 
         public override void Unsubscribe()
         {
-            throw new System.NotImplementedException();
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                roundStats.OnVolumeDestroyedChanged -= UpdateScore;
+                lastVolumeDestroyed = 0;
+            }
+        }
+
+        void UpdateScore(IRoundStats roundStats)
+        {
+            var newVolumeDestroyed = roundStats.VolumeDestroyed - lastVolumeDestroyed;
+            roundStats.Score = newVolumeDestroyed * scoreMultiplier;
         }
 
         /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
