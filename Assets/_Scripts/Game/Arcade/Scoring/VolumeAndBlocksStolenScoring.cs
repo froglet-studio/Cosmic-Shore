@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Arcade.Scoring
             this.trackBlocks = trackBlocks;
         }
         
-        public override void CalculateScore()
+        /*public override void CalculateScore()
         {
             foreach (var playerScore in GameData.RoundStatsList)
             {
@@ -23,7 +23,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                 
                 playerScore.Score += (trackBlocks ? roundStats.PrismStolen : roundStats.VolumeStolen) * scoreMultiplier;
             }
-        }
+        }*/
 
         public override void Subscribe()
         {
@@ -34,19 +34,5 @@ namespace CosmicShore.Game.Arcade.Scoring
         {
             throw new System.NotImplementedException();
         }
-
-        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
-        {
-            if (StatsManager.Instance.PlayerStats.TryGetValue(playerName, out var roundStats))
-                return currentScore + (trackBlocks ? roundStats.BlocksStolen : roundStats.VolumeStolen) * ScoreMultiplier;
-            return currentScore;
-        }
-
-        public override float EndTurnScore(string playerName, float currentScore, float turnStartTime)
-        {
-            var score = CalculateScore(playerName, currentScore, turnStartTime);
-            StatsManager.Instance.ResetStats();
-            return score;
-        }*/
     }
 }

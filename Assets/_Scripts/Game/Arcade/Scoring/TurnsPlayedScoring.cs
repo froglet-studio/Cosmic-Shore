@@ -9,10 +9,10 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         public TurnsPlayedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
-        public override void CalculateScore()
+        /*public override void CalculateScore()
         {
-            
-        }
+            return turnsPlayed;
+        }*/
 
         public override void Subscribe()
         {
@@ -23,16 +23,5 @@ namespace CosmicShore.Game.Arcade.Scoring
         {
             throw new System.NotImplementedException();
         }
-
-        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
-        {
-            return turnsPlayed;
-        }
-
-        public override float EndTurnScore(string playerName, float currentScore, float turnStartTime)
-        {
-            turnsPlayed++;
-            return turnsPlayed;
-        }*/
     }
 }

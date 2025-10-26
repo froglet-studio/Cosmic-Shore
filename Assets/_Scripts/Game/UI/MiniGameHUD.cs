@@ -43,6 +43,8 @@ namespace CosmicShore.Game.UI
             onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
             onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
+
+            CleanupUI();
         }
 
         private void OnDisable()
@@ -118,7 +120,7 @@ namespace CosmicShore.Game.UI
         void ResetForReplay()
         {
             ToggleReadyButton(true);
-            UpdateTurnMonitorDisplay(string.Empty);
+            CleanupUI();
         }
 
         // Public methods you may call externally:
@@ -127,6 +129,12 @@ namespace CosmicShore.Game.UI
 
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
         public void UpdateTurnMonitorDisplay(string message) => view.RoundTimeDisplay.text = message;
+        
+        void CleanupUI()
+        {
+            UpdateTurnMonitorDisplay(string.Empty);
+            view.UpdateScoreUI("0000");
+        }
         
     }
 }

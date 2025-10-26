@@ -35,16 +35,5 @@ namespace CosmicShore.Game.Arcade.Scoring
             var newVolumeCreated = roundStats.VolumeCreated - lastVolumeCreated;
             roundStats.Score += newVolumeCreated * scoreMultiplier;
         }
-        
-        public override void CalculateScore()
-        {
-            /*foreach (var playerScore in GameData.RoundStatsList)
-            {
-                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
-                    return;
-
-                playerScore.Score += roundStats.VolumeCreated * scoreMultiplier;
-            }*/
-        }
     }
 }

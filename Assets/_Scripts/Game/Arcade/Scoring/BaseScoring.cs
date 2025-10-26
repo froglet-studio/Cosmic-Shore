@@ -18,17 +18,6 @@ namespace CosmicShore.Game.Arcade.Scoring
             this.scoreMultiplier = scoreMultiplier;
         }
 
-        /*// TODO - Remove float turnStartTime as it's not needed
-        public abstract float CalculateScore(string playerName, float currentScore, float turnStartTime);
-        public abstract float EndTurnScore(string playerName, float currentScore, float turnStartTime);
-        */
-
-        
-        /// <summary>
-        /// Calculate the score based on specific scoring logic, and add it to the previous score.
-        /// </summary>
-        public abstract void CalculateScore();
-
         public abstract void Subscribe();
         public abstract void Unsubscribe();
         
