@@ -32,26 +32,6 @@ namespace CosmicShore.Game
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
 
-        /*void OnEnable()
-        {
-            if (IsSpawned && !IsOwner)
-            {
-                n_Speed.OnValueChanged += OnSpeedChanged;
-                n_Course.OnValueChanged += OnCourseChanged;
-                n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
-            }
-        }
-
-        void OnDisable()
-        {
-            if (IsSpawned && !IsOwner)
-            {
-                n_Speed.OnValueChanged -= OnSpeedChanged;
-                n_Course.OnValueChanged -= OnCourseChanged;
-                n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
-            }
-        }*/
-
         public override void OnDestroy()
         {
             if ((!IsSpawned && VesselStatus.Player is { IsInitializedAsAI: false }) || IsOwner)
