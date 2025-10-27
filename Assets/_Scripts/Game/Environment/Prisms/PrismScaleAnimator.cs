@@ -83,7 +83,7 @@ namespace CosmicShore.Core
         
         private void TryRegisterWithManager()
         {
-            if (PrismScaleManager.Instance != null && !isRegistered)
+            if (PrismScaleManager.Instance && !isRegistered)
             {
                 PrismScaleManager.Instance.RegisterAnimator(this);
                 isRegistered = true;
@@ -136,11 +136,6 @@ namespace CosmicShore.Core
                     Volume = deltaVolume,
                     PlayerName = prism.PlayerName,
                 });
-                
-            /*if (StatsManager.Instance != null)
-            {
-                StatsManager.Instance.PrismVolumeModified(deltaVolume, trailBlock.PrismProperties);
-            }*/
 
             if (prism == null) return;
                 
@@ -174,9 +169,6 @@ namespace CosmicShore.Core
         {
             if (!enabled) return 0f;
             
-            /*outerDimensions = transform.localScale + 2 * spread;
-            return outerDimensions.x * outerDimensions.y * outerDimensions.z;*/
-            
             var v = transform.localScale;
             return v.x * v.y * v.z;
         }
@@ -190,21 +182,16 @@ namespace CosmicShore.Core
             }
 
             var oldVolume = prism.prismProperties.volume;
-            /*outerDimensions = TargetScale + 2 * spread;
-            prism.prismProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;*/
-
             prism.prismProperties.volume = TargetScale.x * TargetScale.y * TargetScale.z;
-            
             return prism.prismProperties.volume - oldVolume;
         }
 
         private void OnDestroy()
         {
-            if (PrismScaleManager.Instance != null && isRegistered)
-            {
-                PrismScaleManager.Instance.UnregisterAnimator(this);
-                isRegistered = false;
-            }
+            if (!PrismScaleManager.Instance || !isRegistered) 
+                return;
+            PrismScaleManager.Instance.UnregisterAnimator(this);
+            isRegistered = false;
         }
 
     }

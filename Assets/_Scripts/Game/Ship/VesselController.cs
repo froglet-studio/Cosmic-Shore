@@ -32,7 +32,7 @@ namespace CosmicShore.Game
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
 
-        void OnEnable()
+        /*void OnEnable()
         {
             if (IsSpawned && !IsOwner)
             {
@@ -50,7 +50,7 @@ namespace CosmicShore.Game
                 n_Course.OnValueChanged -= OnCourseChanged;
                 n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
             }
-        }
+        }*/
 
         public override void OnDestroy()
         {
@@ -183,6 +183,15 @@ namespace CosmicShore.Game
             Destroy(gameObject);   
         }
 
+        public void StartVessel()
+        {
+            ToggleStationaryMode(false);
+            VesselStatus.VesselPrismController.StartSpawn();
+        }
+
+        void ToggleStationaryMode(bool enable) =>
+            VesselStatus.IsStationary = enable;
+
         public void ResetForPlay()
         {
             VesselStatus.ResetForPlay();
@@ -215,7 +224,6 @@ namespace CosmicShore.Game
                 
             VesselStatus.VesselTransformer.ToggleActive(true);
             VesselStatus.ActionHandler.ToggleSubscription(true);
-            
             VesselStatus.VesselCameraCustomizer.RetargetAndApply(this);
         }
 

@@ -25,22 +25,9 @@ namespace CosmicShore.Game
         bool IsInitializedAsAI { get; }
         bool IsLocalPlayer { get; }
         void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
-        void ToggleActive(bool active);
         void ToggleGameObject(bool toggle);
-        /// <summary>
-        /// If true -> stationary mode is activated. false -> deactivated
-        /// </summary>
-        void ToggleStationaryMode(bool toggle);
-        /// <summary>
-        /// If true -> start auto pilot mode, false -> stop auto pilot mode
-        /// </summary>
-        /// <param name="toggle"></param>
-        void ToggleAIPilot(bool toggle);
-        /// <summary>
-        /// If true -> pause input status. false -> unpause otherwise.
-        /// </summary>
-        void ToggleInputPause(bool toggle);
         void DestroyPlayer();
+        void StartPlayer();
         void ResetForPlay();
         void SetPoseOfVessel(Pose pose) => Vessel.SetPose(pose);
         void ChangeVessel(IVessel vessel);

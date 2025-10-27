@@ -44,12 +44,12 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
             if (isOn)
             {
                 var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status);
-                vesselPrismController?.PauseTrailSpawner();
+                vesselPrismController?.StopSpawn();
                 if (seeded) seedAssemblerExecutor.BeginBonding();
             }
             else
             {
-                vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
+                vesselPrismController?.StartSpawn();
                 seedAssemblerExecutor.StopSeedCompletely();
             }
         }
@@ -58,12 +58,12 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
             if (isOn)
             {
                 CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Prism Guns Activated");
-                vesselPrismController?.PauseTrailSpawner();
+                vesselPrismController?.StopSpawn();
             }
             else
             {
                 CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Auto Guns Activated");
-                vesselPrismController?.RestartTrailSpawnerAfterDelay(0);
+                vesselPrismController?.StartSpawn();
             }
         }
 

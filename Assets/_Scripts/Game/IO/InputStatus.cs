@@ -207,7 +207,7 @@ namespace CosmicShore.Game
         public void ResetForReplay()
         {
             // Non-owners shouldn't modify replicated state
-            if (base.IsSpawned && !IsOwner)
+            if (IsSpawned && !IsOwner)
                 return;
 
             // Reset scalar inputs
@@ -218,7 +218,7 @@ namespace CosmicShore.Game
             Throttle = 0f;
 
             // Reset booleans
-            // Idle = true;
+            Idle = true;
             Paused = true;
             /*IsGyroEnabled = false;
             InvertYEnabled = false;

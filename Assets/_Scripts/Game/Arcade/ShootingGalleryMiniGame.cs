@@ -30,7 +30,7 @@ namespace CosmicShore.Game.Arcade
             SegmentSpawner.Initialize();
 
             // Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
+            ActivePlayer.Vessel.VesselStatus.VesselPrismController.StopSpawn();
 
             FormRing();
         }

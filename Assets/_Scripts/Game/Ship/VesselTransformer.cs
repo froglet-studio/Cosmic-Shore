@@ -67,8 +67,8 @@ public class VesselTransformer : MonoBehaviour
     // ----------------------------- Initialization -----------------------------
     public virtual void Initialize(IVessel vessel)
     {
-        this.Vessel = vessel;
-        ResetTransformer();
+        Vessel = vessel;
+        // ResetTransformer();
     }
     
     public void ToggleActive(bool active) => isActive = active;
@@ -92,20 +92,6 @@ public class VesselTransformer : MonoBehaviour
         // Remove lingering modifiers and states
         ThrottleModifiers.Clear();
         VelocityModifiers.Clear();
-
-        /*if (miniGameData != null)
-            miniGameData.SlowedShipTransforms.Remove(transform);*/
-
-        // Reset vessel animation/state safely
-        if (VesselStatus != null)
-        {
-            VesselStatus.Speed = 0f;
-            VesselStatus.Course = transform.forward;
-            VesselStatus.Slowed = false;
-
-            VesselStatus.VesselAnimation.StopFlareEngine();
-            VesselStatus.VesselAnimation.StopFlareBody();
-        }
     }
 
     // ----------------------------- Rotation Logic -----------------------------

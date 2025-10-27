@@ -235,6 +235,8 @@ namespace CosmicShore.Game
             VesselTransformer.ResetTransformer();
             VesselPrismController.StopSpawn();
             VesselPrismController.ClearTrails();
+            VesselAnimation.StopFlareEngine();
+            VesselAnimation.StopFlareBody();
         }
     }
 }

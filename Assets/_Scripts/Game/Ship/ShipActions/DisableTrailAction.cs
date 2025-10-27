@@ -4,15 +4,14 @@ namespace CosmicShore
 {
     public class DisableTrailAction : ShipAction
     {
-        [SerializeField] float delay = 2f;
         public override void StartAction()
         {
-            Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
+            Vessel.VesselStatus.VesselPrismController.StopSpawn();
         }
         
         public override void StopAction()
         {
-            Vessel.VesselStatus.VesselPrismController.RestartTrailSpawnerAfterDelay(delay);
+            Vessel.VesselStatus.VesselPrismController.StartSpawn();
         }
     }
 }

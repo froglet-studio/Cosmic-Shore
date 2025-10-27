@@ -204,7 +204,7 @@ namespace CosmicShore.Game.AI
             if (!AutoPilotEnabled)
                 return;
 
-            if (VesselStatus is null || VesselStatus.IsStationary)
+            if (VesselStatus.IsStationary)
                 return;
 
             _distance = _targetPosition - transform.position;

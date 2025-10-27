@@ -219,7 +219,7 @@ namespace CosmicShore.Game.Arcade
                 Players[i].ToggleGameObject(true);
             }
 
-            Players[0].ToggleActive(true);
+            // Players[0].ToggleActive(true);
             ActivePlayer = Players[0];
             return ActivePlayer;
         }
@@ -269,7 +269,7 @@ namespace CosmicShore.Game.Arcade
             /*foreach (var turnMonitor in TurnMonitors)
                 turnMonitor.PauseTurn();*/
             ActivePlayer.InputController.InputStatus.Paused = true;
-            ActivePlayer.Vessel.VesselStatus.VesselPrismController.PauseTrailSpawner();
+            // ActivePlayer.Vessel.VesselStatus.VesselPrismController.StopSpawn();
 
             yield return new WaitForSeconds(EndOfTurnDelay);
 

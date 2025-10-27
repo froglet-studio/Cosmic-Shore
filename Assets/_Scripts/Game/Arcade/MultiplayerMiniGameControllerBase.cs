@@ -69,30 +69,20 @@ namespace CosmicShore.Game.Arcade
                 // ignore
             }
         }
-        
+
         protected override void OnCountdownTimerEnded()
         {
-            gameData.StartTurn(); // For this client only.
-            OnCountdownTimerEnded_ServerRpc();
-            
-            // Matches your original Duel behavior: only server starts the game and resets counters.
             if (!IsServer)
                 return;
 
-            // reset this only in server one time
-            // turnsTakenThisRound = 0;
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void OnCountdownTimerEnded_ServerRpc()
-        {
             OnCountdownTimerEnded_ClientRpc();
         }
 
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
-            gameData.SetPlayersActiveForMultiplayer();
+            gameData.SetPlayersActive();
+            gameData.StartTurn(); 
         }
 
         protected override void EndTurn()

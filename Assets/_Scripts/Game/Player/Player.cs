@@ -121,15 +121,8 @@ namespace CosmicShore.Game
         }
 
         // TODO - Unnecessary usage of two methods, can be replaced with a single method.
-        public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
-        
-        public void ToggleActive(bool active) => IsActive = active;
-        
-        public void ToggleStationaryMode(bool toggle) => Vessel.VesselStatus.IsStationary = toggle;
-
-        public void ToggleAIPilot(bool toggle) => Vessel.ToggleAIPilot(toggle);
-        
-        public void ToggleInputPause(bool toggle) => InputController.Pause(toggle);
+        public void ToggleGameObject(bool toggle) => 
+            gameObject.SetActive(toggle);
 
         public void DestroyPlayer()
         {
@@ -138,21 +131,36 @@ namespace CosmicShore.Game
             Destroy(gameObject);
         }
 
+        public void StartPlayer()
+        {
+            ToggleActive(true);
+            Vessel.StartVessel();
+            
+            if (IsNetworkClient)
+                return;
+
+            if (IsInitializedAsAI)
+            {
+                ToggleAIPilot(true);
+                ToggleInputPause(true);
+            }
+            else
+                ToggleInputPause(false);
+        }
+
         public void ResetForPlay()
         {
             // Always reset the vessel and make it stationary.
             Vessel.ResetForPlay();
-            ToggleStationaryMode(true);
             ToggleActive(false);
-
+            
+            if (IsNetworkClient)
+                return;
+            
             if (IsInitializedAsAI)
                 ToggleAIPilot(false);
-            
-            if (IsSpawned && !IsOwner)
-                return;
                 
             InputStatus.ResetForReplay();
-            ToggleInputPause(true);
         }
 
         public void ChangeVessel(IVessel vessel)
@@ -163,10 +171,19 @@ namespace CosmicShore.Game
                 NetDefaultShipType.Value = Vessel.VesselStatus.VesselType;
         }
         
-        private void OnNetTeamDomainChanged(Domains previousValue, Domains newValue) =>
+        void ToggleActive(bool active) => 
+            IsActive = active;
+
+        void ToggleAIPilot(bool toggle) => 
+            Vessel.ToggleAIPilot(toggle);
+        
+        void ToggleInputPause(bool toggle) => 
+            InputController.Pause(toggle);
+        
+        void OnNetTeamDomainChanged(Domains previousValue, Domains newValue) =>
             Domain = newValue;
         
-        private void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>
+        void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>
             Name = newValue.ToString();
     }
 }
