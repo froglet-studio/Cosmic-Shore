@@ -53,25 +53,13 @@ namespace CosmicShore.Core
             get => teamManager?.Domain ?? Domains.Unassigned;
             set
             {
-                if (teamManager != null)
+                if (teamManager)
                     teamManager.SetInitialTeam(value);
             }
         }
         // public IPlayer Player;
         string _playerName;
         public string PlayerName { get; private set; } 
-        /*{ 
-            get
-            {
-                if (_playerName == null)
-                {
-                    _playerName = DEFAULT_PLAYER_NAME; // Default player name if not set -> this is a temp fix. 
-                    // _playerName should never be null in here
-                }
-                return _playerName;
-            }
-            private set => _playerName = value;
-        }*/
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;

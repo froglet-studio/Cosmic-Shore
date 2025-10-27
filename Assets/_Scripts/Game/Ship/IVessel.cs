@@ -36,6 +36,7 @@ namespace CosmicShore.Game
         void BindElementalFloat(string name, Element element);
         // void PerformButtonActions(int buttonNumber);
         void ToggleAIPilot(bool toggle);
+        void StartVessel();
         bool AllowClearPrismInitialization();
         void DestroyVessel();
         void ResetForPlay();

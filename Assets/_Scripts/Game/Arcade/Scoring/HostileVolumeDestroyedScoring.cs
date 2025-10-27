@@ -8,45 +8,35 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         public HostileVolumeDestroyedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
-        public override void CalculateScore()
+        float lastVolumeDestroyed;
+
+        public override void Subscribe()
         {
             foreach (var playerScore in GameData.RoundStatsList)
             {
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
-                {
-                    Debug.LogError($"Didn't find RoundStats for player: {playerScore.Name}");
                     return;
-                }
-                
-                playerScore.Score += roundStats.HostileVolumeDestroyed * scoreMultiplier;
-            }
-        }
 
-        public override void Subscribe()
-        {
-            throw new System.NotImplementedException();
+                roundStats.OnVolumeDestroyedChanged += UpdateScore;
+            }
         }
 
         public override void Unsubscribe()
         {
-            throw new System.NotImplementedException();
-        }
-
-        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
-        {
-            if (StatsManager.Instance.PlayerStats.TryGetValue(playerName, out var roundStats))
+            foreach (var playerScore in GameData.RoundStatsList)
             {
-                float score = roundStats.HostileVolumeDestroyed * scoreMultiplier;
-                return currentScore + score;
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                roundStats.OnVolumeDestroyedChanged -= UpdateScore;
+                lastVolumeDestroyed = 0;
             }
-            return currentScore;
         }
 
-        public override float EndTurnScore(string playerName, float currentScore, float turnStartTime)
+        void UpdateScore(IRoundStats roundStats)
         {
-            var score = CalculateScore(playerName, currentScore, turnStartTime);
-            StatsManager.Instance.ResetStats();
-            return score;
-        }*/
+            var newVolumeDestroyed = roundStats.VolumeDestroyed - lastVolumeDestroyed;
+            roundStats.Score = newVolumeDestroyed * scoreMultiplier;
+        }
     }
 }

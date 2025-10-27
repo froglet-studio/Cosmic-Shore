@@ -1447,6 +1447,8 @@ MonoBehaviour:
   scoringConfigs:
   - Mode: 1
     Multiplier: 1
+  - Mode: 0
+    Multiplier: 1
 --- !u!114 &1527998409
 MonoBehaviour:
   m_ObjectHideFlags: 0

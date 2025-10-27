@@ -7,13 +7,13 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         public TimePlayedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
-        public override void CalculateScore()
+        /*public override void CalculateScore()
         {
             foreach (var playerScore in GameData.RoundStatsList)
             {
                 playerScore.Score += (Time.time - GameData.TurnStartTime) * scoreMultiplier;
             }
-        }
+        }*/
 
         public override void Subscribe()
         {
@@ -24,16 +24,5 @@ namespace CosmicShore.Game.Arcade.Scoring
         {
             throw new System.NotImplementedException();
         }
-
-
-        /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
-        {
-            return currentScore + (Time.time - turnStartTime) * scoreMultiplier;
-        }
-
-        public override float EndTurnScore(string playerName, float currentScore, float turnStartTime)
-        {
-            return CalculateScore(playerName, currentScore, turnStartTime);
-        }*/
     }
 }

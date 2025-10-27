@@ -139,6 +139,99 @@ namespace CosmicShore.SOAP
             DomainAssigner.Initialize();
         }
 
+        public void AddPlayer(IPlayer p)
+        {
+            if (p == null) 
+                return;
+
+            // Avoid duplicates by Name
+            if (Players.Any(player => player.Name == p.Name)) 
+                return;
+            
+            if (RoundStatsList.Any(rs => rs.Name == p.Name)) 
+                return;
+
+            Players.Add(p);
+            
+            RoundStatsList.Add(p.RoundStats);
+            if (p.IsLocalPlayer)
+            {
+                LocalPlayer = p;
+                LocalRoundStats = p.RoundStats;
+            }
+            
+            p.ResetForPlay();
+            
+            if (p.IsNetworkOwner)
+                p.SetPoseOfVessel(GetRandomSpawnPose());
+        }
+        
+        public void SortRoundStats(bool golfRules)
+        {
+            if (golfRules)
+                RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
+            else
+                RoundStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+        }
+        
+        public void SetPlayersActive()
+        {
+            foreach (var player in Players)
+                player.StartPlayer();
+        }
+
+        public void ResetPlayers()
+        {
+            foreach (var player in Players)
+            {
+                player.ResetForPlay();
+                
+                if (player.IsNetworkClient)
+                    continue;
+                
+                player.SetPoseOfVessel(GetRandomSpawnPose());
+            }
+        }
+        
+        /// <summary>
+        /// Remove a player (by display name) from Players & RoundStatsList and fix LocalPlayer if needed.
+        /// </summary>
+        public bool RemovePlayerData(string playerName)
+        {
+            if (string.IsNullOrEmpty(playerName))
+                return false;
+
+            // Remove from Players
+            int removedPlayers = Players.RemoveAll(p => p != null && p.Name == playerName);
+
+            // Remove from RoundStats
+            int removedStats = RoundStatsList.RemoveAll(rs => rs != null && rs.Name == playerName);
+
+            // Fix LocalPlayer if it was the removed one
+            if (LocalPlayer != null && LocalPlayer.Name == playerName)
+                LocalPlayer = Players.Count > 0 ? Players[0] : null;
+
+            // Optional: also stop their vessel spawning if any dangling reference exists (defensive)
+            // No-op here because Players list holds the references.
+
+            return (removedPlayers + removedStats) > 0;
+        }
+        
+        public void SwapVessels()
+        {
+            var player0 = Players[0];
+            var player1 = Players[1];
+            
+            var vessel0 = player0.Vessel;
+            var vessel1 = player1.Vessel;
+            
+            player0.ChangeVessel(vessel1);
+            player1.ChangeVessel(vessel0);
+            
+            vessel0.ChangePlayer(player1);
+            vessel1.ChangePlayer(player0);
+        }
+        
         // -----------------------------------------------------------------------------------------
         // Queries / Scores
 
@@ -233,144 +326,7 @@ namespace CosmicShore.SOAP
             _playerSpawnPoseList?.Clear();
             _playerSpawnPoseList = new List<Pose>(SpawnPoses.ToList());
         }
-
-        public void AddPlayer(IPlayer p)
-        {
-            if (p == null) 
-                return;
-
-            // Avoid duplicates by Name
-            if (Players.Any(player => player.Name == p.Name)) 
-                return;
-            
-            if (RoundStatsList.Any(rs => rs.Name == p.Name)) 
-                return;
-
-            Players.Add(p);
-            
-            RoundStatsList.Add(p.RoundStats);
-            if (p.IsLocalPlayer)
-            {
-                LocalPlayer = p;
-                LocalRoundStats = p.RoundStats;
-            }
-            
-            p.ResetForPlay();
-        }
         
-        public void SortRoundStats(bool golfRules)
-        {
-            if (golfRules)
-                RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
-            else
-                RoundStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
-        }
-        
-        public void SetPlayersActive()
-        {
-            foreach (var player in Players)
-            {
-                var vesselStatus = player?.Vessel?.VesselStatus;
-
-                if (vesselStatus == null)
-                {
-                    Debug.LogError("No vessel status found for player.! This should never happen!");
-                    return;
-                }
-                
-                player.ToggleStationaryMode(false);
-                player.ToggleInputPause(player.IsInitializedAsAI);
-                player.ToggleAIPilot(player.IsInitializedAsAI);
-                player.ToggleActive(true);
-                vesselStatus.VesselPrismController.StartSpawn();
-            }
-        }
-        
-        public void SetPlayersActiveForMultiplayer()
-        {
-            foreach (var player in Players)
-            {
-                var vesselStatus = player?.Vessel?.VesselStatus;
-
-                if (vesselStatus == null)
-                {
-                    Debug.LogError("No vessel status found for player.! This should never happen!");
-                    return;
-                }
-
-                if (!vesselStatus.IsStationary)
-                    continue;
-                
-                bool isOwner = player.IsNetworkOwner;
-                player.ToggleStationaryMode(false);
-                player.ToggleInputPause(!isOwner);
-                player.ToggleActive(true);
-                vesselStatus.VesselPrismController.StartSpawn();
-            }
-        }
-
-        public void ResetPlayers()
-        {
-            foreach (var player in Players)
-            {
-                var vesselStatus = player?.Vessel?.VesselStatus;
-
-                if (vesselStatus == null)
-                {
-                    Debug.LogError("No vessel status found for player.! This should never happen!");
-                    return;
-                }
-                
-                player.ResetForPlay();
-                
-                if (IsMultiplayerMode && !player.IsNetworkOwner)
-                    continue;
-                player.SetPoseOfVessel(GetRandomSpawnPose());
-            }
-        }
-        
-        /// <summary>
-        /// Remove a player (by display name) from Players & RoundStatsList and fix LocalPlayer if needed.
-        /// </summary>
-        public bool RemovePlayerData(string playerName)
-        {
-            if (string.IsNullOrEmpty(playerName))
-                return false;
-
-            // Remove from Players
-            int removedPlayers = Players.RemoveAll(p => p != null && p.Name == playerName);
-
-            // Remove from RoundStats
-            int removedStats = RoundStatsList.RemoveAll(rs => rs != null && rs.Name == playerName);
-
-            // Fix LocalPlayer if it was the removed one
-            if (LocalPlayer != null && LocalPlayer.Name == playerName)
-                LocalPlayer = Players.Count > 0 ? Players[0] : null;
-
-            // Optional: also stop their vessel spawning if any dangling reference exists (defensive)
-            // No-op here because Players list holds the references.
-
-            return (removedPlayers + removedStats) > 0;
-        }
-        
-        public void SwapVessels()
-        {
-            var player0 = Players[0];
-            var player1 = Players[1];
-            
-            var vessel0 = player0.Vessel;
-            var vessel1 = player1.Vessel;
-            
-            player0.ChangeVessel(vessel1);
-            player1.ChangeVessel(vessel0);
-            
-            vessel0.ChangePlayer(player1);
-            vessel1.ChangePlayer(player0);
-        }
-        
-        // ----------------------------
-        // Spawn point picker
-        // ----------------------------
         Pose GetRandomSpawnPose()
         {
             if (_playerSpawnPoseList == null || _playerSpawnPoseList.Count == 0)

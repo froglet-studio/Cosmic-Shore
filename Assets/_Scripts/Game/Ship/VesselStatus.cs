@@ -226,7 +226,6 @@ namespace CosmicShore.Game
             Attached = false;
             AttachedPrism = null;
             GunsActive = false;
-            Course = transform.forward;
             ChargedBoostCharge = 1f;
             Slowed = false;
             Overheating = false;
@@ -235,6 +234,8 @@ namespace CosmicShore.Game
             VesselTransformer.ResetTransformer();
             VesselPrismController.StopSpawn();
             VesselPrismController.ClearTrails();
+            VesselAnimation.StopFlareEngine();
+            VesselAnimation.StopFlareBody();
         }
     }
 }

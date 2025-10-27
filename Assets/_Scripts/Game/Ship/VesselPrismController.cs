@@ -57,7 +57,6 @@ namespace CosmicShore.Game
         readonly Trail Trail2 = new Trail();
 
         IVesselStatus vesselStatus;
-        string ownerId;
 
         // Scaling helpers
         float Xscale;
@@ -91,7 +90,6 @@ namespace CosmicShore.Game
 
             waitTime = defaultWaitTime;
             wavelength = initialWavelength;
-            ownerId = this.vesselStatus.Player.PlayerUUID;
             XScaler = minBlockScale;
         }
 
@@ -114,31 +112,17 @@ namespace CosmicShore.Game
         {
             spawnerEnabled = false;
 
-            if (cts != null)
-            {
-                cts.Cancel();
-                cts.Dispose();
-                cts = null;
-            }
+            if (cts == null) 
+                return;
+            
+            cts.Cancel();
+            cts.Dispose();
+            cts = null;
         }
 
         public void ToggleBlockWaitTime(bool extended)
         {
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
-        }
-
-        public void PauseTrailSpawner() => spawnerEnabled = false;
-
-        public void RestartTrailSpawnerAfterDelay(float delay)
-        {
-            _ = RestartAsync(delay, cts.Token);
-        }
-
-        // Game over restart for AI only
-        void RestartAITrailSpawnerAfterDelay()
-        {
-            if (!CompareTag("Player_Ship"))
-                _ = RestartAsync(waitTime, cts.Token);
         }
 
         public void Charm(IVesselStatus other, float duration)
@@ -222,7 +206,7 @@ namespace CosmicShore.Game
         /// <summary>Creates a block at offset using PrismFactory via event channel.</summary>
         void CreateBlock(float halfGap, Trail trail)
         {
-            if (_onPrismSpawnedEventChannel == null)
+            if (!_onPrismSpawnedEventChannel)
             {
                 Debug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
                 return;
@@ -260,11 +244,12 @@ namespace CosmicShore.Game
             prism.TargetScale = scale;
 
             // Owner / charm
-            bool charm = isCharmed && tempVessel != null;
-            string creatorId = charm ? vesselStatus.Player.PlayerUUID : ownerId;
-            if (string.IsNullOrEmpty(creatorId))
-                creatorId = vesselStatus.Player?.PlayerUUID ?? string.Empty;
-            prism.ownerID = creatorId;
+            
+            // TODO - Later need to reimplement charm
+            // bool charm = isCharmed && tempVessel != null;
+            // string creatorId = charm ? vesselStatus.Player.PlayerUUID : ownerId;
+            // prism.ownerID = creatorId;
+            prism.ownerID = vesselStatus.PlayerName;
 
             // Team
             prism.ChangeTeam(vesselStatus.Domain);
@@ -328,11 +313,12 @@ namespace CosmicShore.Game
 
                 prism.TargetScale = scale;
 
-                bool charm = isCharmed && tempVessel != null;
-                string creatorId = charm ? vesselStatus.Player.PlayerUUID : ownerId;
+                /*bool charm = isCharmed && tempVessel != null;
+                string creatorId = charm ? vesselStatus.Player.PlayerUUID : vesselStatus.PlayerName;
                 if (string.IsNullOrEmpty(creatorId)) creatorId = vesselStatus.Player?.PlayerUUID ?? string.Empty;
 
-                prism.ownerID = creatorId;
+                prism.ownerID = creatorId;*/
+                prism.ownerID = vesselStatus.PlayerName;
                 prism.ChangeTeam(vesselStatus.Domain);
 
                 prism.waitTime = waitTillOutsideSkimmer
