@@ -44,7 +44,7 @@ namespace CosmicShore.Game.Projectiles
             float projectileTime = 3,
             float charge = 0,
             FiringPatterns firingPattern = FiringPatterns.Default,
-            int energy = 0)
+            int energy = 0, bool detachAfterSpawn = false)
         {
             if (_onCooldown && !ignoreCooldown) return;
 
@@ -59,7 +59,7 @@ namespace CosmicShore.Game.Projectiles
 
                 default:
                     FireSingle(containerTransform, speed, inheritedVelocity,
-                        projectileScale, Vector3.zero, projectileTime, charge, energy);
+                        projectileScale, Vector3.zero, projectileTime, charge, energy, null, detachAfterSpawn);
                     break;
             }
 
@@ -144,32 +144,32 @@ namespace CosmicShore.Game.Projectiles
             float projectileTime,
             float charge,
             int energy,
-            Vector3? customDirection = null)
+            Vector3? customDirection = null,
+            bool detachAfterSpawn = false)                // << NEW
         {
             if (_vesselStatus == null)
             {
                 Debug.LogError("Gun.FireSingle - VesselStatus is null!");
                 return;
             }
-            
+
             Vector3 direction = customDirection ?? transform.forward;
-            // Vector3 spawnPos = containerTransform.position +
-            //                    Quaternion.LookRotation(containerTransform.forward) * offset +
-            //                    (containerTransform.forward * barrelLength);
-            Vector3 spawnPos = containerTransform.position;
+            Vector3 spawnPos  = containerTransform.position;   // using container for spawn point
 
             Quaternion rotation = Quaternion.LookRotation(direction);
 
-            var projectile = projectileFactory.GetProjectile(energy, spawnPos, rotation,
-                containerTransform ? containerTransform : null);
+            // keep existing behavior: spawn under container
+            var projectile = projectileFactory.GetProjectile(energy, spawnPos, rotation, containerTransform);
 
             if (!projectile)
             {
-                Debug.LogError($"Gun.FireSingle - Failed to spawn projectile of charge {projectile.Charge}");
+                Debug.LogError($"Gun.FireSingle - Failed to spawn projectile of charge {energy}");
                 return;
             }
 
-            projectile.Initialize(projectileFactory, domain, _vesselStatus, charge);
+            // tell the projectile how to parent THIS flight
+            projectile.Initialize(projectileFactory, domain, _vesselStatus, charge, detachAfterSpawn);
+
             projectile.transform.localScale = projectileScale * projectile.InitialScale;
             projectile.Velocity = direction * speed + inheritedVelocity;
             projectile.LaunchProjectile(projectileTime);

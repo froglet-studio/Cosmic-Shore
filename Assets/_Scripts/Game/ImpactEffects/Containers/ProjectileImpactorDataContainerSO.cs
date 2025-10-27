@@ -11,6 +11,7 @@ namespace CosmicShore.Game
         public ProjectilePrismEffectSO[] ProjectilePrismEffects => projectilePrismEffects;
 
         public ProjectileMineEffectSO[] ProjectileMineEffect => projectileMineEffects;
+        public ProjectileEndEffectSO[] ProjectileEndEffects => projectileEndEffects;
         
         [SerializeField]
         VesselProjectileEffectSO[] projectileShipEffects;
@@ -18,5 +19,7 @@ namespace CosmicShore.Game
         ProjectilePrismEffectSO[]  projectilePrismEffects; 
         [SerializeField]
         ProjectileMineEffectSO[] projectileMineEffects;
+        [SerializeField]
+        ProjectileEndEffectSO[]  projectileEndEffects;
     }
 }

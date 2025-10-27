@@ -30,15 +30,34 @@ namespace CosmicShore.Game.Projectiles
 
         private MeshRenderer meshRenderer;
 
+        // NEW: remember pooled parent so we can restore it
+        private Transform _pooledParent;
+
         // Replaces Coroutine
         private CancellationTokenSource _moveCts;
 
         // Factory reference
         private ProjectileFactory _factory;
 
+        private bool _poolParentCaptured;
+        private bool _detachOnLaunch;   
+        private bool _detachedThisFlight; 
+
+        private void OnEnable()
+        {
+            if (!_poolParentCaptured)
+            {
+                _pooledParent = transform.parent;
+                _poolParentCaptured = true;
+            }
+        }
+        
         private void Awake()
         {
             InitialScale = transform.localScale;
+
+            // cache whatever parent it has in the pool (ship container or pool root)
+            _pooledParent = transform.parent;
         }
 
         private void Start()
@@ -57,12 +76,13 @@ namespace CosmicShore.Game.Projectiles
         }*/
 
         #region Initialization
-        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge)
+        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false) 
         {
             _factory = factory;
             OwnDomain = ownDomain;
             VesselStatus = vesselStatus;
             Charge = charge;
+            _detachOnLaunch = detachOnLaunch;
         }
 
         public void SetType(ProjectileType type) => Type = type;
@@ -72,17 +92,31 @@ namespace CosmicShore.Game.Projectiles
         public bool DisallowImpactOnPrism(Domains trailBlockDomain) => !friendlyFire && trailBlockDomain == OwnDomain;
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
-        
-        
+
         public void LaunchProjectile(float projectileTime)
         {
             ProjectileTime = projectileTime;
 
+            if (_detachOnLaunch && transform.parent)
+            {
+                transform.SetParent(null, true); 
+                _detachedThisFlight = true;
+            }
+            else
+            {
+                _detachedThisFlight = false;
+            }
+            
+            // === DETACH when spawned if it's a spike ===
+            if (spike)
+            {
+                // keep world position/rotation
+                transform.SetParent(null, true);
+            }
+
             if (spike)
             {
                 transform.localScale = new Vector3(0.4f, 0.4f, 2f);
-                /*if (meshRenderer == null)
-                    meshRenderer = GetComponent<MeshRenderer>();*/
                 meshRenderer.material.SetFloat("_Opacity", 0.5f);
             }
 
@@ -96,7 +130,7 @@ namespace CosmicShore.Game.Projectiles
         private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
         {
             float elapsedTime = 0f;
-            var t = transform; // cache for speed
+            var t = transform; // cache
             var useSpike = spike && meshRenderer;
             var mat = useSpike ? meshRenderer.material : null;
 
@@ -105,8 +139,6 @@ namespace CosmicShore.Game.Projectiles
                 while (elapsedTime < projectileTime && !token.IsCancellationRequested)
                 {
                     float deltaTime = Time.deltaTime;
-
-                    // smoother trajectory tapering using cosine falloff
                     float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
                     t.position += Velocity * (deltaTime * factor);
 
@@ -122,34 +154,36 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 projectileImpactor.ExecuteEndEffects();
-                // ReturnToFactory();
+                // ReturnToFactory(); // handled by end effects (delayed)
             }
-            catch (OperationCanceledException)
-            {
-                // expected when stopped manually
-            }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 Debug.LogError($"[Projectile] Move loop error: {ex}");
             }
         }
-        
+
         public void ReturnToFactory()
         {
             Stop();
-            if (_factory)
-                _factory.ReturnProjectile(this);
-            else
+
+            // Only reattach if we had detached for this flight
+            if (_detachedThisFlight && _pooledParent != null && transform.parent == null)
             {
-                Debug.LogError("No projectile factory found to release projectile!, this shouldn't happen!");
+                transform.SetParent(_pooledParent, false);
+                transform.localPosition = Vector3.zero;
+                transform.localRotation = Quaternion.identity;
+                transform.localScale    = Vector3.one; // or InitialScale
             }
+
+            if (_factory) _factory.ReturnProjectile(this);
+            else Debug.LogError("No projectile factory found to release projectile!");
         }
 
         void Stop()
         {
-            if (_moveCts == null) 
-                return;
-            
+            if (_moveCts == null) return;
+
             _moveCts.Cancel();
             _moveCts.Dispose();
             _moveCts = null;

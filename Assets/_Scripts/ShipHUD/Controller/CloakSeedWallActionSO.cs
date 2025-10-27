@@ -9,7 +9,7 @@ public class CloakSeedWallActionSO : ShipActionSO
 
     [Header("Vessel Visibility")]
     [SerializeField] private bool hideShipDuringCooldown = true;
-    
+
     [Header("Seed Wall")]
     [Tooltip("If true, action requires at least one existing trail block to plant seed on.")]
     [SerializeField] private bool requireExistingTrailBlock = true;
@@ -25,7 +25,7 @@ public class CloakSeedWallActionSO : ShipActionSO
     [SerializeField] private float  ghostBobAmplitude = 0.15f;
     [SerializeField] private float  ghostBobSpeed     = 1.2f;
     [SerializeField] private float  ghostYawSpeed     = 10f; // deg/sec
-    
+
     [Header("Cloak Materials")]
     [SerializeField] private Material shipCloakMaterial;
     [SerializeField] private Material prismCloakMaterial;
@@ -45,7 +45,6 @@ public class CloakSeedWallActionSO : ShipActionSO
 
     public Material ShipCloakMaterial  => shipCloakMaterial;
     public Material PrismCloakMaterial => prismCloakMaterial;
-
 
     public override void StartAction(ActionExecutorRegistry execs)
         => execs?.Get<CloakSeedWallActionExecutor>()?.Begin(this, ShipStatus);

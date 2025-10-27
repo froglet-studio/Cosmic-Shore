@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using CosmicShore.Core;
 using CosmicShore.Game;
@@ -26,8 +25,8 @@ namespace CosmicShore
         [SerializeField] private SeedAssemblerActionExecutor seedAssemblerExecutor;
         [SerializeField] private SeedWallActionSO seedWallConfig;
 
-        [Header("Perf/Robustness")] [SerializeField]
-        private bool enableWatchdog;
+        [Header("Perf/Robustness")]
+        [SerializeField] private bool enableWatchdog;
         [SerializeField] private float watchdogInterval  = 0.25f;
 
         private IVesselStatus _status;
@@ -87,10 +86,9 @@ namespace CosmicShore
         public void Begin(CloakSeedWallActionSO so, IVesselStatus status)
         {
             if (_runRoutine != null) return;
-
             _so = so;
 
-            if (_so.RequireExistingTrailBlock && GetLatestBlock() == null)
+            if (_so.RequireExistingTrailBlock && !GetLatestBlock())
             {
                 Debug.LogWarning("[CloakSeedWall] No trail block found to plant seed on.");
                 return;
@@ -107,6 +105,7 @@ namespace CosmicShore
         // ===== Core routine =====
         private IEnumerator Run()
         {
+            // Start seed (protect seed block)
             if (seedAssemblerExecutor && seedAssemblerExecutor.StartSeed(seedWallConfig, _status))
             {
                 var seed = seedAssemblerExecutor.ActiveSeedBlock;
@@ -115,11 +114,16 @@ namespace CosmicShore
             }
 
             var seedBlock = seedAssemblerExecutor?.ActiveSeedBlock ?? GetLatestBlock();
+
+            // Ghost at seed position (mirrors ship rotation each frame)
             if (seedBlock && skinnedMeshRenderer)
                 CreateGhostAt(seedBlock.transform.position);
 
+            // Ship cloak materials
             ApplyShipCloakMaterials();
-            CloakExistingPrisms();
+
+            // IMPORTANT: cloak prisms only AFTER the seed/ghost
+            CloakExistingPrismsFrom(seedBlock);
 
             var wait     = Mathf.Max(0.01f, _so.CooldownSeconds);
             var lifetime = _so.GhostLifetime > 0f ? _so.GhostLifetime : wait;
@@ -146,7 +150,7 @@ namespace CosmicShore
 
             _runRoutine = null;
         }
-        
+
         private void HandleBlockSpawned(Prism block)
         {
             if (!_cloakActive || !block) return;
@@ -171,7 +175,7 @@ namespace CosmicShore
             if (_cloakActive) ApplyPrismCloakTo(p);
         }
 
-        // ===== Ghost =====
+        // ===== Ghost (mirrors ship Z-forward every frame) =====
         private void CreateGhostAt(Vector3 anchorPos)
         {
             if (!skinnedMeshRenderer) return;
@@ -199,13 +203,9 @@ namespace CosmicShore
             _ghostAnchorPos = anchorPos;
             _followTf       = _status?.ShipTransform;
 
-            var shipTf = _followTf;
-            var up     = shipTf ? shipTf.up : Vector3.up;
-            var toShip = (shipTf ? shipTf.position : (anchorPos + Vector3.forward)) - anchorPos;
-            var baseRot = toShip.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(toShip.normalized, up)
-                                                      : (shipTf ? shipTf.rotation : Quaternion.identity);
-
-            _ghostGo.transform.SetPositionAndRotation(_ghostAnchorPos, baseRot * Quaternion.Euler(_so.GhostEulerOffset));
+            // Rotation = ship rotation (+ offset) so Z-forward matches the vessel
+            var shipRot = _followTf ? _followTf.rotation : Quaternion.identity;
+            _ghostGo.transform.SetPositionAndRotation(_ghostAnchorPos, shipRot * Quaternion.Euler(_so.GhostEulerOffset));
 
             var baseScale = modelRoot ? modelRoot.lossyScale : Vector3.one;
             var s = Mathf.Max(0.0001f, _so.GhostScaleMultiplier);
@@ -244,19 +244,14 @@ namespace CosmicShore
                 }
                 _ghostGo.transform.position = pos;
 
-                // smoothly face the current ship position (no parenting)
+                // Copy ship rotation exactly each frame (Z-forward preserved)
                 var shipTf = _status?.ShipTransform;
                 if (shipTf)
                 {
-                    var toShip = shipTf.position - _ghostGo.transform.position;
-                    if (toShip.sqrMagnitude > 1e-6f)
-                    {
-                        var target = Quaternion.LookRotation(toShip.normalized, shipTf.up)
-                                   * Quaternion.Euler(_so.GhostEulerOffset);
-                        _ghostGo.transform.rotation = Quaternion.Slerp(_ghostGo.transform.rotation, target, 8f * Time.deltaTime);
-                    }
+                    _ghostGo.transform.rotation = shipTf.rotation * Quaternion.Euler(_so.GhostEulerOffset);
                 }
 
+                // Optional world yaw spin on top
                 _ghostGo.transform.Rotate(Vector3.up, _so.GhostYawSpeed * Time.deltaTime, Space.World);
 
                 yield return null;
@@ -289,22 +284,31 @@ namespace CosmicShore
         }
 
         // ===== Material swap (Prisms) =====
-        private void CloakExistingPrisms()
+        // NEW: Cloak only AFTER a specific start block (seed/ghost)
+        private void CloakExistingPrismsFrom(Prism start)
         {
             if (_controller == null || !_so || !_so.PrismCloakMaterial) return;
 
-            CloakList(_controller.Trail?.TrailList);
+            CloakListFrom(_controller.Trail?.TrailList, start);
 
-            // compatibility with private Trail2 field (matches earlier pattern)
+            // Private Trail2 compatibility
             var trail2Field = typeof(VesselPrismController).GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
             var trail2 = trail2Field?.GetValue(_controller) as Trail;
-            if (trail2 != null) CloakList(trail2.TrailList);
-            return;
+            if (trail2 != null) CloakListFrom(trail2.TrailList, start);
 
-            void CloakList(List<Prism> list)
+            void CloakListFrom(System.Collections.Generic.List<Prism> list, Prism startBlock)
             {
-                if (list == null) return;
-                for (int i = 0; i < list.Count; i++)
+                if (list == null || list.Count == 0) return;
+
+                int startIdx = 0;
+                if (startBlock != null)
+                {
+                    startIdx = list.IndexOf(startBlock);
+                    if (startIdx < 0) startIdx = 0;                 // fallback if not found
+                    startIdx = Mathf.Min(startIdx + 1, list.Count); // AFTER the start
+                }
+
+                for (int i = startIdx; i < list.Count; i++)
                     ApplyPrismCloakTo(list[i]);
             }
         }
@@ -349,7 +353,7 @@ namespace CosmicShore
             _prismRenderers.Clear();
             _protectedBlockIds.Clear();
         }
-        
+
         private void ReapplyCloakIfNeeded()
         {
             if (!_so) return;
@@ -396,7 +400,7 @@ namespace CosmicShore
             if (mats == null || mats.Length == 0) return false;
             for (int i = 0; i < mats.Length; i++) if (mats[i] != cloak) return false;
             return true;
-            }
+        }
 
         private Prism GetLatestBlock()
         {

@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: DetonateEndEffect
   m_EditorClassIdentifier: 
   aoePrefabs:
-  - {fileID: 1775484485627665200, guid: 2ae56847c6f549948a71f41eaf59f749, type: 3}
   - {fileID: 447888847298330991, guid: b6aa24b5cd6a7f24c9f24c32c20eba91, type: 3}
-  minExplosionScale: 0.75
-  maxExplosionScale: 2.5
+  - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
+  minExplosionScale: 100
+  maxExplosionScale: 100
   faceExitVelocity: 1
+  verbose: 1

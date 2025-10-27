@@ -11,8 +11,7 @@ namespace CosmicShore.Game
         [SerializeField] private SerpentVesselHUDView view;
 
         [Header("Boost (charges)")]
-        // OLD: [SerializeField] private ConsumeBoostAction consumeBoost;
-        [SerializeField] private ConsumeBoostActionExecutor consumeBoostExecutor; // <-- executor
+        [SerializeField] private ConsumeBoostActionExecutor consumeBoostExecutor;
 
         [Header("Shields (resource-driven)")]
         [SerializeField] private int shieldResourceIndex = 0;
@@ -25,16 +24,51 @@ namespace CosmicShore.Game
         private IVesselStatus _status;
         private ResourceSystem _rs;
 
-        private Coroutine[] _pipAnim;
+        private Coroutine[] _pipAnim;          // drain/refill coroutines for consumption or bulk fills
+        private bool[] _pipReloadingLive;      // true while per-pip reload is in progress (driven by Progress events)
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
             _status = vesselStatus;
             view = view != null ? view : baseView as SerpentVesselHUDView;
-            if (view != null && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
 
-            // try to auto-resolve executor from ActionExecutorRegistry if not set
+            // --- Ensure ALL HUD visuals are enabled at start ---
+            if (view != null)
+            {
+                if (!view.gameObject.activeSelf) view.gameObject.SetActive(true);
+
+                // Shield icon on
+                if (view.shieldIcon != null)
+                {
+                    view.shieldIcon.enabled = true;
+                    var go = view.shieldIcon.gameObject;
+                    if (go && !go.activeSelf) go.SetActive(true);
+                }
+
+                var pips = view.BoostPips;
+                if (pips != null && pips.Length > 0)
+                {
+                    _pipAnim = new Coroutine[pips.Length];
+                    _pipReloadingLive = new bool[pips.Length];
+
+                    for (int i = 0; i < pips.Length; i++)
+                    {
+                        var pip = pips[i];
+                        if (!pip) continue;
+
+                        // Make sure the GameObject and Image are enabled
+                        if (!pip.gameObject.activeSelf) pip.gameObject.SetActive(true);
+                        pip.enabled = true;
+
+                        if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
+                        pip.fillAmount = 1f;        // start visible and full visually
+                        pip.color = pipFull;
+                    }
+                }
+            }
+
+            // Resolve executor if not set
             if (consumeBoostExecutor == null)
             {
                 var registry = vesselStatus?.ShipTransform
@@ -44,38 +78,31 @@ namespace CosmicShore.Game
                     consumeBoostExecutor = registry.Get<ConsumeBoostActionExecutor>();
             }
 
-            // shields: subscribe to resource change
+            // Resources
             _rs = _status?.ResourceSystem;
             if (_rs != null) _rs.OnResourceChanged += HandleResourceChanged;
 
-            // pips setup: ensure visible, filled type, and start full
-            var pips = view.BoostPips;
-            _pipAnim = new Coroutine[pips.Length];
-            for (int i = 0; i < pips.Length; i++)
-            {
-                var pip = pips[i];
-                if (!pip) continue;
-                pip.enabled = true;
-                if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
-                pip.fillAmount = 1f;
-                pip.color = pipFull;
-            }
-
-            // subscribe to magazine events from the EXECUTOR
+            // Subscribe to boost executor events
             if (consumeBoostExecutor != null)
             {
-                consumeBoostExecutor.OnChargesSnapshot += HandleBoostSnapshot;      // set all pips full/empty
-                consumeBoostExecutor.OnChargeConsumed  += HandleBoostChargeConsumed;// animate 1→0
-                consumeBoostExecutor.OnReloadStarted   += HandleBoostReloadStarted; // animate ALL 0→1
+                consumeBoostExecutor.OnChargesSnapshot += HandleBoostSnapshot;        // sets full/empty states
+                consumeBoostExecutor.OnChargeConsumed  += HandleBoostChargeConsumed;  // animates a pip 1->0 (duration)
+                // Per-pip reload sequence
+                consumeBoostExecutor.OnReloadPipStarted   += HandleReloadPipStarted;
+                consumeBoostExecutor.OnReloadPipProgress  += HandleReloadPipProgress;
+                consumeBoostExecutor.OnReloadPipCompleted += HandleReloadPipCompleted;
 
-                // Optional: force an initial snapshot so HUD matches current executor state
+                // Optional legacy hooks (no-ops here, but safe to keep)
+                // consumeBoostExecutor.OnReloadStarted    += HandleBoostReloadStarted; // not used with per-pip events
+
+                // Force initial snapshot so HUD matches current executor state
                 HandleBoostSnapshot(
                     consumeBoostExecutor.AvailableCharges,
                     consumeBoostExecutor.MaxCharges
                 );
             }
 
-            // shields initial paint
+            // Shields initial paint
             PushInitialShields();
         }
 
@@ -85,14 +112,22 @@ namespace CosmicShore.Game
 
             if (consumeBoostExecutor != null)
             {
-                consumeBoostExecutor.OnChargesSnapshot -= HandleBoostSnapshot;
-                consumeBoostExecutor.OnChargeConsumed  -= HandleBoostChargeConsumed;
-                consumeBoostExecutor.OnReloadStarted   -= HandleBoostReloadStarted;
+                consumeBoostExecutor.OnChargesSnapshot     -= HandleBoostSnapshot;
+                consumeBoostExecutor.OnChargeConsumed      -= HandleBoostChargeConsumed;
+
+                consumeBoostExecutor.OnReloadPipStarted    -= HandleReloadPipStarted;
+                consumeBoostExecutor.OnReloadPipProgress   -= HandleReloadPipProgress;
+                consumeBoostExecutor.OnReloadPipCompleted  -= HandleReloadPipCompleted;
             }
 
             if (_pipAnim != null)
+            {
                 for (int i = 0; i < _pipAnim.Length; i++)
+                {
                     if (_pipAnim[i] != null) StopCoroutine(_pipAnim[i]);
+                    _pipAnim[i] = null;
+                }
+            }
         }
 
         // ------------ Shields (resource-driven) ------------
@@ -118,15 +153,16 @@ namespace CosmicShore.Game
 
         void PaintShields(int shields)
         {
-            if (view?.shieldIcon == null || view.shieldIconsByCount == null || view.shieldIconsByCount.Length < 5) return;
+            if (!view?.shieldIcon || view.shieldIconsByCount == null || view.shieldIconsByCount.Length < 5) return;
 
             shields = Mathf.Clamp(shields, 0, 4);
             var sprite = view.shieldIconsByCount[shields];
-            if (sprite != null)
-            {
-                view.shieldIcon.sprite = sprite;
-                view.shieldIcon.enabled = true;
-            }
+            if (!sprite) return;
+
+            // Ensure icon is visible
+            if (!view.shieldIcon.gameObject.activeSelf) view.shieldIcon.gameObject.SetActive(true);
+            view.shieldIcon.enabled = true;
+            view.shieldIcon.sprite = sprite;
         }
 
         // ------------ Boost pips (charges) ------------
@@ -134,51 +170,115 @@ namespace CosmicShore.Game
         // Full snapshot: set exactly how many are full (left→right)
         void HandleBoostSnapshot(int available, int max)
         {
+            if (view == null || view.BoostPips == null) return;
+
             var pips = view.BoostPips;
             for (int i = 0; i < pips.Length; i++)
             {
                 var pip = pips[i];
                 if (!pip) continue;
 
-                // NEW: if pip is animating (draining or refilling), DO NOT overwrite it with snapshot
-                if (_pipAnim[i] != null)
-                    continue; // let the ongoing animation show the true remaining time
+                // Make sure visuals are on
+                if (!pip.gameObject.activeSelf) pip.gameObject.SetActive(true);
+                pip.enabled = true;
+
+                // If pip is animating or live-reloading, don't stomp it
+                if (_pipAnim != null && i < _pipAnim.Length && _pipAnim[i] != null) continue;
+                if (_pipReloadingLive != null && i < _pipReloadingLive.Length && _pipReloadingLive[i]) continue;
 
                 bool full = i < available;
-                pip.enabled = true;
+                if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
                 pip.fillAmount = full ? 1f : 0f;
                 pip.color = full ? pipFull : pipEmpty;
-
             }
         }
 
         // Consume: animate rightmost full pip 1 → 0 during boostDuration
         void HandleBoostChargeConsumed(int pipIndex, float duration)
         {
+            if (view == null || view.BoostPips == null) return;
+
             var pips = view.BoostPips;
             if (pipIndex < 0 || pipIndex >= pips.Length) return;
 
+            // If this pip was in live reload mode, stop it first
+            CancelLiveReloadIfAny(pipIndex);
+
             var pip = pips[pipIndex];
             float from = pip.fillAmount > 0f ? pip.fillAmount : 1f;
-
             StartPipAnim(pipIndex, from, 0f, Mathf.Max(0.05f, duration), pipConsuming);
         }
 
-        // Reload (global): animate ALL pips 0 → 1 together during reloadFillTime
-        void HandleBoostReloadStarted(float fillTime)
+        // NEW: Per-pip reload events (sequential fill)
+        void HandleReloadPipStarted(int pipIndex, float seconds)
         {
+            if (view == null || view.BoostPips == null) return;
             var pips = view.BoostPips;
-            for (int i = 0; i < pips.Length; i++)
+            if (pipIndex < 0 || pipIndex >= pips.Length) return;
+
+            // Stop any existing drain/fill animation on this pip
+            if (_pipAnim != null && _pipAnim[pipIndex] != null)
             {
-                var pip = pips[i]; if (!pip) continue;
-                StartPipAnim(i, pip.fillAmount, 1f, Mathf.Max(0.05f, fillTime), pipFull);
+                StopCoroutine(_pipAnim[pipIndex]);
+                _pipAnim[pipIndex] = null;
             }
+
+            _pipReloadingLive[pipIndex] = true;
+
+            var pip = pips[pipIndex];
+            if (!pip.gameObject.activeSelf) pip.gameObject.SetActive(true);
+            pip.enabled = true;
+            if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
+
+            // Start from current (likely 0), color to "filling"
+            pip.color = pipFull; // looks good since it's refilling to full
+            // We'll drive fillAmount via Progress events to stay in sync with executor timers.
         }
+
+        void HandleReloadPipProgress(int pipIndex, float norm)
+        {
+            if (view == null || view.BoostPips == null) return;
+            var pips = view.BoostPips;
+            if (pipIndex < 0 || pipIndex >= pips.Length) return;
+
+            if (!_pipReloadingLive[pipIndex]) return;
+
+            var pip = pips[pipIndex];
+            pip.enabled = true;
+            if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
+            pip.fillAmount = Mathf.Clamp01(norm);
+            // keep color as full while rising
+        }
+
+        void HandleReloadPipCompleted(int pipIndex)
+        {
+            if (view == null || view.BoostPips == null) return;
+            var pips = view.BoostPips;
+            if (pipIndex < 0 || pipIndex >= pips.Length) return;
+
+            _pipReloadingLive[pipIndex] = false;
+
+            var pip = pips[pipIndex];
+            pip.enabled = true;
+            if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
+            pip.fillAmount = 1f;
+            pip.color = pipFull;
+        }
+
+        // (Legacy global reload — kept for compatibility if you still emit it somewhere)
+        // Here we do nothing because per-pip events are authoritative.
+        void HandleBoostReloadStarted(float fillTime) { /* intentionally empty with per-pip events */ }
+
+        // ------------ Pip animation helpers ------------
 
         void StartPipAnim(int i, float from, float to, float seconds, Color colorDuring)
         {
+            if (view == null || view.BoostPips == null) return;
             var pip = view.BoostPips[i];
             if (!pip) return;
+
+            // If a live reload is active for this pip, cancel it (consumption overrides)
+            CancelLiveReloadIfAny(i);
 
             if (_pipAnim[i] != null) StopCoroutine(_pipAnim[i]);
             _pipAnim[i] = StartCoroutine(CoAnimatePip(i, pip, from, to, seconds, colorDuring));
@@ -187,6 +287,7 @@ namespace CosmicShore.Game
         IEnumerator CoAnimatePip(int i, Image pip, float from, float to, float seconds, Color colorDuring)
         {
             pip.enabled = true;
+            if (!pip.gameObject.activeSelf) pip.gameObject.SetActive(true);
             if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
 
             float start = Mathf.Clamp01(from);
@@ -198,6 +299,13 @@ namespace CosmicShore.Game
             float t = 0f;
             while (t < seconds)
             {
+                // If executor began a live reload on this pip mid-animation, abort anim and yield control
+                if (_pipReloadingLive != null && _pipReloadingLive[i])
+                {
+                    _pipAnim[i] = null;
+                    yield break;
+                }
+
                 t += Time.deltaTime;
                 float k = Mathf.Clamp01(t / seconds);
                 pip.fillAmount = Mathf.Lerp(start, end, k);
@@ -208,6 +316,12 @@ namespace CosmicShore.Game
             pip.color = (end >= 1f) ? pipFull : pipEmpty;
 
             _pipAnim[i] = null;
+        }
+
+        void CancelLiveReloadIfAny(int pipIndex)
+        {
+            if (_pipReloadingLive != null && pipIndex >= 0 && pipIndex < _pipReloadingLive.Length)
+                _pipReloadingLive[pipIndex] = false;
         }
     }
 }

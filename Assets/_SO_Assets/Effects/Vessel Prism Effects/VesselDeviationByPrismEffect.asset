@@ -12,8 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a873b7e17864c26a357689bafa75ba3, type: 3}
   m_Name: VesselDeviationByPrismEffect
   m_EditorClassIdentifier: 
-  deviationAngle: 45
-  slerpBlend: 0.35
-  cooldownSeconds: 0.15
-  speedModifierDuration: 0.5
-  debuffAmount: 0.5
+  lateralSpeed: 2
+  accelScale: 5
+  randomizeLeftRight: 0

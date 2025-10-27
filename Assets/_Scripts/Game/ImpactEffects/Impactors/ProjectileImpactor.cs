@@ -30,10 +30,10 @@ namespace CosmicShore.Game
 
         public void ExecuteEndEffects()
         {
-            if (projectileEndEffects.Length <= 0)
+            if (projectileImpactorDataContainer.ProjectileEndEffects.Length <= 0)
                 return;
             
-            foreach (var effect in projectileEndEffects)
+            foreach (var effect in projectileImpactorDataContainer.ProjectileEndEffects)
                 effect.Execute(this, this);     // here we are passing itself as impactee, coz it doesn't have any impactee.
         }
         

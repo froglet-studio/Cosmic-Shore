@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bc36c2b096d34285bbbcee77a170cada, type: 3}
-  m_Name: SparrowProjectileImpactContainer
+  m_Name: SparrowSkyBurstProjectileImpactContainer
   m_EditorClassIdentifier: 
   projectileShipEffects:
   - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
@@ -19,4 +19,4 @@ MonoBehaviour:
   projectileMineEffects:
   - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}
   projectileEndEffects:
-  - {fileID: 11400000, guid: 2db231afba6d20240aaec6c4c9876672, type: 2}
+  - {fileID: 11400000, guid: 45ad00737624ad24488231f779f85f4e, type: 2}

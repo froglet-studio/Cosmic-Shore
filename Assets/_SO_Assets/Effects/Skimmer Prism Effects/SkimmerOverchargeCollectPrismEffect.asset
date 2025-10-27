@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a29eec48c9d96e4d9966fb92ffb4469, type: 3}
   m_Name: SkimmerOverchargeCollectPrismEffect
   m_EditorClassIdentifier: 
-  maxBlockHits: 50
+  maxBlockHits: 200
   cooldownDuration: 5
   verbose: 1
   overchargedMaterial: {fileID: 2100000, guid: 804667eedef1a1145aadfa69e1c519b0, type: 2}

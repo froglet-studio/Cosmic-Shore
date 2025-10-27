@@ -16,4 +16,4 @@ MonoBehaviour:
   matchScaleExactly: 1
   zoomOutMultiplier: 6
   zoomInMultiplier: 1
-  debugLogs: 1
+  debugLogs: 0

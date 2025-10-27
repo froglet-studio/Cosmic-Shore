@@ -39,7 +39,6 @@ namespace CosmicShore
         public void Select()
         {
             OnSelect?.Invoke(Intensity);
-            selectedIntensityCount.Value = Intensity;
         }
 
         public void SetIntensityLevel(int intensity)
@@ -78,6 +77,7 @@ namespace CosmicShore
                 BorderImage.sprite = BorderSpriteSelected;
                 IntensityImage.sprite = IntensitySpriteActive;
                 IntensityText.color = IntensityColorSelected;
+                selectedIntensityCount.Value = Intensity;
             }
             else
             {

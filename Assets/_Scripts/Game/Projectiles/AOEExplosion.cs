@@ -53,7 +53,8 @@ namespace CosmicShore.Game.Projectiles
 
         public void Detonate() => StartCoroutine(ExplodeCoroutine());
 
-        public Vector3 CalculateImpactVector(Vector3 impacteePosition) => (impacteePosition - transform.position).normalized * speed * Inertia ;
+        public Vector3 CalculateImpactVector(Vector3 impacteePosition) =>
+            impacteePosition - transform.position.normalized * speed * Inertia ;
 
         protected virtual IEnumerator ExplodeCoroutine()
         {
