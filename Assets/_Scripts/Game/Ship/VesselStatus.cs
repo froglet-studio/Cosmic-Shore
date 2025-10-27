@@ -226,7 +226,6 @@ namespace CosmicShore.Game
             Attached = false;
             AttachedPrism = null;
             GunsActive = false;
-            Course = transform.forward;
             ChargedBoostCharge = 1f;
             Slowed = false;
             Overheating = false;
