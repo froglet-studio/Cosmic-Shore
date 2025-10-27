@@ -218,9 +218,7 @@ namespace CosmicShore.Game
             }
 
             if (VesselStatus.VesselHUDView)
-            {
                 VesselStatus.VesselHUDView.Show();
-            }
                 
             VesselStatus.VesselTransformer.ToggleActive(true);
             VesselStatus.ActionHandler.ToggleSubscription(true);
