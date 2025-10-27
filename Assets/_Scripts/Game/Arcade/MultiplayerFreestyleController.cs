@@ -16,7 +16,7 @@ namespace CosmicShore.Game.Arcade
         {
             RemovePlayer_ServerRpc(gameData.LocalPlayer.Name);
             await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, PlayerLoopTiming.LastPostLateUpdate ,this.GetCancellationTokenOnDestroy());
-            MultiplayerSetup.Instance.LeaveSession().Forget();
+            multiplayerSetup.LeaveSession().Forget();
         }
 
         [ServerRpc(RequireOwnership = false)]
