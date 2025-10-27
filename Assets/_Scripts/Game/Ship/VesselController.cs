@@ -65,9 +65,7 @@ namespace CosmicShore.Game
             if (IsOwner) 
                 return;
             
-            n_Speed.OnValueChanged += OnSpeedChanged;
-            n_Course.OnValueChanged += OnCourseChanged;
-            n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
+            SubscribeToNetworkVariables();
         }
 
         public override void OnNetworkDespawn()
@@ -75,9 +73,7 @@ namespace CosmicShore.Game
             if (IsOwner) 
                 return;
             
-            n_Speed.OnValueChanged -= OnSpeedChanged;
-            n_Course.OnValueChanged -= OnCourseChanged;
-            n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
+            UnsubscribeFromNetworkVariables();
         }
 
         void Update()
@@ -194,6 +190,12 @@ namespace CosmicShore.Game
 
         public void ResetForPlay()
         {
+            if (IsSpawned && IsOwner)
+            {
+                VesselStatus.Speed = 0f;
+                VesselStatus.Course = transform.forward;
+                VesselStatus.blockRotation = Quaternion.identity;
+            }
             VesselStatus.ResetForPlay();
         }
 
@@ -210,12 +212,17 @@ namespace CosmicShore.Game
                 if (player.IsInitializedAsAI)
                     VesselStatus.VesselTransformer.ToggleActive(true);
                 if (player.IsNetworkClient)
+                {
                     VesselStatus.VesselTransformer.ToggleActive(false);
+                    SubscribeToNetworkVariables();
+                }
                 VesselStatus.ActionHandler.ToggleSubscription(false);
                 if (VesselStatus.VesselHUDView)
                     VesselStatus.VesselHUDView.Hide();
                 return;
             }
+            
+            UnsubscribeFromNetworkVariables();
 
             if (VesselStatus.VesselHUDView)
                 VesselStatus.VesselHUDView.Show();
@@ -276,5 +283,19 @@ namespace CosmicShore.Game
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
+        
+        void SubscribeToNetworkVariables()
+        {
+            n_Speed.OnValueChanged += OnSpeedChanged;
+            n_Course.OnValueChanged += OnCourseChanged;
+            n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
+        }
+        
+        void UnsubscribeFromNetworkVariables()
+        {
+            n_Speed.OnValueChanged -= OnSpeedChanged;
+            n_Course.OnValueChanged -= OnCourseChanged;
+            n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
+        }
     }
 }
