@@ -166,9 +166,8 @@ namespace CosmicShore.Game
         public void ChangeVessel(IVessel vessel)
         {
             Vessel = vessel;
-
-            if (IsSpawned && IsOwner)
-                NetDefaultShipType.Value = Vessel.VesselStatus.VesselType;
+            /*if (IsSpawned && IsOwner)
+                NetDefaultShipType.Value = Vessel.VesselStatus.VesselType;*/
         }
         
         void ToggleActive(bool active) => 
