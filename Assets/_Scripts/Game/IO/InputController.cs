@@ -172,8 +172,11 @@ namespace CosmicShore.Game.IO
             Portrait = portrait;
             currentStrategy?.SetPortrait(portrait);
         }
+        
+        public void SetIdle(bool idle) =>
+            InputStatus.Idle = idle;
 
-        public void Pause(bool paused)
+        public void SetPause(bool paused)
         {
             InputStatus.Paused = paused;
             if (paused)

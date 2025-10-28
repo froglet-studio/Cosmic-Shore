@@ -17,8 +17,8 @@ namespace CosmicShore.Game.Animation
         protected List<Transform> Transforms = new(); // TODO: use this to populate the vessel geometries on vessel.cs
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the vessel geometries on vessel.cs
 
-        protected IInputStatus _inputStatus;
         protected IVesselStatus VesselStatus;
+        IInputStatus InputStatus => VesselStatus.InputStatus;
 
 
         bool _isInitialized;
@@ -28,15 +28,14 @@ namespace CosmicShore.Game.Animation
             if (!_isInitialized)
                 return;
 
-            if (_inputStatus.Idle) Idle();
-            else if (VesselStatus.SingleStickControls) PerformShipPuppetry(_inputStatus.EasedLeftJoystickPosition.y, _inputStatus.EasedLeftJoystickPosition.x, 0, 0);
-            else PerformShipPuppetry(_inputStatus.YSum, _inputStatus.XSum, _inputStatus.YDiff, _inputStatus.XDiff);
+            if (InputStatus.Idle) Idle();
+            else if (VesselStatus.SingleStickControls) PerformShipPuppetry(InputStatus.EasedLeftJoystickPosition.y, InputStatus.EasedLeftJoystickPosition.x, 0, 0);
+            else PerformShipPuppetry(InputStatus.YSum, InputStatus.XSum, InputStatus.YDiff, InputStatus.XDiff);
         }
 
         public virtual void Initialize(IVesselStatus vesselStatus)
         {
             VesselStatus = vesselStatus;
-            _inputStatus = vesselStatus.InputStatus;
             VesselStatus.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
 
             AssignTransforms();
