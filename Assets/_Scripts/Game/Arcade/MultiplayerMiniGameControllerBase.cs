@@ -98,8 +98,9 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         void EndTurn_ClientRpc()
         {
+            // Server already invoked this on TurnMonitorController
             if (!IsServer)
-                gameData.InvokeGameTurnConditionsMet();
+            gameData.InvokeGameTurnConditionsMet();
             
             gameData.ResetPlayers();
         }
