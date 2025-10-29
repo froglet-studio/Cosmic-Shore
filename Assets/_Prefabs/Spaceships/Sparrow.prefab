@@ -504,6 +504,7 @@ MonoBehaviour:
   muzzles:
   - {fileID: 5250897378262215743}
   - {fileID: 8138551634222525996}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &1221810765880443511
 GameObject:
   m_ObjectHideFlags: 0

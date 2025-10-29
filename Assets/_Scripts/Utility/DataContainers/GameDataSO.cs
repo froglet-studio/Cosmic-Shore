@@ -22,7 +22,7 @@ namespace CosmicShore.SOAP
         menuName = "ScriptableObjects/DataContainers/" + nameof(GameDataSO))]
     public class GameDataSO : ScriptableObject
     {
-        // Events
+        // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP 
         public event Action OnLaunchGameScene;
         public event Action OnSessionStarted;
         public event Action OnInitializeGame;

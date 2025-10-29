@@ -135,6 +135,7 @@ namespace CosmicShore.Game
         {
             ToggleActive(true);
             Vessel.StartVessel();
+            ToggleInputIdle(false);
             
             if (IsNetworkClient)
                 return;
@@ -147,6 +148,7 @@ namespace CosmicShore.Game
             else
                 ToggleInputPause(false);
         }
+        
 
         public void ResetForPlay()
         {
@@ -166,8 +168,6 @@ namespace CosmicShore.Game
         public void ChangeVessel(IVessel vessel)
         {
             Vessel = vessel;
-            /*if (IsSpawned && IsOwner)
-                NetDefaultShipType.Value = Vessel.VesselStatus.VesselType;*/
         }
         
         void ToggleActive(bool active) => 
@@ -177,7 +177,10 @@ namespace CosmicShore.Game
             Vessel.ToggleAIPilot(toggle);
         
         void ToggleInputPause(bool toggle) => 
-            InputController.Pause(toggle);
+            InputController.SetPause(toggle);
+
+        void ToggleInputIdle(bool toggle) =>
+            _inputController.SetIdle(toggle);
         
         void OnNetTeamDomainChanged(Domains previousValue, Domains newValue) =>
             Domain = newValue;

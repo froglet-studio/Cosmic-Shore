@@ -7,6 +7,8 @@ namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerCellularDuelController : MultiplayerMiniGameControllerBase
     {
+        
+        
         private int readyClientCount;
         
         public void OnClickReturnToMainMenu()
@@ -17,7 +19,7 @@ namespace CosmicShore.Game.Arcade
         [ServerRpc(RequireOwnership = false)]
         void CloseSession_ServerRpc()
         {
-            MultiplayerSetup.Instance.LeaveSession().Forget();
+            multiplayerSetup.LeaveSession().Forget();
         }
         
         protected override void OnReadyClicked_()

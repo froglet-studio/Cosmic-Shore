@@ -5,21 +5,30 @@ using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
+using Obvious.Soap;
 
 public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 {
     [Header("Scene Refs")]
     [SerializeField] private Gun gun;
     [SerializeField] private Transform[] muzzles;
+    [SerializeField]
+    public ScriptableEventNoParam OnMiniGameTurnEnd;
 
     private IVesselStatus _status;
     private ResourceSystem _resources;
 
     private CancellationTokenSource _cts;
 
+    void OnEnable()
+    {
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
     void OnDisable()
     {
         End();
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
     
     public override void Initialize(IVesselStatus shipStatus)
@@ -49,6 +58,11 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         _cts.Cancel();
         _cts.Dispose();
         _cts = null;
+    }
+    
+    void OnTurnEndOfMiniGame()
+    {
+        End();
     }
 
     private async UniTaskVoid FireLoopAsync(FullAutoActionSO so, CancellationToken token)

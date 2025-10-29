@@ -1,6 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
+using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -13,6 +14,9 @@ namespace CosmicShore.Game.Arcade
     /// </summary>
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
+        [SerializeField]
+        protected MultiplayerSetup multiplayerSetup;
+        
         /// <summary>
         /// Delay (ms) before Initialize() is called after NetworkSpawn (server only).
         /// </summary>
@@ -94,8 +98,9 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         void EndTurn_ClientRpc()
         {
+            // Server already invoked this on TurnMonitorController
             if (!IsServer)
-                gameData.InvokeGameTurnConditionsMet();
+            gameData.InvokeGameTurnConditionsMet();
             
             gameData.ResetPlayers();
         }
