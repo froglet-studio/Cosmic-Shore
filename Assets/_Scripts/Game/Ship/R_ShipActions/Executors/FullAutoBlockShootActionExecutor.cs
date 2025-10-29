@@ -1,4 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using Obvious.Soap;
 using CosmicShore.Core;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
@@ -11,8 +14,22 @@ namespace CosmicShore.Game
         [SerializeField] private Transform[] muzzles;
         [SerializeField] private BlockProjectileFactory blockFactory;
 
+        [Header("Events")]
+        [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
         private IVesselStatus _status;
-        private Coroutine _loop;
+        private CancellationTokenSource _cts;
+
+        void OnEnable()
+        {
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        }
+
+        void OnDisable()
+        {
+            End();
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        }
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -23,72 +40,95 @@ namespace CosmicShore.Game
 
         public void Begin(FullAutoBlockShootActionSO so)
         {
-            if (_loop != null) return;
-            _loop = StartCoroutine(FireLoop(so));
+            if (_cts != null) return;
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            FireLoopAsync(so, _cts.Token).Forget();
         }
 
         public void End()
         {
-            if (_loop == null) return;
-            StopCoroutine(_loop);
-            _loop = null;
+            if (_cts == null) return;
+            try { _cts.Cancel(); } catch 
+            { 
+                //
+            }
+            _cts.Dispose();
+            _cts = null;
         }
 
-        private IEnumerator FireLoop(FullAutoBlockShootActionSO so)
+        void OnTurnEndOfMiniGame() => End();
+
+        private async UniTaskVoid FireLoopAsync(FullAutoBlockShootActionSO so, CancellationToken token)
         {
             if (!blockFactory)
             {
                 Debug.LogError("[FullAutoBlockShootActionExecutor] BlockFactory not assigned.");
-                yield break;
+                return;
             }
 
             float interval = 1f / Mathf.Max(0.1f, so.FireRate);
             var rotOffset = Quaternion.Euler(so.RotationOffsetEuler);
 
-            while (true)
+            try
             {
-                // fire ALL muzzles in the same frame
-                for (int i = 0; i < muzzles.Length; i++)
+                while (!token.IsCancellationRequested)
                 {
-                    var m = muzzles[i];
-                    var prism = blockFactory.GetBlock(so.PrismType, m.position, m.rotation * rotOffset, null);
-                    if (!prism) continue;
-
-                    prism.transform.SetParent(null, true);
-                    prism.transform.localScale = so.BlockScale;
-
-                    if (so.DisableCollidersOnLaunch)
+                    foreach (var m in muzzles)
                     {
-                        if (prism.TryGetComponent<Collider>(out var c)) c.enabled = false;
-                        foreach (var col in prism.GetComponentsInChildren<Collider>()) col.enabled = false;
+                        var prism = blockFactory.GetBlock(so.PrismType, m.position, m.rotation * rotOffset, null);
+                        if (!prism) continue;
+
+                        prism.transform.SetParent(null, true);
+                        prism.transform.localScale = so.BlockScale;
+
+                        if (so.DisableCollidersOnLaunch)
+                        {
+                            if (prism.TryGetComponent<Collider>(out var c)) c.enabled = false;
+                            foreach (var col in prism.GetComponentsInChildren<Collider>()) col.enabled = false;
+                        }
+
+                        MoveAndAnchorAsync(prism.transform, m.forward, so.BlockSpeed,
+                            UnityEngine.Random.Range(so.MinStopDistance, so.MaxStopDistance),
+                            so.DisableCollidersOnLaunch, prism, token).Forget();
                     }
 
-                    // move forward then anchor
-                    StartCoroutine(MoveAndAnchor(prism.transform, m.forward, so.BlockSpeed, Random.Range(so.MinStopDistance, so.MaxStopDistance), so.DisableCollidersOnLaunch, prism));
+                    await UniTask.Delay(TimeSpan.FromSeconds(interval), DelayType.DeltaTime, PlayerLoopTiming.Update, token);
                 }
-
-                yield return new WaitForSeconds(interval);
             }
+            catch (OperationCanceledException) { }
+            catch (Exception e) { Debug.LogError($"[FullAutoBlockShoot] loop error: {e}"); }
         }
 
-        private IEnumerator MoveAndAnchor(Transform block, Vector3 dir, float speed, float distance, bool enableCollidersAtEnd, Prism prism )
+        private async UniTaskVoid MoveAndAnchorAsync(
+            Transform block,
+            Vector3 dir,
+            float speed,
+            float distance,
+            bool enableCollidersAtEnd,
+            Prism prism,
+            CancellationToken token)
         {
             Vector3 start  = block.position;
             Vector3 target = start + dir.normalized * distance;
 
-            while (Vector3.SqrMagnitude(block.position - target) > 0.01f)
+            try
             {
-                block.position = Vector3.MoveTowards(block.position, target, speed * Time.deltaTime);
-                yield return null;
+                while ((block.position - target).sqrMagnitude > 0.01f)
+                {
+                    token.ThrowIfCancellationRequested();
+                    block.position = Vector3.MoveTowards(block.position, target, speed * Time.deltaTime);
+                    await UniTask.Yield(PlayerLoopTiming.Update);
+                }
+
+                prism.Domain = _status.Domain;
+
+                if (!enableCollidersAtEnd) return;
+
+                if (block.TryGetComponent<Collider>(out var c)) c.enabled = true;
+                foreach (var col in block.GetComponentsInChildren<Collider>()) col.enabled = true;
             }
-
-            prism.Domain = _status.Domain;
-            
-            if (enableCollidersAtEnd == false)
-                yield break;
-
-            if (block.TryGetComponent<Collider>(out var c)) c.enabled = true;
-            foreach (var col in block.GetComponentsInChildren<Collider>()) col.enabled = true;
+            catch (OperationCanceledException) { }
+            catch (Exception e) { Debug.LogError($"[FullAutoBlockShoot] MoveAndAnchor error: {e}"); }
         }
     }
 }
