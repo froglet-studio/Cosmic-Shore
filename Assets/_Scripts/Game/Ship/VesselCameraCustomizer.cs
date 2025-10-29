@@ -65,7 +65,6 @@ namespace CosmicShore
         public void RetargetAndApply(IVessel vessel)
         {
             Initialize(vessel);
-
             var active = CameraManager.Instance.GetActiveController();
             if (active != null)
             {

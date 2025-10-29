@@ -88,10 +88,6 @@ namespace CosmicShore.Game
                 consumeBoostExecutor.OnReloadPipProgress  += HandleReloadPipProgress;
                 consumeBoostExecutor.OnReloadPipCompleted += HandleReloadPipCompleted;
 
-                // Optional legacy hooks (no-ops here, but safe to keep)
-                // consumeBoostExecutor.OnReloadStarted    += HandleBoostReloadStarted; // not used with per-pip events
-
-                // Force initial snapshot so HUD matches current executor state
                 HandleBoostSnapshot(
                     consumeBoostExecutor.AvailableCharges,
                     consumeBoostExecutor.MaxCharges
@@ -161,7 +157,6 @@ namespace CosmicShore.Game
             view.shieldIcon.sprite = sprite;
         }
 
-        // ------------ Boost pips (charges) ------------
 
         // Full snapshot: set exactly how many are full (left→right)
         void HandleBoostSnapshot(int available, int max)
