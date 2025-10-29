@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
+using Obvious.Soap;
 
 [DefaultExecutionOrder(-1000)]
 public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
@@ -9,6 +10,9 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     [SerializeField] private GrowTrailActionExecutor   trailProvider;
     [SerializeField] private GrowSkimmerActionExecutor skimmerProvider;
 
+    [Header("Events")]
+    [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
     private IVesselStatus _status;
     private ICameraController _controller;
     private ZoomOutActionSO _so;
@@ -16,9 +20,8 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     private bool _active;
     private bool _retracting;
 
-    // Canonical baseline (never rebased during a session)
-    private float _baseScale;     // provider.MinScale (stable world baseline)
-    private float _baseDistance;  // camera Z captured on first Begin from Idle
+    private float _baseScale;
+    private float _baseDistance;
 
     [SerializeField] private float farClipPadding = 1.3f;
     [SerializeField] private float maxDistanceAbs = 10000f;
@@ -28,10 +31,21 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     private enum State { Idle, Expanding, Retracting }
     private State _state = State.Idle;
 
-    // How close ratio must be to baseline to consider retract finished
     private const float RatioEpsilon = 0.0025f;
-    // Don't thrash distance for sub-mm deltas
     private const float DistDeadband = 0.0005f;
+
+    void OnEnable()
+    {
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        End();
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
+    void OnTurnEndOfMiniGame() => End();
 
     public override void Initialize(IVesselStatus shipStatus)
     {
@@ -47,14 +61,11 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
         var provider = Provider();
         if (provider == null) return;
 
-        // Only capture baselines when coming from Idle.
         if (_state == State.Idle)
         {
-            // Canonical baseline: stable minimal world scale from the provider.
             _baseScale    = Mathf.Max(provider.MinScale, 0.0001f);
             _baseDistance = _controller.GetCameraDistance();
 
-            // Take control of Z (pause adaptive zoom while action is active).
             if (_controller is CustomCameraController cc)
             {
                 _hadAdaptiveZoom = cc.adaptiveZoomEnabled;
@@ -62,7 +73,6 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
             }
         }
 
-        // If we were retracting, just flip to expanding; if already expanding, do nothing special.
         _state      = State.Expanding;
         _retracting = false;
         _active     = true;
@@ -70,13 +80,12 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
     public void End()
     {
-        if (_controller == null || _so == null)
+        if (_controller == null || !_so)
         {
             CleanupToIdle();
             return;
         }
 
-        // If already retracting, ignore.
         if (_state == State.Retracting) return;
 
         _state      = State.Retracting;
@@ -86,7 +95,7 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
     private IScaleProvider Provider()
     {
-        if (_so == null) return null;
+        if (!_so) return null;
         return _so.Source == ZoomOutActionSO.ScaleSource.Skimmer
             ? skimmerProvider
             : trailProvider;
@@ -102,25 +111,20 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
         _controller ??= CameraManager.Instance?.GetActiveController();
         if (_controller == null) { CleanupToIdle(); return; }
 
-        // Direct ratio against canonical baseline — no re-basing, no last-scale memory.
         float currentScale = Mathf.Max(provider.CurrentScale, 0.0001f);
         float currentRatio = currentScale / Mathf.Max(_baseScale, 0.0001f);
 
         float target = _baseDistance * currentRatio;
 
-        // Keep camera behind the target (negative).
         if (!Mathf.Approximately(Mathf.Sign(target), Mathf.Sign(_baseDistance)))
             target = -Mathf.Abs(target);
 
-        // Hard safety
         target = Mathf.Clamp(target, -maxDistanceAbs, -0.01f);
 
-        // Apply only if meaningfully different (avoid micro jitter).
         float zNow = _controller.GetCameraDistance();
         if (Mathf.Abs(target - zNow) > DistDeadband)
             _controller.SetCameraDistance(target);
 
-        // Far clip guard for very large scales
         if (_controller is CustomCameraController concrete)
         {
             var cam = concrete.Camera;
@@ -129,13 +133,10 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
                 cam.farClipPlane = need * farClipPadding;
         }
 
-        // Finish retract cleanly when we're basically back to baseline (ratio≈1).
         if (_state == State.Retracting && Mathf.Abs(currentRatio - 1f) <= RatioEpsilon)
         {
             _controller.SetCameraDistance(_baseDistance);
-            // Provider will finish its own shrink; no need to force scale here.
 
-            // Restore adaptive zoom ownership and go idle.
             if (_controller is CustomCameraController ccRestore)
                 ccRestore.adaptiveZoomEnabled = _hadAdaptiveZoom;
             _hadAdaptiveZoom = false;
@@ -149,7 +150,6 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
     private void CleanupToIdle()
     {
-        // Restore adaptive zoom if we had disabled it.
         if (_controller is CustomCameraController ccRestore)
             ccRestore.adaptiveZoomEnabled = _hadAdaptiveZoom;
         _hadAdaptiveZoom = false;
