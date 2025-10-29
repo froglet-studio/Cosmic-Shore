@@ -1,6 +1,7 @@
 ﻿using System;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -17,6 +18,9 @@ namespace CosmicShore
         [Header("Scene Refs")]
         [SerializeField] private Game.VesselPrismController vesselPrismController;
 
+        [Header("Events")]
+        [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
         // Runtime
         IVesselStatus _status;
         ResourceSystem _resources;
@@ -28,9 +32,22 @@ namespace CosmicShore
         public event Action<Prism> OnBondingBegan;
         public event Action OnSeedStopped;
 
+        void OnEnable()
+        {
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        }
+
+        void OnDisable()
+        {
+            End();
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        }
+
+        void OnTurnEndOfMiniGame() => End();
+
         public override void Initialize(IVesselStatus shipStatus)
         {
-            _status = shipStatus;
+            _status    = shipStatus;
             _resources = shipStatus?.ResourceSystem;
             if (vesselPrismController == null)
                 vesselPrismController = shipStatus?.VesselPrismController;
@@ -46,16 +63,13 @@ namespace CosmicShore
             if (!so || status == null || !_resources || !vesselPrismController)
                 return false;
 
-            // resource check
             var cost = so.ComputeCost(_resources);
             if (!HasResource(so.ResourceIndex, cost)) return false;
-
-            // trail block check
+            
             var last = GetLatestBlock();
             if (!last && so.RequireExistingTrailBlock)
                 return false;
 
-            // set active and apply shield
             ActiveSeedBlock = last;
             if (!ActiveSeedBlock) return false;
 
@@ -74,7 +88,7 @@ namespace CosmicShore
         }
 
         /// <summary>
-        /// Begin the actual bonding/growth coroutine in the assembler.
+        /// Begin the actual bonding/growth routine in the assembler.
         /// </summary>
         public void BeginBonding()
         {
@@ -84,22 +98,23 @@ namespace CosmicShore
         }
 
         /// <summary>
+        /// Full stop via public End() to align with other executors.
+        /// </summary>
+        public void End() => StopSeedCompletely();
+
+        /// <summary>
         /// Full stop. Clears references and stops any assembler work.
         /// </summary>
         public void StopSeedCompletely()
         {
-
             if (_activeAssembler)
             {
                 try { _activeAssembler.StopBonding(); }
-                catch
-                {
-                    // ignored
-                }
+                catch { /* ignore */ }
             }
 
             _activeAssembler = null;
-            ActiveSeedBlock = null;
+            ActiveSeedBlock  = null;
 
             OnSeedStopped?.Invoke();
         }
@@ -111,8 +126,10 @@ namespace CosmicShore
             var listA = vesselPrismController?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
-            var trail2Field = typeof(Game.VesselPrismController).GetField("Trail2",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var trail2Field = typeof(Game.VesselPrismController).GetField(
+                "Trail2",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+            );
             var trail2 = trail2Field?.GetValue(vesselPrismController) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
@@ -151,9 +168,9 @@ namespace CosmicShore
 
             return kind switch
             {
-                SeedWallActionSO.AssemblerKind.Wall => block.gameObject.AddComponent<WallAssembler>(),
+                SeedWallActionSO.AssemblerKind.Wall   => block.gameObject.AddComponent<WallAssembler>(),
                 SeedWallActionSO.AssemblerKind.Gyroid => block.gameObject.AddComponent<WallAssembler>(),
-                _ => block.gameObject.AddComponent<WallAssembler>()
+                _                                     => block.gameObject.AddComponent<WallAssembler>()
             };
         }
     }
