@@ -5,15 +5,20 @@ using System.Reflection;
 using System.Threading;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     public sealed class CloakSeedWallActionExecutor : ShipActionExecutorBase
     {
+        [Header("Scene Refs")]
         [SerializeField] private SkinnedMeshRenderer shipRenderer;
-        [SerializeField] private SeedAssemblerActionExecutor seedAssembler; 
- 
+        [SerializeField] private SeedAssemblerActionExecutor seedAssembler;
+
+        [Header("Events")]
+        [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
         private GameObject _serpentGhost;
 
         private IVesselStatus _status;
@@ -27,25 +32,39 @@ namespace CosmicShore.Game
         private bool _shipRendererDisabledForCloak;
         private bool _shipPrevEnabled;
         private bool _restoring;
-        
+
         [Header("Ghost Tuning")]
         [SerializeField] private Vector3 ghostEulerOffset = Vector3.zero;
-        [SerializeField] private Vector3 ghostPositionOffset = Vector3.zero; 
-        [SerializeField] private float   ghostScaleMultiplier = 1f;      
-        [SerializeField] private bool    ghostUseShipOrientation = true;   
+        [SerializeField] private Vector3 ghostPositionOffset = Vector3.zero;
+        [SerializeField] private float   ghostScaleMultiplier = 1f;
+        [SerializeField] private bool    ghostUseShipOrientation = true;
 
         private class TrackedPrism
         {
             public Prism Prism;
             public Renderer[] Renderers;
-            public Material[][] OriginalShared; 
-            public bool[] WasEnabled;          
+            public Material[][] OriginalShared;
+            public bool[] WasEnabled;
         }
         private readonly List<TrackedPrism> _spawnedDuringCloak = new();
 
+        void OnEnable()
+        {
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        }
+
+        void OnDisable()
+        {
+            End();
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+            if (_controller != null) _controller.OnBlockSpawned -= HandleBlockSpawned;
+        }
+
+        void OnTurnEndOfMiniGame() => End();
+
         public override void Initialize(IVesselStatus shipStatus)
         {
-            _status = shipStatus;
+            _status     = shipStatus;
             _controller = _status?.VesselPrismController;
 
             if (_controller != null)
@@ -62,25 +81,65 @@ namespace CosmicShore.Game
             if (shipRenderer && shipRenderer.enabled)
                 shipRenderer.enabled = false;
 
-            foreach (var r in from tp in _spawnedDuringCloak where tp?.Renderers != null from r in tp.Renderers where r && r.enabled select r)
+            foreach (var r in from tp in _spawnedDuringCloak
+                              where tp?.Renderers != null
+                              from r in tp.Renderers
+                              where r && r.enabled
+                              select r)
             {
                 r.enabled = false;
             }
         }
-        
+
         public void Toggle(CloakSeedWallActionSO so, IVesselStatus status)
         {
             if (!so || status == null) return;
-
             if (_isRunning || Time.time < _cooldownEndTime) return;
 
             var ok = seedAssembler.StartSeed(so.SeedWallSo, status);
+            if (!ok) return;
 
             seedAssembler.BeginBonding();
             SpawnSerpentGhostAtSeed();
 
-            _runCts = new CancellationTokenSource();
+            _runCts?.Cancel();
+            _runCts?.Dispose();
+            _runCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             RunAsync(so, _runCts.Token).Forget();
+        }
+
+        public void End()
+        {
+            // cancel the run if active
+            if (_runCts != null)
+            {
+                try { _runCts.Cancel(); } catch { }
+                _runCts.Dispose();
+                _runCts = null;
+            }
+
+            if (!_isRunning && !_restoring)
+            {
+                // still ensure cleanup of ship/ghost/prisms/seed
+                RestoreShipImmediate();
+                DestroySerpentGhost();
+                ForceUncloakAllExistingPrisms();
+                seedAssembler?.StopSeedCompletely();
+                return;
+            }
+
+            // If running, emulate the restore path
+            _isRunning = false;
+            _restoring = true;
+
+            RestoreShipImmediate();
+            DestroySerpentGhost();
+            ForceUncloakAllExistingPrisms();
+            seedAssembler?.StopSeedCompletely();
+
+            _spawnedDuringCloak.Clear();
+
+            _restoring = false;
         }
 
         private async UniTaskVoid RunAsync(CloakSeedWallActionSO so, CancellationToken ct)
@@ -91,36 +150,36 @@ namespace CosmicShore.Game
             if (shipRenderer)
             {
                 _shipOriginalShared = shipRenderer.sharedMaterials;
-                _shipPrevEnabled = shipRenderer.enabled;
-                shipRenderer.enabled = false;                
+                _shipPrevEnabled    = shipRenderer.enabled;
+                shipRenderer.enabled = false;
                 _shipRendererDisabledForCloak = true;
             }
-            
+
             _cooldownEndTime = Time.time + Mathf.Max(0.01f, so.CooldownSeconds);
 
             try
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(so.CooldownSeconds), cancellationToken: ct);
+                await UniTask.Delay(TimeSpan.FromSeconds(so.CooldownSeconds),
+                                    DelayType.DeltaTime,
+                                    PlayerLoopTiming.Update,
+                                    ct);
             }
-            catch (OperationCanceledException)
-            {
-            }
+            catch (OperationCanceledException) { /* normal */ }
 
-            // Restore everything
             _isRunning = false;
-            _restoring = true;  
+            _restoring = true;
+
             RestoreShipImmediate();
             DestroySerpentGhost();
-            //RestoreAllPrismsImmediate();
             ForceUncloakAllExistingPrisms();
-            
             seedAssembler?.StopSeedCompletely();
-            _restoring = false;  
 
-            _runCts?.Dispose(); _runCts = null;
+            _restoring = false;
+
+            _runCts?.Dispose();
+            _runCts = null;
         }
 
-        // =================== PRISMS: make fully invisible ===================
         private void HandleBlockSpawned(Prism block)
         {
             if (!_isRunning || !block) return;
@@ -130,10 +189,10 @@ namespace CosmicShore.Game
 
             var tracked = new TrackedPrism
             {
-                Prism = block,
-                Renderers = rends,
-                OriginalShared = new Material[rends.Length][], // optional; kept for safety
-                WasEnabled = new bool[rends.Length]
+                Prism         = block,
+                Renderers     = rends,
+                OriginalShared= new Material[rends.Length][],
+                WasEnabled    = new bool[rends.Length]
             };
 
             for (int i = 0; i < rends.Length; i++)
@@ -142,7 +201,7 @@ namespace CosmicShore.Game
                 if (!r) continue;
 
                 tracked.OriginalShared[i] = r.sharedMaterials;
-                tracked.WasEnabled[i] = r.enabled;
+                tracked.WasEnabled[i]     = r.enabled;
 
                 r.enabled = false;
             }
@@ -186,7 +245,7 @@ namespace CosmicShore.Game
             if (_shipOriginalShared != null)
                 shipRenderer.sharedMaterials = _shipOriginalShared;
         }
-        
+
         private void SpawnSerpentGhostAtSeed()
         {
             if (_serpentGhost) return;
@@ -201,7 +260,7 @@ namespace CosmicShore.Game
             if (!seed) return;
 
             var baked = new Mesh();
-            shipRenderer.BakeMesh(baked, true); 
+            shipRenderer.BakeMesh(baked, true);
 
             _serpentGhost = new GameObject("SerpentGhost (Baked)");
             var mf = _serpentGhost.AddComponent<MeshFilter>();
@@ -228,10 +287,9 @@ namespace CosmicShore.Game
                 basePos + ghostPositionOffset,
                 baseRot * Quaternion.Euler(ghostEulerOffset)
             );
-            
+
             _serpentGhost.transform.localScale = Vector3.one * Mathf.Max(0.0001f, ghostScaleMultiplier);
         }
-
 
         private void DestroySerpentGhost()
         {
@@ -255,7 +313,7 @@ namespace CosmicShore.Game
 
             return null;
         }
-        
+
         /// <summary>
         /// Global belt-and-suspenders: ensure ALL current prism renderers are enabled,
         /// even if they weren't in our tracked list (assembler spawns, pooling swaps, etc.).
@@ -272,11 +330,8 @@ namespace CosmicShore.Game
                 .GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (trail2Field?.GetValue(_controller) is not Trail t2 || t2.TrailList == null) return;
-            {
-                foreach (var t in t2.TrailList)
-                    EnableAllUnder(t);
-            }
-            return;
+            foreach (var t in t2.TrailList)
+                EnableAllUnder(t);
 
             void EnableAllUnder(Prism p)
             {
