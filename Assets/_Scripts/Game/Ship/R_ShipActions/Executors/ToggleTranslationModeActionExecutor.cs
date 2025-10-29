@@ -15,9 +15,25 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
     [Header("Events")]
     [SerializeField] private ScriptableEventBool stationaryModeChanged;
 
+    [Header("MiniGame")]
+    [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
     IVessel _ship;
     IVesselStatus _status;
     ActionExecutorRegistry _registry;
+
+    void OnEnable()
+    {
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        End();
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
+    void OnTurnEndOfMiniGame() => End();
 
     public override void Initialize(IVesselStatus shipStatus)
     {
@@ -62,11 +78,24 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
             }
             else
             {
-                CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Auto Guns Activated");
+                CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Auto Guns Deactivated");
                 vesselPrismController?.StartSpawn();
             }
         }
 
         stationaryModeChanged?.Raise(isOn);
+    }
+
+    void End()
+    {
+        if (_status == null) return;
+
+        if (!_status.IsTranslationRestricted) return;
+        _status.IsTranslationRestricted = false;
+
+        vesselPrismController?.StartSpawn();
+        if (seedAssemblerExecutor) seedAssemblerExecutor.StopSeedCompletely();
+
+        stationaryModeChanged?.Raise(false);
     }
 }
