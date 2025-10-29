@@ -1,7 +1,9 @@
 ﻿using System;
-using System.Collections;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using Obvious.Soap;
 using UnityEngine;
 
 public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
@@ -14,18 +16,34 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
     public event Action<float> OnDischargeProgress;
     public event Action OnDischargeEnded;
 
+    [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
+
     IVesselStatus _status;
     ResourceSystem _resources;
-    Coroutine _loop;
+
+    CancellationTokenSource _cts;
     bool _charging;
     float _cooldownUntilUtc;
+
+    void OnEnable()
+    {
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        CancelAll();
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
+    void OnTurnEndOfMiniGame() => End(); 
 
     public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
         _resources = shipStatus.ResourceSystem;
     }
-    
+
     public void BeginCharge(ChargeBoostActionSO so, IVesselStatus status)
     {
         if (Time.unscaledTime < _cooldownUntilUtc)
@@ -35,8 +53,8 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
             return;
         }
 
-        StopRunning();
-        if (_resources == null) return;
+        End(); // stop any running task
+        if (!_resources) return;
 
         _charging = true;
         float start = GetUnits(so);
@@ -44,12 +62,14 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         status.ChargedBoostCharge = BoostMultiplierFrom(so, start);
 
         OnChargeStarted?.Invoke(start);
-        _loop = StartCoroutine(ChargeRoutine(so));
+
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+        ChargeRoutineAsync(so, _cts.Token).Forget();
     }
 
     public void BeginDischarge(ChargeBoostActionSO so, IVesselStatus status)
     {
-        StopRunning();
+        End(); 
         _charging = false;
 
         if (!_resources) return;
@@ -58,75 +78,108 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         status.ChargedBoostDischarging = true;
 
         OnDischargeStarted?.Invoke(start);
-        _loop = StartCoroutine(DischargeRoutine(so));
+
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+        DischargeRoutineAsync(so, _cts.Token).Forget();
     }
 
-    IEnumerator ChargeRoutine(ChargeBoostActionSO so)
+    void End()
+    {
+        CancelAll();
+    }
+
+    void CancelAll()
+    {
+        if (_cts == null) return;
+        try
+        {
+            _cts.Cancel();
+        }
+        catch
+        {
+            //
+        }
+        _cts.Dispose();
+        _cts = null;
+    }
+
+    async UniTaskVoid ChargeRoutineAsync(ChargeBoostActionSO so, CancellationToken token)
     {
         float perTick = ChargePerSecond(so) * so.TickSeconds;
 
-        while (_charging)
+        try
         {
-            float before = GetUnits(so);
-            AddUnits(so, +perTick);
-            float v = GetUnits(so);
+            while (_charging)
+            {
+                float before = GetUnits(so);
+                AddUnits(so, +perTick);
+                float v = GetUnits(so);
 
-            _status.ChargedBoostCharge = BoostMultiplierFrom(so, v);
-            OnChargeProgress?.Invoke(v);
+                _status.ChargedBoostCharge = BoostMultiplierFrom(so, v);
+                OnChargeProgress?.Invoke(v);
 
-            if (v >= so.MaxNormalizedCharge - 1e-4f) break;
+                if (v >= so.MaxNormalizedCharge - 1e-4f) break;
 
-            yield return new WaitForSeconds(so.TickSeconds);
+                await UniTask.Delay(TimeSpan.FromSeconds(so.TickSeconds),
+                                    DelayType.DeltaTime,
+                                    PlayerLoopTiming.Update,
+                                    token);
+            }
+
+            _charging = false;
+            SetUnits(so, so.MaxNormalizedCharge);
+            _status.ChargedBoostCharge = BoostMultiplierFrom(so, so.MaxNormalizedCharge);
+            OnChargeEnded?.Invoke();
         }
-
-        _charging = false;
-        SetUnits(so, so.MaxNormalizedCharge);
-        _status.ChargedBoostCharge = BoostMultiplierFrom(so, so.MaxNormalizedCharge);
-        OnChargeEnded?.Invoke();
+        catch (OperationCanceledException) { }
+        catch (Exception e) { Debug.LogError($"[ChargeBoost] ChargeRoutine error: {e}"); }
     }
 
-    IEnumerator DischargeRoutine(ChargeBoostActionSO so)
+    async UniTaskVoid DischargeRoutineAsync(ChargeBoostActionSO so, CancellationToken token)
     {
         float perTick = DischargePerSecond(so) * so.TickSeconds;
 
-        while (GetUnits(so) > 0f)
+        try
         {
-            float v = GetUnits(so);
-            _status.BoostMultiplier = BoostMultiplierFrom(so, v);
-            _status.Boosting = true;
+            while (GetUnits(so) > 0f)
+            {
+                float v = GetUnits(so);
+                _status.BoostMultiplier = BoostMultiplierFrom(so, v);
+                _status.Boosting = true;
 
-            OnDischargeProgress?.Invoke(v / so.MaxNormalizedCharge);
+                OnDischargeProgress?.Invoke(v / so.MaxNormalizedCharge);
 
-            AddUnits(so, -perTick);
-            yield return new WaitForSeconds(so.TickSeconds);
+                AddUnits(so, -perTick);
+                await UniTask.Delay(TimeSpan.FromSeconds(so.TickSeconds),
+                                    DelayType.DeltaTime,
+                                    PlayerLoopTiming.Update,
+                                    token);
+            }
+
+            SetUnits(so, 0f);
+            _status.BoostMultiplier = 1f;
+            _status.ChargedBoostDischarging = false;
+            _status.Boosting = false;
+
+            if (so.RechargeCooldownSeconds > 0f)
+                _cooldownUntilUtc = Time.unscaledTime + so.RechargeCooldownSeconds;
+
+            OnDischargeEnded?.Invoke();
         }
-
-        SetUnits(so, 0f);
-        _status.BoostMultiplier = 1f;
-        _status.ChargedBoostDischarging = false;
-        _status.Boosting = false;
-
-        if (so.RechargeCooldownSeconds > 0f)
-            _cooldownUntilUtc = Time.unscaledTime + so.RechargeCooldownSeconds;
-
-        OnDischargeEnded?.Invoke();
-    }
-
-    void StopRunning()
-    {
-        if (_loop != null) { StopCoroutine(_loop); _loop = null; }
+        catch (OperationCanceledException) { }
+        catch (Exception e) { Debug.LogError($"[ChargeBoost] DischargeRoutine error: {e}"); }
     }
 
     float GetUnits(ChargeBoostActionSO so)
     {
-        if (_resources == null) return 0f;
+        if (!_resources) return 0f;
         var res = _resources.Resources[so.BoostResourceIndex];
         return Mathf.Clamp01(res.CurrentAmount) * so.MaxNormalizedCharge;
     }
 
     void SetUnits(ChargeBoostActionSO so, float units)
     {
-        if (_resources == null) return;
+        if (!_resources) return;
         units = Mathf.Clamp(units, 0f, so.MaxNormalizedCharge);
 
         var res = _resources.Resources[so.BoostResourceIndex];
@@ -134,7 +187,6 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         res.CurrentAmount = normalized;
         OnChargeProgress?.Invoke(units);
     }
-
 
     void AddUnits(ChargeBoostActionSO so, float delta) => SetUnits(so, GetUnits(so) + delta);
 
