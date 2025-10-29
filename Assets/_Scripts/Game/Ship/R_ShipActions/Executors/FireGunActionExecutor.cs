@@ -1,4 +1,5 @@
 ﻿using System;
+using Obvious.Soap;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
@@ -8,16 +9,29 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 {
     public event Action OnGunFired;
 
-    [Header("Scene Refs")] [SerializeField]
-    Gun gun;
+    [Header("Scene Refs")]
+    [SerializeField] Gun gun;
 
     [SerializeField] Transform projectileContainer;
+
+    [Header("Events")]
+    [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
 
     IVesselStatus _status;
     ResourceSystem _resources;
     FireGunActionSO _soRef;
     readonly bool _detachFromContainer = true;
-    
+
+    void OnEnable()
+    {
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
     public float Ammo01
     {
         get
@@ -31,17 +45,13 @@ public class FireGunActionExecutor : ShipActionExecutorBase
         }
     }
 
-
     public override void Initialize(IVesselStatus shipStatus)
     {
-        _status = shipStatus;
+        _status    = shipStatus;
         _resources = shipStatus.ResourceSystem;
 
         if (gun != null)
             gun.Initialize(shipStatus);
-
-        // if (projectileContainer != null)
-        //     projectileContainer.SetParent(_status.ShipTransform, true);
     }
 
     public void Fire(FireGunActionSO so, IVesselStatus status)
@@ -54,8 +64,22 @@ public class FireGunActionExecutor : ShipActionExecutorBase
         var inheritedVelocity = status.Course;
 
         OnGunFired?.Invoke();
-        gun.FireGun(projectileContainer, so.Speed, inheritedVelocity * status.Speed, so.ProjectileScale, true,
-            so.ProjectileTime.Value, 0,
-            FiringPatterns.Default, so.Energy, detachAfterSpawn:_detachFromContainer);
+        gun.FireGun(
+            projectileContainer,
+            so.Speed,
+            inheritedVelocity * status.Speed,
+            so.ProjectileScale,
+            true,
+            so.ProjectileTime.Value,
+            0,
+            FiringPatterns.Default,
+            so.Energy,
+            detachAfterSpawn: _detachFromContainer
+        );
+    }
+
+    void OnTurnEndOfMiniGame()
+    {
+        _soRef = null;
     }
 }

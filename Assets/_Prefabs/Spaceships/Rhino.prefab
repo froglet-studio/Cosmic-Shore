@@ -45,6 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skimmerRoot: {fileID: 282447970148362685}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &284393576699141201
 GameObject:
   m_ObjectHideFlags: 0
@@ -311,7 +312,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2544623403595669009
 Transform:
   m_ObjectHideFlags: 0
@@ -339,8 +340,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4151b7991de01044a0d147428994f99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  leadActionMono: {fileID: 5565916779484709519}
-  syncAction: {fileID: 6430648885380261475}
+  leadActionMono: {fileID: 0}
+  syncAction: {fileID: 0}
 --- !u!1 &1206455367696695250
 GameObject:
   m_ObjectHideFlags: 0
@@ -610,10 +611,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 402425910533098677}
-  - {fileID: 1378795933305234275}
-  - {fileID: 3337163778756290160}
-  - {fileID: 7290237123723737518}
   - {fileID: 3088948616910878261}
   - {fileID: 2760462643090814815}
   - {fileID: 3748225512178651457}
@@ -760,53 +757,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   impactorObject: {fileID: 3485795873575935315}
---- !u!1 &2313972353893763466
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1378795933305234275}
-  - component: {fileID: 6430648885380261475}
-  m_Layer: 0
-  m_Name: ZoomOutAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &1378795933305234275
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2313972353893763466}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 320384695113571315}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6430648885380261475
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2313972353893763466}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e7868c3b92497748825cce03f8ce9d2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  zoomOutMultiplier: 1.5
-  zoomInMultiplier: 1
-  debugLogs: 1
 --- !u!1 &2343904303954125754
 GameObject:
   m_ObjectHideFlags: 0
@@ -917,69 +867,6 @@ RectTransform:
   m_AnchoredPosition: {x: 185.60101, y: -190.70996}
   m_SizeDelta: {x: 371.201, y: 666.799}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &2713893070599933473
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7290237123723737518}
-  - component: {fileID: 7881301509579309438}
-  m_Layer: 0
-  m_Name: GrowTrailAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &7290237123723737518
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2713893070599933473}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 320384695113571315}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7881301509579309438
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2713893070599933473}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5e3262f4217a8d04c87f30c6baa41194, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxSize:
-    Enabled: 1
-    Value: 4
-    Min: 4
-    Max: 8
-    element: 2
-  growRate: 3
-  shrinkRate:
-    Enabled: 0
-    Value: 1
-    Min: 0
-    Max: 0
-    element: 0
-  target: {fileID: 6417075533431866457}
-  growing: 0
-  XWeight: 1
-  YWeight: 1
-  ZWeight: 0
-  GapWeight: -1
 --- !u!1 &3368373695973179278
 GameObject:
   m_ObjectHideFlags: 0
@@ -1178,65 +1065,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   impactorObject: {fileID: 3485795873575935315}
---- !u!1 &4030021533915493313
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3337163778756290160}
-  - component: {fileID: 5565916779484709519}
-  m_Layer: 0
-  m_Name: GrowSkimmerAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &3337163778756290160
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4030021533915493313}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 320384695113571315}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5565916779484709519
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4030021533915493313}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c000fee499b954a41b704c1cceefc370, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxSize:
-    Enabled: 1
-    Value: 120
-    Min: 120
-    Max: 180
-    element: 3
-  growRate: 12
-  shrinkRate:
-    Enabled: 1
-    Value: 6
-    Min: 6
-    Max: 2
-    element: 1
-  target: {fileID: 2695624631939139826}
-  growing: 0
 --- !u!1 &4298540914865963673
 GameObject:
   m_ObjectHideFlags: 0
@@ -1470,6 +1298,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   controller: {fileID: 874579555101021522}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &4634953772157888635
 GameObject:
   m_ObjectHideFlags: 0
@@ -1537,50 +1366,6 @@ MonoBehaviour:
   worldToUIScale: 2
   imageScale: 0.02
   swingBlocks: 0
---- !u!1 &4954660229079137265
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 402425910533098677}
-  - component: {fileID: 1315493734959331551}
-  m_Layer: 0
-  m_Name: BoostAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &402425910533098677
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4954660229079137265}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 320384695113571315}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1315493734959331551
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4954660229079137265}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a731e767698ec5948b84919808aa176e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &5077424405219628151
 GameObject:
   m_ObjectHideFlags: 0
@@ -1694,6 +1479,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailProvider: {fileID: 6994424773851051839}
   skimmerProvider: {fileID: 1218614309347018735}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   farClipPadding: 1.3
   maxDistanceAbs: 10000
 --- !u!1 &5546161687949175897
@@ -12813,18 +12599,12 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 1660592348679971898}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2695624631939139826}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &2695624631939139826 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3630837686170528968, guid: c8d5df1098821194eb69eec4c965548e,
-    type: 3}
-  m_PrefabInstance: {fileID: 1660592348679971898}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &3187623269586566134
 PrefabInstance:
   m_ObjectHideFlags: 0

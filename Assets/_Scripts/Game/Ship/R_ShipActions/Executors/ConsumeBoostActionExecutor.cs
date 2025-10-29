@@ -1,46 +1,80 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using Obvious.Soap;
 using UnityEngine;
 
 public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 {
- 
-    public event Action<int,int>   OnChargesSnapshot;   
-    public event Action<int,float> OnChargeConsumed;   
-    public event Action<float>     OnReloadStarted;    
-    public event Action            OnReloadCompleted;
-    public event Action<int, float> OnReloadPipStarted;      
-    public event Action<int, float> OnReloadPipProgress;  
-    public event Action<int>        OnReloadPipCompleted;  
-    // (legacy; optional)
-    public event Action<float, float> OnBoostStarted;  
-    public event Action OnBoostEnded;
+    public event Action<int,int>     OnChargesSnapshot;
+    public event Action<int,float>   OnChargeConsumed;
+    public event Action<float>       OnReloadStarted;
+    public event Action              OnReloadCompleted;
+    public event Action<int,float>   OnReloadPipStarted;
+    public event Action<int,float>   OnReloadPipProgress;
+    public event Action<int>         OnReloadPipCompleted;
 
-    IVesselStatus _status;
-    ResourceSystem _resources;
+    // (legacy; optional)
+    public event Action<float, float> OnBoostStarted;
+    public event Action               OnBoostEnded;
+
+    IVesselStatus   _status;
+    ResourceSystem  _resources;
     ConsumeBoostActionSO _so;
 
-    int _available;
+    int  _available;
     bool _reloading;
 
-    class BoostStack
+    [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
+
+    sealed class BoostStack
     {
         public float Mult;
         public float Duration;
-        public int   PipIndex;  
-        public Coroutine Routine; 
+        public int   PipIndex;
+        public CancellationTokenSource Cts;
     }
 
     readonly List<BoostStack> _activeStacks = new();
-    Coroutine _reloadRoutine;
+    CancellationTokenSource _reloadCts;
 
     public int  AvailableCharges => _available;
     public int  MaxCharges       => _so != null ? _so.MaxCharges : 0;
     public bool IsReloading      => _reloading;
+
+    void OnEnable()
+    {
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        CancelReload();
+        CancelAllStacks();
+        _reloading = false;
+        if (_status != null)
+        {
+            _status.Boosting = false;
+            _status.BoostMultiplier = 1f;
+        }
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
+    void OnTurnEndOfMiniGame()
+    {
+        // Stop everything on mini-game turn end
+        CancelReload();
+        CancelAllStacks();
+        _reloading = false;
+        if (_status != null)
+        {
+            _status.Boosting = false;
+            _status.BoostMultiplier = 1f;
+        }
+    }
 
     public override void Initialize(IVesselStatus shipStatus)
     {
@@ -54,26 +88,20 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
     }
 
-    /// <summary>
-    /// Called by SO StartAction. Attempts to consume one charge and apply an independent boost stack.
-    /// </summary>
     public void Consume(ConsumeBoostActionSO so, IVesselStatus status)
     {
         if (!so || status == null) return;
+        if (_status is { IsTranslationRestricted: true }) return;
 
-        if (_reloadRoutine != null)
-        {
-            StopCoroutine(_reloadRoutine);
-            _reloadRoutine = null;
-            _reloading = false;
-        }
+        CancelReload();
+
         if (_so != so || (_available <= 0 && _activeStacks.Count == 0 && !_reloading))
         {
             _so = so;
             if (_available <= 0 && _activeStacks.Count == 0 && !_reloading)
             {
-                _available = Mathf.Clamp(_so.MaxCharges, 0, 4);
-                _reloading = false;
+                _available  = Mathf.Clamp(_so.MaxCharges, 0, 4);
+                _reloading  = false;
                 OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
             }
         }
@@ -92,11 +120,12 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
             _resources.ChangeResourceAmount(_so.ResourceIndex, -_so.ResourceCost);
             OnBoostStarted?.Invoke(_so.BoostDuration, res.CurrentAmount);
         }
-        int pipIndex = Mathf.Clamp(_available - 1, 0, _so.MaxCharges - 1);
 
+        int pipIndex  = Mathf.Clamp(_available - 1, 0, _so.MaxCharges - 1);
         float duration = Mathf.Max(0.05f, _so.BoostDuration);
+
         OnChargeConsumed?.Invoke(pipIndex, duration);
-        
+
         _available = Mathf.Max(0, _available - 1);
         OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
 
@@ -104,34 +133,52 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         {
             Mult     = _so.BoostMultiplier.Value,
             Duration = duration,
-            PipIndex = pipIndex
+            PipIndex = pipIndex,
+            Cts      = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy())
         };
-        stack.Routine = StartCoroutine(StackRoutine(stack));
+
         _activeStacks.Add(stack);
+        StackRoutineAsync(stack, stack.Cts.Token).Forget();
 
         RecalculateMultiplier();
 
         if (_available == 0 && !_reloading)
-            _reloadRoutine = StartCoroutine(ReloadRoutine(_so.ReloadCooldown, _so.ReloadFillTime));
+        {
+            _reloadCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            ReloadRoutineAsync(_so.ReloadCooldown, _so.ReloadFillTime, _reloadCts.Token).Forget();
+        }
     }
 
     public void StopAllBoosts()
     {
-        foreach (var st in _activeStacks)
-            if (st?.Routine != null) StopCoroutine(st.Routine);
-        _activeStacks.Clear();
-
+        CancelAllStacks();
         RecalculateMultiplier();
     }
 
-    IEnumerator StackRoutine(BoostStack stack)
+    async UniTaskVoid StackRoutineAsync(BoostStack stack, CancellationToken token)
     {
-        yield return new WaitForSeconds(stack.Duration);
+        try
+        {
+            await UniTask.Delay(TimeSpan.FromSeconds(stack.Duration),
+                                DelayType.DeltaTime,
+                                PlayerLoopTiming.Update,
+                                token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            Debug.LogError($"[ConsumeBoost] StackRoutine error: {e}");
+        }
+        finally
+        {
+            int idx = _activeStacks.IndexOf(stack);
+            if (idx >= 0) _activeStacks.RemoveAt(idx);
 
-        int idx = _activeStacks.IndexOf(stack);
-        if (idx >= 0) _activeStacks.RemoveAt(idx);
+            stack.Cts?.Dispose();
+            stack.Cts = null;
 
-        RecalculateMultiplier();
+            RecalculateMultiplier();
+        }
     }
 
     void RecalculateMultiplier()
@@ -156,46 +203,75 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
     }
 
-    IEnumerator ReloadRoutine(float cooldown, float perPipFillTime)
+    async UniTaskVoid ReloadRoutineAsync(float cooldown, float perPipFillTime, CancellationToken token)
     {
         _reloading = true;
+        OnReloadStarted?.Invoke(Mathf.Max(0f, cooldown));
 
-        if (cooldown > 0f)
-            yield return new WaitForSeconds(cooldown);
-
-        perPipFillTime = Mathf.Max(0.01f, perPipFillTime);
-
-        // Fill strictly one pip at a time
-        while (_available < _so.MaxCharges)
+        try
         {
-            int pipIndex = _available; // next empty pip to fill (0-based from left)
-
-            // tell HUD: start animating THIS pip for perPipFillTime
-            OnReloadPipStarted?.Invoke(pipIndex, perPipFillTime);
-
-            float t = 0f;
-            while (t < perPipFillTime)
+            if (cooldown > 0f)
             {
-                t += Time.deltaTime;
-                float norm = Mathf.Clamp01(t / perPipFillTime);
-                OnReloadPipProgress?.Invoke(pipIndex, norm);
-                yield return null;
-
-                // if someone consumed mid-reload, abort gracefully
-                if (!_reloading) yield break;
+                await UniTask.Delay(TimeSpan.FromSeconds(cooldown),
+                                    DelayType.DeltaTime,
+                                    PlayerLoopTiming.Update,
+                                    token);
             }
 
-            // commit this pip as filled
-            _available++;
-            OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
-            OnReloadPipCompleted?.Invoke(pipIndex);
+            perPipFillTime = Mathf.Max(0.01f, perPipFillTime);
+
+            while (_available < _so.MaxCharges)
+            {
+                int pipIndex = (_so.MaxCharges - 1) - _available;
+
+                OnReloadPipStarted?.Invoke(pipIndex, perPipFillTime);
+
+                float t = 0f;
+                while (t < perPipFillTime)
+                {
+                    token.ThrowIfCancellationRequested();
+                    t += Time.deltaTime;
+                    float norm = Mathf.Clamp01(t / perPipFillTime);
+                    OnReloadPipProgress?.Invoke(pipIndex, norm);
+                    await UniTask.Yield(PlayerLoopTiming.Update);
+                }
+
+                _available++;
+                OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
+                OnReloadPipCompleted?.Invoke(pipIndex);
+            }
+
+            OnReloadCompleted?.Invoke();
         }
-
-        OnReloadCompleted?.Invoke();
-
-        _reloading = false;
-        _reloadRoutine = null;
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            Debug.LogError($"[ConsumeBoost] ReloadRoutine error: {e}");
+        }
+        finally
+        {
+            _reloading = false;
+            CancelReload();
+        }
     }
 
+    void CancelReload()
+    {
+        if (_reloadCts == null) return;
+        try { _reloadCts.Cancel(); } catch { }
+        _reloadCts.Dispose();
+        _reloadCts = null;
+    }
 
+    void CancelAllStacks()
+    {
+        foreach (var st in _activeStacks)
+        {
+            try { st?.Cts?.Cancel(); } catch { }
+            st?.Cts?.Dispose();
+            if (st != null) st.Cts = null;
+        }
+
+        _activeStacks.Clear();
+    }
 }

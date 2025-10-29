@@ -119,6 +119,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee67b721dde40b8be686c325412c7f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &906114914286106511
 GameObject:
   m_ObjectHideFlags: 0
@@ -622,6 +623,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b111e4c5e7848f7a44f9b65e597a6de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &2615798265241578943
 GameObject:
   m_ObjectHideFlags: 0
@@ -754,6 +756,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b111e4c5e7848f7a44f9b65e597a6de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &3894621490537728581
 GameObject:
   m_ObjectHideFlags: 0
@@ -1811,6 +1814,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   crystalPrefab: {fileID: 2116889879390265659, guid: 922e4ca81ec32e9468c23c3a12a3c65c,
     type: 3}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &6636369852405642565
 GameObject:
   m_ObjectHideFlags: 0
@@ -1856,6 +1860,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &6776402933378899515
 GameObject:
   m_ObjectHideFlags: 0

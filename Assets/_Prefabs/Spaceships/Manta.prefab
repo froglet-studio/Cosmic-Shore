@@ -1488,7 +1488,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vesselTransformer: {fileID: 7686683633640807837}
-  shipAnimator: {fileID: 0}
+  shipAnimator: {fileID: 5658933110804061391}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &5022817358293899131
 GameObject:
   m_ObjectHideFlags: 0
@@ -2324,8 +2325,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
-    type: 2}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0

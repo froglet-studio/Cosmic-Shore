@@ -15,7 +15,6 @@ MonoBehaviour:
   vesselPrismEffects:
   - {fileID: 11400000, guid: 78b37cebc40f2b7458b5958004216de5, type: 2}
   - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
-  - {fileID: 11400000, guid: 222210e40a351d5258b1ce66220b8453, type: 2}
   - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
   vesselCrystalEffects:
   - {fileID: 11400000, guid: 9e42aec8bd1b90c4c8f115039bcd1716, type: 2}

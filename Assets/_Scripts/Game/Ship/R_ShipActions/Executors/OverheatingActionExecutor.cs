@@ -1,8 +1,10 @@
 ﻿using System;
-using System.Collections;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game;
-using UnityEngine;
+using Obvious.Soap;
 
 public sealed class OverheatingActionExecutor : ShipActionExecutorBase
 {
@@ -11,13 +13,27 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     public event Action OnHeatDecayStarted;
     public event Action OnHeatDecayCompleted;
 
+    [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
+
     IVesselStatus _status;
     ResourceSystem _resources;
     Resource _heatResource;
     ActionExecutorRegistry _registry;
 
-    Coroutine _heatRoutine;
+    CancellationTokenSource _cts;
     bool _isOverheating;
+
+    void OnEnable()
+    {
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
+    void OnTurnEndOfMiniGame() => End();
 
     public override void Initialize(IVesselStatus shipStatus)
     {
@@ -37,11 +53,13 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
         if (_isOverheating) return;
 
         _heatResource = _resources.Resources[so.HeatResourceIndex];
-        if (_heatRoutine != null) StopCoroutine(_heatRoutine);
+
+        End(); 
 
         so.WrappedAction?.StartAction(_registry);
 
-        _heatRoutine = StartCoroutine(BuildHeatRoutine(so));
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+        BuildHeatRoutineAsync(so, _cts.Token).Forget();
     }
 
     public void StopOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
@@ -49,50 +67,78 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
         _registry = registry;
         if (_isOverheating) return;
 
-        if (_heatRoutine != null) StopCoroutine(_heatRoutine);
+        End();
 
         so.WrappedAction?.StopAction(_registry);
 
         OnHeatDecayStarted?.Invoke();
-        _heatRoutine = StartCoroutine(DecayHeatRoutine(so));
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+        DecayHeatRoutineAsync(so, _cts.Token).Forget();
     }
 
-    IEnumerator BuildHeatRoutine(OverheatingActionSO so)
+    void End()
+    {
+        if (_cts == null) return;
+        try { _cts.Cancel(); } catch { }
+        _cts.Dispose();
+        _cts = null;
+    }
+
+    async UniTaskVoid BuildHeatRoutineAsync(OverheatingActionSO so, CancellationToken token)
     {
         OnHeatBuildStarted?.Invoke();
 
-        while (_heatResource.CurrentAmount < _heatResource.MaxAmount)
+        try
         {
-            _resources.ChangeResourceAmount(so.HeatResourceIndex, so.HeatBuildRate);
-            yield return new WaitForSeconds(0.1f);
+            while (_heatResource.CurrentAmount < _heatResource.MaxAmount)
+            {
+                _resources.ChangeResourceAmount(so.HeatResourceIndex, so.HeatBuildRate);
+                await UniTask.Delay(TimeSpan.FromSeconds(0.1f),
+                                    DelayType.DeltaTime,
+                                    PlayerLoopTiming.Update,
+                                    token);
+            }
+
+            _isOverheating = true;
+            _status.Overheating = true;
+            _heatResource.CurrentAmount = _heatResource.MaxAmount;
+
+            OnOverheated?.Invoke();
+
+            so.WrappedAction?.StopAction(_registry);
+
+            await UniTask.Delay(TimeSpan.FromSeconds(so.OverheatDuration),
+                                DelayType.DeltaTime,
+                                PlayerLoopTiming.Update,
+                                token);
+
+            _isOverheating = false;
+            _status.Overheating = false;
+
+            OnHeatDecayStarted?.Invoke();
+            await DecayHeatRoutineAsync(so, token);
         }
-
-        _isOverheating = true;
-        _status.Overheating = true;
-        _heatResource.CurrentAmount = _heatResource.MaxAmount;
-
-        OnOverheated?.Invoke();
-
-        so.WrappedAction?.StopAction(_registry);
-
-        yield return new WaitForSeconds(so.OverheatDuration);
-
-        _isOverheating = false;
-        _status.Overheating = false;
-
-        OnHeatDecayStarted?.Invoke();
-        _heatRoutine = StartCoroutine(DecayHeatRoutine(so));
+        catch (OperationCanceledException) { }
+        catch (Exception e) { Debug.LogError($"[Overheating] BuildHeat error: {e}"); }
     }
 
-    IEnumerator DecayHeatRoutine(OverheatingActionSO so)
+    async UniTask DecayHeatRoutineAsync(OverheatingActionSO so, CancellationToken token)
     {
-        while (_heatResource.CurrentAmount > 0)
+        try
         {
-            _resources.ChangeResourceAmount(so.HeatResourceIndex, -so.HeatDecayRate.Value); 
-            yield return new WaitForSeconds(0.1f);
-        }
+            while (_heatResource.CurrentAmount > 0)
+            {
+                _resources.ChangeResourceAmount(so.HeatResourceIndex, -so.HeatDecayRate.Value);
+                await UniTask.Delay(TimeSpan.FromSeconds(0.1f),
+                                    DelayType.DeltaTime,
+                                    PlayerLoopTiming.Update,
+                                    token);
+            }
 
-        _heatResource.CurrentAmount = 0;
-        OnHeatDecayCompleted?.Invoke();
+            _heatResource.CurrentAmount = 0;
+            OnHeatDecayCompleted?.Invoke();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e) { Debug.LogError($"[Overheating] DecayHeat error: {e}"); }
     }
 }

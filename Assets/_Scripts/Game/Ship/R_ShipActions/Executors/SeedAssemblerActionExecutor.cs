@@ -1,6 +1,7 @@
 ﻿using System;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -17,6 +18,9 @@ namespace CosmicShore
         [Header("Scene Refs")]
         [SerializeField] private Game.VesselPrismController vesselPrismController;
 
+        [Header("Events")]
+        [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
         // Runtime
         IVesselStatus _status;
         ResourceSystem _resources;
@@ -28,9 +32,22 @@ namespace CosmicShore
         public event Action<Prism> OnBondingBegan;
         public event Action OnSeedStopped;
 
+        void OnEnable()
+        {
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        }
+
+        void OnDisable()
+        {
+            End();
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        }
+
+        void OnTurnEndOfMiniGame() => End();
+
         public override void Initialize(IVesselStatus shipStatus)
         {
-            _status = shipStatus;
+            _status    = shipStatus;
             _resources = shipStatus?.ResourceSystem;
             if (vesselPrismController == null)
                 vesselPrismController = shipStatus?.VesselPrismController;
@@ -43,21 +60,18 @@ namespace CosmicShore
         /// </summary>
         public bool StartSeed(SeedWallActionSO so, IVesselStatus status)
         {
-            if (so == null || status == null || _resources == null || vesselPrismController == null)
+            if (!so || status == null || !_resources || !vesselPrismController)
                 return false;
 
-            // resource check
             var cost = so.ComputeCost(_resources);
             if (!HasResource(so.ResourceIndex, cost)) return false;
-
-            // trail block check
+            
             var last = GetLatestBlock();
-            if (last == null && so.RequireExistingTrailBlock)
+            if (!last && so.RequireExistingTrailBlock)
                 return false;
 
-            // set active and apply shield
             ActiveSeedBlock = last;
-            if (ActiveSeedBlock == null) return false;
+            if (!ActiveSeedBlock) return false;
 
             ApplyShield(ActiveSeedBlock, so.ShieldOnSeed);
 
@@ -65,9 +79,8 @@ namespace CosmicShore
             if (cost > 0f)
                 _resources.ChangeResourceAmount(so.ResourceIndex, -cost);
 
-            // attach assembler script based on config (if not already present)
             _activeAssembler = EnsureAssembler(ActiveSeedBlock, so.AssemblerType);
-            if (_activeAssembler != null)
+            if (_activeAssembler)
                 _activeAssembler.Depth = so.BondingDepth;
 
             OnSeedStarted?.Invoke(ActiveSeedBlock);
@@ -75,29 +88,33 @@ namespace CosmicShore
         }
 
         /// <summary>
-        /// Begin the actual bonding/growth coroutine in the assembler.
+        /// Begin the actual bonding/growth routine in the assembler.
         /// </summary>
         public void BeginBonding()
         {
-            if (_activeAssembler == null) return;
+            if (!_activeAssembler) return;
             _activeAssembler.StartBonding();
             OnBondingBegan?.Invoke(ActiveSeedBlock);
         }
+
+        /// <summary>
+        /// Full stop via public End() to align with other executors.
+        /// </summary>
+        public void End() => StopSeedCompletely();
 
         /// <summary>
         /// Full stop. Clears references and stops any assembler work.
         /// </summary>
         public void StopSeedCompletely()
         {
-            // best-effort: stop assembler if present
-            if (_activeAssembler != null)
+            if (_activeAssembler)
             {
                 try { _activeAssembler.StopBonding(); }
-                catch { /* no-op */ }
+                catch { /* ignore */ }
             }
 
             _activeAssembler = null;
-            ActiveSeedBlock = null;
+            ActiveSeedBlock  = null;
 
             OnSeedStopped?.Invoke();
         }
@@ -109,9 +126,10 @@ namespace CosmicShore
             var listA = vesselPrismController?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
-            // In case you keep a secondary trail internally (compat with older code)
-            var trail2Field = typeof(Game.VesselPrismController).GetField("Trail2",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var trail2Field = typeof(Game.VesselPrismController).GetField(
+                "Trail2",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+            );
             var trail2 = trail2Field?.GetValue(vesselPrismController) as Trail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
@@ -120,14 +138,14 @@ namespace CosmicShore
 
         bool HasResource(int index, float cost)
         {
-            if (_resources == null || index < 0 || index >= _resources.Resources.Count) return false;
+            if (!_resources || index < 0 || index >= _resources.Resources.Count) return false;
             var res = _resources.Resources[index];
             return (res != null && res.CurrentAmount >= cost);
         }
 
         void ApplyShield(Prism block, SeedWallActionSO.ShieldMode mode)
         {
-            if (block == null) return;
+            if (!block) return;
             switch (mode)
             {
                 case SeedWallActionSO.ShieldMode.None:
@@ -143,25 +161,17 @@ namespace CosmicShore
 
         Assembler EnsureAssembler(Prism block, SeedWallActionSO.AssemblerKind kind)
         {
-            if (block == null) return null;
+            if (!block) return null;
 
-            // Reuse if already present
             var existing = block.GetComponent<Assembler>();
-            if (existing != null) return existing;
+            if (existing) return existing;
 
-            // Attach configured assembler
-            switch (kind)
+            return kind switch
             {
-                case SeedWallActionSO.AssemblerKind.Wall:
-                    return block.gameObject.AddComponent<WallAssembler>();
-                case SeedWallActionSO.AssemblerKind.Gyroid:
-                    // If you have a GyroidAssembler type, add it here:
-                    // return block.gameObject.AddComponent<GyroidAssembler>();
-                    // Fallback to Wall if Gyroid not present in this build:
-                    return block.gameObject.AddComponent<WallAssembler>();
-                default:
-                    return block.gameObject.AddComponent<WallAssembler>();
-            }
+                SeedWallActionSO.AssemblerKind.Wall   => block.gameObject.AddComponent<WallAssembler>(),
+                SeedWallActionSO.AssemblerKind.Gyroid => block.gameObject.AddComponent<WallAssembler>(),
+                _                                     => block.gameObject.AddComponent<WallAssembler>()
+            };
         }
     }
 }
