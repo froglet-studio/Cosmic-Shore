@@ -13,15 +13,7 @@ MonoBehaviour:
   m_Name: CloakSeedWallAction
   m_EditorClassIdentifier: 
   cooldownSeconds: 15
-  hideShipDuringCooldown: 1
-  requireExistingTrailBlock: 1
-  ghostLifetime: 0
-  ghostScaleMultiplier: 1
-  ghostMaterialOverride: {fileID: 0}
-  ghostEulerOffset: {x: 0, y: 0, z: 0}
-  ghostIdleMotion: 0
-  ghostBobAmplitude: 0.15
-  ghostBobSpeed: 1.2
-  ghostYawSpeed: 10
-  shipCloakMaterial: {fileID: 2100000, guid: 518e52d502934984ca138775b988fb4c, type: 2}
-  prismCloakMaterial: {fileID: 2100000, guid: 43d343877d68aa943a8dc856c75d5281, type: 2}
+  seedWallSO: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162, type: 2}
+  prismCloakMaterial: {fileID: 2100000, guid: 35264d3f23e33d44ebdec6d9cade218a, type: 2}
+  shipCloakMaterialOptional: {fileID: 0}
+  shipCloakAlphaFallback: 0.2

@@ -1133,12 +1133,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a55cdf086c44e1f85a7faae295175e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinnedMeshRenderer: {fileID: 4172724446676456733}
-  modelRoot: {fileID: 6722969896632727780}
-  seedAssemblerExecutor: {fileID: 8230992318499782635}
-  seedWallConfig: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162, type: 2}
-  enableWatchdog: 1
-  watchdogInterval: 0.05
+  shipRenderer: {fileID: 4172724446676456733}
+  seedAssembler: {fileID: 8230992318499782635}
+  ghostEulerOffset: {x: 0, y: 0, z: 0}
+  ghostPositionOffset: {x: 0, y: 0, z: 0}
+  ghostScaleMultiplier: 1.5
+  ghostUseShipOrientation: 1
 --- !u!1 &3520243107353251244
 GameObject:
   m_ObjectHideFlags: 0
@@ -2105,7 +2105,8 @@ MonoBehaviour:
   seedAssemblerExecutor: {fileID: 8230992318499782635}
   stationarySeedConfig: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162,
     type: 2}
-  stationaryModeChanged: {fileID: 0}
+  stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
+    type: 2}
 --- !u!1 &6365277042143809594
 GameObject:
   m_ObjectHideFlags: 0
@@ -2594,8 +2595,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
-    type: 2}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
