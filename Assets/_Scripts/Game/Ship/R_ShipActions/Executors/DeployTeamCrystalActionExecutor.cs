@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿using Obvious.Soap;
 using CosmicShore.Game;
 using UnityEngine;
 
@@ -9,23 +9,34 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
     [Header("Scene Refs")]
     [SerializeField] private Crystal crystalPrefab;
 
+    [Header("Events")]
+    [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
     Crystal _ghostCrystal;
-    float _lastUseTime = -Mathf.Infinity;
 
     IVessel _ship;
     IVesselStatus _status;
 
+    void OnEnable()
+    {
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
     public override void Initialize(IVesselStatus shipStatus)
     {
         _status = shipStatus;
-        _ship = shipStatus.Vessel;
+        _ship   = shipStatus.Vessel;
     }
 
     public void Begin(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
     {
         if (_ghostCrystal || !crystalPrefab) return;
 
-        // Parent directly to the ship
         _ghostCrystal = Instantiate(crystalPrefab, ship.Transform);
         _ghostCrystal.transform.localPosition = new Vector3(0f, 0f, so.ForwardOffset);
         _ghostCrystal.transform.localRotation = Quaternion.identity;
@@ -37,15 +48,20 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
     {
         if (!_ghostCrystal) return;
 
-        // Detach before activation so it stays in world space
         _ghostCrystal.transform.SetParent(null, true);
 
         ActivateCrystal(_ghostCrystal, status);
         _ghostCrystal = null;
-
-        _lastUseTime = Time.time;
-        Debug.Log($"[DeployTeamCrystal] Crystal deployed. Cooldown started ({so.Cooldown}s)");
     }
+
+    void End()
+    {
+        if (!_ghostCrystal) return;
+        Destroy(_ghostCrystal.gameObject);
+        _ghostCrystal = null;
+    }
+
+    void OnTurnEndOfMiniGame() => End();
 
     void PrepareGhost(Crystal cr, DeployTeamCrystalActionSO so)
     {
