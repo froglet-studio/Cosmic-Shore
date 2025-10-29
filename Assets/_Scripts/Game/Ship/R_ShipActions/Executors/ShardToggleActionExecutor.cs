@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Game;
+using Obvious.Soap;
 using UnityEngine;
 
 public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
@@ -6,7 +7,22 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
     [Header("Bus (required)")]
     [SerializeField] private ShardFieldBus shardFieldBus;
 
+    [Header("Events")]
+    [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
     bool _redirectActive;
+
+    void OnEnable()
+    {
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
+    void OnTurnEndOfMiniGame() => End();
 
     public override void Initialize(IVesselStatus shipStatus) { }
 
@@ -27,4 +43,11 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
             _redirectActive = false;
         }
     }
+
+     void End()
+     {
+         if (!_redirectActive) return;
+         shardFieldBus.BroadcastRestoreToCrystal();
+         _redirectActive = false;
+     }
 }
