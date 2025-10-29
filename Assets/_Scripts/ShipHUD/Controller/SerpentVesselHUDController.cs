@@ -17,7 +17,7 @@ namespace CosmicShore.Game
         [SerializeField] private int shieldResourceIndex = 0;
 
         [Header("Boost pip colors")]
-        [SerializeField] private Color pipFull      = Color.white;
+        [SerializeField] private Color pipFull      = new Color(1f, 1f, 1f, 1f);
         [SerializeField] private Color pipConsuming = new Color(0.3f, 1f, 0.3f);
         [SerializeField] private Color pipEmpty     = new Color(1f, 1f, 1f, 0.25f);
 
@@ -51,24 +51,20 @@ namespace CosmicShore.Game
                 {
                     _pipAnim = new Coroutine[pips.Length];
                     _pipReloadingLive = new bool[pips.Length];
-
+                
                     for (int i = 0; i < pips.Length; i++)
                     {
                         var pip = pips[i];
                         if (!pip) continue;
-
-                        // Make sure the GameObject and Image are enabled
-                        if (!pip.gameObject.activeSelf) pip.gameObject.SetActive(true);
+                         pip.gameObject.SetActive(true);
                         pip.enabled = true;
-
-                        if (pip.type != Image.Type.Filled) pip.type = Image.Type.Filled;
-                        pip.fillAmount = 1f;        // start visible and full visually
+                        pip.type = Image.Type.Filled;
+                        pip.fillAmount = 1f;
                         pip.color = pipFull;
                     }
                 }
             }
 
-            // Resolve executor if not set
             if (consumeBoostExecutor == null)
             {
                 var registry = vesselStatus?.ShipTransform

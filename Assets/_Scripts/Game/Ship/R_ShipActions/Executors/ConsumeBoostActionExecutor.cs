@@ -60,7 +60,8 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
     public void Consume(ConsumeBoostActionSO so, IVesselStatus status)
     {
         if (!so || status == null) return;
-
+        if (_status is { IsTranslationRestricted: true }) return;
+        
         if (_reloadRoutine != null)
         {
             StopCoroutine(_reloadRoutine);
@@ -165,12 +166,13 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 
         perPipFillTime = Mathf.Max(0.01f, perPipFillTime);
 
-        // Fill strictly one pip at a time
+        // Fill strictly one pip at a time — REVERSE ORDER (rightmost first)
         while (_available < _so.MaxCharges)
         {
-            int pipIndex = _available; // next empty pip to fill (0-based from left)
+            // next empty pip index counting from the RIGHT:
+            // e.g., Max=4, available=0 -> index 3; available=1 -> index 2; …
+            int pipIndex = (_so.MaxCharges - 1) - _available;
 
-            // tell HUD: start animating THIS pip for perPipFillTime
             OnReloadPipStarted?.Invoke(pipIndex, perPipFillTime);
 
             float t = 0f;
@@ -181,11 +183,10 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
                 OnReloadPipProgress?.Invoke(pipIndex, norm);
                 yield return null;
 
-                // if someone consumed mid-reload, abort gracefully
-                if (!_reloading) yield break;
+                if (!_reloading) yield break; // graceful abort if something stops reloading
             }
 
-            // commit this pip as filled
+            // pip is now FULL → commit availability
             _available++;
             OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
             OnReloadPipCompleted?.Invoke(pipIndex);
@@ -196,6 +197,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         _reloading = false;
         _reloadRoutine = null;
     }
+
 
 
 }
