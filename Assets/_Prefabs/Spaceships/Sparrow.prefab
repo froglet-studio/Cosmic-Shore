@@ -386,6 +386,7 @@ MonoBehaviour:
   stationarySeedConfig: {fileID: 0}
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
     type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &717667809712148129
 GameObject:
   m_ObjectHideFlags: 0
@@ -1186,6 +1187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9471794db1a640b38856263fd8b5fab1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &5585527924204855743
 GameObject:
   m_ObjectHideFlags: 0
@@ -2023,6 +2025,7 @@ MonoBehaviour:
   - {fileID: 1507099546418340070}
   - {fileID: 125917388690748467}
   blockFactory: {fileID: 5724387604044236411}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &6746362012311477801
 GameObject:
   m_ObjectHideFlags: 0
@@ -2121,6 +2124,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gun: {fileID: 2848080707669944585}
   projectileContainer: {fileID: 4281975942687864155}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &7379490817640152830
 GameObject:
   m_ObjectHideFlags: 0
