@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Game;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -9,13 +11,27 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
     [Header("Scene Refs")]
     [SerializeField] VesselPrismController controller;
 
+    [SerializeField] public Obvious.Soap.ScriptableEventNoParam OnMiniGameTurnEnd;
+
     IVesselStatus _status;
-    float _min;      
-    Coroutine _loop;
+    float _min;
+    CancellationTokenSource _cts;
     bool _growing;
 
     public float MinScale => _min;
     public float CurrentScale => controller ? controller.ZScaler : 1f;
+
+    void OnEnable()
+    {
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    void OnDisable()
+    {
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
+    void OnTurnEndOfMiniGame() => End();
 
     public override void Initialize(IVesselStatus shipStatus)
     {
@@ -28,37 +44,47 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
 
     public void Begin(GrowTrailActionSO so, IVesselStatus status)
     {
-        if (controller == null) return;
+        if (!controller) return;
         _growing = true;
-        if (_loop != null) StopCoroutine(_loop);
-        _loop = StartCoroutine(Loop(so));
+
+        End();
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+        LoopAsync(so, _cts.Token).Forget();
     }
 
     public void End()
     {
         _growing = false;
+        if (_cts != null)
+        {
+            try { _cts.Cancel(); } catch { }
+            _cts.Dispose();
+            _cts = null;
+        }
     }
 
-    IEnumerator Loop(GrowTrailActionSO so)
+    async UniTaskVoid LoopAsync(GrowTrailActionSO so, CancellationToken token)
     {
-        while (_growing)
+        try
         {
-            Step(so.GrowRate, so.MaxSize, increase:true, so);
-            yield return null;
-        }
+            while (_growing)
+            {
+                Step(so.GrowRate, so.MaxSize, increase:true, so);
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
 
-        while (controller && AnyAboveMin(so))
-        {
-            Step(so.ShrinkRate, _min, increase:false, so);
-            yield return null;
+            while (controller && AnyAboveMin(so))
+            {
+                Step(so.ShrinkRate, _min, increase:false, so);
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
         }
-
-        _loop = null;
+        catch (OperationCanceledException) { }
     }
 
     void Step(float rate, float limit, bool increase, GrowTrailActionSO so)
     {
-        if (controller == null) return;
+        if (!controller) return;
         float sign = increase ? +1f : -1f;
         float dt = Time.deltaTime * rate;
 
@@ -78,7 +104,7 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
         if (so.WX > 0f && controller.XScaler > _min + 0.0001f) return true;
         if (so.WY > 0f && controller.YScaler > _min + 0.0001f) return true;
         if (so.WZ > 0f && controller.ZScaler > _min + 0.0001f) return true;
-        if (so.WGap > 0f) return controller.Gap < so.MaxSize - 0.0001f; // inverted logic for gap
+        if (so.WGap > 0f) return controller.Gap < so.MaxSize - 0.0001f; 
         return false;
     }
 }
