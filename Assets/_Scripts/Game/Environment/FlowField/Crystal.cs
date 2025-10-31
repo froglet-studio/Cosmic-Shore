@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.SOAP;
+using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;
 
@@ -45,9 +46,8 @@ namespace CosmicShore.Game
         public List<CrystalModelData> CrystalModels => crystalModels;
         
         Material tempMaterial;
-        // Vector3 _lastSpawnPosition;
         CrystalManager crystalManager;
-        // public Vector3 Origin { get; private set; } = Vector3.zero;
+        public bool IsExploding { get; private set; }
 
         protected virtual void Start()
         {
@@ -81,7 +81,6 @@ namespace CosmicShore.Game
 
         public void DestroyCrystal()
         {
-            // cell?.TryRemoveItem(this);
             crystalManager.TryRemoveItem(this);
             Destroy(gameObject);
         }
@@ -136,6 +135,12 @@ namespace CosmicShore.Game
         
         public void Explode(ExplodeParams explodeParams)
         {
+            if (IsExploding)
+                return;           
+            
+            IsExploding = true;
+            WaitForImpact().Forget();
+            
             foreach (var modelData in crystalModels)
             {
                 var model = modelData.model;
@@ -228,6 +233,15 @@ namespace CosmicShore.Game
 
             renderer.material = targetMaterial;
             Destroy(tempMaterial);
+        }
+        
+        /// <summary>
+        /// This is to forbid multiple impacts due to multiple vessel colliders
+        /// </summary>
+        async UniTask WaitForImpact()
+        {
+            await UniTask.WaitForSeconds(0.5f);
+            IsExploding = false;
         }
     }
 }

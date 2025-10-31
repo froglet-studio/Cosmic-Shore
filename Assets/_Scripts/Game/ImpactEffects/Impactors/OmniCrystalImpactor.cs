@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Core;
 using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -13,18 +14,21 @@ namespace CosmicShore.Game
         [SerializeField]
         ScriptableEventCrystalStats OnCrystalCollected;
 
-        bool isImpacting;
-
+        bool IsImpacting;
+        
         protected override void AcceptImpactee(IImpactor impactee)
         {
-            if (isImpacting)
+            if (IsImpacting)
+                return;
+            
+            if (Crystal.IsExploding)
                 return;
             
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
                 {
-                    isImpacting = true;
+                    IsImpacting = true;
                     WaitForImpact().Forget();
                     
                     ExecuteEffect(shipImpactee);
@@ -68,10 +72,13 @@ namespace CosmicShore.Game
             }
         }
         
+        /// <summary>
+        /// This is to forbid multiple impacts due to multiple vessel colliders
+        /// </summary>
         async UniTask WaitForImpact()
         {
-            await UniTask.WaitForSeconds(2f);
-            isImpacting = false;
+            await UniTask.WaitForSeconds(0.5f);
+            IsImpacting = false;
         }
     }
 }

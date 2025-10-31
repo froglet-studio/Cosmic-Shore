@@ -12,9 +12,6 @@ namespace CosmicShore.Game
             writePerm: NetworkVariableWritePermission.Server, 
             readPerm: NetworkVariableReadPermission.Everyone
         );
-
-        bool isExploding;
-        
         
         public override void OnNetworkSpawn()
         {
@@ -53,11 +50,6 @@ namespace CosmicShore.Game
         [ServerRpc(RequireOwnership = false)]
         void ExplodeCrystal_ServerRpc(NetworkExplodeParams explodeParams)
         {
-            if (isExploding)
-                return;
-            
-            isExploding = true;
-            WaitForImpact().Forget();
             ExplodeCrystal_ClientRpc(explodeParams);
         }
 
@@ -86,12 +78,6 @@ namespace CosmicShore.Game
         void OnSpawnPosChanged(Vector3 previousValue, Vector3 newValue)
         {
             UpdateCrystalPos(newValue);
-        }
-        
-        async UniTask WaitForImpact()
-        {
-            await UniTask.WaitForSeconds(2f);
-            isExploding = false;
         }
     }
     
