@@ -20,21 +20,22 @@ namespace CosmicShore.Game
             if (isImpacting)
                 return;
             
-            isImpacting = true;
-            
-            WaitForImpact().Forget();
-            
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
                 {
-                    ExecuteEffect(shipImpactee);
+                    isImpacting = true;
+                    WaitForImpact().Forget();
                     
-                    if(!DoesEffectExist(omniCrystalShipEffects)) return;
-                    foreach (var effect in omniCrystalShipEffects)
+                    ExecuteEffect(shipImpactee);
+
+                    if (DoesEffectExist(omniCrystalShipEffects))
                     {
-                        effect.Execute(shipImpactee,this);
+                        foreach (var effect in omniCrystalShipEffects)
+                            effect.Execute(shipImpactee,this);
                     }
+                    
+                    Crystal.Respawn();
                     break;
                 }
             }
@@ -65,8 +66,6 @@ namespace CosmicShore.Game
                     PlayerName = shipStatus.PlayerName,
                 });
             }
-
-            Crystal.Respawn();
         }
         
         async UniTask WaitForImpact()
