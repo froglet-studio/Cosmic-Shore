@@ -14,11 +14,6 @@ namespace CosmicShore.Game
         ScriptableEventCrystalStats OnCrystalCollected;
 
         bool isImpacting;
-        
-        protected virtual void Awake()
-        {
-            base.Awake();
-        }
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
@@ -51,20 +46,7 @@ namespace CosmicShore.Game
 
             if (!Crystal.CanBeCollected(shipStatus.Domain))
                 return;
-            
-//             if (allowVesselImpactEffect)
-//             {
-//                 // TODO - Need to create architecture on how to handle AI based on impact effects
-//                 /*if (vessel.VesselStatus.AIPilot != null)
-//                 {
-//                     AIPilot aiPilot = vessel.VesselStatus.AIPilot;
-//
-//                     aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-//                     aiPilot.throttle = aiPilot.defaultThrottle;
-//                 }*/
-//             }
 
-            // TODO - Add Event channels here rather than calling singletons directly.
             OnCrystalCollected?.Raise(
                 new CrystalStats()
                 {
@@ -73,8 +55,6 @@ namespace CosmicShore.Game
                     Value =  Crystal.crystalProperties.crystalValue,
                 }
             );
-            /*if (StatsManager.Instance)
-                StatsManager.Instance.CrystalCollected(vesselStatus.Vessel, crystal.crystalProperties);*/
 
             if (shipStatus.VesselType != VesselClassType.Manta)
             {
