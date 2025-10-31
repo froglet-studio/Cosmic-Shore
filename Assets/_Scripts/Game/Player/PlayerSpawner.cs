@@ -1,3 +1,4 @@
+using CosmicShore.App.UI.Controllers;
 using CosmicShore.Core;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -8,24 +9,26 @@ namespace CosmicShore.Game
     public class PlayerSpawner : MonoBehaviour
     {
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
-        
+
         [SerializeField, RequireInterface((typeof(IPlayer)))]
         Object _playerPrefab;
 
-        [FormerlySerializedAs("_shipSpawner")] [SerializeField] 
+        [FormerlySerializedAs("_shipSpawner")] [SerializeField]
         VesselSpawner vesselSpawner;
-        
+
+        [SerializeField] private OverviewPanel _overviewPanel;
 
         public IPlayer SpawnPlayerAndShip(IPlayer.InitializeData data)
         {
             if (!data.AllowSpawning)
                 return null;
-                
+
             IPlayer player = (IPlayer)Instantiate(_playerPrefab);
             vesselSpawner.SpawnShip(data.vesselClass, out IVessel ship);
             player.InitializeForSinglePlayerMode(data, ship);
             ship.Initialize(player, data.IsAI);
             PlayerVesselInitializeHelper.SetShipProperties(_themeManagerData, ship);
+
             return player;
         }
     }
