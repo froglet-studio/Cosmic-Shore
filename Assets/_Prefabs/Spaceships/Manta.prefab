@@ -2409,8 +2409,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1079422f73b5424b97437619fdccad2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jawResourceIndex: 0
-  blockBaseSize: {x: 30, y: 30}
   view: {fileID: 2835891913121360755}
   overchargeSO: {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
   skimmer: {fileID: 8469300474470268824}
@@ -4002,6 +4000,14 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 2835891913121360755}
+    - targetCorrespondingSourceObject: {fileID: 7886290077738051211, guid: ce0291905886e0b45b571bb9c51c0d19,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1118492616591276112}
+    - targetCorrespondingSourceObject: {fileID: 7886290077738051211, guid: ce0291905886e0b45b571bb9c51c0d19,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8950761245900539463}
   m_SourcePrefab: {fileID: 100100000, guid: ce0291905886e0b45b571bb9c51c0d19, type: 3}
 --- !u!224 &1018278068738739671 stripped
 RectTransform:
@@ -4042,22 +4048,8 @@ MonoBehaviour:
   highlights:
   - input: 2
     image: {fileID: 7069206601941259528}
-  silhouetteContainer: {fileID: 4894037493201937865}
-  trailDisplayContainer: {fileID: 5007938818474930393}
-  silhouetteParts:
-  - {fileID: 322268676704545573}
-  - {fileID: 8777980414596646480}
-  - {fileID: 4010301292554909138}
-  - {fileID: 4125835721608554647}
-  - {fileID: 5978549935140177486}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  jawResourceIndex: -1
-  vesselPrismController: {fileID: 874579555101021522}
-  driftTrailAction: {fileID: 0}
-  worldToUIScale: 6
-  imageScale: 0.08
-  swingBlocks: 0
+  silhouetteController: {fileID: 1118492616591276112}
+  uiTrailController: {fileID: 8950761245900539463}
   countText: {fileID: 1233584866538271001}
   fillImage: {fileID: 4296652247721588461}
   overchargePrismCount: {fileID: 4338819628229389481}
@@ -4065,6 +4057,47 @@ MonoBehaviour:
   overchargeCountdownText: {fileID: 1233584866538271001}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   highlightColor: {r: 0, g: 1, b: 0.21875882, a: 1}
+--- !u!114 &1118492616591276112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8845336482132744666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0070706274c44ba4b87b98ec1ac94b5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  silhouetteContainer: {fileID: 4894037493201937865}
+  silhouetteParts: []
+  driftTrailAction: {fileID: 0}
+  topJaw: {fileID: 0}
+  bottomJaw: {fileID: 0}
+  jawResourceIndex: -1
+  debugDot: 0
+--- !u!114 &8950761245900539463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8845336482132744666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8734d021ade4a7390ca25cdad361b6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vesselPrismController: {fileID: 0}
+  driftTrailAction: {fileID: 0}
+  trailDisplayContainer: {fileID: 0}
+  blockSizePx: {x: 4, y: 4}
+  rowSpacingPx: 200
+  columnGapPx: 250
+  scaleMultiplier: 0.7
+  swingBlocks: 0
+  smoothingSeconds: 0.08
+  hardRowCap: 8
 --- !u!1001 &4619950853104356685
 PrefabInstance:
   m_ObjectHideFlags: 0

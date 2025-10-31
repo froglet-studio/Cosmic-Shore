@@ -1309,6 +1309,8 @@ GameObject:
   m_Component:
   - component: {fileID: 3797657973119974518}
   - component: {fileID: 7033107979473629901}
+  - component: {fileID: 4090339960333606947}
+  - component: {fileID: 4682555176901532358}
   m_Layer: 0
   m_Name: RhinoHUDVariant
   m_TagString: Untagged
@@ -1355,17 +1357,49 @@ MonoBehaviour:
   highlights:
   - input: 0
     image: {fileID: 6115081010288432129}
-  silhouetteContainer: {fileID: 6767753844588534082}
+  silhouetteController: {fileID: 4682555176901532358}
+  uiTrailController: {fileID: 4090339960333606947}
+--- !u!114 &4090339960333606947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4634953772157888635}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8734d021ade4a7390ca25cdad361b6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vesselPrismController: {fileID: 874579555101021522}
+  driftTrailAction: {fileID: 0}
   trailDisplayContainer: {fileID: 465566354238419221}
+  blockSizePx: {x: 10, y: 10}
+  rowSpacingPx: 6
+  columnGapPx: 16
+  scaleMultiplier: 1
+  swingBlocks: 0
+  smoothingSeconds: 0.08
+  hardRowCap: 8
+--- !u!114 &4682555176901532358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4634953772157888635}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0070706274c44ba4b87b98ec1ac94b5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  silhouetteContainer: {fileID: 6767753844588534082}
   silhouetteParts: []
+  driftTrailAction: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   jawResourceIndex: -1
-  vesselPrismController: {fileID: 874579555101021522}
-  driftTrailAction: {fileID: 0}
-  worldToUIScale: 2
-  imageScale: 0.02
-  swingBlocks: 0
+  debugDot: 0
 --- !u!1 &5077424405219628151
 GameObject:
   m_ObjectHideFlags: 0
@@ -2249,8 +2283,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c636825408af4ed7bb3bc74ab877922d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jawResourceIndex: 0
-  blockBaseSize: {x: 30, y: 30}
   view: {fileID: 7033107979473629901}
 --- !u!1 &6568794290610978101
 GameObject:

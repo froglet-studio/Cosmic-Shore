@@ -115,8 +115,17 @@ namespace CosmicShore.Game
         public void SetShipMaterial(Material material) =>
             VesselStatus.ShipMaterial = material;
 
-        public void SetBlockSilhouettePrefab(GameObject prefab) =>
-            VesselStatus.ShipHUDController.SetBlockPrefab(prefab);
+        public void SetBlockSilhouettePrefab(GameObject prefab)
+        {
+            var trail = VesselStatus?.VesselHUDView ? VesselStatus.VesselHUDView.TrailUI : null;
+            if (trail != null)
+            {
+                trail.SetBlockPrefab(prefab);
+                return;
+            }
+
+            VesselStatus?.ShipHUDController?.SetBlockPrefab(prefab);
+        }
 
         public void SetAOEExplosionMaterial(Material material) =>
             VesselStatus.AOEExplosionMaterial = material;

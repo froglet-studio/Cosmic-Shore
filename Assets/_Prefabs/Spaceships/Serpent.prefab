@@ -2576,8 +2576,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99148a7d0df947b0969a4432426d77a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jawResourceIndex: 0
-  blockBaseSize: {x: 30, y: 30}
   view: {fileID: 5470374086122723936}
   consumeBoostExecutor: {fileID: 2460618104011007721}
   shieldResourceIndex: 0
@@ -3605,6 +3603,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7800325436931231227}
     m_Modifications:
+    - target: {fileID: 1190334749785048167, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1808271107567822185, guid: af7b78e6bb3a8394f88f24bb0e31667a,
         type: 3}
       propertyPath: m_Enabled
@@ -3614,6 +3617,11 @@ PrefabInstance:
         type: 3}
       propertyPath: resourceFillAnimator
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684549187044434082, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3162412769696891332, guid: af7b78e6bb3a8394f88f24bb0e31667a,
         type: 3}
@@ -3836,12 +3844,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!224 &5982939433017233667 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 7277748476972212419, guid: af7b78e6bb3a8394f88f24bb0e31667a,
-    type: 3}
-  m_PrefabInstance: {fileID: 4033090122440962496}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &6247400849586850906 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7010789474626174362, guid: af7b78e6bb3a8394f88f24bb0e31667a,
@@ -3877,22 +3879,8 @@ MonoBehaviour:
     image: {fileID: 8484929212193490670}
   - input: 7
     image: {fileID: 3512818663123036916}
-  silhouetteContainer: {fileID: 5982939433017233667}
-  trailDisplayContainer: {fileID: 3146713351324216133}
-  silhouetteParts:
-  - {fileID: 322268676704545573}
-  - {fileID: 8777980414596646480}
-  - {fileID: 4010301292554909138}
-  - {fileID: 4125835721608554647}
-  - {fileID: 5978549935140177486}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  jawResourceIndex: -1
-  vesselPrismController: {fileID: 874579555101021522}
-  driftTrailAction: {fileID: 0}
-  worldToUIScale: 2
-  imageScale: 0.02
-  swingBlocks: 0
+  silhouetteController: {fileID: 0}
+  uiTrailController: {fileID: 0}
   shieldIconsByCount:
   - {fileID: 21300000, guid: 05ee374807511b44aa2a486aaf27e752, type: 3}
   - {fileID: 21300000, guid: ee81d0070c09faa44824544889fd5ddf, type: 3}
