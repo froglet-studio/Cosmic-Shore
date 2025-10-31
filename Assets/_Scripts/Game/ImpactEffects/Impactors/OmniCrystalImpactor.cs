@@ -70,7 +70,7 @@ namespace CosmicShore.Game
         
         async UniTask WaitForImpact()
         {
-            await UniTask.NextFrame();
+            await UniTask.WaitForSeconds(2f);
             isImpacting = false;
         }
     }

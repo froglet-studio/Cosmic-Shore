@@ -1,4 +1,5 @@
 using CosmicShore.Utility.ClassExtensions;
+using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -54,7 +55,9 @@ namespace CosmicShore.Game
         {
             if (isExploding)
                 return;
+            
             isExploding = true;
+            WaitForImpact().Forget();
             ExplodeCrystal_ClientRpc(explodeParams);
         }
 
@@ -83,6 +86,11 @@ namespace CosmicShore.Game
         void OnSpawnPosChanged(Vector3 previousValue, Vector3 newValue)
         {
             UpdateCrystalPos(newValue);
+        }
+        
+        async UniTask WaitForImpact()
+        {
+            await UniTask.WaitForSeconds(2f);
             isExploding = false;
         }
     }
