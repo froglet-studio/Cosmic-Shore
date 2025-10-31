@@ -16,8 +16,6 @@ namespace CosmicShore.Game
         [FormerlySerializedAs("_shipSpawner")] [SerializeField]
         VesselSpawner vesselSpawner;
 
-        [SerializeField] private OverviewPanel _overviewPanel;
-
         public IPlayer SpawnPlayerAndShip(IPlayer.InitializeData data)
         {
             if (!data.AllowSpawning)
