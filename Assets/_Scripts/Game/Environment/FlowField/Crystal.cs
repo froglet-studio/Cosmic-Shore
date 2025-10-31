@@ -40,8 +40,6 @@ namespace CosmicShore.Game
         [Header("Data Containers")]
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
 
-        [SerializeField] private Collider collider;
-
         #endregion
         
         public List<CrystalModelData> CrystalModels => crystalModels;
@@ -99,16 +97,7 @@ namespace CosmicShore.Game
 
         public void MoveToNewPos(Vector3 newPos)
         {
-            /*Vector3 spawnPos;
-            do
-            {
-                spawnPos = Random.insideUnitSphere * SphereRadius + cellData.CellTransform.position;
-            } while (Vector3.SqrMagnitude(_lastSpawnPosition - spawnPos) <= MinimumSpaceBetweenCurrentAndLastSpawnPos);*/
-            
             transform.SetPositionAndRotation(newPos, Quaternion.identity);
-            collider.enabled = true;
-            // Origin = transform.position;
-           //  _lastSpawnPosition = newPos;
         }
 
         public void Vacuum(Vector3 newPosition, float vaccumAmount)
@@ -147,19 +136,12 @@ namespace CosmicShore.Game
         
         public void Explode(ExplodeParams explodeParams)
         {
-            if (!collider.enabled)
-                return;
-            
-            collider.enabled = false;
-            
             foreach (var modelData in crystalModels)
             {
                 var model = modelData.model;
 
                 tempMaterial = new Material(modelData.explodingMaterial);
                 var spentCrystal = Instantiate(SpentCrystalPrefab);
-                /*spentCrystal.transform.position = transform.position;
-                spentCrystal.transform.localEulerAngles = transform.localEulerAngles;*/
                 spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
                 spentCrystal.GetComponent<Renderer>().material = tempMaterial;
                 spentCrystal.transform.localScale = transform.lossyScale;
