@@ -73270,9 +73270,6 @@ MonoBehaviour:
   RespectInventoryForGameSelection: 0
   selectedVesselClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
-  _selectedPlayerCount: {fileID: 11400000, guid: 15256dcf0be30b4489190913d1f305db,
-    type: 2}
-  _selectedIntensity: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
 --- !u!224 &175867981159570580
 RectTransform:
   m_ObjectHideFlags: 0
@@ -80316,12 +80313,17 @@ MonoBehaviour:
     domain: 2
     PlayerName: Hostile1
     IsAI: 1
-    AllowSpawning: 1
+    AllowSpawning: 0
   - vesselClass: 11
     domain: 2
     PlayerName: Hostile2
-    IsAI: 0
+    IsAI: 1
     AllowSpawning: 0
+  - vesselClass: 3
+    domain: 2
+    PlayerName: Hostile3
+    IsAI: 1
+    AllowSpawning: 1
   _spawnTransforms:
   - {fileID: 1564324325}
   - {fileID: 673228694}
