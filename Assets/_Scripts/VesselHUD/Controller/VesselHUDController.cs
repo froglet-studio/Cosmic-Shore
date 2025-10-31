@@ -38,9 +38,8 @@ namespace CosmicShore.Game
             {
                 Debug.LogWarning("[VesselHUDController] ActionHandler is null.");
             }
-
             _view?.Silhouette?.Initialize(_status);
-            _view?.TrailUI?.Initialize();
+            _view?.TrailUI?.Initialize(_status);
         }
 
         public void TearDown()
