@@ -31,5 +31,15 @@ namespace CosmicShore.Game.Arcade
         
         protected string GetTimeToDisplay() => 
             ((int)duration - (int)elapsedTime).ToString();
+        
+        #if UNITY_EDITOR
+        
+        [ContextMenu("Reset Timer")]
+        void ResetTimer() => elapsedTime = 0;
+        
+        [ContextMenu("End Timer")]
+        void EndTimer() => elapsedTime = duration;
+        
+        #endif
     }
 }
