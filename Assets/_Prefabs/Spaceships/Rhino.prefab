@@ -2269,6 +2269,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 212ff1ef2b8c43c4ab1acfc073c79e0b,
     type: 2}
 --- !u!114 &2171807218592972036
@@ -12464,12 +12465,12 @@ PrefabInstance:
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -1.35
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.91706014
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
@@ -12479,7 +12480,7 @@ PrefabInstance:
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.3987491
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
@@ -12494,7 +12495,7 @@ PrefabInstance:
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 47
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
