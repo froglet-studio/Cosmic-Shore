@@ -14,8 +14,6 @@ namespace CosmicShore.Game.Projectiles
         protected Vector3 MaxScaleVector;
         protected float Inertia = 70;
         protected float speed;
-        // protected Vector3 SpawnPosition;
-        // protected Quaternion SpawnRotation;
 
         // Material and Team
         public Material Material { get; protected set; }
@@ -26,8 +24,6 @@ namespace CosmicShore.Game.Projectiles
         
         public virtual void Initialize(InitializeStruct initStruct)
         {
-            // SpawnPosition = initStruct.SpawnPosition;
-            // SpawnRotation = initStruct.SpawnRotation;
             transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);
             
             AnonymousExplosion = initStruct.AnnonymousExplosion;
