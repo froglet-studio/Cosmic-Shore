@@ -229,17 +229,17 @@ namespace CosmicShore.Game
 
         void InitializeForMultiplayerMode()
         {
-            if (!IsOwner) 
-                return;
-            
-            VesselStatus.VesselCameraCustomizer.Initialize(this);
-            VesselStatus.Silhouette.Initialize(this);
-
             if (VesselStatus.NearFieldSkimmer)
                 VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
 
             if (VesselStatus.FarFieldSkimmer)
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
+            
+            if (!IsOwner) 
+                return;
+            
+            VesselStatus.VesselCameraCustomizer.Initialize(this);
+            VesselStatus.Silhouette.Initialize(this);
 
             VesselStatus.VesselTransformer.ToggleActive(true);
             VesselStatus.ActionHandler.ToggleSubscription(true);

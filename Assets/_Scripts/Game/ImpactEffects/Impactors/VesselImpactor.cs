@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -27,16 +28,39 @@ namespace CosmicShore.Game
                    }
                    break;
                 case OmniCrystalImpactor omniCrystalImpactee:
-                    if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
-                    foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
+                    if (IsSpawned && IsOwner)
                     {
-                        effect.Execute(this, omniCrystalImpactee);
+                        ExecuteCrystalImpact_ServerRpc(new CrystalImpactData());
                     }
+                    else
+                        ExecuteCrystalImpact_Old(omniCrystalImpactee);
                     break;
             }
         }
 
-        private void Reset()
+        [ServerRpc]
+        void ExecuteCrystalImpact_ServerRpc(CrystalImpactData data) =>
+            ExecuteCrystalImpact_ClientRpc(data);
+
+        [ClientRpc]
+        void ExecuteCrystalImpact_ClientRpc(CrystalImpactData data) =>
+            ExecuteCrystalImpact(data);
+
+        void ExecuteCrystalImpact(CrystalImpactData data)
+        {
+            if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
+            foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
+                effect.Execute(this, data);
+        }
+
+        void ExecuteCrystalImpact_Old(OmniCrystalImpactor impactee)
+        {
+            if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
+            foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
+                effect.Execute(this, impactee);
+        }
+
+        void Reset()
         { 
             Vessel ??= GetComponent<IVessel>();
         }
