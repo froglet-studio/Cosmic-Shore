@@ -1,19 +1,25 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "ToggleStationaryModeAction", menuName = "ScriptableObjects/Vessel Actions/Toggle Stationary Mode")]
-public class ToggleTranslationModeActionSO : ShipActionSO
+[CreateAssetMenu(fileName="ToggleTranslationModeAction", menuName="ScriptableObjects/Vessel Actions/Toggle Translation Mode")]
+public sealed class ToggleTranslationModeActionSO : ShipActionSO
 {
-    public enum Mode { Sparrow, Serpent }
+    public enum Mode { Serpent, Sparrow }
+    [SerializeField] private Mode stationaryMode = Mode.Serpent;
+    public Mode StationaryMode => stationaryMode;
 
-    [Header("Mode")]
-    [SerializeField] private Mode mode = Mode.Sparrow;
+    [SerializeField] private bool edgeTriggered = true;
+    public override bool IsEdgeTriggered => edgeTriggered;
 
-    public Mode StationaryMode => mode;
+    public override void StartAction(ActionExecutorRegistry reg)
+    {
+        var exec = reg.Get<ToggleTranslationModeActionExecutor>();
+        var v    = reg.VesselStatus;            
+        var ship = v?.Vessel;
+        if (exec && v != null && ship != null)
+            exec.Toggle(this, ship, v);
+    }
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<ToggleTranslationModeActionExecutor>()?.Toggle(this, Ship, ShipStatus);
-
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry reg)
     {
     }
 }

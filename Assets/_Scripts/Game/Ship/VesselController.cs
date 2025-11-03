@@ -31,6 +31,8 @@ namespace CosmicShore.Game
         readonly NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
+        readonly NetworkVariable<bool> n_IsTranslationRestricted =
+            new(writePerm: NetworkVariableWritePermission.Owner);
 
         public override void OnDestroy()
         {
@@ -42,8 +44,12 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
-            if (IsOwner) 
+            if (!IsOwner)
+            {
+                n_IsTranslationRestricted.OnValueChanged += (_, val) =>
+                    VesselStatus.IsTranslationRestricted = val;
                 return;
+            }
             
             SubscribeToNetworkVariables();
         }
@@ -285,6 +291,17 @@ namespace CosmicShore.Game
             n_Speed.OnValueChanged -= OnSpeedChanged;
             n_Course.OnValueChanged -= OnCourseChanged;
             n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
+        }
+        
+        public void SetTranslationRestricted(bool v)
+        {
+            if (IsSpawned)
+            {
+                if (!IsOwner) return;            
+                n_IsTranslationRestricted.Value = v;
+            }
+
+            VesselStatus.IsTranslationRestricted = v; 
         }
     }
 }

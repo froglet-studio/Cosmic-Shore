@@ -1,6 +1,7 @@
 ﻿using CosmicShore;
 using CosmicShore.Game;
 using Obvious.Soap;
+using Unity.Netcode;
 using UnityEngine;
 
 public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
@@ -21,7 +22,8 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
     IVessel _ship;
     IVesselStatus _status;
     ActionExecutorRegistry _registry;
-
+    int _lastToggleFrame = -1;
+    
     void OnEnable()
     {
         OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
@@ -29,7 +31,6 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
 
     void OnDisable()
     {
-        End();
         OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
 
@@ -48,12 +49,25 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
             seedAssemblerExecutor = _registry.Get<SeedAssemblerActionExecutor>();
     }
 
-    public void Toggle(ToggleTranslationModeActionSO so, IVessel ship, IVesselStatus status)
+     public void Toggle(ToggleTranslationModeActionSO so, IVessel ship, IVesselStatus status)
     {
         if (!so || status == null) return;
+        if (Time.frameCount == _lastToggleFrame) return; 
+        _lastToggleFrame = Time.frameCount;
 
-        status.IsTranslationRestricted = !status.IsTranslationRestricted;
-        var isOn = status.IsTranslationRestricted;
+        var controller = status.Vessel as VesselController;
+        if (!controller) return;
+
+        bool isMp = controller.IsSpawned &&
+                    NetworkManager.Singleton &&
+                    NetworkManager.Singleton.IsListening &&
+                    (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
+
+        bool hasAuthority = !isMp || controller.IsOwnerClient;
+        if (!hasAuthority) return;
+
+        bool isOn = !status.IsTranslationRestricted;
+        controller.SetTranslationRestricted(isOn); 
 
         if (so.StationaryMode == ToggleTranslationModeActionSO.Mode.Serpent && seedAssemblerExecutor)
         {
@@ -85,7 +99,6 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
 
         stationaryModeChanged?.Raise(isOn);
     }
-
     void End()
     {
         if (_status == null) return;

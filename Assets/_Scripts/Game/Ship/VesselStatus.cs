@@ -5,6 +5,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -204,7 +205,19 @@ namespace CosmicShore.Game
         public bool SingleStickControls { get; set; }
         public bool LiveProjectiles { get; set; }
         public bool IsStationary { get; set; }
-        public bool IsTranslationRestricted { get; set; }
+
+        bool _isTranslationRestricted;
+        public bool IsTranslationRestricted
+        {
+            get => _isTranslationRestricted;
+            set
+            {
+                if (_isTranslationRestricted == value) return;
+                _isTranslationRestricted = value;
+                Debug.Log($"[Restrict] isTranslationRestricted = {value} on {(NetworkBehaviour)ActionHandler}.IsOwner={ActionHandler.IsOwner}\n");
+            }
+        }
+
         public bool AlignmentEnabled { get; set; }
         public bool Slowed { get; set; }
         public bool Overheating { get; set; }

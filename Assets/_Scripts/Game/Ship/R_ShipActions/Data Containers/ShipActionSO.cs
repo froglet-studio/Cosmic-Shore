@@ -17,7 +17,7 @@ public abstract class ShipActionSO : ScriptableObject
     }
 
     public virtual void ResetRuntime() { }
-
+    public virtual bool IsEdgeTriggered => false;
     public abstract void StartAction(ActionExecutorRegistry execs);
     public abstract void StopAction(ActionExecutorRegistry execs);
 }

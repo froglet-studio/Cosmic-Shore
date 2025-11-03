@@ -34,17 +34,27 @@ namespace CosmicShore.Game
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
+        bool _subscribed;
+        
+        bool IsRealNetworkSession =>
+            NetworkManager.Singleton &&
+            NetworkManager.Singleton.IsListening &&   
+            (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
 
         void SubscribeToInputEvents()
         {
+            if (_subscribed) return;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
+            _subscribed = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
+            if (!_subscribed) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _subscribed = false;
         }
 
         void OnDisable()
@@ -83,19 +93,16 @@ namespace CosmicShore.Game
             foreach (var t in actions)
                 t.StartAction(_executors);
         }
-
-
+        
         public void StopShipControllerActions(InputEvents controlType)
         {
             if (!HasAction(controlType)) return;
 
-            // Only compute duration if we actually tracked a start time
             float duration = 0f;
             if (_inputAbilityStartTimes.TryGetValue(controlType, out var start))
                 duration = Time.time - start;
 
-            onAbilityExecuted.Raise(new AbilityStats
-            {
+            onAbilityExecuted.Raise(new AbilityStats {
                 PlayerName = vesselStatus.PlayerName,
                 ControlType = controlType,
                 Duration = duration
@@ -103,8 +110,12 @@ namespace CosmicShore.Game
 
             var actions = _shipControlActions[controlType];
             for (int i = 0; i < actions.Count; i++)
-                actions[i].StopAction(_executors);
+            {
+                if (!actions[i].IsEdgeTriggered)
+                    actions[i].StopAction(_executors);
+            }
         }
+
 
         bool HasAction(InputEvents inputEvent)
             => _shipControlActions.TryGetValue(inputEvent, out var list) && list != null && list.Count > 0;
@@ -113,6 +124,12 @@ namespace CosmicShore.Game
         {
             if (vesselStatus.AutoPilotEnabled) return;
             OnInputEventStarted?.Invoke(ie);
+
+            if (!IsRealNetworkSession)
+            {
+                PerformShipControllerActions(ie);
+                return;
+            }
 
             if (IsSpawned)
             {
@@ -123,24 +140,33 @@ namespace CosmicShore.Game
                 PerformShipControllerActions(ie);
             }
         }
-
         
         [ServerRpc]
         private void SendButtonPressed_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
         {
-            // Server rebroadcasts to everyone
-            OnButtonPressedClientRpc(ie); 
+            var target = new ClientRpcParams {
+                Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { OwnerClientId } }
+            };
+            OnButtonPressedClientRpc(ie, target);
         }
-        
-        [ClientRpc] 
-        void OnButtonPressedClientRpc(InputEvents ie) => 
+
+        [ClientRpc]
+        void OnButtonPressedClientRpc(InputEvents ie, ClientRpcParams rpcParams = default)
+        {
+            if (!IsOwner) return;  
             PerformShipControllerActions(ie);
+        }
         
         void OnButtonReleased(InputEvents ie)
         {
             if (vesselStatus.AutoPilotEnabled) return;
-
             OnInputEventStopped?.Invoke(ie);
+
+            if (!IsRealNetworkSession)
+            {
+                StopShipControllerActions(ie);
+                return;
+            }
 
             if (IsSpawned)
             {
@@ -148,34 +174,38 @@ namespace CosmicShore.Game
             }
             else
             {
-                StopShipControllerActions(ie); 
+                StopShipControllerActions(ie);
             }
         }
-
         
         [ServerRpc]
         private void SendButtonReleased_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
         {
-            // Server rebroadcasts to everyone
-            OnButtonReleased_ClientRpc(ie); 
+            var target = new ClientRpcParams {
+                Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { OwnerClientId } }
+            };
+            OnButtonReleased_ClientRpc(ie, target);
         }
-    
+
         [ClientRpc]
-        void OnButtonReleased_ClientRpc(InputEvents ie) =>
+        void OnButtonReleased_ClientRpc(InputEvents ie, ClientRpcParams rpcParams = default)
+        {
+            if (!IsOwner) return;   
             StopShipControllerActions(ie);
+        }
     }
 
     [Serializable]
     public struct InputEventShipActionMapping
     {
         public InputEvents InputEvent;
-        public List<ShipActionSO> ShipActions;   // <-- use SO assets
+        public List<ShipActionSO> ShipActions;   
     }
 
     [Serializable]
     public struct ResourceEventShipActionMapping
     {
         public ResourceEvents ResourceEvent;
-        public List<ShipActionSO> ClassActions;  // <-- use SO assets
+        public List<ShipActionSO> ClassActions;  
     }
 }
