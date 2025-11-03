@@ -708,7 +708,7 @@ MonoBehaviour:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 988902179}
   _initializeDatas:
-  - vesselClass: 3
+  - vesselClass: 9
     domain: 4
     PlayerName: RhinoFucker
     IsAI: 0
@@ -1066,6 +1066,99 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c866b4b7f5114796a1a1773bf17c8b1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1001 &1464469078
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -2651917505136827700, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 542951091
+      objectReference: {fileID: 0}
+    - target: {fileID: 477942985372925436, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 478958640917851404, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3062687464665182224, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928382658856804067, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6417075533431866457, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_Name
+      value: Falcon
+      objectReference: {fileID: 0}
+    - target: {fileID: 8314064271702207074, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 633ae27c43a2006459b22e655df7ab4f, type: 3}
 --- !u!1 &1543201792
 GameObject:
   m_ObjectHideFlags: 0
@@ -1176,16 +1269,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5559635c107344c0877dcd81e560d13b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blockPrefab: {fileID: 5776304996075792891, guid: ed9defc56162b4b4588e61c20984b6d9,
-    type: 3}
-  parent: {fileID: 2069105486}
-  numberOfBlocks: 10
-  startPosition: {x: 0, y: 0, z: 20}
-  spacing: 5
-  spawnAxis: 0
-  randomizeRotation: 0
-  randomizeScale: 1
-  randomScaleRange: {x: 3, y: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1198,3 +1281,4 @@ SceneRoots:
   - {fileID: 1458451201}
   - {fileID: 1170050516}
   - {fileID: 1543201793}
+  - {fileID: 1464469078}
