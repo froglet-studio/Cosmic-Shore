@@ -18,7 +18,7 @@ namespace CosmicShore.Game.Projectiles
         // Material and Team
         public Material Material { get; protected set; }
         public Domains Domain { get; protected set; }
-        public IVessel Vessel { get; protected set; }
+        public IVessel Vessel { get; protected set; }       // TODO - Remove IVessel reference
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
         
@@ -28,23 +28,24 @@ namespace CosmicShore.Game.Projectiles
             
             AnonymousExplosion = initStruct.AnnonymousExplosion;
             Vessel = initStruct.Vessel;
-            if (Vessel == null)
+            /*if (Vessel == null)
             {
                 Debug.LogError("Vessel is not initialized in AOEExplosion!");
                 return;
-            }
+            }*/
 
             Domain = initStruct.OwnDomain;
-            if (Domain == Domains.Unassigned)
-                Domain = Vessel.VesselStatus.Domain;
+            /*if (Domain == Domains.Unassigned)
+                Domain = Vessel.VesselStatus.Domain;*/
 
             MaxScale = initStruct.MaxScale;
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             speed = MaxScale / ExplosionDuration;
 
-            Material = initStruct.OverrideMaterial != null ? initStruct.OverrideMaterial : Vessel.VesselStatus.AOEExplosionMaterial;
+            Material = initStruct.OverrideMaterial;
+            /*Material = initStruct.OverrideMaterial != null ? initStruct.OverrideMaterial : Vessel.VesselStatus.AOEExplosionMaterial;
             if (Material == null)
-                Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);
+                Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);*/
         }
 
         public void Detonate() => StartCoroutine(ExplodeCoroutine());
@@ -76,7 +77,7 @@ namespace CosmicShore.Game.Projectiles
         {
             public Domains OwnDomain;
             public bool AnnonymousExplosion;
-            public IVessel Vessel;
+            public IVessel Vessel;  // TODO - Remove IVessel
             public Material OverrideMaterial;
             public float MaxScale;
             public Vector3 SpawnPosition;

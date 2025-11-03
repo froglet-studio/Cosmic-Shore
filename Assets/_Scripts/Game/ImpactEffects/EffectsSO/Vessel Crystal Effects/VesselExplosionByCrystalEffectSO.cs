@@ -35,27 +35,16 @@ namespace CosmicShore.Game
                 _spawnOffset);
         }
         
-        /*public override void Execute(VesselImpactor shipImpactor, ImpactorBase impactee)
+        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
-            IVesselStatus vesselStatus = shipImpactor.Vessel.VesselStatus;
-            Transform shipTransform = vesselStatus.ShipTransform;
-            var aoeExplosion = Instantiate(_prefabGO).GetComponent<AOEExplosion>();
-            aoeExplosion.Initialize(new AOEExplosion.InitializeStruct
-            {
-                OwnTeam = vesselStatus.Team,
-                Vessel = vesselStatus.Vessel,
-                OverrideMaterial = _aoeExplosionMaterial,
-
-                MaxScale = vesselStatus.ResourceSystem.Resources.Count > _resourceIndex
-                    ? Mathf.Lerp(_minExplosionScale, _maxExplosionScale, vesselStatus.ResourceSystem.Resources[_resourceIndex].CurrentAmount)
-                    : _maxExplosionScale,
-
-                AnnonymousExplosion = true,
-                SpawnPosition = shipTransform.position,
-                SpawnRotation = shipTransform.rotation,
-            });
-
-            aoeExplosion.Detonate();
-        }*/
+            ExplosionHelper.CreateExplosion(
+                _aoePrefabs,
+                vesselImpactor,
+                _minExplosionScale,
+                _maxExplosionScale,
+                _aoeExplosionMaterial,
+                _resourceIndex, 
+                _spawnOffset);
+        }
     }
 }

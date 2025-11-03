@@ -1,9 +1,10 @@
 using System;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public abstract class ImpactorBase : MonoBehaviour, IImpactor
+    public abstract class ImpactorBase : NetworkBehaviour, IImpactor
     {
         protected virtual bool isInitialized => true;
         
