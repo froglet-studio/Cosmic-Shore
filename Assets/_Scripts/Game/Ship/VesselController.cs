@@ -44,12 +44,8 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
-            if (!IsOwner)
-            {
-                n_IsTranslationRestricted.OnValueChanged += (_, val) =>
-                    VesselStatus.IsTranslationRestricted = val;
+            if (IsOwner) 
                 return;
-            }
             
             SubscribeToNetworkVariables();
         }
@@ -278,12 +274,14 @@ namespace CosmicShore.Game
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
+        void OnIsTranslationRestrictedValueChanged(bool previousValue, bool newValue) => VesselStatus.IsTranslationRestricted = newValue;
         
         void SubscribeToNetworkVariables()
         {
             n_Speed.OnValueChanged += OnSpeedChanged;
             n_Course.OnValueChanged += OnCourseChanged;
             n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
+            n_IsTranslationRestricted.OnValueChanged += OnIsTranslationRestrictedValueChanged;
         }
         
         void UnsubscribeFromNetworkVariables()
@@ -291,8 +289,9 @@ namespace CosmicShore.Game
             n_Speed.OnValueChanged -= OnSpeedChanged;
             n_Course.OnValueChanged -= OnCourseChanged;
             n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
+            n_IsTranslationRestricted.OnValueChanged -= OnIsTranslationRestrictedValueChanged;
         }
-        
+
         public void SetTranslationRestricted(bool v)
         {
             if (IsSpawned)

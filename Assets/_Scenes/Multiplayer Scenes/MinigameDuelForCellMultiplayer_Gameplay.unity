@@ -2456,6 +2456,8 @@ MonoBehaviour:
     Multiplier: 1
   - Mode: 0
     Multiplier: 1
+  - Mode: 11
+    Multiplier: 1
 --- !u!114 &1628508337
 MonoBehaviour:
   m_ObjectHideFlags: 0
