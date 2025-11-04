@@ -212,9 +212,8 @@ namespace CosmicShore.Game
             get => _isTranslationRestricted;
             set
             {
-                if (_isTranslationRestricted == value) return;
+                if (_isTranslationRestricted.Equals(value)) return;
                 _isTranslationRestricted = value;
-                Debug.Log($"[Restrict] isTranslationRestricted = {value} on {(NetworkBehaviour)ActionHandler}.IsOwner={ActionHandler.IsOwner}\n");
             }
         }
 
