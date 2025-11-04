@@ -2562,6 +2562,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: d620f2ba2a4df8b4ba6fa7c5015ac5ec,
     type: 2}
 --- !u!114 &9121591686382397393
@@ -2581,7 +2582,7 @@ MonoBehaviour:
   shieldResourceIndex: 0
   pipFull: {r: 1, g: 1, b: 1, a: 1}
   pipConsuming: {r: 0.3, g: 1, b: 0.3, a: 1}
-  pipEmpty: {r: 1, g: 1, b: 1, a: 0.25}
+  pipEmpty: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &6420853210210884085
 GameObject:
   m_ObjectHideFlags: 0
@@ -3789,6 +3790,14 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 5470374086122723936}
+    - targetCorrespondingSourceObject: {fileID: 6610183749247337817, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7237713388083863}
+    - targetCorrespondingSourceObject: {fileID: 6610183749247337817, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7261650085594846340}
   m_SourcePrefab: {fileID: 100100000, guid: af7b78e6bb3a8394f88f24bb0e31667a, type: 3}
 --- !u!224 &1775870881170808980 stripped
 RectTransform:
@@ -3879,8 +3888,8 @@ MonoBehaviour:
     image: {fileID: 8484929212193490670}
   - input: 7
     image: {fileID: 3512818663123036916}
-  silhouetteController: {fileID: 0}
-  uiTrailController: {fileID: 0}
+  silhouetteController: {fileID: 7237713388083863}
+  uiTrailController: {fileID: 7261650085594846340}
   shieldIconsByCount:
   - {fileID: 21300000, guid: 05ee374807511b44aa2a486aaf27e752, type: 3}
   - {fileID: 21300000, guid: ee81d0070c09faa44824544889fd5ddf, type: 3}
@@ -3892,6 +3901,47 @@ MonoBehaviour:
   boostPip2: {fileID: 4793470977653661268}
   boostPip3: {fileID: 8898638695196731009}
   boostPip4: {fileID: 5254409461533313133}
+--- !u!114 &7237713388083863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7801497893982467225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0070706274c44ba4b87b98ec1ac94b5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  silhouetteContainer: {fileID: 0}
+  silhouetteParts: []
+  driftTrailAction: {fileID: 0}
+  topJaw: {fileID: 0}
+  bottomJaw: {fileID: 0}
+  jawResourceIndex: -1
+  debugDot: 0
+--- !u!114 &7261650085594846340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7801497893982467225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8734d021ade4a7390ca25cdad361b6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vesselPrismController: {fileID: 0}
+  driftTrailAction: {fileID: 0}
+  trailDisplayContainer: {fileID: 0}
+  blockSizePx: {x: 30, y: 30}
+  rowSpacingPx: 6
+  columnGapPx: 16
+  scaleMultiplier: 1
+  swingBlocks: 0
+  smoothingSeconds: 0.08
+  hardRowCap: 8
 --- !u!224 &8467111919413194998 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4789951449404768566, guid: af7b78e6bb3a8394f88f24bb0e31667a,

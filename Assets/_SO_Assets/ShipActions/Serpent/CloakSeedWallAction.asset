@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CloakSeedWallAction
   m_EditorClassIdentifier: 
   cooldownSeconds: 15
-  seedWallSO: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162, type: 2}
+  seedWallSo: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162, type: 2}
   prismCloakMaterial: {fileID: 2100000, guid: 35264d3f23e33d44ebdec6d9cade218a, type: 2}
   shipCloakMaterialOptional: {fileID: 0}
   shipCloakAlphaFallback: 0.2

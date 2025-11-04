@@ -9,14 +9,13 @@ public class ConsumeBoostActionSO : ShipActionSO
 
     [Header("Magazine (charges)")]
     [SerializeField, Range(1, 4)] private int maxCharges = 4;
-    [SerializeField] private float reloadCooldown = 3f;    // wait before reload begins
-    [SerializeField] private float reloadFillTime = 0.8f;  // HUD fill anim time for ALL pips (0→1)
+    [SerializeField] private float reloadCooldown = 3f;  
+    [SerializeField] private float reloadFillTime = 0.8f;  
 
     [Header("Optional resource gate (one-time spend per shot; set <=0 to ignore)")]
     [SerializeField] private int resourceIndex = 1;
     [SerializeField] private float resourceCost = 0f;
 
-    // Expose for executor
     public ElementalFloat BoostMultiplier => boostMultiplier;
     public float BoostDuration => boostDuration;
     public int MaxCharges => maxCharges;
@@ -25,7 +24,7 @@ public class ConsumeBoostActionSO : ShipActionSO
     public int ResourceIndex => resourceIndex;
     public float ResourceCost => resourceCost;
 
-    public override void ResetRuntime() { /* nothing yet */ }
+    public override void ResetRuntime() {  }
 
     public override void StartAction(ActionExecutorRegistry execs)
         => execs?.Get<ConsumeBoostActionExecutor>()?.Consume(this, ShipStatus);
