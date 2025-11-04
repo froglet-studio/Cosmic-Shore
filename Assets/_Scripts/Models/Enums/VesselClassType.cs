@@ -18,4 +18,5 @@ public enum VesselClassType
     Falcon = 9,
     Shrike = 10,
     Sparrow = 11,
+    BrittleStar = 12,
 }
