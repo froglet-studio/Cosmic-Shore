@@ -1,12 +1,10 @@
-using CosmicShore.Core;
 using CosmicShore.SOAP;
-using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Scoring
 {
-    public class HostileVolumeDestroyedScoring : BaseScoring
+    public class FriendlyVolumeDestroyedScoring : BaseScoring
     {
-        public HostileVolumeDestroyedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        public FriendlyVolumeDestroyedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
         float lastVolumeDestroyed;
 
@@ -17,7 +15,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                     return;
 
-                roundStats.OnHostileVolumeDestroyedChanged += UpdateScore;
+                roundStats.OnFriendlyVolumeDestroyedChanged += UpdateScore;
             }
         }
 
@@ -28,7 +26,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                     return;
 
-                roundStats.OnHostileVolumeDestroyedChanged -= UpdateScore;
+                roundStats.OnFriendlyVolumeDestroyedChanged -= UpdateScore;
                 lastVolumeDestroyed = 0;
             }
         }
@@ -36,7 +34,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         void UpdateScore(IRoundStats roundStats)
         {
             var newVolumeDestroyed = roundStats.TotalVolumeDestroyed - lastVolumeDestroyed;
-            roundStats.Score += newVolumeDestroyed * scoreMultiplier;
+            roundStats.Score -= newVolumeDestroyed * scoreMultiplier;
         }
     }
 }

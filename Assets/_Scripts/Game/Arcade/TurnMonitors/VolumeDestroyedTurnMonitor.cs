@@ -18,10 +18,10 @@ namespace CosmicShore.Game.Arcade
             if (!gameData.TryGetActivePlayerStats(out IPlayer _, out IRoundStats roundStats))
                 return false;
 
-            return roundStats.VolumeDestroyed > 0;
+            return roundStats.TotalVolumeDestroyed > 0;
             
             /*if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName) && 
-                StatsManager.Instance.PlayerStats[currentPlayerName].VolumeDestroyed > 0)
+                StatsManager.Instance.PlayerStats[currentPlayerName].TotalVolumeDestroyed > 0)
             {
                 return true;
             }

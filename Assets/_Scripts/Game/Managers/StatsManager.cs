@@ -161,7 +161,6 @@ namespace CosmicShore.Core
             var victimPlayerName = prismStats.OtherPlayerName;
             var attackingPlayerName = prismStats.PlayerName;
             
-            // Attacker team stats
             if (!gameData.TryGetRoundStats(attackingPlayerName, out IRoundStats attackerPlayerStats))
                 return;
             
@@ -173,28 +172,14 @@ namespace CosmicShore.Core
                 attackerPlayerStats.FriendlyPrismsDestroyed++;
             else
                 attackerPlayerStats.HostilePrismsDestroyed++;
-            attackerPlayerStats.VolumeDestroyed += prismStats.Volume;
+            attackerPlayerStats.TotalVolumeDestroyed += prismStats.Volume;
             if (attackingPlayerName == victimPlayerName)
                 attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
             else
                 attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
-
-            // Victim team remaining stats
+            
             victimPlayerStats.PrismsRemaining--;
             victimPlayerStats.VolumeRemaining -= prismStats.Volume;
-
-            // Attacker player stats
-            attackerPlayerStats.BlocksDestroyed++;
-            if (attackingPlayerName == victimPlayerName)
-                attackerPlayerStats.FriendlyPrismsDestroyed++;
-            else
-                attackerPlayerStats.HostilePrismsDestroyed++;
-            
-            attackerPlayerStats.VolumeDestroyed += prismStats.Volume;
-            if (attackingPlayerName == victimPlayerName)
-                attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
-            else
-                attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
         }
 
         public void PrismRestored(PrismStats prismStats)
