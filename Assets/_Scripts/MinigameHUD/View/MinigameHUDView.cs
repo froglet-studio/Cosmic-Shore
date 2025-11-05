@@ -24,7 +24,6 @@ namespace CosmicShore.Game.UI
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
         public TMP_Text LeftNumberDisplay => leftNumberDisplay;
         public TMP_Text RightNumberDisplay => rightNumberDisplay;
-        public TMP_Text RoundTimeDisplay => roundTimeDisplay;
         public Button ReadyButton => readyButton;
         public GameObject Pip => pip;
         public GameObject Silhouette => silhouette;
