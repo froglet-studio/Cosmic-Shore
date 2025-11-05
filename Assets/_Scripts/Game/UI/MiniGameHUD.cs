@@ -112,7 +112,7 @@ namespace CosmicShore.Game.UI
                 part.transform.SetParent(sil.transform, false);
                 part.SetActive(true);
             }
-            data.Sender.SetSilhouetteReference(sil.transform, trail.transform);
+            //data.Sender.SetSilhouetteReference(sil.transform, trail.transform);
         }
         
         private void OnClientReady() => ResetForReplay();
