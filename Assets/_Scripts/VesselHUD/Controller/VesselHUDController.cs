@@ -10,20 +10,17 @@ namespace CosmicShore.Game
 
         private bool IsLocalOwner => _status is { IsOwnerClient: true };
 
+        [Header("Legacy Silhouette")]
+        [SerializeField] private Silhouette silhouette;
+
         public virtual void Initialize(IVesselStatus vesselStatus, VesselHUDView view)
         {
             _status = vesselStatus;
             _view   = view;
 
-            if (!IsLocalOwner)
+            if (!IsLocalOwner || _status.AutoPilotEnabled)
             {
-                if (_view) _view.gameObject.SetActive(false);
-                return;
-            }
-
-            if (_status.AutoPilotEnabled)
-            {
-                view.gameObject.SetActive(false);
+                if (_view) _view.Hide();
                 return;
             }
 
@@ -34,12 +31,12 @@ namespace CosmicShore.Game
                 _actions.OnInputEventStopped += HandleStop;
                 _actions.ToggleSubscription(true);
             }
-            else
-            {
-                Debug.LogWarning("[VesselHUDController] ActionHandler is null.");
-            }
-            _view?.Silhouette?.Initialize(_status);
-            _view?.TrailUI?.Initialize(_status);
+
+            if (!silhouette || !_view) return;
+            silhouette.Initialize(_status, _view);
+            // optional: if you already set containers via inspector, this is redundant
+            if (_view.SilhouetteContainer && _view.TrailDisplayContainer)
+                silhouette.SetHudReferences(_view.SilhouetteContainer, _view.TrailDisplayContainer);
         }
 
         public void TearDown()
@@ -51,29 +48,24 @@ namespace CosmicShore.Game
                 _actions.ToggleSubscription(false);
                 _actions = null;
             }
-
-            _view?.Silhouette?.TearDown();
-            _view?.TrailUI?.TearDown();
         }
 
         private void HandleStart(InputEvents ev) => Toggle(ev, true);
-        private void HandleStop(InputEvents ev)  => Toggle(ev, false);
+        private void HandleStop (InputEvents ev) => Toggle(ev, false);
 
         private void Toggle(InputEvents ev, bool on)
         {
             if (!_view || !IsLocalOwner) return;
-
             for (var i = 0; i < _view.highlights.Count; i++)
-            {
                 if (_view.highlights[i].input == ev)
                     _view.highlights[i].image.enabled = on;
-            }
-        }
-        
-        public void SetBlockPrefab(GameObject prefab)
-        {
-            _view?.TrailUI?.SetBlockPrefab(prefab);
         }
 
+        // === This is what VesselController calls ===
+        public void SetBlockPrefab(GameObject prefab)
+        {
+            if (_view) _view.TrailBlockPrefab = prefab;
+            if (silhouette) silhouette.SetBlockPrefab(prefab);
+        }
     }
 }

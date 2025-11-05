@@ -9,10 +9,9 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     [Header("Optional refs (auto-resolved if null)")]
     [SerializeField] private GrowTrailActionExecutor   trailProvider;
     [SerializeField] private GrowSkimmerActionExecutor skimmerProvider;
-
     [Header("Events")]
     [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
-
+    
     private IVesselStatus _status;
     private ICameraController _controller;
     private ZoomOutActionSO _so;
@@ -20,8 +19,8 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     private bool _active;
     private bool _retracting;
 
-    private float _baseScale;
-    private float _baseDistance;
+    private float _baseScale;     // provider.MinScale (stable world baseline)
+    private float _baseDistance;  // camera Z captured on first Begin from Idle
 
     [SerializeField] private float farClipPadding = 1.3f;
     [SerializeField] private float maxDistanceAbs = 10000f;
@@ -33,18 +32,17 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
     private const float RatioEpsilon = 0.0025f;
     private const float DistDeadband = 0.0005f;
-
+    
     void OnEnable()
     {
-        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
     }
 
     void OnDisable()
     {
-        End();
-        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
-
+    
     void OnTurnEndOfMiniGame() => End();
 
     public override void Initialize(IVesselStatus shipStatus)
@@ -103,7 +101,7 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
     private void LateUpdate()
     {
-        if (!_active || _status == null || _status.AutoPilotEnabled || _so == null) return;
+        if (!_active || _status == null || _status.AutoPilotEnabled || !_so) return;
 
         var provider = Provider();
         if (provider == null) { CleanupToIdle(); return; }
@@ -133,19 +131,16 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
                 cam.farClipPlane = need * farClipPadding;
         }
 
-        if (_state == State.Retracting && Mathf.Abs(currentRatio - 1f) <= RatioEpsilon)
-        {
-            _controller.SetCameraDistance(_baseDistance);
+        if (_state != State.Retracting || !(Mathf.Abs(currentRatio - 1f) <= RatioEpsilon)) return;
+        _controller.SetCameraDistance(_baseDistance); 
+        if (_controller is CustomCameraController ccRestore)
+            ccRestore.adaptiveZoomEnabled = _hadAdaptiveZoom;
+        _hadAdaptiveZoom = false;
 
-            if (_controller is CustomCameraController ccRestore)
-                ccRestore.adaptiveZoomEnabled = _hadAdaptiveZoom;
-            _hadAdaptiveZoom = false;
-
-            _retracting = false;
-            _active     = false;
-            _state      = State.Idle;
-            _so         = null;
-        }
+        _retracting = false;
+        _active     = false;
+        _state      = State.Idle;
+        _so         = null;
     }
 
     private void CleanupToIdle()

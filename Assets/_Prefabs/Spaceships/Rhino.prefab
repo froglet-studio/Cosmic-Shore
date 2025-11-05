@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skimmerRoot: {fileID: 282447970148362685}
-  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
 --- !u!1 &284393576699141201
 GameObject:
   m_ObjectHideFlags: 0
@@ -832,7 +832,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!1 &2463109489229810952
+--- !u!1 &3096152614396109349
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -840,32 +840,32 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 465566354238419221}
+  - component: {fileID: 8599908183405914023}
   m_Layer: 0
   m_Name: TrailContainer
   m_TagString: Untagged
-  m_Icon: {fileID: 2488908585195742037, guid: 0000000000000000d000000000000000, type: 0}
+  m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &465566354238419221
+--- !u!224 &8599908183405914023
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2463109489229810952}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_GameObject: {fileID: 3096152614396109349}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3797657973119974518}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 185.60101, y: -190.70996}
-  m_SizeDelta: {x: 371.201, y: 666.799}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 260, y: 0}
+  m_SizeDelta: {x: 520, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &3368373695973179278
 GameObject:
@@ -1309,8 +1309,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3797657973119974518}
   - component: {fileID: 7033107979473629901}
-  - component: {fileID: 4090339960333606947}
-  - component: {fileID: 4682555176901532358}
   m_Layer: 0
   m_Name: RhinoHUDVariant
   m_TagString: Untagged
@@ -1333,8 +1331,8 @@ RectTransform:
   - {fileID: 7432981132668097167}
   - {fileID: 5355521760076922237}
   - {fileID: 3168995979416070291}
-  - {fileID: 465566354238419221}
   - {fileID: 6767753844588534082}
+  - {fileID: 8599908183405914023}
   m_Father: {fileID: 2884778154090512500}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1357,49 +1355,11 @@ MonoBehaviour:
   highlights:
   - input: 0
     image: {fileID: 6115081010288432129}
-  silhouetteController: {fileID: 4682555176901532358}
-  uiTrailController: {fileID: 4090339960333606947}
---- !u!114 &4090339960333606947
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4634953772157888635}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8734d021ade4a7390ca25cdad361b6b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 874579555101021522}
-  driftTrailAction: {fileID: 0}
-  trailDisplayContainer: {fileID: 465566354238419221}
-  blockSizePx: {x: 10, y: 10}
-  rowSpacingPx: 6
-  columnGapPx: 16
-  scaleMultiplier: 1
-  swingBlocks: 0
-  smoothingSeconds: 0.08
-  hardRowCap: 8
---- !u!114 &4682555176901532358
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4634953772157888635}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0070706274c44ba4b87b98ec1ac94b5f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  silhouetteContainer: {fileID: 6767753844588534082}
-  silhouetteParts: []
-  driftTrailAction: {fileID: 0}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  jawResourceIndex: -1
-  debugDot: 0
+  SilhouetteContainer: {fileID: 6767753844588534082}
+  TrailDisplayContainer: {fileID: 8599908183405914023}
+  TopJaw: {fileID: 0}
+  BottomJaw: {fileID: 0}
+  JawResourceIndex: -1
 --- !u!1 &5077424405219628151
 GameObject:
   m_ObjectHideFlags: 0
@@ -1513,7 +1473,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailProvider: {fileID: 6994424773851051839}
   skimmerProvider: {fileID: 1218614309347018735}
-  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
   farClipPadding: 1.3
   maxDistanceAbs: 10000
 --- !u!1 &5546161687949175897
@@ -1798,6 +1758,7 @@ GameObject:
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 3485795873575935315}
   - component: {fileID: 2171807218592972036}
+  - component: {fileID: 7965853245772039612}
   m_Layer: 0
   m_Name: Rhino
   m_TagString: Player_Ship
@@ -2170,7 +2131,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
@@ -2181,11 +2142,11 @@ MonoBehaviour:
   - {fileID: 1562349306234984412}
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 1, y: 1, z: 1}
+  sihouetteScale: {x: 5, y: 5, z: 5}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
-  JawResourceIndex: 0
-  swingBlocks: 1
+  JawResourceIndex: -1
+  swingBlocks: 0
 --- !u!114 &3953285837003103147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2269,9 +2230,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 212ff1ef2b8c43c4ab1acfc073c79e0b,
     type: 2}
+  networkVesselImpactor: {fileID: 7965853245772039612}
 --- !u!114 &2171807218592972036
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2284,7 +2245,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c636825408af4ed7bb3bc74ab877922d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  silhouette: {fileID: 4796952059166273496}
   view: {fileID: 7033107979473629901}
+--- !u!114 &7965853245772039612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b6b52a5b8bf44b9bf86a0d51d59554d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  vesselImpactor: {fileID: 3485795873575935315}
 --- !u!1 &6568794290610978101
 GameObject:
   m_ObjectHideFlags: 0

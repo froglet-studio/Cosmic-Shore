@@ -1,177 +1,133 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    /// <summary>
-    /// Mirrors the vessel's trail into UI with explicit, pixel-based layout knobs.
-    /// </summary>
     public sealed class UITrailController : MonoBehaviour
     {
-        [Header("Sources")] [SerializeField] private VesselPrismController vesselPrismController;
+        [Header("Sources")]
+        [SerializeField] private VesselPrismController vesselPrismController;
         [SerializeField] private DriftTrailActionExecutor driftTrailAction;
 
-        [Header("UI Target")] [SerializeField] private RectTransform trailDisplayContainer;
+        [Header("UI Target")]
+        [SerializeField] private RectTransform trailDisplayContainer;
 
         [Header("Layout (Pixels)")]
-        [Tooltip("Pixel size of each trail block image (width x height) before ScaleMultiplier.")]
-        [SerializeField]
-        private Vector2 blockSizePx = new(30f, 30f);
+        [SerializeField] private Vector2 blockSizePx = new(30f, 30f);
+        [SerializeField] private float   rowSpacingPx = 6f;      // kept for parity (not used directly)
+        [SerializeField] private float   columnGapPx  = 16f;     // kept for parity (not used directly)
+        [SerializeField] private float   scaleMultiplier = 1f;
 
-        [Tooltip("Vertical distance in pixels between successive blocks in a column.")] [SerializeField]
-        private float rowSpacingPx = 6f;
+        [Header("Behaviour")]
+        [SerializeField] private bool swingBlocks = false;
 
-        [Tooltip("Horizontal gap in pixels between the two columns (center spacing).")] [SerializeField]
-        private float columnGapPx = 16f;
+        [Header("World→UI Tuning")]
+        [SerializeField] private float pixelsPerWorldUnit = 2f;  // legacy ~2
+        [SerializeField] private float imageScale         = 0.02f;
 
-        [Tooltip("Uniform multiplier applied to BlockSizePx, RowSpacingPx, ColumnGapPx.")] [SerializeField]
-        private float scaleMultiplier = 1f;
+        [Header("Pool")]
+        [SerializeField] private int hardColumnCap = 256;
 
-        [Header("Behaviour")] [Tooltip("If true, apply swing math variant like the old path.")] [SerializeField]
-        private bool swingBlocks;
+        [Header("Diagnostics")]
+        [Tooltip("If true, ownership/autopilot checks are ignored so you always build & run.")]
+        [SerializeField] private bool ignoreOwnershipChecks = true;
+        [Tooltip("Spam log OnBlockCreated payloads and sizing every event.")]
+        [SerializeField] private bool verboseLogs = true;
 
-        [Header("Tuning")] [Tooltip("Smoothing seconds passed to the pool for UI lerp smoothing.")] [SerializeField]
-        private float smoothingSeconds = 0.08f;
+        // provided at runtime by HUD controller
+        private GameObject _blockPrefab;
 
-        [Tooltip("Hard cap on rows per column.")] [SerializeField]
-        private int hardRowCap = 8;
-
-        // Prefab is provided by HUD controller (do not serialize here)
-        private GameObject _blockUIPrefab;
-
-        private TrailPool _pool;
-        private bool _prismSub;
+        // state
+        private GameObject[,] _pool;   // [col, row(0/1)]
+        private int _columns;
         private float _driftDot;
+        private bool _subPrism;
+        private bool _subDrift;
         private IVesselStatus _status;
 
-        /// <summary>
-        /// Call once. Will only build when prefab and refs are ready.
-        /// </summary>
+        private float Eff1(float v)  => v * Mathf.Max(0.01f, scaleMultiplier);
+        private Vector2 Eff2(Vector2 v) => v * Mathf.Max(0.01f, scaleMultiplier);
+
         public void Initialize(IVesselStatus status)
         {
-            _status = status;
+            _status = status ?? throw new NullReferenceException("[UITrailController] Initialize(status) got null IVesselStatus.");
             TryInitialize();
         }
 
         public void TearDown()
         {
-            if (_prismSub && vesselPrismController)
-                vesselPrismController.OnBlockCreated -= OnPrismBlockCreated;
+            if (_subPrism)  vesselPrismController.OnBlockCreated -= OnPrismBlockCreated;
+            if (_subDrift && driftTrailAction) driftTrailAction.OnChangeDriftAltitude -= OnDriftDotChanged;
+            _subPrism = _subDrift = false;
 
-            if (driftTrailAction)
-                driftTrailAction.OnChangeDriftAltitude -= OnDriftDotChanged;
-
-            _pool?.Dispose();
-            _pool = null;
-            _prismSub = false;
-        }
-
-        public void SetBlockPrefab(GameObject prefab)
-        {
-            if (!prefab)
-            {
-                Debug.LogWarning("[UITrailController] Ignoring null block prefab.");
-                return;
-            }
-
-            _blockUIPrefab = prefab;
-            EnsurePrefabAspect(_blockUIPrefab);
-
-            // Only (re)initialize if we already have a status and refs;
-            // otherwise we’ll init later when Initialize(status) is called.
             if (_pool != null)
             {
-                TearDown();
+                for (int i = 0; i < _pool.GetLength(0); i++)
+                    for (int j = 0; j < 2; j++)
+                        if (_pool[i, j])
+                        {
+                            var parent = _pool[i, j].transform.parent;
+                            Destroy(_pool[i, j]);
+                            if (parent) Destroy(parent.gameObject);
+                        }
             }
+            _pool    = null;
+            _columns = 0;
+        }
 
+        public void SetBlockPrefab(GameObject prefab, IVesselStatus status)
+        {
+            _status ??= status;
+            _blockPrefab = prefab;
+            var img = _blockPrefab.GetComponent<Image>();
+            if (img) img.preserveAspect = true;
+
+            // force rebuild with new prefab
+            TearDown();
             TryInitialize();
+        }
+
+        private void RequireReady()
+        {
+            if (_status == null)
+            {
+                _status = null;
+            }
+            if (!ignoreOwnershipChecks)
+            {
+                if (!_status.IsOwnerClient) throw new InvalidOperationException("[UITrailController] IsOwnerClient == false.");
+                if (_status.AutoPilotEnabled) throw new InvalidOperationException("[UITrailController] AutoPilotEnabled == true.");
+            }
+            if (!trailDisplayContainer)     throw new NullReferenceException("[UITrailController] trailDisplayContainer is null.");
+            if (!vesselPrismController)     throw new NullReferenceException("[UITrailController] vesselPrismController is null.");
+            if (!_blockPrefab)              throw new NullReferenceException("[UITrailController] block prefab not set. Call VesselHUDController.SetBlockPrefab().");
         }
 
         private void TryInitialize()
         {
-            // 1) Must have status
-            if (_status == null) return;
-
-            // 2) Skip for non-owner or autopilot ships
-            if (!_status.IsOwnerClient) return;
-            if (_status.AutoPilotEnabled) return;
-
-            // 3) Don’t double-build
-            if (_pool != null) return;
-
-            // 4) Need all refs + prefab
-            if (!trailDisplayContainer || !vesselPrismController || !_blockUIPrefab)
-            {
-                if (!trailDisplayContainer)
-                    Debug.LogWarning("[UITrailController] trailDisplayContainer missing.");
-                if (!vesselPrismController)
-                    Debug.LogWarning("[UITrailController] vesselPrismController missing.");
-                if (!_blockUIPrefab)
-                    Debug.LogWarning("[UITrailController] blockUIPrefab not set (must be sent from HUD).");
-                return;
-            }
-
-            // --- existing pool construction (unchanged) ---
-            var effBlockSize = blockSizePx * Mathf.Max(0.01f, scaleMultiplier);
-            var effRowSpace = rowSpacingPx * Mathf.Max(0.01f, scaleMultiplier);
-            var effGap = columnGapPx * Mathf.Max(0.01f, scaleMultiplier);
-
-            _pool = new TrailPool(
-                container: trailDisplayContainer,
-                prefab: _blockUIPrefab,
-                controller: vesselPrismController,
-                worldToUi: 1f,
-                imageScale: 1f,
-                swingBlocks: swingBlocks,
-                smoothTime: smoothingSeconds,
-                blockBaseSize: effBlockSize,
-                hardRowCap: hardRowCap
-            );
-
-            _pool.ConfigureLayout(effBlockSize, effRowSpace, effGap);
-            StartCoroutine(EnsureRectAndPool());
+            RequireReady();
+            StartCoroutine(InitWhenRectReady());
 
             vesselPrismController.OnBlockCreated += OnPrismBlockCreated;
-            _prismSub = true;
+            _subPrism = true;
 
             if (driftTrailAction)
+            {
                 driftTrailAction.OnChangeDriftAltitude += OnDriftDotChanged;
+                _subDrift = true;
+            }
         }
 
-        /// <summary>
-        /// Handy runtime button for tuning — right-click component → Reinitialize (runtime).
-        /// </summary>
-        [ContextMenu("Reinitialize (runtime)")]
-        private void ReinitializeContextMenu()
-        {
-            // Keep current prefab & refs, just rebuild with new serialized layout values.
-            TearDown();
-            TryInitialize();
-            Debug.Log("[UITrailController] Reinitialized with current layout settings.");
-        }
-
-        private static void EnsurePrefabAspect(GameObject go)
-        {
-            var img = go.GetComponent<Image>();
-            if (img) img.preserveAspect = true;
-        }
-
-        private IEnumerator EnsureRectAndPool()
+        private IEnumerator InitWhenRectReady()
         {
             yield return new WaitForEndOfFrame();
-
-            if (_pool == null) yield break;
             var r = trailDisplayContainer.rect;
-            if (r.width > 1f && r.height > 1f)
+            if (r.width < 2f || r.height < 2f)
             {
-                _pool.EnsurePool();
-            }
-            else
-            {
-                yield return null;
-                r = trailDisplayContainer.rect;
-                if (r.width > 1f && r.height > 1f) _pool.EnsurePool();
+                // intentionally no graceful fallback — you will see it if not sized
+                throw new InvalidOperationException($"[UITrailController] trailDisplayContainer rect invalid (w:{r.width}, h:{r.height}). Ensure layout is active.");
             }
         }
 
@@ -180,32 +136,143 @@ namespace CosmicShore.Game
             _driftDot = Mathf.Clamp(dot, -0.9999f, 0.9999f);
         }
 
-        private void OnPrismBlockCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
+        private void BuildPool(int neededColumns)
         {
-            if (_pool == null) return;
+            if (neededColumns <= 0) throw new ArgumentOutOfRangeException(nameof(neededColumns));
+            neededColumns = Mathf.Clamp(neededColumns, 1, hardColumnCap);
 
-            // Keep your existing mirror math; pool handles layout in pixels.
-            var ui = _pool.WorldToUi;
-            if (_pool.SwingBlocks)
+            _columns = neededColumns;
+            _pool = new GameObject[_columns, 2];
+
+            for (int i = 0; i < _columns; i++)
             {
-                _pool.UpdateHead(
-                    xShift: xShift * (scaleY / 2f) * ui,
-                    wavelength: wavelength * ui,
-                    scaleX: scaleX * scaleY * _pool.ImageScale,
-                    scaleZ: scaleZ * _pool.ImageScale,
-                    driftDot: _driftDot
-                );
+                var colGO = new GameObject($"TrailCol_{i}", typeof(RectTransform));
+                var colRT = (RectTransform)colGO.transform;
+                colRT.SetParent(trailDisplayContainer, false);
+                colRT.localScale = Vector3.one;
+                colRT.anchorMin = colRT.anchorMax = new Vector2(0.5f, 0.5f);
+
+                for (int j = 0; j < 2; j++)
+                {
+                    var block = Instantiate(_blockPrefab, colRT, false);
+                    var brt = (RectTransform)block.transform;
+                    brt.localScale = Vector3.zero;
+                    brt.sizeDelta  = Eff2(blockSizePx);
+                    _pool[i, j] = block;
+                }
+            }
+        }
+
+        private void OnPrismBlockCreated(float xShiftW, float wavelengthW, float scaleXW, float scaleYW, float scaleZW)
+        {
+            // NO early returns — we want the exception if something is off
+            RequireReady();
+
+            float ui = Mathf.Max(0.0001f, pixelsPerWorldUnit);
+            float wavelengthPx, xShiftPx, scaleXPx, scaleZPx;
+
+            if (swingBlocks)
+            {
+                xShiftPx    = xShiftW    * (scaleYW * 0.5f) * ui;
+                wavelengthPx= wavelengthW* ui;
+                scaleXPx    = scaleXW    * scaleYW * imageScale;
+                scaleZPx    = scaleZW    * imageScale;
             }
             else
             {
-                _pool.UpdateHead(
-                    xShift: xShift * ui * scaleY,
-                    wavelength: wavelength * ui * scaleY,
-                    scaleX: scaleX * scaleY * _pool.ImageScale,
-                    scaleZ: scaleZ * scaleY * _pool.ImageScale,
-                    driftDot: _driftDot
+                xShiftPx    = xShiftW    * ui * scaleYW;
+                wavelengthPx= wavelengthW* ui * scaleYW;
+                scaleXPx    = scaleXW    * scaleYW * imageScale;
+                scaleZPx    = scaleZW    * scaleYW * imageScale;
+            }
+
+            var rect = trailDisplayContainer.rect;
+            float width = rect.width;
+
+            if (_pool == null || _columns == 0)
+            {
+                if (wavelengthPx < 1f) wavelengthPx = Eff2(blockSizePx).x; // force something sane
+                int needed = Mathf.CeilToInt(width / Mathf.Max(1f, wavelengthPx)) + 2;
+                if (verboseLogs) Debug.Log($"[UITrailController] BuildPool — width:{width:F1} px, wavelengthPx:{wavelengthPx:F3}, columns:{needed}");
+                BuildPool(needed);
+            }
+
+            // head scales (X=thickness, Y=height)
+            Vector3 headScaleRow0 = new Vector3(scaleZPx, -scaleXPx, 1f);
+            Vector3 headScaleRow1 = new Vector3(scaleZPx,  scaleXPx, 1f);
+
+            // head column (index 0)
+            for (int j = 0; j < 2; j++)
+            {
+                var block  = _pool[0, j];
+                var parent = (RectTransform)block.transform.parent;
+                parent.localPosition = new Vector3(width * 0.5f, 0f, 0f);
+
+                if (driftTrailAction)
+                {
+                    float tilt = Mathf.Acos(Mathf.Clamp(_driftDot, -0.9999f, 0.9999f)) * Mathf.Rad2Deg;
+                    parent.localRotation = Quaternion.Euler(0f, 0f, (_driftDot >= 0 ? -1f : 1f) * tilt);
+                }
+
+                var brt = (RectTransform)block.transform;
+                float y = (j == 0) ? (-xShiftPx) : (xShiftPx);
+                brt.localPosition = new Vector3(0f, y, 0f);
+                brt.sizeDelta     = Eff2(blockSizePx);
+                brt.localScale    = (j == 0) ? headScaleRow0 : headScaleRow1;
+            }
+
+            // conveyor shift
+            for (int i = _columns - 1; i > 0; i--)
+            {
+                float colX = -i * wavelengthPx + width * 0.5f;
+                bool under = i < Mathf.CeilToInt(width / Mathf.Max(1f, wavelengthPx));
+
+                for (int j = 0; j < 2; j++)
+                {
+                    var cur  = _pool[i, j];
+                    var prev = _pool[i - 1, j];
+
+                    var curParent = (RectTransform)cur.transform.parent;
+                    curParent.localPosition = new Vector3(colX, 0f, 0f);
+                    curParent.gameObject.SetActive(under);
+
+                    ((RectTransform)cur.transform).localScale    = ((RectTransform)prev.transform).localScale;
+                    ((RectTransform)cur.transform).localPosition = ((RectTransform)prev.transform).localPosition;
+
+                    if (driftTrailAction)
+                        curParent.localRotation = ((RectTransform)prev.transform.parent).localRotation;
+                }
+            }
+
+            if (verboseLogs)
+            {
+                Debug.Log(
+                    $"[UITrailController] OnBlockCreated " +
+                    $"xShiftW:{xShiftW:F3} wlW:{wavelengthW:F3} sX:{scaleXW:F3} sY:{scaleYW:F3} sZ:{scaleZW:F3} | " +
+                    $"xShiftPx:{xShiftPx:F2} wlPx:{wavelengthPx:F2} | " +
+                    $"width:{width:F1} cols:{_columns} driftDot:{_driftDot:F5}"
                 );
             }
+        }
+
+        [ContextMenu("Dump State")]
+        private void DumpState()
+        {
+            var rect = trailDisplayContainer ? trailDisplayContainer.rect : new Rect(0,0,0,0);
+            Debug.Log(
+                "[UITrailController] DumpState\n" +
+                $"- status: {(_status==null ? "NULL" : "OK")} (IsOwner:{_status?.IsOwnerClient}, AutoPilot:{_status?.AutoPilotEnabled})\n" +
+                $"- trailDisplayContainer: {trailDisplayContainer}\n" +
+                $"- vesselPrismController: {vesselPrismController}\n" +
+                $"- driftTrailAction: {driftTrailAction}\n" +
+                $"- blockPrefab: {_blockPrefab}\n" +
+                $"- rect: {rect.width}x{rect.height}\n" +
+                $"- columns: {_columns}\n" +
+                $"- swingBlocks: {swingBlocks}\n" +
+                $"- pixelsPerWorldUnit: {pixelsPerWorldUnit}, imageScale:{imageScale}\n" +
+                $"- scaleMultiplier:{scaleMultiplier}\n" +
+                $"- driftDot:{_driftDot}"
+            );
         }
     }
 }
