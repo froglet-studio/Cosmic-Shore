@@ -2279,11 +2279,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  worldToUIScale: 2
+  imageScale: 0.02
   silhouetteParts:
   - {fileID: 322268676704545573}
   - {fileID: 8777980414596646480}
@@ -2292,11 +2294,20 @@ MonoBehaviour:
   - {fileID: 5978549935140177486}
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 1, y: 1, z: 1}
+  sihouetteScale: {x: 5, y: 5, z: 5}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
-  JawResourceIndex: 0
+  JawResourceIndex: -1
   swingBlocks: 0
+  flow: 1
+  columnRotationOffsetDeg: 0
+  perBlockScaleMul: {x: 40, y: 3, z: 1}
+  perBlockLocalOffset: {x: 0, y: 0, z: 0}
+  smooth: 1
+  smoothingSeconds: 2
+  rowGapPxOverride: 10
+  gapMultiplier: 10
+  addBaseGapDuringMotion: 1
 --- !u!114 &3882236086036410899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2411,6 +2422,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1079422f73b5424b97437619fdccad2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  silhouette: {fileID: 2731003324702047408}
   view: {fileID: 2835891913121360755}
   overchargeSO: {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
   skimmer: {fileID: 8469300474470268824}
@@ -3346,10 +3358,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1018278068738739671}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 174.70209, y: -176.97108}
-  m_SizeDelta: {x: 250.872, y: 574.114}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 174.70215, y: -178.972}
+  m_SizeDelta: {x: 250.872, y: -581.848}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7044057605236930007
 CanvasRenderer:
@@ -4016,14 +4028,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 2835891913121360755}
-    - targetCorrespondingSourceObject: {fileID: 7886290077738051211, guid: ce0291905886e0b45b571bb9c51c0d19,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1118492616591276112}
-    - targetCorrespondingSourceObject: {fileID: 7886290077738051211, guid: ce0291905886e0b45b571bb9c51c0d19,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8950761245900539463}
   m_SourcePrefab: {fileID: 100100000, guid: ce0291905886e0b45b571bb9c51c0d19, type: 3}
 --- !u!224 &1018278068738739671 stripped
 RectTransform:
@@ -4064,8 +4068,11 @@ MonoBehaviour:
   highlights:
   - input: 2
     image: {fileID: 7069206601941259528}
-  silhouetteController: {fileID: 1118492616591276112}
-  uiTrailController: {fileID: 8950761245900539463}
+  SilhouetteContainer: {fileID: 4894037493201937865}
+  TrailDisplayContainer: {fileID: 5007938818474930393}
+  TopJaw: {fileID: 0}
+  BottomJaw: {fileID: 0}
+  JawResourceIndex: -1
   countText: {fileID: 1233584866538271001}
   fillImage: {fileID: 4296652247721588461}
   overchargePrismCount: {fileID: 4338819628229389481}
@@ -4073,47 +4080,6 @@ MonoBehaviour:
   overchargeCountdownText: {fileID: 1233584866538271001}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   highlightColor: {r: 0, g: 1, b: 0.21875882, a: 1}
---- !u!114 &1118492616591276112
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8845336482132744666}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0070706274c44ba4b87b98ec1ac94b5f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  silhouetteContainer: {fileID: 4894037493201937865}
-  silhouetteParts: []
-  driftTrailAction: {fileID: 0}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  jawResourceIndex: -1
-  debugDot: 0
---- !u!114 &8950761245900539463
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8845336482132744666}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8734d021ade4a7390ca25cdad361b6b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 0}
-  driftTrailAction: {fileID: 0}
-  trailDisplayContainer: {fileID: 0}
-  blockSizePx: {x: 4, y: 4}
-  rowSpacingPx: 200
-  columnGapPx: 250
-  scaleMultiplier: 0.7
-  swingBlocks: 0
-  smoothingSeconds: 0.08
-  hardRowCap: 8
 --- !u!1001 &4619950853104356685
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4435,6 +4401,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5928382658856804067}
     m_Modifications:
+    - target: {fileID: 6631921849521552077, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: m_MatchWidthOrHeight
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7883774110713613109, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
       propertyPath: m_Pivot.x
