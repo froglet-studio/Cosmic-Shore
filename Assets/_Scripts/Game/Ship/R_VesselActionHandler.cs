@@ -8,14 +8,11 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    /// <summary>
-    /// Component responsible for mapping input and resource events to
-    /// vessel actions.  This logic previously lived inside the Vessel classes.
-    /// </summary>
     public class R_VesselActionHandler : NetworkBehaviour
     {
         [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;   
+
         [Header("Action mappings")]
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
@@ -25,7 +22,6 @@ namespace CosmicShore.Game
         [SerializeField] ScriptableEventInputEvents _onButtonReleased;
         [SerializeField] ScriptableEventAbilityStats onAbilityExecuted;
 
-        // Runtime dictionaries now use ShipActionSO (assets; no Instantiate)
         readonly Dictionary<InputEvents, List<ShipActionSO>> _shipControlActions = new();
         readonly Dictionary<ResourceEvents, List<ShipActionSO>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
@@ -34,27 +30,17 @@ namespace CosmicShore.Game
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
-        bool _subscribed;
-        
-        bool IsRealNetworkSession =>
-            NetworkManager.Singleton &&
-            NetworkManager.Singleton.IsListening &&   
-            (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
 
         void SubscribeToInputEvents()
         {
-            if (_subscribed) return;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
-            _subscribed = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
-            if (!_subscribed) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
-            _subscribed = false;
         }
 
         void OnDisable()
@@ -64,10 +50,8 @@ namespace CosmicShore.Game
 
         public void ToggleSubscription(bool subscribe)
         {
-            if (subscribe)
-                SubscribeToInputEvents();
-            else
-                UnsubscribeFromInputEvents();
+            if (subscribe) SubscribeToInputEvents();
+            else           UnsubscribeFromInputEvents();
         }
 
         public void Initialize(IVesselStatus v)
@@ -88,12 +72,11 @@ namespace CosmicShore.Game
             if (!HasAction(controlType)) return;
 
             _inputAbilityStartTimes[controlType] = Time.time;
-
             var actions = _shipControlActions[controlType];
             foreach (var t in actions)
                 t.StartAction(_executors);
         }
-        
+
         public void StopShipControllerActions(InputEvents controlType)
         {
             if (!HasAction(controlType)) return;
@@ -102,7 +85,8 @@ namespace CosmicShore.Game
             if (_inputAbilityStartTimes.TryGetValue(controlType, out var start))
                 duration = Time.time - start;
 
-            onAbilityExecuted.Raise(new AbilityStats {
+            onAbilityExecuted.Raise(new AbilityStats
+            {
                 PlayerName = vesselStatus.PlayerName,
                 ControlType = controlType,
                 Duration = duration
@@ -110,26 +94,16 @@ namespace CosmicShore.Game
 
             var actions = _shipControlActions[controlType];
             for (int i = 0; i < actions.Count; i++)
-            {
-                if (!actions[i].IsEdgeTriggered)
-                    actions[i].StopAction(_executors);
-            }
+                actions[i].StopAction(_executors);
         }
-
 
         bool HasAction(InputEvents inputEvent)
             => _shipControlActions.TryGetValue(inputEvent, out var list) && list != null && list.Count > 0;
-        
+
         void OnButtonPressed(InputEvents ie)
         {
             if (vesselStatus.AutoPilotEnabled) return;
             OnInputEventStarted?.Invoke(ie);
-
-            if (!IsRealNetworkSession)
-            {
-                PerformShipControllerActions(ie);
-                return;
-            }
 
             if (IsSpawned)
             {
@@ -140,33 +114,22 @@ namespace CosmicShore.Game
                 PerformShipControllerActions(ie);
             }
         }
-        
+
         [ServerRpc]
         private void SendButtonPressed_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
         {
-            var target = new ClientRpcParams {
-                Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { OwnerClientId } }
-            };
-            OnButtonPressedClientRpc(ie, target);
+            // Server rebroadcasts to everyone
+            OnButtonPressedClientRpc(ie); 
         }
 
-        [ClientRpc]
-        void OnButtonPressedClientRpc(InputEvents ie, ClientRpcParams rpcParams = default)
-        {
-            if (!IsOwner) return;  
+        [ClientRpc] 
+        void OnButtonPressedClientRpc(InputEvents ie) => 
             PerformShipControllerActions(ie);
-        }
-        
+
         void OnButtonReleased(InputEvents ie)
         {
             if (vesselStatus.AutoPilotEnabled) return;
             OnInputEventStopped?.Invoke(ie);
-
-            if (!IsRealNetworkSession)
-            {
-                StopShipControllerActions(ie);
-                return;
-            }
 
             if (IsSpawned)
             {
@@ -174,38 +137,32 @@ namespace CosmicShore.Game
             }
             else
             {
-                StopShipControllerActions(ie);
+                StopShipControllerActions(ie); 
             }
         }
-        
+
         [ServerRpc]
         private void SendButtonReleased_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
         {
-            var target = new ClientRpcParams {
-                Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { OwnerClientId } }
-            };
-            OnButtonReleased_ClientRpc(ie, target);
+            OnButtonReleased_ClientRpc(ie); 
         }
 
         [ClientRpc]
-        void OnButtonReleased_ClientRpc(InputEvents ie, ClientRpcParams rpcParams = default)
-        {
-            if (!IsOwner) return;   
+        void OnButtonReleased_ClientRpc(InputEvents ie) =>
             StopShipControllerActions(ie);
-        }
     }
 
     [Serializable]
     public struct InputEventShipActionMapping
     {
         public InputEvents InputEvent;
-        public List<ShipActionSO> ShipActions;   
+        public List<ShipActionSO> ShipActions;
     }
 
     [Serializable]
     public struct ResourceEventShipActionMapping
     {
         public ResourceEvents ResourceEvent;
-        public List<ShipActionSO> ClassActions;  
+        public List<ShipActionSO> ClassActions;
     }
 }

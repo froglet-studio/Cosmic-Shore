@@ -7,13 +7,12 @@ public sealed class ToggleTranslationModeActionSO : ShipActionSO
     [SerializeField] private Mode stationaryMode = Mode.Serpent;
     public Mode StationaryMode => stationaryMode;
 
-    [SerializeField] private bool edgeTriggered = true;
-    public override bool IsEdgeTriggered => edgeTriggered;
+    public override bool IsEdgeTriggered => true; // press-only
 
     public override void StartAction(ActionExecutorRegistry reg)
     {
         var exec = reg.Get<ToggleTranslationModeActionExecutor>();
-        var v    = reg.VesselStatus;            
+        var v    = reg.VesselStatus;
         var ship = v?.Vessel;
         if (exec && v != null && ship != null)
             exec.Toggle(this, ship, v);
@@ -21,5 +20,6 @@ public sealed class ToggleTranslationModeActionSO : ShipActionSO
 
     public override void StopAction(ActionExecutorRegistry reg)
     {
+        // NO-OP for toggle
     }
 }

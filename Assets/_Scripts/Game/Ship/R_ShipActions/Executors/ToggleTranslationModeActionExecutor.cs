@@ -52,23 +52,25 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
      public void Toggle(ToggleTranslationModeActionSO so, IVessel ship, IVesselStatus status)
     {
         if (!so || status == null) return;
-        if (Time.frameCount == _lastToggleFrame) return; 
+
+        // Same-frame debounce to ignore duplicate invokes (e.g., double-press events)
+        if (Time.frameCount == _lastToggleFrame) return;
         _lastToggleFrame = Time.frameCount;
 
         var controller = status.Vessel as VesselController;
         if (!controller) return;
 
-        bool isMp = controller.IsSpawned &&
-                    NetworkManager.Singleton &&
-                    NetworkManager.Singleton.IsListening &&
-                    (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
-
-        bool hasAuthority = !isMp || controller.IsNetworkOwner;
+        // Allow in SP; in MP allow owner and server (server can drive state if your flow ever changes).
+        bool netActive = NetworkManager.Singleton && NetworkManager.Singleton.IsListening &&
+                         (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
+        bool hasAuthority = !netActive || NetworkManager.Singleton.IsServer || controller.IsOwner;
         if (!hasAuthority) return;
 
         bool isOn = !status.IsTranslationRestricted;
-        controller.SetTranslationRestricted(isOn); 
 
+        controller.SetTranslationRestricted(isOn);
+
+        // Side effects live here (not inside setters)
         if (so.StationaryMode == ToggleTranslationModeActionSO.Mode.Serpent && seedAssemblerExecutor)
         {
             if (isOn)
@@ -99,6 +101,7 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
 
         stationaryModeChanged?.Raise(isOn);
     }
+
     void End()
     {
         if (_status == null) return;
