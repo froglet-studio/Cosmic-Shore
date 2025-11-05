@@ -5,15 +5,18 @@ using UnityEngine.Serialization;
 namespace CosmicShore.Game
 {
     [RequireComponent(typeof(IVessel))]
+    [RequireComponent(typeof(NetworkVesselImpactor))]
     public class VesselImpactor : ImpactorBase
     {
         [SerializeField] VesselImpactorDataContainerSO vesselImpactorDataContainerSO;
+        [SerializeField] NetworkVesselImpactor networkVesselImpactor;
         
         public IVessel Vessel { get; private set; }
         
         private void Awake()
         {
             Vessel ??= GetComponent<IVessel>();
+            networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
         }
 
         protected override void AcceptImpactee(IImpactor impactee)
@@ -28,25 +31,15 @@ namespace CosmicShore.Game
                    }
                    break;
                 case OmniCrystalImpactor omniCrystalImpactee:
-                    if (IsSpawned && IsOwner)
-                    {
-                        ExecuteCrystalImpact_ServerRpc(new CrystalImpactData());
-                    }
+                    if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
+                        networkVesselImpactor.ExecuteOnHitOmniCrystal();
                     else
                         ExecuteCrystalImpact_Old(omniCrystalImpactee);
                     break;
             }
         }
 
-        [ServerRpc]
-        void ExecuteCrystalImpact_ServerRpc(CrystalImpactData data) =>
-            ExecuteCrystalImpact_ClientRpc(data);
-
-        [ClientRpc]
-        void ExecuteCrystalImpact_ClientRpc(CrystalImpactData data) =>
-            ExecuteCrystalImpact(data);
-
-        void ExecuteCrystalImpact(CrystalImpactData data)
+        internal void ExecuteCrystalImpact(CrystalImpactData data)
         {
             if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
             foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
@@ -60,9 +53,10 @@ namespace CosmicShore.Game
                 effect.Execute(this, impactee);
         }
 
-        void Reset()
+        void OnValidate()
         { 
             Vessel ??= GetComponent<IVessel>();
+            networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
         }
     }
 }
