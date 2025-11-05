@@ -862,10 +862,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 3797657973119974518}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 260, y: 0}
-  m_SizeDelta: {x: 520, y: 0}
+  m_AnchorMin: {x: 0, y: 0.05669192}
+  m_AnchorMax: {x: 0.27212504, y: 0.64746785}
+  m_AnchoredPosition: {x: -1, y: 5.5}
+  m_SizeDelta: {x: -2, y: 6.022003}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &3368373695973179278
 GameObject:
@@ -2136,17 +2136,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  worldToUIScale: 2
+  imageScale: 0.02
   silhouetteParts:
-  - {fileID: 6936285373394276089}
-  - {fileID: 2343904303954125754}
-  - {fileID: 1562349306234984412}
-  vesselPrismController: {fileID: 874579555101021522}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  vesselPrismController: {fileID: 0}
   driftTrailAction: {fileID: 0}
   sihouetteScale: {x: 5, y: 5, z: 5}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   JawResourceIndex: -1
   swingBlocks: 0
+  flow: 1
+  columnRotationOffsetDeg: 0
+  perBlockScaleMul: {x: 40, y: 3, z: 1}
+  perBlockLocalOffset: {x: 0, y: 0, z: 0}
+  smooth: 1
+  smoothingSeconds: 2
+  rowGapPxOverride: 10
+  gapMultiplier: 10
+  addBaseGapDuringMotion: 1
 --- !u!114 &3953285837003103147
 MonoBehaviour:
   m_ObjectHideFlags: 0
