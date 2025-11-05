@@ -119,12 +119,12 @@ namespace CosmicShore.Game
 
         public void SetBlockSilhouettePrefab(GameObject prefab)
         {
-            var trail = VesselStatus?.VesselHUDView ? VesselStatus.VesselHUDView.TrailUI : null;
-            if (trail != null)
-            {
-                trail.SetBlockPrefab(prefab);
-                return;
-            }
+            // var trail =VesselStatus.VesselHUDView.TrailUI;
+            // if (trail != null)
+            // {
+            //     trail.SetBlockPrefab(prefab, VesselStatus);
+            //     return;
+            // }
 
             VesselStatus?.ShipHUDController?.SetBlockPrefab(prefab);
         }
@@ -235,7 +235,7 @@ namespace CosmicShore.Game
                 return;
             
             VesselStatus.VesselCameraCustomizer.Initialize(this);
-            VesselStatus.Silhouette.Initialize(this);
+            VesselStatus.Silhouette.Initialize(VesselStatus, VesselStatus.VesselHUDView);
 
             VesselStatus.VesselTransformer.ToggleActive(true);
             VesselStatus.ActionHandler.ToggleSubscription(true);
@@ -252,7 +252,7 @@ namespace CosmicShore.Game
             if (VesselStatus.FarFieldSkimmer) 
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
 
-            VesselStatus.Silhouette.Initialize(this);
+            VesselStatus.Silhouette.Initialize(VesselStatus, VesselStatus.VesselHUDView);
             VesselStatus.VesselTransformer.ToggleActive(true);
             
             if (!enableAIPilot)
