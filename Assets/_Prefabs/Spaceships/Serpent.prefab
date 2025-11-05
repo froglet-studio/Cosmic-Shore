@@ -518,6 +518,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f9a042852be45d39d1e7acb6cb04da8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  initialCharges: 4
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &2093883271422758507
 GameObject:
@@ -2088,6 +2089,7 @@ GameObject:
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 3477502592268722062}
   - component: {fileID: 9121591686382397393}
+  - component: {fileID: 7965853245772039612}
   m_Layer: 0
   m_Name: Serpent
   m_TagString: Player_Ship
@@ -2289,7 +2291,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   toggleManualThrottle: 0
   MinimumSpeed: 10
   ThrottleScaler: 50
@@ -2495,6 +2496,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2562,9 +2564,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: d620f2ba2a4df8b4ba6fa7c5015ac5ec,
     type: 2}
+  networkVesselImpactor: {fileID: 7965853245772039612}
 --- !u!114 &9121591686382397393
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2577,12 +2579,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99148a7d0df947b0969a4432426d77a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  silhouette: {fileID: 0}
   view: {fileID: 5470374086122723936}
   consumeBoostExecutor: {fileID: 2460618104011007721}
   shieldResourceIndex: 0
   pipFull: {r: 1, g: 1, b: 1, a: 1}
   pipConsuming: {r: 0.3, g: 1, b: 0.3, a: 1}
   pipEmpty: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &7965853245772039612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b6b52a5b8bf44b9bf86a0d51d59554d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  vesselImpactor: {fileID: 3477502592268722062}
 --- !u!1 &6420853210210884085
 GameObject:
   m_ObjectHideFlags: 0
@@ -3888,8 +3905,11 @@ MonoBehaviour:
     image: {fileID: 8484929212193490670}
   - input: 7
     image: {fileID: 3512818663123036916}
-  silhouetteController: {fileID: 7237713388083863}
-  uiTrailController: {fileID: 7261650085594846340}
+  SilhouetteContainer: {fileID: 0}
+  TrailDisplayContainer: {fileID: 0}
+  TopJaw: {fileID: 0}
+  BottomJaw: {fileID: 0}
+  JawResourceIndex: -1
   shieldIconsByCount:
   - {fileID: 21300000, guid: 05ee374807511b44aa2a486aaf27e752, type: 3}
   - {fileID: 21300000, guid: ee81d0070c09faa44824544889fd5ddf, type: 3}
@@ -3940,8 +3960,11 @@ MonoBehaviour:
   columnGapPx: 16
   scaleMultiplier: 1
   swingBlocks: 0
-  smoothingSeconds: 0.08
-  hardRowCap: 8
+  pixelsPerWorldUnit: 2
+  imageScale: 0.02
+  hardColumnCap: 256
+  ignoreOwnershipChecks: 1
+  verboseLogs: 1
 --- !u!224 &8467111919413194998 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4789951449404768566, guid: af7b78e6bb3a8394f88f24bb0e31667a,

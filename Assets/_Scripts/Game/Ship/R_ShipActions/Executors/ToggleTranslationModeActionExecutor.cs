@@ -63,7 +63,7 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
                     NetworkManager.Singleton.IsListening &&
                     (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
 
-        bool hasAuthority = !isMp || controller.IsOwnerClient;
+        bool hasAuthority = !isMp || controller.IsNetworkOwner;
         if (!hasAuthority) return;
 
         bool isOn = !status.IsTranslationRestricted;

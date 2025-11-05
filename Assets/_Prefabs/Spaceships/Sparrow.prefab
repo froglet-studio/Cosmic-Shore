@@ -1474,6 +1474,7 @@ GameObject:
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 1372953349734463519}
   - component: {fileID: 1002316194365813701}
+  - component: {fileID: 7965853245772039612}
   m_Layer: 0
   m_Name: Sparrow
   m_TagString: Player_Ship
@@ -1655,6 +1656,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1689,8 +1691,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  toggleManualThrottle: 0
+  toggleManualThrottle: 1
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
@@ -1952,6 +1953,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: bd2b4a654fb302e47a23cf303280df2d,
     type: 2}
+  networkVesselImpactor: {fileID: 7965853245772039612}
 --- !u!114 &1002316194365813701
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1964,6 +1966,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1938f2b097540e7abd1e4210d446545, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  silhouette: {fileID: 0}
   view: {fileID: 8556911474882623255}
   fireGunExecutor: {fileID: 433940516795534989}
   overheatingExecutor: {fileID: 8186488272797771781}
@@ -1973,6 +1976,20 @@ MonoBehaviour:
   drainSpeed: 0.04
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
     type: 2}
+--- !u!114 &7965853245772039612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b6b52a5b8bf44b9bf86a0d51d59554d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  vesselImpactor: {fileID: 1372953349734463519}
 --- !u!1 &6613157502497893970
 GameObject:
   m_ObjectHideFlags: 0
@@ -3819,8 +3836,11 @@ MonoBehaviour:
     image: {fileID: 1501352032668899679}
   - input: 6
     image: {fileID: 6366083956812878776}
-  silhouetteController: {fileID: 6363337627062057172}
-  uiTrailController: {fileID: 3823440206901077037}
+  SilhouetteContainer: {fileID: 0}
+  TrailDisplayContainer: {fileID: 0}
+  TopJaw: {fileID: 0}
+  BottomJaw: {fileID: 0}
+  JawResourceIndex: -1
   missileIcons:
   - {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2, type: 3}
   - {fileID: 21300000, guid: 8306bc28766790c4e95529f8ed9ca0cb, type: 3}
@@ -3870,8 +3890,11 @@ MonoBehaviour:
   columnGapPx: 16
   scaleMultiplier: 1
   swingBlocks: 0
-  smoothingSeconds: 0.08
-  hardRowCap: 8
+  pixelsPerWorldUnit: 2
+  imageScale: 0.02
+  hardColumnCap: 256
+  ignoreOwnershipChecks: 1
+  verboseLogs: 1
 --- !u!224 &6942623293342057677 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3975669317849898342, guid: f0a24806a0485254389f97d4c93f7615,

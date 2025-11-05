@@ -18,7 +18,8 @@ namespace CosmicShore.Game
         /// In multiplayer mode, true -> owner client, false -> other clients
         /// In singleplayer mode, always false.
         /// </summary>
-        bool IsOwnerClient { get; }
+        bool IsNetworkOwner { get; }
+        bool IsNetworkClient { get; }
         void Initialize(IPlayer player, bool enableAIPilot = false);
         void PerformShipControllerActions(InputEvents @event);
         void StopShipControllerActions(InputEvents @event);
@@ -42,5 +43,8 @@ namespace CosmicShore.Game
         void ResetForPlay();
         void SetPose(Pose pose);
         void ChangePlayer(IPlayer player);
+        void ModifyThrottle(float amount, float duration);
+        void AddSlowedShipTransformToGameData();
+        void RemoveSlowedShipTransformFromGameData();
     }
 }

@@ -51,7 +51,7 @@ namespace CosmicShore
 
         private void VesselInitialized()
         {
-            if (!Vessel.IsOwnerClient && Vessel.VesselStatus.IsInitializedAsAI) 
+            if (!Vessel.IsNetworkOwner && Vessel.VesselStatus.IsInitializedAsAI) 
                 return;
             
             cameraManager = CameraManager.Instance;

@@ -1923,6 +1923,7 @@ GameObject:
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 538077361211256076}
   - component: {fileID: 6733957700513663958}
+  - component: {fileID: 7965853245772039612}
   m_Layer: 0
   m_Name: Manta
   m_TagString: Player_Ship
@@ -2122,7 +2123,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -2325,6 +2325,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2397,6 +2398,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: fed903592808c9b49b28dc65e94825fc,
     type: 2}
+  networkVesselImpactor: {fileID: 7965853245772039612}
 --- !u!114 &6733957700513663958
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2412,6 +2414,20 @@ MonoBehaviour:
   view: {fileID: 2835891913121360755}
   overchargeSO: {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
   skimmer: {fileID: 8469300474470268824}
+--- !u!114 &7965853245772039612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b6b52a5b8bf44b9bf86a0d51d59554d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  vesselImpactor: {fileID: 538077361211256076}
 --- !u!1 &6427700898264204751
 GameObject:
   m_ObjectHideFlags: 0

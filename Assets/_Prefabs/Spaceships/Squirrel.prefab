@@ -266,6 +266,7 @@ GameObject:
   - component: {fileID: 2800655758706162833}
   - component: {fileID: 2643412773408452782}
   - component: {fileID: 7874551534278607383}
+  - component: {fileID: 7965853245772039612}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -435,8 +436,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
-    type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -471,7 +471,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -725,6 +724,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c65db9958c064485be49a2183f263,
     type: 2}
+  networkVesselImpactor: {fileID: 7965853245772039612}
 --- !u!114 &7874551534278607383
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -737,8 +737,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2134c837bdb00594d80fc211aa9d0c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jawResourceIndex: 0
-  blockBaseSize: {x: 15, y: 15}
+  silhouette: {fileID: 0}
+--- !u!114 &7965853245772039612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b6b52a5b8bf44b9bf86a0d51d59554d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  vesselImpactor: {fileID: 2643412773408452782}
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1322,18 +1335,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   highlights: []
-  silhouetteContainer: {fileID: 0}
-  trailDisplayContainer: {fileID: 5403290303549652124}
-  silhouetteParts:
-  - {fileID: 5229348401851143220}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  jawResourceIndex: -1
-  vesselPrismController: {fileID: 874579555101021522}
-  driftTrailAction: {fileID: 0}
-  worldToUIScale: 6
-  imageScale: 0.08
-  swingBlocks: 0
+  SilhouetteContainer: {fileID: 0}
+  TrailDisplayContainer: {fileID: 0}
+  TopJaw: {fileID: 0}
+  BottomJaw: {fileID: 0}
+  JawResourceIndex: -1
 --- !u!1001 &5313661885591395716
 PrefabInstance:
   m_ObjectHideFlags: 0

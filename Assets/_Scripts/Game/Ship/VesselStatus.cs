@@ -227,7 +227,7 @@ namespace CosmicShore.Game
         
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
-        public bool IsOwnerClient => Vessel.IsOwnerClient;
+        public bool IsOwnerClient => Vessel.IsNetworkOwner;
 
         public void ResetForPlay()
         {
