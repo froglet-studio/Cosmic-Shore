@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FalconCameraSettingsSO
   m_EditorClassIdentifier: 
   mode: 0
-  followOffset: {x: 0, y: 10, z: -20}
+  followOffset: {x: 0, y: 10, z: -30}
   dynamicMinDistance: 10
   dynamicMaxDistance: 40
   followSmoothTime: 0.2
