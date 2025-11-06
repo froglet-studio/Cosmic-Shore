@@ -89,6 +89,7 @@ namespace CosmicShore.Game.Arcade
             return mode switch
             {
                 ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(gameData, multiplier),
+                ScoringModes.FriendlyVolumeDestroyedScoring => new FriendlyVolumeDestroyedScoring(gameData, multiplier), 
                 ScoringModes.VolumeCreated => new VolumeCreatedScoring(gameData, multiplier),
                 ScoringModes.TimePlayed => new TimePlayedScoring(gameData, multiplier),
                 ScoringModes.TurnsPlayed => new TurnsPlayedScoring(gameData, multiplier),

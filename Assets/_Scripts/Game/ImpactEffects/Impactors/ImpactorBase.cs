@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public abstract class ImpactorBase : NetworkBehaviour, IImpactor
+    public abstract class ImpactorBase : MonoBehaviour, IImpactor
     {
         protected virtual bool isInitialized => true;
         

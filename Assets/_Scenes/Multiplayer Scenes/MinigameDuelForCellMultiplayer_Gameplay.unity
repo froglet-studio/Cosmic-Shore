@@ -2456,6 +2456,8 @@ MonoBehaviour:
     Multiplier: 1
   - Mode: 0
     Multiplier: 1
+  - Mode: 11
+    Multiplier: 1
 --- !u!114 &1628508337
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2473,7 +2475,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  duration: 120
+  duration: 60
 --- !u!114 &1628508338
 MonoBehaviour:
   m_ObjectHideFlags: 0

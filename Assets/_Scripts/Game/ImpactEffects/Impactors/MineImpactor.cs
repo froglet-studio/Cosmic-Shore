@@ -27,7 +27,6 @@ namespace CosmicShore.Game
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
-                    // ExecuteEffect(impactee, mineShipEffects);
                     if(!DoesEffectExist(mineShipEffects)) return;
                     foreach (var effect in mineShipEffects)
                     {
@@ -35,7 +34,6 @@ namespace CosmicShore.Game
                     }
                     break;
                 case ProjectileImpactor projectileImpactee:
-                    // ExecuteEffect(impactee, mineProjectileEffects);
                     if(!DoesEffectExist(mineProjectileEffects)) return;
                     foreach (var effect in mineProjectileEffects)
                     {
@@ -43,7 +41,6 @@ namespace CosmicShore.Game
                     }
                     break;
                 case ExplosionImpactor explosionImpactee:
-                    // ExecuteEffect(impactee, mineExplosionEffects);
                     if(!DoesEffectExist(mineExplosionEffects)) return;
                     foreach (var effect in mineExplosionEffects)
                     {

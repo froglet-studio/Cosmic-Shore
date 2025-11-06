@@ -33,7 +33,6 @@ namespace CosmicShore.Game.UI
         private void OnEnable()
         {
             ToggleReadyButton(false);
-            UpdateTurnMonitorDisplay(string.Empty);
             
             gameData.OnClientReady += OnClientReady;
             gameData.OnMiniGmaeTurnStarted.OnRaised += OnMiniGameTurnStarted;
@@ -68,6 +67,7 @@ namespace CosmicShore.Game.UI
         void OnMiniGameTurnEnd()
         {
             localRoundStats.OnScoreChanged -= UpdateScoreUI;
+            UpdateTurnMonitorDisplay(string.Empty);
         }
 
         void UpdateScoreUI()
@@ -112,7 +112,7 @@ namespace CosmicShore.Game.UI
                 part.transform.SetParent(sil.transform, false);
                 part.SetActive(true);
             }
-            data.Sender.SetSilhouetteReference(sil.transform, trail.transform);
+            //data.Sender.SetSilhouetteReference(sil.transform, trail.transform);
         }
         
         private void OnClientReady() => ResetForReplay();
@@ -123,17 +123,18 @@ namespace CosmicShore.Game.UI
             CleanupUI();
         }
 
-        // Public methods you may call externally:
+        // Public methods you may call externally: 
+        // TODO -> Use Canvas Group, dont activate/deactivate game objects -> expensive.
         public void Show() => view.gameObject.SetActive(true);
         public void Hide() => view.gameObject.SetActive(false);
 
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
-        public void UpdateTurnMonitorDisplay(string message) => view.RoundTimeDisplay.text = message;
+        public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
         
         void CleanupUI()
         {
             UpdateTurnMonitorDisplay(string.Empty);
-            view.UpdateScoreUI("0000");
+            view.UpdateScoreUI("0");
         }
         
     }

@@ -8,14 +8,11 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    /// <summary>
-    /// Component responsible for mapping input and resource events to
-    /// vessel actions.  This logic previously lived inside the Vessel classes.
-    /// </summary>
     public class R_VesselActionHandler : NetworkBehaviour
     {
         [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;   
+
         [Header("Action mappings")]
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
@@ -25,7 +22,6 @@ namespace CosmicShore.Game
         [SerializeField] ScriptableEventInputEvents _onButtonReleased;
         [SerializeField] ScriptableEventAbilityStats onAbilityExecuted;
 
-        // Runtime dictionaries now use ShipActionSO (assets; no Instantiate)
         readonly Dictionary<InputEvents, List<ShipActionSO>> _shipControlActions = new();
         readonly Dictionary<ResourceEvents, List<ShipActionSO>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
@@ -54,10 +50,8 @@ namespace CosmicShore.Game
 
         public void ToggleSubscription(bool subscribe)
         {
-            if (subscribe)
-                SubscribeToInputEvents();
-            else
-                UnsubscribeFromInputEvents();
+            if (subscribe) SubscribeToInputEvents();
+            else           UnsubscribeFromInputEvents();
         }
 
         public void Initialize(IVesselStatus v)
@@ -78,18 +72,15 @@ namespace CosmicShore.Game
             if (!HasAction(controlType)) return;
 
             _inputAbilityStartTimes[controlType] = Time.time;
-
             var actions = _shipControlActions[controlType];
             foreach (var t in actions)
                 t.StartAction(_executors);
         }
 
-
         public void StopShipControllerActions(InputEvents controlType)
         {
             if (!HasAction(controlType)) return;
 
-            // Only compute duration if we actually tracked a start time
             float duration = 0f;
             if (_inputAbilityStartTimes.TryGetValue(controlType, out var start))
                 duration = Time.time - start;
@@ -108,7 +99,7 @@ namespace CosmicShore.Game
 
         bool HasAction(InputEvents inputEvent)
             => _shipControlActions.TryGetValue(inputEvent, out var list) && list != null && list.Count > 0;
-        
+
         void OnButtonPressed(InputEvents ie)
         {
             if (vesselStatus.AutoPilotEnabled) return;
@@ -124,22 +115,20 @@ namespace CosmicShore.Game
             }
         }
 
-        
         [ServerRpc]
         private void SendButtonPressed_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
         {
             // Server rebroadcasts to everyone
             OnButtonPressedClientRpc(ie); 
         }
-        
+
         [ClientRpc] 
         void OnButtonPressedClientRpc(InputEvents ie) => 
             PerformShipControllerActions(ie);
-        
+
         void OnButtonReleased(InputEvents ie)
         {
             if (vesselStatus.AutoPilotEnabled) return;
-
             OnInputEventStopped?.Invoke(ie);
 
             if (IsSpawned)
@@ -152,14 +141,12 @@ namespace CosmicShore.Game
             }
         }
 
-        
         [ServerRpc]
         private void SendButtonReleased_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
         {
-            // Server rebroadcasts to everyone
             OnButtonReleased_ClientRpc(ie); 
         }
-    
+
         [ClientRpc]
         void OnButtonReleased_ClientRpc(InputEvents ie) =>
             StopShipControllerActions(ie);
@@ -169,13 +156,13 @@ namespace CosmicShore.Game
     public struct InputEventShipActionMapping
     {
         public InputEvents InputEvent;
-        public List<ShipActionSO> ShipActions;   // <-- use SO assets
+        public List<ShipActionSO> ShipActions;
     }
 
     [Serializable]
     public struct ResourceEventShipActionMapping
     {
         public ResourceEvents ResourceEvent;
-        public List<ShipActionSO> ClassActions;  // <-- use SO assets
+        public List<ShipActionSO> ClassActions;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using CosmicShore;
 using CosmicShore.Game;
 using Obvious.Soap;
+using Unity.Netcode;
 using UnityEngine;
 
 public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
@@ -21,7 +22,8 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
     IVessel _ship;
     IVesselStatus _status;
     ActionExecutorRegistry _registry;
-
+    int _lastToggleFrame = -1;
+    
     void OnEnable()
     {
         OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
@@ -29,7 +31,6 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
 
     void OnDisable()
     {
-        End();
         OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
 
@@ -48,13 +49,28 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
             seedAssemblerExecutor = _registry.Get<SeedAssemblerActionExecutor>();
     }
 
-    public void Toggle(ToggleTranslationModeActionSO so, IVessel ship, IVesselStatus status)
+     public void Toggle(ToggleTranslationModeActionSO so, IVessel ship, IVesselStatus status)
     {
         if (!so || status == null) return;
 
-        status.IsTranslationRestricted = !status.IsTranslationRestricted;
-        var isOn = status.IsTranslationRestricted;
+        // Same-frame debounce to ignore duplicate invokes (e.g., double-press events)
+        if (Time.frameCount == _lastToggleFrame) return;
+        _lastToggleFrame = Time.frameCount;
 
+        var controller = status.Vessel as VesselController;
+        if (!controller) return;
+
+        // Allow in SP; in MP allow owner and server (server can drive state if your flow ever changes).
+        bool netActive = NetworkManager.Singleton && NetworkManager.Singleton.IsListening &&
+                         (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
+        bool hasAuthority = !netActive || NetworkManager.Singleton.IsServer || controller.IsOwner;
+        if (!hasAuthority) return;
+
+        bool isOn = !status.IsTranslationRestricted;
+
+        controller.SetTranslationRestricted(isOn);
+
+        // Side effects live here (not inside setters)
         if (so.StationaryMode == ToggleTranslationModeActionSO.Mode.Serpent && seedAssemblerExecutor)
         {
             if (isOn)

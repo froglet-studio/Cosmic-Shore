@@ -20,7 +20,7 @@ MonoBehaviour:
     element: 4
   boostDuration: 3
   maxCharges: 4
-  reloadCooldown: 3
+  reloadCooldown: 7
   reloadFillTime: 2
   resourceIndex: 1
   resourceCost: 0.25

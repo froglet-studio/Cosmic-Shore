@@ -2086,6 +2086,7 @@ GameObject:
   - component: {fileID: 5784366292517366828}
   - component: {fileID: 6556690844172358248}
   - component: {fileID: 2145686236205056283}
+  - component: {fileID: 5259057883249728580}
   m_Layer: 0
   m_Name: Dolphin
   m_TagString: Player_Ship
@@ -2266,6 +2267,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!114 &945558687787062591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2300,7 +2302,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   toggleManualThrottle: 0
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -2571,6 +2572,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 6935af56b01b7664f8fd9e6ced0f2a87,
     type: 2}
+  networkVesselImpactor: {fileID: 5259057883249728580}
 --- !u!114 &2145686236205056283
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2587,6 +2589,20 @@ MonoBehaviour:
   chargeBoostExecutor: {fileID: 8363998993469153081}
   chargeBoostActionSO: {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2,
     type: 2}
+--- !u!114 &5259057883249728580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7014513329719026904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b6b52a5b8bf44b9bf86a0d51d59554d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  vesselImpactor: {fileID: 6556690844172358248}
 --- !u!1 &7285420413364848933
 GameObject:
   m_ObjectHideFlags: 0

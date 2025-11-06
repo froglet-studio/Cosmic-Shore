@@ -6,8 +6,6 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(Projectile))]
     public class ProjectileImpactor : ImpactorBase
     {
-        // [SerializeField, RequireInterface(typeof(IImpactEffect))]
-        // ScriptableObject[] projectileShipEffectsSO;
         [SerializeField]
         VesselProjectileEffectSO[] projectileShipEffects;
         [SerializeField]
@@ -44,7 +42,6 @@ namespace CosmicShore.Game
                 case VesselImpactor shipImpactee:
                     if (Projectile.DisallowImpactOnVessel(shipImpactee.Vessel.VesselStatus.Domain))
                         break;
-                    // ExecuteEffect(impactee, projectileShipEffects);
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileShipEffects)) return;
                     foreach (var effect in projectileImpactorDataContainer.ProjectileShipEffects)
                     {
@@ -55,7 +52,6 @@ namespace CosmicShore.Game
                 case PrismImpactor prismImpactee:
                     if (Projectile.DisallowImpactOnPrism(prismImpactee.Prism.Domain))
                         break;
-                    // ExecuteEffect(impactee, projectilePrismEffects);
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectilePrismEffects)) return;
                     foreach (var effect in projectileImpactorDataContainer.ProjectilePrismEffects)
                     {
@@ -63,8 +59,6 @@ namespace CosmicShore.Game
                     }
                     break;
                 case MineImpactor mineImpactee:
-        
-                    // ExecuteEffect(impactee, projectilePrismEffects);
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileMineEffect)) return;
                     foreach (var effect in projectileImpactorDataContainer.ProjectileMineEffect)
                     {
@@ -72,7 +66,6 @@ namespace CosmicShore.Game
                     }
                     break;
             }
-            // Projectile.ReturnToFactory();
         }
 
         private void OnValidate()

@@ -6,22 +6,22 @@ using UnityEngine;
 
 public class ActionExecutorRegistry : MonoBehaviour
 {
-    [Tooltip("List the executors this ship actually uses (one component per action type).")]
     [SerializeField] List<ShipActionExecutorBase> _executors = new();
-
     readonly Dictionary<Type, ShipActionExecutorBase> _byType = new();
+
+    public IVesselStatus VesselStatus { get; private set; }   // <—
 
     public void InitializeAll(IVesselStatus status)
     {
+        VesselStatus = status;                                // <—
         _byType.Clear();
-        foreach (var exec in _executors.Where(exec => exec))
+        foreach (var exec in _executors.Where(e => e))
         {
             exec.Initialize(status);
             _byType[exec.GetType()] = exec;
         }
     }
 
-    // Get by concrete type (fast & simple)
     public T Get<T>() where T : ShipActionExecutorBase
     {
         if (_byType.TryGetValue(typeof(T), out var e)) return (T)e;

@@ -9,7 +9,6 @@ public class VesselTransformer : MonoBehaviour
 {
     protected const float LERP_AMOUNT = 1.5f;
 
-    [FormerlySerializedAs("miniGameData")] [SerializeField] private GameDataSO gameData;
     [SerializeField] protected bool toggleManualThrottle;
 
     #region Vessel
@@ -224,14 +223,14 @@ public class VesselTransformer : MonoBehaviour
                 if (ThrottleModifiers.Count == 0)
                 {
                     VesselStatus.Slowed = false;
-                    gameData?.SlowedShipTransforms.Remove(transform);
+                    Vessel.RemoveSlowedShipTransformFromGameData();
                 }
             }
             else if (modifier.initialValue < 1f)
             {
                 accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
                 VesselStatus.Slowed = true;
-                gameData?.SlowedShipTransforms.Add(transform);
+                Vessel.AddSlowedShipTransformToGameData();
             }
             else
             {
@@ -244,7 +243,7 @@ public class VesselTransformer : MonoBehaviour
         if (accumulatedThrottleModification < 0.001f)
         {
             VesselStatus.Slowed = false;
-            gameData?.SlowedShipTransforms.Remove(transform);
+            Vessel.RemoveSlowedShipTransformFromGameData();
         }
 
         throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0f);

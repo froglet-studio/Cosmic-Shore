@@ -5,6 +5,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -204,7 +205,18 @@ namespace CosmicShore.Game
         public bool SingleStickControls { get; set; }
         public bool LiveProjectiles { get; set; }
         public bool IsStationary { get; set; }
-        public bool IsTranslationRestricted { get; set; }
+
+        bool _isTranslationRestricted;
+        public bool IsTranslationRestricted
+        {
+            get => _isTranslationRestricted;
+            set
+            {
+                if (_isTranslationRestricted.Equals(value)) return;
+                _isTranslationRestricted = value;
+            }
+        }
+
         public bool AlignmentEnabled { get; set; }
         public bool Slowed { get; set; }
         public bool Overheating { get; set; }
@@ -215,7 +227,7 @@ namespace CosmicShore.Game
         
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
-        public bool IsOwnerClient => Vessel.IsOwnerClient;
+        public bool IsOwnerClient => Vessel.IsNetworkOwner;
 
         public void ResetForPlay()
         {

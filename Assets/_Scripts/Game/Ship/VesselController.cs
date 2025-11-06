@@ -1,6 +1,6 @@
 using System;
 using CosmicShore.Models.Enums;
-using Obvious.Soap;
+using CosmicShore.SOAP;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -13,6 +13,9 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(IVesselStatus))]
     public class VesselController : NetworkBehaviour, IVessel
     {
+        [SerializeField]
+        GameDataSO gameData;
+        
         public event Action OnInitialized;
         public event Action OnBeforeDestroyed;
 
@@ -26,11 +29,14 @@ namespace CosmicShore.Game
             }
         }
 
-        public bool IsOwnerClient => IsSpawned && IsOwner;
-
+        public bool IsNetworkOwner => IsSpawned && IsOwner;
+        public bool IsNetworkClient => IsSpawned && !IsOwner;
+        
         readonly NetworkVariable<float> n_Speed = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_Course = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
+        readonly NetworkVariable<bool> n_IsTranslationRestricted =
+            new(writePerm: NetworkVariableWritePermission.Owner);
 
         public override void OnDestroy()
         {
@@ -117,12 +123,12 @@ namespace CosmicShore.Game
 
         public void SetBlockSilhouettePrefab(GameObject prefab)
         {
-            var trail = VesselStatus?.VesselHUDView ? VesselStatus.VesselHUDView.TrailUI : null;
-            if (trail != null)
-            {
-                trail.SetBlockPrefab(prefab);
-                return;
-            }
+            // var trail =VesselStatus.VesselHUDView.TrailUI;
+            // if (trail != null)
+            // {
+            //     trail.SetBlockPrefab(prefab, VesselStatus);
+            //     return;
+            // }
 
             VesselStatus?.ShipHUDController?.SetBlockPrefab(prefab);
         }
@@ -174,9 +180,6 @@ namespace CosmicShore.Game
             VesselStatus.VesselPrismController.StartSpawn();
         }
 
-        void ToggleStationaryMode(bool enable) =>
-            VesselStatus.IsStationary = enable;
-
         public void ResetForPlay()
         {
             if (IsSpawned && IsOwner)
@@ -220,6 +223,53 @@ namespace CosmicShore.Game
             VesselStatus.ActionHandler.ToggleSubscription(true);
             VesselStatus.VesselCameraCustomizer.RetargetAndApply(this);
         }
+        
+        public void SetTranslationRestricted(bool value)
+        {
+            if (IsNetworkOwner)
+                n_IsTranslationRestricted.Value = value;
+
+            VesselStatus.IsTranslationRestricted = value; 
+        }
+
+        public void ModifyThrottle(float amount, float duration) =>
+            VesselStatus.VesselTransformer.ModifyThrottle(amount, duration);
+        
+        public void AddSlowedShipTransformToGameData()
+        {
+            if (IsSpawned)
+                AddSlowedShipTransformToGameData_ServerRpc();
+            else
+                AddSlowedShipTransformToGameData_Local();
+        }
+        
+        public void RemoveSlowedShipTransformFromGameData()
+        {
+            if (IsSpawned)
+                RemoveSlowedShipTransformFromGameData_ServerRpc();
+            else
+                RemoveSlowedShipTransformFromGameData_Local();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void RemoveSlowedShipTransformFromGameData_ServerRpc() =>
+            RemoveSlowedShipTransformFromGameData_ClientRpc();
+
+        [ClientRpc]
+        void RemoveSlowedShipTransformFromGameData_ClientRpc() =>
+            RemoveSlowedShipTransformFromGameData_Local();
+        void RemoveSlowedShipTransformFromGameData_Local() =>
+            gameData?.SlowedShipTransforms.Remove(transform);
+        
+        [ServerRpc(RequireOwnership = false)]
+        void AddSlowedShipTransformToGameData_ServerRpc() =>
+            AddSlowedShipTransformToGameData_ClientRpc();
+
+        [ClientRpc]
+        void AddSlowedShipTransformToGameData_ClientRpc() =>
+            AddSlowedShipTransformToGameData_Local();
+        void AddSlowedShipTransformToGameData_Local() =>
+            gameData?.SlowedShipTransforms.Add(transform);
 
         void InitializeForMultiplayerMode()
         {
@@ -233,7 +283,7 @@ namespace CosmicShore.Game
                 return;
             
             VesselStatus.VesselCameraCustomizer.Initialize(this);
-            VesselStatus.Silhouette.Initialize(this);
+            VesselStatus.Silhouette.Initialize(VesselStatus, VesselStatus.VesselHUDView);
 
             VesselStatus.VesselTransformer.ToggleActive(true);
             VesselStatus.ActionHandler.ToggleSubscription(true);
@@ -250,7 +300,7 @@ namespace CosmicShore.Game
             if (VesselStatus.FarFieldSkimmer) 
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
 
-            VesselStatus.Silhouette.Initialize(this);
+            VesselStatus.Silhouette.Initialize(VesselStatus, VesselStatus.VesselHUDView);
             VesselStatus.VesselTransformer.ToggleActive(true);
             
             if (!enableAIPilot)
@@ -272,12 +322,14 @@ namespace CosmicShore.Game
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
+        void OnIsTranslationRestrictedValueChanged(bool previousValue, bool newValue) => VesselStatus.IsTranslationRestricted = newValue;
         
         void SubscribeToNetworkVariables()
         {
             n_Speed.OnValueChanged += OnSpeedChanged;
             n_Course.OnValueChanged += OnCourseChanged;
             n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
+            n_IsTranslationRestricted.OnValueChanged += OnIsTranslationRestrictedValueChanged;
         }
         
         void UnsubscribeFromNetworkVariables()
@@ -285,6 +337,10 @@ namespace CosmicShore.Game
             n_Speed.OnValueChanged -= OnSpeedChanged;
             n_Course.OnValueChanged -= OnCourseChanged;
             n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
+            n_IsTranslationRestricted.OnValueChanged -= OnIsTranslationRestrictedValueChanged;
         }
+        
+        void ToggleStationaryMode(bool enable) =>
+            VesselStatus.IsStationary = enable;
     }
 }

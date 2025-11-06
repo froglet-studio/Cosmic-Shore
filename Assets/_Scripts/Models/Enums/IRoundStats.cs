@@ -6,7 +6,9 @@ namespace CosmicShore.Game
     {
         public event Action OnScoreChanged;
         public event Action<IRoundStats> OnVolumeCreatedChanged;
-        public event Action<IRoundStats> OnVolumeDestroyedChanged;
+        public event Action<IRoundStats> OnTotalVolumeDestroyedChanged;
+        public event Action<IRoundStats> OnFriendlyVolumeDestroyedChanged;
+        public event Action<IRoundStats> OnHostileVolumeDestroyedChanged;
         
         string Name { get; set; }
         Domains Domain { get; set; }
@@ -19,7 +21,7 @@ namespace CosmicShore.Game
         int FriendlyPrismsDestroyed { get; set; }
         int HostilePrismsDestroyed { get; set; }
         float VolumeCreated { get; set; }
-        float VolumeDestroyed { get; set; }
+        float TotalVolumeDestroyed { get; set; }
         float VolumeRestored { get; set; }
         float VolumeStolen { get; set; }
         float VolumeRemaining { get; set; }
@@ -52,7 +54,7 @@ namespace CosmicShore.Game
                         CrystalsCollected = OmniCrystalsCollected = ElementalCrystalsCollected =
                             SkimmerShipCollisions = 0;
 
-            VolumeCreated = VolumeDestroyed = VolumeRestored =
+            VolumeCreated = TotalVolumeDestroyed = VolumeRestored =
                 VolumeStolen = VolumeRemaining =
                     FriendlyVolumeDestroyed = HostileVolumeDestroyed =
                         ChargeCrystalValue = MassCrystalValue = SpaceCrystalValue = TimeCrystalValue =
