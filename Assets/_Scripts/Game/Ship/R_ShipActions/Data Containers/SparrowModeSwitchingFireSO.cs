@@ -4,11 +4,11 @@ namespace CosmicShore.Game
 {
     [CreateAssetMenu(fileName="ModeSwitchingFire",
         menuName="ScriptableObjects/Vessel Actions/Mode Switching Fire")]
-    public class ModeSwitchingFireSO : ShipActionSO
+    public class SparrowModeSwitchingFireSO : ShipActionSO
     {
         [Header("Actions")]
-        [SerializeField] private ShipActionSO normalFire;     // FullAutoActionSO
-        [SerializeField] private ShipActionSO stationaryFire; // FullAutoBlockShootActionSO
+        [SerializeField] private ShipActionSO normalFire;   
+        [SerializeField] private ShipActionSO stationaryFire;
 
         private ShipActionSO _active;
 
