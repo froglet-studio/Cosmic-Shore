@@ -128,7 +128,7 @@ namespace CosmicShore.Game.Projectiles
                 ownDomain       = Domain,
                 Rotation        = Quaternion.LookRotation(forward, up),
                 SpawnPosition   = position,
-                Scale           = targetScale,             // final target scale
+                Scale           = targetScale,           
                 Velocity        = Vector3.zero,
                 PrismType       = PrismType.Interactive,
                 TargetTransform = null,
@@ -152,7 +152,7 @@ namespace CosmicShore.Game.Projectiles
             // Owner + gameplay flags
             prism.ownerID = OwnerIdBase + blockId + position;
             if (shielded) prism.prismProperties.IsShielded = true;
-
+            prism.Domain = Domain;
             // Make sure it starts at zero and grows (like TrailBlock used to)
             var tr = prism.transform;
             tr.localScale = Vector3.zero; // force from-zero growth
