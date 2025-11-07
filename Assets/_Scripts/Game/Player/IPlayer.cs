@@ -16,14 +16,18 @@ namespace CosmicShore.Game
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
         IRoundStats RoundStats { get; }
-        public bool IsNetworkOwner { get; }
-        public bool IsNetworkClient { get; }
         bool IsActive { get; }
         /// <summary>
         /// If true, it means that this played was marked as AI at initialization
         /// </summary>
         bool IsInitializedAsAI { get; }
-        bool IsLocalPlayer { get; }
+        public bool IsNetworkOwner { get; }
+        public bool IsNetworkClient { get; }
+        /// <summary>
+        /// Local User in singleplayer is the player providing input, not AI.
+        /// In Multiplayer, it is the Owner Client providing input.
+        /// </summary>
+        bool IsLocalUser { get; }
         void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
         void ToggleGameObject(bool toggle);
         void DestroyPlayer();

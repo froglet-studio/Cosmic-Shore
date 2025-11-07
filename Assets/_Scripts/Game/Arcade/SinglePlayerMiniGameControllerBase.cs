@@ -20,6 +20,12 @@ namespace CosmicShore.Game.Arcade
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
         }
         
+        protected override void SetupNewRound()
+        {
+            gameData.InvokeMiniGameRoundStarted();
+            base.SetupNewRound();
+        }
+        
         protected override void OnCountdownTimerEnded()
         {
             gameData.SetPlayersActive();
@@ -31,10 +37,15 @@ namespace CosmicShore.Game.Arcade
             gameData.ResetPlayers();
             base.EndTurn();
         }
-        
-        protected override void EndGame()
+
+        protected override void EndRound()
         {
-            gameData.InvokeMiniGameEnd();
+            gameData.RoundsPlayed++;
+            gameData.InvokeMiniGameRoundEnd();
+            base.EndRound();
         }
+        
+        protected override void EndGame() =>
+            gameData.InvokeMiniGameEnd();
     }
 }

@@ -16,13 +16,13 @@ namespace CosmicShore.Game
         public override void OnNetworkSpawn()
         {
             gameData.OnInitializeGame += OnInitializeGame;
-            gameData.OnMiniGmaeTurnStarted.OnRaised += MiniGmaeTurnStartedInServer;
+            gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStartedInServer;
         }
 
         public override void OnNetworkDespawn()
         {
             gameData.OnInitializeGame -= OnInitializeGame;
-            gameData.OnMiniGmaeTurnStarted.OnRaised -= MiniGmaeTurnStartedInServer;
+            gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStartedInServer;
             n_SpawnPos.OnValueChanged -= OnSpawnPosChanged;
         }
 
@@ -69,7 +69,7 @@ namespace CosmicShore.Game
             n_SpawnPos.OnValueChanged += OnSpawnPosChanged;
         }
 
-        void MiniGmaeTurnStartedInServer()
+        void MiniGameTurnStartedInServer()
         {
             if (!cellData.Crystal)
                 Spawn(n_SpawnPos.Value);

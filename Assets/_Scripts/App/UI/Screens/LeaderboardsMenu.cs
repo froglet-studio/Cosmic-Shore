@@ -192,7 +192,7 @@ namespace CosmicShore.App.UI.Screens
                 HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.Score.ToString();
                 HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
 
-                // Highlight the player's score
+                // Highlight the player's Score
                 if (score.PlayerId == AuthenticationManager.PlayFabAccount.ID)
                 {
                     HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);

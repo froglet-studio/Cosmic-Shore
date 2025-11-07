@@ -27,8 +27,11 @@ namespace CosmicShore.SOAP
         public event Action OnSessionStarted;
         public event Action OnInitializeGame;
         public event Action OnClientReady;
-        public ScriptableEventNoParam OnMiniGmaeTurnStarted;
+        public ScriptableEventNoParam OnMiniGameRoundStarted;
+        [FormerlySerializedAs("OnMiniGmaeTurnStarted")] 
+        public ScriptableEventNoParam OnMiniGameTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
+        public ScriptableEventNoParam OnMiniGameRoundEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
         
@@ -62,6 +65,8 @@ namespace CosmicShore.SOAP
         public IPlayer LocalPlayer { get; private set; }
         public IRoundStats LocalRoundStats { get; private set; }
         public ISession ActiveSession { get; set; }
+        public int TurnsTakenThisRound { get; set; }
+        public int RoundsPlayed { get; set; }
         
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
@@ -97,17 +102,21 @@ namespace CosmicShore.SOAP
         }
         
         public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
-        public void InvokeTurnStarted() => OnMiniGmaeTurnStarted?.Raise();
+        public void InvokeClientReady() => OnClientReady?.Invoke();
+        public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
+        public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
         public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Raise();
+        public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
-        public void InvokeClientReady() => OnClientReady?.Invoke();
 
         public void ResetRuntimeData()
         {
             Players.Clear();
             RoundStatsList.Clear();
             TurnStartTime = 0f;
+            RoundsPlayed = 0;
+            TurnsTakenThisRound = 0;
         }
 
         public void ResetDataForReplay()
@@ -154,7 +163,7 @@ namespace CosmicShore.SOAP
             Players.Add(p);
             
             RoundStatsList.Add(p.RoundStats);
-            if (p.IsLocalPlayer)
+            if (p.IsLocalUser)
             {
                 LocalPlayer = p;
                 LocalRoundStats = p.RoundStats;

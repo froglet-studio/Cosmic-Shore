@@ -7,10 +7,6 @@ namespace CosmicShore.Game.Arcade
     /// </summary>
     public class FreestyleController : SinglePlayerMiniGameControllerBase
     {
-        /*[Header("Course Settings")]
-        [SerializeField] Crystal crystal;
-        [SerializeField] Vector3 crystalStartPosition;*/
-        
         [SerializeField] SegmentSpawner segmentSpawner;
         [SerializeField] int baseNumberOfSegments = 10;
         [SerializeField] int baseStraightLineLength = 400;
@@ -26,16 +22,9 @@ namespace CosmicShore.Game.Arcade
         int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * gameData.SelectedIntensity : baseNumberOfSegments;
         int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / gameData.SelectedIntensity : baseStraightLineLength;
         
-        // Vector3 crystalStart => scaleCrystalPositionWithIntensity ? crystalStartPosition * miniGameData.SelectedIntensity : crystalStartPosition;
-        
         protected override void OnCountdownTimerEnded()
         {
             segmentSpawner.Seed = Random.Range(int.MinValue,int.MaxValue);
-            
-            // Scoring mode should never be dependent on Vessel Class.
-            /*if (_miniGameData.Value.SelectedShipClass.Value == ShipClassType.Rhino) 
-                scoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;*/
-
             if (helix)
             {
                 helix.firstOrderRadius = helix.secondOrderRadius = gameData.SelectedIntensity.Value / helixIntensityScaling;
@@ -60,8 +49,6 @@ namespace CosmicShore.Game.Arcade
         void ResetEnvironment() {
             segmentSpawner.NumberOfSegments   = numberOfSegments;
             segmentSpawner.StraightLineLength = straightLineLength;
-            // VesselPrismController.ClearTrails();
-            // crystal.transform.position = crystalStart;
             segmentSpawner.Initialize();
         }
     }

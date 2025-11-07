@@ -7,8 +7,6 @@ namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerCellularDuelController : MultiplayerMiniGameControllerBase
     {
-        
-        
         private int readyClientCount;
         
         public void OnClickReturnToMainMenu()
@@ -48,11 +46,11 @@ namespace CosmicShore.Game.Arcade
 
         protected override void SetupNewRound()
         {
-            bool allowSwap = roundsPlayed > 0;
+            bool allowSwap = gameData.RoundsPlayed > 0;
             if (allowSwap)
                 ChangeOwnershipOfVessels();
-            SetupNewRound_ClientRpc(allowSwap);
             
+            SetupNewRound_ClientRpc(allowSwap);
             base.SetupNewRound();
         }
         
@@ -61,7 +59,9 @@ namespace CosmicShore.Game.Arcade
         {
             if (allowSwap)
                 gameData.SwapVessels();
+            
             ToggleReadyButton(true);
+            base.SetupNewRound_ClientRpc();
         }
         
         protected override void OnResetForReplay()
