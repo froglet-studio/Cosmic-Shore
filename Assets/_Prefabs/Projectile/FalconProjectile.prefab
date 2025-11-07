@@ -4953,7 +4953,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0abdb3ebc3c413846859b59615823360, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectileImpactor: {fileID: 0}
+  projectileImpactor: {fileID: 1566105718857374325}
   spike: 0
   growthRate: 1
   friendlyFire: 1
@@ -4970,9 +4970,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  projectileShipEffects: []
-  projectilePrismEffects: []
-  projectileMineEffects: []
-  projectileEndEffects: []
-  projectileImpactorDataContainer: {fileID: 0}
+  projectileShipEffects:
+  - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
+  projectilePrismEffects:
+  - {fileID: 11400000, guid: 2564c4fefc3011b43a28e573899e7889, type: 2}
+  projectileMineEffects:
+  - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}
+  projectileEndEffects:
+  - {fileID: 11400000, guid: 2db231afba6d20240aaec6c4c9876672, type: 2}
+  projectileImpactorDataContainer: {fileID: 11400000, guid: c876b418c4188d546996eaabb11d0f26,
+    type: 2}

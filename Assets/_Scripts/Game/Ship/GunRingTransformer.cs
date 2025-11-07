@@ -1,68 +1,77 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.UIElements;
+using UnityEngine.InputSystem;
 
 namespace CosmicShore
 {
     public class GunRingTransformer : MonoBehaviour
     {
-        [SerializeField] float radius = 20f;
-        float constant;
-
-        [RequireInterface(typeof(IVesselStatus))]
         [SerializeField] MonoBehaviour shipInstance;
         [SerializeField] Transform gunFocus;
-        [SerializeField] float UnitsPerSec = 3;
+        [SerializeField] GameObject pivotObject;
 
-        IInputStatus InputStatus => (shipInstance as IVesselStatus).InputStatus;
+        [SerializeField] private float radius = 20.0f;
+        [SerializeField] private float rotationSpeed = 20.0f;
+        [SerializeField] private float speed = 10.0f;
+        
 
 
-
-
-        void Start()
+       void Start()
         {
-            var children = GetComponentsInChildren<Transform>();
-            constant = 2 * Mathf.PI / (children.Length - 1); //Finds the radian so all point are equally spaced | Subtract one to remove the parent
-            InputStatus.RightClampedPosition.SqrMagnitude();
+            foreach (var child in GetComponentsInChildren<Transform>())
+            {
+
+                if (child == transform) continue; // skip the parent itself
+
+                // Get direction from origin to child
+                Vector3 direction = (child.position - shipInstance.transform.position).normalized;
+
+                // Move outward equally along that direction
+                child.position = shipInstance.transform.position + direction * radius;
+
+
+            }
+
+
+
+
+
+
         }
 
-        // Update is called once per frame
+        
         void Update()
         {
-            var i = 0;
+            Vector2 rightStick = Gamepad.current?.rightStick.ReadValue() ?? Vector2.zero;
+
+
+
+
 
             foreach (var child in GetComponentsInChildren<Transform>())
             {
 
-                if (child == transform)
-                {
-                    continue;
-                }
+                child.transform.RotateAround(pivotObject.transform.position, new Vector3(0, 0, 1), rotationSpeed * Time.deltaTime);
 
-                //Compute an angle offset from the joystick direction, rotated 90°, and spaced apart by a multiple of constant
-                var RotatedAngle = i * constant + (Mathf.PI) / 2 - Mathf.Atan2(InputStatus.RightNormalizedJoystickPosition.y,InputStatus.RightNormalizedJoystickPosition.x); 
-                i++;
+
+                Vector3 targetFocus = new Vector3(0, 0, 300f * rightStick.sqrMagnitude + 70f);
+                gunFocus.localPosition = Vector3.Lerp(gunFocus.localPosition, targetFocus, Time.deltaTime * speed);
 
 
 
-                /* 
-                  Smoothly move the child toward its target position on a circular formation that rotates based on the right joystick’s direction. 
-                  The target point is determined by angle 'RotatedAngle' and radius, while Slerp ensures smooth, frame-rate independent motion along the circle 
-                */
-                child.transform.localPosition = Vector3.Slerp(child.transform.localPosition, radius * new Vector3(Mathf.Sin(RotatedAngle), Mathf.Cos(RotatedAngle), 0), Time.deltaTime * UnitsPerSec);
-
-
-                /* 
-                   Smoothly adjust the gun's focus position forward or backward based on how far the right joystick is pushed. 
-                   The farther the stick is tilted, the greater the Z offset (up to 300 units), with a base offset of 70.
-                */
-                gunFocus.localPosition = Vector3.Lerp(gunFocus.localPosition, new Vector3(0, 0, 300 * InputStatus.RightNormalizedJoystickPosition.SqrMagnitude() + 70), Time.deltaTime);
-
-                // Orient child to face the gun focus.
                 child.LookAt(gunFocus);
 
+
+
             }
-        }
+
+
+
+
+
+            }
     }
 }

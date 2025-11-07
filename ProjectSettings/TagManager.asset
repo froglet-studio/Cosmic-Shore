@@ -21,6 +21,7 @@ TagManager:
   - FossilPrism_Ruby
   - FossilPrism_Gold
   - FossilPrism_Blue
+  - Gun
   layers:
   - Default
   - TransparentFX
