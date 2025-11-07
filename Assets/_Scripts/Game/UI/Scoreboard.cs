@@ -86,12 +86,12 @@ namespace CosmicShore.Game
             else
                 BannerText.text = "WON";
 
-            // Populate this run's score
+            // Populate this run's Score
             var playerScore = roundStats.Score; // Mathf.Max(roundStats.Score, 0);
             SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
 
-            // TODO: pull actual high score
-            // Populate high score
+            // TODO: pull actual high Score
+            // Populate high Score
             SinglePlayerHighscoreTextField.text = ((int) playerScore).ToString();
 
             // Show the jam
@@ -161,12 +161,12 @@ namespace CosmicShore.Game
             else
                 BannerText.text = "RUN RESULTS";
 
-            // Populate this run's score
+            // Populate this run's Score
             var playerScore = Mathf.Max(miniGameData.RoundStatsList[0].Score, 0);
             SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
 
-            // TODO: pull actual high score
-            // Populate high score
+            // TODO: pull actual high Score
+            // Populate high Score
             SinglePlayerHighscoreTextField.text = ((int) playerScore).ToString();
 
             // Show the jam

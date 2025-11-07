@@ -115,7 +115,7 @@ namespace CosmicShore.Game.Arcade
             // GameManager.OnPlayGame += InitializeGame;
             
             // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGmaeTurnStarted += FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnMiniGameTurnStarted += FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused += HandleGamePaused;
             PauseSystem.OnGameResumed += HandleGameResumed;
@@ -126,7 +126,7 @@ namespace CosmicShore.Game.Arcade
             // GameManager.OnPlayGame -= InitializeGame;
             
             // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGmaeTurnStarted -= FirebaseAnalyticsController.LogEventMiniGameStart;
+            // OnMiniGameTurnStarted -= FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
@@ -320,7 +320,7 @@ namespace CosmicShore.Game.Arcade
             {
                 GameCanvas.AwardsContainer.SetActive(true);
                 // Award Crystals
-                Debug.Log($"Mission EndGame - Award Mission Crystals -  score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}");
+                Debug.Log($"Mission EndGame - Award Mission Crystals -  Score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}");
                 Debug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
                 int crystalsEarned = 0;
                 switch (PlayerCaptain.PrimaryElement)
@@ -347,7 +347,7 @@ namespace CosmicShore.Game.Arcade
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
 
                 // Award XP
-                Debug.Log($"Mission EndGame - Award Mission XP -  score:{0/*(int)ScoreTracker.GetWinnerScoreData().Score*/}, element:{PlayerCaptain.PrimaryElement}");
+                Debug.Log($"Mission EndGame - Award Mission XP -  Score:{0/*(int)ScoreTracker.GetWinnerScoreData().Score*/}, element:{PlayerCaptain.PrimaryElement}");
                 XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
                 GameCanvas.XPEarnedText.text = "10";
 

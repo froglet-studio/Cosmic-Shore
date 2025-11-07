@@ -19,7 +19,7 @@ namespace CosmicShore.Game
             string opponent = null;
             foreach (var player in gameData.Players)
             {
-                if (player.IsLocalPlayer)
+                if (player.IsLocalUser)
                     continue;
                 opponent = player.Name;
             }

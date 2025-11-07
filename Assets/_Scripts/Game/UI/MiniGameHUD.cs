@@ -35,7 +35,7 @@ namespace CosmicShore.Game.UI
             ToggleReadyButton(false);
             
             gameData.OnClientReady += OnClientReady;
-            gameData.OnMiniGmaeTurnStarted.OnRaised += OnMiniGameTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised += OnMiniGameTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnMiniGameTurnEnd;
             OnResetForReplay.OnRaised += ResetForReplay;
             
@@ -49,7 +49,7 @@ namespace CosmicShore.Game.UI
         private void OnDisable()
         {
             gameData.OnClientReady -= OnClientReady;
-            gameData.OnMiniGmaeTurnStarted.OnRaised -= OnMiniGameTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnMiniGameTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnMiniGameTurnEnd;
             OnResetForReplay.OnRaised -= ResetForReplay;
             

@@ -70,7 +70,7 @@ namespace CosmicShore.App.UI.Views
 
                 // TODO: need to solve this one
                 //if (SelectedGame.GolfScoring)
-                //    score.Score *= -1;
+                //    Score.Score *= -1;
 
                 HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = (score.Position + 1).ToString();
                 HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<Image>().sprite = GetProfileIconByID(int.Parse(score.AvatarUrl)).IconSprite;
@@ -87,7 +87,7 @@ namespace CosmicShore.App.UI.Views
                 HighScoresContainer.transform.GetChild(i).GetChild(3).GetComponent<TMP_Text>().text = score.Score.ToString();
                 HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
 
-                // Highlight the player's score
+                // Highlight the player's Score
                 if (score.PlayerId == AuthenticationManager.PlayFabAccount.ID)
                 {
                     HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);

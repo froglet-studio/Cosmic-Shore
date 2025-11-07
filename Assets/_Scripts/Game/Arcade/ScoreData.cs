@@ -17,11 +17,11 @@ namespace CosmicShore.Game.Arcade
         {
             roundStats = null;
             
-            foreach (var score in RoundStatsList)
+            foreach (var Score in RoundStatsList)
             {
-                if (score.Name != playerName)
+                if (Score.Name != playerName)
                     continue;
-                roundStats = score;
+                roundStats = Score;
                 return true;
             }
 

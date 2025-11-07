@@ -133,15 +133,15 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         public void ReportGameplayStatistic(GameModes gameMode, VesselClassType vesselType, int intensity, int score, bool golfScoring)
         {
             // Build list of statistics to update
-            // One entry for each score for specific game mode/vessel combination
-            // One entry for each score for game mode any vessel
+            // One entry for each Score for specific game mode/vessel combination
+            // One entry for each Score for game mode any vessel
             // One entry to count how many times people have played a given game with a given vessel
 
-            // Playfab does not support reverse sort for leaderboards... take the negative to figure out the position, then flip it again when displaying the score
+            // Playfab does not support reverse sort for leaderboards... take the negative to figure out the position, then flip it again when displaying the Score
             if (golfScoring)
                 score *= -1;
 
-            Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{vesselType}, intensity:{intensity}, score:{score}");
+            Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{vesselType}, intensity:{intensity}, Score:{score}");
             List<StatisticUpdate> stats = new()
             {
                 new StatisticUpdate()
@@ -170,11 +170,11 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         /// </summary>
         public void ReportDailyChallengeStatistic(int score, bool golfScoring)
         {
-            // Playfab does not support reverse sort for leaderboards... take the negative to figure out the position, then flip it again when displaying the score
+            // Playfab does not support reverse sort for leaderboards... take the negative to figure out the position, then flip it again when displaying the Score
             if (golfScoring)
                 score *= -1;
 
-            Debug.Log($"ReportDailyChallengeStatistic - score:{score}");
+            Debug.Log($"ReportDailyChallengeStatistic - Score:{score}");
             List<StatisticUpdate> stats = new()
             {
                 new StatisticUpdate()
@@ -360,7 +360,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
             var leaderboardEntry = new List<LeaderboardEntry>();
             foreach (var entry in result.Leaderboard)
             {
-                Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
+                Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} Score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
                 leaderboardEntry.Add(new LeaderboardEntry(entry.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position, entry.Profile.AvatarUrl));
             }
             // Let callback handle leaderboard data

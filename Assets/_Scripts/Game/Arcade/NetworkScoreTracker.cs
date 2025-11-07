@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Arcade
                 return;
 
             gameData.OnInitializeGame += InitializeScoringMode;
-            gameData.OnMiniGmaeTurnStarted.OnRaised += OnTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd += CalculateWinnerOnServer;
             OnClickToMainMenu.OnRaised += OnTurnEnded;
@@ -23,7 +23,7 @@ namespace CosmicShore.Game.Arcade
                 return;
 
             gameData.OnInitializeGame -= InitializeScoringMode;
-            gameData.OnMiniGmaeTurnStarted.OnRaised -= OnTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd -= CalculateWinnerOnServer;
             OnClickToMainMenu.OnRaised -= OnTurnEnded;

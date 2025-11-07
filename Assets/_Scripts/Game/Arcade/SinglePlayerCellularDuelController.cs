@@ -11,12 +11,11 @@ namespace CosmicShore.Game.Arcade
 
         protected override void SetupNewRound()
         {
-            ToggleReadyButton(true);
-            
             // Don't swap at first round
-            if (roundsPlayed > 0)       
+            if (gameData.RoundsPlayed > 0)       
                 gameData.SwapVessels();
             
+            ToggleReadyButton(true);
             base.SetupNewRound();
         }
     }

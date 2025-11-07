@@ -28,11 +28,6 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] 
         protected ScriptableEventBool _onToggleReadyButton;
         
-        
-        // Gameplay state
-        protected int turnsTakenThisRound;
-        protected int roundsPlayed;
-        
         public void OnReadyClicked() =>
             OnReadyClicked_();
         
@@ -53,37 +48,19 @@ namespace CosmicShore.Game.Arcade
         
         protected virtual void SetupNewTurn()
         {
-            // TODO - Need to rewrite the following method.
-            
-            /*if (!_miniGameData.Value.TryAdvanceActivePlayer(out IPlayer activePlayer))
-                return;
-
-            activePlayer.ToggleStationaryMode(true);
-            monitorController.NewTurn(_miniGameData.Value.LocalPlayer.PlayerName);
-            
-            turnsTakenThisRound = 0;
-            
-            monitorController.StartTurns();
-            monitorController.PauseTurns();
-            
-            if (_miniGameData.Value.Players.Count > 1)
-                _onToggleReadyButton.Raise(true);
-            else
-                countdownTimer.BeginCountdown(OnCountdownTimerEnded);*/
         }
 
         protected virtual void SetupNewRound()
         {
-            turnsTakenThisRound = 0;
+            gameData.TurnsTakenThisRound = 0;
             SetupNewTurn();
         }
         
         protected virtual void EndTurn()
         {
-            // miniGameData.InvokeMiniGameTurnEnd();   
-            turnsTakenThisRound++;
+            gameData.TurnsTakenThisRound++;
 
-            if(turnsTakenThisRound >= numberOfTurnsPerRound)
+            if(gameData.TurnsTakenThisRound >= numberOfTurnsPerRound)
                 EndRound();
             else 
                 SetupNewTurn();
@@ -91,20 +68,16 @@ namespace CosmicShore.Game.Arcade
 
         protected abstract void EndGame();
 
-        void EndRound()
+        protected virtual void EndRound()
         {
-            roundsPlayed++;
-            if (roundsPlayed >= numberOfRounds) 
+            if (gameData.RoundsPlayed >= numberOfRounds) 
                 EndGame();
             else
-            {
                 SetupNewRound();
-            }
         }
         
         protected virtual void OnResetForReplay()
         {
-            roundsPlayed = 0;
             SetupNewRound();
         }
     }
