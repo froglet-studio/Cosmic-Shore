@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using UnityEditor;
 using UnityEngine;
 using UnityEditor.SceneManagement;
@@ -10,7 +11,7 @@ public class FindAssetByGUID : EditorWindow
     private string[] searchModes = { "Find Asset by GUID", "Find GameObject by File ID", "Find Sub-Asset (GUID + File ID)" };
     private Vector2 scrollPosition;
 
-    [MenuItem("FrogletTools/Find Asset by GUID")]
+    [MenuItem(GameSetting.TopMenuName + "/Find Asset by GUID")]
     private static void ShowWindow()
     {
         GetWindow<FindAssetByGUID>("Asset & Object Finder");
@@ -54,9 +55,9 @@ public class FindAssetByGUID : EditorWindow
         // Info section
         GUILayout.Space(10);
         EditorGUILayout.HelpBox(
-            "• GUID: Identifies asset files uniquely across projects\n" +
-            "• File ID: Identifies objects within a scene or asset file\n" +
-            "• Sub-assets: Components, materials in prefabs, etc.",
+            "* GUID: Identifies asset files uniquely across projects\n" +
+            "* File ID: Identifies objects within a scene or asset file\n" +
+            "* Sub-assets: Components, materials in prefabs, etc.",
             MessageType.Info);
     }
 
