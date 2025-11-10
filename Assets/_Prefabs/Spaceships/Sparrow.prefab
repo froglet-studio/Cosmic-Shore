@@ -1188,6 +1188,8 @@ GameObject:
   m_Component:
   - component: {fileID: 7301318318309385068}
   - component: {fileID: 8186488272797771781}
+  - component: {fileID: 2124329905120944864}
+  - component: {fileID: 7703984631587426887}
   m_Layer: 8
   m_Name: OverheatingBoostActionExecutor
   m_TagString: Untagged
@@ -1223,6 +1225,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+--- !u!114 &2124329905120944864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5369736708836365734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a15b5e9096604a049dbbde6dd963cdf9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  overheating: {fileID: 8186488272797771781}
+  silhouette: {fileID: 2731003324702047408}
+  config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
+--- !u!114 &7703984631587426887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5369736708836365734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2fd4223c00747ca8955ea6bb12ebdd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  controller: {fileID: 874579555101021522}
+  profile: {fileID: 0}
 --- !u!1 &5585527924204855743
 GameObject:
   m_ObjectHideFlags: 0
@@ -1888,30 +1919,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  worldToUIScale: 2
-  imageScale: 0.02
-  silhouetteParts:
-  - {fileID: 322268676704545573}
-  - {fileID: 8777980414596646480}
-  - {fileID: 4010301292554909138}
-  - {fileID: 4125835721608554647}
-  - {fileID: 5978549935140177486}
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 5, y: 5, z: 5}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  JawResourceIndex: -1
-  swingBlocks: 0
-  flow: 1
-  columnRotationOffsetDeg: 0
-  perBlockScaleMul: {x: 40, y: 3, z: 1}
-  perBlockLocalOffset: {x: 0, y: 0, z: 0}
-  smooth: 1
-  smoothingSeconds: 2
-  rowGapPxOverride: 10
-  gapMultiplier: 10
-  addBaseGapDuringMotion: 1
+  trailDisplayContainer: {fileID: 4086940857397470401}
+  blockPrefab: {fileID: 0}
+  config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
 --- !u!114 &705402283976800655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3874,7 +3886,7 @@ MonoBehaviour:
   - input: 6
     image: {fileID: 6366083956812878776}
   SilhouetteContainer: {fileID: 4894037493201937865}
-  TrailDisplayContainer: {fileID: 0}
+  TrailDisplayContainer: {fileID: 4086940857397470401}
   TopJaw: {fileID: 0}
   BottomJaw: {fileID: 0}
   JawResourceIndex: -1
