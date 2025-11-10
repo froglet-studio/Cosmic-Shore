@@ -97,58 +97,57 @@ namespace CosmicShore.Game
                 actions[i].StopAction(_executors);
         }
 
-        bool HasAction(InputEvents inputEvent)
-            => _shipControlActions.TryGetValue(inputEvent, out var list) && list != null && list.Count > 0;
+        bool HasAction(InputEvents inputEvent) =>
+            _shipControlActions.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
 
         void OnButtonPressed(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) return;
-            OnInputEventStarted?.Invoke(ie);
-
-            if (IsSpawned)
+            if (vesselStatus.AutoPilotEnabled) 
+                return;
+            
+            if (IsSpawned && IsOwner)
             {
-                if (IsOwner) SendButtonPressed_ServerRpc(ie);
+                SendButtonPressed_ServerRpc(ie);
             }
             else
             {
                 PerformShipControllerActions(ie);
             }
+            
+            OnInputEventStarted?.Invoke(ie);
         }
 
         [ServerRpc]
-        private void SendButtonPressed_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
-        {
-            // Server rebroadcasts to everyone
-            OnButtonPressedClientRpc(ie); 
-        }
+        private void SendButtonPressed_ServerRpc(InputEvents ie) =>
+            SendButtonPressed_ClientRpc(ie);
 
         [ClientRpc] 
-        void OnButtonPressedClientRpc(InputEvents ie) => 
+        void SendButtonPressed_ClientRpc(InputEvents ie) => 
             PerformShipControllerActions(ie);
 
         void OnButtonReleased(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) return;
-            OnInputEventStopped?.Invoke(ie);
+            if (vesselStatus.AutoPilotEnabled) 
+                return;
 
-            if (IsSpawned)
+            if (IsSpawned && IsOwner)
             {
-                if (IsOwner) SendButtonReleased_ServerRpc(ie);
+                SendButtonReleased_ServerRpc(ie);
             }
             else
             {
                 StopShipControllerActions(ie); 
             }
+            
+            OnInputEventStopped?.Invoke(ie);
         }
 
         [ServerRpc]
-        private void SendButtonReleased_ServerRpc(InputEvents ie, ServerRpcParams rpcParams = default)
-        {
-            OnButtonReleased_ClientRpc(ie); 
-        }
+        private void SendButtonReleased_ServerRpc(InputEvents ie) =>
+            SendButtonReleased_ClientRpc(ie);
 
         [ClientRpc]
-        void OnButtonReleased_ClientRpc(InputEvents ie) =>
+        void SendButtonReleased_ClientRpc(InputEvents ie) =>
             StopShipControllerActions(ie);
     }
 
