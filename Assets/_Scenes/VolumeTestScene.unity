@@ -708,9 +708,9 @@ MonoBehaviour:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 988902179}
   _initializeDatas:
-  - vesselClass: 3
+  - vesselClass: 11
     domain: 4
-    PlayerName: RhinoFucker
+    PlayerName: Professional Frog
     IsAI: 0
     AllowSpawning: 1
   _spawnTransforms:
@@ -1176,16 +1176,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5559635c107344c0877dcd81e560d13b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blockPrefab: {fileID: 5776304996075792891, guid: ed9defc56162b4b4588e61c20984b6d9,
-    type: 3}
-  parent: {fileID: 2069105486}
-  numberOfBlocks: 10
-  startPosition: {x: 0, y: 0, z: 20}
-  spacing: 5
-  spawnAxis: 0
-  randomizeRotation: 0
-  randomizeScale: 1
-  randomScaleRange: {x: 3, y: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
