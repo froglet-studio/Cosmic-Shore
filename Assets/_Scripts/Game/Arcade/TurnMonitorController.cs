@@ -45,7 +45,8 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnDisable()
         {
-            UnsubscribeFromEvents();   
+            UnsubscribeFromEvents();
+            StopMonitors();
         }
         
         protected void SubscribeToEvents()
