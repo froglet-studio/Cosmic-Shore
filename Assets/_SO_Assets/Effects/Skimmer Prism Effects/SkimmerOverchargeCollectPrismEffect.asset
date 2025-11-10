@@ -18,5 +18,5 @@ MonoBehaviour:
   overchargedMaterial: {fileID: 2100000, guid: 804667eedef1a1145aadfa69e1c519b0, type: 2}
   explosionSpeed: 70
   minBlastSpeed: 15
-  materialBlendDuration: 4
+  materialBlendDuration: 15
   appendOverchargedMaterial: 1

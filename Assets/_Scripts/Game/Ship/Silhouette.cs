@@ -44,11 +44,10 @@ namespace CosmicShore
                 vesselPrismController.OnBlockCreated += OnBlockCreated;
                 vesselPrismController.OnBlockSpawned += OnBlockSpawned_Color;
             }
-            if (driftTrailAction)
-            {
-                _driftHandler = OnDriftChanged;
-                driftTrailAction.OnChangeDriftAltitude += _driftHandler;
-            }
+
+            if (!driftTrailAction) return;
+            _driftHandler = OnDriftChanged;
+            driftTrailAction.OnChangeDriftAltitude += _driftHandler;
         }
 
         void OnDisable()
@@ -58,11 +57,10 @@ namespace CosmicShore
                 vesselPrismController.OnBlockCreated -= OnBlockCreated;
                 vesselPrismController.OnBlockSpawned -= OnBlockSpawned_Color;
             }
-            if (driftTrailAction != null && _driftHandler != null)
-            {
-                driftTrailAction.OnChangeDriftAltitude -= _driftHandler;
-                _driftHandler = null;
-            }
+
+            if (driftTrailAction == null || _driftHandler == null) return;
+            driftTrailAction.OnChangeDriftAltitude -= _driftHandler;
+            _driftHandler = null;
         }
 
         public void Initialize(IVesselStatus status, VesselHUDView hudView)
@@ -120,71 +118,68 @@ namespace CosmicShore
         {
             if (!prism || _pool == null || _cols < 1) return;
 
-            // Silhouette.cs — inside OnBlockSpawned_Color(Prism prism)
-            Color tint;
-            bool haveTint = TryExtractPrismColor(prism, out tint) && IsUsableColor(tint);
+            Color tint = default;
+            var haveTint = false;
 
-// If dangerous, use palette.danger (alpha untouched)
-            bool isDanger = false;
-            try { isDanger = prism.prismProperties != null && prism.prismProperties.IsDangerous; } catch { }
-
-            if (isDanger && config && config.useDomainPaletteColors && config.domainPalette != null)
+            var isDanger = false;
+            try { isDanger = prism.prismProperties != null && prism.prismProperties.IsDangerous; }
+            catch
             {
-                // prefer dedicated danger color
-                tint = config.domainPalette.danger; // make sure you add this field in the SO
+                // ignored
+            }
+
+            if (isDanger && config && config.useDomainPaletteColors && config.domainPalette)
+            {
+                tint = config.domainPalette.danger;
                 haveTint = true;
             }
-            else if (!haveTint && config && config.useDomainPaletteColors && config.domainPalette != null)
+            else if (config && config.useDomainPaletteColors && config.domainPalette)
             {
                 var dom = _vessel?.VesselStatus?.Domain ?? Domains.Unassigned;
                 tint = config.domainPalette.Get(dom);
                 haveTint = true;
             }
 
-            if (haveTint)
+            if (!haveTint) return;
+            for (var r = 0; r < 2; r++)
             {
-                // tint the head and let conveyor propagate (existing code)
-                for (int r = 0; r < 2; r++)
-                {
-                    var img = _pool[0, r]?.GetComponent<UnityEngine.UI.Image>();
-                    if (img) img.color = tint; // alpha untouched
-                }
-                for (int i = 1; i < _cols; i++)
-                for (int r = 0; r < 2; r++)
-                {
-                    var img = _pool[i, r]?.GetComponent<UnityEngine.UI.Image>();
-                    var prev= _pool[i-1, r]?.GetComponent<UnityEngine.UI.Image>();
-                    if (img && prev) img.color = Color.Lerp(img.color, prev.color, Alpha);
-                }
+                var img = _pool[0, r]?.GetComponent<Image>();
+                if (img) img.color = tint; 
+            }
+            for (var i = 1; i < _cols; i++)
+            for (var r = 0; r < 2; r++)
+            {
+                var img = _pool[i, r]?.GetComponent<Image>();
+                var prev= _pool[i-1, r]?.GetComponent<Image>();
+                if (img && prev) img.color = Color.Lerp(img.color, prev.color, Alpha);
             }
 
         }
 
         void BuildPoolIfNeeded(float scaleY, float wavelength)
         {
-            if (_pool != null || !trailDisplayContainer || !blockPrefab || config == null) return;
+            if (_pool != null || !trailDisplayContainer || !blockPrefab || !config) return;
 
             var rect = (RectTransform)trailDisplayContainer;
-            float minWL = Mathf.Max(0.0001f,
+            var minWl = Mathf.Max(0.0001f,
                 vesselPrismController ? vesselPrismController.MinWaveLength : wavelength);
 
-            int needed = (config.flow == SilhouetteConfigSO.FlowDirection.HorizontalRTL)
-                ? Mathf.CeilToInt(rect.rect.width  / (minWL * config.worldToUIScale * Mathf.Max(0.0001f, scaleY)))
-                : Mathf.CeilToInt(rect.rect.height / (minWL * config.worldToUIScale * Mathf.Max(0.0001f, scaleY)));
+            var needed = (config.flow == SilhouetteConfigSO.FlowDirection.HorizontalRTL)
+                ? Mathf.CeilToInt(rect.rect.width  / (minWl * config.worldToUIScale * Mathf.Max(0.0001f, scaleY)))
+                : Mathf.CeilToInt(rect.rect.height / (minWl * config.worldToUIScale * Mathf.Max(0.0001f, scaleY)));
 
             _cols = Mathf.Max(config.minColumns, needed);
 
             _pool    = new RectTransform[_cols, 2];
             _parents = new RectTransform[_cols];
 
-            float width  = rect.rect.width;
-            float height = rect.rect.height;
+            var width  = rect.rect.width;
+            var height = rect.rect.height;
 
-            // NOTE: columnGapMultiplier applied here too
-            float stride = Mathf.Max(1f, minWL * config.worldToUIScale)
-                           * Mathf.Max(0.0001f, config.columnGapMultiplier);
+            var stride = Mathf.Max(1f, minWl * config.worldToUIScale)
+                         * Mathf.Max(0.0001f, config.columnGapMultiplier);
 
-            for (int i = 0; i < _cols; i++)
+            for (var i = 0; i < _cols; i++)
             {
                 var go  = new GameObject($"TrailSeg_{i}", typeof(RectTransform));
                 var prt = (RectTransform)go.transform;
@@ -222,7 +217,8 @@ namespace CosmicShore
                         if (Application.isEditor) DestroyImmediate(go); else Destroy(go);
                     }
                 }
-                if (_parents[i])
+
+                if (!_parents[i]) continue;
                 {
                     var go = _parents[i].gameObject;
                     if (Application.isEditor) DestroyImmediate(go); else Destroy(go);
@@ -236,17 +232,14 @@ namespace CosmicShore
             if (_pool == null || _cols == 0) return;
 
             var rect  = (RectTransform)trailDisplayContainer;
-            float w   = rect.rect.width;
-            float h   = rect.rect.height;
+            var w   = rect.rect.width;
+            var h   = rect.rect.height;
+            var stride   = Mathf.Max(1f, wavelength * config.worldToUIScale * Mathf.Max(0.0001f, sy))
+                           * Mathf.Max(0.0001f, config.columnGapMultiplier);
+            var xShiftUI = Mathf.Abs(xShift) * config.worldToUIScale * sy * config.gapMultiplier;
+            var thickUI  = Mathf.Abs(2f * sx * sy * config.imageScale * config.worldToUIScale) * config.thicknessMultiplier;
+            var lenUI    = Mathf.Abs(sz * sy * config.imageScale * config.worldToUIScale)      * config.lengthMultiplier;
 
-            // world → UI
-            float stride   = Mathf.Max(1f, wavelength * config.worldToUIScale * Mathf.Max(0.0001f, sy))
-                             * Mathf.Max(0.0001f, config.columnGapMultiplier); // NEW
-            float xShiftUI = Mathf.Abs(xShift) * config.worldToUIScale * sy * config.gapMultiplier;
-            float thickUI  = Mathf.Abs(2f * sx * sy * config.imageScale * config.worldToUIScale) * config.thicknessMultiplier;
-            float lenUI    = Mathf.Abs(sz * sy * config.imageScale * config.worldToUIScale)      * config.lengthMultiplier;
-
-            // head
             for (int r = 0; r < 2; r++)
             {
                 var rt     = _pool[0, r];
@@ -269,24 +262,22 @@ namespace CosmicShore
                 rt.localPosition = Vector3.Lerp(rt.localPosition, bPos, Alpha);
 
                 var img = rt.GetComponent<Image>();
-                if (img)
-                {
-                    Vector2 size = (config.flow == SilhouetteConfigSO.FlowDirection.HorizontalRTL)
-                        ? new Vector2(lenUI, Mathf.Max(0f, thickUI))
-                        : new Vector2(Mathf.Max(0f, thickUI), lenUI);
+                if (!img) continue;
+                var size = (config.flow == SilhouetteConfigSO.FlowDirection.HorizontalRTL)
+                    ? new Vector2(lenUI, Mathf.Max(0f, thickUI))
+                    : new Vector2(Mathf.Max(0f, thickUI), lenUI);
 
-                    rt.sizeDelta = Vector2.Lerp(rt.sizeDelta, size, Alpha);
-                }
+                rt.sizeDelta = Vector2.Lerp(rt.sizeDelta, size, Alpha);
             }
 
             // conveyor
             for (int i = _cols - 1; i > 0; i--)
             {
-                Vector3 parentTarget = (config.flow == SilhouetteConfigSO.FlowDirection.HorizontalRTL)
+                var parentTarget = (config.flow == SilhouetteConfigSO.FlowDirection.HorizontalRTL)
                     ? new Vector3(w * 0.5f - i * stride, 0f, 0f)
                     : new Vector3(0f, h * 0.5f - i * stride, 0f);
 
-                bool under = (config.flow == SilhouetteConfigSO.FlowDirection.HorizontalRTL)
+                var under = (config.flow == SilhouetteConfigSO.FlowDirection.HorizontalRTL)
                     ? i < Mathf.CeilToInt(w / Mathf.Max(1f, stride))
                     : i < Mathf.CeilToInt(h / Mathf.Max(1f, stride));
 
@@ -308,81 +299,37 @@ namespace CosmicShore
             }
         }
 
-        static bool IsUsableColor(Color c) => c.a >= 0.01f && Mathf.Max(c.r, c.g, c.b) >= 0.01f;
-
-        bool TryExtractPrismColor(Prism prism, out Color color)
+        public void SetDangerVisual(bool dangerEnabled)
         {
-            color = Color.white;
-            var rend = prism.GetComponentInChildren<Renderer>();
-            if (!rend) return false;
+            if (!config || !config.enableDangerVisual) return;
+            if (_pool == null || _cols == 0) { _dangerActive = dangerEnabled; return; }
 
-            var mpb = new MaterialPropertyBlock();
-            rend.GetPropertyBlock(mpb);
-
-            if (TryGetColor(mpb, "_BaseColor", out color)) return true;
-            if (TryGetColor(mpb, "_Color",     out color)) return true;
-            if (TryGetColor(mpb, "_Tint",      out color)) return true;
-
-            var mat = rend.sharedMaterial ?? rend.material;
-            if (!mat) return false;
-
-            if (mat.HasProperty("_BaseColor")) { color = mat.GetColor("_BaseColor"); return true; }
-            if (mat.HasProperty("_Color"))     { color = mat.GetColor("_Color");     return true; }
-            if (mat.HasProperty("_Tint"))      { color = mat.GetColor("_Tint");      return true; }
-            return false;
-        }
-
-        bool TryGetColor(MaterialPropertyBlock mpb, string name, out Color c)
-        {
-            c = Color.white;
-            if (mpb == null) return false;
-            try
-            {
-                var v = mpb.GetVector(name);
-                c = new Color(v.x, v.y, v.z, v.w);
-                return IsUsableColor(c);
-            }
-            catch { return false; }
-        }
-        
-        public void SetDangerVisual(bool _enabled)
-        {
-            if (config == null || !config.enableDangerVisual) return;
-            if (_pool == null || _cols == 0) { _dangerActive = _enabled; return; }
-
-            if (_enabled == _dangerActive) return; // no-op
-            _dangerActive = _enabled;
-
-            // Choose sprite source: danger prefab → Image.sprite
+            if (dangerEnabled == _dangerActive) return; 
+            _dangerActive = dangerEnabled;
             Sprite dangerSprite = null;
-            if (_enabled && config.dangerBlockPrefab)
+            if (dangerEnabled && config.dangerBlockPrefab)
             {
                 var img = config.dangerBlockPrefab.GetComponentInChildren<Image>();
                 if (img) dangerSprite = img.sprite;
             }
 
-            for (int i = 0; i < _cols; i++)
+            for (var i = 0; i < _cols; i++)
             {
-                for (int r = 0; r < 2; r++)
+                for (var r = 0; r < 2; r++)
                 {
                     var rt  = _pool[i, r];
                     if (!rt) continue;
                     var img = rt.GetComponent<Image>();
                     if (!img) continue;
 
-                    if (_enabled)
+                    if (dangerEnabled)
                     {
-                        // store original sprite once
-                        if (_originalSprite == null) _originalSprite = img.sprite;
-
+                        if (!_originalSprite) _originalSprite = img.sprite;
                         if (dangerSprite) img.sprite = dangerSprite;
-
-                        // tint with dangerColor (alpha untouched)
                         img.color = config.dangerColor;
                     }
                     else
                     {
-                        // revert sprite & leave color management to OnBlockSpawned_Color / palette
                         if (_originalSprite) img.sprite = _originalSprite;
                     }
                 }
