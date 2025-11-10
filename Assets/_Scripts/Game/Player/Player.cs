@@ -17,8 +17,7 @@ namespace CosmicShore.Game
         GameDataSO gameData;
         
         public static List<IPlayer> NppList { get; } = new();
-
-        // Declare the NetworkVariable without initializing its value.
+        
         public NetworkVariable<VesselClassType> NetDefaultShipType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Domains> NetTeam = new();
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); 

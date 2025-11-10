@@ -45,7 +45,7 @@ namespace CosmicShore.Game
         
         [SerializeField]
         MonoBehaviour _shipHUDController;
-        public IVesselHUDController ShipHUDController => _shipHUDController as IVesselHUDController;
+        public IVesselHUDController VesselHUDController => _shipHUDController as IVesselHUDController;
         
         [SerializeField] VesselHUDView _vesselHUDView;
         public VesselHUDView VesselHUDView
@@ -227,7 +227,8 @@ namespace CosmicShore.Game
         
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
-        public bool IsOwnerClient => Vessel.IsNetworkOwner;
+        public bool IsNetworkOwner => Vessel.IsNetworkOwner;
+        public bool IsNetworkClient => Vessel.IsNetworkClient;
 
         public void ResetForPlay()
         {
