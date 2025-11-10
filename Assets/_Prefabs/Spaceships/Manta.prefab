@@ -2286,28 +2286,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   worldToUIScale: 2
   imageScale: 0.02
-  silhouetteParts:
-  - {fileID: 322268676704545573}
-  - {fileID: 8777980414596646480}
-  - {fileID: 4010301292554909138}
-  - {fileID: 4125835721608554647}
-  - {fileID: 5978549935140177486}
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 5, y: 5, z: 5}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  JawResourceIndex: -1
-  swingBlocks: 0
+  trailDisplayContainer: {fileID: 0}
+  blockPrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
+    type: 3}
+  domainPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   flow: 1
   columnRotationOffsetDeg: 0
-  perBlockScaleMul: {x: 40, y: 3, z: 1}
-  perBlockLocalOffset: {x: 0, y: 0, z: 0}
-  smooth: 1
-  smoothingSeconds: 2
-  rowGapPxOverride: 10
-  gapMultiplier: 10
   addBaseGapDuringMotion: 1
+  smooth: 0
+  smoothingSeconds: 0.2
+  minColumns: 4
+  thicknessMultiplier: 30
+  lengthMultiplier: 20
+  gapMultiplier: 1.5
 --- !u!114 &3882236086036410899
 MonoBehaviour:
   m_ObjectHideFlags: 0
