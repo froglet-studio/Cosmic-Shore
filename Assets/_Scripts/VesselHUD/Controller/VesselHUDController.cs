@@ -31,12 +31,12 @@ namespace CosmicShore.Game
                 _actions.OnInputEventStopped += HandleStop;
                 _actions.ToggleSubscription(true);
             }
-
-            if (!silhouette || !_view) return;
-            silhouette.Initialize(_status, _view);
-            // optional: if you already set containers via inspector, this is redundant
-            if (_view.SilhouetteContainer && _view.TrailDisplayContainer)
-                silhouette.SetHudReferences(_view.SilhouetteContainer, _view.TrailDisplayContainer);
+            //
+            // if (!silhouette || !_view) return;
+            // silhouette.Initialize(_status, _view);
+            //
+            // if (_view.SilhouetteContainer && _view.TrailDisplayContainer)
+            //     silhouette.SetHudReferences(_view.SilhouetteContainer, _view.TrailDisplayContainer);
         }
 
         public void TearDown()
@@ -60,8 +60,7 @@ namespace CosmicShore.Game
                 if (_view.highlights[i].input == ev)
                     _view.highlights[i].image.enabled = on;
         }
-
-        // === This is what VesselController calls ===
+        
         public void SetBlockPrefab(GameObject prefab)
         {
             if (_view) _view.TrailBlockPrefab = prefab;
