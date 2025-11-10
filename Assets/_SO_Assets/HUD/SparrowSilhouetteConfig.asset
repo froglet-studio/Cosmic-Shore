@@ -19,13 +19,13 @@ MonoBehaviour:
   minColumns: 10
   smooth: 1
   smoothingSeconds: 0.08
-  thicknessMultiplier: 250
-  lengthMultiplier: 100
+  thicknessMultiplier: 180
+  lengthMultiplier: 200
   gapMultiplier: 1
-  columnGapMultiplier: 3
+  columnGapMultiplier: 3.5
   useDomainPaletteColors: 1
   domainPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   enableDangerVisual: 1
   dangerBlockPrefab: {fileID: 5776304996075792891, guid: aad956930fb933f4b82b992b1bc2b773,
     type: 3}
-  dangerColor: {r: 1, g: 0.25, b: 0.2, a: 1}
+  dangerColor: {r: 1, g: 0.25, b: 0.2, a: 0.78431374}
