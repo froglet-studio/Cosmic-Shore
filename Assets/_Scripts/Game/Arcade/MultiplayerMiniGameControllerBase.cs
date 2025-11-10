@@ -80,20 +80,7 @@ namespace CosmicShore.Game.Arcade
             gameData.InvokeMiniGameRoundStarted();
         }
 
-        protected override void OnCountdownTimerEnded()
-        {
-            if (!IsServer)
-                return;
-
-            OnCountdownTimerEnded_ClientRpc();
-        }
-
-        [ClientRpc]
-        void OnCountdownTimerEnded_ClientRpc()
-        {
-            gameData.SetPlayersActive();
-            gameData.StartTurn(); 
-        }
+        
 
         protected override void EndTurn()
         {

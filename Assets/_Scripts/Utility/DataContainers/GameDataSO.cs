@@ -189,6 +189,12 @@ namespace CosmicShore.SOAP
                 player.StartPlayer();
         }
 
+        public void SetPlayersActive(string playerName)
+        {
+            foreach (var player in Players.Where(player => player.Name.Equals(playerName)))
+                player.StartPlayer();
+        }
+
         public void ResetPlayers()
         {
             foreach (var player in Players)

@@ -1,5 +1,6 @@
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -17,6 +18,24 @@ namespace CosmicShore.Game.Arcade
             RemovePlayer_ServerRpc(gameData.LocalPlayer.Name);
             await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, PlayerLoopTiming.LastPostLateUpdate ,this.GetCancellationTokenOnDestroy());
             multiplayerSetup.LeaveSession().Forget();
+        }
+        
+        protected override void OnCountdownTimerEnded()
+        {
+            OnCountdownTimerEnded_ServerRpc(gameData.LocalPlayer.Name);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void OnCountdownTimerEnded_ServerRpc(FixedString128Bytes playerName)
+        {
+            OnCountdownTimerEnded_ClientRpc(playerName);
+        }
+
+        [ClientRpc]
+        void OnCountdownTimerEnded_ClientRpc(FixedString128Bytes playerName)
+        {
+            gameData.SetPlayersActive(playerName.ToString());
+            gameData.StartTurn(); 
         }
 
         [ServerRpc(RequireOwnership = false)]

@@ -35,14 +35,14 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnReadyClicked_()
         {
-            ToggleReadyButton(false);
+            RaiseToggleReadyButtonEvent(false);
             StartCountdownTimer();
         }
 
         protected void StartCountdownTimer() =>
             countdownTimer.BeginCountdown(OnCountdownTimerEnded);
         
-        protected void ToggleReadyButton(bool enable) => _onToggleReadyButton.Raise(enable);
+        protected void RaiseToggleReadyButtonEvent(bool enable) => _onToggleReadyButton.Raise(enable);
         
         protected abstract void OnCountdownTimerEnded();
         
