@@ -40,7 +40,7 @@ namespace CosmicShore.Game
 
         public override void OnDestroy()
         {
-            if ((!IsSpawned && VesselStatus.Player is { IsInitializedAsAI: false }) || IsOwner)
+            if (VesselStatus.Player.IsLocalUser)
             {
                 OnBeforeDestroyed?.Invoke();
             }
