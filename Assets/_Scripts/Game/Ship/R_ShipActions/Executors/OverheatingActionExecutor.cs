@@ -130,7 +130,9 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
                 token);
 
             _isOverheating = false;
-            _status.Overheating = false;
+            if (_status != null) _status.Overheating = false;
+
+            if (ctrl) ctrl.DisableDangerMode(so.ScaleLerpSeconds);
 
             OnHeatDecayStarted?.Invoke();
             await DecayHeatRoutineAsync(so, token);
@@ -159,11 +161,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
 
             _heatResource.CurrentAmount = 0;
             OnHeatDecayCompleted?.Invoke();
-            var ctrl = _status?.VesselPrismController;
-            if (ctrl != null)
-            {
-                ctrl.DisableDangerMode(so.ScaleLerpSeconds);
-            }
+     
         }
         catch (OperationCanceledException)
         {
