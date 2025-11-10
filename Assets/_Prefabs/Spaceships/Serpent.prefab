@@ -2455,19 +2455,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouetteParts:
-  - {fileID: 322268676704545573}
-  - {fileID: 8777980414596646480}
-  - {fileID: 4010301292554909138}
-  - {fileID: 4125835721608554647}
-  - {fileID: 5978549935140177486}
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 1, y: 1, z: 1}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  JawResourceIndex: 0
-  swingBlocks: 0
+  trailDisplayContainer: {fileID: 0}
+  blockPrefab: {fileID: 0}
+  config: {fileID: 0}
 --- !u!114 &705402283976800655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2819,18 +2811,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ownPullSpeed: 290000
-  opponentPullSpeed: 285000
-  ownRotateSpeed: 278000
-  opponentRotateSpeed: 275000
+  ownPullSpeed: 50000000
+  opponentPullSpeed: 40000000
+  ownRotateSpeed: 40000000
+  opponentRotateSpeed: 37500000
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
   TopIsBonded: 0
   RightIsBonded: 0
   BottomIsBonded: 0
   LeftIsBonded: 0
-  colliderTheshold: 35
-  radius: 50
+  colliderTheshold: 60
+  radius: 90
 --- !u!1 &6740300659898847770
 GameObject:
   m_ObjectHideFlags: 0
