@@ -27,6 +27,9 @@ namespace CosmicShore.Game
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
 
+        
+        // TODO - Unnecessary events added.
+        // Remove and Use _onButtonPressed and _onButtonReleased.
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
@@ -45,6 +48,17 @@ namespace CosmicShore.Game
 
         void OnDisable()
         {
+            if (IsSpawned)
+                return;
+            
+            UnsubscribeFromInputEvents();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (!IsOwner)
+                return;
+
             UnsubscribeFromInputEvents();
         }
 

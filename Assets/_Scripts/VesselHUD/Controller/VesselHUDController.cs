@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -10,6 +11,11 @@ namespace CosmicShore.Game
         [Header("Legacy Silhouette")]
         [SerializeField] private Silhouette silhouette;
 
+        private void OnDestroy()
+        {
+            UnsubscribeFromEvents();
+        }
+
         public virtual void Initialize(IVesselStatus vesselStatus, VesselHUDView view)
         {
             _view   = view;
@@ -20,15 +26,12 @@ namespace CosmicShore.Game
         {
             _actions.OnInputEventStarted += HandleStart;
             _actions.OnInputEventStopped += HandleStop;
-            _actions.ToggleSubscription(true);
         }
 
         public void UnsubscribeFromEvents()
         {
             _actions.OnInputEventStarted -= HandleStart;
             _actions.OnInputEventStopped -= HandleStop;
-            _actions.ToggleSubscription(false);
-            _actions = null;
         }
 
         private void HandleStart(InputEvents ev) => Toggle(ev, true);
