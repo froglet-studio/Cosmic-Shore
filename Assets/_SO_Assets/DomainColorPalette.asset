@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: DomainColorPalette
   m_EditorClassIdentifier: 
   unassigned: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  jade: {r: 0, g: 0.9616327, b: 1, a: 1}
-  ruby: {r: 0.9845714, g: 0.2980392, b: 1, a: 1}
-  blue: {r: 0.3, g: 0.6, b: 1, a: 1}
-  gold: {r: 1, g: 0.8, b: 0.3, a: 1}
-  danger: {r: 1, g: 0, b: 0, a: 1}
-  none: {r: 1, g: 1, b: 1, a: 1}
+  jade: {r: 0, g: 0.9616327, b: 1, a: 0.78431374}
+  ruby: {r: 0.9845714, g: 0.2980392, b: 1, a: 0.78431374}
+  blue: {r: 0.3, g: 0.6, b: 1, a: 0.78431374}
+  gold: {r: 1, g: 0.8, b: 0.3, a: 0.78431374}
+  danger: {r: 1, g: 0, b: 0, a: 0.78431374}
+  none: {r: 1, g: 1, b: 1, a: 0.78431374}
