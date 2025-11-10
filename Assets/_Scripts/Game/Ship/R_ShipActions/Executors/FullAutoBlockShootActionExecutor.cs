@@ -41,6 +41,7 @@ namespace CosmicShore.Game
         public void Begin(FullAutoBlockShootActionSO so)
         {
             if (_cts != null) return;
+            // Fire loop cancels on End() or Destroy
             _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             FireLoopAsync(so, _cts.Token).Forget();
         }
@@ -48,10 +49,7 @@ namespace CosmicShore.Game
         public void End()
         {
             if (_cts == null) return;
-            try { _cts.Cancel(); } catch 
-            { 
-                //
-            }
+            try { _cts.Cancel(); } catch { /* no-op */ }
             _cts.Dispose();
             _cts = null;
         }
@@ -75,11 +73,17 @@ namespace CosmicShore.Game
                 {
                     foreach (var m in muzzles)
                     {
+                        if (!m) continue;
+
+                        var domainAtShot = _status.Domain;
+
                         var prism = blockFactory.GetBlock(so.PrismType, m.position, m.rotation * rotOffset, null);
                         if (!prism) continue;
 
                         prism.transform.SetParent(null, true);
                         prism.transform.localScale = so.BlockScale;
+
+                        prism.Domain = domainAtShot;
 
                         if (so.DisableCollidersOnLaunch)
                         {
@@ -87,9 +91,17 @@ namespace CosmicShore.Game
                             foreach (var col in prism.GetComponentsInChildren<Collider>()) col.enabled = false;
                         }
 
-                        MoveAndAnchorAsync(prism.transform, m.forward, so.BlockSpeed,
+                        var movementToken = this.GetCancellationTokenOnDestroy();
+
+                        MoveAndAnchorAsync(
+                            prism.transform,
+                            m.forward,
+                            so.BlockSpeed,
                             UnityEngine.Random.Range(so.MinStopDistance, so.MaxStopDistance),
-                            so.DisableCollidersOnLaunch, prism, token).Forget();
+                            so.DisableCollidersOnLaunch,
+                            prism,
+                            movementToken
+                        ).Forget();
                     }
 
                     await UniTask.Delay(TimeSpan.FromSeconds(interval), DelayType.DeltaTime, PlayerLoopTiming.Update, token);
@@ -120,8 +132,7 @@ namespace CosmicShore.Game
                     await UniTask.Yield(PlayerLoopTiming.Update);
                 }
 
-                prism.Domain = _status.Domain;
-
+                // Domain already assigned at launch; keep it as-shot.
                 if (!enableCollidersAtEnd) return;
 
                 if (block.TryGetComponent<Collider>(out var c)) c.enabled = true;
