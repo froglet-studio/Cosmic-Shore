@@ -624,15 +624,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouetteParts:
-  - {fileID: 5229348401851143220}
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 1, y: 1, z: 1}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  JawResourceIndex: 0
-  swingBlocks: 0
+  trailDisplayContainer: {fileID: 0}
+  blockPrefab: {fileID: 0}
+  config: {fileID: 0}
 --- !u!114 &6989089190155014109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -737,7 +733,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2134c837bdb00594d80fc211aa9d0c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouette: {fileID: 0}
+  silhouette: {fileID: 6013884537839217096}
 --- !u!114 &7965853245772039612
 MonoBehaviour:
   m_ObjectHideFlags: 0
