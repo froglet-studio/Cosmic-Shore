@@ -17,8 +17,6 @@ namespace CosmicShore
         [SerializeField] private float rotationSpeed = 20.0f;
         [SerializeField] private float speed = 10.0f;
         
-
-
        void Start()
         {
             foreach (var child in GetComponentsInChildren<Transform>())
@@ -34,43 +32,21 @@ namespace CosmicShore
 
 
             }
-
-
-
-
-
-
         }
 
         
         void Update()
         {
+            //This very hacky and probally will get removed when brittlestar become more finialized
             Vector2 rightStick = Gamepad.current?.rightStick.ReadValue() ?? Vector2.zero;
-
-
-
-
 
             foreach (var child in GetComponentsInChildren<Transform>())
             {
-
-                child.transform.RotateAround(pivotObject.transform.position, new Vector3(0, 0, 1), rotationSpeed * Time.deltaTime);
-
-
+                child.transform.RotateAround(pivotObject.transform.position, pivotObject.transform.forward, rotationSpeed * Time.deltaTime);
                 Vector3 targetFocus = new Vector3(0, 0, 300f * rightStick.sqrMagnitude + 70f);
                 gunFocus.localPosition = Vector3.Lerp(gunFocus.localPosition, targetFocus, Time.deltaTime * speed);
-
-
-
                 child.LookAt(gunFocus);
-
-
-
             }
-
-
-
-
 
             }
     }

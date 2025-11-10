@@ -2228,6 +2228,7 @@ MonoBehaviour:
   pivotObject: {fileID: 2733558225281794993}
   radius: 20
   rotationSpeed: 60
+  speed: 10
 --- !u!1 &3062687464665182224
 GameObject:
   m_ObjectHideFlags: 0
@@ -3982,7 +3983,7 @@ MonoBehaviour:
   _inputEventShipActions:
   - InputEvent: 6
     ShipActions:
-    - {fileID: 11400000, guid: 072a19a85e76fe34ab83b891e8536d4d, type: 2}
+    - {fileID: 11400000, guid: dc7e7fdb99fd02445a7230b97df4c55a, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
