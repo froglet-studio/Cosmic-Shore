@@ -97,7 +97,7 @@ namespace CosmicShore.Game
             }
             if (!ignoreOwnershipChecks)
             {
-                if (!_status.IsOwnerClient) throw new InvalidOperationException("[UITrailController] IsOwnerClient == false.");
+                if (!_status.IsNetworkOwner) throw new InvalidOperationException("[UITrailController] IsNetworkOwner == false.");
                 if (_status.AutoPilotEnabled) throw new InvalidOperationException("[UITrailController] AutoPilotEnabled == true.");
             }
             if (!trailDisplayContainer)     throw new NullReferenceException("[UITrailController] trailDisplayContainer is null.");
@@ -261,7 +261,7 @@ namespace CosmicShore.Game
             var rect = trailDisplayContainer ? trailDisplayContainer.rect : new Rect(0,0,0,0);
             Debug.Log(
                 "[UITrailController] DumpState\n" +
-                $"- status: {(_status==null ? "NULL" : "OK")} (IsOwner:{_status?.IsOwnerClient}, AutoPilot:{_status?.AutoPilotEnabled})\n" +
+                $"- status: {(_status==null ? "NULL" : "OK")} (IsOwner:{_status?.IsNetworkOwner}, AutoPilot:{_status?.AutoPilotEnabled})\n" +
                 $"- trailDisplayContainer: {trailDisplayContainer}\n" +
                 $"- vesselPrismController: {vesselPrismController}\n" +
                 $"- driftTrailAction: {driftTrailAction}\n" +

@@ -21,7 +21,15 @@ namespace CosmicShore.Game
         /// If true, it means that this played was marked as AI at initialization
         /// </summary>
         bool IsInitializedAsAI { get; }
+        /// <summary>
+        /// In multiplayer mode, true -> owner client, false -> other clients
+        /// In singleplayer mode, always false.
+        /// </summary>
         public bool IsNetworkOwner { get; }
+        /// <summary>
+        /// In multiplayer mode, true -> non-owner client, false -> owner client
+        /// In singleplayer mode, always false
+        /// </summary>
         public bool IsNetworkClient { get; }
         /// <summary>
         /// Local User in singleplayer is the player providing input, not AI.

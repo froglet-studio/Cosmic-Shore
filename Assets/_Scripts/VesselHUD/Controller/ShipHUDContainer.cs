@@ -50,7 +50,7 @@ namespace CosmicShore.Game
             }
             vesselStatus.VesselHUDView = _activeHUDView as VesselHUDView;
             
-            var controller = vesselStatus.ShipHUDController;
+            var controller = vesselStatus.VesselHUDController;
             var baseView = _activeHUDView as VesselHUDView;
             if (baseView == null)
                 Debug.LogWarning($"[ShipHUDContainer] IVesselHUDView is not an R_ShipHUDView; controllers may expect that type.");

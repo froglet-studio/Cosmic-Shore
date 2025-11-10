@@ -15,7 +15,7 @@ namespace CosmicShore.Game.Arcade
             if (gameData.RoundsPlayed > 0)       
                 gameData.SwapVessels();
             
-            ToggleReadyButton(true);
+            RaiseToggleReadyButtonEvent(true);
             base.SetupNewRound();
         }
     }

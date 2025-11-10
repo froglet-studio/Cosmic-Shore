@@ -85,12 +85,21 @@ namespace CosmicShore.Game
         VesselPrismController VesselPrismController { get; }
         ShipHUDContainer ShipHUDContainer { get; }
         IVesselHUDView ShipHUDView { get; set; }
-        IVesselHUDController ShipHUDController { get; }
+        IVesselHUDController VesselHUDController { get; }
         VesselCustomization Customization { get; }
         R_VesselActionHandler ActionHandler { get; }
         VesselHUDView VesselHUDView { get; set; }
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
-        bool IsOwnerClient { get; }  
+        /// <summary>
+        /// In multiplayer mode, true -> owner client, false -> other clients
+        /// In singleplayer mode, always false.
+        /// </summary>
+        bool IsNetworkOwner { get; }
+        /// <summary>
+        /// In multiplayer mode, true -> non-owner client, false -> owner client
+        /// In singleplayer mode, always false
+        /// </summary>
+        bool IsNetworkClient { get; }
         void ResetForPlay();
     }
 }

@@ -13,6 +13,21 @@ namespace CosmicShore.Game.Arcade
         {
             CloseSession_ServerRpc();
         }
+        
+        protected override void OnCountdownTimerEnded()
+        {
+            if (!IsServer)
+                return;
+
+            OnCountdownTimerEnded_ClientRpc();
+        }
+
+        [ClientRpc]
+        void OnCountdownTimerEnded_ClientRpc()
+        {
+            gameData.SetPlayersActive();
+            gameData.StartTurn(); 
+        }
 
         [ServerRpc(RequireOwnership = false)]
         void CloseSession_ServerRpc()
@@ -22,7 +37,7 @@ namespace CosmicShore.Game.Arcade
         
         protected override void OnReadyClicked_()
         {
-            ToggleReadyButton(false);
+            RaiseToggleReadyButtonEvent(false);
             // Debug.Log($"{NetworkManager.Singleton.LocalClientId} is ready!");
             OnReadyClicked_ServerRpc();
         }
@@ -60,7 +75,7 @@ namespace CosmicShore.Game.Arcade
             if (allowSwap)
                 gameData.SwapVessels();
             
-            ToggleReadyButton(true);
+            RaiseToggleReadyButtonEvent(true);
             base.SetupNewRound_ClientRpc();
         }
         
