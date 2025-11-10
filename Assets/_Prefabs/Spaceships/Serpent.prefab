@@ -1035,10 +1035,6 @@ MonoBehaviour:
   shipRenderer: {fileID: 4172724446676456733}
   seedAssembler: {fileID: 8230992318499782635}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  ghostEulerOffset: {x: 0, y: 0, z: 0}
-  ghostPositionOffset: {x: 0, y: 0, z: 0}
-  ghostScaleMultiplier: 1.5
-  ghostUseShipOrientation: 1
 --- !u!1 &3520243107353251244
 GameObject:
   m_ObjectHideFlags: 0
@@ -2571,7 +2567,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99148a7d0df947b0969a4432426d77a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouette: {fileID: 0}
+  silhouette: {fileID: 2731003324702047408}
   view: {fileID: 5470374086122723936}
   consumeBoostExecutor: {fileID: 2460618104011007721}
   shieldResourceIndex: 0
