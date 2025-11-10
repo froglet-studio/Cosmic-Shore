@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
+using CosmicShore.Core.Visuals;
 using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
@@ -70,6 +71,11 @@ namespace CosmicShore.Game
 
         // Cancellation
         CancellationTokenSource cts;
+        
+        bool     _dangerMode;
+        Material _dangerMaterial;
+        float    _dangerBlendSeconds; 
+        bool     _dangerAppend;  
 
         // Properties
         public float MinWaveLength => minWavelength;
@@ -139,7 +145,7 @@ namespace CosmicShore.Game
             float newScale = Mathf.Max(minBlockScale, maxBlockScale * Xscale);
             
             if (cts != null)
-            _ = LerpXScalerAsync(XScaler, newScale, 1.5f, cts.Token);
+                _ = LerpXScalerAsync(XScaler, newScale, 1.5f, cts.Token);
         }
 
         public void SetDotProduct(float amount)
@@ -259,6 +265,20 @@ namespace CosmicShore.Game
                 ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
                 : waitTime;
 
+            if (_dangerMode)
+            {
+                try { prism.prismProperties.IsDangerous = true; } catch { /* ignore */ }
+
+                if (_dangerMaterial && prism.TryGetComponent<Renderer>(out var rend))
+                {
+                    if (_dangerBlendSeconds > 0f)
+                        MaterialBlendUtility.BeginBlend(rend, _dangerMaterial, _dangerBlendSeconds, _dangerAppend);
+                    else
+                        rend.sharedMaterial = _dangerMaterial; 
+                }
+            }
+
+            
             // Shield
             if (shielded)
                 prism.prismProperties.IsShielded = true;
@@ -326,6 +346,20 @@ namespace CosmicShore.Game
                     : waitTime;
 
                 if (shielded) prism.prismProperties.IsShielded = true;
+                
+                if (_dangerMode)
+                {
+                    try { prism.prismProperties.IsDangerous = true; } catch { /* ignore */ }
+
+                    if (_dangerMaterial && prism.TryGetComponent<Renderer>(out var rend))
+                    {
+                        if (_dangerBlendSeconds > 0f)
+                            MaterialBlendUtility.BeginBlend(rend, _dangerMaterial, _dangerBlendSeconds, _dangerAppend);
+                        else
+                            rend.sharedMaterial = _dangerMaterial;
+                    }
+                }
+
 
                 prisms.Add(prism);
                 prism.prismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
@@ -355,6 +389,54 @@ namespace CosmicShore.Game
             if (Trail2.TrailList.Count > 0)
                 return new List<Prism> { Trail.TrailList[^1], Trail2.TrailList[^1] };
             return null;
+        }
+        
+        public void EnableDangerMode(Material dangerMat, Vector3 scaleMult, float lerpSeconds = 0f,
+            float blendSeconds = 0f, bool append = true)
+        {
+            _dangerMode         = true;
+            _dangerMaterial     = dangerMat;
+            _dangerBlendSeconds = blendSeconds;
+            _dangerAppend       = append;
+            LerpScaleMultipliers(scaleMult, lerpSeconds);
+        }
+
+        public void DisableDangerMode(float lerpSeconds = 0f)
+        {
+            _dangerMode         = false;
+            _dangerMaterial     = null;
+            _dangerBlendSeconds = 0f;
+            _dangerAppend       = true;
+            LerpScaleMultipliers(Vector3.one, lerpSeconds);
+        }
+
+
+        async void LerpScaleMultipliers(Vector3 targetMult, float seconds)
+        {
+            float t = 0f;
+            float dur = Mathf.Max(0f, seconds);
+            float sx0 = XScaler, sy0 = YScaler, sz0 = ZScaler;
+            float sx1 = Mathf.Max(0.0001f, targetMult.x);
+            float sy1 = Mathf.Max(0.0001f, targetMult.y);
+            float sz1 = Mathf.Max(0.0001f, targetMult.z);
+
+            if (dur <= 0f)
+            {
+                XScaler = sx1; YScaler = sy1; ZScaler = sz1;
+                return;
+            }
+
+            var ct = this.GetCancellationTokenOnDestroy();
+            while (t < dur && !ct.IsCancellationRequested)
+            {
+                t += Time.deltaTime;
+                float a = Mathf.Clamp01(t / dur);
+                XScaler = Mathf.Lerp(sx0, sx1, a);
+                YScaler = Mathf.Lerp(sy0, sy1, a);
+                ZScaler = Mathf.Lerp(sz0, sz1, a);
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            XScaler = sx1; YScaler = sy1; ZScaler = sz1;
         }
 
         public void ClearTrails()

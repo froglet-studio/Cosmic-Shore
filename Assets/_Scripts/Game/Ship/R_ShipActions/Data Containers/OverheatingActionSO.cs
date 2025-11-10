@@ -12,12 +12,18 @@ public class OverheatingActionSO : ShipActionSO
     [SerializeField] float heatBuildRate;
     [SerializeField] ElementalFloat heatDecayRate;
     [SerializeField] float overheatDuration;
-
+    [SerializeField] private Material dangerPrismMaterial;
+    [SerializeField] private Vector3 overheatScaleMultiplier = new Vector3(0.7f, 1f, 0.7f);
+    [SerializeField, Min(0f)] private float scaleLerpSeconds = 0.15f;
+    
     public ShipActionSO WrappedAction => wrappedAction;
     public int HeatResourceIndex => heatResourceIndex;
     public float HeatBuildRate => heatBuildRate;
     public ElementalFloat HeatDecayRate => heatDecayRate;
     public float OverheatDuration => overheatDuration;
+    public Material DangerPrismMaterial => dangerPrismMaterial;
+    public Vector3 OverheatScaleMultiplier => overheatScaleMultiplier;
+    public float ScaleLerpSeconds => scaleLerpSeconds;
 
     public override void Initialize(IVessel ship)
     {

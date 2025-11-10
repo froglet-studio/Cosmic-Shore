@@ -54,7 +54,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
 
         _heatResource = _resources.Resources[so.HeatResourceIndex];
 
-        End(); 
+        End();
 
         so.WrappedAction?.StartAction(_registry);
 
@@ -79,7 +79,14 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     void End()
     {
         if (_cts == null) return;
-        try { _cts.Cancel(); } catch { }
+        try
+        {
+            _cts.Cancel();
+        }
+        catch
+        {
+        }
+
         _cts.Dispose();
         _cts = null;
     }
@@ -94,23 +101,33 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
             {
                 _resources.ChangeResourceAmount(so.HeatResourceIndex, so.HeatBuildRate);
                 await UniTask.Delay(TimeSpan.FromSeconds(0.1f),
-                                    DelayType.DeltaTime,
-                                    PlayerLoopTiming.Update,
-                                    token);
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.Update,
+                    token);
             }
 
             _isOverheating = true;
             _status.Overheating = true;
             _heatResource.CurrentAmount = _heatResource.MaxAmount;
-
             OnOverheated?.Invoke();
+            var ctrl = _status?.VesselPrismController;
+            if (ctrl)
+            {
+                ctrl.EnableDangerMode(
+                    so.DangerPrismMaterial,
+                    so.OverheatScaleMultiplier,
+                    so.ScaleLerpSeconds,
+                    blendSeconds: .4f,
+                    append: true
+                );
+            }
 
             so.WrappedAction?.StopAction(_registry);
 
             await UniTask.Delay(TimeSpan.FromSeconds(so.OverheatDuration),
-                                DelayType.DeltaTime,
-                                PlayerLoopTiming.Update,
-                                token);
+                DelayType.DeltaTime,
+                PlayerLoopTiming.Update,
+                token);
 
             _isOverheating = false;
             _status.Overheating = false;
@@ -118,8 +135,13 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
             OnHeatDecayStarted?.Invoke();
             await DecayHeatRoutineAsync(so, token);
         }
-        catch (OperationCanceledException) { }
-        catch (Exception e) { Debug.LogError($"[Overheating] BuildHeat error: {e}"); }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[Overheating] BuildHeat error: {e}");
+        }
     }
 
     async UniTask DecayHeatRoutineAsync(OverheatingActionSO so, CancellationToken token)
@@ -130,15 +152,25 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
             {
                 _resources.ChangeResourceAmount(so.HeatResourceIndex, -so.HeatDecayRate.Value);
                 await UniTask.Delay(TimeSpan.FromSeconds(0.1f),
-                                    DelayType.DeltaTime,
-                                    PlayerLoopTiming.Update,
-                                    token);
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.Update,
+                    token);
             }
 
             _heatResource.CurrentAmount = 0;
             OnHeatDecayCompleted?.Invoke();
+            var ctrl = _status?.VesselPrismController;
+            if (ctrl != null)
+            {
+                ctrl.DisableDangerMode(so.ScaleLerpSeconds);
+            }
         }
-        catch (OperationCanceledException) { }
-        catch (Exception e) { Debug.LogError($"[Overheating] DecayHeat error: {e}"); }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[Overheating] DecayHeat error: {e}");
+        }
     }
 }
