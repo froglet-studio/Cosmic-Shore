@@ -60,6 +60,7 @@ namespace CosmicShore.Game.UI
 
         void OnMiniGameTurnStarted()
         {
+            
             localRoundStats = gameData.LocalRoundStats;
             localRoundStats.OnScoreChanged += UpdateScoreUI;
         }
@@ -120,6 +121,7 @@ namespace CosmicShore.Game.UI
         void ResetForReplay()
         {
             ToggleReadyButton(true);
+            view.UpdateConnectingPanel(false);
             CleanupUI();
         }
 

@@ -19,9 +19,17 @@ namespace CosmicShore.Game.UI
         [SerializeField] private GameObject silhouette;
         [SerializeField] private GameObject trailDisplay;
         [SerializeField] private ButtonPanel buttonPanel;
+        [SerializeField] private CanvasGroup connectingPanel;
         
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
+
+        public void UpdateConnectingPanel(bool active)
+        {
+            connectingPanel.alpha = active ? 1 : 0;
+            connectingPanel.interactable = active;
+            connectingPanel.blocksRaycasts = active;
+        }
         public TMP_Text LeftNumberDisplay => leftNumberDisplay;
         public TMP_Text RightNumberDisplay => rightNumberDisplay;
         public Button ReadyButton => readyButton;
