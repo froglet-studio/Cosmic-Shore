@@ -285,7 +285,6 @@ namespace CosmicShore
                 {
                     var cur  = _pool[i, r];
                     var prev = _pool[i - 1, r];
-
                     var curP  = _parents[i];
                     var prevP = _parents[i - 1];
 
