@@ -36,6 +36,13 @@ namespace CosmicShore.Game
                     else
                         ExecuteCrystalImpact_Old(omniCrystalImpactee);
                     break;
+                case SkimmerImpactor skimmerImpactee:
+                    if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
+                    foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)
+                    {
+                        effect.Execute(this, skimmerImpactee);
+                    }
+                    break;
             }
         }
 

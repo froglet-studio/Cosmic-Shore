@@ -10,11 +10,14 @@ namespace CosmicShore.Game
         public VesselPrismEffectSO[] VesselPrismEffects => vesselPrismEffects;
 
         public VesselCrystalEffectSO[] VesselCrystalEffects => vesselCrystalEffects;
+        public VesselSkimmerEffectsSO[] VesselSkimmerEffects => vesselSkimmerEffects;
         
         [FormerlySerializedAs("shipPrismEffects")] [SerializeField]
         VesselPrismEffectSO[] vesselPrismEffects;
         
         [FormerlySerializedAs("vesselOmniCrystalEffects")] [FormerlySerializedAs("shipOmniCrystalEffects")] [SerializeField]
         VesselCrystalEffectSO[] vesselCrystalEffects;
+        [SerializeField]
+        VesselSkimmerEffectsSO[] vesselSkimmerEffects;
     }
 }
