@@ -2332,7 +2332,7 @@ MonoBehaviour:
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
-  startDelay: 0.1
+  startDelay: 0.2
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -2513,6 +2513,7 @@ MonoBehaviour:
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
+  _onInputEventBlocked: {fileID: 0}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3893,11 +3894,6 @@ MonoBehaviour:
     image: {fileID: 8484929212193490670}
   - input: 7
     image: {fileID: 3512818663123036916}
-  SilhouetteContainer: {fileID: 0}
-  TrailDisplayContainer: {fileID: 0}
-  TopJaw: {fileID: 0}
-  BottomJaw: {fileID: 0}
-  JawResourceIndex: -1
   shieldIconsByCount:
   - {fileID: 21300000, guid: 05ee374807511b44aa2a486aaf27e752, type: 3}
   - {fileID: 21300000, guid: ee81d0070c09faa44824544889fd5ddf, type: 3}

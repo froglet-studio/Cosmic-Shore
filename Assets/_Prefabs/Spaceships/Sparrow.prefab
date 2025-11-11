@@ -1225,6 +1225,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  StationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
+    type: 2}
 --- !u!114 &2124329905120944864
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1253,7 +1255,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   controller: {fileID: 874579555101021522}
-  profile: {fileID: 0}
+  profile: {fileID: 11400000, guid: b157cce9ec71308458d171eacb6ace01, type: 2}
 --- !u!1 &5585527924204855743
 GameObject:
   m_ObjectHideFlags: 0
@@ -1802,7 +1804,7 @@ MonoBehaviour:
   MinimumGap: 0
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
-  startDelay: 0
+  startDelay: 0.2
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -3895,11 +3897,6 @@ MonoBehaviour:
     image: {fileID: 1501352032668899679}
   - input: 6
     image: {fileID: 6366083956812878776}
-  SilhouetteContainer: {fileID: 4894037493201937865}
-  TrailDisplayContainer: {fileID: 4086940857397470401}
-  TopJaw: {fileID: 0}
-  BottomJaw: {fileID: 0}
-  JawResourceIndex: -1
   missileIcons:
   - {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2, type: 3}
   - {fileID: 21300000, guid: 8306bc28766790c4e95529f8ed9ca0cb, type: 3}

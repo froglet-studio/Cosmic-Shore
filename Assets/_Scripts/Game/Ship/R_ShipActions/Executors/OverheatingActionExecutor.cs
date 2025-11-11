@@ -14,6 +14,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     public event Action OnHeatDecayCompleted;
 
     [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
+    [SerializeField] private ScriptableEventBool StationaryModeChanged;
 
     IVesselStatus _status;
     ResourceSystem _resources;
@@ -26,11 +27,13 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     void OnEnable()
     {
         OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        StationaryModeChanged.OnRaised += HandleStationaryModeChanged;
     }
 
     void OnDisable()
     {
         OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        StationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
     }
 
     void OnTurnEndOfMiniGame() => End();
@@ -56,12 +59,13 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
         _heatResource = _resources.Resources[so.HeatResourceIndex];
 
         End();
-
         so.WrappedAction?.StartAction(_registry);
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
         BuildHeatRoutineAsync(so, _cts.Token).Forget();
     }
+
+
 
     public void StopOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
     {
@@ -75,6 +79,17 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
         OnHeatDecayStarted?.Invoke();
         _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
         DecayHeatRoutineAsync(so, _cts.Token).Forget();
+    }
+    
+    private void HandleStationaryModeChanged(bool isStationary)
+    {
+        if (!isStationary || _status == null) return;
+
+        float s = _status.Speed;
+        if (s > 0.01f)
+        {
+            _status.VesselTransformer?.ModifyVelocity(_status.Course, 1f);
+        }
     }
 
     void End()
