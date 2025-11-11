@@ -19,8 +19,8 @@ MonoBehaviour:
   minColumns: 10
   smooth: 1
   smoothingSeconds: 0.08
-  thicknessMultiplier: 1
-  lengthMultiplier: 1
+  thicknessMultiplier: 1100
+  lengthMultiplier: 10
   gapMultiplier: 1
   columnGapMultiplier: 1
   useDomainPaletteColors: 1
