@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: DolphinSkimmerImpactorDataContainer
   m_EditorClassIdentifier: 
   vesselSkimmerEffectsSO: []
-  skimmerPrismEffectsSO: []
+  skimmerPrismEffectsSO:
+  - {fileID: 11400000, guid: 66f1edf31a7db6e4d971af7586eedf8f, type: 2}
   skimmerCrystalEffectsSO: []
