@@ -12,9 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccff787dc643e6d48a46c1b58af79d00, type: 3}
   m_Name: GameData
   m_EditorClassIdentifier: 
-  OnMiniGmaeTurnStarted: {fileID: 11400000, guid: c1e403b35fa04e64d9ab4dea06077e6c,
+  OnMiniGameRoundStarted: {fileID: 11400000, guid: eadb3425134abb341a2ebc617fa5604a,
+    type: 2}
+  OnMiniGameTurnStarted: {fileID: 11400000, guid: c1e403b35fa04e64d9ab4dea06077e6c,
     type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+  OnMiniGameRoundEnd: {fileID: 11400000, guid: eadb3425134abb341a2ebc617fa5604a, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   selectedVesselClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
@@ -29,7 +32,7 @@ MonoBehaviour:
     Charge: 0.5
     Space: 0.5
     Time: 0.5
-  SceneName: MinigameFreestyle
+  SceneName: 
   GameMode: 0
   IsDailyChallenge: 0
   IsTraining: 0
