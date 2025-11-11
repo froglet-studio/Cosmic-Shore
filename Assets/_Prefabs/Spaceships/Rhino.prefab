@@ -12926,6 +12926,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: NotificationPresenter
       objectReference: {fileID: 0}
+    - target: {fileID: 3658507416675008600, guid: 4b9cc33db99b8b942b826de886b57d23,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4434022435045388415, guid: 4b9cc33db99b8b942b826de886b57d23,
         type: 3}
       propertyPath: m_Pivot.x
