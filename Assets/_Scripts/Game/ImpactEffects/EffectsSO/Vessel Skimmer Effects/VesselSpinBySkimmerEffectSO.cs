@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    /// Attach to the VICTIM (vessel) impact list for Vessel–Skimmer collisions.
     [CreateAssetMenu(
         fileName = "VesselSpinBySkimmerEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselSpinBySkimmerEffectSO")]

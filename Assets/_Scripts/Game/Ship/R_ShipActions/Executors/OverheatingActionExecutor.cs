@@ -51,6 +51,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     {
         _registry = registry;
         if (_isOverheating) return;
+        if (status.IsTranslationRestricted) return;
 
         _heatResource = _resources.Resources[so.HeatResourceIndex];
 
