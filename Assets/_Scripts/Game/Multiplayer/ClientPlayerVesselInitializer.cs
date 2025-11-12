@@ -44,9 +44,6 @@ namespace CosmicShore.Game
             InitializePlayerAndVessel(clientId);
         }
         
-        [ClientRpc]
-        internal void InvokeClientReady_ClientRpc(ClientRpcParams clientRpcParams = default) => gameData.InvokeClientReady();
-        
         void InitializePlayerAndVessel(ulong clientId)
         {
             var networkPlayer = NetworkPlayerClientCache.GetInstanceByClientId(clientId);

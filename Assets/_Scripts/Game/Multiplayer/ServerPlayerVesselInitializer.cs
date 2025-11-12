@@ -95,14 +95,6 @@ namespace CosmicShore.Game
 
             // Then spawn their own vessel after 2s
             DelayedSpawnVesselForPlayer(clientId).Forget();
-            
-            clientPlayerVesselInitializer.InvokeClientReady_ClientRpc(new ClientRpcParams
-            {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = new[] { clientId }
-                }
-            });
         }
 
         // ----------------------------
