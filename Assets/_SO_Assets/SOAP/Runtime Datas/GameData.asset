@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccff787dc643e6d48a46c1b58af79d00, type: 3}
   m_Name: GameData
   m_EditorClassIdentifier: 
-  OnMiniGameRoundStarted: {fileID: 11400000, guid: eadb3425134abb341a2ebc617fa5604a,
+  OnMiniGameRoundStarted: {fileID: 11400000, guid: 97086a0eecde5df4783ba65b3b12f3a2,
     type: 2}
   OnMiniGameTurnStarted: {fileID: 11400000, guid: c1e403b35fa04e64d9ab4dea06077e6c,
     type: 2}
@@ -37,5 +37,5 @@ MonoBehaviour:
   IsDailyChallenge: 0
   IsTraining: 0
   IsMission: 0
-  IsMultiplayerMode: 0
+  IsMultiplayerMode: 1
   TurnStartTime: 0
