@@ -31,8 +31,6 @@ namespace CosmicShore.Game.Arcade
         public void OnReadyClicked() =>
             OnReadyClicked_();
         
-        protected void InitializeGame() => gameData.InitializeGame();
-
         protected virtual void OnReadyClicked_()
         {
             RaiseToggleReadyButtonEvent(false);
@@ -53,6 +51,7 @@ namespace CosmicShore.Game.Arcade
         protected virtual void SetupNewRound()
         {
             gameData.TurnsTakenThisRound = 0;
+            gameData.InvokeMiniGameRoundStarted();
             SetupNewTurn();
         }
         

@@ -66,7 +66,6 @@ namespace CosmicShore.Game.Arcade
                 ChangeOwnershipOfVessels();
             
             SetupNewRound_ClientRpc(allowSwap);
-            base.SetupNewRound();
         }
         
         [ClientRpc]
@@ -76,7 +75,7 @@ namespace CosmicShore.Game.Arcade
                 gameData.SwapVessels();
             
             RaiseToggleReadyButtonEvent(true);
-            base.SetupNewRound_ClientRpc();
+            base.SetupNewRound();
         }
         
         protected override void OnResetForReplay()

@@ -28,7 +28,10 @@ namespace CosmicShore.Game.UI
         
         void OnEnable()
         {
-            gameData.OnMiniGameRoundStarted.OnRaised += OnMiniGameRoundStarted;
+            // Need to use TurnStarted, as RoundStarted will be called instantly after RoundEnded,
+            // Turn Started will be called after client presses ready button and server accepts it.
+            gameData.OnMiniGameTurnStarted.OnRaised += OnMiniGameTurnStarted;
+            
             gameData.OnMiniGameRoundEnd.OnRaised += OnMiniGameRoundEnd;
             gameData.OnWinnerCalculated += OnWinnerCalculated;
 
@@ -37,12 +40,15 @@ namespace CosmicShore.Game.UI
 
         void OnDisable()
         { 
-            gameData.OnMiniGameRoundStarted.OnRaised -= OnMiniGameRoundStarted;
+            // Need to use TurnStarted, as RoundStarted will be called instantly after RoundEnded,
+            // Turn Started will be called after client presses ready button and server accepts it.
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnMiniGameTurnStarted;
+            
             gameData.OnMiniGameRoundEnd.OnRaised -= OnMiniGameRoundEnd;
             gameData.OnWinnerCalculated -= OnWinnerCalculated;
         }
 
-        void OnMiniGameRoundStarted() => Hide();
+        void OnMiniGameTurnStarted() => Hide();
 
         void OnMiniGameRoundEnd()
         {
@@ -69,7 +75,7 @@ namespace CosmicShore.Game.UI
 
                 if (!rowUIController)
                 {
-                    Debug.LogError("This should never happen!");
+                    Debug.LogError($"This should never happen! Rounds Played: {gameData.RoundsPlayed}");
                     return;
                 }
 

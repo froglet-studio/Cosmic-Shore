@@ -26,8 +26,8 @@ namespace CosmicShore.SOAP
         public event Action OnLaunchGameScene;
         public event Action OnSessionStarted;
         public event Action OnInitializeGame;
-        public event Action OnClientReady;
         public ScriptableEventNoParam OnMiniGameRoundStarted;
+        public event Action OnClientReady;
         public ScriptableEventNoParam OnMiniGameTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
         public ScriptableEventNoParam OnMiniGameRoundEnd;
@@ -70,12 +70,11 @@ namespace CosmicShore.SOAP
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
 
-        public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
         
         public void InitializeGame()
         {
             ResetRuntimeData();
-            OnInitializeGame?.Invoke();
+            InvokeInitializeGame();
         }
 
         public void SetupForMultiplayer()
@@ -100,14 +99,23 @@ namespace CosmicShore.SOAP
             InvokeTurnStarted();
         }
         
+        public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
         public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
-        public void InvokeClientReady() => OnClientReady?.Invoke();
+        public void InvokeInitializeGame() => OnInitializeGame?.Invoke();
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
+        public void InvokeClientReady() => OnClientReady?.Invoke();
         public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
         public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Raise();
         public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
+
+        public void ResetForReplay()
+        {
+            ResetRuntimeDataForReplay();
+            OnResetForReplay?.Raise();
+        }
+            
 
         public void ResetRuntimeData()
         {
@@ -118,7 +126,14 @@ namespace CosmicShore.SOAP
             TurnsTakenThisRound = 0;
         }
 
-        public void ResetDataForReplay()
+        void ResetRuntimeDataForReplay()
+        {
+            TurnStartTime = 0f;
+            RoundsPlayed = 0;
+            TurnsTakenThisRound = 0;
+        }
+
+        public void ResetStatsDataForReplay()
         {
             if (RoundStatsList == null || RoundStatsList.Count == 0)
             {
@@ -130,8 +145,6 @@ namespace CosmicShore.SOAP
             {
                 RoundStatsList[i].Cleanup();
             }
-            
-            TurnStartTime = 0f;
         }
         
         public void ResetAllData()

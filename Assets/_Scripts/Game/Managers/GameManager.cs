@@ -40,14 +40,14 @@ namespace CosmicShore.Core
         {
             // LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
             
-            gameData.ResetDataForReplay();
+            gameData.ResetStatsDataForReplay();
             // VesselPrismController.ClearTrails();
             InvokeOnResetForReplay();
         }
 
         public virtual void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();
 
-        protected void InvokeOnResetForReplay() => gameData.OnResetForReplay?.Raise();
+        protected void InvokeOnResetForReplay() => gameData.ResetForReplay();
         
         void LaunchGameScene()
         {
