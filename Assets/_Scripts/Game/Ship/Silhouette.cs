@@ -10,7 +10,7 @@ namespace CosmicShore
     {
         [Header("Sources")]
         [SerializeField] private VesselPrismController vesselPrismController;
-        [SerializeField] private DriftTrailAction      driftTrailAction;
+        [SerializeField] private DriftTrailActionExecutor      driftTrailAction;
 
         [Header("HUD Refs")]
         [SerializeField] private Transform  trailDisplayContainer;
@@ -26,7 +26,7 @@ namespace CosmicShore
         private IVessel _vessel;
         private float _dot = .9999f;
 
-        private DriftTrailAction.ChangeDriftAltitude _driftHandler;
+        private DriftTrailActionExecutor.ChangeDriftAltitude _driftHandler;
 
         float _xShift, _wavelength, _sx, _sy, _sz;
         bool  _haveHead;
