@@ -31,6 +31,7 @@ namespace CosmicShore.Game
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
         private readonly Dictionary<InputEvents, float> _inputMuteUntil = new();
         private readonly Dictionary<InputEvents, CancellationTokenSource> _muteEndCts = new();
+        readonly List<ShipActionSO> _runtimeInstances = new();
         
         // TODO - Unnecessary events added.
         // Remove and Use _onButtonPressed and _onButtonReleased.
@@ -52,18 +53,14 @@ namespace CosmicShore.Game
 
         void OnDisable()
         {
-            if (IsSpawned)
-                return;
-            
+            if (!IsSpawned) ShipHelper.DestroyRuntimeActions(_runtimeInstances);
             UnsubscribeFromInputEvents();
         }
 
         public override void OnNetworkDespawn()
         {
-            if (!IsOwner)
-                return;
-
-            UnsubscribeFromInputEvents();
+            if (IsOwner) UnsubscribeFromInputEvents();
+            ShipHelper.DestroyRuntimeActions(_runtimeInstances);
         }
 
         public void ToggleSubscription(bool subscribe)
@@ -76,13 +73,11 @@ namespace CosmicShore.Game
         {
             vesselStatus = v;
 
-            if (_executors)
-                _executors.InitializeAll(vesselStatus);
-            else
-                Debug.LogWarning("[R_ShipActionHandler] ActionExecutorRegistry is not assigned.");
+            if (_executors) _executors.InitializeAll(vesselStatus);
 
-            ShipHelper.InitializeShipControlActions(vesselStatus, _inputEventShipActions, _shipControlActions);
-            ShipHelper.InitializeClassResourceActions(vesselStatus, _resourceEventClassActions, _classResourceActions);
+            _runtimeInstances.Clear();
+            ShipHelper.InitializeShipControlActions(vesselStatus, _inputEventShipActions, _shipControlActions, _runtimeInstances);
+            ShipHelper.InitializeClassResourceActions(vesselStatus, _resourceEventClassActions, _classResourceActions, _runtimeInstances);
         }
 
         public void PerformShipControllerActions(InputEvents controlType)

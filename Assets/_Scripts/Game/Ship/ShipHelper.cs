@@ -8,13 +8,14 @@ namespace CosmicShore.Game
     /// <summary>
     /// This class helps in method execution for IVesselStatus instances
     /// </summary>
-    public static class ShipHelper
+   public static class ShipHelper
     {
-        // ShipHelper.cs
         public static void InitializeShipControlActions(
             IVesselStatus vesselStatus,
             List<InputEventShipActionMapping> inputEventShipActions,
-            Dictionary<InputEvents, List<ShipActionSO>> shipControlActions)
+            Dictionary<InputEvents, List<ShipActionSO>> shipControlActions,
+            List<ShipActionSO> runtimeInstancesCollector // <- NEW
+        )
         {
             shipControlActions.Clear();
 
@@ -28,11 +29,13 @@ namespace CosmicShore.Game
 
                 foreach (var asset in map.ShipActions)
                 {
-                    if (asset == null) continue;
-                    var instance = Object.Instantiate(asset); 
-                    instance.name = $"{asset.name} [runtime:{vesselStatus.PlayerName}]";
-                    instance.Initialize(vesselStatus.Vessel);       
+                    if (!asset) continue;
+
+                    // RECURSIVE per-vessel clone:
+                    var instance = ActionInstanceFactory.CreatePerVesselInstance(asset, vesselStatus.Vessel);
+
                     list.Add(instance);
+                    runtimeInstancesCollector?.Add(instance);
                 }
             }
         }
@@ -40,7 +43,9 @@ namespace CosmicShore.Game
         public static void InitializeClassResourceActions(
             IVesselStatus vesselStatus,
             List<ResourceEventShipActionMapping> resourceEventShipActionMappings,
-            Dictionary<ResourceEvents, List<ShipActionSO>> classResourceActions)
+            Dictionary<ResourceEvents, List<ShipActionSO>> classResourceActions,
+            List<ShipActionSO> runtimeInstancesCollector 
+        )
         {
             classResourceActions.Clear();
 
@@ -54,13 +59,21 @@ namespace CosmicShore.Game
 
                 foreach (var asset in map.ClassActions)
                 {
-                    if (asset == null) continue;
-                    var instance = Object.Instantiate(asset);
-                    instance.name = $"{asset.name} [runtime:{vesselStatus.PlayerName}]";
-                    instance.Initialize(vesselStatus.Vessel);
+                    if (!asset) continue;
+
+                    // RECURSIVE per-vessel clone:
+                    var instance = ActionInstanceFactory.CreatePerVesselInstance(asset, vesselStatus.Vessel);
+
                     list.Add(instance);
+                    runtimeInstancesCollector?.Add(instance);
                 }
             }
+        }
+
+        public static void DestroyRuntimeActions(List<ShipActionSO> runtimeInstances)
+        {
+            ActionInstanceFactory.DestroyInstances(runtimeInstances);
+            runtimeInstances?.Clear();
         }
 
 
