@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game
 {
@@ -7,13 +8,12 @@ namespace CosmicShore.Game
         [Header("View")]
         [SerializeField] private DolphinVesselHUDView view;
 
-        [Header("Executor (runtime)")]
-        [SerializeField] private ChargeBoostActionExecutor chargeBoostExecutor;
+        [Header("Resource Binding")]
+        [SerializeField, Tooltip("Which resource drives the Dolphin charge bar (Energy = 0).")]
+        private int energyResourceIndex = 0;
 
-        [SerializeField] private ChargeBoostActionSO chargeBoostActionSO;
-
-        private float _maxUnits = 1f;
-        private int   _stepsMinusOne;
+        private ResourceSystem _resources;
+        private int _stepsMinusOne;
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
@@ -26,33 +26,44 @@ namespace CosmicShore.Game
             if (view == null || view.chargeSteps == null || view.chargeSteps.Count == 0)
                 return;
 
+            _stepsMinusOne = Mathf.Max(0, view.chargeSteps.Count - 1);
+            _resources     = vesselStatus?.ResourceSystem;
 
-            if (chargeBoostExecutor != null)
+            if (_resources == null) return;
+
+            // subscribe
+            _resources.OnResourceChanged += HandleResourceChanged;
+
+            // initial sync from current values
+            if (energyResourceIndex >= 0 && energyResourceIndex < _resources.Resources.Count)
             {
-                _maxUnits = chargeBoostActionSO != null ? Mathf.Max(0.0001f, chargeBoostActionSO.MaxNormalizedCharge) : 1f;
-
-                // Subscribe to executor events
-                chargeBoostExecutor.OnChargeStarted     += SetFromUnits;
-                chargeBoostExecutor.OnChargeProgress    += SetFromUnits;
-                chargeBoostExecutor.OnChargeEnded       += () => SetSpriteIndex(_stepsMinusOne);
-
-                chargeBoostExecutor.OnDischargeStarted  += SetFromUnits;
-                chargeBoostExecutor.OnDischargeProgress += u => SetFromUnits(u);
-                chargeBoostExecutor.OnDischargeEnded    += () => SetSpriteIndex(0);
+                var r = _resources.Resources[energyResourceIndex];
+                SetFromAmounts(r.CurrentAmount, r.MaxAmount);
             }
-
-            // start empty
-            SetSpriteIndex(0);
+            else
+            {
+                SetSpriteIndex(0);
+            }
         }
 
-        void SetFromUnits(float units)
+        void OnDisable()
+        {
+            if (_resources != null)
+                _resources.OnResourceChanged -= HandleResourceChanged;
+        }
+
+        void HandleResourceChanged(int index, float current, float max)
+        {
+            if (index != energyResourceIndex) return;
+            SetFromAmounts(current, max);
+        }
+
+        void SetFromAmounts(float current, float max)
         {
             if (view == null || view.chargeSteps == null || view.chargeSteps.Count == 0) return;
 
-            float u = Mathf.Clamp(units, 0f, _maxUnits);
-            float t = _maxUnits > 0f ? u / _maxUnits : 0f;
-
-            int idx = Mathf.Clamp(Mathf.RoundToInt(t * _stepsMinusOne), 0, _stepsMinusOne);
+            float norm = (max > 0f) ? Mathf.Clamp01(current / max) : 0f;
+            int idx = Mathf.Clamp(Mathf.RoundToInt(norm * _stepsMinusOne), 0, _stepsMinusOne);
             SetSpriteIndex(idx);
         }
 
@@ -65,7 +76,7 @@ namespace CosmicShore.Game
             if (sprite != null)
             {
                 view.chargeBoostImage.enabled = true;
-                view.chargeBoostImage.sprite = sprite;
+                view.chargeBoostImage.sprite  = sprite;
             }
         }
     }

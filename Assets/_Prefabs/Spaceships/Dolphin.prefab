@@ -2194,16 +2194,15 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &7318639533368661048
-Transform:
+--- !u!224 &7318639533368661048
+RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6991916221215901041}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -792.5926, y: 200.80002, z: -21.817314}
+  m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: -21.817314}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2211,7 +2210,12 @@ Transform:
   - {fileID: 639922495428989031}
   - {fileID: 8741541425519103338}
   m_Father: {fileID: 2515900224755962236}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -792.5926, y: 200.80002}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &7014513329719026904
 GameObject:
   m_ObjectHideFlags: 0
@@ -2627,6 +2631,14 @@ MonoBehaviour:
   trailDisplayContainer: {fileID: 6223442238412242697}
   blockPrefab: {fileID: 0}
   config: {fileID: 11400000, guid: 24c3d542313e98e4cbc5c759fa60be10, type: 2}
+  silhouetteRoot: {fileID: 7318639533368661048}
+  jawTop: {fileID: 639922495428989031}
+  jawBottom: {fileID: 8741541425519103338}
+  jawMaxOffset: 40
+  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
+  jawTintTargets: []
+  energyResourceIndex: 0
 --- !u!114 &8590080875247618286
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2737,9 +2749,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   silhouette: {fileID: 8438934208232307470}
   view: {fileID: 117603555638778835}
-  chargeBoostExecutor: {fileID: 8363998993469153081}
-  chargeBoostActionSO: {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2,
-    type: 2}
+  energyResourceIndex: 0
 --- !u!114 &5259057883249728580
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3789,6 +3799,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: NotificationPresenter
       objectReference: {fileID: 0}
+    - target: {fileID: 3658507416675008600, guid: 4b9cc33db99b8b942b826de886b57d23,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4434022435045388415, guid: 4b9cc33db99b8b942b826de886b57d23,
         type: 3}
       propertyPath: m_Pivot.x
@@ -4098,11 +4113,6 @@ PrefabInstance:
       propertyPath: jawResourceIndex
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
-        type: 3}
-      propertyPath: silhouetteContainer
-      value: 
-      objectReference: {fileID: 7318639533368661048}
     - target: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       propertyPath: trailDisplayContainer

@@ -8,9 +8,9 @@ namespace CosmicShore
 {
     public class Silhouette : MonoBehaviour
     {
-        [Header("Sources")]
+   [Header("Sources")]
         [SerializeField] private VesselPrismController vesselPrismController;
-        [SerializeField] private DriftTrailActionExecutor      driftTrailAction;
+        [SerializeField] private DriftTrailActionExecutor driftTrailAction;
 
         [Header("HUD Refs")]
         [SerializeField] private Transform  trailDisplayContainer;
@@ -19,13 +19,27 @@ namespace CosmicShore
         [Header("Config")]
         [SerializeField] private SilhouetteConfigSO config;
 
+        // NEW: silhouette root & jaw refs
+        [Header("Silhouette Root & Jaws")]
+        [SerializeField] private RectTransform silhouetteRoot;     // rotate this to match ship heading
+        [SerializeField] private RectTransform jawTop;             // optional – will move outwards with energy
+        [SerializeField] private RectTransform jawBottom;          // optional – will move outwards with energy
+        [SerializeField, Min(0f)] private float jawMaxOffset = 40f;// total outward delta at full energy
+        [SerializeField] private Color jawNormalColor = Color.white;
+        [SerializeField] private Color jawFullColor = Color.green;
+        [SerializeField] private Image[] jawTintTargets;           // if set, these get color tint (top/bottom images, outline, etc.)
+        [SerializeField] private int energyResourceIndex = 0;      // energy is Resource[0] in your spec
+
+        // internals (existing)
         private RectTransform[,] _pool;
         private RectTransform[]  _parents;
         private int _cols;
 
         private IVessel _vessel;
-        private float _dot = .9999f;
+        private IVesselStatus _status;
+        private ResourceSystem _resources;
 
+        private float _dot = .9999f;
         private DriftTrailActionExecutor.ChangeDriftAltitude _driftHandler;
 
         float _xShift, _wavelength, _sx, _sy, _sz;
@@ -45,9 +59,14 @@ namespace CosmicShore
                 vesselPrismController.OnBlockSpawned += OnBlockSpawned_Color;
             }
 
-            if (!driftTrailAction) return;
-            _driftHandler = OnDriftChanged;
-            driftTrailAction.OnChangeDriftAltitude += _driftHandler;
+            if (driftTrailAction)
+            {
+                _driftHandler = OnDriftChanged;
+                driftTrailAction.OnChangeDriftAltitude += _driftHandler;
+            }
+
+            // subscribe to resource stream once we have _resources (Initialize)
+            TrySubscribeResources();
         }
 
         void OnDisable()
@@ -58,14 +77,78 @@ namespace CosmicShore
                 vesselPrismController.OnBlockSpawned -= OnBlockSpawned_Color;
             }
 
-            if (driftTrailAction == null || _driftHandler == null) return;
-            driftTrailAction.OnChangeDriftAltitude -= _driftHandler;
-            _driftHandler = null;
+            if (driftTrailAction != null && _driftHandler != null)
+            {
+                driftTrailAction.OnChangeDriftAltitude -= _driftHandler;
+                _driftHandler = null;
+            }
+
+            TryUnsubscribeResources();
         }
 
         public void Initialize(IVesselStatus status, VesselHUDView hudView)
         {
-            _vessel = status?.Vessel;
+            _status    = status;
+            _vessel    = status?.Vessel;
+            _resources = status?.ResourceSystem;
+
+            TrySubscribeResources();
+
+            // initialize jaws to current energy
+            if (_resources != null && energyResourceIndex >= 0 && energyResourceIndex < _resources.Resources.Count)
+            {
+                var r = _resources.Resources[energyResourceIndex];
+                UpdateEnergyUI(r.CurrentAmount, r.MaxAmount);
+            }
+        }
+
+        void TrySubscribeResources()
+        {
+            if (_resources == null) return;
+            TryUnsubscribeResources(); // safety
+            _resources.OnResourceChanged += HandleResourceChanged;
+        }
+
+        void TryUnsubscribeResources()
+        {
+            if (_resources == null) return;
+            _resources.OnResourceChanged -= HandleResourceChanged;
+        }
+
+        void HandleResourceChanged(int index, float current, float max)
+        {
+            if (index != energyResourceIndex) return;
+            UpdateEnergyUI(current, max);
+        }
+
+        // --- ENERGY → jaws & tint ---
+        void UpdateEnergyUI(float current, float max)
+        {
+            float norm = (max > 0f) ? Mathf.Clamp01(current / max) : 0f;
+
+            // jaw offsets (if assigned). We offset on Y (top up, bottom down). Works in any canvas.
+            if (jawTop)
+            {
+                var p = jawTop.anchoredPosition;
+                p.y = Mathf.Lerp(0f, +jawMaxOffset, norm);
+                jawTop.anchoredPosition = Vector2.Lerp(jawTop.anchoredPosition, p, Alpha);
+            }
+            if (jawBottom)
+            {
+                var p = jawBottom.anchoredPosition;
+                p.y = Mathf.Lerp(0f, -jawMaxOffset, norm);
+                jawBottom.anchoredPosition = Vector2.Lerp(jawBottom.anchoredPosition, p, Alpha);
+            }
+
+            // tint when full
+            var col = (norm >= 0.999f) ? jawFullColor : jawNormalColor;
+            if (jawTintTargets != null)
+            {
+                for (int i = 0; i < jawTintTargets.Length; i++)
+                {
+                    if (jawTintTargets[i]) jawTintTargets[i].color = Color.Lerp(jawTintTargets[i].color, col, Alpha);
+                }
+            }
         }
 
         public void SetBlockPrefab(GameObject prefab)
@@ -92,12 +175,34 @@ namespace CosmicShore
 
         void LateUpdate()
         {
+            if (_status != null && silhouetteRoot) SyncSilhouetteRotation2D();
+
             if (!_haveHead || _pool == null || !trailDisplayContainer || _vessel?.VesselStatus == null) return;
             ApplyHeadAndConveyor(_xShift, _wavelength, _sx, _sy, _sz);
         }
 
+        // ---------- DRIFT / ROTATION ----------
         void OnDriftChanged(float dot) => _dot = dot;
 
+        // Rotate the 2D silhouette to match ship heading on the XZ plane.
+        void SyncSilhouetteRotation2D()
+        {
+            // Project forward & course on XZ
+            var fwd = _status.ShipTransform ? _status.ShipTransform.forward : Vector3.forward;
+            var course = _status.Course;
+
+            var fwd2 = Vector3.ProjectOnPlane(fwd, Vector3.up);
+            var course2 = Vector3.ProjectOnPlane(course, Vector3.up);
+
+            if (fwd2.sqrMagnitude < 1e-6f || course2.sqrMagnitude < 1e-6f) return;
+
+            // Signed angle so rotation direction is preserved
+            float angle = Vector3.SignedAngle(course2, fwd2, Vector3.up);
+            var target = Quaternion.Euler(0f, 0f, angle);
+            silhouetteRoot.localRotation = Quaternion.Slerp(silhouetteRoot.localRotation, target, Alpha);
+        }
+
+        // ---------- TRAIL HOOKS (unchanged) ----------
         void OnBlockCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
             if (_vessel?.VesselStatus == null || _vessel.VesselStatus.AutoPilotEnabled) return;
@@ -122,11 +227,7 @@ namespace CosmicShore
             var haveTint = false;
 
             var isDanger = false;
-            try { isDanger = prism.prismProperties != null && prism.prismProperties.IsDangerous; }
-            catch
-            {
-                // ignored
-            }
+            try { isDanger = prism.prismProperties != null && prism.prismProperties.IsDangerous; } catch {}
 
             if (isDanger && config && config.useDomainPaletteColors && config.domainPalette)
             {
@@ -141,19 +242,21 @@ namespace CosmicShore
             }
 
             if (!haveTint) return;
+
+            // head
             for (var r = 0; r < 2; r++)
             {
                 var img = _pool[0, r]?.GetComponent<Image>();
-                if (img) img.color = tint; 
+                if (img) img.color = tint;
             }
+            // conveyor blend
             for (var i = 1; i < _cols; i++)
-            for (var r = 0; r < 2; r++)
-            {
-                var img = _pool[i, r]?.GetComponent<Image>();
-                var prev= _pool[i-1, r]?.GetComponent<Image>();
-                if (img && prev) img.color = Color.Lerp(img.color, prev.color, Alpha);
-            }
-
+                for (var r = 0; r < 2; r++)
+                {
+                    var img  = _pool[i, r]?.GetComponent<Image>();
+                    var prev = _pool[i-1, r]?.GetComponent<Image>();
+                    if (img && prev) img.color = Color.Lerp(img.color, prev.color, Alpha);
+                }
         }
 
         void BuildPoolIfNeeded(float scaleY, float wavelength)
