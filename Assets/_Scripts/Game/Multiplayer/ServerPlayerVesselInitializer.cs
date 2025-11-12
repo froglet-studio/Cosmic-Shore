@@ -138,6 +138,7 @@ namespace CosmicShore.Game
 
                 foreach (var clientPair in NetworkManager.Singleton.ConnectedClientsList)
                 {
+                    // A new client joined in this client, we need to initialize the new client's vessel and player clone only.
                     if (clientPair.ClientId != clientId)
                     {
                         var target = new ClientRpcSendParams
@@ -145,11 +146,12 @@ namespace CosmicShore.Game
                             TargetClientIds = new[] { clientPair.ClientId }
                         };
                         
-                        clientPlayerVesselInitializer.InitializePlayerAndVessel_ClientRpc(clientId, new ClientRpcParams
+                        clientPlayerVesselInitializer.InitializeNewPlayerAndVesselInThisClient_ClientRpc(clientId, new ClientRpcParams
                         {
                             Send = target
                         });
                     }
+                    // This is the new client, and we have to initialize all the other client's vessel and player clones in this client.
                     else
                     {
                         var target = new ClientRpcSendParams
@@ -157,7 +159,7 @@ namespace CosmicShore.Game
                             TargetClientIds = new[] { clientId }
                         };
                         
-                        clientPlayerVesselInitializer.InitializeAllPlayersAndVessels_ClientRpc(new ClientRpcParams
+                        clientPlayerVesselInitializer.InitializeAllPlayersAndVesselsInThisNewClient_ClientRpc(new ClientRpcParams
                         {
                             Send = target
                         });
