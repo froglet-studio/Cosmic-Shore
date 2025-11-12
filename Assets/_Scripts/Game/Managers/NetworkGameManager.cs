@@ -14,7 +14,7 @@ namespace CosmicShore.Core
         [ServerRpc(RequireOwnership = false)]
         void RestartGame_ServerRpc()
         {
-            gameData.ResetDataForReplay();
+            gameData.ResetStatsDataForReplay();
             RestartGame_ClientRpc();
         }
 

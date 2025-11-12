@@ -10,7 +10,7 @@ namespace CosmicShore.Game.Arcade
         
         void Start()
         {
-            InitializeGame();
+            gameData.InitializeGame();
             SetupNewRound();
         }
         

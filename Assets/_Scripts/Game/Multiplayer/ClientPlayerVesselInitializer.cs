@@ -21,27 +21,27 @@ namespace CosmicShore.Game
         [SerializeField]
         protected GameDataSO gameData;
         
+        /// <summary>
+        /// // This is the new client, and we have to initialize all the other client's vessel and player clones in this client.
+        /// </summary>
         [ClientRpc]
-        internal void InitializeAllPlayersAndVessels_ClientRpc(ClientRpcParams clientRpcParams = default)
-        {
-            InitializeAllPlayersAndVessels();
-        }
-        
-        [ClientRpc]
-        internal void InitializePlayerAndVessel_ClientRpc(ulong clientId, ClientRpcParams clientRpcParams = default)
-        {
-            InitializePlayerAndVessel(clientId);
-        }
-        
-        [ClientRpc]
-        internal void InvokeClientReady_ClientRpc(ClientRpcParams clientRpcParams = default) => gameData.InvokeClientReady();
-
-        void InitializeAllPlayersAndVessels()
+        internal void InitializeAllPlayersAndVesselsInThisNewClient_ClientRpc(ClientRpcParams clientRpcParams = default)
         {
             foreach (var networkPlayer in Player.NppList.Cast<Player>())
             {
                 InitializePlayerAndVessel(networkPlayer.OwnerClientId);
             }
+            
+            DelayInvokeClientReady(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+        
+        /// <summary>
+        /// // A new client joined in this client, we need to initialize the new client's vessel and player clone only.
+        /// </summary>
+        [ClientRpc]
+        internal void InitializeNewPlayerAndVesselInThisClient_ClientRpc(ulong clientId, ClientRpcParams clientRpcParams = default)
+        {
+            InitializePlayerAndVessel(clientId);
         }
         
         void InitializePlayerAndVessel(ulong clientId)
@@ -52,14 +52,9 @@ namespace CosmicShore.Game
             networkShip.Initialize(networkPlayer, false);
             PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
             gameData.AddPlayer(networkPlayer);
-
-            if (!clientId.IsLocalClient())
-                return;
-            
-            DelayInvokeClientReady(clientId, this.GetCancellationTokenOnDestroy()).Forget();
         }
         
-        async UniTaskVoid DelayInvokeClientReady(ulong clientId, CancellationToken token)
+        async UniTaskVoid DelayInvokeClientReady(CancellationToken token)
         {
             await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, PlayerLoopTiming.LastPostLateUpdate ,token);
             if (token.IsCancellationRequested)

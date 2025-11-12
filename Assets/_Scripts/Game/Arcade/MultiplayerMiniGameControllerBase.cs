@@ -66,21 +66,17 @@ namespace CosmicShore.Game.Arcade
             try
             {
                 await UniTask.Delay(initDelayMs, DelayType.UnscaledDeltaTime);
-                InitializeGame();
+                InitializeGame_ClientRpc();
+                SetupNewRound();
             }
             catch (OperationCanceledException)
             {
                 // ignore
             }
         }
-        
-        [ClientRpc]
-        protected void SetupNewRound_ClientRpc()
-        {
-            gameData.InvokeMiniGameRoundStarted();
-        }
 
-        
+        [ClientRpc]
+        void InitializeGame_ClientRpc() => gameData.InitializeGame();
 
         protected override void EndTurn()
         {

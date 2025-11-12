@@ -26,9 +26,8 @@ namespace CosmicShore.SOAP
         public event Action OnLaunchGameScene;
         public event Action OnSessionStarted;
         public event Action OnInitializeGame;
-        public event Action OnClientReady;
         public ScriptableEventNoParam OnMiniGameRoundStarted;
-        [FormerlySerializedAs("OnMiniGmaeTurnStarted")] 
+        public event Action OnClientReady;
         public ScriptableEventNoParam OnMiniGameTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
         public ScriptableEventNoParam OnMiniGameRoundEnd;
@@ -71,12 +70,11 @@ namespace CosmicShore.SOAP
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
 
-        public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
         
         public void InitializeGame()
         {
             ResetRuntimeData();
-            OnInitializeGame?.Invoke();
+            InvokeInitializeGame();
         }
 
         public void SetupForMultiplayer()
@@ -101,14 +99,23 @@ namespace CosmicShore.SOAP
             InvokeTurnStarted();
         }
         
+        public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
         public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
-        public void InvokeClientReady() => OnClientReady?.Invoke();
+        public void InvokeInitializeGame() => OnInitializeGame?.Invoke();
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
+        public void InvokeClientReady() => OnClientReady?.Invoke();
         public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
         public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Raise();
         public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
+
+        public void ResetForReplay()
+        {
+            ResetRuntimeDataForReplay();
+            OnResetForReplay?.Raise();
+        }
+            
 
         public void ResetRuntimeData()
         {
@@ -119,7 +126,14 @@ namespace CosmicShore.SOAP
             TurnsTakenThisRound = 0;
         }
 
-        public void ResetDataForReplay()
+        void ResetRuntimeDataForReplay()
+        {
+            TurnStartTime = 0f;
+            RoundsPlayed = 0;
+            TurnsTakenThisRound = 0;
+        }
+
+        public void ResetStatsDataForReplay()
         {
             if (RoundStatsList == null || RoundStatsList.Count == 0)
             {
@@ -131,8 +145,6 @@ namespace CosmicShore.SOAP
             {
                 RoundStatsList[i].Cleanup();
             }
-            
-            TurnStartTime = 0f;
         }
         
         public void ResetAllData()
@@ -189,7 +201,13 @@ namespace CosmicShore.SOAP
                 player.StartPlayer();
         }
 
-        public void SetPlayersActive(string playerName)
+        public void SetNonOwnerPlayersActiveInNewClient()
+        {
+            foreach (var player in Players.Where(player => !player.IsNetworkOwner))
+                player.StartPlayer();
+        }
+
+        public void SetNewPlayerActive(string playerName)
         {
             foreach (var player in Players.Where(player => player.Name.Equals(playerName)))
                 player.StartPlayer();
@@ -367,69 +385,5 @@ namespace CosmicShore.SOAP
 
         float VolumeOf(Domains domain) =>
             FindByTeam(domain)?.VolumeRemaining ?? 0f;
-        
-        // TODO - Need to rewrite the following method.
-        /*
-        public bool TryAdvanceActivePlayer(out IPlayer activePlayer)
-        {
-            activePlayer = null;
-            if (RemainingPlayers.Count == 0)
-            {
-                Debug.LogError($"No remaining player found to set as active player!");
-                return false;
-            }
-
-            activePlayerId = 0; // (ActivePlayerId + 1) % RemainingPlayers.Count; 
-            localPlayer = Players[0]; // Players[RemainingPlayers[ActivePlayerId]];
-            Transform activePlayerOrigin =  PlayerOrigins[activePlayerId];
-            
-            localPlayer.Transform.SetPositionAndRotation(activePlayerOrigin.position, activePlayerOrigin.rotation);
-            localPlayer.InputController.InputStatus.Paused = true;
-            localPlayer.Vessel.Teleport(activePlayerOrigin);
-            localPlayer.Vessel.VesselStatus.VesselTransformer.ResetTransformer();
-            // LocalPlayer.Vessel.VesselStatus.TrailSpawner.PauseTrailSpawner();
-            localPlayer.Vessel.VesselStatus.ResourceSystem.Reset();
-            // LocalPlayer.Vessel.SetResourceLevels(ResourceCollection);
-
-            // CameraManager.Instance.SetupGamePlayCameras(LocalPlayer.Vessel.VesselStatus.CameraFollowTarget);
-            
-            foreach (var player in Players)
-            {
-                // Debug.Log($"PlayerUUID: {player.PlayerUUID}");
-                player.ToggleGameObject(player.PlayerUUID == localPlayer.PlayerUUID);
-            }
-            
-            activePlayer = localPlayer;
-            return true;
-        }
-
-        
-        public void PlayActivePlayer()
-        {
-            LocalPlayer.ToggleStationaryMode(false);
-            LocalPlayer.InputController.InputStatus.Paused = false;
-            // LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
-        }
-
-
-        public void SetupForNextTurn()
-        {
-            LocalPlayer.InputController.InputStatus.Paused = false;
-            LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
-            LocalPlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
-        }
-
-        public void EliminateActive()
-        {
-            RemainingPlayers.RemoveAt(ActivePlayerId);
-            ActivePlayerId--;
-
-            if (ActivePlayerId < 0 && RemainingPlayers.Count > 0)
-                ActivePlayerId = RemainingPlayers.Count - 1;
-
-            if (RemainingPlayers.Count > 0)
-                LocalPlayer = Players[RemainingPlayers[ActivePlayerId]];
-        }
-        */
     }
 }

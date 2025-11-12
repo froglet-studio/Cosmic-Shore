@@ -12,6 +12,20 @@ namespace CosmicShore.Game.Arcade
         {
             OnClickReturnToMainMenuAsync().Forget();
         }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            gameData.OnClientReady += OnClientReady;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            gameData.OnClientReady -= OnClientReady;
+        }
+        
+        void OnClientReady() => gameData.SetNonOwnerPlayersActiveInNewClient();
         
         async UniTaskVoid OnClickReturnToMainMenuAsync()
         {
@@ -34,7 +48,7 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc(FixedString128Bytes playerName)
         {
-            gameData.SetPlayersActive(playerName.ToString());
+            gameData.SetNewPlayerActive(playerName.ToString());
             gameData.StartTurn(); 
         }
 
@@ -59,6 +73,18 @@ namespace CosmicShore.Game.Arcade
             {
                 Debug.Log($"[Freestyle][Client] Removed player '{playerName}'.");
             }
+        }
+        
+        protected override void SetupNewRound()
+        {
+            SetupNewRound_ClientRpc();
+        }
+        
+        [ClientRpc]
+        void SetupNewRound_ClientRpc()
+        {
+            // RaiseToggleReadyButtonEvent(true);
+            base.SetupNewRound();
         }
     }
 }
