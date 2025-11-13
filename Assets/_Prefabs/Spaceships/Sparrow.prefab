@@ -1228,6 +1228,14 @@ MonoBehaviour:
   trailDisplayContainer: {fileID: 4625218033296401838}
   blockPrefab: {fileID: 0}
   config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
+  silhouetteRoot: {fileID: 0}
+  jawTop: {fileID: 0}
+  jawBottom: {fileID: 0}
+  jawMaxOffset: 40
+  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
+  jawTintTargets: []
+  energyResourceIndex: 0
 --- !u!114 &4780908095115307824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2287,6 +2295,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2285003040825308999}
     m_Modifications:
+    - target: {fileID: 65076338016416088, guid: f0a24806a0485254389f97d4c93f7615,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 65076338016416088, guid: f0a24806a0485254389f97d4c93f7615,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 65076338016416088, guid: f0a24806a0485254389f97d4c93f7615,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 220384674327949564, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
       propertyPath: m_AnchorMax.x
