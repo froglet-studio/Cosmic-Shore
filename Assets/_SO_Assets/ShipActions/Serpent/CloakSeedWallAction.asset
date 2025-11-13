@@ -14,11 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cooldownSeconds: 15
   seedWallSo: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162, type: 2}
-  prismCloakMaterial: {fileID: 2100000, guid: 35264d3f23e33d44ebdec6d9cade218a, type: 2}
   ghostShipMaterial: {fileID: 2100000, guid: 518e52d502934984ca138775b988fb4c, type: 2}
-  prismLocalCloakMaterial: {fileID: 2100000, guid: 35264d3f23e33d44ebdec6d9cade218a,
+  prismCloakTransparent: {fileID: 2100000, guid: 35264d3f23e33d44ebdec6d9cade218a,
     type: 2}
-  prismRemoteCloakMaterial: {fileID: 2100000, guid: 610cab53f1b111643950485dad94c3c8,
-    type: 2}
-  shipCloakMaterialOptional: {fileID: 0}
-  shipCloakAlphaFallback: 0
+  prismCloakOpaque: {fileID: 0}

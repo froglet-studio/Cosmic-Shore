@@ -7,32 +7,29 @@ namespace CosmicShore.Game
     public class CloakSeedWallActionSO : ShipActionSO
     {
         [Header("Cooldown")]
-        [Min(0.01f)] [SerializeField] private float cooldownSeconds = 20f;
+        [Min(0.01f)] 
+        [SerializeField] private float cooldownSeconds = 20f;
 
         [Header("Resources (consumed by SeedAssemblerActionExecutor.StartSeed)")]
         [SerializeField] private SeedWallActionSO seedWallSo;
         public SeedWallActionSO SeedWallSo => seedWallSo;
 
-        [Header("Prism Cloak")] [SerializeField]
-        private Material prismCloakMaterial;
-
         [Header("Ship Cloak (Owner Visual)")]
         [SerializeField] private Material ghostShipMaterial;
+        public Material GhostShipMaterial => ghostShipMaterial;
+        [Header("Prism Cloak (MaterialPropertyAnimator)")]
+        [SerializeField] private Material prismCloakTransparent; // 20% style
+        [SerializeField] private Material prismCloakOpaque;      // matching opaque look
 
-        [Header("Prism Cloak Materials")]
-        [SerializeField] private Material prismLocalCloakMaterial;
-        [SerializeField] private Material prismRemoteCloakMaterial; 
+        public Material PrismCloakTransparent => prismCloakTransparent;
+        public Material PrismCloakOpaque      => prismCloakOpaque;
 
-        [Header("Ship Cloak (Fallback for non-owners)")]
-        [SerializeField] private Material shipCloakMaterialOptional;
-        [Range(0f,1f)] [SerializeField] private float shipCloakAlphaFallback = 0.2f;
+
+        // NOTE:
+        // Prism cloak is now handled by MaterialPropertyAnimator on each Prism
+        // via Prism.SetTransparency(true/false). No prism cloak materials here.
 
         public float CooldownSeconds => cooldownSeconds;
-
-        public Material GhostShipMaterial => ghostShipMaterial;
-        public Material PrismLocalCloakMaterial => prismLocalCloakMaterial;
-        public Material PrismRemoteCloakMaterial => prismRemoteCloakMaterial;
-        public Material PrismCloakMaterialLegacy => prismCloakMaterial;
 
         public override void StartAction(ActionExecutorRegistry execs)
             => execs?.Get<CloakSeedWallActionExecutor>()?.Toggle(this, ShipStatus);

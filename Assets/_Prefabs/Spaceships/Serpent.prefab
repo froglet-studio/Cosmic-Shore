@@ -2354,7 +2354,7 @@ MonoBehaviour:
     resourceGainRate: 0.008
     maxAmount: 1
     initialAmount: 0.75
-  - Name: Fuel Pellets
+  - Name: Boost
     initialResourceGainRate: 0.4
     resourceGainRate: 0.07
     maxAmount: 1
@@ -2456,6 +2456,14 @@ MonoBehaviour:
   trailDisplayContainer: {fileID: 0}
   blockPrefab: {fileID: 0}
   config: {fileID: 0}
+  silhouetteRoot: {fileID: 0}
+  jawTop: {fileID: 0}
+  jawBottom: {fileID: 0}
+  jawMaxOffset: 40
+  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
+  jawTintTargets: []
+  energyResourceIndex: 0
 --- !u!114 &705402283976800655
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -87,7 +87,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _Add_sin: 0
-    - _Alpha: 0.1
+    - _Alpha: 0.01
     - _AlphaClip: 0
     - _AlphaToMask: 0
     - _Blend: 0
