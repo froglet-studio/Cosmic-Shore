@@ -37,7 +37,7 @@ namespace CosmicShore.Game.CameraSystem
         
         private void UpdateCamera()
         {
-            if (_followTarget == null) return;
+            if (!_followTarget) return;
 
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = _followTarget.position;
@@ -47,24 +47,16 @@ namespace CosmicShore.Game.CameraSystem
             float fwd = Vector3.Dot(shipDelta, _followTarget.forward);
             float lat = Vector3.Dot(shipDelta, _followTarget.right);
 
-            if (_disableRotationLerp)
+            if (_disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
             {
                 transform.position = desiredPos;
                 _velocity = Vector3.zero;
             }
             else
             {
-                if (Mathf.Abs(lat) > Mathf.Abs(fwd))
-                {
-                    transform.position = desiredPos;
-                    _velocity = Vector3.zero;
-                }
-                else
-                {
-                    transform.position = Vector3.SmoothDamp(
-                        transform.position, desiredPos, ref _velocity, _followSmoothTime
-                    );
-                }
+                transform.position = Vector3.SmoothDamp(
+                    transform.position, desiredPos, ref _velocity, _followSmoothTime
+                );
             }
 
             Quaternion targetRot = Quaternion.LookRotation(
@@ -88,7 +80,7 @@ namespace CosmicShore.Game.CameraSystem
         public void ApplySettings(CameraSettingsSO settings)
         {
             _currentSettings = settings;
-            if (_currentSettings == null) return;
+            if (!_currentSettings) return;
 
             var flags = _currentSettings.mode;
 
@@ -124,7 +116,7 @@ namespace CosmicShore.Game.CameraSystem
         public void Activate()
         {
             gameObject.SetActive(true);
-            if (_currentSettings == null) return;
+            if (!_currentSettings) return;
             
             Camera.nearClipPlane = _currentSettings.nearClipPlane;
             Camera.farClipPlane = _currentSettings.farClipPlane;
