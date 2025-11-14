@@ -13,8 +13,9 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 1
+  m_InvalidKeywords:
+  - _EMISSION
+  m_LightmapFlags: 3
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 2000
@@ -147,6 +148,7 @@ Material:
     - _Distance: 100000
     - _DrawOrder: 0
     - _DstBlend: 0
+    - _DstBlendAlpha: 0
     - _EMISSION_WEIGHT: 1
     - _EnvironmentReflections: 1
     - _ExplosionAmount: 0
@@ -172,6 +174,7 @@ Material:
     - _SpecularHighlights: 1
     - _SqrDistance: 100000
     - _SrcBlend: 1
+    - _SrcBlendAlpha: 1
     - _Surface: 0
     - _TRANSPARENCY: 0
     - _WorkflowMode: 1
@@ -213,4 +216,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 9
+  version: 10
