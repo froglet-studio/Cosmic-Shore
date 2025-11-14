@@ -25,7 +25,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 9
+  version: 10
 --- !u!21 &2100000
 Material:
   serializedVersion: 8
@@ -115,6 +115,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 1
+    - _AlphaToMask: 0
     - _BUILTIN_QueueControl: 0
     - _BUILTIN_QueueOffset: 0
     - _Blend: 0
@@ -128,6 +129,7 @@ Material:
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
+    - _DstBlendAlpha: 10
     - _Ease: 1
     - _EnvironmentReflections: 1
     - _Float: 0.099
@@ -150,6 +152,7 @@ Material:
     - _SpecularHighlights: 1
     - _Speed: 0.1
     - _SrcBlend: 5
+    - _SrcBlendAlpha: 1
     - _Start: 0.66
     - _Stop: 1
     - _Surface: 1
