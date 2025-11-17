@@ -1,6 +1,7 @@
 using CosmicShore.App.Systems;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.SOAP;
 using Obvious.Soap;
 
 /// <summary>
@@ -20,6 +21,9 @@ namespace CosmicShore.App.UI.Screens
         
         [SerializeField] 
         GameObject MiniGameHUD;
+        
+        [SerializeField]
+        GameDataSO gameData;
 
         GameSetting gameSetting;
 
@@ -38,6 +42,18 @@ namespace CosmicShore.App.UI.Screens
 
         public void OnClickReplayButton() => _onClickToRestartButton.Raise();
 
+        public void OnClickMultiplayerResumeGameButton()
+        {
+            MiniGameHUD.SetActive(true);
+            gameData.LocalPlayer.InputController.SetPause(false);
+        }
+
+        public void OnClickMultiplayerPauseButton()
+        {
+            MiniGameHUD.SetActive(false);
+            gameData.LocalPlayer.InputController.SetPause(true);
+        }
+        
         /// <summary>
         /// UnPauses the game 
         /// </summary>
