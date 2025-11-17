@@ -24,7 +24,7 @@ public class PlayFabProductGenerator : EditorWindow
     bool isProcessing;
 
     /* Uncomment here to add the tool to the menu when it is working
-    [MenuItem("FrogletTools/PlayFab Product Generator")]
+    [MenuItem(GameSetting.TopMenuName + "/PlayFab Product Generator")]
     public static void ShowWindow()
     {
         GetWindow<PlayFabProductGenerator>("PlayFab Product Generator");
