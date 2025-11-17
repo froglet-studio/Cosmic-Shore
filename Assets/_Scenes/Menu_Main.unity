@@ -17112,7 +17112,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -35, y: -45.000015}
+  m_AnchoredPosition: {x: -35, y: -45}
   m_SizeDelta: {x: -130, y: -89.99996}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &538005724
@@ -47091,7 +47091,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1446396970
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -70031,7 +70031,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2087570514
 RectTransform:
   m_ObjectHideFlags: 0
@@ -73261,7 +73261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53fdb8b87ea083742933aa41c292b9e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GameList: {fileID: 11400000, guid: 402ca7eefc2aeb64baaa140c43312bcd, type: 2}
+  GameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
   GameSelectionView: {fileID: 538005720}
   GameSelectionGrid: {fileID: 1529521931}
   ArcadeDPadNav: {fileID: 4125016653255471350}
@@ -78670,6 +78670,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 289688366, guid: 656cb297fa7eee642bf30a27718f0c59, type: 3}
+      propertyPath: forceOffline
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7573389150061318401, guid: 656cb297fa7eee642bf30a27718f0c59,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -91637,7 +91641,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: 187.00009}
+  m_AnchoredPosition: {x: -32, y: 235.14633}
   m_SizeDelta: {x: 64, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &5840560526580898137
