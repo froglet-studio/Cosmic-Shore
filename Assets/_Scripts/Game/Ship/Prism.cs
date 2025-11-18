@@ -287,7 +287,7 @@ namespace CosmicShore.Core
             // Stats tracking
             _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
-                PlayerName      = PlayerName,
+                PlayerName      = playerName,
                 Volume          = prismProperties.volume,
                 OtherPlayerName = prismProperties.prism.PlayerName,
             });
