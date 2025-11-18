@@ -200,50 +200,6 @@ namespace CosmicShore.Core
                 });
             }
         }
-        
-        private void CreateBlock()
-        {
-            meshRenderer.enabled = true;
-            blockCollider.enabled = true;
-
-            transform.localScale = TargetScale == Vector3.zero ? Vector3.one : TargetScale;
-            
-            /*if (scaleAnimator)
-            {
-                // Force it to target immediately
-                scaleAnimator.ForceSetScale(TargetScale);
-            }
-            else
-            {
-                // fallback if animator missing
-                transform.localScale = TargetScale == Vector3.zero ? Vector3.one : TargetScale;
-            }*/
-
-            // Update volume immediately
-            prismProperties.volume = scaleAnimator != null 
-                ? scaleAnimator.GetCurrentVolume() 
-                : Mathf.Max(TargetScale.x * TargetScale.y * TargetScale.z, 0.001f);
-
-            // Fire creation event
-            _onTrailBlockCreatedEventChannel.Raise(new PrismStats
-            {
-                PlayerName      = PlayerName,
-                Volume          = prismProperties.volume,
-                OtherPlayerName = prismProperties.prism.PlayerName,
-            });
-
-            // Add to cell system
-            if (CellControlManager.Instance)
-            {
-                CellControlManager.Instance.AddBlock(Domain, prismProperties);
-
-                Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
-                System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
-                {
-                    if (t != Domain) targetCell.countGrids[t].AddBlock(this);
-                });
-            }
-        }
 
         // Growth Methods
         public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
@@ -393,8 +349,8 @@ namespace CosmicShore.Core
         public void MakeDangerous() => stateManager?.MakeDangerous();
         public void DeactivateShields() => stateManager?.DeactivateShields();
         public void ActivateShield() => stateManager?.ActivateShield();
-        public void ActivateSuperShield() => stateManager?.ActivateSuperShield();
         public void ActivateShield(float duration) => stateManager?.ActivateShield(duration);
+        public void ActivateSuperShield() => stateManager?.ActivateSuperShield();
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 
         // Team Management Methods
