@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6349275177958244260}
   - component: {fileID: 2148634898793878778}
   - component: {fileID: 2007011057286385746}
-  m_Layer: 0
+  m_Layer: 18
   m_Name: ClearPrisms
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba5446a35daa6134e9ac74f6afbaa82b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Ship: {fileID: 0}
+  _shipMono: {fileID: 0}
   scaleCurve:
     serializedVersion: 2
     m_Curve:
