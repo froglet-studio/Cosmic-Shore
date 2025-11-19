@@ -58,7 +58,7 @@ namespace CosmicShore.SOAP
         public Dictionary<int, CellStats> CellStatsList = new();
         public HashSet<Transform> SlowedShipTransforms = new();
         public float TurnStartTime;
-        public bool IsRunning { get; private set; }
+        public bool IsTurnRunning { get; private set; }
         public Pose[] SpawnPoses { get; private set; }
         List<Pose> _playerSpawnPoseList = new ();
         public IPlayer LocalPlayer { get; private set; }
@@ -93,7 +93,7 @@ namespace CosmicShore.SOAP
 
         public void StartTurn()
         {
-            IsRunning = true;
+            IsTurnRunning = true;
             TurnStartTime = Time.time;
 
             InvokeTurnStarted();
@@ -105,7 +105,12 @@ namespace CosmicShore.SOAP
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
         public void InvokeClientReady() => OnClientReady?.Invoke();
         public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
-        public void InvokeGameTurnConditionsMet() => OnMiniGameTurnEnd?.Raise();
+
+        public void InvokeGameTurnConditionsMet()
+        {
+            IsTurnRunning = false;
+            OnMiniGameTurnEnd?.Raise();   
+        }
         public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
