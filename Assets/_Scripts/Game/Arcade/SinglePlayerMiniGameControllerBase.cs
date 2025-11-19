@@ -11,6 +11,7 @@ namespace CosmicShore.Game.Arcade
         void Start()
         {
             gameData.InitializeGame();
+            gameData.InvokeClientReady();
             SetupNewRound();
         }
         
