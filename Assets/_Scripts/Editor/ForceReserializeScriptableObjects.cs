@@ -4,7 +4,7 @@ using System.IO;
 
 public class ForceReserializeScriptableObjects
 {
-    [MenuItem(GameSetting.TopMenuName + "/Force Re-Serialize All ScriptableObjects")]
+    [MenuItem("FrogletTools/Force Re-Serialize All ScriptableObjects")]
     public static void ReserializeAllScriptableObjects()
     {
         // Find all ScriptableObject asset GUIDs in the project

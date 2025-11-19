@@ -8,7 +8,7 @@ public class ElementalFloatEditor : EditorWindow
     static List<(GameObject, Component, FieldInfo, SerializedObject, SerializedProperty)> results = new List<(GameObject, Component, FieldInfo, SerializedObject, SerializedProperty)>();
     Vector2 scrollPosition;
 
-    [MenuItem(GameSetting.TopMenuName + "/ElementalFloat Editor")]
+    [MenuItem("FrogletTools/ElementalFloat Editor")]
     public static void ShowWindow()
     {
         GetWindow<ElementalFloatEditor>("ElementalFloat Editor");

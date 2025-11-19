@@ -6,10 +6,6 @@ namespace CosmicShore.Core
 {
     public class GameSetting : SingletonPersistent<GameSetting>
     {
-        /// <summary>
-        /// The name of the top parent item in the Unity menu bar for Froglet-specific menu items.
-        /// </summary>
-        public const string TopMenuName = "Froglet Tools";
         public delegate void OnChangeMusicEnabledStatusEvent(bool status);
         public static event OnChangeMusicEnabledStatusEvent OnChangeMusicEnabledStatus;
 

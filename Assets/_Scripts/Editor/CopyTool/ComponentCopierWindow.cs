@@ -14,7 +14,7 @@ public class ComponentCopierWindow : EditorWindow
     private List<Component> componentList = new List<Component>();
     private List<bool> selectedFlags = new List<bool>();
 
-    [MenuItem(GameSetting.TopMenuName + "/Component Copier")]
+    [MenuItem("FrogletTools/Component Copier")]
     public static void ShowWindow()
     {
         GetWindow<ComponentCopierWindow>("Component Copier");
