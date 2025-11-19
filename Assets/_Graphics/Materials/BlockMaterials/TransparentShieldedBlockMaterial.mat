@@ -7,19 +7,20 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: GoldDangerBlockMaterial
+  m_Name: TransparentShieldedBlockMaterial
   m_Shader: {fileID: -6465566751694194690, guid: bf8c159f627e64b439094797bff88611,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2000
+  m_CustomRenderQueue: 3000
   stringTagMap:
-    RenderType: Opaque
+    RenderType: Transparent
   disabledShaderPasses:
   - SHADOWCASTER
   - MOTIONVECTORS
@@ -86,8 +87,9 @@ Material:
     m_Ints: []
     m_Floats:
     - _Add_sin: 0
-    - _Alpha: 0
+    - _Alpha: 1
     - _AlphaClip: 0
+    - _AlphaToMask: 0
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
@@ -98,7 +100,8 @@ Material:
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _Distance: 100000
-    - _DstBlend: 0
+    - _DstBlend: 10
+    - _DstBlendAlpha: 10
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
@@ -113,8 +116,10 @@ Material:
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _SrcBlend: 1
-    - _Surface: 0
+    - _SqrDistance: 100000
+    - _SrcBlend: 5
+    - _SrcBlendAlpha: 1
+    - _Surface: 1
     - _WorkflowMode: 1
     - _ZTest: 4
     - _ZWrite: 1
@@ -136,12 +141,12 @@ Material:
     - _seedy: 0.1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 1.4980392, g: 0.015686275, b: 0, a: 1}
+    - _BrightColor: {r: 0, g: 0.42352942, b: 1.4980392, a: 1}
     - _Color: {r: 0, g: 0.7754338, b: 0.54808146, a: 1}
-    - _DarkColor: {r: 0.16831183, g: 0.08049697, b: 0.010976859, a: 1}
+    - _DarkColor: {r: 0.0060816035, g: 0.13338894, b: 0.38679248, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Spread: {r: 1.5, g: 1.5, b: 1.5, a: 0}
+    - _Spread: {r: 0.5, g: 0.5, b: 0.5, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _spread: {r: 1, g: 1, b: 1, a: 0}
     - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}

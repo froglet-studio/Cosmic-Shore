@@ -26,6 +26,8 @@ namespace CosmicShore.Game.UI
 
         public void UpdateConnectingPanel(bool active)
         {
+            if (connectingPanel == null) return;
+
             connectingPanel.alpha = active ? 1 : 0;
             connectingPanel.interactable = active;
             connectingPanel.blocksRaycasts = active;

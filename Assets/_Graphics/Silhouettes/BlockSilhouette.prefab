@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2690912152348362284}
   - component: {fileID: 3279707729678363435}
   m_Layer: 5
-  m_Name: GreenBlockSilhouette
+  m_Name: BlockSilhouette
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
