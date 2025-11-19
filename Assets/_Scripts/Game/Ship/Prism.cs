@@ -44,7 +44,8 @@ namespace CosmicShore.Core
         
         [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
         
-        [FormerlySerializedAs("_onFlockSpawnedEventChannel")] [SerializeField] PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
+        [FormerlySerializedAs("_onFlockSpawnedEventChannel")] 
+        [SerializeField] PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
         
         public Action<Prism> OnReturnToPool;
 
@@ -196,7 +197,8 @@ namespace CosmicShore.Core
                 Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
                 System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
                 {
-                    if (t != Domain) targetCell.countGrids[t].AddBlock(this);
+                    if (t != Domain && targetCell != null)
+                        targetCell.countGrids[t].AddBlock(this);
                 });
             }
         }
