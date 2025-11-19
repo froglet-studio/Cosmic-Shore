@@ -1,6 +1,6 @@
-using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using UnityEngine;
 
 namespace CosmicShore
 {
@@ -51,9 +51,6 @@ namespace CosmicShore
 
         private void VesselInitialized()
         {
-            if (!Vessel.IsNetworkOwner && Vessel.VesselStatus.IsInitializedAsAI) 
-                return;
-            
             cameraManager = CameraManager.Instance;
             mainCamera = cameraManager.GetCloseCamera();
             if (mainCamera == null)
@@ -98,27 +95,21 @@ namespace CosmicShore
         {
             Prism prism = other.GetComponent<Prism>();
             if (prism != null)
-            {
                 prism.SetTransparency(true);
-            }
         }
 
         private void OnTriggerStay(Collider other)
         {
             Renderer renderer = other.GetComponent<Renderer>();
             if (renderer != null)
-            {
                 renderer.material.SetFloat("_Alpha", scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData)/ capsuleRadius));
-            }
         }
 
         void OnTriggerExit(Collider other)
         {
             Prism prism = other.GetComponent<Prism>();
             if (prism != null)
-            {
                 prism.SetTransparency(false);
-            }
         }
     }
 }

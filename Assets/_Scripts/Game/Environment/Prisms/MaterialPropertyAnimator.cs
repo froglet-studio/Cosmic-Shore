@@ -1,6 +1,5 @@
 using UnityEngine;
 using System;
-using Unity.Mathematics;
 
 namespace CosmicShore.Core
 {
@@ -116,9 +115,12 @@ namespace CosmicShore.Core
                 activeOpaqueMaterial = _themeManagerData.GetTeamBlockMaterial(team);
                 activeTransparentMaterial = _themeManagerData.GetTeamTransparentBlockMaterial(team);
                 
-                if (activeOpaqueMaterial != null && MeshRenderer != null)
+                if (activeOpaqueMaterial != null && activeTransparentMaterial != null && MeshRenderer != null)
                 {
-                    MeshRenderer.material = activeOpaqueMaterial;
+                    if (cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent)
+                        MeshRenderer.material = activeTransparentMaterial;
+                    else
+                        MeshRenderer.material = activeOpaqueMaterial;
                 }
                 
                 materialsDirty = false;
@@ -179,16 +181,16 @@ namespace CosmicShore.Core
                         transparentMaterial : opaqueMaterial;
                 }
 
-                //cachedTrailBlock.BlockCollider.size = Vector3.one + VectorDivision(TargetSpread, cachedTrailBlock.TargetScale);
                 onComplete?.Invoke();
             };
         }
 
         public void SetTransparency(bool transparent)
         {
-            if (!IsAnimating && MeshRenderer != null && ValidateMaterials())
+            if (MeshRenderer != null && ValidateMaterials())
             {
                 MeshRenderer.material = transparent ? activeTransparentMaterial : activeOpaqueMaterial;
+                cachedPrism.prismProperties.IsTransparent = transparent;
             }
         }
 
@@ -205,11 +207,6 @@ namespace CosmicShore.Core
                 isRegistered = false;
             }
             OnAnimationComplete = null;
-        }
-
-        Vector3 VectorDivision(Vector3 Vector1, Vector3 Vector2) // TODO: move to tools
-        {
-            return new Vector3(Vector1.x / Vector2.x, Vector1.y / Vector2.y, Vector1.z / Vector2.z);
         }
     }
 }

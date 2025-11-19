@@ -7,24 +7,22 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ExplodingRedBlockMateral
+  m_Name: MazeDangerBlockMateral
   m_Shader: {fileID: -6465566751694194690, guid: de59ec1f616f51044a23e6c1368d6660,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _SURFACE_TYPE_TRANSPARENT
+  m_ValidKeywords: []
   m_InvalidKeywords:
   - _EMISSION
   m_LightmapFlags: 3
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: 2000
   stringTagMap:
-    RenderType: Transparent
+    RenderType: Opaque
   disabledShaderPasses:
   - SHADOWCASTER
-  - DepthOnly
   - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
@@ -129,6 +127,7 @@ Material:
     m_Ints: []
     m_Floats:
     - Normal_Blend: 0.5
+    - _Alpha: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
     - _BASE_COLOR_WEIGHT: 1
@@ -146,14 +145,15 @@ Material:
     - _DecalMeshViewBias: 0
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
+    - _Distance: 100000
     - _DrawOrder: 0
-    - _DstBlend: 10
-    - _DstBlendAlpha: 10
+    - _DstBlend: 0
+    - _DstBlendAlpha: 0
     - _EMISSION_WEIGHT: 1
     - _EnvironmentReflections: 1
     - _ExplosionAmount: 0
-    - _ExplosiveRotation: 0.13
-    - _ExplosiveSpead: 0.13
+    - _ExplosiveRotation: 0.1
+    - _ExplosiveSpead: 0.1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
@@ -162,6 +162,7 @@ Material:
     - _OcclusionStrength: 1
     - _Opacity: 0
     - _Parallax: 0.005
+    - _Proximity: 0
     - _QueueControl: 0
     - _QueueOffset: 0
     - _REFLECTIONS_IOR: 1.52
@@ -172,19 +173,16 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SqrDistance: 100000
-    - _SrcBlend: 5
+    - _SrcBlend: 1
     - _SrcBlendAlpha: 1
-    - _Surface: 1
+    - _Surface: 0
     - _TRANSPARENCY: 0
     - _WorkflowMode: 1
     - _ZTest: 4
-    - _ZWrite: 0
+    - _ZWrite: 1
     - _ZWriteControl: 0
     - _distance: 0
-    - _fadeShellThickness: 0
-    - _gradientThickness: 0.5
-    - _innerFadeOutRadius: 0
-    - _opacity: 1
+    - _opacity: 0
     - _playerBlock: 0
     - _playerHit: 0
     - _red: 1
@@ -193,18 +191,16 @@ Material:
     m_Colors:
     - _BASE_COLOR: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 0.7299098, g: 0, b: 0.8773585, a: 0}
+    - _BrightColor: {r: 0.8, g: 0.09093656, b: 0, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color1: {r: 0, g: 0.7764706, b: 0.5490196, a: 0}
-    - _Color2: {r: 0, g: 0.02352941, b: 0.05490196, a: 0}
-    - _DarkColor: {r: 0.4984641, g: 0, b: 0.5849056, a: 0}
+    - _DarkColor: {r: 0.03773582, g: 0.0029027553, b: 0, a: 1}
     - _EMISSION_COLOR: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _REFLECTIONS_COLOR: {r: 1, g: 1, b: 1, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Spread: {r: 0, g: 0, b: 0, a: 0}
+    - _Spread: {r: 0.2, g: 0.2, b: 0.2, a: 0}
     - _Velocity: {r: 0.01, g: 0, b: 0, a: 0}
-    - _spread: {r: 0, g: 0, b: 0, a: 0}
+    - _spread: {r: 0.2, g: 0.2, b: 0.2, a: 0}
     - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

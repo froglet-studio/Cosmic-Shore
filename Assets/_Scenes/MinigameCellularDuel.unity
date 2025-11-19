@@ -248,6 +248,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 616803186437646230, guid: cd99a5607934ac64c83b6e596de708c7,
+        type: 3}
+      propertyPath: m_text
+      value: '-'
+      objectReference: {fileID: 0}
     - target: {fileID: 864245278538590096, guid: cd99a5607934ac64c83b6e596de708c7,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -397,6 +402,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1446472563125235451, guid: cd99a5607934ac64c83b6e596de708c7,
+        type: 3}
+      propertyPath: m_text
+      value: '-'
       objectReference: {fileID: 0}
     - target: {fileID: 1555127838274786783, guid: cd99a5607934ac64c83b6e596de708c7,
         type: 3}
@@ -608,6 +618,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2958828751624489446, guid: cd99a5607934ac64c83b6e596de708c7,
+        type: 3}
+      propertyPath: m_text
+      value: '-'
+      objectReference: {fileID: 0}
     - target: {fileID: 4244085074250138405, guid: cd99a5607934ac64c83b6e596de708c7,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -637,6 +652,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4264490567394954231, guid: cd99a5607934ac64c83b6e596de708c7,
+        type: 3}
+      propertyPath: m_text
+      value: '-'
       objectReference: {fileID: 0}
     - target: {fileID: 4794595961192801083, guid: cd99a5607934ac64c83b6e596de708c7,
         type: 3}
@@ -738,6 +758,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5267432680021089429, guid: cd99a5607934ac64c83b6e596de708c7,
+        type: 3}
+      propertyPath: m_text
+      value: '-'
+      objectReference: {fileID: 0}
     - target: {fileID: 5383949741013430163, guid: cd99a5607934ac64c83b6e596de708c7,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -797,6 +822,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6573270409329647236, guid: cd99a5607934ac64c83b6e596de708c7,
+        type: 3}
+      propertyPath: m_text
+      value: '-'
       objectReference: {fileID: 0}
     - target: {fileID: 7017267004218297637, guid: cd99a5607934ac64c83b6e596de708c7,
         type: 3}
@@ -863,6 +893,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Duel Cell Stats Panel
       objectReference: {fileID: 0}
+    - target: {fileID: 7537093062926496485, guid: cd99a5607934ac64c83b6e596de708c7,
+        type: 3}
+      propertyPath: m_text
+      value: '-'
+      objectReference: {fileID: 0}
     - target: {fileID: 7670300286992558322, guid: cd99a5607934ac64c83b6e596de708c7,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1042,6 +1077,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8359971933144955784, guid: cd99a5607934ac64c83b6e596de708c7,
+        type: 3}
+      propertyPath: m_text
+      value: '-'
       objectReference: {fileID: 0}
     - target: {fileID: 8487909386783070688, guid: cd99a5607934ac64c83b6e596de708c7,
         type: 3}
