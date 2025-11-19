@@ -43,7 +43,7 @@ namespace CosmicShore.Game.UI
             // Wait a small moment to ensure MiniGameData is initialized
             await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
 
-            if (gameData.IsRunning)
+            if (gameData.IsTurnRunning)
             {
                 // Request the current state from server
                 RequestSyncFromServer_ServerRpc();

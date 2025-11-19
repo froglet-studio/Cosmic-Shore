@@ -2,6 +2,7 @@ using CosmicShore.Game.Arcade;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game.UI
@@ -19,19 +20,26 @@ namespace CosmicShore.Game.UI
         [SerializeField] private GameObject silhouette;
         [SerializeField] private GameObject trailDisplay;
         [SerializeField] private ButtonPanel buttonPanel;
-        [SerializeField] private CanvasGroup connectingPanel;
+        [SerializeField] private CanvasGroup connectingPanelCanvasGroup; 
+        [SerializeField] private CanvasGroup canvasGroup;
         
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
 
-        public void UpdateConnectingPanel(bool active)
+        public void ToggleView(bool active)
         {
-            if (connectingPanel == null) return;
-
-            connectingPanel.alpha = active ? 1 : 0;
-            connectingPanel.interactable = active;
-            connectingPanel.blocksRaycasts = active;
+            canvasGroup.alpha = active ? 1 : 0;
+            canvasGroup.interactable = active;
+            canvasGroup.blocksRaycasts = active;
         }
+
+        public void ToggleConnectingPanel(bool active)
+        {
+            connectingPanelCanvasGroup.alpha = active ? 1 : 0;
+            connectingPanelCanvasGroup.interactable = active;
+            connectingPanelCanvasGroup.blocksRaycasts = active;
+        }
+        
         public TMP_Text LeftNumberDisplay => leftNumberDisplay;
         public TMP_Text RightNumberDisplay => rightNumberDisplay;
         public Button ReadyButton => readyButton;
