@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.SOAP;
+using CosmicShore.Utility.ClassExtensions;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
@@ -59,7 +60,20 @@ namespace CosmicShore.Game
             return true;
         }
         
-        protected abstract void Spawn(Vector3 spawnPos);
+        protected void Spawn(Vector3 spawnPos)
+        {
+            if (cellData.Crystal)
+            {
+                DebugExtensions.LogErrorColored("Already have a crystal, should not happen!", Color.magenta);
+                return;
+            }
+            
+            var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
+            crystal.InjectDependencies(this);
+            cellData.Crystal = crystal;
+            TryInitializeAndAdd(crystal);
+            cellData.OnCrystalSpawned.Raise();
+        }
 
         protected Vector3 CalculateSpawnPos() => 
             scaleCrystalPositionWithIntensity ? cellData.CellTransform.position * intensityLevelData : Vector3.forward * 30; // 30 unit forward if none
