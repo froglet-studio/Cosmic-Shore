@@ -1102,7 +1102,7 @@ MonoBehaviour:
   maxBlockScale: 4
   waitTillOutsideSkimmer: 1
   shielded: 0
-  offset: 5
+  offset: 4
   Gap: 0
   MinimumGap: 0
   TargetScale: {x: 0, y: 0, z: 0}

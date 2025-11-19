@@ -16,22 +16,20 @@ namespace CosmicShore.Game
 
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
-            if (vesselImpactor?.Vessel == null) return;
+            var vesselStatus = vesselImpactor?.Vessel?.VesselStatus;
+            if (vesselStatus == null || vesselStatus.IsTranslationRestricted) return;
 
-            IVesselStatus vesselStatus = vesselImpactor.Vessel.VesselStatus;
-            if (vesselStatus == null || vesselStatus.IsStationary) return;
-
-            Transform shipTransform = vesselStatus.ShipTransform;
+            var shipTransform = vesselStatus.ShipTransform;
             if (shipTransform == null) return;
 
-            Transform prismTf = prismImpactee.Prism.prismProperties.prism.transform;
+            var prismTf = prismImpactee.Prism.prismProperties.prism.transform;
             var cross   = Vector3.Cross(shipTransform.forward, prismTf.forward);
             var normal  = Quaternion.AngleAxis(15f, cross) * prismTf.forward;
             
             var reflectRight = Vector3.Reflect(shipTransform.right, normal).normalized;
             var reflectUp    = Vector3.Reflect(shipTransform.up,    normal).normalized;
 
-            Vector3 lateralDir = reflectRight;
+            var lateralDir = reflectRight;
             if (randomizeLeftRight && Random.value < 0.5f)
                 lateralDir = -lateralDir;
 
