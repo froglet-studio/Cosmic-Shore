@@ -106,7 +106,7 @@ namespace CosmicShore.Core
 
         private void Awake()
         {
-            gameObject.layer = LayerMask.NameToLayer(layerName);
+            //gameObject.layer = LayerMask.NameToLayer(layerName);
 
             // Cache component references
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
