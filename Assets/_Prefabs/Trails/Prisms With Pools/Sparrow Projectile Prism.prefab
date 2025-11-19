@@ -273,6 +273,7 @@ MonoBehaviour:
     IsDangerous: 0
     IsTransparent: 0
     TimeCreated: 0
+    DefaultLayerName: 
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
@@ -282,6 +283,7 @@ MonoBehaviour:
   devastated: 0
   IsSmallest: 0
   IsLargest: 0
+  IsProjectile: 1
   ownerID: 
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
