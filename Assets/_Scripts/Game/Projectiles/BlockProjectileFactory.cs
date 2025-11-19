@@ -48,16 +48,16 @@ namespace CosmicShore.Game.Projectiles
 
         public void ReturnBlock(Prism prism)
         {
-            if (prism == null) return;
-
-            // if (!_pools.TryGetValue(prism.PrismType, out var pool))
+            // if (prism == null) return;
+            //
+            // if (!_pools.TryGetValue(prism., out var pool))
             // {
-            //     Debug.LogWarning($"No pool registered for {prism.PrismType}; destroying instead.");
-            //     Destroy(prism.gameObject);
+            //     Debug.LogWarning($"No pool registered for {prism.PrismType}; disabling instead.");
+            //     prism.gameObject.SetActive(false);
             //     return;
             // }
 
-            // pool.Release(prism);
+            //pool.Release(prism);
         }
     }
 }
