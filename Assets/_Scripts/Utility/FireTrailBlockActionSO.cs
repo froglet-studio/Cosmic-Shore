@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "FireTrailBlockAction", menuName = "ScriptableObjects/Vessel Actions/Fire Trail Block")]
 public class FireTrailBlockActionSO : ShipActionSO
@@ -22,9 +23,9 @@ public class FireTrailBlockActionSO : ShipActionSO
     public bool Shielded => shielded;
     public bool FriendlyFire => friendlyFire;
 
-    public override void StartAction(ActionExecutorRegistry execs)
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus status)
         => execs?.Get<FireTrailBlockActionExecutor>()?.Begin(this);
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus status)
         => execs?.Get<FireTrailBlockActionExecutor>()?.End();
 }

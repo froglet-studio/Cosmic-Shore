@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "FireGunAction", menuName = "ScriptableObjects/Vessel Actions/Fire Gun")]
 public class FireGunActionSO : ShipActionSO
@@ -18,10 +19,10 @@ public class FireGunActionSO : ShipActionSO
     public float Speed => speed;
     public ElementalFloat ProjectileTime => projectileTime;
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<FireGunActionExecutor>()?.Fire(this, ShipStatus);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<FireGunActionExecutor>()?.Fire(this, vesselStatus);
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
     }
 }

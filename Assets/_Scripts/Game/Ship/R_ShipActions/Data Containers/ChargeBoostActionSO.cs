@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "ChargeBoostAction", menuName = "CosmicShore/Actions/Charge Boost")]
 public class ChargeBoostActionSO : ShipActionSO
@@ -32,9 +33,9 @@ public class ChargeBoostActionSO : ShipActionSO
     public float RechargeCooldownSeconds=> rechargeCooldownSeconds;
     public bool Verbose                 => verbose;
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<ChargeBoostActionExecutor>()?.BeginCharge(this, ShipStatus);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<ChargeBoostActionExecutor>()?.BeginCharge(this, vesselStatus);
 
-    public override void StopAction(ActionExecutorRegistry execs)
-        => execs?.Get<ChargeBoostActionExecutor>()?.BeginDischarge(this, ShipStatus);
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<ChargeBoostActionExecutor>()?.BeginDischarge(this, vesselStatus);
 }

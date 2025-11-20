@@ -45,9 +45,9 @@ public class YawsteryActionSO : ShipActionSO
     public string AnimStart => animatorParamTriggerStart;
     public string AnimEnd => animatorParamTriggerEnd;
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<YawsteryActionExecutor>()?.Begin(this, ShipStatus);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<YawsteryActionExecutor>()?.Begin(this, vesselStatus);
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<YawsteryActionExecutor>()?.End();
 }

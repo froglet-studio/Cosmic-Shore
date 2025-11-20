@@ -36,14 +36,14 @@ public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
         vesselPrismController = _status.VesselPrismController;
     }
 
-    public void Begin(DriftTrailActionSO so, IVessel ship, IVesselStatus status)
+    public void Begin(DriftTrailActionSO so, IVesselStatus status)
     {
         if (_cts != null) return;
         _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
         UpdateDotProductLoopAsync(_cts.Token).Forget();
     }
 
-    public void End(DriftTrailActionSO so, IVessel ship, IVesselStatus status) => EndInternal();
+    public void End(DriftTrailActionSO so, IVesselStatus status) => EndInternal();
 
     void EndInternal()
     {

@@ -31,10 +31,10 @@ public class OverheatingActionSO : ShipActionSO
         wrappedAction?.Initialize(ship);
     }
     
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<OverheatingActionExecutor>()?.StartOverheat(this, ShipStatus, execs);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<OverheatingActionExecutor>()?.StartOverheat(this, vesselStatus, execs);
 
-    public override void StopAction(ActionExecutorRegistry execs)
-        => execs?.Get<OverheatingActionExecutor>()?.StopOverheat(this, ShipStatus, execs);
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<OverheatingActionExecutor>()?.StopOverheat(this, vesselStatus, execs);
 
 }

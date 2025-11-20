@@ -1,5 +1,6 @@
 ﻿using CosmicShore;
 using CosmicShore.Core;
+using CosmicShore.Game;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "SeedWallAction", menuName = "ScriptableObjects/Vessel Actions/Seed Wall")]
@@ -38,9 +39,9 @@ public class SeedWallActionSO : ShipActionSO
         return res.MaxAmount / denom;
     }
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<SeedAssemblerActionExecutor>()?.StartSeed(this, ShipStatus);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<SeedAssemblerActionExecutor>()?.StartSeed(this, vesselStatus);
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<SeedAssemblerActionExecutor>()?.StopSeedCompletely();
 }

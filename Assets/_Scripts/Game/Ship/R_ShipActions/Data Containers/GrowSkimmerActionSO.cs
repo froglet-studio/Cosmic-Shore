@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "GrowSkimmerAction", menuName = "ScriptableObjects/Vessel Actions/Grow Skimmer")]
 public class GrowSkimmerActionSO : ShipActionSO
@@ -18,9 +19,9 @@ public class GrowSkimmerActionSO : ShipActionSO
     public bool ApplyBoostWhileGrowing => applyBoostWhileGrowing;
     public float BoostMultiplier => boostMultiplier.Value;
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<GrowSkimmerActionExecutor>()?.Begin(this, ShipStatus);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<GrowSkimmerActionExecutor>()?.Begin(this, vesselStatus);
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<GrowSkimmerActionExecutor>()?.End();
 }

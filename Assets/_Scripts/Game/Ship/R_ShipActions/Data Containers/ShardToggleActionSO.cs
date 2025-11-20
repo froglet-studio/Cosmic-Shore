@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "ShardToggleAction", menuName = "ScriptableObjects/Vessel Actions/Shard Toggle")]
@@ -12,8 +13,8 @@ public class ShardToggleActionSO : ShipActionSO
     public Domains Domain => domain;
     public float SearchRadiusHint => searchRadiusHint;
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<ShardToggleActionExecutor>()?.Toggle(this, Ship, ShipStatus);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<ShardToggleActionExecutor>()?.Toggle(this, vesselStatus);
 
-    public override void StopAction(ActionExecutorRegistry execs) { /* no-op */ }
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus) { /* no-op */ }
 }

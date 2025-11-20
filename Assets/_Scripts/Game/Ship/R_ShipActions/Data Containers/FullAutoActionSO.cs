@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.Projectiles;
+﻿using CosmicShore.Game;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
 [CreateAssetMenu(fileName="FullAutoAction", menuName="ScriptableObjects/Vessel Actions/Full Auto")]
@@ -25,9 +26,9 @@ public class FullAutoActionSO : ShipActionSO
     public int Energy => energy;
     public ElementalFloat SpeedValue => speedValue;
 
-    public override void StartAction(ActionExecutorRegistry execs)
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<FullAutoActionExecutor>()?.Begin(this);
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<FullAutoActionExecutor>()?.End();
 }
