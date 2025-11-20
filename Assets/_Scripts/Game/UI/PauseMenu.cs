@@ -1,4 +1,3 @@
-using System;
 using CosmicShore.App.Systems;
 using UnityEngine;
 using CosmicShore.Core;
@@ -31,8 +30,6 @@ namespace CosmicShore.App.UI.Screens
         CanvasGroup canvasGroup;
 
         GameSetting gameSetting;
-
-        private void Awake() => Hide();
 
         // Start is called before the first frame update
         void Start() => gameSetting = GameSetting.Instance;
