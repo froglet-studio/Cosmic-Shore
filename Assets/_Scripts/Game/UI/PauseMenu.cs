@@ -31,6 +31,8 @@ namespace CosmicShore.App.UI.Screens
 
         GameSetting gameSetting;
 
+        void Awake() => Hide();
+        
         // Start is called before the first frame update
         void Start() => gameSetting = GameSetting.Instance;
 
