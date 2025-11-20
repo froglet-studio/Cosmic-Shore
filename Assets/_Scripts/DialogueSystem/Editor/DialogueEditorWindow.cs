@@ -35,7 +35,7 @@ namespace CosmicShore.DialogueSystem.Editor
         // Your DialogueSet folder path (update as needed)
         private static readonly string DialogueSetFolder = "Assets/_Scripts/DialogueSystem/SO";
 
-        [MenuItem("FrogletTools/Dialogue Editor")]
+        [MenuItem(GameSetting.TopMenuName + "/Dialogue Editor")]
         public static void Open()
         {
             GetWindow<DialogueEditorWindow>("Dialogue Editor");
