@@ -4,19 +4,19 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "DriftSO", menuName = "ScriptableObjects/Vessel Actions/Drift")]
 public class DriftSO : ShipActionSO
 {
-    public override void StartAction(ActionExecutorRegistry execs)
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        ShipStatus.VesselTransformer.PitchScaler *= 1.5f;
-        ShipStatus.VesselTransformer.YawScaler *= 1.5f;
-        ShipStatus.VesselTransformer.RollScaler *= 1.5f;
-        ShipStatus.Drifting = true;
+        vesselStatus.VesselTransformer.PitchScaler *= 1.5f;
+        vesselStatus.VesselTransformer.YawScaler *= 1.5f;
+        vesselStatus.VesselTransformer.RollScaler *= 1.5f;
+        vesselStatus.Drifting = true;
     }
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        ShipStatus.VesselTransformer.PitchScaler /= 1.5f;
-        ShipStatus.VesselTransformer.YawScaler /= 1.5f;
-        ShipStatus.VesselTransformer.RollScaler /= 1.5f;
-        ShipStatus.Drifting = false;
+        vesselStatus.VesselTransformer.PitchScaler /= 1.5f;
+        vesselStatus.VesselTransformer.YawScaler /= 1.5f;
+        vesselStatus.VesselTransformer.RollScaler /= 1.5f;
+        vesselStatus.Drifting = false;
     }
 }

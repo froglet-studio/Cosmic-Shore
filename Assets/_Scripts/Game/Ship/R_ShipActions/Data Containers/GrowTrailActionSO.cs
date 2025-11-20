@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "GrowTrailAction", menuName = "ScriptableObjects/Vessel Actions/Grow Trail")]
 public class GrowTrailActionSO : ShipActionSO
@@ -19,9 +20,9 @@ public class GrowTrailActionSO : ShipActionSO
     public float ShrinkRate => shrinkRate.Value;
     public float WX => XWeight; public float WY => YWeight; public float WZ => ZWeight; public float WGap => GapWeight;
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<GrowTrailActionExecutor>()?.Begin(this, ShipStatus);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<GrowTrailActionExecutor>()?.Begin(this, vesselStatus);
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<GrowTrailActionExecutor>()?.End();
 }

@@ -256,9 +256,9 @@ namespace CosmicShore.Game.AI
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
             {
-                action.Ability.StartAction(actionExecutorRegistry);
+                action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
                 yield return new WaitForSeconds(action.Duration);
-                action.Ability.StopAction(actionExecutorRegistry);
+                action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
                 yield return new WaitForSeconds(action.Cooldown);
             }
         }

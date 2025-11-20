@@ -59,7 +59,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
         _heatResource = _resources.Resources[so.HeatResourceIndex];
 
         End();
-        so.WrappedAction?.StartAction(_registry);
+        so.WrappedAction?.StartAction(_registry, status);
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
         BuildHeatRoutineAsync(so, _cts.Token).Forget();
@@ -74,7 +74,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
 
         End();
 
-        so.WrappedAction?.StopAction(_registry);
+        so.WrappedAction?.StopAction(_registry, status);
 
         OnHeatDecayStarted?.Invoke();
         _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
@@ -138,7 +138,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
                 );
             }
 
-            so.WrappedAction?.StopAction(_registry);
+            so.WrappedAction?.StopAction(_registry, _status);
 
             await UniTask.Delay(TimeSpan.FromSeconds(so.OverheatDuration),
                 DelayType.DeltaTime,

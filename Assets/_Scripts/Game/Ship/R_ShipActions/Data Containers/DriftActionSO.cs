@@ -1,25 +1,26 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "DriftAction", menuName = "ScriptableObjects/Vessel Actions/Drift")]
 public class DriftActionSO : ShipActionSO
 {
     const float Mult = 1.5f;
 
-    public override void StartAction(ActionExecutorRegistry execs)
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        var t = Ship.VesselStatus.VesselTransformer;
+        var t = vesselStatus.VesselTransformer;
         t.PitchScaler *= Mult;
         t.YawScaler   *= Mult;
         t.RollScaler  *= Mult;
-        Ship.VesselStatus.Drifting = true;
+        vesselStatus.Drifting = true;
     }
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        var t = Ship.VesselStatus.VesselTransformer;
+        var t = vesselStatus.VesselTransformer;
         t.PitchScaler /= Mult;
         t.YawScaler   /= Mult;
         t.RollScaler  /= Mult;
-        Ship.VesselStatus.Drifting = false;
+        vesselStatus.Drifting = false;
     }
 }

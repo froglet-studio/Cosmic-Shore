@@ -11,19 +11,19 @@ public sealed class ToggleAlignActionSO : ShipActionSO
     public override void Initialize(IVessel ship)
     {
         base.Initialize(ship);
-        if (setInitialOnInitialize && ShipStatus != null)
-            ShipStatus.AlignmentEnabled = initialAlignmentEnabled;
+        if (setInitialOnInitialize && ship.VesselStatus != null)
+            ship.VesselStatus.AlignmentEnabled = initialAlignmentEnabled;
     }
 
-    public override void StartAction(ActionExecutorRegistry execs)
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        if (ShipStatus == null) return;
-        ShipStatus.AlignmentEnabled = false;
+        if (vesselStatus == null) return;
+        vesselStatus.AlignmentEnabled = false;
     }
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        if (ShipStatus == null) return;
-        ShipStatus.AlignmentEnabled = true;
+        if (vesselStatus == null) return;
+        vesselStatus.AlignmentEnabled = true;
     }
 }
