@@ -1,6 +1,7 @@
 using CosmicShore.App.Systems;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Game.UI;
 using CosmicShore.SOAP;
 using Obvious.Soap;
 
@@ -20,13 +21,18 @@ namespace CosmicShore.App.UI.Screens
         ScriptableEventNoParam _onClickToRestartButton;
         
         [SerializeField] 
-        GameObject MiniGameHUD;
+        MiniGameHUD MiniGameHUD;
         
         [SerializeField]
         GameDataSO gameData;
+        
+        [SerializeField]
+        CanvasGroup canvasGroup;
 
         GameSetting gameSetting;
 
+        void Awake() => Hide();
+        
         // Start is called before the first frame update
         void Start() => gameSetting = GameSetting.Instance;
 
@@ -44,13 +50,13 @@ namespace CosmicShore.App.UI.Screens
 
         public void OnClickMultiplayerResumeGameButton()
         {
-            MiniGameHUD.SetActive(true);
+            MiniGameHUD.ToggleView(true);
             gameData.LocalPlayer.InputController.SetPause(false);
         }
 
         public void OnClickMultiplayerPauseButton()
         {
-            MiniGameHUD.SetActive(false);
+            MiniGameHUD.ToggleView(false);
             gameData.LocalPlayer.InputController.SetPause(true);
         }
         
@@ -60,7 +66,7 @@ namespace CosmicShore.App.UI.Screens
         public void OnClickResumeGameButton()
         {
             PauseSystem.TogglePauseGame(false);
-            MiniGameHUD.SetActive(true);
+            MiniGameHUD.ToggleView(true);
         }
 
         /// <summary>
@@ -69,9 +75,23 @@ namespace CosmicShore.App.UI.Screens
         public void OnClickPauseGameButton()
         {
             PauseSystem.TogglePauseGame(true);
-            MiniGameHUD.SetActive(false);
+            MiniGameHUD.ToggleView(false);
         }
 
         public void OnClickMainMenu() => _onClickToMainMenu.Raise();
+
+        public void Show()
+        {
+            canvasGroup.alpha = 1;
+            canvasGroup.blocksRaycasts = true;
+            canvasGroup.interactable = true;
+        }
+
+        public void Hide()
+        {
+            canvasGroup.alpha = 0;
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.interactable = false;
+        }
     }
 }

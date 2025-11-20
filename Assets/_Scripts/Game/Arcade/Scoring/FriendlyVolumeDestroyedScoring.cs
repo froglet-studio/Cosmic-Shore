@@ -30,7 +30,7 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         void UpdateScore(IRoundStats roundStats)
         {
-            roundStats.Score = roundStats.FriendlyVolumeDestroyed;
+            roundStats.Score = roundStats.FriendlyVolumeDestroyed * scoreMultiplier;
         }
     }
 }

@@ -26,6 +26,7 @@ namespace CosmicShore.Game.IO
         [SerializeField] Sprite BButtonSprite;
         [SerializeField] Sprite AButtonSprite;
         [SerializeField] Sprite XButtonSprite;
+        [SerializeField] CanvasGroup canvasGroup;
         //[SerializeField] 
 
         EventSystem eventSystem;
@@ -89,6 +90,11 @@ namespace CosmicShore.Game.IO
 
         void Update()
         {
+            // Remove the null check -> after making sure every place of ControllerButtonPress has a canvas group
+            // reference added to them
+            if (canvasGroup && !canvasGroup.interactable)
+                return;
+            
             if (screenSwitcher != null)
             {
                 // If the screen context is active do the action

@@ -15,14 +15,17 @@ namespace CosmicShore.Game
         
         public override void OnNetworkSpawn()
         {
-            gameData.OnInitializeGame += OnInitializeGame;
-            gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStartedInServer;
+            gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStarted;
+            
+            if (IsServer)
+                n_SpawnPos.Value = CalculateSpawnPos();
+            
+            n_SpawnPos.OnValueChanged += OnSpawnPosChanged;
         }
 
         public override void OnNetworkDespawn()
         {
-            gameData.OnInitializeGame -= OnInitializeGame;
-            gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStartedInServer;
+            gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStarted;
             n_SpawnPos.OnValueChanged -= OnSpawnPosChanged;
         }
 
@@ -31,21 +34,6 @@ namespace CosmicShore.Game
 
         public override void ExplodeCrystal(Crystal.ExplodeParams explodeParams) =>
             ExplodeCrystal_ServerRpc(NetworkExplodeParams.FromExplodeParams(explodeParams));
-
-        protected override void Spawn(Vector3 spawnPos)
-        {
-            if (cellData.Crystal)
-            {
-                DebugExtensions.LogErrorColored("Already have a crystal, should not happen!", Color.magenta);
-                return;
-            }
-            
-            var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
-            crystal.InjectDependencies(this);
-            cellData.Crystal = crystal;
-            TryInitializeAndAdd(crystal);
-            cellData.OnCrystalSpawned.Raise();
-        }
 
         [ServerRpc(RequireOwnership = false)]
         void ExplodeCrystal_ServerRpc(NetworkExplodeParams explodeParams)
@@ -60,16 +48,8 @@ namespace CosmicShore.Game
         [ServerRpc(RequireOwnership = false)]
         void RespawnCrystal_ServerRpc() =>
             n_SpawnPos.Value = CalculateNewSpawnPos();
-        
-        void OnInitializeGame()
-        {
-            if (IsServer)
-                n_SpawnPos.Value = CalculateSpawnPos();
-            
-            n_SpawnPos.OnValueChanged += OnSpawnPosChanged;
-        }
 
-        void MiniGameTurnStartedInServer()
+        void MiniGameTurnStarted()
         {
             if (!cellData.Crystal)
                 Spawn(n_SpawnPos.Value);

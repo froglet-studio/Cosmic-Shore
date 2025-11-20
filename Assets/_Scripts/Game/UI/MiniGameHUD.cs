@@ -121,15 +121,16 @@ namespace CosmicShore.Game.UI
         void ResetForReplay()
         {
             ToggleReadyButton(true);
-            view.UpdateConnectingPanel(false);
+            view.ToggleConnectingPanel(false);
             CleanupUI();
         }
 
         // Public methods you may call externally: 
         // TODO -> Use Canvas Group, dont activate/deactivate game objects -> expensive.
-        public void Show() => view.gameObject.SetActive(true);
-        public void Hide() => view.gameObject.SetActive(false);
-
+        public void ToggleView(bool toggle) => view.ToggleView(toggle);
+        public void Show() => view.ToggleView(true);
+        public void Hide() => view.ToggleView(false);
+        
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
         
