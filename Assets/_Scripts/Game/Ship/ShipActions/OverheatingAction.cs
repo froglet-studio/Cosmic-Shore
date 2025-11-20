@@ -70,14 +70,14 @@ public class OverheatingAction : ShipAction
 
         isOverheating = true;
         OnOverheated?.Invoke();  
-        VesselStatus.Overheating = true;
+        VesselStatus.IsOverheating = true;
         heatResource.CurrentAmount = heatResource.MaxAmount;
         wrappedAction.StopAction();
 
         yield return new WaitForSeconds(overheatDuration);
 
         isOverheating = false;
-        VesselStatus.Overheating = false;
+        VesselStatus.IsOverheating = false;
         OnHeatDecayStarted?.Invoke();
         StartCoroutine(DecayHeatCoroutine());
     }

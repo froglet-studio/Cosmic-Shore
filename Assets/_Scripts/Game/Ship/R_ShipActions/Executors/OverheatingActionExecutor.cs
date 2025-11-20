@@ -123,7 +123,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
             }
 
             _isOverheating = true;
-            _status.Overheating = true;
+            _status.IsOverheating = true;
             _heatResource.CurrentAmount = _heatResource.MaxAmount;
             OnOverheated?.Invoke();
             var ctrl = _status?.VesselPrismController;
@@ -146,7 +146,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
                 token);
 
             _isOverheating = false;
-            if (_status != null) _status.Overheating = false;
+            if (_status != null) _status.IsOverheating = false;
 
             if (ctrl) ctrl.DisableDangerMode(so.ScaleLerpSeconds);
 

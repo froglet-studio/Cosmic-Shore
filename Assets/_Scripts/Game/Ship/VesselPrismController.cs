@@ -67,7 +67,6 @@ namespace CosmicShore.Game
 
         // Charm
         bool isCharmed;
-        IVesselStatus tempVessel;
 
         // Cancellation
         CancellationTokenSource cts;
@@ -131,9 +130,8 @@ namespace CosmicShore.Game
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
         }
 
-        public void Charm(IVesselStatus other, float duration)
+        public void Charm(float duration)
         {
-            tempVessel = other;
             isCharmed = true;
             _ = CharmAsync(duration, cts.Token);
         }
@@ -162,7 +160,7 @@ namespace CosmicShore.Game
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !vesselStatus.Attached && vesselStatus.Speed > 3f)
+                if (spawnerEnabled && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {
@@ -182,12 +180,6 @@ namespace CosmicShore.Game
 
                 await UniTask.Delay(TimeSpan.FromSeconds(clamped), cancellationToken: ct);
             }
-        }
-
-        async UniTaskVoid RestartAsync(float delay, CancellationToken ct)
-        {
-            await UniTask.Delay(TimeSpan.FromSeconds(delay), cancellationToken: ct);
-            spawnerEnabled = true;
         }
 
         async UniTaskVoid CharmAsync(float duration, CancellationToken ct)

@@ -15,7 +15,7 @@ namespace CosmicShore.Game.Animation
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            if (VesselStatus.Boosting && hasBoost) animator.SetBool("Boost", true);
+            if (VesselStatus.IsBoosting && hasBoost) animator.SetBool("Boost", true);
             else if (hasBoost) animator.SetBool("Boost", false);
 
             currentPitch = Mathf.Lerp(currentPitch, pitch, animationSpeed * Time.deltaTime);
@@ -31,7 +31,7 @@ namespace CosmicShore.Game.Animation
 
         protected override void Idle()
         {
-            if (VesselStatus.Boosting) animator.SetBool("Boost", true);
+            if (VesselStatus.IsBoosting) animator.SetBool("Boost", true);
             else animator.SetBool("Boost", false);
 
             currentPitch = Mathf.Lerp(currentPitch, 0, animationSpeed * Time.deltaTime);

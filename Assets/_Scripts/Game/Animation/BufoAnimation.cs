@@ -44,7 +44,7 @@ namespace CosmicShore.Game.Animation
 
         protected override void RotatePart(Transform part, float pitch, float yaw, float roll)
         {
-            Quaternion rotation = VesselStatus.Portrait ? Quaternion.Euler(yaw, -pitch, -roll) : Quaternion.Euler(pitch, yaw, roll);
+            Quaternion rotation = VesselStatus.IsPortrait ? Quaternion.Euler(yaw, -pitch, -roll) : Quaternion.Euler(pitch, yaw, roll);
 
             part.localRotation = Quaternion.Lerp(
                                     part.localRotation,

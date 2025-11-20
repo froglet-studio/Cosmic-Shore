@@ -9,7 +9,7 @@ public class DriftSO : ShipActionSO
         ShipStatus.VesselTransformer.PitchScaler *= 1.5f;
         ShipStatus.VesselTransformer.YawScaler *= 1.5f;
         ShipStatus.VesselTransformer.RollScaler *= 1.5f;
-        ShipStatus.Drifting = true;
+        ShipStatus.IsDrifting = true;
     }
 
     public override void StopAction(ActionExecutorRegistry execs)
@@ -17,6 +17,6 @@ public class DriftSO : ShipActionSO
         ShipStatus.VesselTransformer.PitchScaler /= 1.5f;
         ShipStatus.VesselTransformer.YawScaler /= 1.5f;
         ShipStatus.VesselTransformer.RollScaler /= 1.5f;
-        ShipStatus.Drifting = false;
+        ShipStatus.IsDrifting = false;
     }
 }

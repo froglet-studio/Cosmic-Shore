@@ -25,7 +25,7 @@ namespace CosmicShore.Game
                 return;
             }
 
-            vesselStatus.Attached = true;
+            vesselStatus.IsAttached = true;
             vesselStatus.AttachedPrism = trailBlock;
         }
     }

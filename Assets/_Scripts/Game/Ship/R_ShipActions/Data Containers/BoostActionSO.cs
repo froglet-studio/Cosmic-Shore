@@ -13,13 +13,13 @@ public class BoostActionSO : ShipActionSO
     public override void StartAction(ActionExecutorRegistry execs)
     {
         if (ShipStatus == null) return;
-        ShipStatus.Boosting = true;
+        ShipStatus.IsBoosting = true;
         ShipStatus.IsStationary = false;
     }
 
     public override void StopAction(ActionExecutorRegistry execs)
     {
         if (ShipStatus == null) return;
-        ShipStatus.Boosting = false;
+        ShipStatus.IsBoosting = false;
     }
 }

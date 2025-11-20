@@ -11,7 +11,7 @@ public class DriftActionSO : ShipActionSO
         t.PitchScaler *= Mult;
         t.YawScaler   *= Mult;
         t.RollScaler  *= Mult;
-        Ship.VesselStatus.Drifting = true;
+        Ship.VesselStatus.IsDrifting = true;
     }
 
     public override void StopAction(ActionExecutorRegistry execs)
@@ -20,6 +20,6 @@ public class DriftActionSO : ShipActionSO
         t.PitchScaler /= Mult;
         t.YawScaler   /= Mult;
         t.RollScaler  /= Mult;
-        Ship.VesselStatus.Drifting = false;
+        Ship.VesselStatus.IsDrifting = false;
     }
 }

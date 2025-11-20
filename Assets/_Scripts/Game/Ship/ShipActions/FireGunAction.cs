@@ -43,7 +43,7 @@ public class FireGunAction : ShipAction
             ResourceSystem.ChangeResourceAmount(ammoIndex, - ammoCost);
 
             Vector3 inheritedVelocity;
-            if (VesselStatus.Attached) inheritedVelocity = gun.transform.forward;
+            if (VesselStatus.IsAttached) inheritedVelocity = gun.transform.forward;
             else inheritedVelocity = VesselStatus.Course;
             OnGunFired?.Invoke(); 
             gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);

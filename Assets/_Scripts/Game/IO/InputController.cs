@@ -125,7 +125,7 @@ namespace CosmicShore.Game.IO
         /*
         private void InitializeOrientation()
         {
-            if (Portrait)
+            if (IsPortrait)
             {
                 vessel.SetShipUp(90);
             }

@@ -211,14 +211,14 @@ namespace CosmicShore.Game.AI
             Vector3 desiredDirection = _distance.normalized;
 
             LookingAtCrystal = Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
-            if (LookingAtCrystal && drift && !VesselStatus.Drifting)
+            if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
             {
                 VesselStatus.Course = desiredDirection;
                 vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
                 desiredDirection *= -1;
             }
-            else if (LookingAtCrystal && VesselStatus.Drifting) desiredDirection *= -1;
-            else if (VesselStatus.Drifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
+            else if (LookingAtCrystal && VesselStatus.IsDrifting) desiredDirection *= -1;
+            else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
             if (_distance.magnitude < float.Epsilon) // Avoid division by zero
@@ -233,7 +233,7 @@ namespace CosmicShore.Game.AI
             aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
             float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
-            if (VesselStatus.SingleStickControls)
+            if (VesselStatus.IsSingleStickControls)
             {
                 float x = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
                 float y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
