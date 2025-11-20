@@ -57,7 +57,7 @@ namespace CosmicShore.Game
         public Trail Trail = new Trail();
         readonly Trail Trail2 = new Trail();
 
-        IVesselStatus vesselStatus;
+        protected IVesselStatus vesselStatus;
 
         // Scaling helpers
         float Xscale;
@@ -164,12 +164,12 @@ namespace CosmicShore.Game
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {
-                        CreateBlock(0f, Trail);
+                        CreateBlock(ApplyBoostGap(0f), Trail);
                     }
                     else
                     {
-                        CreateBlock(Gap * 0.5f, Trail);
-                        CreateBlock(-Gap * 0.5f, Trail2);
+                        CreateBlock(ApplyBoostGap(Gap * 0.5f), Trail);
+                        CreateBlock(ApplyBoostGap(-Gap * 0.5f), Trail2);
                     }
                 }
 
@@ -178,7 +178,8 @@ namespace CosmicShore.Game
                     ? defaultWaitTime
                     : Mathf.Clamp(raw, 0f, 3f);
 
-                await UniTask.Delay(TimeSpan.FromSeconds(clamped), cancellationToken: ct);
+                float finalDelay = ApplyBoostSpawnDelay(clamped);
+                await UniTask.Delay(TimeSpan.FromSeconds(finalDelay), cancellationToken: ct);
             }
         }
 
@@ -211,11 +212,11 @@ namespace CosmicShore.Game
             }
 
             // --- Compute scale from BaseScale ---
-            var scale = new Vector3(
+            Vector3 scale = ApplyBoostScale(new Vector3(
                 BaseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
                 BaseScale.y * YScaler,
                 BaseScale.z * ZScaler
-            );
+            ));
 
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
@@ -294,11 +295,12 @@ namespace CosmicShore.Game
             }
 
             // --- Scale from BaseScale ---
-            Vector3 scale = new Vector3(
+            Vector3 scale = ApplyBoostScale(new Vector3(
                 BaseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
                 BaseScale.y * YScaler,
                 BaseScale.z * ZScaler
-            );
+            ));
+
 
             // --- Position & Rotation ---
             float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
@@ -435,6 +437,21 @@ namespace CosmicShore.Game
         {
             Trail.Clear();
             Trail2.Clear();
+        }
+
+        protected virtual Vector3 ApplyBoostScale(Vector3 scale)
+        {
+            return scale;
+        }
+        
+        protected virtual float ApplyBoostGap(float halfGap)
+        {
+            return halfGap;
+        }
+        
+        protected virtual float ApplyBoostSpawnDelay(float delay)
+        {
+            return delay;
         }
     }
 }

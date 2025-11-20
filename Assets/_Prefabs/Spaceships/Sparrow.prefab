@@ -521,7 +521,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2fd4223c00747ca8955ea6bb12ebdd6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  controller: {fileID: 7357106330467729575}
+  controller: {fileID: 0}
   profile: {fileID: 11400000, guid: b157cce9ec71308458d171eacb6ace01, type: 2}
 --- !u!1 &4432795841785961401
 GameObject:
@@ -810,7 +810,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c3f54abda8145ecabf7c85253cab9ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 7357106330467729575}
+  vesselPrismController: {fileID: 0}
   seedAssemblerExecutor: {fileID: 0}
   stationarySeedConfig: {fileID: 0}
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
@@ -834,7 +834,7 @@ GameObject:
   - component: {fileID: 5625026016231715243}
   - component: {fileID: 3262847868077016728}
   - component: {fileID: 782227326690287682}
-  - component: {fileID: 7357106330467729575}
+  - component: {fileID: 5613657713013293844}
   - component: {fileID: 647308514974513799}
   - component: {fileID: 333211638083239348}
   - component: {fileID: 9172070623654400206}
@@ -1077,7 +1077,7 @@ MonoBehaviour:
   YawScaler: 80
   RollScaler: 30
   RotationThrottleScaler: 0.1
---- !u!114 &7357106330467729575
+--- !u!114 &5613657713013293844
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1086,7 +1086,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 8279817603024118164}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
+  m_Script: {fileID: 11500000, guid: 39b518a4212e4b21aa1a16917ba427db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
@@ -1111,6 +1111,8 @@ MonoBehaviour:
   XScaler: 1
   YScaler: 1
   ZScaler: 1
+  nonBoostingScaleMultiplier: 2
+  nonBoostingGapMultiplier: 4
 --- !u!114 &647308514974513799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1224,7 +1226,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 7357106330467729575}
+  vesselPrismController: {fileID: 0}
   driftTrailAction: {fileID: 0}
   trailDisplayContainer: {fileID: 4625218033296401838}
   blockPrefab: {fileID: 0}
