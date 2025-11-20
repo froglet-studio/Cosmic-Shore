@@ -102,8 +102,8 @@ namespace CosmicShore.SOAP
         public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
         public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
         public void InvokeInitializeGame() => OnInitializeGame?.Invoke();
-        public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
         public void InvokeClientReady() => OnClientReady?.Invoke();
+        public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
         public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
 
         public void InvokeGameTurnConditionsMet()
@@ -120,7 +120,6 @@ namespace CosmicShore.SOAP
             ResetRuntimeDataForReplay();
             OnResetForReplay?.Raise();
         }
-            
 
         public void ResetRuntimeData()
         {
