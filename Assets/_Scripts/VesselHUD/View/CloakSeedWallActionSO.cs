@@ -31,9 +31,9 @@ namespace CosmicShore.Game
 
         public float CooldownSeconds => cooldownSeconds;
 
-        public override void StartAction(ActionExecutorRegistry execs)
-            => execs?.Get<CloakSeedWallActionExecutor>()?.Toggle(this, ShipStatus);
+        public override void StartAction(ActionExecutorRegistry execs, IVesselStatus status)
+            => execs?.Get<CloakSeedWallActionExecutor>()?.Toggle(this, status);
 
-        public override void StopAction(ActionExecutorRegistry execs) { }
+        public override void StopAction(ActionExecutorRegistry execs, IVesselStatus status) { }
     }
 }

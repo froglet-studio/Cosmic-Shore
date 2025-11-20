@@ -10,16 +10,16 @@ public class BoostActionSO : ShipActionSO
         base.Initialize(ship);
     }
     
-    public override void StartAction(ActionExecutorRegistry execs)
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        if (ShipStatus == null) return;
-        ShipStatus.IsBoosting = true;
-        ShipStatus.IsStationary = false;
+        if (vesselStatus == null) return;
+        vesselStatus.Boosting = true;
+        vesselStatus.IsStationary = false;
     }
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        if (ShipStatus == null) return;
-        ShipStatus.IsBoosting = false;
+        if (vesselStatus == null) return;
+        vesselStatus.Boosting = false;
     }
 }

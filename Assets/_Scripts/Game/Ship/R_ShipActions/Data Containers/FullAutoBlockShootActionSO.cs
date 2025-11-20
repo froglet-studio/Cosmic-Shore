@@ -36,10 +36,10 @@ namespace CosmicShore.Game
         public PrismType PrismType => prismType;
         public bool DisableCollidersOnLaunch => disableCollidersOnLaunch;
 
-        public override void StartAction(ActionExecutorRegistry execs)
+        public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<FullAutoBlockShootActionExecutor>()?.Begin(this);
 
-        public override void StopAction(ActionExecutorRegistry execs)
+        public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<FullAutoBlockShootActionExecutor>()?.End();
     }
 }

@@ -26,11 +26,11 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
 
     public override void Initialize(IVesselStatus shipStatus) { }
 
-    public void Toggle(ShardToggleActionSO so, IVessel ship, IVesselStatus status)
+    public void Toggle(ShardToggleActionSO so,  IVesselStatus status)
     {
         if (!_redirectActive)
         {
-            var shipPos = (ship != null) ? ship.Transform.position : transform.position;
+            var shipPos = (status != null) ? status.Vessel.Transform.position : transform.position;
             var cell = CellControlManager.Instance.GetNearestCell(shipPos);
 
             Vector3 highDensityPosition = cell.GetExplosionTarget(so.Domain);

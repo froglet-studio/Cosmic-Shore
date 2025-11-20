@@ -13,9 +13,7 @@ namespace CosmicShore.Game
         public static void InitializeShipControlActions(
             IVesselStatus vesselStatus,
             List<InputEventShipActionMapping> inputEventShipActions,
-            Dictionary<InputEvents, List<ShipActionSO>> shipControlActions,
-            List<ShipActionSO> runtimeInstancesCollector // <- NEW
-        )
+            Dictionary<InputEvents, List<ShipActionSO>> shipControlActions)
         {
             shipControlActions.Clear();
 
@@ -29,13 +27,9 @@ namespace CosmicShore.Game
 
                 foreach (var asset in map.ShipActions)
                 {
-                    if (!asset) continue;
-
-                    // RECURSIVE per-vessel clone:
-                    var instance = ActionInstanceFactory.CreatePerVesselInstance(asset, vesselStatus.Vessel);
-
-                    list.Add(instance);
-                    runtimeInstancesCollector?.Add(instance);
+                    if (asset == null) continue;
+                    asset.Initialize(vesselStatus.Vessel);
+                    list.Add(asset);
                 }
             }
         }
@@ -43,9 +37,7 @@ namespace CosmicShore.Game
         public static void InitializeClassResourceActions(
             IVesselStatus vesselStatus,
             List<ResourceEventShipActionMapping> resourceEventShipActionMappings,
-            Dictionary<ResourceEvents, List<ShipActionSO>> classResourceActions,
-            List<ShipActionSO> runtimeInstancesCollector 
-        )
+            Dictionary<ResourceEvents, List<ShipActionSO>> classResourceActions)
         {
             classResourceActions.Clear();
 
@@ -59,20 +51,15 @@ namespace CosmicShore.Game
 
                 foreach (var asset in map.ClassActions)
                 {
-                    if (!asset) continue;
-
-                    // RECURSIVE per-vessel clone:
-                    var instance = ActionInstanceFactory.CreatePerVesselInstance(asset, vesselStatus.Vessel);
-
-                    list.Add(instance);
-                    runtimeInstancesCollector?.Add(instance);
+                    if (asset == null) continue;
+                    list.Add(asset);
                 }
             }
         }
 
         public static void DestroyRuntimeActions(List<ShipActionSO> runtimeInstances)
         {
-            ActionInstanceFactory.DestroyInstances(runtimeInstances);
+            //ActionInstanceFactory.DestroyInstances(runtimeInstances);
             runtimeInstances?.Clear();
         }
 

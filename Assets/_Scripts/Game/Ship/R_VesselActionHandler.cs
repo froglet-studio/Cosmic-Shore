@@ -76,8 +76,8 @@ namespace CosmicShore.Game
             if (_executors) _executors.InitializeAll(vesselStatus);
 
             _runtimeInstances.Clear();
-            ShipHelper.InitializeShipControlActions(vesselStatus, _inputEventShipActions, _shipControlActions, _runtimeInstances);
-            ShipHelper.InitializeClassResourceActions(vesselStatus, _resourceEventClassActions, _classResourceActions, _runtimeInstances);
+            ShipHelper.InitializeShipControlActions(vesselStatus, _inputEventShipActions, _shipControlActions);
+            ShipHelper.InitializeClassResourceActions(vesselStatus, _resourceEventClassActions, _classResourceActions);
         }
 
         public void PerformShipControllerActions(InputEvents controlType)
@@ -87,8 +87,9 @@ namespace CosmicShore.Game
 
             _inputAbilityStartTimes[controlType] = Time.time;
             var actions = _shipControlActions[controlType];
+
             foreach (var t in actions)
-                t.StartAction(_executors);
+                t.StartAction(_executors, vesselStatus);
         }
 
         public void StopShipControllerActions(InputEvents controlType)
@@ -101,15 +102,18 @@ namespace CosmicShore.Game
 
             onAbilityExecuted.Raise(new AbilityStats
             {
-                PlayerName = vesselStatus.PlayerName,
+                PlayerName  = vesselStatus.PlayerName,
                 ControlType = controlType,
-                Duration = duration
+                Duration    = duration
             });
 
             var actions = _shipControlActions[controlType];
+
             for (int i = 0; i < actions.Count; i++)
-                actions[i].StopAction(_executors);
+                actions[i].StopAction(_executors, vesselStatus);
         }
+
+
 
         bool HasAction(InputEvents inputEvent) =>
             _shipControlActions.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
