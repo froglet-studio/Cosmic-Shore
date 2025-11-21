@@ -3,6 +3,7 @@ using System.Collections;
 using CosmicShore.Core;
 using System.Collections.Generic;
 using CosmicShore;
+using CosmicShore.Utility;
 
 public class BoidManager : Population
 {
@@ -25,7 +26,8 @@ public class BoidManager : Population
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
-            Boid newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.LookRotation(Vector3.Cross(spawnPosition,Vector3.forward)));
+            SafeLookRotation.TryGet(Vector3.Cross(spawnPosition,Vector3.forward), out var initialRotation, boidPrefab);
+            Boid newBoid = Instantiate(boidPrefab, spawnPosition, initialRotation);
             newBoid.transform.SetParent(transform);
             newBoid.Population = this;
             newBoid.domain = domain;

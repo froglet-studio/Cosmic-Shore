@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 using CosmicShore.Game;
 using CosmicShore.SOAP;
+using CosmicShore.Utility;
 using UnityEngine.Serialization;
 
 public class VesselTransformer : MonoBehaviour
@@ -131,12 +132,14 @@ public class VesselTransformer : MonoBehaviour
 
     public void SpinShip(Vector3 newDirection)
     {
-        accumulatedRotation = Quaternion.LookRotation(newDirection);
+        if (SafeLookRotation.TryGet(newDirection, out var rotation, this, logError: false))
+            accumulatedRotation = rotation;
     }
 
     public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
     {
-        accumulatedRotation = Quaternion.Slerp(accumulatedRotation, Quaternion.LookRotation(newDirection, newUp), amount);
+        if (SafeLookRotation.TryGet(newDirection, newUp, out var rotation, this, logError: false))
+            accumulatedRotation = Quaternion.Slerp(accumulatedRotation, rotation, amount);
     }
 
     public void ApplyRotation(float angle, Vector3 axis)

@@ -80,8 +80,8 @@ public class Worm : MonoBehaviour
         Vector3 directionToTarget = (targetPosition - head.transform.position).normalized;
 
         // Smoothly rotate the head towards the target
-        Quaternion targetHeadRotation = Quaternion.LookRotation(directionToTarget);
-        head.transform.rotation = Quaternion.Slerp(head.transform.rotation, targetHeadRotation, headTurnSpeed * Time.deltaTime);
+        if (SafeLookRotation.TryGet(directionToTarget, out var targetHeadRotation, head))
+            head.transform.rotation = Quaternion.Slerp(head.transform.rotation, targetHeadRotation, headTurnSpeed * Time.deltaTime);
 
         // Move the head forward
         head.transform.position += head.transform.forward * movementSpeed * Time.deltaTime;
@@ -105,24 +105,22 @@ public class Worm : MonoBehaviour
         if (Time.time >= targetTime)
         {
             // Calculate the desired rotation to look at the parent
-            Quaternion targetRotation = Quaternion.LookRotation(
-                segments[index - 1].transform.position - segments[index].transform.position,
-                segments[index - 1].transform.up
-            );
+            if (SafeLookRotation.TryGet(segments[index - 1].transform.position - segments[index].transform.position, segments[index - 1].transform.up, out var targetRotation, segments[index]))
+            {
+                // Apply damping to reduce rigidity
+                targetRotation = Quaternion.Slerp(targetRotations[index], targetRotation, 1 - rotationDamping);
 
-            // Apply damping to reduce rigidity
-            targetRotation = Quaternion.Slerp(targetRotations[index], targetRotation, 1 - rotationDamping);
+                // Smoothly rotate towards the target rotation
+                segments[index].transform.rotation = Quaternion.Slerp(
+                    segments[index].transform.rotation,
+                    targetRotation,
+                    bodyTurnSpeed * Time.deltaTime
+                );
 
-            // Smoothly rotate towards the target rotation
-            segments[index].transform.rotation = Quaternion.Slerp(
-                segments[index].transform.rotation,
-                targetRotation,
-                bodyTurnSpeed * Time.deltaTime
-            );
-
-            // Update target rotation and time for this segment
-            targetRotations[index] = targetRotation;
-            rotationTimes[index] = Time.time;
+                // Update target rotation and time for this segment
+                targetRotations[index] = targetRotation;
+                rotationTimes[index] = Time.time;
+            }
         }
     }
 

@@ -59,10 +59,8 @@ namespace CosmicShore.Game.CameraSystem
                 );
             }
 
-            Quaternion targetRot = Quaternion.LookRotation(
-                _followTarget.position - transform.position,
-                _followTarget.up
-            );
+            if (!SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+                targetRot = transform.rotation;
 
             if (_disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
             {

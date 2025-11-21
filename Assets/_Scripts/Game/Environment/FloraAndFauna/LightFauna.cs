@@ -3,6 +3,7 @@ using System.Collections;
 using CosmicShore.Core;
 using CosmicShore;
 using CosmicShore.Game;
+using CosmicShore.Utility;
 
 public class LightFauna : Fauna
 {
@@ -115,8 +116,10 @@ public class LightFauna : Fauna
                           (goalDirection * goalWeight)).normalized;
 
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
-        desiredRotation = currentVelocity != Vector3.zero ? 
-            Quaternion.LookRotation(currentVelocity) : transform.rotation;
+        if (currentVelocity != Vector3.zero && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+            desiredRotation = rotation;
+        else
+            desiredRotation = transform.rotation;
     }
 
     void Update()
