@@ -10,9 +10,8 @@ namespace CosmicShore.DialogueSystem.Models
         [TextArea(2, 4)] public string text;
         public AudioClip voiceClip;
 
-        // We no longer store portraits here
+        public DialogueSide side = DialogueSide.Auto;
         public float displayTime = 3f;
         public bool isInGameMonologue;
-
     }
 }
