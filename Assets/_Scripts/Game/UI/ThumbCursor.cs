@@ -53,7 +53,7 @@ namespace CosmicShore.Game.UI
             /*yield return new WaitUntil(() => Player.LocalPlayer != null && Player.LocalPlayer.Vessel != null && Player.LocalPlayer.Vessel.VesselStatus.InputController != null);
 
             if (!Player.LocalPlayer.Vessel.VesselStatus.AutoPilotEnabled)
-                gameObject.SetActive(Gamepad.current == null && !Player.LocalPlayer.Vessel.VesselStatus.CommandStickControls && (LeftThumb || !Player.LocalPlayer.Vessel.VesselStatus.SingleStickControls));
+                gameObject.SetActive(Gamepad.current == null && !Player.LocalPlayer.Vessel.VesselStatus.CommandStickControls && (LeftThumb || !Player.LocalPlayer.Vessel.VesselStatus.IsSingleStickControls));
 
             initialized = true;*/
 

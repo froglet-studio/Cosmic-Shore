@@ -8,9 +8,8 @@ namespace CosmicShore.Game
     /// <summary>
     /// This class helps in method execution for IVesselStatus instances
     /// </summary>
-    public static class ShipHelper
+   public static class ShipHelper
     {
-        // ShipHelper.cs
         public static void InitializeShipControlActions(
             IVesselStatus vesselStatus,
             List<InputEventShipActionMapping> inputEventShipActions,
@@ -29,10 +28,8 @@ namespace CosmicShore.Game
                 foreach (var asset in map.ShipActions)
                 {
                     if (asset == null) continue;
-                    var instance = Object.Instantiate(asset); 
-                    instance.name = $"{asset.name} [runtime:{vesselStatus.PlayerName}]";
-                    instance.Initialize(vesselStatus.Vessel);       
-                    list.Add(instance);
+                    asset.Initialize(vesselStatus.Vessel);
+                    list.Add(asset);
                 }
             }
         }
@@ -55,12 +52,15 @@ namespace CosmicShore.Game
                 foreach (var asset in map.ClassActions)
                 {
                     if (asset == null) continue;
-                    var instance = Object.Instantiate(asset);
-                    instance.name = $"{asset.name} [runtime:{vesselStatus.PlayerName}]";
-                    instance.Initialize(vesselStatus.Vessel);
-                    list.Add(instance);
+                    list.Add(asset);
                 }
             }
+        }
+
+        public static void DestroyRuntimeActions(List<ShipActionSO> runtimeInstances)
+        {
+            //ActionInstanceFactory.DestroyInstances(runtimeInstances);
+            runtimeInstances?.Clear();
         }
 
 

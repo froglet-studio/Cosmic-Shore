@@ -58,7 +58,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
 
         _charging = true;
         float start = GetUnits(so);
-        status.ChargedBoostDischarging = false;
+        status.IsChargedBoostDischarging = false;
         status.ChargedBoostCharge = BoostMultiplierFrom(so, start);
 
         OnChargeStarted?.Invoke(start);
@@ -75,7 +75,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         if (!_resources) return;
 
         float start = GetUnits(so);
-        status.ChargedBoostDischarging = true;
+        status.IsChargedBoostDischarging = true;
 
         OnDischargeStarted?.Invoke(start);
 
@@ -145,7 +145,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
             {
                 float v = GetUnits(so);
                 _status.BoostMultiplier = BoostMultiplierFrom(so, v);
-                _status.Boosting = true;
+                _status.IsBoosting = true;
 
                 OnDischargeProgress?.Invoke(v / so.MaxNormalizedCharge);
 
@@ -158,8 +158,8 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
 
             SetUnits(so, 0f);
             _status.BoostMultiplier = 1f;
-            _status.ChargedBoostDischarging = false;
-            _status.Boosting = false;
+            _status.IsChargedBoostDischarging = false;
+            _status.IsBoosting = false;
 
             if (so.RechargeCooldownSeconds > 0f)
                 _cooldownUntilUtc = Time.unscaledTime + so.RechargeCooldownSeconds;

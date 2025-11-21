@@ -28,7 +28,7 @@ public class GunVesselTransformer : VesselTransformer
 
     protected override void MoveShip()
     {
-        switch (VesselStatus.Attached)
+        switch (VesselStatus.IsAttached)
         {
             case true when !attached:
             {
@@ -54,7 +54,7 @@ public class GunVesselTransformer : VesselTransformer
             }
         }
 
-        attached = VesselStatus.Attached;
+        attached = VesselStatus.IsAttached;
 
         if (attached)
             Slide();

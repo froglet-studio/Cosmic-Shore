@@ -33,18 +33,18 @@ public sealed class DeployTeamCrystalActionExecutor : ShipActionExecutorBase
         _ship   = shipStatus.Vessel;
     }
 
-    public void Begin(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
+    public void Begin(DeployTeamCrystalActionSO so, IVesselStatus status)
     {
         if (_ghostCrystal || !crystalPrefab) return;
 
-        _ghostCrystal = Instantiate(crystalPrefab, ship.Transform);
+        _ghostCrystal = Instantiate(crystalPrefab, status.Vessel.Transform);
         _ghostCrystal.transform.localPosition = new Vector3(0f, 0f, so.ForwardOffset);
         _ghostCrystal.transform.localRotation = Quaternion.identity;
 
         PrepareGhost(_ghostCrystal, so);
     }
 
-    public void Commit(DeployTeamCrystalActionSO so, IVessel ship, IVesselStatus status)
+    public void Commit(DeployTeamCrystalActionSO so, IVesselStatus status)
     {
         if (!_ghostCrystal) return;
 

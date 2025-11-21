@@ -66,7 +66,8 @@ namespace CosmicShore.Game.Arcade
             try
             {
                 await UniTask.Delay(initDelayMs, DelayType.UnscaledDeltaTime);
-                InitializeGame();
+                InitializeGame_ClientRpc();
+                SetupNewRound();
             }
             catch (OperationCanceledException)
             {
@@ -74,20 +75,8 @@ namespace CosmicShore.Game.Arcade
             }
         }
 
-        protected override void OnCountdownTimerEnded()
-        {
-            if (!IsServer)
-                return;
-
-            OnCountdownTimerEnded_ClientRpc();
-        }
-
         [ClientRpc]
-        void OnCountdownTimerEnded_ClientRpc()
-        {
-            gameData.SetPlayersActive();
-            gameData.StartTurn(); 
-        }
+        void InitializeGame_ClientRpc() => gameData.InitializeGame();
 
         protected override void EndTurn()
         {
@@ -100,20 +89,34 @@ namespace CosmicShore.Game.Arcade
         {
             // Server already invoked this on TurnMonitorController
             if (!IsServer)
-            gameData.InvokeGameTurnConditionsMet();
+                gameData.InvokeGameTurnConditionsMet();
             
             gameData.ResetPlayers();
         }
-        
-        protected override void EndGame()
+
+        protected override void EndRound()
         {
-            EndGame_ClientRpc();
+            if (!IsServer)
+                return;
+
+            EndRound_ClientRpc();
         }
+
+        [ClientRpc]
+        void EndRound_ClientRpc()
+        {
+            gameData.RoundsPlayed++;
+            gameData.InvokeMiniGameRoundEnd();
+
+            if (IsServer)
+                base.EndRound();
+        }
+        
+        protected override void EndGame() =>
+            EndGame_ClientRpc();
         
         [ClientRpc]
-        void EndGame_ClientRpc()
-        {
+        void EndGame_ClientRpc() =>
             gameData.InvokeMiniGameEnd();
-        }
     }
 }

@@ -40,7 +40,7 @@ namespace CosmicShore.Game
 
         public override void OnDestroy()
         {
-            if ((!IsSpawned && VesselStatus.Player is { IsInitializedAsAI: false }) || IsOwner)
+            if (VesselStatus.Player.IsLocalUser)
             {
                 OnBeforeDestroyed?.Invoke();
             }
@@ -82,7 +82,7 @@ namespace CosmicShore.Game
                 VesselStatus.CameraFollowTarget = transform;
             VesselStatus.ActionHandler.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.Initialize(this);
-            VesselStatus.ShipHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
+            VesselStatus.VesselHUDController.Initialize(VesselStatus, VesselStatus.VesselHUDView);
             if (VesselStatus.VesselHUDView)
                 VesselStatus.VesselHUDView.Hide();
             
@@ -130,7 +130,7 @@ namespace CosmicShore.Game
             //     return;
             // }
 
-            VesselStatus?.ShipHUDController?.SetBlockPrefab(prefab);
+            VesselStatus?.VesselHUDController?.SetBlockPrefab(prefab);
         }
 
         public void SetAOEExplosionMaterial(Material material) =>
@@ -196,13 +196,15 @@ namespace CosmicShore.Game
 
         public void ChangePlayer(IPlayer player)
         {
-            VesselStatus.ShipHUDController.TearDown();
             VesselStatus.Player = player;
 
             if (player.IsInitializedAsAI || player.IsNetworkClient)
             {
+                VesselStatus.VesselHUDController.UnsubscribeFromEvents();
                 if (player.IsInitializedAsAI)
+                {
                     VesselStatus.VesselTransformer.ToggleActive(true);
+                }
                 if (player.IsNetworkClient)
                 {
                     VesselStatus.VesselTransformer.ToggleActive(false);
@@ -216,6 +218,7 @@ namespace CosmicShore.Game
             
             UnsubscribeFromNetworkVariables();
 
+            VesselStatus.VesselHUDController.SubscribeToEvents();
             if (VesselStatus.VesselHUDView)
                 VesselStatus.VesselHUDView.Show();
                 
@@ -287,6 +290,7 @@ namespace CosmicShore.Game
 
             VesselStatus.VesselTransformer.ToggleActive(true);
             VesselStatus.ActionHandler.ToggleSubscription(true);
+            VesselStatus.VesselHUDController.SubscribeToEvents();
 
             if (VesselStatus.VesselHUDView)
                 VesselStatus.VesselHUDView.Show();
@@ -308,6 +312,7 @@ namespace CosmicShore.Game
                 VesselStatus.ActionHandler.ToggleSubscription(true);
                 VesselStatus.VesselHUDView.Show();   
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
+                VesselStatus.VesselHUDController.SubscribeToEvents();
             }
             
             // TODO - Currently AIPilot's update should run only after SingleStickVesselTransformer

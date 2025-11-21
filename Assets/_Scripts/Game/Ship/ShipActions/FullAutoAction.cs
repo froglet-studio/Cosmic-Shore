@@ -82,7 +82,7 @@ namespace CosmicShore
                     {
                         if (inherit)
                         {
-                            if (VesselStatus.Attached) inheritedVelocity = transform.transform.forward;
+                            if (VesselStatus.IsAttached) inheritedVelocity = transform.transform.forward;
                             else inheritedVelocity = VesselStatus.Course;
                         }
                         else inheritedVelocity = Vector3.zero;

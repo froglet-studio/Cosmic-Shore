@@ -59,7 +59,7 @@ public class FireBarrageAction : ShipAction
                 {
                     if (inherit)
                     {
-                        if (VesselStatus.Attached) inheritedVelocity = gun.transform.forward;
+                        if (VesselStatus.IsAttached) inheritedVelocity = gun.transform.forward;
                         else inheritedVelocity = VesselStatus.Course;
                     }
                     else inheritedVelocity = Vector3.zero;

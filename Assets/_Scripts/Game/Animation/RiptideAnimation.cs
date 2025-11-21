@@ -58,7 +58,7 @@ namespace CosmicShore.Game.Animation
                         roll * animationScaler,
                         Vector3.zero);
 
-            if (VesselStatus.Drifting)
+            if (VesselStatus.IsDrifting)
             {
                 DriftHandle.rotation = Quaternion.LookRotation(VesselStatus.Course, transform.up);
                 RightWing.parent = DriftHandle;

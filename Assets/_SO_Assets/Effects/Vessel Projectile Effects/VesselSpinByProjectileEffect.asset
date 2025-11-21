@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d39b2a60f9c810048bd3a7ebd779feab, type: 3}
   m_Name: VesselSpinByProjectileEffect
   m_EditorClassIdentifier: 
+  spinSpeed: 0.2

@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a873b7e17864c26a357689bafa75ba3, type: 3}
   m_Name: VesselDeviationByPrismEffect
   m_EditorClassIdentifier: 
-  lateralSpeed: 2
-  accelScale: 5
+  lateralSpeed: 0.5
+  accelScale: 1.75
   randomizeLeftRight: 0

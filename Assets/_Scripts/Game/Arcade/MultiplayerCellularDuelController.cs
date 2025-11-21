@@ -7,13 +7,26 @@ namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerCellularDuelController : MultiplayerMiniGameControllerBase
     {
-        
-        
         private int readyClientCount;
         
         public void OnClickReturnToMainMenu()
         {
             CloseSession_ServerRpc();
+        }
+        
+        protected override void OnCountdownTimerEnded()
+        {
+            if (!IsServer)
+                return;
+
+            OnCountdownTimerEnded_ClientRpc();
+        }
+
+        [ClientRpc]
+        void OnCountdownTimerEnded_ClientRpc()
+        {
+            gameData.SetPlayersActive();
+            gameData.StartTurn(); 
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -24,7 +37,7 @@ namespace CosmicShore.Game.Arcade
         
         protected override void OnReadyClicked_()
         {
-            ToggleReadyButton(false);
+            RaiseToggleReadyButtonEvent(false);
             // Debug.Log($"{NetworkManager.Singleton.LocalClientId} is ready!");
             OnReadyClicked_ServerRpc();
         }
@@ -48,12 +61,11 @@ namespace CosmicShore.Game.Arcade
 
         protected override void SetupNewRound()
         {
-            bool allowSwap = roundsPlayed > 0;
+            bool allowSwap = gameData.RoundsPlayed > 0;
             if (allowSwap)
                 ChangeOwnershipOfVessels();
-            SetupNewRound_ClientRpc(allowSwap);
             
-            base.SetupNewRound();
+            SetupNewRound_ClientRpc(allowSwap);
         }
         
         [ClientRpc]
@@ -61,7 +73,9 @@ namespace CosmicShore.Game.Arcade
         {
             if (allowSwap)
                 gameData.SwapVessels();
-            ToggleReadyButton(true);
+            
+            RaiseToggleReadyButtonEvent(true);
+            base.SetupNewRound();
         }
         
         protected override void OnResetForReplay()

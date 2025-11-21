@@ -1,5 +1,5 @@
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
-
 
 namespace CosmicShore.Game.Arcade
 {
@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Arcade
                 return;
 
             gameData.OnInitializeGame += InitializeScoringMode;
-            gameData.OnMiniGmaeTurnStarted.OnRaised += OnTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd += CalculateWinnerOnServer;
             OnClickToMainMenu.OnRaised += OnTurnEnded;
@@ -23,7 +23,7 @@ namespace CosmicShore.Game.Arcade
                 return;
 
             gameData.OnInitializeGame -= InitializeScoringMode;
-            gameData.OnMiniGmaeTurnStarted.OnRaised -= OnTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd -= CalculateWinnerOnServer;
             OnClickToMainMenu.OnRaised -= OnTurnEnded;
@@ -31,6 +31,12 @@ namespace CosmicShore.Game.Arcade
 
         private void CalculateWinnerOnServer()
         {
+            DelayAndSendResults().Forget(); // fire and forget async call
+        }
+
+        private async UniTaskVoid DelayAndSendResults()
+        {
+            await UniTask.Delay(500); // waits for 0.5 seconds (500ms)
             SendRoundStats_ClientRpc();
         }
 

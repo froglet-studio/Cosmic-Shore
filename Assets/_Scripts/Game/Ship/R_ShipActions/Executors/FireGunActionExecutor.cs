@@ -22,6 +22,18 @@ public class FireGunActionExecutor : ShipActionExecutorBase
     FireGunActionSO _soRef;
     readonly bool _detachFromContainer = true;
 
+    Transform _worldMuzzleAnchor;
+
+    void Awake()
+    {
+        var go = new GameObject("[MuzzleWorldAnchor]")
+        {
+            hideFlags = HideFlags.HideAndDontSave
+        };
+        _worldMuzzleAnchor = go.transform;
+        _worldMuzzleAnchor.SetParent(null, true);
+    }
+
     void OnEnable()
     {
         if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
@@ -30,6 +42,12 @@ public class FireGunActionExecutor : ShipActionExecutorBase
     void OnDisable()
     {
         if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+    }
+
+    void OnDestroy()
+    {
+        if (_worldMuzzleAnchor)
+            Destroy(_worldMuzzleAnchor.gameObject);
     }
 
     public float Ammo01
@@ -61,15 +79,20 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
         _soRef = so;
         _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
-        var inheritedVelocity = status.Course;
+
+        var gunTf = gun ? gun.transform : transform;
+        _worldMuzzleAnchor.SetPositionAndRotation(gunTf.position, gunTf.rotation);
+
+        var inheritedVelocityWS = status.Course * status.Speed;
 
         OnGunFired?.Invoke();
+
         gun.FireGun(
-            projectileContainer,
+            _worldMuzzleAnchor,        
             so.Speed,
-            inheritedVelocity * status.Speed,
+            inheritedVelocityWS,
             so.ProjectileScale,
-            true,
+            true,                      
             so.ProjectileTime.Value,
             0,
             FiringPatterns.Default,

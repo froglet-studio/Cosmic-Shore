@@ -273,10 +273,10 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 2578401360066863000}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 4446903459644244966}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Screens.PauseMenu, Assembly-CSharp
+        m_MethodName: Hide
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -299,7 +299,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ActiveMenuScreens: 
   ActiveModalWindows: 
-  activationButton: 6
+  activationButton: 7
   activationButtonImage: {fileID: 7807410459988682646}
   TriangleButtonSprite: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
     type: 3}
@@ -310,6 +310,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 6467987976891983253}
 --- !u!114 &1092805372
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -622,7 +623,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ActiveMenuScreens: 
   ActiveModalWindows: 
-  activationButton: 7
+  activationButton: 4
   activationButtonImage: {fileID: 2982108693135987649}
   TriangleButtonSprite: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
     type: 3}
@@ -633,6 +634,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 6467987976891983253}
 --- !u!114 &1806468744
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -978,7 +980,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad1572ebe0d06f143bbc8789e520819f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   gameOverPanel: {fileID: 5054612726784394719}
   BannerImage: {fileID: 5054612726745043333}
@@ -1937,16 +1939,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Pause_Menu_Panel
       objectReference: {fileID: 0}
-    - target: {fileID: 8035663729132098927, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
+    - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
+      propertyPath: gameData
+      value: 
+      objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
+        type: 2}
     - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
       propertyPath: MiniGameHUD
       value: 
-      objectReference: {fileID: 5497835174634480093}
+      objectReference: {fileID: 5497835174634480091}
     - target: {fileID: 8802639757950604504, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
       propertyPath: m_IsActive
@@ -1962,12 +1965,6 @@ PrefabInstance:
       addedObject: {fileID: 2049118375}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 58dbda2a7cc479e4091d2abacbfd4d94, type: 3}
---- !u!1 &2578401360066863000 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8035663729132098927, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
-    type: 3}
-  m_PrefabInstance: {fileID: 5497835174978882295}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &2578401360066863001 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8035663729132098926, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
@@ -1980,12 +1977,18 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 5497835174978882295}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2578401360066863000}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b60804daa69172f468c76a40afdaaa28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!225 &6467987976891983253 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 1553411183395434338, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
+    type: 3}
+  m_PrefabInstance: {fileID: 5497835174978882295}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6605683967492913355
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2103,7 +2106,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 2578401360066863000}
+      objectReference: {fileID: 4446903459644244966}
     - target: {fileID: 1720411786918787520, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
@@ -2131,15 +2134,9 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 6605683967492913355}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5497835174634480093}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aa08588b33df93c4fb866d88d19a5a42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &5497835174634480093 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1720411786157758742, guid: 491eb8350c5c6ab45a8b291192f9891a,
-    type: 3}
-  m_PrefabInstance: {fileID: 6605683967492913355}
-  m_PrefabAsset: {fileID: 0}

@@ -8,11 +8,14 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public sealed class FullAutoBlockShootActionExecutor : ShipActionExecutorBase
+    public class FullAutoBlockShootActionExecutor : ShipActionExecutorBase
     {
         [Header("Scene Refs")]
         [SerializeField] private Transform[] muzzles;
         [SerializeField] private BlockProjectileFactory blockFactory;
+
+        [Header("Visual")]
+        [SerializeField] private float spawnVisibilityDelay = 0.1f;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
@@ -20,44 +23,62 @@ namespace CosmicShore.Game
         private IVesselStatus _status;
         private CancellationTokenSource _cts;
 
-        void OnEnable()
+        #region Unity Lifecycle
+        private void OnEnable()
         {
-            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+            if (OnMiniGameTurnEnd)
+                OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             End();
-            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+            if (OnMiniGameTurnEnd)
+                OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
         }
+        #endregion
 
+        #region ShipActionExecutorBase
         public override void Initialize(IVesselStatus vesselStatus)
         {
             _status = vesselStatus;
             if (muzzles == null || muzzles.Length == 0)
                 muzzles = new[] { _status.ShipTransform };
         }
+        #endregion
 
+        #region Public API
         public void Begin(FullAutoBlockShootActionSO so)
         {
             if (_cts != null) return;
-            _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(
+                this.GetCancellationTokenOnDestroy());
+
             FireLoopAsync(so, _cts.Token).Forget();
         }
 
         public void End()
         {
             if (_cts == null) return;
-            try { _cts.Cancel(); } catch 
-            { 
-                //
+
+            try
+            {
+                _cts.Cancel();
             }
+            catch
+            {
+                // no-op
+            }
+
             _cts.Dispose();
             _cts = null;
         }
 
-        void OnTurnEndOfMiniGame() => End();
+        private void OnTurnEndOfMiniGame() => End();
+        #endregion
 
+        #region Core Loop
         private async UniTaskVoid FireLoopAsync(FullAutoBlockShootActionSO so, CancellationToken token)
         {
             if (!blockFactory)
@@ -66,7 +87,7 @@ namespace CosmicShore.Game
                 return;
             }
 
-            float interval = 1f / Mathf.Max(0.1f, so.FireRate);
+            var interval  = 1f / Mathf.Max(0.1f, so.FireRate);
             var rotOffset = Quaternion.Euler(so.RotationOffsetEuler);
 
             try
@@ -75,38 +96,136 @@ namespace CosmicShore.Game
                 {
                     foreach (var m in muzzles)
                     {
-                        var prism = blockFactory.GetBlock(so.PrismType, m.position, m.rotation * rotOffset, null);
+                        if (!m) continue;
+
+                        var domainAtShot = _status.Domain;
+                        var prism = blockFactory.GetBlock(
+                            so.PrismType,
+                            m.position,
+                            m.rotation * rotOffset,
+                            null);
+
                         if (!prism) continue;
 
                         prism.transform.SetParent(null, true);
                         prism.transform.localScale = so.BlockScale;
 
+                        SetupPrismVisualAsync(prism, domainAtShot, spawnVisibilityDelay,
+                            this.GetCancellationTokenOnDestroy()).Forget();
+
                         if (so.DisableCollidersOnLaunch)
                         {
-                            if (prism.TryGetComponent<Collider>(out var c)) c.enabled = false;
-                            foreach (var col in prism.GetComponentsInChildren<Collider>()) col.enabled = false;
+                            var rootColliders = prism.GetComponents<Collider>();
+                            foreach (var col in rootColliders)
+                                col.enabled = false;
+                        }
+                        var childProjectile = prism.GetComponentInChildren<Projectile>();
+                        if (childProjectile)
+                        {
+                            childProjectile.Velocity = m.forward.normalized * so.BlockSpeed;
+
+                            if (childProjectile.TryGetComponent<Collider>(out var projCol))
+                                projCol.enabled = true;
+
+                            if (childProjectile.TryGetComponent<Rigidbody>(out var rb))
+                            {
+                                rb.isKinematic = false;
+                            }
                         }
 
-                        MoveAndAnchorAsync(prism.transform, m.forward, so.BlockSpeed,
-                            UnityEngine.Random.Range(so.MinStopDistance, so.MaxStopDistance),
-                            so.DisableCollidersOnLaunch, prism, token).Forget();
+                        float travelDistance = UnityEngine.Random.Range(so.MinStopDistance, so.MaxStopDistance);
+
+                        var movementToken = this.GetCancellationTokenOnDestroy();
+                        MoveAndAnchorAsync(
+                            prism.transform,
+                            m.forward,
+                            so.BlockSpeed,
+                            travelDistance,
+                            so.DisableCollidersOnLaunch,
+                            prism,
+                            childProjectile,
+                            movementToken
+                        ).Forget();
                     }
 
-                    await UniTask.Delay(TimeSpan.FromSeconds(interval), DelayType.DeltaTime, PlayerLoopTiming.Update, token);
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(interval),
+                        DelayType.DeltaTime,
+                        PlayerLoopTiming.Update,
+                        token);
                 }
             }
-            catch (OperationCanceledException) { }
-            catch (Exception e) { Debug.LogError($"[FullAutoBlockShoot] loop error: {e}"); }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[FullAutoBlockShoot] loop error: {e}");
+            }
         }
+        #endregion
 
-        private async UniTaskVoid MoveAndAnchorAsync(
-            Transform block,
-            Vector3 dir,
-            float speed,
-            float distance,
-            bool enableCollidersAtEnd,
+        #region Visual Setup (no flash)
+        private async UniTaskVoid SetupPrismVisualAsync(
             Prism prism,
+            Domains domain,
+            float delaySeconds,
             CancellationToken token)
+        {
+            try
+            {
+                if (!prism) return;
+
+                var matAnim = prism.GetComponent<MaterialPropertyAnimator>();
+                if (!matAnim || !matAnim.MeshRenderer)
+                {
+                    prism.Domain = domain;
+                    return;
+                }
+
+                var mr = matAnim.MeshRenderer;
+                mr.enabled = false;
+                prism.Domain = domain;
+                matAnim.IsAnimating        = false;
+                matAnim.AnimationProgress  = 1f;
+                matAnim.OnAnimationComplete = null;
+                matAnim.MarkMaterialsDirty();
+
+                matAnim.SetTransparency(false);
+
+                if (delaySeconds > 0f)
+                {
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(delaySeconds),
+                        DelayType.DeltaTime,
+                        PlayerLoopTiming.Update,
+                        token);
+                }
+                else
+                {
+    
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                }
+
+                if (!prism || !prism.gameObject.activeInHierarchy)
+                    return;
+
+                // Now show the mesh with the correct, final material – no flash
+                mr.enabled = true;
+            }
+            catch (OperationCanceledException)
+            {
+
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[FullAutoBlockShoot] SetupPrismVisual error: {e}");
+            }
+        }
+        #endregion
+
+        #region Movement / Anchor
+        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 dir, float speed, float distance, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, CancellationToken token)
         {
             Vector3 start  = block.position;
             Vector3 target = start + dir.normalized * distance;
@@ -116,19 +235,44 @@ namespace CosmicShore.Game
                 while ((block.position - target).sqrMagnitude > 0.01f)
                 {
                     token.ThrowIfCancellationRequested();
-                    block.position = Vector3.MoveTowards(block.position, target, speed * Time.deltaTime);
+
+                    if (!block || !block.gameObject.activeInHierarchy)
+                        return;
+
+                    block.position = Vector3.MoveTowards(
+                        block.position,
+                        target,
+                        speed * Time.deltaTime);
+
                     await UniTask.Yield(PlayerLoopTiming.Update);
                 }
 
-                prism.Domain = _status.Domain;
+                if (reactivateCollidersAtEnd && prism && prism.gameObject.activeInHierarchy)
+                {
+                    var rootColliders = prism.GetComponents<Collider>();
+                    foreach (var col in rootColliders)
+                        col.enabled = true;
+                }
 
-                if (!enableCollidersAtEnd) return;
+                if (childProjectile && childProjectile.gameObject.activeInHierarchy)
+                {
+                    if (childProjectile.TryGetComponent<Collider>(out var projCol))
+                        projCol.gameObject.SetActive(false);
 
-                if (block.TryGetComponent<Collider>(out var c)) c.enabled = true;
-                foreach (var col in block.GetComponentsInChildren<Collider>()) col.enabled = true;
+                    if (childProjectile.TryGetComponent<Rigidbody>(out var rb))
+                    {
+                        rb.isKinematic     = true;
+                    }
+                }
             }
-            catch (OperationCanceledException) { }
-            catch (Exception e) { Debug.LogError($"[FullAutoBlockShoot] MoveAndAnchor error: {e}"); }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[FullAutoBlockShoot] MoveAndAnchor error: {e}");
+            }
         }
+        #endregion
     }
 }

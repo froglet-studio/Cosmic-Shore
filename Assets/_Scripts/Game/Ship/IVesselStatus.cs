@@ -18,23 +18,22 @@ namespace CosmicShore.Game
         bool AlignmentEnabled { get; set; }
         Material AOEConicExplosionMaterial { get; set; }
         Material AOEExplosionMaterial { get; set; }
-        bool Attached { get; set; }
+        bool IsAttached { get; set; }
         Prism AttachedPrism { get; set; }
         Quaternion blockRotation { get; set; }
-        bool Boosting { get; set; }
+        bool IsBoosting { get; set; }
         float BoostMultiplier { get; set; }
-        CameraManager CameraManager { get; set; }
         SO_Captain Captain { get; set; }
         float ChargedBoostCharge { get; set; }
-        bool ChargedBoostDischarging { get; set; }
+        bool IsChargedBoostDischarging { get; set; }
         Vector3 Course { get; set; }
-        bool Drifting { get; set; }
+        bool IsDrifting { get; set; }
         Transform CameraFollowTarget { get; set; }
         bool GunsActive { get; set; }
         InputController InputController => Player.InputController;
         IInputStatus InputStatus => Player.InputStatus;
-        bool LiveProjectiles { get; set; }
-        bool Overheating { get; set; }
+        bool HasLiveProjectiles { get; set; }
+        bool IsOverheating { get; set; }
         IPlayer Player { get; set; }
         string PlayerName
         {
@@ -61,7 +60,7 @@ namespace CosmicShore.Game
             }
         }
 
-        bool Portrait { get; set; }
+        bool IsPortrait { get; set; }
         ResourceSystem ResourceSystem { get; }
         VesselAnimation VesselAnimation { get; }
         VesselCameraCustomizer VesselCameraCustomizer { get; }
@@ -77,20 +76,26 @@ namespace CosmicShore.Game
         Material ShipMaterial { get; set; }
         Material SkimmerMaterial { get; set; }
         float Speed { get; set; }
-        bool SingleStickControls { get; set; }
-        bool Slowed { get; set; }
+        bool IsSingleStickControls { get; set; }
+        bool IsSlowed { get; set; }
         bool IsStationary { get; set; }
         bool IsTranslationRestricted { get; set; }
-        bool Turret { get; set; }
         VesselPrismController VesselPrismController { get; }
-        ShipHUDContainer ShipHUDContainer { get; }
-        IVesselHUDView ShipHUDView { get; set; }
-        IVesselHUDController ShipHUDController { get; }
+        IVesselHUDController VesselHUDController { get; }
         VesselCustomization Customization { get; }
         R_VesselActionHandler ActionHandler { get; }
         VesselHUDView VesselHUDView { get; set; }
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
-        bool IsOwnerClient { get; }  
+        /// <summary>
+        /// In multiplayer mode, true -> owner client, false -> other clients
+        /// In singleplayer mode, always false.
+        /// </summary>
+        bool IsNetworkOwner { get; }
+        /// <summary>
+        /// In multiplayer mode, true -> non-owner client, false -> owner client
+        /// In singleplayer mode, always false
+        /// </summary>
+        bool IsNetworkClient { get; }
         void ResetForPlay();
     }
 }

@@ -12,15 +12,14 @@ namespace CosmicShore.Game
 {
     public sealed class CloakSeedWallActionExecutor : ShipActionExecutorBase
     {
-        [Header("Scene Refs")]
+        [Header("Scene Refs")] 
         [SerializeField] private SkinnedMeshRenderer shipRenderer;
         [SerializeField] private SeedAssemblerActionExecutor seedAssembler;
 
-        [Header("Events")]
+        [Header("Events")] 
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
 
-        private GameObject _serpentGhost;
-
+        // State
         private IVesselStatus _status;
         private VesselPrismController _controller;
 
@@ -28,25 +27,32 @@ namespace CosmicShore.Game
         private float _cooldownEndTime;
         private CancellationTokenSource _runCts;
 
+        // SO used during active cloak
+        private CloakSeedWallActionSO _activeSo;
+
+        // Ship restore cache
         private Material[] _shipOriginalShared;
-        private bool _shipRendererDisabledForCloak;
         private bool _shipPrevEnabled;
-        private bool _restoring;
+        private GameObject _serpentGhost;
 
-        [Header("Ghost Tuning")]
-        [SerializeField] private Vector3 ghostEulerOffset = Vector3.zero;
-        [SerializeField] private Vector3 ghostPositionOffset = Vector3.zero;
-        [SerializeField] private float   ghostScaleMultiplier = 1f;
-        [SerializeField] private bool    ghostUseShipOrientation = true;
+        // Prism alpha override (same pattern as old code)
+        private static readonly int _ColorId     = Shader.PropertyToID("_Color");
+        private static readonly int _BaseColorId = Shader.PropertyToID("_BaseColor");
 
-        private class TrackedPrism
+        private sealed class TrackedPrism
         {
             public Prism Prism;
-            public Renderer[] Renderers;
-            public Material[][] OriginalShared;
-            public bool[] WasEnabled;
+            public MaterialPropertyAnimator Animator;
         }
+
+        private readonly List<TrackedPrism> _cloakedPrisms = new();
+
+
         private readonly List<TrackedPrism> _spawnedDuringCloak = new();
+
+        private bool IsLocalUser => true;
+
+        // ---------------- Lifecycle ----------------
 
         void OnEnable()
         {
@@ -74,33 +80,22 @@ namespace CosmicShore.Game
                 seedAssembler.Initialize(_status);
         }
 
-        private void LateUpdate()
-        {
-            if (!_isRunning || _restoring) return;
-
-            if (shipRenderer && shipRenderer.enabled)
-                shipRenderer.enabled = false;
-
-            foreach (var r in from tp in _spawnedDuringCloak
-                              where tp?.Renderers != null
-                              from r in tp.Renderers
-                              where r && r.enabled
-                              select r)
-            {
-                r.enabled = false;
-            }
-        }
+        // ---------------- API ----------------
 
         public void Toggle(CloakSeedWallActionSO so, IVesselStatus status)
         {
             if (!so || status == null) return;
             if (_isRunning || Time.time < _cooldownEndTime) return;
 
-            var ok = seedAssembler.StartSeed(so.SeedWallSo, status);
-            if (!ok) return;
+            _activeSo = so;
+
+            if (!seedAssembler.StartSeed(so.SeedWallSo, status))
+                return;
 
             seedAssembler.BeginBonding();
-            SpawnSerpentGhostAtSeed();
+
+            BeginCloakVisuals();      // ship ghost
+            CloakExistingPrisms();    // all current trail blocks
 
             _runCts?.Cancel();
             _runCts?.Dispose();
@@ -108,9 +103,9 @@ namespace CosmicShore.Game
             RunAsync(so, _runCts.Token).Forget();
         }
 
+
         public void End()
         {
-            // cancel the run if active
             if (_runCts != null)
             {
                 try { _runCts.Cancel(); } catch { }
@@ -118,151 +113,101 @@ namespace CosmicShore.Game
                 _runCts = null;
             }
 
-            if (!_isRunning && !_restoring)
-            {
-                // still ensure cleanup of ship/ghost/prisms/seed
-                RestoreShipImmediate();
-                DestroySerpentGhost();
-                ForceUncloakAllExistingPrisms();
-                seedAssembler?.StopSeedCompletely();
-                return;
-            }
-
-            // If running, emulate the restore path
-            _isRunning = false;
-            _restoring = true;
-
+            // Always restore
             RestoreShipImmediate();
-            DestroySerpentGhost();
-            ForceUncloakAllExistingPrisms();
+            RestoreAllPrismsImmediate();
             seedAssembler?.StopSeedCompletely();
 
-            _spawnedDuringCloak.Clear();
-
-            _restoring = false;
+            _activeSo  = null;
+            _isRunning = false;
         }
+
+        // ---------------- Run ----------------
 
         private async UniTaskVoid RunAsync(CloakSeedWallActionSO so, CancellationToken ct)
         {
             _isRunning = true;
             _spawnedDuringCloak.Clear();
 
-            if (shipRenderer)
-            {
-                _shipOriginalShared = shipRenderer.sharedMaterials;
-                _shipPrevEnabled    = shipRenderer.enabled;
-                shipRenderer.enabled = false;
-                _shipRendererDisabledForCloak = true;
-            }
-
             _cooldownEndTime = Time.time + Mathf.Max(0.01f, so.CooldownSeconds);
 
             try
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(so.CooldownSeconds),
-                                    DelayType.DeltaTime,
-                                    PlayerLoopTiming.Update,
-                                    ct);
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.Update,
+                    ct);
             }
-            catch (OperationCanceledException) { /* normal */ }
+            catch (OperationCanceledException)
+            {
+                // normal on End()
+            }
 
             _isRunning = false;
-            _restoring = true;
 
             RestoreShipImmediate();
-            DestroySerpentGhost();
-            ForceUncloakAllExistingPrisms();
+            RestoreAllPrismsImmediate();
             seedAssembler?.StopSeedCompletely();
 
-            _restoring = false;
+            _activeSo = null;
 
             _runCts?.Dispose();
             _runCts = null;
+        }
+
+        // ---------------- Cloak visuals ----------------
+
+        private void BeginCloakVisuals()
+        {
+            if (!shipRenderer) return;
+            _shipOriginalShared = shipRenderer.sharedMaterials;
+            _shipPrevEnabled    = shipRenderer.enabled;
+            SpawnSerpentGhost();
+
+            if (IsLocalUser)
+            {
+                var ghostMat = _activeSo?.GhostShipMaterial;
+                if (ghostMat) ApplySingleMaterialAcrossRenderer(shipRenderer, ghostMat);
+                shipRenderer.enabled = true;
+            }
+            else
+            {
+                shipRenderer.enabled = false;
+            }
         }
 
         private void HandleBlockSpawned(Prism block)
         {
             if (!_isRunning || !block) return;
 
-            var rends = block.GetComponentsInChildren<Renderer>(true);
-            if (rends == null || rends.Length == 0) return;
-
-            var tracked = new TrackedPrism
+            // Optional: keep these blocks alive for entire cooldown
+            var remaining = _cooldownEndTime - Time.time;
+            if (remaining > 0f)
             {
-                Prism         = block,
-                Renderers     = rends,
-                OriginalShared= new Material[rends.Length][],
-                WasEnabled    = new bool[rends.Length]
-            };
-
-            for (int i = 0; i < rends.Length; i++)
-            {
-                var r = rends[i];
-                if (!r) continue;
-
-                tracked.OriginalShared[i] = r.sharedMaterials;
-                tracked.WasEnabled[i]     = r.enabled;
-
-                r.enabled = false;
+                var original = block.waitTime;
+                var target   = Mathf.Max(original, remaining);
+                if (!Mathf.Approximately(original, target))
+                    block.waitTime = target;
             }
 
-            _spawnedDuringCloak.Add(tracked);
+            CloakOnePrism(block);
         }
 
-        private void RestoreAllPrismsImmediate()
-        {
-            var snapshot = _spawnedDuringCloak.ToArray();
 
-            foreach (var t in snapshot)
-            {
-                if (t?.Renderers == null) continue;
-
-                for (int i = 0; i < t.Renderers.Length; i++)
-                {
-                    var r = t.Renderers[i];
-                    if (!r) continue;
-
-                    bool shouldEnable = (t.WasEnabled == null || i >= t.WasEnabled.Length) || t.WasEnabled[i];
-                    r.enabled = shouldEnable;
-
-                    if (t.OriginalShared != null && i < t.OriginalShared.Length && t.OriginalShared[i] != null)
-                        r.sharedMaterials = t.OriginalShared[i];
-                }
-            }
-            _spawnedDuringCloak.Clear();
-        }
-
-        private void RestoreShipImmediate()
+        private void SpawnSerpentGhost()
         {
             if (!shipRenderer) return;
 
-            if (_shipRendererDisabledForCloak)
+            if (_serpentGhost)
             {
-                shipRenderer.enabled = _shipPrevEnabled;
-                _shipRendererDisabledForCloak = false;
+                Destroy(_serpentGhost);
+                _serpentGhost = null;
             }
-
-            if (_shipOriginalShared != null)
-                shipRenderer.sharedMaterials = _shipOriginalShared;
-        }
-
-        private void SpawnSerpentGhostAtSeed()
-        {
-            if (_serpentGhost) return;
-            if (!shipRenderer)
-            {
-                Debug.LogWarning("[CloakSeedWall] shipRenderer missing; cannot bake ghost.");
-                return;
-            }
-
-            Prism seed = seedAssembler ? seedAssembler.ActiveSeedBlock : null;
-            if (!seed) seed = GetLatestBlock();
-            if (!seed) return;
 
             var baked = new Mesh();
             shipRenderer.BakeMesh(baked, true);
 
-            _serpentGhost = new GameObject("SerpentGhost (Baked)");
+            _serpentGhost = new GameObject("SerpentGhost");
             var mf = _serpentGhost.AddComponent<MeshFilter>();
             var mr = _serpentGhost.AddComponent<MeshRenderer>();
             mf.sharedMesh = baked;
@@ -276,73 +221,192 @@ namespace CosmicShore.Game
                 mr.materials = clones;
             }
 
-            var baseRot = ghostUseShipOrientation
-                ? shipRenderer.transform.rotation
-                : seed.transform.rotation;
-
-            Vector3 basePos = seed.transform.position;
-
-            _serpentGhost.transform.SetParent(null, true);
             _serpentGhost.transform.SetPositionAndRotation(
-                basePos + ghostPositionOffset,
-                baseRot * Quaternion.Euler(ghostEulerOffset)
+                shipRenderer.transform.position,
+                shipRenderer.transform.rotation
             );
-
-            _serpentGhost.transform.localScale = Vector3.one * Mathf.Max(0.0001f, ghostScaleMultiplier);
+            _serpentGhost.transform.localScale = shipRenderer.transform.lossyScale;
+            _serpentGhost.SetActive(true);
         }
-
-        private void DestroySerpentGhost()
+        
+        private void CloakExistingPrisms()
         {
-            if (!_serpentGhost) return;
-            Destroy(_serpentGhost);
-            _serpentGhost = null;
-        }
+            if (_controller == null) return;
 
-        private Prism GetLatestBlock()
-        {
-            // Primary trail
-            var listA = _controller?.Trail?.TrailList;
-            if (listA != null && listA.Count > 0)
-                return listA[^1];
-
-            var trail2Field = typeof(VesselPrismController)
-                .GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            if (trail2Field?.GetValue(_controller) is Trail { TrailList: { Count: > 0 } } trail2)
-                return trail2.TrailList[^1];
-
-            return null;
-        }
-
-        /// <summary>
-        /// Global belt-and-suspenders: ensure ALL current prism renderers are enabled,
-        /// even if they weren't in our tracked list (assembler spawns, pooling swaps, etc.).
-        /// </summary>
-        private void ForceUncloakAllExistingPrisms()
-        {
-            // Primary trail
-            var listA = _controller?.Trail?.TrailList;
-            if (listA != null)
-                foreach (var t in listA)
-                    EnableAllUnder(t);
-
-            var trail2Field = typeof(VesselPrismController)
-                .GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            if (trail2Field?.GetValue(_controller) is not Trail t2 || t2.TrailList == null) return;
-            foreach (var t in t2.TrailList)
-                EnableAllUnder(t);
-
-            void EnableAllUnder(Prism p)
+            void CloakTrail(Trail trail)
             {
-                if (!p) return;
-                var rends = p.GetComponentsInChildren<Renderer>(true);
-                foreach (var r in rends)
-                {
-                    if (!r) continue;
-                    r.enabled = true;
-                }
+                if (trail?.TrailList == null) return;
+                foreach (var p in trail.TrailList)
+                    if (p != null)
+                        CloakOnePrism(p);
             }
+
+            CloakTrail(_controller.Trail);
+
+            // Optional second trail (like your old code)
+            var trail2Field = typeof(VesselPrismController)
+                .GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (trail2Field?.GetValue(_controller) is Trail t2)
+                CloakTrail(t2);
+        }
+
+
+        // ---------------- Restore ----------------
+
+        private void RestoreShipImmediate()
+        {
+            if (_serpentGhost)
+            {
+                Destroy(_serpentGhost);
+                _serpentGhost = null;
+            }
+
+            if (!shipRenderer) return;
+
+            shipRenderer.enabled = _shipPrevEnabled;
+
+            if (_shipOriginalShared != null)
+                shipRenderer.sharedMaterials = _shipOriginalShared;
+
+            _shipOriginalShared = null;
+        }
+
+        private void RestoreAllPrismsImmediate()
+        {
+            foreach (var t in _cloakedPrisms)
+            {
+                if (t?.Prism == null || t.Animator == null) continue;
+
+                // Next ValidateMaterials() should rebuild the team materials from ThemeManager
+                t.Animator.MarkMaterialsDirty();
+
+                if (t.Prism.prismProperties != null)
+                    t.Prism.prismProperties.IsTransparent = false;
+
+                // This will call ValidateMaterials(), pull team block materials again,
+                // and then choose the opaque one
+                t.Prism.SetTransparency(false);
+            }
+
+            _cloakedPrisms.Clear();
+        }
+
+
+        // ---------------- Alpha override helpers (copied from old working code) ----------------
+
+        private static void ApplyAlphaToRenderer(Renderer r, float alpha)
+        {
+            if (!r) return;
+
+            var mats  = r.sharedMaterials;
+            int count = mats?.Length ?? 0;
+            if (count == 0) count = 1; // still set a block on index 0
+
+            for (int i = 0; i < count; i++)
+            {
+                var block = new MaterialPropertyBlock();
+                r.GetPropertyBlock(block, i);
+
+                Color baseColor = Color.white;
+                if (mats != null && i < mats.Length && mats[i])
+                {
+                    var mat = mats[i];
+
+                    if (mat.HasProperty(_BaseColorId))
+                    {
+                        baseColor = mat.GetColor(_BaseColorId);
+                        baseColor.a = alpha;
+                        block.SetColor(_BaseColorId, baseColor);
+                    }
+                    else if (mat.HasProperty(_ColorId))
+                    {
+                        baseColor = mat.GetColor(_ColorId);
+                        baseColor.a = alpha;
+                        block.SetColor(_ColorId, baseColor);
+                    }
+                    else
+                    {
+                        baseColor.a = alpha;
+                        block.SetColor(_ColorId, baseColor);
+                    }
+                }
+                else
+                {
+                    baseColor.a = alpha;
+                    block.SetColor(_ColorId, baseColor);
+                }
+
+                r.SetPropertyBlock(block, i);
+            }
+        }
+
+        private static void ClearAlphaOverrides(Renderer r)
+        {
+            if (!r) return;
+
+            var mats  = r.sharedMaterials;
+            int count = mats?.Length ?? 0;
+            if (count == 0) count = 1;
+
+            for (int i = 0; i < count; i++)
+            {
+                // Passing null clears overrides for that submesh index
+                r.SetPropertyBlock(null, i);
+            }
+        }
+
+        // ---------------- Ship helper ----------------
+        
+        private void CloakOnePrism(Prism prism)
+        {
+            if (prism == null || _activeSo == null) return;
+
+            var anim = prism.GetComponent<MaterialPropertyAnimator>();
+            if (anim == null) return;
+
+            var transparent = _activeSo.PrismCloakTransparent;
+            var opaque      = _activeSo.PrismCloakOpaque;
+
+            // If SO not set up yet, just fall back to normal transparency toggle
+            if (transparent == null || opaque == null)
+            {
+                prism.SetTransparency(true);
+                _cloakedPrisms.Add(new TrackedPrism { Prism = prism, Animator = anim });
+                return;
+            }
+
+            // Blend from current team material into the cloak pair, then turn transparent
+            anim.UpdateMaterial(
+                transparent,
+                opaque,
+                0.15f,                    // fade duration, tweak as you like
+                () =>
+                {
+                    // Mark the prism logically as transparent if you use this flag
+                    if (prism.prismProperties != null)
+                        prism.prismProperties.IsTransparent = true;
+
+                    // Now actually switch to the transparent cloak material
+                    prism.SetTransparency(true);
+                });
+
+            _cloakedPrisms.Add(new TrackedPrism
+            {
+                Prism    = prism,
+                Animator = anim
+            });
+        }
+
+
+        private static void ApplySingleMaterialAcrossRenderer(Renderer r, Material mat)
+        {
+            if (!r || !mat) return;
+            var count = r.sharedMaterials is { Length: > 0 }
+                ? r.sharedMaterials.Length
+                : 1;
+            var arr = new Material[count];
+            for (int i = 0; i < count; i++) arr[i] = mat;
+            r.sharedMaterials = arr;
         }
     }
 }

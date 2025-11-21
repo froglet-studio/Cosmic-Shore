@@ -1,5 +1,6 @@
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,12 +12,44 @@ namespace CosmicShore.Game.Arcade
         {
             OnClickReturnToMainMenuAsync().Forget();
         }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            gameData.OnClientReady += OnClientReady;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            gameData.OnClientReady -= OnClientReady;
+        }
+        
+        void OnClientReady() => gameData.SetNonOwnerPlayersActiveInNewClient();
         
         async UniTaskVoid OnClickReturnToMainMenuAsync()
         {
             RemovePlayer_ServerRpc(gameData.LocalPlayer.Name);
             await UniTask.Delay(1000, DelayType.UnscaledDeltaTime, PlayerLoopTiming.LastPostLateUpdate ,this.GetCancellationTokenOnDestroy());
             multiplayerSetup.LeaveSession().Forget();
+        }
+        
+        protected override void OnCountdownTimerEnded()
+        {
+            OnCountdownTimerEnded_ServerRpc(gameData.LocalPlayer.Name);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void OnCountdownTimerEnded_ServerRpc(FixedString128Bytes playerName)
+        {
+            OnCountdownTimerEnded_ClientRpc(playerName);
+        }
+
+        [ClientRpc]
+        void OnCountdownTimerEnded_ClientRpc(FixedString128Bytes playerName)
+        {
+            gameData.SetNewPlayerActive(playerName.ToString());
+            gameData.StartTurn(); 
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -40,6 +73,18 @@ namespace CosmicShore.Game.Arcade
             {
                 Debug.Log($"[Freestyle][Client] Removed player '{playerName}'.");
             }
+        }
+        
+        protected override void SetupNewRound()
+        {
+            SetupNewRound_ClientRpc();
+        }
+        
+        [ClientRpc]
+        void SetupNewRound_ClientRpc()
+        {
+            // RaiseToggleReadyButtonEvent(true);
+            base.SetupNewRound();
         }
     }
 }

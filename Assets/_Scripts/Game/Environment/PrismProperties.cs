@@ -17,5 +17,6 @@ namespace CosmicShore.Core
         public bool IsDangerous; // TODO: change to enum with mutually exclusive values with shielding
         public bool IsTransparent;
         public float TimeCreated;
+        public string DefaultLayerName = "TrailBlocks";
     }
 }

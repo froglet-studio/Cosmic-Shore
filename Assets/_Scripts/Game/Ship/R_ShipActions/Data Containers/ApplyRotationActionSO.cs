@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "ApplyRotationAction", menuName = "ScriptableObjects/Vessel Actions/ApplyRotationActionSO")]
 public class ApplyRotationActionSO : ShipActionSO
@@ -8,23 +9,22 @@ public class ApplyRotationActionSO : ShipActionSO
     [SerializeField] bool yaw   = true;
     [SerializeField] bool roll  = true;
 
-    public override void StartAction(ActionExecutorRegistry execs)
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
-        var ship = Ship;
-        var status = ShipStatus;
-        var transformer = status.VesselTransformer;
+ 
+        var transformer = vesselStatus.VesselTransformer;
 
         if (pitch)
-            transformer.ApplyRotation(rotationAmount, ship.Transform.right);
+            transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.right);
 
         if (yaw)
-            transformer.ApplyRotation(rotationAmount, ship.Transform.up);
+            transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.up);
 
         if (roll)
-            transformer.ApplyRotation(rotationAmount, ship.Transform.forward);
+            transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.forward);
     }
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
     }
 }

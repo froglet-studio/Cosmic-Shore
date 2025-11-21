@@ -9,6 +9,7 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     [Header("Optional refs (auto-resolved if null)")]
     [SerializeField] private GrowTrailActionExecutor   trailProvider;
     [SerializeField] private GrowSkimmerActionExecutor skimmerProvider;
+
     [Header("Events")]
     [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
     
@@ -16,11 +17,10 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     private ICameraController _controller;
     private ZoomOutActionSO _so;
 
-    private bool _active;
-    private bool _retracting;
-
-    private float _baseScale;     // provider.MinScale (stable world baseline)
-    private float _baseDistance;  // camera Z captured on first Begin from Idle
+    private bool  _active;
+    private bool  _retracting;
+    private float _baseScale;    
+    private float _baseDistance;  
 
     [SerializeField] private float farClipPadding = 1.3f;
     [SerializeField] private float maxDistanceAbs = 10000f;
@@ -49,9 +49,26 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     {
         _status = shipStatus;
     }
+    
+    private bool IsLocalCameraTarget()
+    {
+        if (_status == null) return false;
+
+        var cm = CameraManager.Instance;
+        
+        var follow = cm.PlayerFollowTarget;
+        var shipTransform  = _status.ShipTransform;
+        var cameraTarget   = _status.CameraFollowTarget ?? shipTransform;
+        return follow == shipTransform || follow == cameraTarget;
+    }
 
     public void Begin(ZoomOutActionSO so, IVesselStatus status)
     {
+        _status ??= status;
+
+        if (!IsLocalCameraTarget())
+            return;
+        
         _so = so;
         _controller ??= CameraManager.Instance?.GetActiveController();
         if (_controller == null) return;
@@ -66,7 +83,7 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
             if (_controller is CustomCameraController cc)
             {
-                _hadAdaptiveZoom = cc.adaptiveZoomEnabled;
+                _hadAdaptiveZoom      = cc.adaptiveZoomEnabled;
                 cc.adaptiveZoomEnabled = false;
             }
         }
@@ -78,6 +95,9 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
     public void End()
     {
+        if (_status == null || !IsLocalCameraTarget())
+            return;
+
         if (_controller == null || !_so)
         {
             CleanupToIdle();
@@ -101,13 +121,28 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
     private void LateUpdate()
     {
-        if (!_active || _status == null || _status.AutoPilotEnabled || !_so) return;
+        if (_status == null ||
+            !IsLocalCameraTarget() ||
+            !_active ||
+            _status.AutoPilotEnabled ||
+            !_so)
+        {
+            return;
+        }
 
         var provider = Provider();
-        if (provider == null) { CleanupToIdle(); return; }
+        if (provider == null)
+        {
+            CleanupToIdle();
+            return;
+        }
 
         _controller ??= CameraManager.Instance?.GetActiveController();
-        if (_controller == null) { CleanupToIdle(); return; }
+        if (_controller == null)
+        {
+            CleanupToIdle();
+            return;
+        }
 
         float currentScale = Mathf.Max(provider.CurrentScale, 0.0001f);
         float currentRatio = currentScale / Mathf.Max(_baseScale, 0.0001f);
@@ -125,14 +160,18 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 
         if (_controller is CustomCameraController concrete)
         {
-            var cam = concrete.Camera;
+            var cam  = concrete.Camera;
             float need = Mathf.Abs(target) * 1.05f;
             if (need > cam.farClipPlane * 0.95f)
                 cam.farClipPlane = need * farClipPadding;
         }
 
-        if (_state != State.Retracting || !(Mathf.Abs(currentRatio - 1f) <= RatioEpsilon)) return;
+        // Handle retract finish
+        if (_state != State.Retracting || !(Mathf.Abs(currentRatio - 1f) <= RatioEpsilon))
+            return;
+
         _controller.SetCameraDistance(_baseDistance); 
+
         if (_controller is CustomCameraController ccRestore)
             ccRestore.adaptiveZoomEnabled = _hadAdaptiveZoom;
         _hadAdaptiveZoom = false;

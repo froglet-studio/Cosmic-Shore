@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,36 +19,47 @@ namespace CosmicShore.Game
         [SerializeField] private Color boostNormalColor;
         [SerializeField] private Color boostFullColor;
         [SerializeField] private Color overheatingColor;
+        [SerializeField] private Color blockedInputColor = Color.red;   // NEW
 
         [Header("Drain animation")]
         [SerializeField] private float drainSpeed = 0.04f;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged; 
+        [SerializeField] private ScriptableEventInputEventBlock onInputEventBlocked; // NEW
 
         Coroutine _heatFillLoop;
         Coroutine _drainLoop;
 
+        // NEW: track block + pressed states, and defaults to restore
+        private readonly HashSet<InputEvents> _blocked = new();
+        private readonly HashSet<InputEvents> _pressed = new();
+        private readonly Dictionary<InputEvents, Color> _defaultHighlightColors = new();
+        private readonly Dictionary<InputEvents, Coroutine> _blockEnforcers = new();
+        // keep a local reference to the handler so we can subscribe in addition to the base
+        private R_VesselActionHandler _handler; // NEW
+
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
-            view = view != null ? view : baseView as SparrowHUDView;
+            view = view ? view : baseView as SparrowHUDView;
 
-            if (view != null && !view.isActiveAndEnabled)
-                view.gameObject.SetActive(true);
+            if (view && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
 
-            if (stationaryModeChanged != null)
-                stationaryModeChanged.OnRaised += HandleStationaryModeChanged;
-
+            if (stationaryModeChanged) stationaryModeChanged.OnRaised += HandleStationaryModeChanged;
             HandleStationaryModeChanged(vesselStatus.IsTranslationRestricted);
 
-            if (overheatingExecutor == null) return;
-            overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
-            overheatingExecutor.OnOverheated         += OnOverheated;
-            overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
-            overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
+            if (onInputEventBlocked) onInputEventBlocked.OnRaised += HandleInputEventBlocked;
 
-            ApplyBoostVisual(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
+            if (overheatingExecutor != null)
+            {
+                overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
+                overheatingExecutor.OnOverheated         += OnOverheated;
+                overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
+                overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
+
+                ApplyBoostVisual(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
+            }
         }
 
         private void OnDestroy()
@@ -59,12 +71,63 @@ namespace CosmicShore.Game
                 overheatingExecutor.OnHeatDecayStarted   -= OnHeatDecayStarted;
                 overheatingExecutor.OnHeatDecayCompleted -= OnHeatDecayCompleted;
             }
-            if (stationaryModeChanged != null)
-                stationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
-
+            if (stationaryModeChanged)  stationaryModeChanged.OnRaised  -= HandleStationaryModeChanged;
+            if (onInputEventBlocked)    onInputEventBlocked.OnRaised    -= HandleInputEventBlocked;
+            
             StopHeatFillLoop();
             StopDrainLoop();
         }
+
+        // ---------- Block logic ----------
+
+        private void HandleInputEventBlocked(InputEventBlockPayload p)
+        {
+            if (!view || view.highlights == null) return;
+
+            var image = FindHighlightImage(p.Input);
+            if (!image) return;
+
+            if (p.Started)
+            {
+                // (Re)start enforcer for this input
+                if (_blockEnforcers.TryGetValue(p.Input, out var running) && running != null)
+                    StopCoroutine(running);
+                _blockEnforcers[p.Input] = StartCoroutine(EnforceBlockedHighlight(image, p.Input));
+            }
+            else if (p.Ended)
+            {
+                // Stop enforcer + hard restore (white & hidden)
+                if (_blockEnforcers.TryGetValue(p.Input, out var running) && running != null)
+                    StopCoroutine(running);
+                _blockEnforcers.Remove(p.Input);
+
+                image.color   = Color.white; // restore to white explicitly
+                image.enabled = false;       // hide exactly when mute ends
+            }
+        }
+
+        private IEnumerator EnforceBlockedHighlight(Image img, InputEvents input)
+        {
+            // while no "ended" event has come in, keep forcing red+enabled each frame
+            // (We don't poll any state; the End event will stop this.)
+            while (true)
+            {
+                if (!img) yield break;
+                img.enabled = true;
+                img.color   = blockedInputColor;
+                yield return null;
+            }
+        }
+
+        private Image FindHighlightImage(InputEvents ev)
+        {
+            for (int i = 0; i < view.highlights.Count; i++)
+                if (view.highlights[i].input == ev)
+                    return view.highlights[i].image;
+            return null;
+        }
+
+        // ---------- existing HUD behavior below (unchanged) ----------
 
         private void HandleStationaryModeChanged(bool isStationary)
         {
@@ -80,13 +143,13 @@ namespace CosmicShore.Game
             }
         }
 
-        void OnHeatBuildStarted() { StopDrainLoop(); StartHeatFillLoop(); }
-        void OnOverheated() { StopHeatFillLoop(); StopDrainLoop(); ApplyBoostVisual(1f, true); }
-        void OnHeatDecayStarted() { StopHeatFillLoop(); StartDrainLoop(); }
-        void OnHeatDecayCompleted() { StopHeatFillLoop(); StopDrainLoop(); ApplyBoostVisual(0f, false); }
+        void OnHeatBuildStarted()      { StopDrainLoop(); StartHeatFillLoop(); }
+        void OnOverheated()            { StopHeatFillLoop(); StopDrainLoop(); ApplyBoostVisual(1f, true); }
+        void OnHeatDecayStarted()      { StopHeatFillLoop(); StartDrainLoop(); }
+        void OnHeatDecayCompleted()    { StopHeatFillLoop(); StopDrainLoop(); ApplyBoostVisual(0f, false); }
 
         void StartHeatFillLoop() { StopHeatFillLoop(); _heatFillLoop = StartCoroutine(HeatFillRoutine()); }
-        void StopHeatFillLoop() { if (_heatFillLoop != null) { StopCoroutine(_heatFillLoop); _heatFillLoop = null; } }
+        void StopHeatFillLoop()  { if (_heatFillLoop != null) { StopCoroutine(_heatFillLoop); _heatFillLoop = null; } }
 
         IEnumerator HeatFillRoutine()
         {
@@ -103,7 +166,7 @@ namespace CosmicShore.Game
         }
 
         void StartDrainLoop() { StopDrainLoop(); _drainLoop = StartCoroutine(DrainToZeroRoutine()); }
-        void StopDrainLoop() { if (_drainLoop != null) { StopCoroutine(_drainLoop); _drainLoop = null; } }
+        void StopDrainLoop()  { if (_drainLoop != null) { StopCoroutine(_drainLoop); _drainLoop = null; } }
 
         IEnumerator DrainToZeroRoutine()
         {

@@ -29,7 +29,8 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _DstBlendAlpha: 10
     m_Colors:
     - _BrightCrystalColor: {r: 1.9743518, g: 4.8700967, b: 0.6119494, a: 0.9411765}
     - _Color1: {r: 0.68790275, g: 2.1822639, b: 0.34761727, a: 1}
@@ -49,4 +50,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 9
+  version: 10

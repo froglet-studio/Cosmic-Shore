@@ -7,7 +7,7 @@ public class DriftAction : ShipAction
         Vessel.VesselStatus.VesselTransformer.PitchScaler *= 1.5f;
         Vessel.VesselStatus.VesselTransformer.YawScaler *= 1.5f;
         Vessel.VesselStatus.VesselTransformer.RollScaler *= 1.5f;
-        Vessel.VesselStatus.Drifting = true;
+        Vessel.VesselStatus.IsDrifting = true;
     }
 
     public override void StopAction()
@@ -15,6 +15,6 @@ public class DriftAction : ShipAction
         Vessel.VesselStatus.VesselTransformer.PitchScaler /= 1.5f;
         Vessel.VesselStatus.VesselTransformer.YawScaler /= 1.5f;
         Vessel.VesselStatus.VesselTransformer.RollScaler /= 1.5f;
-        Vessel.VesselStatus.Drifting = false;
+        Vessel.VesselStatus.IsDrifting = false;
     }
 }

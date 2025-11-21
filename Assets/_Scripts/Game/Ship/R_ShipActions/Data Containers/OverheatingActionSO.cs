@@ -12,12 +12,18 @@ public class OverheatingActionSO : ShipActionSO
     [SerializeField] float heatBuildRate;
     [SerializeField] ElementalFloat heatDecayRate;
     [SerializeField] float overheatDuration;
-
+    [SerializeField] private Material dangerPrismMaterial;
+    [SerializeField] private Vector3 overheatScaleMultiplier = new Vector3(0.7f, 1f, 0.7f);
+    [SerializeField, Min(0f)] private float scaleLerpSeconds = 0.15f;
+    
     public ShipActionSO WrappedAction => wrappedAction;
     public int HeatResourceIndex => heatResourceIndex;
     public float HeatBuildRate => heatBuildRate;
     public ElementalFloat HeatDecayRate => heatDecayRate;
     public float OverheatDuration => overheatDuration;
+    public Material DangerPrismMaterial => dangerPrismMaterial;
+    public Vector3 OverheatScaleMultiplier => overheatScaleMultiplier;
+    public float ScaleLerpSeconds => scaleLerpSeconds;
 
     public override void Initialize(IVessel ship)
     {
@@ -25,10 +31,10 @@ public class OverheatingActionSO : ShipActionSO
         wrappedAction?.Initialize(ship);
     }
     
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<OverheatingActionExecutor>()?.StartOverheat(this, ShipStatus, execs);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<OverheatingActionExecutor>()?.StartOverheat(this, vesselStatus, execs);
 
-    public override void StopAction(ActionExecutorRegistry execs)
-        => execs?.Get<OverheatingActionExecutor>()?.StopOverheat(this, ShipStatus, execs);
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<OverheatingActionExecutor>()?.StopOverheat(this, vesselStatus, execs);
 
 }

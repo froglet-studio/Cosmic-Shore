@@ -19,6 +19,10 @@ namespace CosmicShore.Game
         /// In singleplayer mode, always false.
         /// </summary>
         bool IsNetworkOwner { get; }
+        /// <summary>
+        /// In multiplayer mode, true -> non-owner client, false -> owner client
+        /// In singleplayer mode, always false
+        /// </summary>
         bool IsNetworkClient { get; }
         void Initialize(IPlayer player, bool enableAIPilot = false);
         void PerformShipControllerActions(InputEvents @event);

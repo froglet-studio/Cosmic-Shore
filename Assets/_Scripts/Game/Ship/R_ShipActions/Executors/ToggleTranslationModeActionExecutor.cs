@@ -53,14 +53,12 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
     {
         if (!so || status == null) return;
 
-        // Same-frame debounce to ignore duplicate invokes (e.g., double-press events)
         if (Time.frameCount == _lastToggleFrame) return;
         _lastToggleFrame = Time.frameCount;
 
         var controller = status.Vessel as VesselController;
         if (!controller) return;
 
-        // Allow in SP; in MP allow owner and server (server can drive state if your flow ever changes).
         bool netActive = NetworkManager.Singleton && NetworkManager.Singleton.IsListening &&
                          (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
         bool hasAuthority = !netActive || NetworkManager.Singleton.IsServer || controller.IsOwner;
@@ -70,7 +68,6 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
 
         controller.SetTranslationRestricted(isOn);
 
-        // Side effects live here (not inside setters)
         if (so.StationaryMode == ToggleTranslationModeActionSO.Mode.Serpent && seedAssemblerExecutor)
         {
             if (isOn)
@@ -89,18 +86,18 @@ public sealed class ToggleTranslationModeActionExecutor : ShipActionExecutorBase
         {
             if (isOn)
             {
-                CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Prism Guns Activated");
                 vesselPrismController?.StopSpawn();
             }
             else
             {
-                CosmicShore.Game.UI.NotificationAPI.Notify("", "Sparrow Auto Guns Deactivated");
                 vesselPrismController?.StartSpawn();
             }
         }
 
         stationaryModeChanged?.Raise(isOn);
     }
+     
+     
 
     void End()
     {

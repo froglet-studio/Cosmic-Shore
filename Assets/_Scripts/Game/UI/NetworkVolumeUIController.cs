@@ -18,7 +18,7 @@ namespace CosmicShore.Game.UI
         {
             if (IsServer)
             {
-                gameData.OnMiniGmaeTurnStarted.OnRaised += MiniGmaeTurnStartServer;
+                gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStartServer;
                 gameData.OnMiniGameTurnEnd.OnRaised += GameTurnEndServer;
             }
 
@@ -33,7 +33,7 @@ namespace CosmicShore.Game.UI
         {
             if (IsServer)
             {
-                gameData.OnMiniGmaeTurnStarted.OnRaised -= MiniGmaeTurnStartServer;
+                gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStartServer;
                 gameData.OnMiniGameTurnEnd.OnRaised -= GameTurnEndServer;
             }
         }
@@ -43,7 +43,7 @@ namespace CosmicShore.Game.UI
             // Wait a small moment to ensure MiniGameData is initialized
             await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
 
-            if (gameData.IsRunning)
+            if (gameData.IsTurnRunning)
             {
                 // Request the current state from server
                 RequestSyncFromServer_ServerRpc();
@@ -52,7 +52,7 @@ namespace CosmicShore.Game.UI
 
         #region --- SERVER HANDLERS ---
 
-        private void MiniGmaeTurnStartServer()
+        private void MiniGameTurnStartServer()
         {
             _active = true;
             SendActiveState_ClientRpc(true, gameData.GetTeamVolumes());

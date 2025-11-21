@@ -6,13 +6,13 @@ namespace CosmicShore.Game
     {
         private void OnEnable()
         {
-            gameData.OnMiniGmaeTurnStarted.OnRaised += MiniGmaeTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
         }
 
         private void OnDisable()
         {
-            gameData.OnMiniGmaeTurnStarted.OnRaised -= MiniGmaeTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
         }
 
@@ -21,17 +21,8 @@ namespace CosmicShore.Game
 
         public override void ExplodeCrystal(Crystal.ExplodeParams explodeParams) =>
             cellData.Crystal.Explode(explodeParams);
-
-        protected override void Spawn(Vector3 spawnPos)
-        {
-            var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
-            crystal.InjectDependencies(this);
-            cellData.Crystal = crystal;
-            TryInitializeAndAdd(crystal);
-            cellData.OnCrystalSpawned.Raise();
-        }
         
-        void MiniGmaeTurnStarted() => Spawn(CalculateSpawnPos());
+        void MiniGameTurnStarted() => Spawn(CalculateSpawnPos());
         
         void OnTurnEnded()
         {

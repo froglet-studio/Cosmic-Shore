@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf98ddd0ffbb46599732949ed0ef76e5, type: 3}
   m_Name: DetonateEndEffect
   m_EditorClassIdentifier: 
+  detonator: {fileID: 11400000, guid: 6fd89f92dc5dac54f9064c27f5147f5d, type: 2}
   aoePrefabs:
   - {fileID: 447888847298330991, guid: b6aa24b5cd6a7f24c9f24c32c20eba91, type: 3}
   - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
   minExplosionScale: 100
   maxExplosionScale: 100
   faceExitVelocity: 1
-  verbose: 1
+  returnDelay: 0.25

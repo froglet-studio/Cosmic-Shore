@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6454128237993233764}
   - component: {fileID: 8507666106090082286}
   - component: {fileID: 6292995804365306619}
+  - component: {fileID: 4493526936049736346}
   m_Layer: 10
   m_Name: AOEFlowerSpawner
   m_TagString: Untagged
@@ -45,22 +46,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68f57ba7e4f214f49b194da79a32585c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 50
-  MaxScale: 200
   ExplosionDuration: 2
   ExplosionDelay: 0.2
-  shipImpactEffects: 
-  affectSelf: 0
-  destructive: 1
-  devastating: 0
-  shielding: 0
-  Team: 0
-  AnonymousExplosion: 0
-  trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
-    type: 3}
+  renderer: {fileID: 4493526936049736346}
   blockScale: {x: 20, y: 10, z: 5}
   shielded: 1
-  _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  _prismSpawnEvent: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
   blockCount: 8
   ringCount: 3
   radius: 30
@@ -77,11 +68,55 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cffb159dd53eb994cbdbc75e99d20388, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Team: 3
+  domain: 3
   lastTwoBlocks:
   - {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   - {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
-  trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
-    type: 3}
+  prism: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   blockScale: {x: 1, y: 2, z: 3}
   depth: 6
+--- !u!23 &4493526936049736346
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}

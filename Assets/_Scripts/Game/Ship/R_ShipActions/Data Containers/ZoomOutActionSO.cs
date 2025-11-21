@@ -27,10 +27,10 @@ namespace CosmicShore.Game.CameraSystem
         public float ZoomInMultiplier      => zoomInMultiplier;
         public bool DebugLogs              => debugLogs;
 
-        public override void StartAction(ActionExecutorRegistry execs)
-            => execs?.Get<ZoomOutActionExecutor>()?.Begin(this, ShipStatus);
+        public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+            => execs?.Get<ZoomOutActionExecutor>()?.Begin(this, vesselStatus);
 
-        public override void StopAction(ActionExecutorRegistry execs)
+        public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<ZoomOutActionExecutor>()?.End();
     }
 }

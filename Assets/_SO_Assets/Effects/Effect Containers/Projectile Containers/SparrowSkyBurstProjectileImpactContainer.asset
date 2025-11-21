@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: SparrowSkyBurstProjectileImpactContainer
   m_EditorClassIdentifier: 
   projectileShipEffects:
-  - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
+  - {fileID: 11400000, guid: f773eabd787a5b343873f0e2a3dec6d4, type: 2}
   projectilePrismEffects:
-  - {fileID: 11400000, guid: 2564c4fefc3011b43a28e573899e7889, type: 2}
+  - {fileID: 11400000, guid: da61c7085b9469046a26b74551d97dca, type: 2}
   projectileMineEffects:
-  - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}
+  - {fileID: 11400000, guid: 9b1ae19c2598b054b92a4784cc968cf4, type: 2}
   projectileEndEffects:
   - {fileID: 11400000, guid: 45ad00737624ad24488231f779f85f4e, type: 2}

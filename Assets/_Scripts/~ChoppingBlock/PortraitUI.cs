@@ -40,7 +40,7 @@ namespace CosmicShore.Game.UI
             if (!playerReady) return;
 
             // TODO - Can't have LocalPlayer as static
-            // if (Player.LocalPlayer.Vessel.VesselStatus.InputController.Portrait)
+            // if (Player.LocalPlayer.Vessel.VesselStatus.InputController.IsPortrait)
             if (true) // TEMP
             {
                 // Set the anchorMin and anchorMax values to center the RectTransform

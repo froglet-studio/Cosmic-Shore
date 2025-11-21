@@ -49,15 +49,6 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 
     void OnDisable()
     {
-        CancelReload();
-        CancelAllStacks();
-        _reloading = false;
-        if (_status != null)
-        {
-            _status.Boosting = false;
-            _status.BoostMultiplier = 1f;
-        }
-
         OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
 
@@ -67,7 +58,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         CancelAllStacks();
         _reloading = false;
         if (_status == null) return;
-        _status.Boosting = false;
+        _status.IsBoosting = false;
         _status.BoostMultiplier = 1f;
     }
 
@@ -79,7 +70,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         if (_status != null)
         {
             _status.BoostMultiplier = 1f;
-            _status.Boosting = false;
+            _status.IsBoosting = false;
         }
 
         _available = Mathf.Clamp(initialCharges, 0, 4);
@@ -91,7 +82,6 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         if (!so || status == null) return;
         
         if (_status is { IsTranslationRestricted: true }) return;
-        if (_activeStacks.Count > 0) return;
         
         if (_so != so)
         {
@@ -127,7 +117,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 
         var stack = new BoostStack
         {
-            Mult = _so.BoostMultiplier.Value,
+            Mult = _status.BoostMultiplier,
             Duration = duration,
             PipIndex = pipIndex,
             Cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy())
@@ -137,24 +127,31 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         StackRoutineAsync(stack, stack.Cts.Token).Forget();
         RecalculateMultiplier();
 
-        if (_available != 0 || _reloading) return;
-        
-        _reloadCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-        ReloadRoutineAsync(_so.ReloadCooldown, _so.ReloadFillTime, _reloadCts.Token).Forget();
+        // if (_available != 0 || _reloading) return;
+        //
+        // _reloadCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+        // ReloadRoutineAsync(_so.ReloadCooldown, _so.ReloadFillTime, _reloadCts.Token).Forget();
     }
 
     void RecalculateMultiplier()
     {
         if (_status == null) return;
 
-        if (_activeStacks.Count > 0)
+        var stacks = _activeStacks.Count;
+
+        if (stacks > 0)
         {
-            _status.Boosting = true;
-            _status.BoostMultiplier = (_so) ? _so.BoostMultiplier.Value : 4f;
+            _status.IsBoosting = true;
+
+            // linear stacking
+           // _status.BoostMultiplier = (_so ? _so.BoostMultiplier.Value : 4f) * stacks;
+            // multiplicative
+             _status.BoostMultiplier = Mathf.Pow( 4f, stacks);
+             Debug.Log($"Boost Multiplier Working {_status.BoostMultiplier}");
         }
         else
         {
-            _status.Boosting = false;
+            _status.IsBoosting = false;
             _status.BoostMultiplier = 1f;
             OnBoostEnded?.Invoke();
 
@@ -214,7 +211,6 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
     }
 
-
     async UniTaskVoid StackRoutineAsync(BoostStack stack, CancellationToken token)
     {
         try
@@ -248,7 +244,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 
         if (_status != null)
         {
-            _status.Boosting = false;
+            _status.IsBoosting = false;
             _status.BoostMultiplier = 1f;
         }
 

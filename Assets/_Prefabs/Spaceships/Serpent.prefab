@@ -1035,10 +1035,6 @@ MonoBehaviour:
   shipRenderer: {fileID: 4172724446676456733}
   seedAssembler: {fileID: 8230992318499782635}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  ghostEulerOffset: {x: 0, y: 0, z: 0}
-  ghostPositionOffset: {x: 0, y: 0, z: 0}
-  ghostScaleMultiplier: 1.5
-  ghostUseShipOrientation: 1
 --- !u!1 &3520243107353251244
 GameObject:
   m_ObjectHideFlags: 0
@@ -2336,7 +2332,7 @@ MonoBehaviour:
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
-  startDelay: 0.1
+  startDelay: 0.2
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -2358,7 +2354,7 @@ MonoBehaviour:
     resourceGainRate: 0.008
     maxAmount: 1
     initialAmount: 0.75
-  - Name: Fuel Pellets
+  - Name: Boost
     initialResourceGainRate: 0.4
     resourceGainRate: 0.07
     maxAmount: 1
@@ -2455,19 +2451,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouetteParts:
-  - {fileID: 322268676704545573}
-  - {fileID: 8777980414596646480}
-  - {fileID: 4010301292554909138}
-  - {fileID: 4125835721608554647}
-  - {fileID: 5978549935140177486}
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 1, y: 1, z: 1}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  JawResourceIndex: 0
-  swingBlocks: 0
+  trailDisplayContainer: {fileID: 0}
+  blockPrefab: {fileID: 0}
+  config: {fileID: 0}
+  silhouetteRoot: {fileID: 0}
+  jawTop: {fileID: 0}
+  jawBottom: {fileID: 0}
+  jawMaxOffset: 40
+  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
+  jawTintTargets: []
+  energyResourceIndex: 0
 --- !u!114 &705402283976800655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2525,6 +2521,7 @@ MonoBehaviour:
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
+  _onInputEventBlocked: {fileID: 0}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2579,7 +2576,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99148a7d0df947b0969a4432426d77a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouette: {fileID: 0}
+  silhouette: {fileID: 2731003324702047408}
   view: {fileID: 5470374086122723936}
   consumeBoostExecutor: {fileID: 2460618104011007721}
   shieldResourceIndex: 0
@@ -2819,18 +2816,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ownPullSpeed: 290000
-  opponentPullSpeed: 285000
-  ownRotateSpeed: 278000
-  opponentRotateSpeed: 275000
+  ownPullSpeed: 50000000
+  opponentPullSpeed: 40000000
+  ownRotateSpeed: 40000000
+  opponentRotateSpeed: 37500000
   RightMate: {fileID: 0}
   LeftMate: {fileID: 0}
   TopIsBonded: 0
   RightIsBonded: 0
   BottomIsBonded: 0
   LeftIsBonded: 0
-  colliderTheshold: 35
-  radius: 50
+  colliderTheshold: 60
+  radius: 90
 --- !u!1 &6740300659898847770
 GameObject:
   m_ObjectHideFlags: 0
@@ -3905,11 +3902,6 @@ MonoBehaviour:
     image: {fileID: 8484929212193490670}
   - input: 7
     image: {fileID: 3512818663123036916}
-  SilhouetteContainer: {fileID: 0}
-  TrailDisplayContainer: {fileID: 0}
-  TopJaw: {fileID: 0}
-  BottomJaw: {fileID: 0}
-  JawResourceIndex: -1
   shieldIconsByCount:
   - {fileID: 21300000, guid: 05ee374807511b44aa2a486aaf27e752, type: 3}
   - {fileID: 21300000, guid: ee81d0070c09faa44824544889fd5ddf, type: 3}

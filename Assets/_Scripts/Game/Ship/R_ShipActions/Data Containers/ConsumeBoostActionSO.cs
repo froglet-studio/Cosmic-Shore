@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Game;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "ConsumeBoostAction", menuName = "ScriptableObjects/Vessel Actions/Consume Boost")]
 public class ConsumeBoostActionSO : ShipActionSO
@@ -26,9 +27,9 @@ public class ConsumeBoostActionSO : ShipActionSO
 
     public override void ResetRuntime() {  }
 
-    public override void StartAction(ActionExecutorRegistry execs)
-        => execs?.Get<ConsumeBoostActionExecutor>()?.Consume(this, ShipStatus);
+    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        => execs?.Get<ConsumeBoostActionExecutor>()?.Consume(this, vesselStatus);
 
-    public override void StopAction(ActionExecutorRegistry execs)
+    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<ConsumeBoostActionExecutor>()?.StopAllBoosts();
 }

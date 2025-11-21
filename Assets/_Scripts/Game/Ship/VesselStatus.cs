@@ -45,7 +45,7 @@ namespace CosmicShore.Game
         
         [SerializeField]
         MonoBehaviour _shipHUDController;
-        public IVesselHUDController ShipHUDController => _shipHUDController as IVesselHUDController;
+        public IVesselHUDController VesselHUDController => _shipHUDController as IVesselHUDController;
         
         [SerializeField] VesselHUDView _vesselHUDView;
         public VesselHUDView VesselHUDView
@@ -56,8 +56,6 @@ namespace CosmicShore.Game
 
         [SerializeField] 
         ShipHUDContainer shipHUDContainer;
-        public ShipHUDContainer ShipHUDContainer => shipHUDContainer;
-        public IVesselHUDView ShipHUDView { get; set; }
 
         [SerializeField] protected float boostMultiplier = 4f;
         public float BoostMultiplier
@@ -92,7 +90,6 @@ namespace CosmicShore.Game
         public Material ShipMaterial { get; set; }
         public Material SkimmerMaterial { get; set; }
         public SO_Captain Captain { get; set; }
-        public CameraManager CameraManager { get; set; }
         public List<GameObject> ShipGeometries { get; set; }
         public Prism AttachedPrism { get; set; }
 
@@ -197,13 +194,12 @@ namespace CosmicShore.Game
         }
         
         // booleans
-        public bool Boosting { get; set; }
-        public bool ChargedBoostDischarging { get; set; }
-        public bool Drifting { get; set; }
-        public bool Turret { get; set; }
-        public bool Portrait { get; set; }
-        public bool SingleStickControls { get; set; }
-        public bool LiveProjectiles { get; set; }
+        public bool IsBoosting { get; set; }
+        public bool IsChargedBoostDischarging { get; set; }
+        public bool IsDrifting { get; set; }
+        public bool IsPortrait { get; set; }
+        public bool IsSingleStickControls { get; set; }
+        public bool HasLiveProjectiles { get; set; }
         public bool IsStationary { get; set; }
 
         bool _isTranslationRestricted;
@@ -218,29 +214,30 @@ namespace CosmicShore.Game
         }
 
         public bool AlignmentEnabled { get; set; }
-        public bool Slowed { get; set; }
-        public bool Overheating { get; set; }
-        public bool Attached { get; set; }
+        public bool IsSlowed { get; set; }
+        public bool IsOverheating { get; set; }
+        public bool IsAttached { get; set; }
         public bool GunsActive { get; set; }
         public float Speed { get; set; }
         public float ChargedBoostCharge { get; set; }
         
         public Vector3 Course { get; set; }
         public Quaternion blockRotation { get; set; }
-        public bool IsOwnerClient => Vessel.IsNetworkOwner;
+        public bool IsNetworkOwner => Vessel.IsNetworkOwner;
+        public bool IsNetworkClient => Vessel.IsNetworkClient;
 
         public void ResetForPlay()
         {
             IsStationary = true;
-            Boosting = false;
-            ChargedBoostDischarging = false;
-            Drifting = false;
-            Attached = false;
+            IsBoosting = false;
+            IsChargedBoostDischarging = false;
+            IsDrifting = false;
+            IsAttached = false;
             AttachedPrism = null;
             GunsActive = false;
             ChargedBoostCharge = 1f;
-            Slowed = false;
-            Overheating = false;
+            IsSlowed = false;
+            IsOverheating = false;
 
             ResourceSystem.Reset();
             VesselTransformer.ResetTransformer();

@@ -60,7 +60,7 @@ namespace CosmicShore.Game.UI
         {
             // TODO - Can't have LocalPlayer as static
             /*yield return new WaitUntil(() => Player.LocalPlayer != null && Player.LocalPlayer.Vessel != null && Player.LocalPlayer.Vessel.VesselStatus.InputController != null);
-            bool isActive = Gamepad.current == null && !Player.LocalPlayer.Vessel.VesselStatus.CommandStickControls && (LeftThumb || !Player.LocalPlayer.Vessel.VesselStatus.SingleStickControls);
+            bool isActive = Gamepad.current == null && !Player.LocalPlayer.Vessel.VesselStatus.CommandStickControls && (LeftThumb || !Player.LocalPlayer.Vessel.VesselStatus.IsSingleStickControls);
             if (!Player.LocalPlayer.Vessel.VesselStatus.AutoPilotEnabled)
             {
                 gameObject.SetActive(isActive);

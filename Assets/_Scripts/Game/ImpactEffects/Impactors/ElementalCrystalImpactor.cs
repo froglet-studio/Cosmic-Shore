@@ -14,9 +14,10 @@ namespace CosmicShore.Game
             {
                 case VesselImpactor shipImpactee:
                     if (!DoesEffectExist(vesselCrystalEffects)) return;
+                    CrystalImpactData data = CrystalImpactData.FromCrystal(Crystal);
                     foreach (var effect in vesselCrystalEffects)
                     {
-                        effect.Execute(shipImpactee,this);
+                        effect.Execute(shipImpactee, data);
                     }
                     break;
                 case SkimmerImpactor skimmerImpactee:

@@ -22,3 +22,6 @@ MonoBehaviour:
     Max: 0.08
     element: 1
   overheatDuration: 7
+  dangerPrismMaterial: {fileID: 2100000, guid: 7e148d5b33e1c0045973b65f2685fc63, type: 2}
+  overheatScaleMultiplier: {x: 0.7, y: 1, z: 0.7}
+  scaleLerpSeconds: 0.15

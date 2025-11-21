@@ -1,23 +1,23 @@
-using System.Collections;
+using System;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
+using System.Threading;
 
 namespace CosmicShore.Game.Projectiles
 {
     public class AOEConicExplosion : AOEExplosion
     {
-        [SerializeField] float height = 800; // TODO: maybe pull from node diameter
-        [SerializeField] GameObject coneContainer;
+        [SerializeField] private float height = 800f;
+        [SerializeField] private GameObject coneContainer;
 
         public override void Initialize(InitializeStruct initStruct)
         {
-            // SpawnPosition = initStruct.SpawnPosition;
-            // SpawnRotation = initStruct.SpawnRotation;
-            
             AnonymousExplosion = initStruct.AnnonymousExplosion;
             Vessel = initStruct.Vessel;
+
             if (Vessel == null)
             {
-                Debug.LogError("Vessel is not initialized in AOEExplosion!");
+                Debug.LogError("Vessel is not initialized in AOEConicExplosion!");
                 return;
             }
 
@@ -27,44 +27,79 @@ namespace CosmicShore.Game.Projectiles
 
             MaxScale = initStruct.MaxScale;
             MaxScaleVector = new Vector3(MaxScale, MaxScale, height);
+
             speed = height / (ExplosionDuration * 4);
 
-
+            // Clone material so opacity change doesn't affect shared asset
             Material = new Material(Vessel.VesselStatus.AOEConicExplosionMaterial);
             if (!Material)
                 Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);
-            
+
             if (!coneContainer)
                 coneContainer = new GameObject("AOEContainer");
+
             coneContainer.transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);
+
+            // Parent our object to the container
             transform.SetParent(coneContainer.transform, false);
+
+            // create CTS for explosion
+            explosionCts = new CancellationTokenSource();
         }
 
-        protected override IEnumerator ExplodeCoroutine()
+        protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
-            yield return new WaitForSeconds(ExplosionDelay);
-
-            if (TryGetComponent<MeshRenderer>(out var meshRenderer))
-                meshRenderer.material = Material;
-
-            var elapsedTime = 0f;
-            while (elapsedTime < ExplosionDuration)
+            try
             {
-                elapsedTime += Time.deltaTime;
-                var lerpAmount = Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO);
-                coneContainer.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, lerpAmount);
-                GetComponent<SphereCollider>().radius = coneContainer.transform.localScale.x / (Mathf.Clamp(coneContainer.transform.localScale.z, .01f, Mathf.Infinity) * 2);
-                Material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - coneContainer.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
-                yield return null;
+                await UniTask.Delay(
+                    System.TimeSpan.FromSeconds(ExplosionDelay),
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.Update,
+                    ct);
+
+                if (TryGetComponent<MeshRenderer>(out var meshRenderer))
+                    meshRenderer.material = Material;
+
+                float elapsed = 0f;
+
+                var sphereCol = GetComponent<SphereCollider>();
+
+                while (elapsed < ExplosionDuration)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / ExplosionDuration;
+                    float lerp = Mathf.Sin(t * PI_OVER_TWO);
+
+                    // Scale cone
+                    coneContainer.transform.localScale =
+                        Vector3.Lerp(Vector3.zero, MaxScaleVector, lerp);
+
+                    // Dynamic collider radius update
+                    float z = Mathf.Clamp(coneContainer.transform.localScale.z, 0.01f, Mathf.Infinity);
+                    sphereCol.radius = coneContainer.transform.localScale.x / (z * 2f);
+
+                    // Opacity fade
+                    float opacity =
+                        Mathf.Clamp(
+                            (MaxScaleVector - coneContainer.transform.localScale).magnitude
+                             / MaxScaleVector.magnitude,
+                            0f,
+                            1f);
+
+                    Material.SetFloat("_Opacity", opacity);
+
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+
+                Destroy(gameObject);
             }
-
-            Destroy(gameObject);
+            catch (OperationCanceledException)
+            {
+                // clean cancel
+                Destroy(gameObject);
+            }
         }
-
-        /*public override void SetPositionAndRotation(Vector3 position, Quaternion rotation)
-        {
-            containerPosition = position;
-            containerRotation = rotation;
-        }*/
     }
 }

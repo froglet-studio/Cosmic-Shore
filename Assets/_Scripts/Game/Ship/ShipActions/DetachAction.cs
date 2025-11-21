@@ -4,9 +4,9 @@ public class DetachAction : ShipAction
 {
     public override void StartAction()
     {
-        if (VesselStatus.Attached)
+        if (VesselStatus.IsAttached)
         {
-            VesselStatus.Attached = false;
+            VesselStatus.IsAttached = false;
             VesselStatus.AttachedPrism = null;
         }
     }
