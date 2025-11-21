@@ -31,10 +31,11 @@ namespace CosmicShore.Game
                    }
                    break;
                 case OmniCrystalImpactor omniCrystalImpactee:
+                    CrystalImpactData data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
                     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
-                        networkVesselImpactor.ExecuteOnHitOmniCrystal();
+                        networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
                     else
-                        ExecuteCrystalImpact_Old(omniCrystalImpactee);
+                        ExecuteCrystalImpact(data);
                     break;
                 case SkimmerImpactor skimmerImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
@@ -51,13 +52,6 @@ namespace CosmicShore.Game
             if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
             foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
                 effect.Execute(this, data);
-        }
-
-        void ExecuteCrystalImpact_Old(OmniCrystalImpactor impactee)
-        {
-            if(!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;
-            foreach (var effect in vesselImpactorDataContainerSO.VesselCrystalEffects)
-                effect.Execute(this, impactee);
         }
 
         void OnValidate()

@@ -12,7 +12,12 @@ namespace CosmicShore.Game
 
         private static readonly Dictionary<Crystal, float> NextAllowedAt = new();
 
-        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor impactee)
+        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
+        {
+            
+        }
+        
+        /*public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor impactee)
         {
             var crystal = impactee.Crystal;
             if (!crystal) return;
@@ -44,6 +49,6 @@ namespace CosmicShore.Game
             }
 
             crystal.Respawn();
-        }
+        }*/
     }
 }
