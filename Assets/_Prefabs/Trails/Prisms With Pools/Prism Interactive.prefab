@@ -139,6 +139,7 @@ MonoBehaviour:
     IsDangerous: 0
     IsTransparent: 0
     TimeCreated: 0
+    DefaultLayerName: TrailBlocks
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
@@ -155,7 +156,7 @@ MonoBehaviour:
     type: 2}
   _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: b5c1a6869a63cbf469f649a5c0b811fc,
     type: 2}
-  _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+  OnBlockImpactedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
 --- !u!114 &6524930787130387424
 MonoBehaviour:

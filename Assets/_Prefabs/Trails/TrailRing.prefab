@@ -104,18 +104,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FossilBlock: {fileID: 0}
-  TrailBlockProperties:
+  prismProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
-    trailBlock: {fileID: 0}
+    prism: {fileID: 0}
     Index: 0
     IsShielded: 0
     IsSuperShielded: 0
     IsDangerous: 0
     IsTransparent: 0
     TimeCreated: 0
+    DefaultLayerName: TrailBlocks
   ParticleEffect: {fileID: 0}
   GrowthVector: {x: 0, y: 2, z: 0}
   growthRate: 0.01
@@ -128,7 +128,7 @@ MonoBehaviour:
   _onTrailBlockCreatedEventChannel: {fileID: 0}
   _onTrailBlockDestroyedEventChannel: {fileID: 0}
   _onTrailBlockRestoredEventChannel: {fileID: 0}
-  _onFlockSpawnedEventChannel: {fileID: 0}
+  OnBlockImpactedEventChannel: {fileID: 0}
 --- !u!65 &6010018596354240628
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -255,18 +255,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FossilBlock: {fileID: 0}
-  TrailBlockProperties:
+  prismProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
-    trailBlock: {fileID: 0}
+    prism: {fileID: 0}
     Index: 0
     IsShielded: 0
     IsSuperShielded: 0
     IsDangerous: 0
     IsTransparent: 0
     TimeCreated: 0
+    DefaultLayerName: TrailBlocks
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
@@ -283,7 +283,7 @@ MonoBehaviour:
     type: 2}
   _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: b5c1a6869a63cbf469f649a5c0b811fc,
     type: 2}
-  _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+  OnBlockImpactedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
 --- !u!114 &4966205134028606813
 MonoBehaviour:
@@ -445,18 +445,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FossilBlock: {fileID: 0}
-  TrailBlockProperties:
+  prismProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
-    trailBlock: {fileID: 0}
+    prism: {fileID: 0}
     Index: 0
     IsShielded: 0
     IsSuperShielded: 0
     IsDangerous: 0
     IsTransparent: 0
     TimeCreated: 0
+    DefaultLayerName: TrailBlocks
   ParticleEffect: {fileID: 0}
   GrowthVector: {x: 0, y: 2, z: 0}
   growthRate: 0.01
@@ -469,7 +469,7 @@ MonoBehaviour:
   _onTrailBlockCreatedEventChannel: {fileID: 0}
   _onTrailBlockDestroyedEventChannel: {fileID: 0}
   _onTrailBlockRestoredEventChannel: {fileID: 0}
-  _onFlockSpawnedEventChannel: {fileID: 0}
+  OnBlockImpactedEventChannel: {fileID: 0}
 --- !u!65 &8557056649638950145
 BoxCollider:
   m_ObjectHideFlags: 0
