@@ -1,21 +1,23 @@
-using System.Collections;
+using System;
+using System.Threading;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Utilities;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace CosmicShore.Game.Projectiles
 {
     public class AOERadialBlocks : AOEConicExplosion
     {
-        // Scale both ray radius and block size, in the z direction (kept behavior)
+        // Scale both ray radius and block size in Z
         private ElementalFloat depthScale = new(1f);
 
         [SerializeField] private float growthRate = .05f;
 
         [Header("Events")]
-        [SerializeField] private PrismEventChannelWithReturnSO _prismSpawnEvent; // PrismFactory event channel
+        [SerializeField] private PrismEventChannelWithReturnSO _prismSpawnEvent;
 
         #region Block Creation
         [Header("Block Creation")]
@@ -30,8 +32,8 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] private int blocksPerRay = 5;
         [SerializeField] private float maxRadius = 50f;
         [SerializeField] private float minRadius = 10f;
-        [SerializeField] private float raySpread = 15f;             // spread angle in degrees
-        [SerializeField] private AnimationCurve scaleCurve = null;  // defaults to linear if null
+        [SerializeField] private float raySpread = 15f;
+        [SerializeField] private AnimationCurve scaleCurve = null;
         #endregion
 
         private Vector3 rayDirection;
@@ -43,79 +45,91 @@ namespace CosmicShore.Game.Projectiles
         {
             base.Initialize(initStruct);
 
-            // Match the old behavior: apply depth scaling up front
             baseBlockScale.z *= depthScale.Value;
             maxRadius        *= depthScale.Value;
 
-            // Direction and curve defaults
             rayDirection = transform.forward;
             scaleCurve ??= AnimationCurve.Linear(0, 1, 1, 0.5f);
-
-            // (Optional) if you had elemental bindings previously
-            // BindElementalFloats(Ship); // uncomment if needed in your project
         }
 
-        /// <summary>
-        /// IMPORTANT: restore coroutine path so Detonate() from base calls into this.
-        /// </summary>
-        protected override IEnumerator ExplodeCoroutine()
+        // ----------------------------------------------------------------------
+
+        protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
-            // run the base cone (visual) first
-            StartCoroutine(base.ExplodeCoroutine());
-
-            // wait: primary + secondary delay
-            float wait = Mathf.Max(0f, ExplosionDelay) + Mathf.Max(0f, SecondaryExplosionDelay);
-            if (wait > 0f) yield return new WaitForSeconds(wait);
-
-            // Build trails & rays
-            trails.Clear();
-
-            for (int ray = 0; ray < numberOfRays; ray++)
+            try
             {
-                var trail = new Trail();
-                trails.Add(trail);
-                CreateRay(ray, trail);
+                // FIRST: Run the conic explosion visuals from parent
+                base.ExplodeAsync(ct).Forget();
 
-                // small yield to distribute load like the UniTask version did
-                yield return null;
+                // wait: primary delay + secondary delay
+                float wait = Mathf.Max(0f, ExplosionDelay) + Mathf.Max(0f, SecondaryExplosionDelay);
+                if (wait > 0f)
+                    await UniTask.Delay((int)(wait * 1000f), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
+
+                trails.Clear();
+
+                // Spawn each ray over multiple frames
+                for (int ray = 0; ray < numberOfRays; ray++)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    Trail trail = new Trail();
+                    trails.Add(trail);
+
+                    CreateRay(ray, trail);
+
+                    // Small frame delay to distribute work
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Explosion cancelled
             }
         }
+
+        // ----------------------------------------------------------------------
 
         private void CreateRay(int rayIndex, Trail trail)
         {
             float angleStep = 360f / Mathf.Max(1, numberOfRays);
-            float rayAngle  = rayIndex * angleStep; // kept for potential future use
 
             for (int b = 0; b < blocksPerRay; b++)
             {
                 float radius = Random.Range(minRadius, maxRadius);
                 float tNorm  = Mathf.InverseLerp(0f, maxRadius, radius);
-                float scaleMult = (scaleCurve != null) ? scaleCurve.Evaluate(tNorm) : 1f;
-                Vector3 blockScale = baseBlockScale * scaleMult;
+                float scaleMultiplier = scaleCurve.Evaluate(tNorm);
 
-                // spread axis: perpendicular to rayDirection (fallback if parallel to up)
+                Vector3 finalScale = baseBlockScale * scaleMultiplier;
+
+                // Spread axis
                 Vector3 axis = Vector3.Cross(rayDirection, Vector3.up);
                 if (axis.sqrMagnitude < 1e-6f) axis = Vector3.Cross(rayDirection, Vector3.right);
                 axis.Normalize();
 
-                float spreadDeg            = raySpread;
-                float rotationAroundRayDeg = Random.Range(0f, 360f);
+                float spreadDeg = raySpread;
+                float randomRot = Random.Range(0f, 360f);
 
-                Quaternion spreadRotation = Quaternion.AngleAxis(spreadDeg, axis);
-                Quaternion rotationAround = Quaternion.AngleAxis(rotationAroundRayDeg, rayDirection);
-                Vector3 spreadDirection   = rotationAround * spreadRotation * rayDirection;
+                Quaternion spreadRot   = Quaternion.AngleAxis(spreadDeg, axis);
+                Quaternion aroundRay   = Quaternion.AngleAxis(randomRot, rayDirection);
+                Vector3 spreadDir      = aroundRay * spreadRot * rayDirection;
 
-                Vector3 position = transform.position + spreadDirection * radius;
-                Vector3 up       = transform.up;
+                Vector3 pos = transform.position + spreadDir * radius;
+                Vector3 up  = transform.up;
 
-                CreateBlock(position, spreadDirection, up, $"::Radial::{rayIndex}::{b}", trail, blockScale);
+                CreateBlock(pos, spreadDir, up, $"::Radial::{rayIndex}::{b}", trail, finalScale);
             }
         }
 
-        /// <summary>
-        /// Spawns an Interactive Prism via PrismFactory and forces growth like old TrailBlock behavior.
-        /// </summary>
-        private Prism CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string blockId, Trail trail, Vector3 targetScale)
+        // ----------------------------------------------------------------------
+
+        private Prism CreateBlock(
+            Vector3 position,
+            Vector3 forward,
+            Vector3 up,
+            string blockId,
+            Trail trail,
+            Vector3 targetScale)
         {
             if (!_prismSpawnEvent)
             {
@@ -123,12 +137,12 @@ namespace CosmicShore.Game.Projectiles
                 return null;
             }
 
-            var data = new PrismEventData
+            PrismEventData data = new PrismEventData
             {
                 ownDomain       = Domain,
                 Rotation        = Quaternion.LookRotation(forward, up),
                 SpawnPosition   = position,
-                Scale           = targetScale,           
+                Scale           = targetScale,
                 Velocity        = Vector3.zero,
                 PrismType       = PrismType.Interactive,
                 TargetTransform = null,
@@ -142,52 +156,53 @@ namespace CosmicShore.Game.Projectiles
                 return null;
             }
 
-            var prism = ret.SpawnedObject.GetComponent<Prism>();
+            Prism prism = ret.SpawnedObject.GetComponent<Prism>();
             if (!prism)
             {
-                Debug.LogWarning("[AOERadialBlocks] Spawned object has no Prism component.");
+                Debug.LogWarning("[AOERadialBlocks] Spawned object missing Prism component.");
                 return null;
             }
 
-            // Owner + gameplay flags
             prism.ownerID = OwnerIdBase + blockId + position;
-            if (shielded) prism.prismProperties.IsShielded = true;
             prism.Domain = Domain;
-            // Make sure it starts at zero and grows (like TrailBlock used to)
-            var tr = prism.transform;
-            tr.localScale = Vector3.zero; // force from-zero growth
 
-            // If your Prism already grows when TargetScale & growthRate are set, keep these:
+            if (shielded)
+                prism.prismProperties.IsShielded = true;
+
+            // Start at zero scale
+            prism.transform.localScale = Vector3.zero;
+
+            // built-in growth (if Prism supports it)
             prism.TargetScale = targetScale;
             prism.growthRate  = growthRate;
 
-            // If not, run a local grower to guarantee the effect:
-            StartCoroutine(GrowToScale(tr, targetScale, growthRate));
+            // fallback grower in case Prism doesn't auto grow
+            GrowToScale(prism.transform, targetScale, growthRate).Forget();
 
-            // Initialize & trail bookkeeping
             prism.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
+
             prism.Trail = trail;
             trail.Add(prism);
 
             return prism;
         }
 
-        /// <summary>
-        /// Local fallback growth (frame-based, non-alloc). Matches old "grow after exploding".
-        /// </summary>
-        private static IEnumerator GrowToScale(Transform tr, Vector3 target, float ratePerFrame)
+        // ----------------------------------------------------------------------
+        // Block growth without coroutine
+        // ----------------------------------------------------------------------
+
+        private static async UniTaskVoid GrowToScale(Transform tr, Vector3 target, float rate)
         {
-            // safeguard
-            ratePerFrame = Mathf.Max(1e-5f, ratePerFrame);
+            rate = Mathf.Max(1e-5f, rate);
 
             while (tr && (tr.localScale - target).sqrMagnitude > 0.0001f)
             {
-                // Move scale toward target at 'growthRate' per frame (like the old TrailBlock)
-                tr.localScale = Vector3.MoveTowards(tr.localScale, target, ratePerFrame);
-                yield return null;
+                tr.localScale = Vector3.MoveTowards(tr.localScale, target, rate);
+                await UniTask.Yield();
             }
 
-            if (tr) tr.localScale = target;
+            if (tr)
+                tr.localScale = target;
         }
     }
 }

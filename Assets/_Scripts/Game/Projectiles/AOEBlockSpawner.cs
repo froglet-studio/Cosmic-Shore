@@ -1,23 +1,34 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
 {
+    using UnityEngine;
+    using Cysharp.Threading.Tasks;
+    using System.Threading;
+
     public class AOEBlockSpawner : AOEBlockCreation
     {
-        [SerializeField] SpawnableAbstractBase spawnable;
+        [SerializeField] private SpawnableAbstractBase spawnable;
 
-        protected override IEnumerator ExplodeCoroutine()
+        protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
-            var position = Vessel.Transform.position;
-            var rotation = Vessel.Transform.rotation;
-            var team = Vessel.VesselStatus.Domain;
+            try
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
-            yield return new WaitForSeconds(ExplosionDelay);
+                var position = Vessel.Transform.position;
+                var rotation = Vessel.Transform.rotation;
+                var team = Vessel.VesselStatus.Domain;
 
-            spawnable.Spawn(position, rotation, team, (int)(Vessel.VesselStatus.ResourceSystem.Resources[0].CurrentAmount*10));
+                spawnable.Spawn(position, rotation, team,
+                    (int)(Vessel.VesselStatus.ResourceSystem.Resources[0].CurrentAmount * 10));
 
-            yield return new WaitForEndOfFrame();
+                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate , ct);
+            }
+            catch (OperationCanceledException) { }
         }
     }
+
 }
