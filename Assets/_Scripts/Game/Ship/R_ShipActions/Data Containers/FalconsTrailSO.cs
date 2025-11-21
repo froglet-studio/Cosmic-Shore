@@ -1,14 +1,22 @@
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "FalconsTrail", menuName = "Scriptable Objects/Vessel Actions/Falcons Trail")]
-    public class Falcons : ScriptableObject
+    [CreateAssetMenu(fileName = "FalconTrail", menuName = "ScriptableObjects/Vessel Actions/Falcon Trail")]
+    public class FalconsTrailSO : ShipActionExecutorBase
     {
-    
 
 
+       void StartAction(ActionExecutorRegistry registry)
+        {
+            Debug.Log("Trail Started");
 
+
+        }
+        void StopAction(ActionExecutorRegistry execs)
+        {
+            
+        }
 
 
 

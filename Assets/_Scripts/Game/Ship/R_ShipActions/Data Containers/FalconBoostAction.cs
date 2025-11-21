@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    [CreateAssetMenu(fileName = "FalconBoostAction", menuName = "Scriptable Objects/Vessel Actions/FalconBoost")]
+    [CreateAssetMenu(fileName = "FalconBoostAction", menuName = "ScriptableObjects/Vessel Actions/FalconBoost")]
     public class Falcon : ShipActionSO
     {
         public override void Initialize(IVessel ship)

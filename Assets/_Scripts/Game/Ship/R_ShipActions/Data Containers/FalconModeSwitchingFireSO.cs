@@ -9,7 +9,7 @@ namespace CosmicShore.Game
         [Header("Actions")]
         [SerializeField] private ShipActionSO normalFire;     // FullAutoActionSO
         [SerializeField] private ShipActionSO ringFire; // FullAutoBlockShootActionSO
-        [SerializeField] private ShipActionSO ringMovement; // PLACEHOLDER
+        [SerializeField] private ShipActionExecutorBase ringMovement; // PLACEHOLDER
         private ShipActionSO _active;
 
         public override void StartAction(ActionExecutorRegistry registry)
