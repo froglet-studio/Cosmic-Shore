@@ -64,14 +64,14 @@ namespace CosmicShore.Game.IO
             // Shoulder buttons and triggers
             if (Gamepad.current.leftShoulder.wasPressedThisFrame)
             {
-                inputStatus.Idle = true;
-                inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);;
+                //inputStatus.Idle = true;
+                //inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);;
                 // vessel.PerformShipControllerActions(InputEvents.IdleAction);
             }
             if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
             {
-                inputStatus.Idle = false;
-                inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);;
+                //inputStatus.Idle = false;
+                //inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);;
                 // vessel.StopShipControllerActions(InputEvents.IdleAction);
             }
 
