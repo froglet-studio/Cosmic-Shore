@@ -18,7 +18,7 @@ namespace CosmicShore
 
         void Start()
         {
-            if (Gamepad.current != null && ScreenSwitcher.ScreenIsActive(ScreenSwitcher.MenuScreens.ARCADE))
+            if (Gamepad.current != null /*&& ScreenSwitcher.ScreenIsActive(ScreenSwitcher.MenuScreens.ARCADE)*/)
             {
                 InitializeNavigation();
             }
@@ -26,28 +26,28 @@ namespace CosmicShore
 
         void Update()
         {
-            if (ScreenSwitcher.ScreenIsActive(ScreenSwitcher.MenuScreens.ARCADE))
+            // if (ScreenSwitcher.ScreenIsActive(ScreenSwitcher.MenuScreens.ARCADE))
+            // {
+            // }
+            if (!initialized)
             {
-                if (!initialized)
-                {
-                    if (Gamepad.current != null)
-                    {
-                        InitializeNavigation();
-                    }
-                }
-
                 if (Gamepad.current != null)
                 {
-                    if (Gamepad.current.dpad.up.wasPressedThisFrame) NavigateUp();
-                    if (Gamepad.current.dpad.down.wasPressedThisFrame) NavigateDown();
-                    if (Gamepad.current.dpad.left.wasPressedThisFrame) NavigateLeft();
-                    if (Gamepad.current.dpad.right.wasPressedThisFrame) NavigateRight();
+                    InitializeNavigation();
                 }
+            }
 
-                if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame)
-                {
-                    selectedButton.onClick.Invoke();
-                }
+            if (Gamepad.current != null)
+            {
+                if (Gamepad.current.dpad.up.wasPressedThisFrame) NavigateUp();
+                if (Gamepad.current.dpad.down.wasPressedThisFrame) NavigateDown();
+                if (Gamepad.current.dpad.left.wasPressedThisFrame) NavigateLeft();
+                if (Gamepad.current.dpad.right.wasPressedThisFrame) NavigateRight();
+            }
+
+            if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame)
+            {
+                selectedButton.onClick.Invoke();
             }
         }
 

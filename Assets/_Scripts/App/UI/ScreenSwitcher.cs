@@ -17,40 +17,41 @@ namespace CosmicShore.App.UI
     {
         public enum MenuScreens
         {
-            STORE = 0,
-            ARCADE = 1,
-            HOME = 2,
-            PORT = 3,
-            HANGAR = 4,
+            HANGAR = 0,
+            ARK    = 1,
+            HOME   = 2,
+            PORT   = 3,
+            PROFILE= 4,
         }
 
         public enum ModalWindows
         {
             NONE = -1,
-            // STORE MODALS
+
+            // OLD STORE MODALS
             PURCHASE_ITEM_CONFIRMATION = 0,
 
-            // ARCADE MODALS
+            // ARCADE MODALS (now modal, not a screen)
             ARCADE_GAME_CONFIGURE = 1,
-            DAILY_CHALLENGE = 2,
+            DAILY_CHALLENGE       = 2,
 
             // HOME MODALS
-            PROFILE = 3,
-            PROFILE_ICON_SELECT = 4,
-            SETTINGS = 5,
-            XP_TRACK = 6,
+            PROFILE                = 3,
+            PROFILE_ICON_SELECT    = 4,
+            SETTINGS               = 5,
+            XP_TRACK               = 6,
 
             // PORT MODALS
-            FACTION_MISSION = 7,
+            FACTION_MISSION        = 7,
             SQUAD_MEMBER_CONFIGURE = 8,
 
             // HANGAR MODALS
-            HANGAR_TRAINING = 9,
+            HANGAR_TRAINING        = 9,
         }
 
-        [SerializeField] float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
-        [SerializeField] float easing = 0.5f; // Makes the transition less jarring
-        [SerializeField] int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
+        [SerializeField] float percentThreshold = 0.2f;
+        [SerializeField] float easing = 0.5f;
+        [SerializeField] int currentScreen;
         [SerializeField] List<ModalWindows> activeModalStack = new();
 
         [SerializeField] Transform NavBar;
@@ -60,14 +61,21 @@ namespace CosmicShore.App.UI
         Vector3 panelLocation;
         Coroutine navigateCoroutine;
 
-        const int STORE = (int)MenuScreens.STORE;
-        const int PORT = (int)MenuScreens.PORT;
-        const int HOME = (int)MenuScreens.HOME;
-        const int HANGAR = (int)MenuScreens.HANGAR;
-        const int ARCADE = (int)MenuScreens.ARCADE;
+        // New constant mapping for reordered screens
+        const int HANGAR_SCREEN  = (int)MenuScreens.HANGAR;
+        const int ARK_SCREEN     = (int)MenuScreens.ARK;
+        const int HOME_SCREEN    = (int)MenuScreens.HOME;
+        const int PORT_SCREEN    = (int)MenuScreens.PORT;
+        const int PROFILE_SCREEN = (int)MenuScreens.PROFILE;
 
         [SerializeField] Image NavBarLine;
         [SerializeField] List<Sprite> NavBarLineSprites;
+
+        [Header("Nav Tab Icons (optional)")]
+        [Tooltip("Active images for each screen index (0=Hangar,1=Ark,2=Home,3=Port,4=Profile)")]
+        [SerializeField] List<GameObject> NavActiveImages;
+        [Tooltip("Inactive images for each screen index (0=Hangar,1=Ark,2=Home,3=Port,4=Profile)")]
+        [SerializeField] List<GameObject> NavInactiveImages;
 
         [Header("Modal Windows")]
         [SerializeField] List<ModalWindowManager> Modals;
@@ -75,9 +83,14 @@ namespace CosmicShore.App.UI
         [SerializeField] ModalWindowManager DailyChallengeModal;
         [SerializeField] ModalWindowManager HangarTrainingGameModal;
         [SerializeField] ModalWindowManager FactionMissionModal;
+        [Header("Arcade")]
+        [SerializeField] private GameObject arcadeModalRoot;
+
 
         static string ReturnToScreenPrefKey = "ReturnToScreen";
         static string ReturnToModalPrefKey = "ReturnToModal";
+
+        #region Modal Stack
 
         public void PushModal(ModalWindows modalType)
         {
@@ -87,6 +100,9 @@ namespace CosmicShore.App.UI
 
         public void PopModal()
         {
+            if (activeModalStack.Count == 0)
+                return;
+
             activeModalStack.RemoveAt(activeModalStack.Count - 1);
 
             if (activeModalStack.Count == 0)
@@ -94,6 +110,10 @@ namespace CosmicShore.App.UI
             else
                 SetReturnToModal(activeModalStack.Last());
         }
+
+        #endregion
+
+        #region Return State
 
         public void SetReturnToScreen(MenuScreens screen)
         {
@@ -136,6 +156,10 @@ namespace CosmicShore.App.UI
             ClearReturnState();
         }
 
+        #endregion
+
+        #region Lifecycle
+
         void Start()
         {
             if (PlayerPrefs.HasKey(ReturnToScreenPrefKey))
@@ -147,7 +171,8 @@ namespace CosmicShore.App.UI
             }
             else
             {
-                NavigateTo(HOME, false);
+                // default to HOME in the new order (index 2)
+                NavigateTo(HOME_SCREEN, false);
             }
 
             if (PlayerPrefs.HasKey(ReturnToModalPrefKey))
@@ -165,25 +190,6 @@ namespace CosmicShore.App.UI
                 if (modal.ModalType == (ModalWindows)modalType)
                     modal.ModalWindowIn();
             }
-            /*
-            switch ((ModalWindows)modalType)
-            {
-                case ModalWindows.ARCADE_GAME_CONFIGURE:
-                    ArcadeGameConfigureModal.ModalWindowIn();
-                    break;
-                case ModalWindows.DAILY_CHALLENGE:
-                    DailyChallengeModal.ModalWindowIn();
-                    break;
-                case ModalWindows.HANGAR_TRAINING:
-                    HangarTrainingGameModal.ModalWindowIn();
-                    break;
-                case ModalWindows.FACTION_MISSION:
-                    FactionMissionModal.ModalWindowIn();
-                    break;
-            }
-            */
-            //PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
-            //PlayerPrefs.Save();
         }
 
         void Update()
@@ -196,6 +202,10 @@ namespace CosmicShore.App.UI
                     NavigateRight();
             }
         }
+
+        #endregion
+
+        #region Drag
 
         public void OnDrag(PointerEventData data)
         {
@@ -220,6 +230,10 @@ namespace CosmicShore.App.UI
             }
         }
 
+        #endregion
+
+        #region Navigation Core
+
         public void NavigateTo(int ScreenIndex, bool animate = true)
         {
             ScreenIndex = Mathf.Clamp(ScreenIndex, 0, transform.childCount - 1);
@@ -227,16 +241,16 @@ namespace CosmicShore.App.UI
             if (ScreenIndex == currentScreen)
                 return;
 
-            if (ScreenIndex == ARCADE)
-                UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
-
-            if (ScreenIndex == HANGAR)
+            // Per-screen side-effects in new order
+            if (ScreenIndex == HANGAR_SCREEN && HangarMenu != null)
             {
                 UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
                 HangarMenu.LoadView();
             }
 
-            if (ScreenIndex == HOME)
+            // Pause behaviour – same idea as before:
+            // HOME = unpaused, everything else = paused
+            if (ScreenIndex == HOME_SCREEN)
                 PauseSystem.TogglePauseGame(false);
             else
                 PauseSystem.TogglePauseGame(true);
@@ -246,41 +260,24 @@ namespace CosmicShore.App.UI
 
             if (animate)
             {
-                GetComponent<MenuAudio>().PlayAudio();
+                var audio = GetComponent<MenuAudio>();
+                if (audio != null)
+                    audio.PlayAudio();
+
                 if (navigateCoroutine != null)
                     StopCoroutine(navigateCoroutine);
                 navigateCoroutine = StartCoroutine(SmoothMove(transform.position, newLocation, easing));
             }
             else
+            {
                 transform.position = newLocation;
+            }
 
             currentScreen = ScreenIndex;
             SetReturnToScreen((MenuScreens)currentScreen);
             UpdateNavBar(currentScreen);
         }
 
-        public void OnClickStoreNav()
-        {
-            NavigateTo(STORE);
-        }
-        public void OnClickPortNav()
-        {
-            LeaderboardMenu.LoadView();
-            NavigateTo(PORT);
-        }
-        public void OnClickHomeNav()
-        {
-            NavigateTo(HOME);
-        }
-        public void OnClickHangarNav()
-        {
-            //HangarMenu.LoadView();
-            NavigateTo(HANGAR);
-        }
-        public void OnClickArcadeNav()
-        {
-            NavigateTo(ARCADE);
-        }
         public void NavigateLeft()
         {
             if (currentScreen <= 0)
@@ -288,6 +285,7 @@ namespace CosmicShore.App.UI
 
             NavigateTo(currentScreen - 1);
         }
+
         public void NavigateRight()
         {
             if (currentScreen >= transform.childCount - 1)
@@ -295,30 +293,126 @@ namespace CosmicShore.App.UI
 
             NavigateTo(currentScreen + 1);
         }
+
+        #endregion
+
+        #region Nav Button Handlers (updated mapping)
+
+        // This was originally "Store" – now first tab = Hangar
+        public void OnClickStoreNav()
+        {
+            NavigateTo(HANGAR_SCREEN);
+        }
+
+        // New Ark screen
+        public void OnClickArkNav()
+        {
+            NavigateTo(ARK_SCREEN);
+        }
+
+        public void OnClickHomeNav()
+        {
+            NavigateTo(HOME_SCREEN);
+        }
+
+        public void OnClickPortNav()
+        {
+            if (LeaderboardMenu != null)
+                LeaderboardMenu.LoadView();
+
+            NavigateTo(PORT_SCREEN);
+        }
+
+        public void OnClickProfileNav()
+        {
+            NavigateTo(PROFILE_SCREEN);
+        }
+
+        // Arcade is now a separate modal (no longer a screen)
+        public void OnClickArcadeNav()
+        {
+            OpenArcadeModal();
+        }
+
+        // Small arrow buttons
+        public void OnClickLeftArrow()
+        {
+            NavigateLeft();
+        }
+
+        public void OnClickRightArrow()
+        {
+            NavigateRight();
+        }
+
+        #endregion
+
+        #region Arcade Modal
+
+        void OpenArcadeModal()
+        {
+            if (arcadeModalRoot != null)
+                arcadeModalRoot.SetActive(true);
+
+            // If you still want analytics + pause:
+            UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
+            //PauseSystem.TogglePauseGame(true);
+        }
+
+        #endregion
+
+        #region NavBar & Icons
+
         void UpdateNavBar(int index)
         {
-            // Deselect them all
+            // Existing behaviour: switch child[0]/child[1] under NavBar
             for (var i = 0; i < NavBar.childCount; i++)
             {
                 NavBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
                 NavBar.GetChild(i).GetChild(1).gameObject.SetActive(false);
             }
 
-            // Select the one
-            NavBar.GetChild(index).GetChild(0).gameObject.SetActive(false);
-            NavBar.GetChild(index).GetChild(1).gameObject.SetActive(true);
+            if (index >= 0 && index < NavBar.childCount)
+            {
+                NavBar.GetChild(index).GetChild(0).gameObject.SetActive(false);
+                NavBar.GetChild(index).GetChild(1).gameObject.SetActive(true);
+            }
 
-            NavBarLine.sprite = NavBarLineSprites[index];
+            if (NavBarLine != null &&
+                NavBarLineSprites != null &&
+                index >= 0 && index < NavBarLineSprites.Count)
+            {
+                NavBarLine.sprite = NavBarLineSprites[index];
+            }
+
+            // NEW: active/inactive icon pairs
+            for (int i = 0; i < NavActiveImages.Count; i++)
+            {
+                bool isActive = (i == index);
+
+                if (NavActiveImages[i] != null)
+                    NavActiveImages[i].SetActive(isActive);
+
+                if (i < NavInactiveImages.Count && NavInactiveImages[i] != null)
+                    NavInactiveImages[i].SetActive(!isActive);
+            }
         }
+
+        #endregion
+
+        #region Helpers
+
         IEnumerator SmoothMove(Vector3 startpos, Vector3 endpos, float seconds)
         {
             float t = 0f;
-            while (t <= 1.0)
+            while (t <= 1.0f)
             {
                 t += Time.unscaledDeltaTime / seconds;
                 transform.position = Vector3.Lerp(startpos, endpos, Mathf.SmoothStep(0f, 1f, t));
                 yield return null;
             }
         }
+
+        #endregion
     }
 }
