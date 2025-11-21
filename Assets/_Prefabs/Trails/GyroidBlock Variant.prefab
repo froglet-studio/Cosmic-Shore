@@ -95,6 +95,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
         type: 3}
+      propertyPath: OnBlockImpactedEventChannel
+      value: 
+      objectReference: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+        type: 2}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
       propertyPath: _onTrailBlockCreatedEventChannel
       value: 
       objectReference: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,

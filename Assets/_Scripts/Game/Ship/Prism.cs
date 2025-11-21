@@ -16,13 +16,15 @@ namespace CosmicShore.Core
     {
         protected const string DEFAULT_PLAYER_NAME = "DefaultPlayer"; // -> This should be removed later,
 
-        [FormerlySerializedAs("Prism Properties")] [Header("Prism Properties")] [SerializeField]
+        [Header("Prism Properties")] 
+        
+        [SerializeField]
         public PrismProperties prismProperties;
-
         public GameObject ParticleEffect;
         public Trail Trail;
 
-        [Header("Prism Growth")] public Vector3 GrowthVector = new Vector3(0, 2, 0);
+        [Header("Prism Growth")] 
+        public Vector3 GrowthVector = new Vector3(0, 2, 0);
         public float growthRate = 0.01f;
         public float waitTime = 0.6f;
 
@@ -30,17 +32,22 @@ namespace CosmicShore.Core
         public bool devastated;
         public bool IsSmallest;
         public bool IsLargest;
-        public bool IsProjectile;
-        [Header("Team Ownership")] public string ownerID;
+        
+        [Header("Team Ownership")] 
+        public string ownerID;
 
-        [Header("Event Channels")] [SerializeField]
+        [Header("Event Channels")] 
+        
+        [SerializeField]
         ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
 
-        [SerializeField] ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
+        [SerializeField] 
+        ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
 
-        [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
+        [SerializeField] 
+        ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
 
-        [FormerlySerializedAs("_onFlockSpawnedEventChannel")] [SerializeField]
+        [SerializeField]
         PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
 
         public Action<Prism> OnReturnToPool;
@@ -102,8 +109,6 @@ namespace CosmicShore.Core
 
         private void Awake()
         {
-            //
-            
             // Cache component references
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
             scaleAnimator = GetComponent<PrismScaleAnimator>();
@@ -158,8 +163,6 @@ namespace CosmicShore.Core
         private IEnumerator CreateBlockCoroutine()
         {
             yield return new WaitForSeconds(waitTime);
-            // yield return new WaitUntil(() => Player != null);
-
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
@@ -173,14 +176,9 @@ namespace CosmicShore.Core
             prismProperties.volume = scaleAnimator.GetCurrentVolume();
 
             scaleAnimator.BeginGrowthAnimation();
-
-            // TODO - Raise events about block creation.
-            /*if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockCreated(Team, PlayerName, PrismProperties);*/
-
+            
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
-                // OwnTeam = Team,
                 PlayerName = PlayerName,
                 Volume = prismProperties.volume,
             });
@@ -202,19 +200,10 @@ namespace CosmicShore.Core
 
         // Growth Methods
         public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
-        // public void Grow(Vector3 growthVector) => scaleAnimator.Grow(growthVector);
 
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
         {
-            // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-            /*if (other.TryGetComponent(out IVesselCollider vesselCollider))
-            {
-                var vessel = vesselCollider.Vessel;
-                if (!vessel.VesselStatus.Attached)
-                    vessel.PerformTrailBlockImpactEffects(PrismProperties);
-            }*/
-
             if (other.TryGetComponent(out CellItem cellItem))
             {
                 if (!prismProperties.IsShielded)
@@ -265,25 +254,10 @@ namespace CosmicShore.Core
                 ownDomain = Domain,
                 SpawnPosition = transform.position,
                 Rotation = transform.rotation,
-                Scale = transform.lossyScale,
+                Scale = transform.localScale,
                 Velocity = impactVector / prismProperties.volume,
                 PrismType = PrismType.Explosion
             });
-
-            /*
-            GameObject explodingBlock = returnData.SpawnedObject;
-            if (!explodingBlock)
-            {
-                Debug.LogError("Failed to spawn exploding block. Check if the pool is initialized and has available objects.");
-                return;
-            }
-
-            explodingBlock.transform.localScale = transform.lossyScale;
-
-            // Handle explosion-specific impact
-            var impact = explodingBlock.GetComponent<PrismExplosion>();
-            if (impact != null)
-                impact.TriggerExplosion(impactVector / PrismProperties.volume);*/
         }
 
         // Implosion Methods
@@ -303,22 +277,6 @@ namespace CosmicShore.Core
                 Volume = prismProperties.volume,
                 PrismType = PrismType.Implosion
             });
-
-            /*GameObject implodingBlock = returnData.SpawnedObject;
-            if (!implodingBlock)
-            {
-                Debug.LogError("Failed to spawn imploding block. Check if the pool is initialized and has available objects.");
-                return;
-            }
-
-            implodingBlock.transform.localScale = transform.lossyScale;
-
-            // Handle implosion-specific effect
-            var implosion = implodingBlock.GetComponent<PrismImplosion>();
-            if (implosion != null)
-            {
-                implosion.StartImplosion(sinkPoint, PrismProperties.volume);
-            }*/
         }
 
         public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
@@ -365,12 +323,8 @@ namespace CosmicShore.Core
         {
             if (!devastated)
             {
-                /*if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockRestored(Team, PlayerName, PrismProperties);*/
-
                 _onTrailBlockRestoredEventChannel.Raise(new PrismStats
                 {
-                    // OwnTeam = Team,
                     PlayerName = PlayerName,
                     Volume = prismProperties.volume,
                     OtherPlayerName = prismProperties.prism.PlayerName,
