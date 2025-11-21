@@ -254,7 +254,7 @@ namespace CosmicShore.Core
                 ownDomain = Domain,
                 SpawnPosition = transform.position,
                 Rotation = transform.rotation,
-                Scale = transform.lossyScale,
+                Scale = transform.localScale,
                 Velocity = impactVector / prismProperties.volume,
                 PrismType = PrismType.Explosion
             });
