@@ -28,11 +28,17 @@ namespace CosmicShore.Utility
         public TimelineAsset timelineAsset;
 
         /// <summary>
-        /// Where all items generated or expcted from this utility should be stored.
-        /// The path is relative to the project and will usually start with "Assets/".
+        /// The parent of the folder where all items generated or expected from this utility should be stored.
+        /// The path is relative to the project and must start with "Assets".
         /// </summary>
         [SerializeField]
-        public string assetsPath = "Assets/Recorder";
+        public string assetsParentPath = "Assets";
+
+        /// <summary>
+        /// The name of the directory where all the itames generated or xpected from this utility should be stored.
+        /// </summary>
+        [SerializeField]
+        public string assetsDirectoryName = "Recorder";
 
         /// <summary>
         /// The game objects that this recorder will track.
@@ -54,11 +60,6 @@ namespace CosmicShore.Utility
         [SerializeField]
         internal string salt;
 
-        /// <summary>
-        /// The salt currently used in recording names.
-        /// </summary>
-        /// 
-        internal string salt;
         #pragma warning restore 0414
     }
 }
