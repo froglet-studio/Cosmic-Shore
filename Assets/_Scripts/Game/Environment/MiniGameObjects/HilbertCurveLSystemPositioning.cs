@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 
 public class HilbertCurveLSystemPositioning : MonoBehaviour
 {
@@ -60,7 +61,10 @@ public class HilbertCurveLSystemPositioning : MonoBehaviour
             {
                 case 'F':
                     positions.Add(position);
-                    rotations.Add(Quaternion.LookRotation(direction, up));
+                    if (SafeLookRotation.TryGet(direction, up, out var rotation, this))
+                        rotations.Add(rotation);
+                    else
+                        rotations.Add(rotations.Count > 0 ? rotations[^1] : Quaternion.identity);
                     position += direction * segmentLength;
                     break;
                 case '+':

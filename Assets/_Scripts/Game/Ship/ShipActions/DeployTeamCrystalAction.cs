@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -35,7 +36,7 @@ namespace CosmicShore.Game
             if (_ghostCrystal != null) return;
 
             Vector3 pos = GetSpawnPoint();
-            Quaternion rot = Quaternion.LookRotation(Vessel.Transform.forward, Vessel.Transform.up);
+            SafeLookRotation.TryGet(Vessel.Transform.forward, Vessel.Transform.up, out var rot, Vessel.Transform);
 
             _ghostCrystal = Instantiate(crystalPrefab, pos, rot);
 
@@ -74,9 +75,12 @@ namespace CosmicShore.Game
         {
             while (_ghostCrystal != null)
             {
+                Quaternion rotation = Vessel.Transform.rotation;
+                SafeLookRotation.TryGet(Vessel.Transform.forward, Vessel.Transform.up, out rotation, Vessel.Transform);
+
                 _ghostCrystal.transform.SetPositionAndRotation(
                     GetSpawnPoint(),
-                    Quaternion.LookRotation(Vessel.Transform.forward, Vessel.Transform.up));
+                    rotation);
                 yield return null;
             }
         }

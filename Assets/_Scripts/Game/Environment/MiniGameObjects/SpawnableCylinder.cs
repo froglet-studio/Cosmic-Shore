@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -57,7 +58,10 @@ namespace CosmicShore
             var Block = Instantiate(prism);
             Block.ChangeTeam(domain);
             Block.ownerID = "public";
-            Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
+            if (SafeLookRotation.TryGet(lookPosition, up, out var rotation, Block))
+                Block.transform.SetPositionAndRotation(position, rotation);
+            else
+                Block.transform.position = position;
             Block.transform.SetParent(container.transform, false);
             Block.ownerID = blockId;
             Block.TargetScale = scale;

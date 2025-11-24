@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore;
 using CosmicShore.Game;
+using CosmicShore.Utility;
 
 public enum BoidCollisionEffects
 {
@@ -82,7 +83,10 @@ public class Boid : Fauna
         {
             desiredDirection = (target - transform.position).normalized;
             currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
-            desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
+            if (SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+                desiredRotation = rotation;
+            else
+                desiredRotation = transform.rotation;
             return;
         }
 
@@ -175,7 +179,10 @@ public class Boid : Fauna
 
         desiredDirection = ((separation * separationWeight) + (alignment * alignmentWeight) + (cohesion * cohesionWeight) + (goalDirection * goalWeight) + blockAttraction).normalized;
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
-        desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
+        if (SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this))
+            desiredRotation = desiredRot;
+        else
+            desiredRotation = transform.rotation;
     }
 
     protected override void Spawn()

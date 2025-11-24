@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore
@@ -127,7 +128,9 @@ namespace CosmicShore
                 up = additionalRotation * up;
             }
 
-            return Quaternion.LookRotation(forward, up);
+            SafeLookRotation.TryGet(forward, up, out var rotation, this);
+            
+            return rotation;
         }
 
 
@@ -513,7 +516,10 @@ namespace CosmicShore
         {
             int signRight = mate.Bondee == SiteType.Right ? 1 : -1;
             int signTop = mate.Substrate == SiteType.Top ? 1 : -1;
-            return Quaternion.LookRotation(transform.forward, signRight * signTop * transform.right);
+            if (!SafeLookRotation.TryGet(transform.forward, signRight * signTop * transform.right, out var rotation, this))
+                return Quaternion.identity;
+
+            return rotation;
         }
 
         private void RotateMate(BondMate mate, bool isSnapping)
