@@ -32,6 +32,11 @@ namespace CosmicShore.Game.Projectiles
             if (!renderer)
                 renderer = GetComponent<MeshRenderer>();
         }
+        
+        private void OnDestroy()
+        {
+            CancelExplosion();
+        }
 
         public virtual void Initialize(InitializeStruct initStruct)
         {
