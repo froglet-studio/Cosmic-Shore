@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 using CosmicShore.Game;
 using CosmicShore.SOAP;
+using CosmicShore.Utility;
 using UnityEngine.Serialization;
 
 public class VesselTransformer : MonoBehaviour
@@ -131,12 +132,14 @@ public class VesselTransformer : MonoBehaviour
 
     public void SpinShip(Vector3 newDirection)
     {
-        accumulatedRotation = Quaternion.LookRotation(newDirection);
+        if (SafeLookRotation.TryGet(newDirection, out var rotation, this, logError: false))
+            accumulatedRotation = rotation;
     }
 
     public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
     {
-        accumulatedRotation = Quaternion.Slerp(accumulatedRotation, Quaternion.LookRotation(newDirection, newUp), amount);
+        if (SafeLookRotation.TryGet(newDirection, newUp, out var rotation, this, logError: false))
+            accumulatedRotation = Quaternion.Slerp(accumulatedRotation, rotation, amount);
     }
 
     public void ApplyRotation(float angle, Vector3 axis)
@@ -174,10 +177,10 @@ public class VesselTransformer : MonoBehaviour
         if (VesselStatus == null || InputStatus == null) return;
 
         float boostAmount = 1f;
-        if (VesselStatus.Boosting)
+        if (VesselStatus.IsBoosting)
             boostAmount = VesselStatus.BoostMultiplier;
 
-        if (VesselStatus.ChargedBoostDischarging)
+        if (VesselStatus.IsChargedBoostDischarging)
             boostAmount *= VesselStatus.ChargedBoostCharge;
 
         // Smooth throttle speed calculation
@@ -194,7 +197,7 @@ public class VesselTransformer : MonoBehaviour
         VesselStatus.Speed = speed;
 
         // If drifting, keep direction; otherwise, go straight
-        VesselStatus.Course = VesselStatus.Drifting
+        VesselStatus.Course = VesselStatus.IsDrifting
             ? (speed * VesselStatus.Course + velocityShift).normalized
             : transform.forward;
 
@@ -222,14 +225,14 @@ public class VesselTransformer : MonoBehaviour
                 ThrottleModifiers.RemoveAt(i);
                 if (ThrottleModifiers.Count == 0)
                 {
-                    VesselStatus.Slowed = false;
+                    VesselStatus.IsSlowed = false;
                     Vessel.RemoveSlowedShipTransformFromGameData();
                 }
             }
             else if (modifier.initialValue < 1f)
             {
                 accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
-                VesselStatus.Slowed = true;
+                VesselStatus.IsSlowed = true;
                 Vessel.AddSlowedShipTransformToGameData();
             }
             else
@@ -242,7 +245,7 @@ public class VesselTransformer : MonoBehaviour
 
         if (accumulatedThrottleModification < 0.001f)
         {
-            VesselStatus.Slowed = false;
+            VesselStatus.IsSlowed = false;
             Vessel.RemoveSlowedShipTransformFromGameData();
         }
 

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -218,7 +219,9 @@ namespace CosmicShore.Game
             Vector3 mid = (a + b) * 0.5f;
             Vector3 dir = (b - a).normalized;
 
-            var go = Object.Instantiate(rodPrefab, mid, Quaternion.LookRotation(dir, up), parent);
+            SafeLookRotation.TryGet(dir, up, out var rotation, parent ? parent.gameObject : null);
+
+            var go = Object.Instantiate(rodPrefab, mid, rotation, parent);
             go.transform.localScale = blockScale;
         }
     }

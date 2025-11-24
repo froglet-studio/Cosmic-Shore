@@ -57,7 +57,7 @@ namespace CosmicShore.Game
         public Trail Trail = new Trail();
         readonly Trail Trail2 = new Trail();
 
-        IVesselStatus vesselStatus;
+        protected IVesselStatus vesselStatus;
 
         // Scaling helpers
         float Xscale;
@@ -67,7 +67,6 @@ namespace CosmicShore.Game
 
         // Charm
         bool isCharmed;
-        IVesselStatus tempVessel;
 
         // Cancellation
         CancellationTokenSource cts;
@@ -131,9 +130,8 @@ namespace CosmicShore.Game
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
         }
 
-        public void Charm(IVesselStatus other, float duration)
+        public void Charm(float duration)
         {
-            tempVessel = other;
             isCharmed = true;
             _ = CharmAsync(duration, cts.Token);
         }
@@ -162,16 +160,16 @@ namespace CosmicShore.Game
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !vesselStatus.Attached && vesselStatus.Speed > 3f)
+                if (spawnerEnabled && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {
-                        CreateBlock(0f, Trail);
+                        CreateBlock(ApplyBoostGap(0f), Trail);
                     }
                     else
                     {
-                        CreateBlock(Gap * 0.5f, Trail);
-                        CreateBlock(-Gap * 0.5f, Trail2);
+                        CreateBlock(ApplyBoostGap(Gap * 0.5f), Trail);
+                        CreateBlock(ApplyBoostGap(-Gap * 0.5f), Trail2);
                     }
                 }
 
@@ -180,14 +178,9 @@ namespace CosmicShore.Game
                     ? defaultWaitTime
                     : Mathf.Clamp(raw, 0f, 3f);
 
-                await UniTask.Delay(TimeSpan.FromSeconds(clamped), cancellationToken: ct);
+                float finalDelay = ApplyBoostSpawnDelay(clamped);
+                await UniTask.Delay(TimeSpan.FromSeconds(finalDelay), cancellationToken: ct);
             }
-        }
-
-        async UniTaskVoid RestartAsync(float delay, CancellationToken ct)
-        {
-            await UniTask.Delay(TimeSpan.FromSeconds(delay), cancellationToken: ct);
-            spawnerEnabled = true;
         }
 
         async UniTaskVoid CharmAsync(float duration, CancellationToken ct)
@@ -219,11 +212,11 @@ namespace CosmicShore.Game
             }
 
             // --- Compute scale from BaseScale ---
-            var scale = new Vector3(
+            Vector3 scale = ApplyBoostScale(new Vector3(
                 BaseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
                 BaseScale.y * YScaler,
                 BaseScale.z * ZScaler
-            );
+            ));
 
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
@@ -302,11 +295,12 @@ namespace CosmicShore.Game
             }
 
             // --- Scale from BaseScale ---
-            Vector3 scale = new Vector3(
+            Vector3 scale = ApplyBoostScale(new Vector3(
                 BaseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
                 BaseScale.y * YScaler,
                 BaseScale.z * ZScaler
-            );
+            ));
+
 
             // --- Position & Rotation ---
             float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
@@ -443,6 +437,21 @@ namespace CosmicShore.Game
         {
             Trail.Clear();
             Trail2.Clear();
+        }
+
+        protected virtual Vector3 ApplyBoostScale(Vector3 scale)
+        {
+            return scale;
+        }
+        
+        protected virtual float ApplyBoostGap(float halfGap)
+        {
+            return halfGap;
+        }
+        
+        protected virtual float ApplyBoostSpawnDelay(float delay)
+        {
+            return delay;
         }
     }
 }

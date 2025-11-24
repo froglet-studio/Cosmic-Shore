@@ -15,7 +15,7 @@ namespace CosmicShore.Game
             courseTransform = courseObject.transform;
             
             base.Initialize(vessel);
-            Vessel.VesselStatus.SingleStickControls = true;
+            Vessel.VesselStatus.IsSingleStickControls = true;
         }
 
         protected override void Pitch() // These need to not use *= because quaternions are not commutative
@@ -53,10 +53,10 @@ namespace CosmicShore.Game
         protected override void MoveShip()
         {
             float boostAmount = 1f;
-            if (VesselStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the vessel data still thinks we are boosting
+            if (VesselStatus.IsBoosting) // TODO: if we run out of fuel while full speed and straight the vessel data still thinks we are boosting
                 boostAmount = Vessel.VesselStatus.BoostMultiplier;
 
-            if (VesselStatus.ChargedBoostDischarging)
+            if (VesselStatus.IsChargedBoostDischarging)
                 boostAmount *= VesselStatus.ChargedBoostCharge;
 
             speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);

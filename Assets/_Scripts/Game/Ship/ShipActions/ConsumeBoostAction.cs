@@ -41,7 +41,7 @@ public class ConsumeBoostAction : ShipAction
     {
         base.Initialize(vessel);
         Vessel.VesselStatus.BoostMultiplier = 1f;
-        VesselStatus.Boosting = false;
+        VesselStatus.IsBoosting = false;
 
         available = Mathf.Clamp(maxCharges, 0, 4);
         reloading = false;
@@ -97,7 +97,7 @@ public class ConsumeBoostAction : ShipAction
         if (Vessel.VesselStatus.BoostMultiplier <= 1f)
         {
             Vessel.VesselStatus.BoostMultiplier = 1f;
-            VesselStatus.Boosting = false;
+            VesselStatus.IsBoosting = false;
             OnBoostEnded?.Invoke(); // legacy
         }
     }
@@ -106,7 +106,7 @@ public class ConsumeBoostAction : ShipAction
     {
         float mult = boostMultiplier.Value;
         activeStacks += 1f;
-        VesselStatus.Boosting = true;
+        VesselStatus.IsBoosting = true;
         Vessel.VesselStatus.BoostMultiplier += mult;
 
         yield return new WaitForSeconds(boostDuration);
@@ -117,7 +117,7 @@ public class ConsumeBoostAction : ShipAction
         if (Vessel.VesselStatus.BoostMultiplier <= 1f)
         {
             Vessel.VesselStatus.BoostMultiplier = 1f;
-            VesselStatus.Boosting = false;
+            VesselStatus.IsBoosting = false;
             OnBoostEnded?.Invoke(); // legacy
         }
 

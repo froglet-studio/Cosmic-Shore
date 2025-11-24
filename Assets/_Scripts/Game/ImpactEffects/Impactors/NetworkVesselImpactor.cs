@@ -13,9 +13,9 @@ namespace CosmicShore.Game
             vesselImpactor ??= GetComponent<VesselImpactor>();
         }
         
-        public void ExecuteOnHitOmniCrystal()
+        public void ExecuteOnHitOmniCrystal(CrystalImpactData data)
         {
-            ExecuteCrystalImpact_ServerRpc(new CrystalImpactData());
+            ExecuteCrystalImpact_ServerRpc(data);
         }
         
         [ServerRpc]

@@ -11,13 +11,13 @@ public class BoostAction : ShipAction
     {
         if (VesselStatus != null)
         {
-            VesselStatus.Boosting = true;
+            VesselStatus.IsBoosting = true;
             VesselStatus.IsStationary = false;
         }
     }
 
     public override void StopAction()
     {
-        VesselStatus.Boosting = false;
+        VesselStatus.IsBoosting = false;
     }
 }

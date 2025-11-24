@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Game.IO;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -168,9 +169,10 @@ namespace CosmicShore.Game
                 Vector3 worldPos = blockTransform.position + localPos;
  
                 
-                var marker = nudgeShardPoolManager?.Get(
-                    worldPos,
-                    Quaternion.LookRotation(blockTransform.forward, localPos), nudgeShardPoolManager.transform);
+                if (!SafeLookRotation.TryGet(blockTransform.forward, localPos, out var rotation, blockTransform))
+                    continue;
+
+                var marker = nudgeShardPoolManager?.Get(worldPos, rotation, nudgeShardPoolManager.transform);
 
                 if (!marker) break;
                 

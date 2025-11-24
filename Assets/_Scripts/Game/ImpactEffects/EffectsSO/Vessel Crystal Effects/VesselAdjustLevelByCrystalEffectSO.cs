@@ -6,10 +6,10 @@ namespace CosmicShore.Game
     public class VesselAdjustLevelByCrystalEffectSO : VesselCrystalEffectSO
     {
         [SerializeField] int LevelAdjustment;
-
-        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor crystalImpactee)
+        
+        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
-            vesselImpactor.Vessel.VesselStatus.ResourceSystem.AdjustLevel(crystalImpactee.Crystal.crystalProperties.Element, LevelAdjustment);
+            vesselImpactor.Vessel.VesselStatus.ResourceSystem.AdjustLevel(data.Element, LevelAdjustment);
         }
     }
 }

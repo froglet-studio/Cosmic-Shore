@@ -6,8 +6,6 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         public FriendlyVolumeDestroyedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
 
-        float lastVolumeDestroyed;
-
         public override void Subscribe()
         {
             foreach (var playerScore in GameData.RoundStatsList)
@@ -27,14 +25,12 @@ namespace CosmicShore.Game.Arcade.Scoring
                     return;
 
                 roundStats.OnFriendlyVolumeDestroyedChanged -= UpdateScore;
-                lastVolumeDestroyed = 0;
             }
         }
 
         void UpdateScore(IRoundStats roundStats)
         {
-            var newVolumeDestroyed = roundStats.TotalVolumeDestroyed - lastVolumeDestroyed;
-            roundStats.Score -= newVolumeDestroyed * scoreMultiplier;
+            roundStats.Score = roundStats.FriendlyVolumeDestroyed * scoreMultiplier;
         }
     }
 }

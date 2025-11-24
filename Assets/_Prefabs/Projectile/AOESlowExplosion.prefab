@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 4173946516839143748}
   - component: {fileID: 5577395274875715967}
   - component: {fileID: -8960277768126443594}
+  - component: {fileID: 3138139401171723731}
   m_Layer: 10
   m_Name: AOESlowExplosion
   m_TagString: Untagged
@@ -52,6 +53,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ExplosionDuration: 3
   ExplosionDelay: 0.2
+  renderer: {fileID: 1158389878633052016}
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -184,3 +186,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   impactorObject: {fileID: 5577395274875715967}
+--- !u!114 &3138139401171723731
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d93ba61543949824db31c7cb89b4f009, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _binding: 0
+  _disableAfterSubscribing: 0
+  _eventResponses:
+  - Delay: 0
+    ScriptableEvent: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+    Response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 5915562654621825366}
+          m_TargetAssemblyTypeName: CosmicShore.Game.Projectiles.AOEExplosion, Assembly-CSharp
+          m_MethodName: CancelExplosionAndDestroy
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2

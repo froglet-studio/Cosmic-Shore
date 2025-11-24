@@ -58,7 +58,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         CancelAllStacks();
         _reloading = false;
         if (_status == null) return;
-        _status.Boosting = false;
+        _status.IsBoosting = false;
         _status.BoostMultiplier = 1f;
     }
 
@@ -70,7 +70,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         if (_status != null)
         {
             _status.BoostMultiplier = 1f;
-            _status.Boosting = false;
+            _status.IsBoosting = false;
         }
 
         _available = Mathf.Clamp(initialCharges, 0, 4);
@@ -141,7 +141,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 
         if (stacks > 0)
         {
-            _status.Boosting = true;
+            _status.IsBoosting = true;
 
             // linear stacking
            // _status.BoostMultiplier = (_so ? _so.BoostMultiplier.Value : 4f) * stacks;
@@ -151,7 +151,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
         else
         {
-            _status.Boosting = false;
+            _status.IsBoosting = false;
             _status.BoostMultiplier = 1f;
             OnBoostEnded?.Invoke();
 
@@ -244,7 +244,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 
         if (_status != null)
         {
-            _status.Boosting = false;
+            _status.IsBoosting = false;
             _status.BoostMultiplier = 1f;
         }
 

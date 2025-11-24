@@ -21,15 +21,6 @@ namespace CosmicShore.Game
 
         public override void ExplodeCrystal(Crystal.ExplodeParams explodeParams) =>
             cellData.Crystal.Explode(explodeParams);
-
-        protected override void Spawn(Vector3 spawnPos)
-        {
-            var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
-            crystal.InjectDependencies(this);
-            cellData.Crystal = crystal;
-            TryInitializeAndAdd(crystal);
-            cellData.OnCrystalSpawned.Raise();
-        }
         
         void MiniGameTurnStarted() => Spawn(CalculateSpawnPos());
         

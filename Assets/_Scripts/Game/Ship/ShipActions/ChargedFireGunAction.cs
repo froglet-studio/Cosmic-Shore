@@ -26,7 +26,7 @@ public class ChargedFireGunAction : ShipAction
     }
     public override void StartAction()
     {
-        if (VesselStatus.LiveProjectiles) gun.StopProjectile();
+        if (VesselStatus.HasLiveProjectiles) gun.StopProjectile();
         else gainEnergy = StartCoroutine(GainEnergyCoroutine());
     }
 
@@ -46,10 +46,10 @@ public class ChargedFireGunAction : ShipAction
     {
         while (projectileContainer.GetComponentsInChildren<Projectile>().Length > 0)
         {
-            VesselStatus.LiveProjectiles = true;
+            VesselStatus.HasLiveProjectiles = true;
             yield return null;
         }
-        VesselStatus.LiveProjectiles = false;
+        VesselStatus.HasLiveProjectiles = false;
     }
 
     void StartCheckProjectiles()
@@ -62,7 +62,7 @@ public class ChargedFireGunAction : ShipAction
 
     public override void StopAction()
     {
-        if (VesselStatus.LiveProjectiles) gun.DetonateProjectile();
+        if (VesselStatus.HasLiveProjectiles) gun.DetonateProjectile();
         else 
         {
             StopCoroutine(gainEnergy);
@@ -72,7 +72,7 @@ public class ChargedFireGunAction : ShipAction
                 ResourceSystem.ChangeResourceAmount(AmmoResourceIndex, -ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
 
                 Vector3 inheritedDirection;
-                if (VesselStatus.Attached || VesselStatus.IsTranslationRestricted) inheritedDirection = transform.forward;
+                if (VesselStatus.IsAttached || VesselStatus.IsTranslationRestricted) inheritedDirection = transform.forward;
                 else inheritedDirection = VesselStatus.Course;
 
                 // TODO: WIP magic numbers

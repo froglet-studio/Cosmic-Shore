@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Game.Animation
@@ -58,9 +59,9 @@ namespace CosmicShore.Game.Animation
                         roll * animationScaler,
                         Vector3.zero);
 
-            if (VesselStatus.Drifting)
+            if (VesselStatus.IsDrifting)
             {
-                DriftHandle.rotation = Quaternion.LookRotation(VesselStatus.Course, transform.up);
+                SafeLookRotation.TrySet(DriftHandle, VesselStatus.Course, transform.up, DriftHandle ? DriftHandle.gameObject : gameObject, logError: false);
                 RightWing.parent = DriftHandle;
                 LeftWing.parent = DriftHandle;
                 wingPosition = forwardWingPosition;

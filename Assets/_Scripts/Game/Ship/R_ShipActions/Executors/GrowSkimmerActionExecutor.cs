@@ -60,7 +60,7 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
         {
             boostApplied = so.BoostMultiplier;
             _status.BoostMultiplier *= boostApplied;
-            _status.Boosting = true;
+            _status.IsBoosting = true;
         }
 
         while (_growing)
@@ -82,7 +82,7 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
         if (so.ApplyBoostWhileGrowing && _status != null)
         {
             _status.BoostMultiplier /= Mathf.Max(0.0001f, boostApplied);
-            if (_status.BoostMultiplier <= 1f) { _status.BoostMultiplier = 1f; _status.Boosting = false; }
+            if (_status.BoostMultiplier <= 1f) { _status.BoostMultiplier = 1f; _status.IsBoosting = false; }
         }
 
         _loop = null;
