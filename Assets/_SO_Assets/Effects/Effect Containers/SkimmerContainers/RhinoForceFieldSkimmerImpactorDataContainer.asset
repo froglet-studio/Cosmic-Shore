@@ -16,6 +16,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 02cd4a20ea91bbc4591c9ccbf9db91af, type: 2}
   - {fileID: 11400000, guid: c57e976ae0b3f0749895f17697cac036, type: 2}
   - {fileID: 11400000, guid: 48300753e6e071a4cb4949fba42b3075, type: 2}
+  - {fileID: 11400000, guid: 01629884bddcd5e4ebfc46aed212f1f5, type: 2}
   skimmerPrismEffectsSO:
   - {fileID: 11400000, guid: a70647f138323c14392e84920a1a44f2, type: 2}
   - {fileID: 11400000, guid: dcce08b9351b97c4eb275508001a5b8e, type: 2}
