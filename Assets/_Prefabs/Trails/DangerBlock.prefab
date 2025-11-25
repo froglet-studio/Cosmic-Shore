@@ -135,7 +135,7 @@ MonoBehaviour:
     Index: 0
     IsShielded: 0
     IsSuperShielded: 0
-    IsDangerous: 0
+    IsDangerous: 1
     IsTransparent: 0
     TimeCreated: 0
     DefaultLayerName: TrailBlocks
