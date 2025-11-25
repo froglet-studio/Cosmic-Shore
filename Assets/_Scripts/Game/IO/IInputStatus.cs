@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.IO;
+﻿using System;
+using CosmicShore.Game.IO;
 using CosmicShore.SOAP;
 using CosmicShore.Utilities;
 using UnityEngine;
@@ -8,6 +9,8 @@ namespace CosmicShore.Game
 {
     public interface IInputStatus
     {
+        public event Action<bool> OnToggleInputPaused;
+        
         static ScreenOrientation CurrentOrientation;
 
         ScriptableEventInputEvents OnButtonPressed {get;}

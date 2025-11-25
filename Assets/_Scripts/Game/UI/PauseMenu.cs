@@ -1,8 +1,8 @@
 using CosmicShore.App.Systems;
 using UnityEngine;
 using CosmicShore.Core;
-using CosmicShore.Game.UI;
 using CosmicShore.SOAP;
+using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 
 /// <summary>
@@ -20,8 +20,8 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField] 
         ScriptableEventNoParam _onClickToRestartButton;
         
-        [SerializeField] 
-        MiniGameHUD MiniGameHUD;
+        /*[SerializeField] 
+        MiniGameHUD MiniGameHUD;*/
         
         [SerializeField]
         GameDataSO gameData;
@@ -50,32 +50,40 @@ namespace CosmicShore.App.UI.Screens
 
         public void OnClickMultiplayerResumeGameButton()
         {
-            MiniGameHUD.ToggleView(true);
-            gameData.LocalPlayer.InputController.SetPause(false);
+            // MiniGameHUD.ToggleView(true);
+            // gameData.LocalPlayer.InputController.SetPause(false);
+            TogglePlayerPauseWithDelay(false);
+            Hide();
         }
 
         public void OnClickMultiplayerPauseButton()
         {
-            MiniGameHUD.ToggleView(false);
-            gameData.LocalPlayer.InputController.SetPause(true);
+            // MiniGameHUD.ToggleView(false);
+            // gameData.LocalPlayer.InputController.SetPause(true);
+            TogglePlayerPauseWithDelay(true);
+            Show();
         }
         
         /// <summary>
-        /// UnPauses the game 
+        /// On click the resume button from UI
         /// </summary>
         public void OnClickResumeGameButton()
         {
             PauseSystem.TogglePauseGame(false);
-            MiniGameHUD.ToggleView(true);
+            // MiniGameHUD.ToggleView(true);
+            TogglePlayerPauseWithDelay(false);
+            Hide();
         }
 
         /// <summary>
-        /// Pauses the game 
+        /// On click the pause button from UI
         /// </summary>
         public void OnClickPauseGameButton()
         {
             PauseSystem.TogglePauseGame(true);
-            MiniGameHUD.ToggleView(false);
+            // MiniGameHUD.ToggleView(false);
+            TogglePlayerPauseWithDelay(true);
+            Show();
         }
 
         public void OnClickMainMenu() => _onClickToMainMenu.Raise();
@@ -92,6 +100,12 @@ namespace CosmicShore.App.UI.Screens
             canvasGroup.alpha = 0;
             canvasGroup.blocksRaycasts = false;
             canvasGroup.interactable = false;
+        }
+        
+        async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)
+        {
+            await UniTask.Yield();
+            gameData.LocalPlayer?.InputController.SetPause(toggle);
         }
     }
 }
