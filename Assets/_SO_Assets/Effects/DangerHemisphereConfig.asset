@@ -54,4 +54,5 @@ MonoBehaviour:
   prismSpawnEvent: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
   markShielded: 1
   markDangerous: 1
-  dangerPrismMaterial: {fileID: 2100000, guid: abdd319ac0ecd4248b35a706fb0839d9, type: 2}
+  themeManagerDataContainer: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628,
+    type: 2}

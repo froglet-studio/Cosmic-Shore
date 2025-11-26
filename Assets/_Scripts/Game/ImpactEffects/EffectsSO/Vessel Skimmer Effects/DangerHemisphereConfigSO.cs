@@ -1,4 +1,5 @@
-﻿using CosmicShore.Utilities;
+﻿using CosmicShore.Core;
+using CosmicShore.Utilities;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
@@ -36,7 +37,7 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] private bool markDangerous = true;
 
         [Header("Material")]
-        [SerializeField] private Material dangerPrismMaterial;
+        [SerializeField] private ThemeManagerDataContainerSO themeManagerDataContainer;
 
         // ----------------- PROPERTIES -----------------
 
@@ -59,6 +60,6 @@ namespace CosmicShore.Game.Projectiles
         public bool MarkShielded            => markShielded;
         public bool MarkDangerous           => markDangerous;
 
-        public Material DangerMaterial      => dangerPrismMaterial;
+        public ThemeManagerDataContainerSO ThemeManagerDataContainer => themeManagerDataContainer;
     }
 }
