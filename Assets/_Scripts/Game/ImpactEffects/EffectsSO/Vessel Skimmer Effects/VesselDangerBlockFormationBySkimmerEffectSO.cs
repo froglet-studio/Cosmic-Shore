@@ -49,7 +49,7 @@ namespace CosmicShore.Game
                 return;
             }
 
-            var targetPos = cell.GetExplosionTarget(attackerStatus.Domain);
+            var targetPos = cell.GetCrystalTransform().position;
 
             var toTarget = targetPos - victimPos;
             if (toTarget.sqrMagnitude < 0.01f)
