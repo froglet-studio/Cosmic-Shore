@@ -4,11 +4,11 @@ using UnityEngine;
 namespace CosmicShore.Soap
 {
     [System.Serializable]
-    [CreateAssetMenu(fileName = "ShipPrefabContainer", menuName = "ScriptableObjects/Data Containers/Ship Prefab Container")]
+    [CreateAssetMenu(fileName = "ShipPrefabContainer",
+        menuName = "ScriptableObjects/Data Containers/Ship Prefab Container")]
     public class ShipPrefabContainer : ScriptableObject
     {
-        [SerializeField]
-        Transform[] _shipPrefabs;
+        [SerializeField] Transform[] _shipPrefabs;
 
         public bool TryGetShipPrefab(ShipClassType shipType, out Transform shipPrefabTransform)
         {

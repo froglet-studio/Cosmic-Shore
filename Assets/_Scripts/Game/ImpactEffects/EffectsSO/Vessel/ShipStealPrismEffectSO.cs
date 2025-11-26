@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipStealPrismEffect", 
+    [CreateAssetMenu(fileName = "ShipStealPrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel/ShipStealPrismEffectSO")]
     public class ShipStealPrismEffectSO : StealPrismEffectBaseSO<ShipImpactor>
     {

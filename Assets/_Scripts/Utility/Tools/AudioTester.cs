@@ -18,7 +18,6 @@ namespace CosmicShore
         // Update is called once per frame
         void OnClickPlayAudioTest()
         {
-            
         }
     }
 }

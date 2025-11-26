@@ -17,8 +17,8 @@ namespace CosmicShore.Core
         // TODO: move to cell
         [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new();
 
-        [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [Header("Data Containers")] [SerializeField]
+        ThemeManagerDataContainerSO _themeManagerData;
 
         // TODO - Store in separate data container
         public ShipClassType ChoosenClassType;

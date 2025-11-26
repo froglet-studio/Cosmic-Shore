@@ -7,6 +7,7 @@ namespace CosmicShore
     public class PostProcessingManager : Singleton<PostProcessingManager>
     {
         Volume thisVolume;
+
         // this serializes a new postprocess profile
         [SerializeField] VolumeProfile orthographicProfile;
         [SerializeField] VolumeProfile perspectiveProfile;

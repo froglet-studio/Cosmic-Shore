@@ -21,6 +21,8 @@ namespace CosmicShore.Utilities.Network
         }
 
         public static implicit operator string(FixedPlayerName s) => s.ToString();
-        public static implicit operator FixedPlayerName(string s) => new FixedPlayerName() { _name = new FixedString32Bytes(s) };
+
+        public static implicit operator FixedPlayerName(string s) =>
+            new FixedPlayerName() { _name = new FixedString32Bytes(s) };
     }
 }

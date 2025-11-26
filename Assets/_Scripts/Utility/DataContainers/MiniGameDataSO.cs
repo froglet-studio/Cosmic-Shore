@@ -29,15 +29,15 @@ namespace CosmicShore.SOAP
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
 
-        
+
         // Local player config / state
         public ShipClassTypeVariable SelectedShipClass;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
         public SO_Captain PlayerCaptain;
         public ResourceCollection ResourceCollection;
-        
-        
+
+
         // Game Config / State
         public string SceneName;
         public GameModes GameMode;
@@ -51,9 +51,10 @@ namespace CosmicShore.SOAP
         public Dictionary<int, CellStats> CellStatsList = new();
         public float TurnStartTime;
         public bool IsRunning { get; private set; }
-        
+
 
         int _activePlayerId;
+
         public IPlayer ActivePlayer =>
             (_activePlayerId >= 0 && _activePlayerId < Players.Count) ? Players[_activePlayerId] : null;
 
@@ -61,7 +62,7 @@ namespace CosmicShore.SOAP
         // Initialization / Lifecycle
 
         public void InvokeGameLaunch() => OnLaunchGame?.Invoke();
-        
+
         public void InvokeMiniGameInitialize()
         {
             PauseSystem.TogglePauseGame(false);
@@ -91,6 +92,7 @@ namespace CosmicShore.SOAP
             PauseSystem.TogglePauseGame(true);
             OnMiniGameEnd?.Invoke();
         }
+
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
         public void InvokeAllPlayersSpawned() => OnAllPlayersSpawned?.Invoke();
 
@@ -119,7 +121,7 @@ namespace CosmicShore.SOAP
 
             return top is null ? (Teams.Jade, 0f) : (top.Team, top.VolumeRemaining);
         }
-        
+
         public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>
             RoundStatsList.OrderByDescending(r => r.VolumeRemaining).ToList();
 
@@ -166,7 +168,7 @@ namespace CosmicShore.SOAP
             if (!TryGetActivePlayerStats(out IPlayer _, out roundStats))
             {
                 Debug.LogError("No round stats of active player found!");
-                return false;   
+                return false;
             }
 
             if (roundStats.Name == RoundStatsList[0].Name)
@@ -198,7 +200,7 @@ namespace CosmicShore.SOAP
             // Keep players stationary until game starts
             p.ToggleStationaryMode(true);
         }
-        
+
         public void ResetPlayerScores()
         {
             if (RoundStatsList is null || RoundStatsList.Count == 0)
@@ -206,14 +208,14 @@ namespace CosmicShore.SOAP
                 Debug.LogError("This should never happen!");
                 return;
             }
-            
-            for (int i = 0, count = RoundStatsList.Count; i < count ; i++)
+
+            for (int i = 0, count = RoundStatsList.Count; i < count; i++)
             {
                 var roundStats = RoundStatsList[i];
                 roundStats.Score = 0;
             }
         }
-        
+
         public void SortRoundStats(bool golfRules)
         {
             if (golfRules)
@@ -252,7 +254,7 @@ namespace CosmicShore.SOAP
                 player.ToggleInputStatus(!active);
             }
         }
-        
+
         // TODO - Need to rewrite the following method.
         /*
         public bool TryAdvanceActivePlayer(out IPlayer activePlayer)
@@ -264,10 +266,10 @@ namespace CosmicShore.SOAP
                 return false;
             }
 
-            activePlayerId = 0; // (ActivePlayerId + 1) % RemainingPlayers.Count; 
+            activePlayerId = 0; // (ActivePlayerId + 1) % RemainingPlayers.Count;
             localPlayer = Players[0]; // Players[RemainingPlayers[ActivePlayerId]];
             Transform activePlayerOrigin =  PlayerOrigins[activePlayerId];
-            
+
             localPlayer.Transform.SetPositionAndRotation(activePlayerOrigin.position, activePlayerOrigin.rotation);
             localPlayer.InputController.InputStatus.Paused = true;
             localPlayer.Ship.Teleport(activePlayerOrigin);
@@ -277,18 +279,18 @@ namespace CosmicShore.SOAP
             // ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
 
             // CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
-            
+
             foreach (var player in Players)
             {
                 // Debug.Log($"PlayerUUID: {player.PlayerUUID}");
                 player.ToggleGameObject(player.PlayerUUID == localPlayer.PlayerUUID);
             }
-            
+
             activePlayer = localPlayer;
             return true;
         }
 
-        
+
         public void PlayActivePlayer()
         {
             LocalPlayer.ToggleStationaryMode(false);

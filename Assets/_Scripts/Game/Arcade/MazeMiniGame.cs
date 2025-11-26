@@ -25,7 +25,6 @@ namespace CosmicShore.Game.Arcade
 
         void InitializeSegments()
         {
-
             TrailSpawner.NukeTheTrails();
 
             for (int i = 0; i < IntensityLevel; i++)

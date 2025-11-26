@@ -1,17 +1,16 @@
 ﻿using UnityEngine;
 
 namespace CosmicShore.Game
-{ 
+{
     public class MantaShipHUDController : R_ShipHUDController
     {
-        [Header("View")]
-        [SerializeField] private MantaShipHUDView view;
+        [Header("View")] [SerializeField] private MantaShipHUDView view;
 
-        [Header("Effect Source (SO)")]
-        [SerializeField] private SkimmerOverchargeCollectPrismEffectSO overchargeSO;
+        [Header("Effect Source (SO)")] [SerializeField]
+        private SkimmerOverchargeCollectPrismEffectSO overchargeSO;
 
-        [Header("Skimmer binding")]
-        [SerializeField] private SkimmerImpactor skimmer;
+        [Header("Skimmer binding")] [SerializeField]
+        private SkimmerImpactor skimmer;
 
         private int _max = 1;
 
@@ -27,8 +26,8 @@ namespace CosmicShore.Game
             }
 
             // subscribe
-            overchargeSO.OnCountChanged    += HandleCountChanged;
-            overchargeSO.OnOvercharge      += HandleOvercharge;
+            overchargeSO.OnCountChanged += HandleCountChanged;
+            overchargeSO.OnOvercharge += HandleOvercharge;
             overchargeSO.OnCooldownStarted += HandleCooldownStarted;
 
             SetCounter(0, overchargeSO.MaxBlockHits);
@@ -38,8 +37,8 @@ namespace CosmicShore.Game
         {
             if (overchargeSO != null)
             {
-                overchargeSO.OnCountChanged    -= HandleCountChanged;
-                overchargeSO.OnOvercharge      -= HandleOvercharge;
+                overchargeSO.OnCountChanged -= HandleCountChanged;
+                overchargeSO.OnOvercharge -= HandleOvercharge;
                 overchargeSO.OnCooldownStarted -= HandleCooldownStarted;
             }
         }
@@ -47,7 +46,7 @@ namespace CosmicShore.Game
 
         void HandleCountChanged(SkimmerImpactor who, int count, int max)
         {
-            if (who != skimmer) return;     
+            if (who != skimmer) return;
             _max = Mathf.Max(1, max);
             SetCounter(count, _max);
         }
@@ -55,13 +54,12 @@ namespace CosmicShore.Game
         void HandleOvercharge(SkimmerImpactor who)
         {
             if (who != skimmer) return;
-     
+
             SetCounter(_max, _max);
         }
 
         void HandleCooldownStarted(SkimmerImpactor who, float seconds)
         {
-            
         }
 
 
@@ -71,7 +69,6 @@ namespace CosmicShore.Game
 
             if (view.countText != null)
                 view.countText.text = $"{count}/{max}";
-
         }
     }
 }

@@ -19,7 +19,7 @@ public class FadeIn : MonoBehaviour
     {
         // Set the opacity to zero before starting the coroutine so there is no delay in the start of the effect
         gameObject.GetComponent<Renderer>().material.SetFloat("_opacity", 0f);
-        
+
         if (fadeInCoroutine != null)
             StopCoroutine(fadeInCoroutine);
 

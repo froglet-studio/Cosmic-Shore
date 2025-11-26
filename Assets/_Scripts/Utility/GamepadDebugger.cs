@@ -29,7 +29,8 @@ public class GamepadDebugger : MonoBehaviour
             string type = GetControllerType(pad);
             string color = GetColorForType(type);
 
-            string info = $"<color={color}><b>Gamepad Detected:</b> '{pad.displayName}' ({pad.device.description.product})";
+            string info =
+                $"<color={color}><b>Gamepad Detected:</b> '{pad.displayName}' ({pad.device.description.product})";
             info += $"\n<b>Controller Type:</b> {type}";
 
             if (type == "Other")
@@ -56,7 +57,8 @@ public class GamepadDebugger : MonoBehaviour
     {
         var product = (pad.device.description.product ?? "").ToLower();
         if (product.Contains("xbox")) return "XBOX";
-        if (product.Contains("dualshock") || product.Contains("dualsense") || product.Contains("ps4") || product.Contains("ps5") || product.Contains("playstation"))
+        if (product.Contains("dualshock") || product.Contains("dualsense") || product.Contains("ps4") ||
+            product.Contains("ps5") || product.Contains("playstation"))
             return "PlayStation";
         if (product.Contains("logitech")) return "Logitech (Other)";
         return "Other";

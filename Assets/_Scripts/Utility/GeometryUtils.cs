@@ -49,18 +49,18 @@ public static class GeometryUtils
         {
             distances.Add(DistanceFromPointToLine(point, lineData));
         }
+
         return distances;
     }
 
     public static Vector3 ClampMagnitude(Vector3 vector, float minMagnitude, float maxMagnitude, out float magnitude)
-    { 
-        magnitude = vector.magnitude;   
+    {
+        magnitude = vector.magnitude;
         if (magnitude < minMagnitude)
-            return vector * minMagnitude/magnitude;
-      
+            return vector * minMagnitude / magnitude;
+
         else if (magnitude > maxMagnitude)
-            return vector * maxMagnitude/magnitude;
+            return vector * maxMagnitude / magnitude;
         return vector;
     }
-
 }

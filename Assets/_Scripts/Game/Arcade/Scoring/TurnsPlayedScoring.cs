@@ -7,13 +7,14 @@ namespace CosmicShore.Game.Arcade.Scoring
     /// </summary>
     public class TurnsPlayedScoring : BaseScoring
     {
-        public TurnsPlayedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        public TurnsPlayedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier)
+        {
+        }
 
         public override void CalculateScore()
         {
-            
         }
-        
+
         /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {
             return turnsPlayed;

@@ -4,11 +4,12 @@ using Obvious.Soap;
 
 namespace CosmicShore.Utilities
 {
-    [AddComponentMenu("Soap/EventListeners/EventListener"+nameof(SilhouetteData))]
+    [AddComponentMenu("Soap/EventListeners/EventListener" + nameof(SilhouetteData))]
     public class EventListenerSilhouetteData : EventListenerGeneric<SilhouetteData>
     {
         [SerializeField] private EventResponse[] _eventResponses = null;
         protected override EventResponse<SilhouetteData>[] EventResponses => _eventResponses;
+
         [System.Serializable]
         public class EventResponse : EventResponse<SilhouetteData>
         {
@@ -17,10 +18,10 @@ namespace CosmicShore.Utilities
             [SerializeField] private SilhouetteDataUnityEvent _response = null;
             public override UnityEvent<SilhouetteData> Response => _response;
         }
+
         [System.Serializable]
         public class SilhouetteDataUnityEvent : UnityEvent<SilhouetteData>
         {
-            
         }
     }
 }

@@ -12,15 +12,16 @@ namespace CosmicShore
 {
     public class ProtectMissionGame : MiniGame
     {
+        [Header("Mission Configuration")] [SerializeField]
+        SO_Mission MissionData;
 
-        [Header("Mission Configuration")]
-        [SerializeField] SO_Mission MissionData;
         [SerializeField] List<Transform> SpawnLocations;
         [SerializeField] R_Player SquadMateOne;
         [SerializeField] R_Player SquadMateTwo;
         [SerializeField] R_Player HostileAIOne;
         [SerializeField] R_Player HostileAITwo;
         [SerializeField] R_Player HostileAIThree;
+
         [SerializeField] List<ShipClassType> EnemyShipClasses = new()
         {
             ShipClassType.Rhino,
@@ -32,9 +33,11 @@ namespace CosmicShore
         };
 
         [Range(1, 9)] public int CurrentDifficulty = 5;
-        [SerializeField] float faunaOnlyLimit = 1000; // If the team volume is above this limit, only fauna threats will spawn
 
-        public float IntensityThreshold = 1;  // How much variance is allowed from mission difficulty in a wave
+        [SerializeField]
+        float faunaOnlyLimit = 1000; // If the team volume is above this limit, only fauna threats will spawn
+
+        public float IntensityThreshold = 1; // How much variance is allowed from mission difficulty in a wave
         public float ThreatWaveMinimumPeriodInSeconds = 20;
         int currentSpawnLocationIndex = 0;
         Threat[] faunaThreats = new Threat[0];
@@ -54,7 +57,8 @@ namespace CosmicShore
             HostileAITwo.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];*/
 
-            faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
+            faunaThreats = MissionData.PotentialThreats
+                .Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
             node = CellControlManager.Instance.GetNearestCell(Vector3.zero);
         }
 
@@ -118,7 +122,6 @@ namespace CosmicShore
             return wave;
         }
 
-        
 
         public ThreatSpawner ThreatSpawner;
 
@@ -157,7 +160,8 @@ namespace CosmicShore
                     Debug.LogWarning($"ThreatWaveCoroutine -  Spawning Threat:{threat.threatName}");
 
                     if (SpawnLocations != null)
-                        ThreatSpawner.SpawnThreat(threat, threatTeam, SpawnLocations[currentSpawnLocationIndex].position);
+                        ThreatSpawner.SpawnThreat(threat, threatTeam,
+                            SpawnLocations[currentSpawnLocationIndex].position);
                     else
                         ThreatSpawner.SpawnThreat(threat, threatTeam);
                 }
@@ -170,7 +174,8 @@ namespace CosmicShore
 
                 var timeToTarget = (elapsedThreat / targetThreatPerTime) - elapsedTime;
 
-                Debug.LogWarning($"ThreatWaveCoroutine -  elapsedTime:{elapsedTime}, elapsedThreat:{elapsedThreat}, timeToTarget:{timeToTarget}");
+                Debug.LogWarning(
+                    $"ThreatWaveCoroutine -  elapsedTime:{elapsedTime}, elapsedThreat:{elapsedThreat}, timeToTarget:{timeToTarget}");
 
                 yield return new WaitForSeconds(Mathf.Max(ThreatWaveMinimumPeriodInSeconds, timeToTarget));
             }

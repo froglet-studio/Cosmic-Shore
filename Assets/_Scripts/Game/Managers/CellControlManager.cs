@@ -11,7 +11,7 @@ namespace CosmicShore.Game
     public class CellControlManager : Singleton<CellControlManager>
     {
         [SerializeField] List<Cell> cells;
-        
+
         public void AddBlock(Teams team, TrailBlockProperties blockProperties)
         {
             foreach (var cell in cells.Where(cell => cell.ContainsPosition(blockProperties.position)))
@@ -46,7 +46,7 @@ namespace CosmicShore.Game
                 result = cell;
 
             return result;
-            
+
             bool IsCloseToCell(Cell cell) => Vector3.SqrMagnitude(position - cell.transform.position) < minPosition;
         }
 
@@ -98,4 +98,3 @@ namespace CosmicShore.Game
         }
     }
 }
-

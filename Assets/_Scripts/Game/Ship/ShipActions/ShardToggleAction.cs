@@ -9,15 +9,17 @@ namespace CosmicShore.Game
     /// </summary>
     public class ShardToggleAction : ShipAction
     {
-        [Header("Bus (required)")]
-        [SerializeField] private ShardFieldBus shardFieldBus;
+        [Header("Bus (required)")] [SerializeField]
+        private ShardFieldBus shardFieldBus;
 
         [Header("Mass Centroids Settings")]
         [Tooltip("Team whose density grid is queried for the explosion target.")]
-        [SerializeField] private Teams team = Teams.Jade;
+        [SerializeField]
+        private Teams team = Teams.Jade;
 
         [Tooltip("Max distance to search for a cell (used by CellControlManager on its side, if applicable).")]
-        [SerializeField] private float searchRadiusHint = 0f; // optional / unused here, kept for future
+        [SerializeField]
+        private float searchRadiusHint = 0f; // optional / unused here, kept for future
 
         // Runtime toggle state
         bool _redirectActive = false;
@@ -29,7 +31,7 @@ namespace CosmicShore.Game
                 Debug.LogWarning("[ShardToggleAction] No ShardFieldBus assigned!");
                 return;
             }
-            
+
             if (!_redirectActive)
             {
                 var shipPos = Ship != null ? Ship.Transform.position : transform.position;
@@ -37,7 +39,8 @@ namespace CosmicShore.Game
 
                 Vector3 highDensityPosition = cell.GetExplosionTarget(team);
 
-                Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={team} Target={highDensityPosition}");
+                Debug.Log(
+                    $"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={team} Target={highDensityPosition}");
                 shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
 
                 _redirectActive = true;
@@ -52,7 +55,6 @@ namespace CosmicShore.Game
 
         public override void StopAction()
         {
- 
         }
     }
 }

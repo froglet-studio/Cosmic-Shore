@@ -16,17 +16,14 @@ namespace Unity.Multiplayer.Samples.Utilities
     /// </summary>
     public class ServerAdditiveSceneLoader : NetworkBehaviour
     {
-        [SerializeField]
-        float m_DelayBeforeUnload = 5.0f;
+        [SerializeField] float m_DelayBeforeUnload = 5.0f;
 
-        [SerializeField]
-        string m_SceneName;
+        [SerializeField] string m_SceneName;
 
         /// <summary>
         /// We assume that all NetworkObjects with this tag are player-owned
         /// </summary>
-        [SerializeField]
-        string m_PlayerTag;
+        [SerializeField] string m_PlayerTag;
 
         /// <summary>
         /// We keep the clientIds of every player-owned object inside the collider's volume
@@ -76,7 +73,8 @@ namespace Unity.Multiplayer.Samples.Utilities
             {
                 m_SceneState = SceneState.Loaded;
             }
-            else if (sceneEvent.SceneEventType == SceneEventType.UnloadEventCompleted && sceneEvent.SceneName == m_SceneName)
+            else if (sceneEvent.SceneEventType == SceneEventType.UnloadEventCompleted &&
+                     sceneEvent.SceneName == m_SceneName)
             {
                 m_SceneState = SceneState.Unloaded;
             }
@@ -140,7 +138,9 @@ namespace Unity.Multiplayer.Samples.Utilities
         {
             // remove all references to this clientId. There could be multiple references if a single client owns
             // multiple NetworkObjects with the m_PlayerTag, or if this script's GameObject has overlapping colliders
-            while (m_PlayersInTrigger.Remove(clientId)) { }
+            while (m_PlayersInTrigger.Remove(clientId))
+            {
+            }
         }
 
         IEnumerator WaitToUnloadCoroutine()

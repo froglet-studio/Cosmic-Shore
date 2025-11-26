@@ -5,8 +5,7 @@ namespace CosmicShore.Utilities
 {
     public class AutoHide : MonoBehaviour
     {
-        [SerializeField]
-        float m_TimeToHideSeconds = 5f;
+        [SerializeField] float m_TimeToHideSeconds = 5f;
 
         // Start is called before the first frame update
         void Start()

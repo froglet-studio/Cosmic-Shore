@@ -3,9 +3,10 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class BotDuelMiniGame : MiniGame 
+    public class BotDuelMiniGame : MiniGame
     {
         [SerializeField] R_Player hostilePilot;
+
         protected override void Start()
         {
             base.Start();

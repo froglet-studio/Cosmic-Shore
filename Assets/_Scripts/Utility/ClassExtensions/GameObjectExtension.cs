@@ -60,9 +60,9 @@ namespace CosmicShore.Utility.ClassExtensions
             where TInterface : class
         {
             iface = go
-                .GetComponents<Component>()    // grab all Components
-                .OfType<TInterface>()          // filter by your interface
-                .FirstOrDefault();             // take the first, or null
+                .GetComponents<Component>() // grab all Components
+                .OfType<TInterface>() // filter by your interface
+                .FirstOrDefault(); // take the first, or null
 
             return iface != null;
         }

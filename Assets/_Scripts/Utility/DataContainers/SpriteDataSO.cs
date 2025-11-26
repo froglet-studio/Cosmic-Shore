@@ -7,5 +7,4 @@ namespace CosmicShore.Utilities
     public class SpriteDataSO : GenericDataSO<Sprite>
     {
     }
-
 }

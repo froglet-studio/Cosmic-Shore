@@ -50,7 +50,7 @@ namespace CosmicShore.Game.IO
         private void Update()
         {
             // Toggle the fullscreen state if the Escape key was pressed this frame on windows
-#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN || UNITY_STANDALONE_LINUX || UNITY_EDITOR_LINUX
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
                 Screen.fullScreen = !Screen.fullScreen;
 #endif
@@ -66,7 +66,7 @@ namespace CosmicShore.Game.IO
             // 4) Otherwise, handle normal player input:
             UpdateInputStrategy();
             currentStrategy?.ProcessInput();
-            orientationHandler.Update();
+            orientationHandler?.Update();
         }
 
         public void Initialize(IShip ship)

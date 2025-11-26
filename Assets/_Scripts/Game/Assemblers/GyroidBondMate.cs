@@ -14,4 +14,3 @@ namespace CosmicShore
         public bool isTail;
     }
 }
-

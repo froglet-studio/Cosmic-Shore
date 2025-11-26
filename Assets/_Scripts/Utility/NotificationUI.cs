@@ -13,8 +13,7 @@ namespace CosmicShore.Utilities
         /*[SerializeField]
         Animator _animator;*/
 
-        [SerializeField]
-        TextMeshProUGUI _statusText;
+        [SerializeField] TextMeshProUGUI _statusText;
 
         private void Start()
         {
@@ -48,5 +47,4 @@ namespace CosmicShore.Utilities
             gameObject.SetActive(false);
         }
     }
-
 }

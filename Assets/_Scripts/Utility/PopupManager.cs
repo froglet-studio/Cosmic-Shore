@@ -13,11 +13,9 @@ namespace CosmicShore.Utilities
         private const float OFFSET = 30;
         private const float MAX_OFFSET = 200;
 
-        [SerializeField]
-        private GameObject _popupPanelPrefab;
+        [SerializeField] private GameObject _popupPanelPrefab;
 
-        [SerializeField]
-        private NotificationUI _notificationUI;
+        [SerializeField] private NotificationUI _notificationUI;
 
         private List<PopupPanel> _popupPanels = new List<PopupPanel>();
 
@@ -31,7 +29,7 @@ namespace CosmicShore.Utilities
                 return;
             }
 
-            _instance = this;            // since DontdestroyOnLoad only works on root objects, we need to make sure the canvas is a root object
+            _instance = this; // since DontdestroyOnLoad only works on root objects, we need to make sure the canvas is a root object
         }
 
         private void OnDestroy()

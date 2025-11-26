@@ -24,7 +24,9 @@ namespace CosmicShore.Game.Arcade
     public abstract class MiniGame : MonoBehaviour
     {
         [SerializeField] protected GameModes gameMode;
+
         [SerializeField] protected int NumberOfRounds = int.MaxValue;
+
         // [SerializeField] protected List<TurnMonitor> TurnMonitors;
         [SerializeField] protected ScoreTracker ScoreTracker;
         [SerializeField] GameCanvas GameCanvas;
@@ -36,6 +38,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SO_Captain DefaultPlayerCaptain;
 
         protected Button ReadyButton;
+
         // protected GameObject EndGameScreen;
         protected MiniGameHUD HUD;
         protected List<IPlayer> Players = new();
@@ -45,7 +48,7 @@ namespace CosmicShore.Game.Arcade
         List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
         // Configuration set by player
-        public static int NumberOfPlayers = 1;  // TODO: P1 - support excluding single player games (e.g for elimination)
+        public static int NumberOfPlayers = 1; // TODO: P1 - support excluding single player games (e.g for elimination)
         public static int IntensityLevel = 1;
         public static bool IsDailyChallenge = false;
         public static bool IsMission = false;
@@ -62,6 +65,7 @@ namespace CosmicShore.Game.Arcade
                 playerShipTypeInitialized = true;
             }
         }
+
         public static SO_Captain PlayerCaptain;
         public static ResourceCollection ResourceCollection = new(.5f, .5f, .5f, .5f);
 
@@ -79,8 +83,12 @@ namespace CosmicShore.Game.Arcade
 
         // Firebase analytics events
         public delegate void MiniGameStart(GameModes mode, ShipClassType ship, int playerCount, int intensity);
+
         public static event MiniGameStart OnMiniGameStart;
-        public delegate void MiniGameEnd(GameModes mode, ShipClassType ship, int playerCount, int intensity, int highScore);
+
+        public delegate void MiniGameEnd(GameModes mode, ShipClassType ship, int playerCount, int intensity,
+            int highScore);
+
         public static event MiniGameEnd OnMiniGameEnd;
 
         protected virtual void Awake()
@@ -112,7 +120,7 @@ namespace CosmicShore.Game.Arcade
         protected virtual void OnEnable()
         {
             // GameManager.OnPlayGame += InitializeGame;
-            
+
             // TODO - Replaced in R_MiniGameBase
             // OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
@@ -123,13 +131,12 @@ namespace CosmicShore.Game.Arcade
         protected virtual void OnDisable()
         {
             // GameManager.OnPlayGame -= InitializeGame;
-            
+
             // TODO - Replaced in R_MiniGameBase
             // OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
             // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
-
         }
 
         void InitializeGame()
@@ -158,10 +165,7 @@ namespace CosmicShore.Game.Arcade
         {
             ReadyButton.gameObject.SetActive(false);
 
-            countdownTimer.BeginCountdown(() =>
-            {
-                StartTurn();
-            });
+            countdownTimer.BeginCountdown(() => { StartTurn(); });
         }
 
         protected virtual void StartNewGame()
@@ -212,7 +216,7 @@ namespace CosmicShore.Game.Arcade
                     PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
                     PlayerUUID = PlayerNames[i]
                 };
-                
+
                 // TODO - Player spawning and initializations are done using PlayerSpawner now!
                 // Players[i].Initialize(data);
                 Players[i].ToggleGameObject(true);
@@ -248,7 +252,7 @@ namespace CosmicShore.Game.Arcade
             // ScoreTracker.StartTracking(Players[activePlayerId].PlayerName, Players[activePlayerId].Team);
 
             Debug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
-            
+
             ActivePlayer.InputController.InputStatus.Paused = false;
 
             if (EnableTrails)
@@ -302,7 +306,7 @@ namespace CosmicShore.Game.Arcade
             Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
             // Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinnerScoreData().Name} ");
 
-            
+
             // TODO - In MiniGameBase, use MiniGameData to get scores
             /*foreach (var player in Players)
                 Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.Name)} ");*/
@@ -310,59 +314,66 @@ namespace CosmicShore.Game.Arcade
             if (IsDailyChallenge)
             {
                 // LeaderboardManager.Instance.ReportDailyChallengeStatistic(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/, ScoreTracker.GolfRules);
-                DailyChallengeSystem.Instance.ReportScore(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/);
+                DailyChallengeSystem.Instance.ReportScore(0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/);
 
                 // TODO: P1 Hide play again button, or map it to use another ticket
-
             }
             else if (IsMission)
             {
                 GameCanvas.AwardsContainer.SetActive(true);
                 // Award Crystals
-                Debug.Log($"Mission EndGame - Award Mission Crystals -  score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}");
+                Debug.Log(
+                    $"Mission EndGame - Award Mission Crystals -  score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}");
                 Debug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
                 int crystalsEarned = 0;
                 switch (PlayerCaptain.PrimaryElement)
                 {
                     case Element.Charge:
-                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue * 100);
+                        crystalsEarned =
+                            0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue * 100);
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Charge);
                         break;
                     case Element.Mass:
-                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100);
+                        crystalsEarned =
+                            0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100);
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Mass);
                         break;
                     case Element.Space:
-                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100);
+                        crystalsEarned =
+                            0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100);
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Space);
                         break;
                     case Element.Time:
-                        crystalsEarned = 0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100);
+                        crystalsEarned =
+                            0; // (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100);
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
                         break;
                 }
+
                 Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
-                GameCanvas.CrystalsEarnedImage.sprite = CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name).SO_Element.GetFullIcon(true);
+                GameCanvas.CrystalsEarnedImage.sprite = CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name)
+                    .SO_Element.GetFullIcon(true);
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
 
                 // Award XP
-                Debug.Log($"Mission EndGame - Award Mission XP -  score:{0/*(int)ScoreTracker.GetWinnerScoreData().Score*/}, element:{PlayerCaptain.PrimaryElement}");
+                Debug.Log(
+                    $"Mission EndGame - Award Mission XP -  score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}, element:{PlayerCaptain.PrimaryElement}");
                 XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
                 GameCanvas.XPEarnedText.text = "10";
 
                 // Report any encountered captains
                 Debug.Log($"Mission EndGame - Unlock Mission Captains");
-                
+
                 // TODO - Get Captains from Data Containers, not Hanger
                 // if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
                 /*{
                     Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
-                    
-                    
+
+
                     //GameCanvas.EncounteredCaptainImage.sprite = Hangar.Instance.HostileAI1Captain.Image;
                 }*/
-                
+
                 // TODO - Get Captains from Data Containers, not Hanger
 
                 /*{
@@ -379,12 +390,12 @@ namespace CosmicShore.Game.Arcade
             }
             else
                 LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel,
-                    0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/, false);// ScoreTracker.GolfRules);
+                    0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/, false); // ScoreTracker.GolfRules);
 
             UserActionSystem.Instance.CompleteAction(new UserAction(
-                    UserActionType.PlayGame,
-                    0,// (int)ScoreTracker.GetWinnerScoreData().Score,
-                    UserAction.GetGameplayUserActionLabel(gameMode, PlayerShipType, IntensityLevel)));
+                UserActionType.PlayGame,
+                0, // (int)ScoreTracker.GetWinnerScoreData().Score,
+                UserAction.GetGameplayUserActionLabel(gameMode, PlayerShipType, IntensityLevel)));
 
             CameraManager.Instance.SetEndCameraActive();
             PauseSystem.TogglePauseGame(true);
@@ -432,7 +443,8 @@ namespace CosmicShore.Game.Arcade
                 turnMonitor.PauseTurn();
             }*/
 
-            ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
+            ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position,
+                PlayerOrigin.transform.rotation);
             ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
             ActivePlayer.Ship.ShipStatus.ShipTransformer.ResetShipTransformer();

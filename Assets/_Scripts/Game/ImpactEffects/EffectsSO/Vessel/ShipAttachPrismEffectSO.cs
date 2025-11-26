@@ -3,14 +3,15 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipAttachPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAttachPrismEffectSO")]
+    [CreateAssetMenu(fileName = "ShipAttachPrismEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAttachPrismEffectSO")]
     public class ShipAttachPrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
     {
         protected override void ExecuteTyped(ShipImpactor shipImpactor, PrismImpactor prismImpactee)
         {
             IShipStatus shipStatus = shipImpactor.Ship.ShipStatus;
             TrailBlockProperties trailBlockProperties = prismImpactee.Prism.TrailBlockProperties;
-            
+
             if (trailBlockProperties == null)
             {
                 Debug.LogError("ShipAttachPrismEffectSO called with null data or trailBlockProperties.");

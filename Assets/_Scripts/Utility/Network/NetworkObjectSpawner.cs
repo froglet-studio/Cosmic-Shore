@@ -32,7 +32,8 @@ namespace Unity.Multiplayer.Samples.Utilities
             }
         }
 
-        void SceneManagerOnOnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+        void SceneManagerOnOnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode,
+            List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
         {
             SpawnNetworkObject();
             Destroy(gameObject);

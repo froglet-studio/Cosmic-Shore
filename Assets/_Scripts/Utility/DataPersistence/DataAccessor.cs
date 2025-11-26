@@ -26,16 +26,17 @@ static class DataAccessor
     /// <typeparam name="T">Generic type of a serializable object</typeparam>
     /// <param name="fileName">Filename to store the serialized object into</param>
     /// <param name="data">Instance of the object to save</param>
-    public static void Save<T>(string fileName, T data) where T : new ()
+    public static void Save<T>(string fileName, T data) where T : new()
     {
         using FileStream dataStream = new FileStream(GetFilePath(fileName), FileMode.Create);
         BinaryFormatter converter = new BinaryFormatter();
         //converter.Serialize(dataStream, data);
 
-        dataStream.Write(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings()
-        {
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        })));
+        dataStream.Write(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(data, Formatting.None,
+            new JsonSerializerSettings()
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            })));
 
         dataStream.Close();
     }

@@ -2,7 +2,8 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipGainAmmoByOtherEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipGainAmmoByOtherEffectSO")]
+    [CreateAssetMenu(fileName = "ShipGainAmmoByOtherEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel/ShipGainAmmoByOtherEffectSO")]
     public class ShipGainAmmoByOtherEffectSO : ImpactEffectSO<ShipImpactor, ImpactorBase>
     {
         [SerializeField] private int ammoResourceIndex;
@@ -11,7 +12,7 @@ namespace CosmicShore.Game
         protected override void ExecuteTyped(ShipImpactor impactor, ImpactorBase impactee)
         {
             var shipStatus = impactor.Ship.ShipStatus;
-            
+
             shipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex,
                 shipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount * ammoAmountMultiplier);
         }

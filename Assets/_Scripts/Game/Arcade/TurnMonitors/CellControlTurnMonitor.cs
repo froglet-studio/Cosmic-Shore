@@ -13,7 +13,7 @@ namespace CosmicShore
 
         /*private void Start()
         {
-            game = GetComponent<MiniGame>();    
+            game = GetComponent<MiniGame>();
             if (game != null && game.ActivePlayer != null)
             {
                 playerTeam = game.ActivePlayer.Team;
@@ -35,5 +35,4 @@ namespace CosmicShore
             base.StartMonitor();
         }*/
     }
-    
 }

@@ -5,11 +5,12 @@ using Obvious.Soap;
 
 namespace CosmicShore.Utilities
 {
-    [AddComponentMenu("Soap/EventListeners/EventListener"+nameof(PrismStats))]
+    [AddComponentMenu("Soap/EventListeners/EventListener" + nameof(PrismStats))]
     public class EventListenerPrismStats : EventListenerGeneric<PrismStats>
     {
         [SerializeField] private EventResponse[] _eventResponses = null;
         protected override EventResponse<PrismStats>[] EventResponses => _eventResponses;
+
         [System.Serializable]
         public class EventResponse : EventResponse<PrismStats>
         {
@@ -18,10 +19,10 @@ namespace CosmicShore.Utilities
             [SerializeField] private PrismStatsUnityEvent _response = null;
             public override UnityEvent<PrismStats> Response => _response;
         }
+
         [System.Serializable]
         public class PrismStatsUnityEvent : UnityEvent<PrismStats>
         {
-            
         }
     }
 }

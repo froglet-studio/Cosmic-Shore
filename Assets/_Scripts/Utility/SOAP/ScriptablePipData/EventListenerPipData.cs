@@ -23,9 +23,6 @@ namespace CosmicShore.SOAP
         [System.Serializable]
         public class PipEventDataUnityEvent : UnityEvent<PipData>
         {
-
         }
     }
 }
-
-

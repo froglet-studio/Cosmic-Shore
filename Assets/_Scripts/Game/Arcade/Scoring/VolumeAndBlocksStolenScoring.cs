@@ -8,23 +8,25 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         private readonly bool trackBlocks;
 
-        public VolumeAndBlocksStolenScoring(MiniGameDataSO data, float scoreNormalizationQuotient, bool trackBlocks = false) 
+        public VolumeAndBlocksStolenScoring(MiniGameDataSO data, float scoreNormalizationQuotient,
+            bool trackBlocks = false)
             : base(data, scoreNormalizationQuotient)
         {
             this.trackBlocks = trackBlocks;
         }
-        
+
         public override void CalculateScore()
         {
             foreach (var playerScore in miniGameData.RoundStatsList)
             {
                 if (!TryGetRoundStats(playerScore.Name, out IRoundStats roundStats))
                     return;
-                
-                playerScore.Score += (trackBlocks ? roundStats.BlocksStolen : roundStats.VolumeStolen) * scoreMultiplier;
+
+                playerScore.Score +=
+                    (trackBlocks ? roundStats.BlocksStolen : roundStats.VolumeStolen) * scoreMultiplier;
             }
         }
-        
+
         /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {
             if (StatsManager.Instance.PlayerStats.TryGetValue(playerName, out var roundStats))

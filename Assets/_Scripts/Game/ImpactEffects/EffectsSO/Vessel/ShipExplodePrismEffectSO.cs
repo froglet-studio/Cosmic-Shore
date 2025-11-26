@@ -5,32 +5,28 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     // TODO - Separate Damage Effect and Explode Effect by asking Garrett
-    [CreateAssetMenu(fileName = "ShipExplodePrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipExplodePrismEffectSO")]
+    [CreateAssetMenu(fileName = "ShipExplodePrismEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel/ShipExplodePrismEffectSO")]
     public class ShipExplodePrismEffectSO : ImpactEffectSO<ShipImpactor, PrismImpactor>
     {
-        [SerializeField]
-        float _inertia;
+        [SerializeField] float _inertia;
 
-        [SerializeField]
-        GameObject[] _aoePrefabs;
+        [SerializeField] GameObject[] _aoePrefabs;
 
-        [SerializeField]
-        float _minExplosionScale;
+        [SerializeField] float _minExplosionScale;
 
-        [SerializeField]
-        float _maxExplosionScale;
+        [SerializeField] float _maxExplosionScale;
 
-        [SerializeField]
-        float _charge;
-        
+        [SerializeField] float _charge;
+
         protected override void ExecuteTyped(ShipImpactor shipImpactor, PrismImpactor prismImpactee)
         {
             var shipStatus = shipImpactor.Ship.ShipStatus;
             Transform shipTransform = shipStatus.ShipTransform;
-            
+
             prismImpactee.Prism.Damage(_inertia * shipStatus.Speed * shipStatus.Course,
                 shipStatus.Team, shipStatus.PlayerName);
-            
+
             foreach (var AOE in _aoePrefabs)
             {
                 var aoeExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
@@ -44,7 +40,7 @@ namespace CosmicShore.Game
                     SpawnPosition = shipTransform.position,
                     SpawnRotation = shipTransform.rotation,
                 });
-                
+
                 aoeExplosion.Detonate();
             }
         }

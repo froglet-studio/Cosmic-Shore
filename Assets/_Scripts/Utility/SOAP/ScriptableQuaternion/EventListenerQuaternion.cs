@@ -4,11 +4,12 @@ using Obvious.Soap;
 
 namespace CosmicShore.Utilities
 {
-    [AddComponentMenu("Soap/EventListeners/EventListener"+nameof(Quaternion))]
+    [AddComponentMenu("Soap/EventListeners/EventListener" + nameof(Quaternion))]
     public class EventListenerQuaternion : EventListenerGeneric<Quaternion>
     {
         [SerializeField] private EventResponse[] _eventResponses = null;
         protected override EventResponse<Quaternion>[] EventResponses => _eventResponses;
+
         [System.Serializable]
         public class EventResponse : EventResponse<Quaternion>
         {
@@ -17,10 +18,10 @@ namespace CosmicShore.Utilities
             [SerializeField] private QuaternionUnityEvent _response = null;
             public override UnityEvent<Quaternion> Response => _response;
         }
+
         [System.Serializable]
         public class QuaternionUnityEvent : UnityEvent<Quaternion>
         {
-            
         }
     }
 }

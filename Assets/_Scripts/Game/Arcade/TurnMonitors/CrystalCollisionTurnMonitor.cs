@@ -22,6 +22,8 @@ namespace CosmicShore.Game.Arcade
             // TODO: perhaps coerce stats manager to create an entry for the player here
         }*/
 
-        protected override void RestrictedUpdate() { }
+        protected override void RestrictedUpdate()
+        {
+        }
     }
 }

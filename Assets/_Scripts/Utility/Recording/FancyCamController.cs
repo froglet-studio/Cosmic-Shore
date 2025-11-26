@@ -36,8 +36,10 @@ public class FancyCamController : MonoBehaviour
 
         if (mouseRotation)
         {
-            if (Mouse.current.leftButton.isPressed) transform.Rotate(Vector3.up * (speed * Time.deltaTime * Mouse.current.delta.ReadValue().x));
-            if (Mouse.current.rightButton.isPressed) transform.Rotate(Vector3.right * (speed * Time.deltaTime * Mouse.current.delta.ReadValue().y));
+            if (Mouse.current.leftButton.isPressed)
+                transform.Rotate(Vector3.up * (speed * Time.deltaTime * Mouse.current.delta.ReadValue().x));
+            if (Mouse.current.rightButton.isPressed)
+                transform.Rotate(Vector3.right * (speed * Time.deltaTime * Mouse.current.delta.ReadValue().y));
         }
 
         if (target != null && !gamepadTargetControls)
@@ -52,13 +54,16 @@ public class FancyCamController : MonoBehaviour
 
             followDistance += Gamepad.current.rightTrigger.ReadValue() * 10;
             followDistance -= Gamepad.current.leftTrigger.ReadValue() * 10;
-            transform.position = Vector3.Lerp(transform.position, target.position - (transform.forward * followDistance), Time.deltaTime * 10);
+            transform.position = Vector3.Lerp(transform.position,
+                target.position - (transform.forward * followDistance), Time.deltaTime * 10);
 
-            transform.RotateAround(target.position, transform.forward, Gamepad.current.rightStick.ReadValue().x * speed * Time.deltaTime);
+            transform.RotateAround(target.position, transform.forward,
+                Gamepad.current.rightStick.ReadValue().x * speed * Time.deltaTime);
 
-            transform.RotateAround(target.position, transform.up, Gamepad.current.leftStick.ReadValue().x * speed * Time.deltaTime);
-            transform.RotateAround(target.position, transform.right, Gamepad.current.leftStick.ReadValue().y * speed * Time.deltaTime);
-
+            transform.RotateAround(target.position, transform.up,
+                Gamepad.current.leftStick.ReadValue().x * speed * Time.deltaTime);
+            transform.RotateAround(target.position, transform.right,
+                Gamepad.current.leftStick.ReadValue().y * speed * Time.deltaTime);
         }
 
         // this code uses the mouse to move the camera toward a target and roll the camera
@@ -67,16 +72,21 @@ public class FancyCamController : MonoBehaviour
             transform.LookAt(target);
 
             followDistance += Mouse.current.scroll.ReadValue().y * 10;
-            transform.position = Vector3.Lerp(transform.position, target.position - (transform.forward * followDistance), Time.deltaTime * 10);
+            transform.position = Vector3.Lerp(transform.position,
+                target.position - (transform.forward * followDistance), Time.deltaTime * 10);
 
             // this sets a condition that the mouse must be pressed switcch between x controlling roll and x controlling yaw
             if (Mouse.current.leftButton.isPressed)
             {
-                transform.RotateAround(target.position, transform.forward, Mouse.current.delta.ReadValue().x * speed * Time.deltaTime);
+                transform.RotateAround(target.position, transform.forward,
+                    Mouse.current.delta.ReadValue().x * speed * Time.deltaTime);
             }
-            else transform.RotateAround(target.position, transform.up, Mouse.current.delta.ReadValue().x * speed * Time.deltaTime);
+            else
+                transform.RotateAround(target.position, transform.up,
+                    Mouse.current.delta.ReadValue().x * speed * Time.deltaTime);
 
-            transform.RotateAround(target.position, transform.right, Mouse.current.delta.ReadValue().y * speed * Time.deltaTime);
+            transform.RotateAround(target.position, transform.right,
+                Mouse.current.delta.ReadValue().y * speed * Time.deltaTime);
         }
     }
 }

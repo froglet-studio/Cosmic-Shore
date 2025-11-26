@@ -11,23 +11,22 @@ namespace CosmicShore
     {
         public event Action OnAssembleStarted;
         public event Action OnAssembleCompleted;
-        
-        public event Action OnSeedStarted;    // fire when we begin placing
-        public event Action OnSeedCompleted; 
-        
-        [Header("Placement")]
-        [SerializeField] Assembler assemblerPrefab;
+
+        public event Action OnSeedStarted; // fire when we begin placing
+        public event Action OnSeedCompleted;
+
+        [Header("Placement")] [SerializeField] Assembler assemblerPrefab;
         [SerializeField] int depth = 50;
 
-        [Header("Resource")]
-        [Tooltip("Which Resource index funds Seed Walls")]
-        [SerializeField] int shieldResourceIndex = 0;
-        [Tooltip("How many walls per full resource bar (e.g., 4)")]
-        [SerializeField] float wallsPerFullResource = 4f;
-        
+        [Header("Resource")] [Tooltip("Which Resource index funds Seed Walls")] [SerializeField]
+        int shieldResourceIndex = 0;
+
+        [Tooltip("How many walls per full resource bar (e.g., 4)")] [SerializeField]
+        float wallsPerFullResource = 4f;
+
         TrailSpawner _spawner;
         Assembler _activeAssembler;
-        
+
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
@@ -36,10 +35,10 @@ namespace CosmicShore
 
         public override void StartAction()
         {
-           StartSeed();
+            StartSeed();
         }
 
-        public override void StopAction() 
+        public override void StopAction()
         {
             StopSeed();
         }
@@ -55,7 +54,7 @@ namespace CosmicShore
         //        sourceFields.SetValue(value, i);
         //    }
         //}
-        
+
         public void StartSeed()
         {
             var rs = ResourceSystem;
@@ -95,6 +94,7 @@ namespace CosmicShore
                 seed.ActivateSuperShield();
                 seed.transform.localScale *= 2f;
             }
+
             _activeAssembler.SeedBonding();
             _activeAssembler = null;
 
@@ -102,5 +102,3 @@ namespace CosmicShore
         }
     }
 }
-
-

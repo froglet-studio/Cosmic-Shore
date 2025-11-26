@@ -11,13 +11,12 @@ using UnityEngine.SceneManagement;
 
 public class CameraManager : Singleton<CameraManager>
 {
-    [SerializeField]
-    SceneNameListSO _sceneNameList;
-    
+    [SerializeField] SceneNameListSO _sceneNameList;
+
     [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
     [SerializeField] private ScriptableEventNoParam _onReturnToMainMenu;
     [SerializeField] private ScriptableEventTransform _onInitializePlayerCamera;
-    
+
     // TODO - Need to have a game over event, to activate the end camera
     // += SetEndCameraActive
     // [SerializeField] private ScriptableEventNoParam _onGameOver;
@@ -25,13 +24,13 @@ public class CameraManager : Singleton<CameraManager>
     private ICameraController _playerCamera;
     private ICameraController _deathCamera;
     private ICameraController _activeController;
-    
-    [SerializeField] private CustomCameraController endCamera; 
+
+    [SerializeField] private CustomCameraController endCamera;
     [SerializeField] private CinemachineCamera mainMenuCamera;
     [SerializeField] private Transform endCameraFollowTarget;
     [SerializeField] private Transform endCameraLookAtTarget;
     [SerializeField] private float startTransitionDistance = 40f;
-    
+
     private Transform _playerFollowTarget;
     private const int ActivePriority = 10;
 
@@ -51,7 +50,7 @@ public class CameraManager : Singleton<CameraManager>
         _deathCamera = GetOrFindCameraController("CM DeathCam");
         endCamera = GetOrFindCameraController("CM EndCam") as CustomCameraController;
     }
-    
+
     private void OnEnable()
     {
         _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
@@ -79,7 +78,7 @@ public class CameraManager : Singleton<CameraManager>
             OnEnteredMainMenu();
         }
     }
-    
+
     private ICameraController GetOrFindCameraController(string name)
     {
         Transform t = transform.Find(name);
@@ -90,14 +89,16 @@ public class CameraManager : Singleton<CameraManager>
             {
                 ctrl = t.gameObject.AddComponent<CustomCameraController>();
             }
+
             return ctrl;
         }
+
         Debug.LogWarning($"[CameraManager] Could not find camera controller: {name}");
         return null;
     }
 
     public Transform GetCloseCamera() => (_playerCamera as CustomCameraController)?.transform;
-    
+
     void OnEnteredMainMenu()
     {
         SetMainMenuCameraActive();
@@ -106,13 +107,13 @@ public class CameraManager : Singleton<CameraManager>
 
     public void SetupGamePlayCameras(Transform followTarget)
     {
-        if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
-        
+        if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
         _playerFollowTarget = followTarget;
         _playerCamera?.SetFollowTarget(_playerFollowTarget);
         _deathCamera?.SetFollowTarget(_playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
-        
+
         SetCloseCameraActive();
 
         var shipGO = _playerFollowTarget.gameObject;
@@ -131,7 +132,7 @@ public class CameraManager : Singleton<CameraManager>
         {
             Debug.LogWarning("[CameraManager] Main menu camera is not assigned!");
         }
-        
+
         if (_playerCamera is CustomCameraController pcc)
             pcc.Deactivate();
         if (_deathCamera is CustomCameraController dcc)
@@ -158,9 +159,9 @@ public class CameraManager : Singleton<CameraManager>
 
     void SetActiveCamera(ICameraController controller)
     {
-            if (_playerCamera != null) _playerCamera.Deactivate();
-            if (_deathCamera != null) _deathCamera.Deactivate();
-            if (endCamera != null) endCamera.Deactivate();
+        if (_playerCamera != null) _playerCamera.Deactivate();
+        if (_deathCamera != null) _deathCamera.Deactivate();
+        if (endCamera != null) endCamera.Deactivate();
 
 
         controller?.Activate();

@@ -16,7 +16,8 @@ namespace CosmicShore.Utilities
         public Quaternion Rotation;
     }
 
-    [CreateAssetMenu(fileName = "PrismEventChannelWithReturn", menuName = "ScriptableObjects/Event Channels/PrismEventChannelWithReturnSO")]
+    [CreateAssetMenu(fileName = "PrismEventChannelWithReturn",
+        menuName = "ScriptableObjects/Event Channels/PrismEventChannelWithReturnSO")]
     public class PrismEventChannelWithReturnSO : GenericEventChannelWithReturnSO<PrismEventData, PrismReturnEventData>
     {
     }

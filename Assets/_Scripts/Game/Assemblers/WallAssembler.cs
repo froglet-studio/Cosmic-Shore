@@ -462,7 +462,8 @@ namespace CosmicShore
             mate.Mate.CalculateBondSites(); // to access BondSiteRight/Left
 
             // target world-space position for the mate's *bond site* to land at 'bondSite'
-            Vector3 mateLocalOffset = (mate.Bondee == SiteType.Right) ? mate.Mate.BondSiteRight : mate.Mate.BondSiteLeft;
+            Vector3 mateLocalOffset =
+                (mate.Bondee == SiteType.Right) ? mate.Mate.BondSiteRight : mate.Mate.BondSiteLeft;
             Vector3 targetPos = bondSite - mateLocalOffset;
 
             // choose speeds based on whether this is own team or opponent team
@@ -481,7 +482,7 @@ namespace CosmicShore
             if (distSqr < snapDistance)
             {
                 // snap rotation & position
-                RotateMate(mate, true);        // hard snap rot
+                RotateMate(mate, true); // hard snap rot
                 CalculateBondSites();
                 mate.Mate.transform.position = targetPos;
 
@@ -496,7 +497,7 @@ namespace CosmicShore
                     if (updateBottomMate != null) StopCoroutine(updateBottomMate);
                     BottomIsBonded = true;
                 }
-                
+
                 var mateTB = mate.Mate.TrailBlock;
                 if (mateTB != null && mateTB.Team != TrailBlock.Team)
                 {

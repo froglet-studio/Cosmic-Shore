@@ -6,10 +6,10 @@ namespace CosmicShore.Game.Arcade
     public class VolumeCreatedTurnMonitor : TurnMonitor
     {
         [SerializeField] float amount;
-        
+
         // Use MiniGameData for player infos.
         // [SerializeField] MiniGame Game;
-        
+
         // [SerializeField] bool hostileVolume;
         // Core.IRoundStats volumeStat;
         Teams team;
@@ -38,7 +38,7 @@ namespace CosmicShore.Game.Arcade
             return miniGameData.RoundStatsList.Any(roundStats => roundStats.VolumeCreated > amount);
             // return StatsManager.Instance.TeamStats[team].VolumeCreated > Amount;
         }
-        
+
         /*protected override void StartTurn()
         {
             // StatsManager.Instance.ResetStats();
@@ -53,7 +53,8 @@ namespace CosmicShore.Game.Arcade
                 onUpdateTurnMonitorDisplay.Raise(message);
             }*/
 
-            string message = ((int)((amount - miniGameData.RoundStatsList[0].VolumeCreated) / volumeUnitConverstion)).ToString();
+            string message = ((int)((amount - miniGameData.RoundStatsList[0].VolumeCreated) / volumeUnitConverstion))
+                .ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }
     }

@@ -8,12 +8,12 @@ namespace CosmicShore.Utility.ClassExtensions
         {
             Debug.LogFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);
         }
-        
+
         public static void LogWarningWithClassMethod<T>(this T obj, string methodName, string message)
         {
             Debug.LogWarningFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);
         }
-        
+
         public static void LogErrorWithClassMethod<T>(this T obj, string methodName, string message)
         {
             Debug.LogErrorFormat("{0} - {1}: {2}", obj.GetType(), methodName, message);

@@ -18,8 +18,8 @@ namespace CosmicShore.DialogueSystem.View
             speaker.gameObject.SetActive(true);
 
             speaker.DOAnchorPos(moveTo.anchoredPosition, duration)
-                   .SetEase(ease)
-                   .OnComplete(() => onArrive?.Invoke());
+                .SetEase(ease)
+                .OnComplete(() => onArrive?.Invoke());
         }
 
         public static void AnimateSpeakerOut(
@@ -30,12 +30,12 @@ namespace CosmicShore.DialogueSystem.View
             Action onComplete = null)
         {
             speaker.DOAnchorPos(moveTo.anchoredPosition, duration)
-                   .SetEase(ease)
-                   .OnComplete(() =>
-                   {
-                       speaker.gameObject.SetActive(false);
-                       onComplete?.Invoke();
-                   });
+                .SetEase(ease)
+                .OnComplete(() =>
+                {
+                    speaker.gameObject.SetActive(false);
+                    onComplete?.Invoke();
+                });
         }
 
         // You can keep this utility for hiding things if you want

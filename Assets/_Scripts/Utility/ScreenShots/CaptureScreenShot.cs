@@ -16,7 +16,7 @@ namespace CosmicShore.Utility.ScreenShots
             {
                 ScreenCapture.CaptureScreenshot($"Screenshot {screenShotIndex}.png", supersize);
                 Debug.Log($"Screenshot {screenShotIndex}.png hass been taken.");
-                
+
                 screenShotIndex++;
             }
 #endif
@@ -25,7 +25,8 @@ namespace CosmicShore.Utility.ScreenShots
         public void CaptureScreenShotToDisk(string path)
         {
             ScreenCapture.CaptureScreenshot($"{path}Screenshot {screenShotIndex}.png", supersize);
-            Debug.Log($"CaptureScreenShot.CaptureScreenShotToDisk - {path}Screenshot {screenShotIndex}.png has been taken.");
+            Debug.Log(
+                $"CaptureScreenShot.CaptureScreenShotToDisk - {path}Screenshot {screenShotIndex}.png has been taken.");
 
             screenShotIndex++;
         }
@@ -44,5 +45,3 @@ namespace CosmicShore.Utility.ScreenShots
         }
     }
 }
-
-

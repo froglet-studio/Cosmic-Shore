@@ -110,18 +110,22 @@ namespace CosmicShore.Utilities
                     T[] results = Resources.FindObjectsOfTypeAll<T>();
                     if (results.Length == 0)
                     {
-                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" + typeof(T).ToString() + ".");
+                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" +
+                                       typeof(T).ToString() + ".");
                         return null;
-
                     }
+
                     if (results.Length > 1)
                     {
-                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is greater than for type" + typeof(T).ToString() + ".");
+                        Debug.LogError(
+                            "SingletonScriptableObject -> Instance -> results length is greater than for type" +
+                            typeof(T).ToString() + ".");
                         return null;
-
                     }
+
                     _instance = results[0];
                 }
+
                 return _instance;
             }
         }

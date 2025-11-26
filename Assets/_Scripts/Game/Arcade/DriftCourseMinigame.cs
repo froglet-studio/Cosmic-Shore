@@ -24,7 +24,8 @@ namespace CosmicShore.Game.Arcade
             base.SetupTurn();
 
             SegmentSpawner.Radius = maxSphereRadius * IntensityLevel;
-            spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
+            spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth =
+                spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
 
 
             TrailSpawner.NukeTheTrails();

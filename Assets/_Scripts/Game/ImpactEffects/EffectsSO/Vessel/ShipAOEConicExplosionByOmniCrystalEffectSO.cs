@@ -8,7 +8,8 @@ namespace CosmicShore
     /// Position is taken from the crystal's world-space bounds center (collider → renderer → transform).
     /// Orientation faces from the crystal toward the impacting ship.
     /// </summary>
-    [CreateAssetMenu(fileName = "ShipAOEConicExplosionByOmniCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAOEConicExplosionByOmniCrystalEffectSO")] 
+    [CreateAssetMenu(fileName = "ShipAOEConicExplosionByOmniCrystalEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAOEConicExplosionByOmniCrystalEffectSO")]
     public class ShipAOEConicExplosionByOmniCrystalEffectSO : ImpactEffectSO<ShipImpactor, OmniCrystalImpactor>
     {
         [SerializeField] private GameObject _aoeConicExplosion;
@@ -44,7 +45,6 @@ namespace CosmicShore
 
             var aoe = Instantiate(_aoeConicExplosion, spawnPos, spawnRot);
             aoe.transform.SetParent(null, true);
-
         }
     }
 }

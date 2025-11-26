@@ -60,7 +60,7 @@ public class BlockDensityGrid
         team = Team;
         this.origin = new Vector3(-this.totalLength / 2, -this.totalLength / 2, -this.totalLength / 2);
         nGridPointsPerDimension = (int)Math.Floor(this.totalLength / this.Stride) + 1;
-        
+
         // Initialize job system arrays
         int totalSize = nGridPointsPerDimension * nGridPointsPerDimension * nGridPointsPerDimension;
         jobValues = new NativeArray<byte>(totalSize, Allocator.Persistent);
@@ -140,9 +140,13 @@ public class BlockDensityGrid
         return MapGridIndicesToCoordinates(bestIndices);
     }
 
-    public virtual void AddBlock(TrailBlock block) {}
+    public virtual void AddBlock(TrailBlock block)
+    {
+    }
 
-    public virtual void RemoveBlock(TrailBlock block) {}
+    public virtual void RemoveBlock(TrailBlock block)
+    {
+    }
 }
 
 public class BlockCountDensityGrid : BlockDensityGrid
@@ -172,4 +176,6 @@ public class BlockCountDensityGrid : BlockDensityGrid
     }
 }
 
-public class BlockVolumeDensityGrid : BlockDensityGrid {}
+public class BlockVolumeDensityGrid : BlockDensityGrid
+{
+}

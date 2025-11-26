@@ -73,18 +73,21 @@ namespace CosmicShore
             System.IO.File.WriteAllBytes(Application.persistentDataPath + "/" + fileName + "_silhouette.png", bytes);
 
             var pressedTexture = ToTexture2D(renderTexture, renderTexture.width, renderTexture.height);
-            TextureScale.Bilinear(pressedTexture, (int)(renderTexture.width * PressedScaleFactor), (int)(renderTexture.height * PressedScaleFactor));
+            TextureScale.Bilinear(pressedTexture, (int)(renderTexture.width * PressedScaleFactor),
+                (int)(renderTexture.height * PressedScaleFactor));
             bytes = pressedTexture.EncodeToPNG();
             System.IO.File.WriteAllBytes(Application.persistentDataPath + "/" + fileName + "_pressed.png", bytes);
 
             if (aspect == Aspect.Square)
-            { 
-                bytes = ToTexture2DBordered(renderTexture, SquareAspectBorderTexture, renderTexture.width, renderTexture.height).EncodeToPNG();
+            {
+                bytes = ToTexture2DBordered(renderTexture, SquareAspectBorderTexture, renderTexture.width,
+                    renderTexture.height).EncodeToPNG();
                 System.IO.File.WriteAllBytes(Application.persistentDataPath + "/" + fileName + "_selected.png", bytes);
             }
             else
             {
-                bytes = ToTexture2DBordered(renderTexture, WideAspectBorderTexture, renderTexture.width, renderTexture.height).EncodeToPNG();
+                bytes = ToTexture2DBordered(renderTexture, WideAspectBorderTexture, renderTexture.width,
+                    renderTexture.height).EncodeToPNG();
                 System.IO.File.WriteAllBytes(Application.persistentDataPath + "/" + fileName + "_selected.png", bytes);
             }
         }
@@ -131,7 +134,8 @@ namespace CosmicShore
 
             Color32[] borderColors = borderTex.GetPixels32();
             Color32[] texColors = tex.GetPixels32();
-            Color32[] newColors = new Color32[width * height]; ;
+            Color32[] newColors = new Color32[width * height];
+            ;
 
             for (int i = 0; i < borderColors.Length; i++)
             {

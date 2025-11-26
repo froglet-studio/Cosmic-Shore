@@ -8,11 +8,11 @@ namespace CosmicShore.Game
         : ImpactEffectSO<TImpactor, PrismImpactor>
         where TImpactor : class, IImpactor
     {
-        [SerializeField] float inertia = 70f;   // global scalar you can tune per effect
+        [SerializeField] float inertia = 70f; // global scalar you can tune per effect
         [SerializeField] private Vector3 overrideCourse;
         [SerializeField] private float overrideSpeed;
-        
-        
+
+
         /// Provide the attacking ship status from the given impactor.
         protected abstract IShipStatus GetAttackerStatus(TImpactor impactor);
 
@@ -26,12 +26,14 @@ namespace CosmicShore.Game
         protected sealed override void ExecuteTyped(TImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = GetAttackerStatus(impactor);
-            var prism  = prismImpactee?.Prism;
+            var prism = prismImpactee?.Prism;
 
-            if (status == null || prism == null || prism.TrailBlockProperties == null || prism.TrailBlockProperties.trailBlock == null)
+            if (status == null || prism == null || prism.TrailBlockProperties == null ||
+                prism.TrailBlockProperties.trailBlock == null)
             {
 #if UNITY_EDITOR
-                Debug.LogWarning($"{nameof(DamagePrismEffectBase<TImpactor>)}: Missing status or prism/trailBlock.", this);
+                Debug.LogWarning($"{nameof(DamagePrismEffectBase<TImpactor>)}: Missing status or prism/trailBlock.",
+                    this);
 #endif
                 return;
             }

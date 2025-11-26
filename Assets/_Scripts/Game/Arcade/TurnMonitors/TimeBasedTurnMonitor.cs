@@ -15,7 +15,7 @@ namespace CosmicShore.Game.Arcade
             UpdateTimerUI();
             base.StartMonitor();
         }
-        
+
         protected override void RestrictedUpdate()
         {
             base.RestrictedUpdate();

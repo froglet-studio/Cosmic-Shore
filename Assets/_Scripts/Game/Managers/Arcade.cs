@@ -21,14 +21,16 @@ namespace CosmicShore.Core
     public class Arcade : SingletonPersistent<Arcade>
     {
         [field: FormerlySerializedAs("FactionMissionGames")]
-        [field: SerializeField] public SO_MissionList MissionGames { get; private set; }
+        [field: SerializeField]
+        public SO_MissionList MissionGames { get; private set; }
+
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
 
         [SerializeField] private MiniGameDataSO miniGameData;
-        
+
         // [SerializeField] ScriptableEventArcadeData OnArcadeMultiplayerModeSelected;
-        
+
         /*[SerializeField]
         ScriptableEventNoParam _onStartSceneTransition;*/
 
@@ -61,7 +63,7 @@ namespace CosmicShore.Core
             miniGameData.IsMultiplayerMode = false;
             miniGameData.SceneName = MissionLookup[gameMode].SceneName;
             miniGameData.InvokeGameLaunch();
-            
+
             /*MiniGame.PlayerCaptain = captain;
             MiniGame.PlayerShipType = captain.Ship.Class;
             MiniGame.ResourceCollection = CaptainManager.Instance.GetCaptainByName(captain.Name).ResourceLevels;
@@ -78,13 +80,14 @@ namespace CosmicShore.Core
             var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.PORT);
             screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.FACTION_MISSION);
-            
+
 
             StartCoroutine(LaunchGameCoroutine(MissionLookup[gameMode].SceneName));
             */
         }
 
-        public void LaunchArcadeGame(GameModes gameMode, ShipClassType ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
+        public void LaunchArcadeGame(GameModes gameMode, ShipClassType ship, ResourceCollection shipResources,
+            int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
             miniGameData.ResourceCollection = shipResources;
             miniGameData.IsDailyChallenge = isDailyChallenge;
@@ -133,7 +136,8 @@ namespace CosmicShore.Core
             return ArcadeGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
         }*/
 
-        public void LaunchTrainingGame(GameModes gameMode, ShipClassType ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
+        public void LaunchTrainingGame(GameModes gameMode, ShipClassType ship, ResourceCollection shipResources,
+            int intensity, int numberOfPlayers, bool isDailyChallenge = false)
         {
             miniGameData.ResourceCollection = shipResources;
             miniGameData.IsDailyChallenge = isDailyChallenge;
@@ -142,7 +146,7 @@ namespace CosmicShore.Core
             miniGameData.IsMultiplayerMode = false;
             miniGameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
             miniGameData.InvokeGameLaunch();
-            
+
             /*MiniGame.PlayerShipType = ship;
             MiniGame.ResourceCollection = shipResources;
             MiniGame.IntensityLevel = intensity;
@@ -161,7 +165,7 @@ namespace CosmicShore.Core
             }
             else
                 screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.HANGAR);
-            
+
 
             StartCoroutine(LaunchGameCoroutine(TrainingGameLookup[gameMode].Game.SceneName));*/
         }

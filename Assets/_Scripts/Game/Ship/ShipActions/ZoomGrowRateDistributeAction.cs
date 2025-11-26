@@ -12,7 +12,7 @@ namespace CosmicShore
             // var grow = GetComponent<GrowActionBase>();
             // if (grow != null)
             //     grow.SetShrinkRate(sharedRate);
-            
+
             // var zoom = GetComponent<ZoomOutAction>();
             // if (zoom != null)
             //     zoom.SetZoomInRate(sharedRate);

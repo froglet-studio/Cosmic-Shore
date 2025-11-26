@@ -13,6 +13,5 @@ namespace CosmicShore.DialogueSystem.Models
         // We no longer store portraits here
         public float displayTime = 3f;
         public bool isInGameMonologue;
-
     }
 }

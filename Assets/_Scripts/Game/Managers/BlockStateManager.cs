@@ -6,8 +6,8 @@ namespace CosmicShore.Core
 {
     public class BlockStateManager : MonoBehaviour
     {
-        [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [Header("Data Containers")] [SerializeField]
+        ThemeManagerDataContainerSO _themeManagerData;
 
         private TrailBlock trailBlock;
         private MaterialPropertyAnimator materialAnimator;
@@ -41,6 +41,7 @@ namespace CosmicShore.Core
                 {
                     StopCoroutine(activeStateCoroutine);
                 }
+
                 activeStateCoroutine = StartCoroutine(TimedShieldCoroutine(duration.Value));
             }
             else
@@ -68,6 +69,7 @@ namespace CosmicShore.Core
                 {
                     StopCoroutine(activeStateCoroutine);
                 }
+
                 activeStateCoroutine = StartCoroutine(DelayedShieldDeactivationCoroutine(delay.Value));
             }
             else

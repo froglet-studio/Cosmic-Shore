@@ -7,9 +7,9 @@ namespace CosmicShore.Game
     /// </summary>
     public class ImpactCollider : MonoBehaviour, IImpactCollider
     {
-        [SerializeField, RequireInterface(typeof(IImpactor))] 
+        [SerializeField, RequireInterface(typeof(IImpactor))]
         private Object impactorObject;
-        
+
         public IImpactor Impactor => impactorObject as IImpactor;
     }
 }

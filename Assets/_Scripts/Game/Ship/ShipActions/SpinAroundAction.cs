@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class SpinAroundAction : ShipAction
 {
-    
     public override void StartAction()
     {
         Ship.ShipStatus.ShipTransformer.FlatSpinShip(180);
@@ -12,7 +11,5 @@ public class SpinAroundAction : ShipAction
 
     public override void StopAction()
     {
-
     }
-
 }

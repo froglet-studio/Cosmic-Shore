@@ -45,12 +45,10 @@ namespace CosmicShore.Core
 
     public class StatsManager : Singleton<StatsManager>
     {
-        [SerializeField]
-        List<GameObject> EndOfRoundStatContainers;
-        
-        [SerializeField]
-        MiniGameDataSO _miniGameData;
-        
+        [SerializeField] List<GameObject> EndOfRoundStatContainers;
+
+        [SerializeField] MiniGameDataSO _miniGameData;
+
         // Stats dictionaries
         /*public Dictionary<Teams, IRoundStats> TeamStats = new();
         public Dictionary<string, IRoundStats> PlayerStats = new();
@@ -74,15 +72,15 @@ namespace CosmicShore.Core
             /*_onPlayGame.OnRaised -= ResetStats;
             _onGameOver.OnRaised -= OutputRoundStats;*/
         }
-        
+
         public virtual IRoundStats GetOrCreateRoundStats(Teams team) => new RoundStats();
-        
+
         public void LifeformCreated(int cellID)
         {
             if (!allowRecord) return;
 
             var cellStatsList = _miniGameData.CellStatsList;
-            
+
             if (!cellStatsList.ContainsKey(cellID))
                 cellStatsList[cellID] = new CellStats();
 
@@ -96,7 +94,7 @@ namespace CosmicShore.Core
             if (!allowRecord) return;
 
             var cellStatsList = _miniGameData.CellStatsList;
-            
+
             if (!cellStatsList.ContainsKey(cellID))
                 cellStatsList[cellID] = new CellStats();
 
@@ -104,7 +102,7 @@ namespace CosmicShore.Core
             cs.LifeFormsInCell--;
             cellStatsList[cellID] = cs;
         }
-        
+
         public void CrystalCollected(CrystalStats crystalStats)
         {
             if (!allowRecord) return;
@@ -119,14 +117,11 @@ namespace CosmicShore.Core
             if (!_miniGameData.TryGetRoundStats(playerName, out IRoundStats stats))
                 return;
             stats.CrystalsCollected++;
-            
+
             switch (crystalStats.Element)
             {
                 case Element.Omni:
-                    UpdateStatForPlayer(playerName, s =>
-                    {
-                        s.OmniCrystalsCollected++;
-                    });
+                    UpdateStatForPlayer(playerName, s => { s.OmniCrystalsCollected++; });
                     break;
 
                 case Element.Charge:
@@ -177,7 +172,7 @@ namespace CosmicShore.Core
             if (!_miniGameData.TryGetRoundStats(skimmerPlayerName, out var roundStats))
                 return;
             roundStats.SkimmerShipCollisions++;
-            
+
             /*if (!EnsureDictionaryEntriesExist(team, playerName)) return;
 
             TeamStats[team].SkimmerShipCollisions++;
@@ -195,7 +190,7 @@ namespace CosmicShore.Core
             roundStats.PrismsRemaining++;
             roundStats.VolumeCreated += prismStats.Volume;
             roundStats.VolumeRemaining += prismStats.Volume;
-            
+
             /*if (!EnsureDictionaryEntriesExist(creatingTeam, creatingPlayerName)) return;
 
             TeamStats[creatingTeam].BlocksCreated++;
@@ -225,10 +220,10 @@ namespace CosmicShore.Core
             // Attacker team stats
             if (!_miniGameData.TryGetRoundStats(attackingPlayerName, out IRoundStats attackerPlayerStats))
                 return; // TeamStats[destroyingTeam];
-            
+
             if (!_miniGameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
-                return;// TeamStats[victimTeam];
-            
+                return; // TeamStats[victimTeam];
+
             attackerPlayerStats.BlocksDestroyed++;
             if (attackingPlayerName == victimPlayerName)
                 attackerPlayerStats.FriendlyPrismsDestroyed++;
@@ -250,7 +245,7 @@ namespace CosmicShore.Core
                 attackerPlayerStats.FriendlyPrismsDestroyed++;
             else
                 attackerPlayerStats.HostilePrismsDestroyed++;
-            
+
             attackerPlayerStats.VolumeDestroyed += prismStats.Volume;
             if (attackingPlayerName == victimPlayerName)
                 attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
@@ -270,7 +265,7 @@ namespace CosmicShore.Core
 
             if (!_miniGameData.TryGetRoundStats(restoringPlayerName, out IRoundStats roundStats))
                 return;
-            
+
             /*var ownerPlayerName = restoredTrailBlockProperties.trailBlock.PlayerName;
 
             if (!EnsureDictionaryEntriesExist(restoringTeam, restoringPlayerName)) return;
@@ -295,7 +290,7 @@ namespace CosmicShore.Core
 
             // var ownerTeam = modifiedTrailBlockProperties.trailBlock.Team;
             var ownerPlayerName = prismStats.OtherPlayerName;
-            
+
             if (!_miniGameData.TryGetRoundStats(ownerPlayerName, out IRoundStats roundStats))
                 return;
 
@@ -321,7 +316,7 @@ namespace CosmicShore.Core
             var stealingPlayerName = prismStats.PlayerName;
             if (!_miniGameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
                 return;
-            
+
             stealingPlayerStats.BlocksStolen++;
             stealingPlayerStats.PrismsRemaining++;
             stealingPlayerStats.VolumeStolen += prismStats.Volume;
@@ -329,7 +324,7 @@ namespace CosmicShore.Core
 
             // Stealing player stats
             // var stealingPlayerStats = PlayerStats[stealingPlayerName];
-            
+
             /*stealingPlayerStats.BlocksStolen++;
             stealingPlayerStats.BlocksRemaining++;
             stealingPlayerStats.VolumeStolen += stolenTrailBlockProperties.volume;
@@ -338,7 +333,7 @@ namespace CosmicShore.Core
             var victimPlayerName = prismStats.OtherPlayerName;
             if (!_miniGameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
                 return;
-            
+
             // Victim team remaining
             // var victimTeamStats = TeamStats[victimTeam];
             victimPlayerStats.PrismsRemaining--;
@@ -358,7 +353,7 @@ namespace CosmicShore.Core
 
             var teamStats = TeamStats[team];
             var playerStats = PlayerStats[playerName];*/
-            
+
             if (!_miniGameData.TryGetRoundStats(abilityStats.PlayerName, out IRoundStats playerStats))
                 return;
 
@@ -400,9 +395,9 @@ namespace CosmicShore.Core
                     break;
             }
         }
-        
+
         /*
-         
+
          /// <summary>
         /// Ensures the given team and player have entries in their dictionaries.
         /// </summary>
@@ -414,7 +409,7 @@ namespace CosmicShore.Core
                 PlayerStats[playerName] = GetRoundStats(team);
             return true;
         }
-         
+
         public void ResetStats()
         {
             LastRoundTeamStats = new Dictionary<Teams, IRoundStats>(TeamStats);
@@ -431,8 +426,7 @@ namespace CosmicShore.Core
         }
         */
 
-        
-        
+
         // void UpdateStatForTeamAndPlayer(Teams team, string playerName, Action<IRoundStats> updateAction)
         void UpdateStatForPlayer(string playerName, Action<IRoundStats> updateAction)
         {
@@ -440,7 +434,7 @@ namespace CosmicShore.Core
                 return;
 
             updateAction(roundStats);
-            
+
             // TODO - Remove following code after confirmation.
             /*if (TeamStats.TryGetValue(team, out var teamStats))
                 updateAction(teamStats);

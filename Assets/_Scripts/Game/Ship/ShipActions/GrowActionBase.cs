@@ -13,10 +13,15 @@ public class GrowActionBase : ShipAction, IScaleProvider
     public bool growing;
 
     public float MinScale => MinSize;
-    private float MaxSize      => maxSize.Value;
+    private float MaxSize => maxSize.Value;
     public float CurrentScale => target.transform.lossyScale.z;
 
-    private enum ScaleDir { None, Grow, Shrink }
+    private enum ScaleDir
+    {
+        None,
+        Grow,
+        Shrink
+    }
 
     private ScaleDir _dir = ScaleDir.None;
 
@@ -35,26 +40,34 @@ public class GrowActionBase : ShipAction, IScaleProvider
     {
         _dir = ScaleDir.Shrink;
     }
-    
+
     private void LateUpdate()
     {
         if (_dir == ScaleDir.None) return;
 
         float dt = Time.deltaTime;
 
-        float worldR = target.transform.lossyScale.z; 
+        float worldR = target.transform.lossyScale.z;
         if (_dir == ScaleDir.Grow)
         {
             worldR += growRate * dt;
-            if (worldR >= MaxSize) { worldR = MaxSize; _dir = ScaleDir.None; }
+            if (worldR >= MaxSize)
+            {
+                worldR = MaxSize;
+                _dir = ScaleDir.None;
+            }
         }
-        else 
+        else
         {
             worldR -= shrinkRate.Value * dt;
-            if (worldR <= MinScale) { worldR = MinScale; _dir = ScaleDir.None; }
+            if (worldR <= MinScale)
+            {
+                worldR = MinScale;
+                _dir = ScaleDir.None;
+            }
         }
 
-        float parentScaleZ = 1f;                             
+        float parentScaleZ = 1f;
         if (target.transform.parent != null)
             parentScaleZ = target.transform.parent.lossyScale.z;
 
@@ -62,7 +75,7 @@ public class GrowActionBase : ShipAction, IScaleProvider
 
         target.transform.localScale = Vector3.one * localR;
     }
-    
+
     protected virtual IEnumerator GrowCoroutine(bool growing)
     {
         while (growing && target.transform.localScale.z < maxSize.Value)
@@ -79,6 +92,7 @@ public class GrowActionBase : ShipAction, IScaleProvider
             target.transform.localScale -= Time.deltaTime * shrinkRate.Value * Vector3.one;
             yield return null;
         }
+
         target.transform.localScale = MinSize * Vector3.one;
     }
 }

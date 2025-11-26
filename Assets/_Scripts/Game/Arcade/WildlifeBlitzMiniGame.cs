@@ -17,7 +17,6 @@ namespace CosmicShore.Game.Arcade
 
         protected override void Awake()
         {
-
             base.Awake();
             node.CellType = IntensityLevel switch
             {
@@ -35,7 +34,6 @@ namespace CosmicShore.Game.Arcade
 
             TrailSpawner.NukeTheTrails();
             Crystal.transform.position = CrystalStartPosition;
-
         }
     }
 }

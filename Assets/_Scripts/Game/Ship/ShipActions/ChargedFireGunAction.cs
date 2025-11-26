@@ -24,6 +24,7 @@ public class ChargedFireGunAction : ShipAction
         base.Initialize(ship);
         //projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
     }
+
     public override void StartAction()
     {
         if (ShipStatus.LiveProjectiles) gun.StopProjectile();
@@ -33,7 +34,8 @@ public class ChargedFireGunAction : ShipAction
     IEnumerator GainEnergyCoroutine()
     {
         var chargePeriod = .1f;
-        while (ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount < ResourceSystem.Resources[EnergyResourceIndex].MaxAmount)
+        while (ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount <
+               ResourceSystem.Resources[EnergyResourceIndex].MaxAmount)
         {
             yield return new WaitForSeconds(chargePeriod);
             ResourceSystem.ChangeResourceAmount(EnergyResourceIndex, chargePerSecond * chargePeriod);
@@ -49,6 +51,7 @@ public class ChargedFireGunAction : ShipAction
             ShipStatus.LiveProjectiles = true;
             yield return null;
         }
+
         ShipStatus.LiveProjectiles = false;
     }
 
@@ -63,25 +66,28 @@ public class ChargedFireGunAction : ShipAction
     public override void StopAction()
     {
         if (ShipStatus.LiveProjectiles) gun.DetonateProjectile();
-        else 
+        else
         {
             StopCoroutine(gainEnergy);
 
-            if (ResourceSystem.Resources[AmmoResourceIndex].CurrentAmount > ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount)
+            if (ResourceSystem.Resources[AmmoResourceIndex].CurrentAmount >
+                ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount)
             {
-                ResourceSystem.ChangeResourceAmount(AmmoResourceIndex, -ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
+                ResourceSystem.ChangeResourceAmount(AmmoResourceIndex,
+                    -ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
 
                 Vector3 inheritedDirection;
                 if (ShipStatus.Attached || ShipStatus.IsStationary) inheritedDirection = transform.forward;
                 else inheritedDirection = ShipStatus.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * ShipStatus.Speed, ProjectileScale * ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount, true, float.MaxValue, ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
+                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * ShipStatus.Speed,
+                    ProjectileScale * ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount, true, float.MaxValue,
+                    ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
                 StartCheckProjectiles();
             }
 
             ResourceSystem.ResetResource(EnergyResourceIndex);
         }
-        
     }
 }

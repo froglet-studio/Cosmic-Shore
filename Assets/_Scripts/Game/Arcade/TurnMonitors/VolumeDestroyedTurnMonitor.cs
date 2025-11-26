@@ -19,8 +19,8 @@ namespace CosmicShore.Game.Arcade
                 return false;
 
             return roundStats.VolumeDestroyed > 0;
-            
-            /*if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName) && 
+
+            /*if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName) &&
                 StatsManager.Instance.PlayerStats[currentPlayerName].VolumeDestroyed > 0)
             {
                 return true;
@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade
             currentPlayerName = playerName;
             StatsManager.Instance.ResetStats();
         }*/
-        
+
         /*public override void StartMonitor()
         {
             // Get PlayerName from MiniGameData

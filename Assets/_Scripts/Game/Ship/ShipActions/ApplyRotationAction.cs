@@ -14,12 +14,12 @@ public class ApplyRotationAction : ShipAction
         {
             Ship.ShipStatus.ShipTransformer.ApplyRotation(rotationAmount, Ship.Transform.right);
         }
-        
+
         if (yaw)
         {
             Ship.ShipStatus.ShipTransformer.ApplyRotation(rotationAmount, Ship.Transform.up);
         }
-        
+
         if (roll)
         {
             Ship.ShipStatus.ShipTransformer.ApplyRotation(rotationAmount, Ship.Transform.forward);

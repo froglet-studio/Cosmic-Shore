@@ -15,11 +15,9 @@ namespace CosmicShore.Utilities
     [Serializable]
     public abstract class GuidSO : ScriptableObject
     {
-        [SerializeField]
-        private string m_InstanceName;
+        [SerializeField] private string m_InstanceName;
 
-        [SerializeField]
-        byte[] m_Guid;
+        [SerializeField] byte[] m_Guid;
 
         public Guid Guid => new Guid(m_Guid);
 
@@ -29,6 +27,7 @@ namespace CosmicShore.Utilities
             {
                 return;
             }
+
             m_InstanceName = name;
 
             if (m_Guid == null || m_Guid.Length == 0)

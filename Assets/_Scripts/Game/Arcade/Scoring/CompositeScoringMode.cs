@@ -6,10 +6,9 @@ namespace CosmicShore.Game.Arcade.Scoring
     [System.Serializable]
     public class CompositeScoringMode : BaseScoringMode
     {
-        [SerializeField]
-        private List<BaseScoringMode> scoringModes;
+        [SerializeField] private List<BaseScoringMode> scoringModes;
 
-        public CompositeScoringMode(IEnumerable<BaseScoringMode> modes, float scoreNormalizationQuotient = 145.65f) 
+        public CompositeScoringMode(IEnumerable<BaseScoringMode> modes, float scoreNormalizationQuotient = 145.65f)
             : base(scoreNormalizationQuotient)
         {
             scoringModes = new List<BaseScoringMode>(modes);
@@ -28,6 +27,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                     totalScore += mode.CalculateScore(playerName, 0, turnStartTime);
                 }
             }
+
             return totalScore;
         }
 
@@ -44,6 +44,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                     totalScore += mode.EndTurnScore(playerName, 0, turnStartTime);
                 }
             }
+
             return totalScore;
         }
 

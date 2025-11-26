@@ -12,6 +12,7 @@ namespace CosmicShore.Core
         {
             public GameObject prefab;
             public int size;
+
             public Pool(GameObject prefab, int size)
             {
                 this.prefab = prefab;
@@ -19,8 +20,9 @@ namespace CosmicShore.Core
             }
         }
 
-        [FormerlySerializedAs("pools")]
-        [SerializeField] protected List<Pool> _configDatas;
+        [FormerlySerializedAs("pools")] [SerializeField]
+        protected List<Pool> _configDatas;
+
         protected Dictionary<string, Queue<GameObject>> _poolDictionary;
 
         #region Initialization

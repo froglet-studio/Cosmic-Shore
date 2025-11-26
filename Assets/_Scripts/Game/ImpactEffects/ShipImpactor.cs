@@ -8,27 +8,27 @@ namespace CosmicShore.Game
     {
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         ScriptableObject[] shipPrismEffectsSO;
-        
+
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         ScriptableObject[] shipOmniCrystalEffectsSO;
-        
+
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         ScriptableObject[] shipElementalCrystalEffectsSO;
-        
+
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         ScriptableObject[] shipFakeCrystalEffectsSO;
-        
+
         IImpactEffect[] shipPrismEffects;
         IImpactEffect[] shipOmniCrystalEffects;
         IImpactEffect[] shipElementalCrystalEffects;
         IImpactEffect[] shipFakeCrystalEffects;
-        
+
         public IShip Ship;
-        
+
         private void Awake()
         {
             Ship ??= GetComponent<IShip>();
-            
+
             shipPrismEffects = Array.ConvertAll(shipPrismEffectsSO, so => (IImpactEffect)so);
             shipOmniCrystalEffects = Array.ConvertAll(shipOmniCrystalEffectsSO, so => (IImpactEffect)so);
             shipElementalCrystalEffects = Array.ConvertAll(shipElementalCrystalEffectsSO, so => (IImpactEffect)so);
@@ -52,7 +52,7 @@ namespace CosmicShore.Game
         }
 
         private void Reset()
-        { 
+        {
             Ship ??= GetComponent<IShip>();
         }
     }

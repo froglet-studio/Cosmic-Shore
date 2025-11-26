@@ -5,8 +5,7 @@ namespace CosmicShore.Utilities
     [CreateAssetMenu(fileName = "TagSO", menuName = "ScriptableObjects/TagSO", order = 0)]
     public class TagSO : GuidSO
     {
-        [SerializeField]
-        private string m_TagName;
+        [SerializeField] private string m_TagName;
 
         protected override void OnValidate()
         {
@@ -14,6 +13,7 @@ namespace CosmicShore.Utilities
             {
                 return;
             }
+
             if (string.IsNullOrEmpty(m_TagName))
             {
                 m_TagName = name;

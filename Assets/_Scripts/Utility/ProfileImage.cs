@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore
 {
-    [RequireComponent (typeof (Image))]
+    [RequireComponent(typeof(Image))]
     public class ProfileImage : MonoBehaviour
     {
         [SerializeField] SO_ProfileIconList ProfileIcons;

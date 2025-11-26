@@ -10,8 +10,9 @@ namespace CosmicShore.DialogueSystem.Controller
     {
         public static DialogueManager Instance;
 
-        [Header("References")]
-        [SerializeField] private DialogueUIController _uiController;
+        [Header("References")] [SerializeField]
+        private DialogueUIController _uiController;
+
         [SerializeField] private Canvas _dialogueCanvas;
         [SerializeField] private DialogueSetLibrary _dialogueLibrary;
         [SerializeField] private GameObject _mainGameCanvas;
@@ -37,6 +38,7 @@ namespace CosmicShore.DialogueSystem.Controller
                 Debug.LogWarning($"DialogueManager: No DialogueSet found with ID '{setId}'.");
                 return;
             }
+
             PlayDialogueSet(set);
         }
 
@@ -100,7 +102,6 @@ namespace CosmicShore.DialogueSystem.Controller
 
         private void OnNextRequested()
         {
-
         }
 
         [ContextMenu("PlayDefualtSet")]

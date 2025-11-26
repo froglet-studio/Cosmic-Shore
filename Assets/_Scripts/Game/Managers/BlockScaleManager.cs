@@ -10,6 +10,7 @@ namespace CosmicShore.Core
     public class BlockScaleManager : AdaptiveAnimationManager<BlockScaleManager, BlockScaleAnimator, ScaleAnimationData>
     {
         private const float COMPLETION_THRESHOLD = 0.01f;
+
         private readonly List<(BlockScaleAnimator block, Vector3 scale)> completionQueue =
             new List<(BlockScaleAnimator, Vector3)>(32);
 
@@ -101,7 +102,7 @@ namespace CosmicShore.Core
                     bool contains = activeAnimators.Contains(block);
                 }
 
-                if (block.OnScaleComplete == null) 
+                if (block.OnScaleComplete == null)
                     continue;
                 try
                 {
@@ -111,6 +112,7 @@ namespace CosmicShore.Core
                 {
                     Debug.LogError($"Error in scale completion callback: {e.Message}");
                 }
+
                 block.OnScaleComplete = null;
             }
 

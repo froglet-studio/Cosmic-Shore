@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
 
-[AddComponentMenu("Soap/EventListeners/EventListener"+nameof(ShipClassType))]
+[AddComponentMenu("Soap/EventListeners/EventListener" + nameof(ShipClassType))]
 public class EventListenerShipClassType : EventListenerGeneric<ShipClassType>
 {
     [SerializeField] private EventResponse[] _eventResponses = null;
@@ -21,6 +21,5 @@ public class EventListenerShipClassType : EventListenerGeneric<ShipClassType>
     [System.Serializable]
     public class ShipClassTypeUnityEvent : UnityEvent<ShipClassType>
     {
-        
     }
 }

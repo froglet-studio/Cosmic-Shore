@@ -8,14 +8,14 @@ namespace CosmicShore.Game.Arcade
 {
     public class CountdownTimer : MonoBehaviour
     {
-        [SerializeField] Image   countdownDisplay;
-        [SerializeField] Sprite  countdown3;
-        [SerializeField] Sprite  countdown2;
-        [SerializeField] Sprite  countdown1;
-        [SerializeField] Sprite  countdown0;
+        [SerializeField] Image countdownDisplay;
+        [SerializeField] Sprite countdown3;
+        [SerializeField] Sprite countdown2;
+        [SerializeField] Sprite countdown1;
+        [SerializeField] Sprite countdown0;
         [SerializeField] AudioClip countdownBeep;
-        [SerializeField] float     countdownDuration  = 1f;
-        [SerializeField] float     countdownGrowScale = 1.5f;
+        [SerializeField] float countdownDuration = 1f;
+        [SerializeField] float countdownGrowScale = 1.5f;
 
         Sprite[] _sprites;
 

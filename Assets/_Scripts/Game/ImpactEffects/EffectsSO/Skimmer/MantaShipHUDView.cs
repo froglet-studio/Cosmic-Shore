@@ -6,7 +6,6 @@ namespace CosmicShore.Game
 {
     public class MantaShipHUDView : R_ShipHUDView
     {
-        [Header("Simple counter")]
-        public TMP_Text countText;   
+        [Header("Simple counter")] public TMP_Text countText;
     }
 }

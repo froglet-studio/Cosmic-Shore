@@ -11,9 +11,8 @@ namespace CosmicShore
         public event Action OnAssembleStarted;
         public event Action OnAssembleCompleted;
 
-        [Header("Config")]
-        [SerializeField] private float enhancementsPerFullAmmo = 4f;
-        [SerializeField] private Assembler assembler;  
+        [Header("Config")] [SerializeField] private float enhancementsPerFullAmmo = 4f;
+        [SerializeField] private Assembler assembler;
         [SerializeField] private int depth = 50;
         [SerializeField] private int resourceIndex = 0;
 
@@ -29,7 +28,5 @@ namespace CosmicShore
         public override void StopAction()
         {
         }
-
-     
     }
 }

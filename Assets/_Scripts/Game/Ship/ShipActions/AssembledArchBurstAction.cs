@@ -9,53 +9,64 @@ namespace CosmicShore.Game
     /// </summary>
     public class AssembledArchBurstAction : ShipAction
     {
-    // ---------- Config ----------
+        // ---------- Config ----------
         [Header("Block/Rod Prefab")]
         [Tooltip("A thin bar/rod prefab (the yellow segment). Its local Z axis should point along length.")]
-        [SerializeField] private GameObject rodPrefab;
+        [SerializeField]
+        private GameObject rodPrefab;
 
-        [Header("Placement Ray")]
-        [SerializeField] private float rayDistance = 200f;
+        [Header("Placement Ray")] [SerializeField]
+        private float rayDistance = 200f;
+
         [SerializeField] private LayerMask rayMask = ~0;
         [SerializeField] private float fallbackForward = 60f;
 
-        [Header("Surface Patch (Ship-local)")]
-        [Tooltip("Total lateral width (Right axis).")]
-        [SerializeField] private float width = 80f;
-        [Tooltip("Total height (Up axis).")]
-        [SerializeField] private float height = 50f;
-        [Tooltip("How far forward the patch bows (Forward axis).")]
-        [SerializeField] private float bowDepth = 35f;
-        [Tooltip("Forward offset from the ray hit/fallback point.")]
-        [SerializeField] private float forwardPush = 0f;
+        [Header("Surface Patch (Ship-local)")] [Tooltip("Total lateral width (Right axis).")] [SerializeField]
+        private float width = 80f;
 
-        [Header("UV Tessellation")]
-        [Tooltip("Number of divisions across width (U).")]
-        [SerializeField] private int uDiv = 8;
-        [Tooltip("Number of divisions across height (V).")]
-        [SerializeField] private int vDiv = 6;
+        [Tooltip("Total height (Up axis).")] [SerializeField]
+        private float height = 50f;
 
-        public enum LatticeType { Tri, Hex }
+        [Tooltip("How far forward the patch bows (Forward axis).")] [SerializeField]
+        private float bowDepth = 35f;
+
+        [Tooltip("Forward offset from the ray hit/fallback point.")] [SerializeField]
+        private float forwardPush = 0f;
+
+        [Header("UV Tessellation")] [Tooltip("Number of divisions across width (U).")] [SerializeField]
+        private int uDiv = 8;
+
+        [Tooltip("Number of divisions across height (V).")] [SerializeField]
+        private int vDiv = 6;
+
+        public enum LatticeType
+        {
+            Tri,
+            Hex
+        }
+
         [SerializeField] private LatticeType lattice = LatticeType.Tri;
 
-        [Header("Organic Variation")]
-        [Tooltip("0 = random each activation; otherwise deterministic.")]
-        [SerializeField] private int seed = 0;
-        [SerializeField] private float jitter = 0.15f;    // UV-space jitter
+        [Header("Organic Variation")] [Tooltip("0 = random each activation; otherwise deterministic.")] [SerializeField]
+        private int seed = 0;
+
+        [SerializeField] private float jitter = 0.15f; // UV-space jitter
         [SerializeField] private float surfaceNoise = 0.2f; // meters, pushes along surface binormal
         [SerializeField] private float surfaceNoiseScale = 1.4f;
 
         [Header("Thickness (layers)")]
         [Tooltip("Duplicate the lattice N layers along the patch normal.")]
-        [SerializeField] private int layers = 1;
+        [SerializeField]
+        private int layers = 1;
+
         [SerializeField] private float layerSpacing = 1.25f;
 
-        [Header("Parenting")]
-        [SerializeField] private Transform structureParent;
-        
-        [Tooltip("Uniform local scale applied to every spawned block/rod.")]
-        [SerializeField] private Vector3 blockScale;
-        [SerializeField] private bool enforceScaleNextFrame = true; 
+        [Header("Parenting")] [SerializeField] private Transform structureParent;
+
+        [Tooltip("Uniform local scale applied to every spawned block/rod.")] [SerializeField]
+        private Vector3 blockScale;
+
+        [SerializeField] private bool enforceScaleNextFrame = true;
 
         private Transform _container;
         private System.Random _rng;
@@ -64,7 +75,7 @@ namespace CosmicShore.Game
         public override void StartAction()
         {
             if (rodPrefab == null) return;
-            
+
             // Seed RNG
             int s = (seed != 0) ? seed : (int)(Random.value * int.MaxValue);
             _rng = new System.Random(s);
@@ -77,7 +88,8 @@ namespace CosmicShore.Game
             Vector3 up = t.up;
             Vector3 right = t.right;
 
-            bool hitFound = Physics.Raycast(origin, fwd, out var hit, rayDistance, rayMask, QueryTriggerInteraction.Ignore);
+            bool hitFound = Physics.Raycast(origin, fwd, out var hit, rayDistance, rayMask,
+                QueryTriggerInteraction.Ignore);
             Vector3 basePoint = hitFound ? hit.point : origin + fwd * fallbackForward;
             basePoint += fwd * forwardPush;
 
@@ -107,8 +119,8 @@ namespace CosmicShore.Game
 
                 for (int iv = 0; iv <= vDiv; iv++)
                 {
-                    float v = iv / (float)vDiv;            // [0..1]
-                    float vCentered = (v - 0.5f) * 2f;     // [-1..1]
+                    float v = iv / (float)vDiv; // [0..1]
+                    float vCentered = (v - 0.5f) * 2f; // [-1..1]
                     Vector3 p = Pu + Bu * (vCentered * halfH);
 
                     // UV jitter
@@ -117,7 +129,8 @@ namespace CosmicShore.Game
                     Vector3 jittered = p + Nu * (jU * (width / uDiv)) + Bu * (jV * (height / vDiv));
 
                     // light surface wobble
-                    float n = Mathf.PerlinNoise(_perlinBase + u * surfaceNoiseScale, _perlinBase + v * surfaceNoiseScale);
+                    float n = Mathf.PerlinNoise(_perlinBase + u * surfaceNoiseScale,
+                        _perlinBase + v * surfaceNoiseScale);
                     Vector3 pFinal = jittered + Nu * ((n - 0.5f) * 2f * surfaceNoise);
 
                     int idx = Index(iu, iv);
@@ -142,7 +155,7 @@ namespace CosmicShore.Game
             if (_container != null) Destroy(_container.gameObject);
             _container = new GameObject($"Lattice_{gameObject.name}_{Time.frameCount}").transform;
             _container.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-            _container.localScale = Vector3.one;      
+            _container.localScale = Vector3.one;
             if (structureParent) _container.SetParent(structureParent, true);
 
             int total = 0;
@@ -196,7 +209,7 @@ namespace CosmicShore.Game
                     AddEdge(edges, i01, i11);
 
                     if (diag) AddEdge(edges, i00, i11);
-                    else      AddEdge(edges, i10, i01);
+                    else AddEdge(edges, i10, i01);
                 }
             }
         }
@@ -264,7 +277,7 @@ namespace CosmicShore.Game
 
         System.Collections.IEnumerator ApplyScaleNextFrame(Transform t)
         {
-            yield return null;         
+            yield return null;
             if (t != null) t.localScale = blockScale;
         }
     }

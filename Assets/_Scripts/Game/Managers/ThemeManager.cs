@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
-
     public class ThemeManager : MonoBehaviour
     {
         [SerializeField] ThemeManagerDataContainerSO _dataContainer;
@@ -15,12 +14,13 @@ namespace CosmicShore.Core
             var GoldTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.GoldColors, "Gold");
             var BlueTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.BlueColors, "Blue");
 
-            _dataContainer.TeamMaterialSets = new() {
+            _dataContainer.TeamMaterialSets = new()
+            {
                 { Teams.Jade, GreenTeamMaterialSet },
-                { Teams.Ruby,   RedTeamMaterialSet },
-                { Teams.Blue,  BlueTeamMaterialSet },
-                { Teams.Gold,  GoldTeamMaterialSet },
-                { Teams.Unassigned,  BlueTeamMaterialSet },
+                { Teams.Ruby, RedTeamMaterialSet },
+                { Teams.Blue, BlueTeamMaterialSet },
+                { Teams.Gold, GoldTeamMaterialSet },
+                { Teams.Unassigned, BlueTeamMaterialSet },
             };
         }
 
@@ -32,17 +32,23 @@ namespace CosmicShore.Core
             // Copy all materials from the base set
             materialSet.ShipMaterial = new Material(_dataContainer.BaseMaterialSet.ShipMaterial);
             materialSet.BlockMaterial = new Material(_dataContainer.BaseMaterialSet.BlockMaterial);
-            materialSet.TransparentBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentBlockMaterial);
+            materialSet.TransparentBlockMaterial =
+                new Material(_dataContainer.BaseMaterialSet.TransparentBlockMaterial);
             materialSet.CrystalMaterial = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial);
             materialSet.ExplodingBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ExplodingBlockMaterial);
             materialSet.ShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ShieldedBlockMaterial);
-            materialSet.TransparentShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentShieldedBlockMaterial);
-            materialSet.SuperShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.SuperShieldedBlockMaterial);
-            materialSet.TransparentSuperShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentSuperShieldedBlockMaterial);
+            materialSet.TransparentShieldedBlockMaterial =
+                new Material(_dataContainer.BaseMaterialSet.TransparentShieldedBlockMaterial);
+            materialSet.SuperShieldedBlockMaterial =
+                new Material(_dataContainer.BaseMaterialSet.SuperShieldedBlockMaterial);
+            materialSet.TransparentSuperShieldedBlockMaterial =
+                new Material(_dataContainer.BaseMaterialSet.TransparentSuperShieldedBlockMaterial);
             materialSet.DangerousBlockMaterial = new Material(_dataContainer.BaseMaterialSet.DangerousBlockMaterial);
-            materialSet.TransparentDangerousBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentDangerousBlockMaterial);
+            materialSet.TransparentDangerousBlockMaterial =
+                new Material(_dataContainer.BaseMaterialSet.TransparentDangerousBlockMaterial);
             materialSet.AOEExplosionMaterial = new Material(_dataContainer.BaseMaterialSet.AOEExplosionMaterial);
-            materialSet.AOEConicExplosionMaterial = new Material(_dataContainer.BaseMaterialSet.AOEConicExplosionMaterial);
+            materialSet.AOEConicExplosionMaterial =
+                new Material(_dataContainer.BaseMaterialSet.AOEConicExplosionMaterial);
             materialSet.SpikeMaterial = new Material(_dataContainer.BaseMaterialSet.SpikeMaterial);
             materialSet.SkimmerMaterial = new Material(_dataContainer.BaseMaterialSet.SkimmerMaterial);
 
@@ -58,7 +64,7 @@ namespace CosmicShore.Core
 
             materialSet.CrystalMaterial.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
             materialSet.CrystalMaterial.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
-            
+
             materialSet.ExplodingBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
             materialSet.ExplodingBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
 
@@ -75,8 +81,10 @@ namespace CosmicShore.Core
             materialSet.SuperShieldedBlockMaterial.SetColor("_BrightColor", colorSet.SuperShieldedInsideBlockColor);
             materialSet.SuperShieldedBlockMaterial.SetColor("_DarkColor", colorSet.SuperShieldedOutsideBlockColor);
 
-            materialSet.TransparentSuperShieldedBlockMaterial.SetColor("_BrightColor", colorSet.SuperShieldedInsideBlockColor);
-            materialSet.TransparentSuperShieldedBlockMaterial.SetColor("_DarkColor", colorSet.SuperShieldedOutsideBlockColor);
+            materialSet.TransparentSuperShieldedBlockMaterial.SetColor("_BrightColor",
+                colorSet.SuperShieldedInsideBlockColor);
+            materialSet.TransparentSuperShieldedBlockMaterial.SetColor("_DarkColor",
+                colorSet.SuperShieldedOutsideBlockColor);
 
             materialSet.ShipMaterial.SetColor("_Color1", colorSet.ShipColor1);
             materialSet.ShipMaterial.SetColor("_Color2", colorSet.ShipColor2);

@@ -17,6 +17,7 @@ namespace CosmicShore.Game
             {
                 velocity = Vector3.up * minSpeed; // Fallback velocity
             }
+
             StartCoroutine(ImpactCoroutine(velocity));
         }
 

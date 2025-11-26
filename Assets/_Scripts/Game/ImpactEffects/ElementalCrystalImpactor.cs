@@ -7,10 +7,10 @@ namespace CosmicShore.Game
     {
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         ScriptableObject[] elementalCrystalShipEffectsSO;
-        
+
         [SerializeField, RequireInterface(typeof(IImpactEffect))]
         ScriptableObject[] elementalCrystalSkimmerEffectsSO;
-        
+
         IImpactEffect[] elementalCrystalShipEffects;
         IImpactEffect[] elementalCrystalSkimmerEffects;
 
@@ -18,9 +18,10 @@ namespace CosmicShore.Game
         {
             base.Awake();
             elementalCrystalShipEffects = Array.ConvertAll(elementalCrystalShipEffectsSO, so => so as IImpactEffect);
-            elementalCrystalSkimmerEffects = Array.ConvertAll(elementalCrystalSkimmerEffectsSO, so => so as IImpactEffect);
+            elementalCrystalSkimmerEffects =
+                Array.ConvertAll(elementalCrystalSkimmerEffectsSO, so => so as IImpactEffect);
         }
-        
+
         protected override void AcceptImpactee(IImpactor impactee)
         {
             switch (impactee)

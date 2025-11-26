@@ -11,12 +11,13 @@ namespace CosmicShore.Utility.ClassExtensions
         /// <param name="position">Game object position</param>
         /// <param name="rotation">Game object rotation</param>
         /// <param name="scale">Game object local scale</param>
-        public static void SetFullProperties(this Transform transform, Vector3 position, Quaternion rotation, Vector3 scale)
+        public static void SetFullProperties(this Transform transform, Vector3 position, Quaternion rotation,
+            Vector3 scale)
         {
             transform.SetPositionAndRotation(position, rotation);
             transform.localScale = scale;
         }
-        
+
         /// <summary>
         /// A helper method to convert local position, relativeto a transform, into a to global position.
         /// </summary>
@@ -25,7 +26,8 @@ namespace CosmicShore.Utility.ClassExtensions
         /// <returns>Vector3 global position</returns>
         public static Vector3 ToGlobal(this Transform transform, Vector3 localPosition)
         {
-            return localPosition.x * transform.right + localPosition.y * transform.up + localPosition.z * transform.forward + transform.position;
+            return localPosition.x * transform.right + localPosition.y * transform.up +
+                   localPosition.z * transform.forward + transform.position;
         }
     }
 }

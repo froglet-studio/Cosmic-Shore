@@ -17,10 +17,10 @@ public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IS
     {
         this.Clear();
 
-        if(keys.Count != values.Count)
+        if (keys.Count != values.Count)
         {
-            Debug.LogError("Failed to deserialize a SerializableDictionary. Keys : " + keys.Count + " Values : " 
-                + values.Count + " did not match.");
+            Debug.LogError("Failed to deserialize a SerializableDictionary. Keys : " + keys.Count + " Values : "
+                           + values.Count + " did not match.");
         }
 
         for (int i = 0; i < keys.Count; i++)

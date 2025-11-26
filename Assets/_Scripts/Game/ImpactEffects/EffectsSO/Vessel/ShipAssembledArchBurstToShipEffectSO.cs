@@ -3,46 +3,56 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "ShipAssembledArchBurstToShipEffect", menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAssembledArchBurstToShipEffectSO")]
+    [CreateAssetMenu(fileName = "ShipAssembledArchBurstToShipEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel/ShipAssembledArchBurstToShipEffectSO")]
     public class ShipAssembledArchBurstToShipEffectSO : ImpactEffectSO<ShipImpactor, ShipImpactor>
     {
         #region Config Values
 
         [Header("Block/Rod Prefab")]
         [Tooltip("Thin bar/rod prefab. Local Z should point along the length.")]
-        [SerializeField] private GameObject rodPrefab;
+        [SerializeField]
+        private GameObject rodPrefab;
 
-        [Header("Placement Ray (from IMPACTEE ship)")]
-        [SerializeField] private float rayDistance = 200f;
+        [Header("Placement Ray (from IMPACTEE ship)")] [SerializeField]
+        private float rayDistance = 200f;
+
         [SerializeField] private LayerMask rayMask = ~0;
         [SerializeField] private float fallbackForward = 60f;
         [SerializeField] private float forwardPush = 0f;
 
-        [Header("Surface Patch (Impactee-local)")]
-        [SerializeField] private float width = 80f;   // right axis
-        [SerializeField] private float height = 50f;  // up axis
+        [Header("Surface Patch (Impactee-local)")] [SerializeField]
+        private float width = 80f; // right axis
+
+        [SerializeField] private float height = 50f; // up axis
         [SerializeField] private float bowDepth = 35f;
 
-        [Header("UV Tessellation")]
-        [SerializeField] private int uDiv = 8;
+        [Header("UV Tessellation")] [SerializeField]
+        private int uDiv = 8;
+
         [SerializeField] private int vDiv = 6;
 
-        public enum LatticeType { Tri, Hex }
+        public enum LatticeType
+        {
+            Tri,
+            Hex
+        }
+
         [SerializeField] private LatticeType lattice = LatticeType.Tri;
 
-        [Header("Organic Variation")]
-        [Tooltip("0 = random each activation; otherwise deterministic.")]
-        [SerializeField] private int seed = 0;
-        [SerializeField] private float jitter = 0.15f;          // UV-space jitter
-        [SerializeField] private float surfaceNoise = 0.2f;     // meters along surface normal
+        [Header("Organic Variation")] [Tooltip("0 = random each activation; otherwise deterministic.")] [SerializeField]
+        private int seed = 0;
+
+        [SerializeField] private float jitter = 0.15f; // UV-space jitter
+        [SerializeField] private float surfaceNoise = 0.2f; // meters along surface normal
         [SerializeField] private float surfaceNoiseScale = 1.4f;
 
-        [Header("Thickness (layers)")]
-        [SerializeField] private int layers = 1;
+        [Header("Thickness (layers)")] [SerializeField]
+        private int layers = 1;
+
         [SerializeField] private float layerSpacing = 1.25f;
 
-        [Header("Rod Scale")]
-        [SerializeField] private Vector3 blockScale = Vector3.one;
+        [Header("Rod Scale")] [SerializeField] private Vector3 blockScale = Vector3.one;
 
         [SerializeField] private bool verbose = false;
 
@@ -61,11 +71,12 @@ namespace CosmicShore.Game
             // ---- Impactee frame (NOT the impactor) ----
             Transform t = targetShip.Transform;
             Vector3 origin = t.position;
-            Vector3 fwd    = t.forward;
-            Vector3 up     = t.up;
-            Vector3 right  = t.right;
+            Vector3 fwd = t.forward;
+            Vector3 up = t.up;
+            Vector3 right = t.right;
 
-            bool hitFound = Physics.Raycast(origin, fwd, out var hit, rayDistance, rayMask, QueryTriggerInteraction.Ignore);
+            bool hitFound = Physics.Raycast(origin, fwd, out var hit, rayDistance, rayMask,
+                QueryTriggerInteraction.Ignore);
             Vector3 basePoint = hitFound ? hit.point : origin + fwd * fallbackForward;
             basePoint += fwd * forwardPush;
 
@@ -78,7 +89,7 @@ namespace CosmicShore.Game
             int uCount = uDiv + 1;
             int vCount = vDiv + 1;
 
-            var points  = new Vector3[uCount * vCount];
+            var points = new Vector3[uCount * vCount];
             var normals = new Vector3[uCount * vCount];
 
             for (int iu = 0; iu <= uDiv; iu++)
@@ -107,7 +118,7 @@ namespace CosmicShore.Game
                     Vector3 pFinal = jittered + Nu * ((n - 0.5f) * 2f * surfaceNoise);
 
                     int idx = Index(iu, iv, vCount);
-                    points[idx]  = pFinal;
+                    points[idx] = pFinal;
                     normals[idx] = Vector3.Cross(Nu, Tu).normalized;
                 }
             }
@@ -143,7 +154,9 @@ namespace CosmicShore.Game
             }
 
             if (verbose)
-                Debug.Log($"[AssembledArchBurstEffectSO] Spawned {total} rods in front of IMPACTEE. hit={hitFound} seed={s} type={lattice}", container);
+                Debug.Log(
+                    $"[AssembledArchBurstEffectSO] Spawned {total} rods in front of IMPACTEE. hit={hitFound} seed={s} type={lattice}",
+                    container);
         }
 
         // ---- Helpers (pure/static) ----
@@ -155,9 +168,9 @@ namespace CosmicShore.Game
             {
                 for (int iv = 0; iv < vN; iv++)
                 {
-                    int i00 = Index(iu,     iv,     vCount);
-                    int i10 = Index(iu + 1, iv,     vCount);
-                    int i01 = Index(iu,     iv + 1, vCount);
+                    int i00 = Index(iu, iv, vCount);
+                    int i10 = Index(iu + 1, iv, vCount);
+                    int i01 = Index(iu, iv + 1, vCount);
                     int i11 = Index(iu + 1, iv + 1, vCount);
 
                     bool diag = ((iu + iv) & 1) == 0;
@@ -168,7 +181,7 @@ namespace CosmicShore.Game
                     AddEdge(edges, i01, i11);
 
                     if (diag) AddEdge(edges, i00, i11);
-                    else      AddEdge(edges, i10, i01);
+                    else AddEdge(edges, i10, i01);
                 }
             }
         }
@@ -179,11 +192,11 @@ namespace CosmicShore.Game
             {
                 for (int iv = 0; iv <= vN; iv++)
                 {
-                    int i   = Index(iu, iv, vCount);
+                    int i = Index(iu, iv, vCount);
                     int iuR = Mathf.Min(uN, iu + 1);
                     int ivU = Mathf.Min(vN, iv + 1);
 
-                    AddEdge(edges, i, Index(iuR, iv,  vCount)); // horizontal
+                    AddEdge(edges, i, Index(iuR, iv, vCount)); // horizontal
 
                     bool odd = (iv & 1) == 1;
                     int iuDiagA = Mathf.Clamp(iu + (odd ? 1 : 0), 0, uN);

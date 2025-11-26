@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace CosmicShore.Core
 {
-    [CreateAssetMenu(fileName = "ThemeManagerDataContainer", menuName = "ScriptableObjects/DataContainers/ThemeManagerDataContainerSO")]
+    [CreateAssetMenu(fileName = "ThemeManagerDataContainer",
+        menuName = "ScriptableObjects/DataContainers/ThemeManagerDataContainerSO")]
     public class ThemeManagerDataContainerSO : ScriptableObject
     {
         public SO_MaterialSet BaseMaterialSet;

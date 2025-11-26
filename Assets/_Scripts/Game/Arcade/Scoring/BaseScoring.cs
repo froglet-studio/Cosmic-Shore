@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         protected float scoreMultiplier;
 
         protected MiniGameDataSO miniGameData;
-        
+
         protected BaseScoring(MiniGameDataSO data, float scoreMultiplier = 145.65f)
         {
             miniGameData = data;
@@ -23,7 +23,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         public abstract float EndTurnScore(string playerName, float currentScore, float turnStartTime);
         */
 
-        
+
         /// <summary>
         /// Calculate the score based on specific scoring logic, and add it to the previous score.
         /// </summary>
@@ -32,9 +32,9 @@ namespace CosmicShore.Game.Arcade.Scoring
         protected bool TryGetRoundStats(string playerName, out IRoundStats roundStats)
         {
             roundStats = null;
-            if (miniGameData.TryGetRoundStats(playerName, out roundStats)) 
+            if (miniGameData.TryGetRoundStats(playerName, out roundStats))
                 return true;
-            
+
             Debug.LogError($"Didn't find RoundStats for player: {playerName}");
             return false;
         }

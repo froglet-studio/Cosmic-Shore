@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 namespace CosmicShore.Utilities
@@ -22,7 +21,5 @@ namespace CosmicShore.Utilities
         {
             _cooldownFinishedTime = Time.unscaledTime + _cooldownTimeLength;
         }
-
-        
     }
 }

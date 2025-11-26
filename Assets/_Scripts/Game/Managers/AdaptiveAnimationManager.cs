@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using CosmicShore.Utilities;
 
 
-
 namespace CosmicShore.Core
 {
     public abstract class AdaptiveAnimationManager<TManager, TAnimator, TAnimationData> : Singleton<TManager>
@@ -98,6 +97,7 @@ namespace CosmicShore.Core
                     {
                         NativeArray<TAnimationData>.Copy(animationData, newArray, animationData.Length);
                     }
+
                     animationData.Dispose();
                 }
 
@@ -133,6 +133,7 @@ namespace CosmicShore.Core
                 avgFrameTime += frameTime;
                 maxFrameTime = Mathf.Max(maxFrameTime, frameTime);
             }
+
             avgFrameTime /= frameTimeHistory.Count;
 
             // More aggressive capacity scaling
@@ -209,6 +210,7 @@ namespace CosmicShore.Core
             {
                 animationData.Dispose();
             }
+
             registeredAnimators.Clear();
             activeAnimators.Clear();
             activeAnimatorsList.Clear();

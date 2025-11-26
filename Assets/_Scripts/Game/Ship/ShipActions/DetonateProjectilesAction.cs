@@ -14,6 +14,5 @@ public class DetonateProjectilesAction : ShipAction
 
     public override void StopAction()
     {
-        
     }
 }

@@ -4,12 +4,12 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "OmniCrystalExplodeByShipEffect", menuName = "ScriptableObjects/Impact Effects/Crystal/OmniCrystalExplodeByShipEffectSO")]
+    [CreateAssetMenu(fileName = "OmniCrystalExplodeByShipEffect",
+        menuName = "ScriptableObjects/Impact Effects/Crystal/OmniCrystalExplodeByShipEffectSO")]
     public class OmniCrystalExplodeByShipEffectSO : ImpactEffectSO<OmniCrystalImpactor, ShipImpactor>
     {
-        [SerializeField]
-        ScriptableEventCrystalStats OnCrystalCollected;
-        
+        [SerializeField] ScriptableEventCrystalStats OnCrystalCollected;
+
         protected override void ExecuteTyped(OmniCrystalImpactor crystalImpactor, ShipImpactor shipImpactee)
         {
             var shipStatus = shipImpactee.Ship.ShipStatus;
@@ -17,7 +17,7 @@ namespace CosmicShore.Game
 
             if (!crystal.CanBeCollected(shipStatus.Team))
                 return;
-            
+
 //             if (allowVesselImpactEffect)
 //             {
 //                 // TODO - Need to create architecture on how to handle AI based on impact effects
@@ -35,8 +35,8 @@ namespace CosmicShore.Game
                 new CrystalStats()
                 {
                     PlayerName = shipStatus.PlayerName,
-                    Element =  crystal.crystalProperties.Element,
-                    Value =  crystal.crystalProperties.crystalValue,
+                    Element = crystal.crystalProperties.Element,
+                    Value = crystal.crystalProperties.crystalValue,
                 }
             );
             /*if (StatsManager.Instance)

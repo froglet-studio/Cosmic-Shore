@@ -28,12 +28,12 @@ public class EnergizeAction : ShipAction
 
     public override void StartAction()
     {
-            foreach (FireGunAction fireaction in fireActions)
-            {
-                if (fireaction.Energy < Energy) fireaction.Energy = Energy;
-                if (fireaction.Speed < Speed) fireaction.Speed = Speed;
-                if (fireaction.ProjectileTime.Value < ProjectileTime) fireaction.ProjectileTime.Value = ProjectileTime;
-            }
+        foreach (FireGunAction fireaction in fireActions)
+        {
+            if (fireaction.Energy < Energy) fireaction.Energy = Energy;
+            if (fireaction.Speed < Speed) fireaction.Speed = Speed;
+            if (fireaction.ProjectileTime.Value < ProjectileTime) fireaction.ProjectileTime.Value = ProjectileTime;
+        }
     }
 
     public override void StopAction()

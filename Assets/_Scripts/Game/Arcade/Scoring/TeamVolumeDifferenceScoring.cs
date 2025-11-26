@@ -9,7 +9,10 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class TeamVolumeDifferenceScoring : BaseScoring
     {
-        public TeamVolumeDifferenceScoring(MiniGameDataSO scoreData, float scoreMultiplier) : base(scoreData, scoreMultiplier) { }
+        public TeamVolumeDifferenceScoring(MiniGameDataSO scoreData, float scoreMultiplier) : base(scoreData,
+            scoreMultiplier)
+        {
+        }
 
         public override void CalculateScore()
         {
@@ -22,10 +25,10 @@ namespace CosmicShore.Game.Arcade.Scoring
             foreach (var ps in miniGameData.RoundStatsList)
             {
                 float rel = Mathf.Max(0f, ps.VolumeRemaining - minVol); // relative to last place
-                ps.Score += rel * scoreMultiplier;                      // accumulate like before
+                ps.Score += rel * scoreMultiplier; // accumulate like before
             }
         }
-        
+
         /*public override void CalculateScore()
         {
             float Vol(Teams t) => miniGameData.TryGetRoundStats(t, out var s) ? s.VolumeRemaining : 0f;
@@ -44,7 +47,7 @@ namespace CosmicShore.Game.Arcade.Scoring
 
             var maxVol = sorted.First().Volume;
             var minVol = sorted.Last().Volume;
-            
+
             var volumeByTeam = teamVolumes.ToDictionary(t => t.Team, t => t.Volume);
 
             foreach (var ps in miniGameData.RoundStatsList)
@@ -79,6 +82,5 @@ namespace CosmicShore.Game.Arcade.Scoring
             StatsManager.Instance.ResetStats();
             return score;
         }*/
-        
     }
 }

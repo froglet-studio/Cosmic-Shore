@@ -9,16 +9,14 @@ namespace CosmicShore.Game.Arcade
     /// <summary>
     /// Single responsibility: own a list of TurnMonitor and expose a clean API.
     /// </summary>
-    public class TurnMonitorController : MonoBehaviour 
+    public class TurnMonitorController : MonoBehaviour
     {
-        [SerializeField]
-        MiniGameDataSO miniGameData;
-        
-        [SerializeField] 
-        List<TurnMonitor> monitors;
+        [SerializeField] MiniGameDataSO miniGameData;
+
+        [SerializeField] List<TurnMonitor> monitors;
 
         bool isRunning;
-        
+
         void OnEnable()
         {
             miniGameData.OnMiniGameStart += StartMonitors;
@@ -47,28 +45,28 @@ namespace CosmicShore.Game.Arcade
         void StartMonitors()
         {
             isRunning = true;
-            
-            foreach(var m in monitors) 
+
+            foreach (var m in monitors)
                 m.StartMonitor();
         }
 
         void PauseMonitors()
         {
             isRunning = false;
-            
-            foreach(var m in monitors) 
+
+            foreach (var m in monitors)
                 m.Pause();
         }
 
         void StopMonitors()
         {
-            foreach(var m in monitors)
+            foreach (var m in monitors)
                 m.StopMonitor();
         }
 
         void ResumeMonitors()
         {
-            foreach(var m in monitors) 
+            foreach (var m in monitors)
                 m.Resume();
         }
 

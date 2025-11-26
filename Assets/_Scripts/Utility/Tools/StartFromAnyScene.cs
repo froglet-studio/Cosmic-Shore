@@ -9,7 +9,6 @@ using UnityEngine;
 /// </summary>
 public class StartFromAnyScene : MonoBehaviour
 {
-
     [SerializeField] List<GameObject> MainMenuSingletonPersistents;
 
     void Awake()
@@ -28,6 +27,4 @@ public class StartFromAnyScene : MonoBehaviour
         yield return new WaitForEndOfFrame();
         // CameraManager.Instance.SetupGamePlayCameras();
     }
-
-
 }

@@ -4,7 +4,9 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class VolumeCreatedScoring : BaseScoring
     {
-        public VolumeCreatedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        public VolumeCreatedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier)
+        {
+        }
 
         public override void CalculateScore()
         {

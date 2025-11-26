@@ -8,7 +8,7 @@ namespace CosmicShore.Game.Arcade
     public class ScoreData
     {
         public List<IRoundStats> RoundStatsList = new ();
-        
+
         public float TurnStartTime;
 
         public IRoundStats Winner;
@@ -16,7 +16,7 @@ namespace CosmicShore.Game.Arcade
         public bool TryGetPlayerScore(string playerName, out IRoundStats roundStats)
         {
             roundStats = null;
-            
+
             foreach (var score in RoundStatsList)
             {
                 if (score.Name != playerName)

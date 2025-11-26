@@ -95,6 +95,7 @@ namespace CosmicShore.DialogueSystem.View
                         StartTypewriter(_instanceRefs.rightDialogueText, line.text,
                             () => _instanceRefs.nextButton.gameObject.SetActive(true));
                     }
+
                     _instanceRefs.OnAnimInComplete = null;
                 };
 
@@ -204,13 +205,14 @@ namespace CosmicShore.DialogueSystem.View
                 _currentInstance = null;
                 _instanceRefs = null;
             }
+
             // Reset flags so next PlaySequence starts panel-in again
             _leftPanelEntered = false;
             _rightPanelEntered = false;
         }
 
         /// <summary>
-        /// Plays the appropriate “pop-in” (exit) animation, then cleans up.
+        /// Plays the appropriate ï¿½pop-inï¿½ (exit) animation, then cleans up.
         /// </summary>
         public void HideWithAnimation(bool wasMonologue, Action onHidden)
         {
@@ -232,7 +234,6 @@ namespace CosmicShore.DialogueSystem.View
         }
 
 
-
         // Plug in your typewriter, or use this stub
         private void StartTypewriter(TMP_Text target, string text, Action onComplete)
         {
@@ -249,6 +250,7 @@ namespace CosmicShore.DialogueSystem.View
                 textDisplay.text += c;
                 yield return new WaitForSecondsRealtime(0.04f);
             }
+
             // Only now, after _all_ characters are drawn:
             onComplete?.Invoke();
         }
@@ -262,7 +264,5 @@ namespace CosmicShore.DialogueSystem.View
         }
 
         public void ResetWaitingForNext() => WaitingForNextPressed = false;
-
     }
-
 }

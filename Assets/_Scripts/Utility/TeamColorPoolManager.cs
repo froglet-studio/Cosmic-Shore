@@ -10,11 +10,11 @@ namespace CosmicShore.Game
         private const string FossilTag = "FossilPrism";
 
 
-        [Header("Event Channels")]
-        [SerializeField] PrismEventChannelWithReturnSO _onFlockSpawnedEventChannel;
+        [Header("Event Channels")] [SerializeField]
+        PrismEventChannelWithReturnSO _onFlockSpawnedEventChannel;
 
-        [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [Header("Data Containers")] [SerializeField]
+        ThemeManagerDataContainerSO _themeManagerData;
 
         private void OnEnable()
         {
@@ -41,9 +41,9 @@ namespace CosmicShore.Game
 
             // Set the material based on the pool's tag
             var r = obj.GetComponent<Renderer>();
-            if (!r) 
+            if (!r)
                 return obj;
-            
+
             Teams team = GetTeamFromTag(prefab.tag);
             Material teamMaterial = new Material(_themeManagerData.GetTeamExplodingBlockMaterial(team));
             r.material = teamMaterial;
@@ -76,7 +76,7 @@ namespace CosmicShore.Game
                 Teams.Gold => $"{FossilTag}_Gold",
                 Teams.Blue => $"{FossilTag}_Blue",
                 Teams.Jade => $"{FossilTag}_Jade",
-                _ => $"{FossilTag}_Gold",                   // This should never happen
+                _ => $"{FossilTag}_Gold", // This should never happen
             };
         }
     }

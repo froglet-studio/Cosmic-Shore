@@ -113,8 +113,8 @@ namespace CosmicShore.Utilities
             {
                 profilesToSave += profile + ",";
             }
+
             ClientPrefs.SetAvailableProfiles(profilesToSave);
         }
-
     }
 }

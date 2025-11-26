@@ -12,7 +12,7 @@ namespace CosmicShore.Utility.Reports
         public Button returnButton;
         public TMP_InputField subjectInputField;
         public TMP_InputField contentsInputField;
-        [SerializeField] string recipient = "support@frogletgames.zendesk.com";  //for support reporting though Zendesk
+        [SerializeField] string recipient = "support@frogletgames.zendesk.com"; //for support reporting though Zendesk
 
         private void LateUpdate()
         {
@@ -24,6 +24,7 @@ namespace CosmicShore.Utility.Reports
             bugReportPopUpWindow.SetActive(true);
             sendButton.enabled = false;
         }
+
         public void OnButtonPushedDisableBugReportPopUp()
         {
             bugReportPopUpWindow.SetActive(false);
@@ -41,11 +42,12 @@ namespace CosmicShore.Utility.Reports
 
         public void WaitOnInputFields()
         {
-            if(subjectInputField.text == "" || contentsInputField.text == "")
+            if (subjectInputField.text == "" || contentsInputField.text == "")
             {
                 sendButton.enabled = false;
                 return;
             }
+
             sendButton.enabled = true;
         }
     }

@@ -54,9 +54,9 @@ public class FindAssetByGUID : EditorWindow
         // Info section
         GUILayout.Space(10);
         EditorGUILayout.HelpBox(
-            "• GUID: Identifies asset files uniquely across projects\n" +
-            "• File ID: Identifies objects within a scene or asset file\n" +
-            "• Sub-assets: Components, materials in prefabs, etc.",
+            "ï¿½ GUID: Identifies asset files uniquely across projects\n" +
+            "ï¿½ File ID: Identifies objects within a scene or asset file\n" +
+            "ï¿½ Sub-assets: Components, materials in prefabs, etc.",
             MessageType.Info);
     }
 

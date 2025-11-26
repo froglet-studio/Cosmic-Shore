@@ -5,7 +5,7 @@ namespace CosmicShore.Game.Arcade
     public class ResourceAccumulationTurnMonitor : TurnMonitor
     {
         [SerializeField] float percent;
-        
+
         // Get PlayerData from MiniGameData
         // [SerializeField] MiniGame Game;
 
@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Arcade
         public override bool CheckForEndOfTurn()
         {
             // return Game.ActivePlayer.Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].CurrentAmount / Game.ActivePlayer.Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].MaxAmount >= percent / 100;
-            return true;    // TEMP
+            return true; // TEMP
         }
     }
 }

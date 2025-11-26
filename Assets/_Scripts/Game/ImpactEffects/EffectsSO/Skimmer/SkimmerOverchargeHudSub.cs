@@ -1,18 +1,17 @@
 ﻿using UnityEngine;
 using CosmicShore.Game;
 
-[CreateAssetMenu(fileName="SkimmerOverchargeCountHudSub", menuName="HUD/Subs/Skimmer Overcharge Count")]
+[CreateAssetMenu(fileName = "SkimmerOverchargeCountHudSub", menuName = "HUD/Subs/Skimmer Overcharge Count")]
 public class SkimmerOverchargeHudSub : HudSubscriptionSO
 {
-    [Header("Channel")]
-    [SerializeField] private OverchargeEventSO channel;
+    [Header("Channel")] [SerializeField] private OverchargeEventSO channel;
 
-    [Header("HUD Text Key (ShipHUDEffects → Texts)")]
-    [SerializeField] private string textKey = "SkimmerOverchargeText";
+    [Header("HUD Text Key (ShipHUDEffects → Texts)")] [SerializeField]
+    private string textKey = "SkimmerOverchargeText";
 
     // Optional: also mirror a bar (normalized)
     [SerializeField] private bool driveMeter = false;
-    [SerializeField] private int  meterIndex = 0;
+    [SerializeField] private int meterIndex = 0;
 
     private System.Action<IShipStatus, int, int> _handler;
 

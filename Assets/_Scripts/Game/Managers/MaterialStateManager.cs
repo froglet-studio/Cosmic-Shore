@@ -7,10 +7,12 @@ using System.Linq;
 
 namespace CosmicShore.Core
 {
-    public class MaterialStateManager : AdaptiveAnimationManager<MaterialStateManager, MaterialPropertyAnimator, MaterialAnimationData>
+    public class MaterialStateManager : AdaptiveAnimationManager<MaterialStateManager, MaterialPropertyAnimator,
+        MaterialAnimationData>
     {
-        private readonly List<(MaterialPropertyAnimator animator, float4 brightColor, float4 darkColor, float3 spread)> propertyUpdateQueue =
-            new List<(MaterialPropertyAnimator, float4, float4, float3)>(32);
+        private readonly List<(MaterialPropertyAnimator animator, float4 brightColor, float4 darkColor, float3 spread)>
+            propertyUpdateQueue =
+                new List<(MaterialPropertyAnimator, float4, float4, float3)>(32);
 
         private MaterialPropertyBlock sharedPropertyBlock;
 
@@ -45,7 +47,8 @@ namespace CosmicShore.Core
             int animatingCount = 0;
             foreach (var animator in activeAnimatorsList)
             {
-                if (animator == null || !animator.enabled || !animator.IsAnimating || animator.MeshRenderer == null) continue;
+                if (animator == null || !animator.enabled || !animator.IsAnimating ||
+                    animator.MeshRenderer == null) continue;
 
                 animationData[animatingCount] = new MaterialAnimationData
                 {
@@ -112,12 +115,12 @@ namespace CosmicShore.Core
                             {
                                 Debug.LogError($"Error in animation completion callback: {e.Message}");
                             }
+
                             animator.OnAnimationComplete = null;
                         }
                     }
                 }
             }
-
 
 
             // Validate all remaining active animators are actually animating

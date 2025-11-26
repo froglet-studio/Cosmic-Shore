@@ -6,7 +6,9 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class HostileVolumeDestroyedScoring : BaseScoring
     {
-        public HostileVolumeDestroyedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        public HostileVolumeDestroyedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier)
+        {
+        }
 
         public override void CalculateScore()
         {
@@ -17,11 +19,11 @@ namespace CosmicShore.Game.Arcade.Scoring
                     Debug.LogError($"Didn't find RoundStats for player: {playerScore.Name}");
                     return;
                 }
-                
+
                 playerScore.Score += roundStats.HostileVolumeDestroyed * scoreMultiplier;
             }
         }
-        
+
         /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {
             if (StatsManager.Instance.PlayerStats.TryGetValue(playerName, out var roundStats))

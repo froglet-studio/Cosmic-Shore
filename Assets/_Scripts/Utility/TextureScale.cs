@@ -9,6 +9,7 @@ public class TextureScale
     {
         public int start;
         public int end;
+
         public ThreadData(int s, int e)
         {
             start = s;
@@ -49,6 +50,7 @@ public class TextureScale
             ratioX = ((float)tex.width) / newWidth;
             ratioY = ((float)tex.height) / newHeight;
         }
+
         w = tex.width;
         w2 = newWidth;
         var cores = Mathf.Min(SystemInfo.processorCount, newHeight);
@@ -59,6 +61,7 @@ public class TextureScale
         {
             mutex = new Mutex(false);
         }
+
         if (cores > 1)
         {
             int i = 0;
@@ -66,10 +69,13 @@ public class TextureScale
             for (i = 0; i < cores - 1; i++)
             {
                 threadData = new ThreadData(slice * i, slice * (i + 1));
-                ParameterizedThreadStart ts = useBilinear ? new ParameterizedThreadStart(BilinearScale) : new ParameterizedThreadStart(PointScale);
+                ParameterizedThreadStart ts = useBilinear
+                    ? new ParameterizedThreadStart(BilinearScale)
+                    : new ParameterizedThreadStart(PointScale);
                 Thread thread = new Thread(ts);
                 thread.Start(threadData);
             }
+
             threadData = new ThreadData(slice * i, newHeight);
             if (useBilinear)
             {
@@ -79,6 +85,7 @@ public class TextureScale
             {
                 PointScale(threadData);
             }
+
             while (finishCount < cores)
             {
                 Thread.Sleep(1);
@@ -119,9 +126,10 @@ public class TextureScale
             {
                 int xFloor = (int)Mathf.Floor(x * ratioX);
                 var xLerp = x * ratioX - xFloor;
-                newColors[yw + x] = ColorLerpUnclamped(ColorLerpUnclamped(texColors[y1 + xFloor], texColors[y1 + xFloor + 1], xLerp),
-                                                       ColorLerpUnclamped(texColors[y2 + xFloor], texColors[y2 + xFloor + 1], xLerp),
-                                                       y * ratioY - yFloor);
+                newColors[yw + x] = ColorLerpUnclamped(
+                    ColorLerpUnclamped(texColors[y1 + xFloor], texColors[y1 + xFloor + 1], xLerp),
+                    ColorLerpUnclamped(texColors[y2 + xFloor], texColors[y2 + xFloor + 1], xLerp),
+                    y * ratioY - yFloor);
             }
         }
 
@@ -151,8 +159,8 @@ public class TextureScale
     private static Color ColorLerpUnclamped(Color c1, Color c2, float value)
     {
         return new Color(c1.r + (c2.r - c1.r) * value,
-                          c1.g + (c2.g - c1.g) * value,
-                          c1.b + (c2.b - c1.b) * value,
-                          c1.a + (c2.a - c1.a) * value);
+            c1.g + (c2.g - c1.g) * value,
+            c1.b + (c2.b - c1.b) * value,
+            c1.a + (c2.a - c1.a) * value);
     }
 }

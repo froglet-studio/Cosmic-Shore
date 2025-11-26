@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public class ToggleProjectileActionWrapper :ShipAction
+    public class ToggleProjectileActionWrapper : ShipAction
     {
         [SerializeField] FullAutoAction wrappedAction;
         [SerializeField] float projectileTime1 = 0.3f;
@@ -17,7 +17,6 @@ namespace CosmicShore
 
         public override void StopAction()
         {
-
         }
     }
 }

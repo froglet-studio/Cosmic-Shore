@@ -5,20 +5,22 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "SkimmerOverchargeCollectPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer/SkimmerOverchargeCollectPrismEffectSO")]
+    [CreateAssetMenu(fileName = "SkimmerOverchargeCollectPrismEffect",
+        menuName = "ScriptableObjects/Impact Effects/Skimmer/SkimmerOverchargeCollectPrismEffectSO")]
     public class SkimmerOverchargeCollectPrismEffectSO : ImpactEffectSO<SkimmerImpactor, PrismImpactor>
     {
-        [Header("Overcharge Settings")]
-        [SerializeField] private int   maxBlockHits     = 30;
+        [Header("Overcharge Settings")] [SerializeField]
+        private int maxBlockHits = 30;
+
         [SerializeField] private float cooldownDuration = 5f;
-        [SerializeField] private bool  verbose;
+        [SerializeField] private bool verbose;
         [SerializeField] private Material overchargedMaterial;
 
         public int MaxBlockHits => maxBlockHits;
-        
-        public event Action<SkimmerImpactor,int,int> OnCountChanged;   
-        public event Action<SkimmerImpactor,float>   OnCooldownStarted; 
-        public event Action<SkimmerImpactor>         OnOvercharge;     
+
+        public event Action<SkimmerImpactor, int, int> OnCountChanged;
+        public event Action<SkimmerImpactor, float> OnCooldownStarted;
+        public event Action<SkimmerImpactor> OnOvercharge;
 
         private static readonly Dictionary<SkimmerImpactor, HashSet<PrismImpactor>> hitsBySkimmer = new();
         private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers = new();
@@ -48,7 +50,7 @@ namespace CosmicShore.Game
             if (rend && overchargedMaterial) rend.material = overchargedMaterial;
 
             var count = hitSet.Count;
-            OnCountChanged?.Invoke(impactor, count, maxBlockHits);   // <— notify HUD
+            OnCountChanged?.Invoke(impactor, count, maxBlockHits); // <— notify HUD
 
             if (count < maxBlockHits) return;
 
@@ -68,4 +70,3 @@ namespace CosmicShore.Game
         }
     }
 }
-

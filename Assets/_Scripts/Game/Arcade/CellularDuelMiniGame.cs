@@ -1,6 +1,6 @@
 namespace CosmicShore.Game.Arcade
 {
-    public class CellularDuelMiniGame : R_MiniGameBase 
+    public class CellularDuelMiniGame : R_MiniGameBase
     {
     }
 }

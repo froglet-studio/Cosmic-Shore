@@ -58,9 +58,9 @@ namespace CosmicShore.Game.Arcade
         virtual protected void CreateRingBlock(int i, Trail trail)
         {
             var position = transform.position +
-                                 radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
-                                 radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up +
-                                 radius * transform.forward;
+                           radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
+                           radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up +
+                           radius * transform.forward;
             CreateBlock(position, position, trail);
         }
 
@@ -70,7 +70,8 @@ namespace CosmicShore.Game.Arcade
             Block.ChangeTeam(ActivePlayer.Team);
             Block.ownerID = ActivePlayer.PlayerUUID;
             Block.PlayerName = ActivePlayer.Name;
-            Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
+            Block.transform.SetPositionAndRotation(position,
+                Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
             Block.ownerID = Block.ownerID + position;
             Block.TargetScale = blockScale;
             Block.Trail = trail;

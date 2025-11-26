@@ -1,7 +1,20 @@
 using UnityEngine;
 
-public enum RewardType { Item, Currency, XP, Unlock }
-public enum RewardRarity { Common, Rare, Epic, Legendary }
+public enum RewardType
+{
+    Item,
+    Currency,
+    XP,
+    Unlock
+}
+
+public enum RewardRarity
+{
+    Common,
+    Rare,
+    Epic,
+    Legendary
+}
 
 [System.Serializable]
 public class RewardData

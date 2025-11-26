@@ -29,7 +29,8 @@ namespace CosmicShore.Game.Arcade
 
             TrailSpawner.NukeTheTrails();
             Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, ActivePlayer.Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].MaxAmount);
+            ActivePlayer.Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex,
+                ActivePlayer.Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].MaxAmount);
         }
     }
 }

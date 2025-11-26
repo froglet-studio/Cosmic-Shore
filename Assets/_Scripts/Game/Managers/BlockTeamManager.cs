@@ -7,8 +7,8 @@ namespace CosmicShore.Core
 {
     public class BlockTeamManager : MonoBehaviour
     {
-        [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [Header("Data Containers")] [SerializeField]
+        ThemeManagerDataContainerSO _themeManagerData;
 
         [SerializeField] private ScriptableEventPrismStats onPrismStolen;
 
@@ -70,10 +70,11 @@ namespace CosmicShore.Core
 
         public void Steal(string playerName, Teams newTeam, bool superSteal)
         {
-            if (Team == newTeam) 
+            if (Team == newTeam)
                 return;
-            
-            if (!superSteal && (trailBlock.TrailBlockProperties.IsShielded || trailBlock.TrailBlockProperties.IsSuperShielded))
+
+            if (!superSteal && (trailBlock.TrailBlockProperties.IsShielded ||
+                                trailBlock.TrailBlockProperties.IsSuperShielded))
             {
                 trailBlock.DeactivateShields();
                 return;
@@ -82,7 +83,7 @@ namespace CosmicShore.Core
             playerName ??= "No name";
 
             // TODO - Raise events about steal.
-                
+
             onPrismStolen.Raise(
                 new PrismStats
                 {
@@ -125,7 +126,7 @@ namespace CosmicShore.Core
                 materialAnimator.UpdateMaterial(
                     _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(newTeam),
                     _themeManagerData.GetTeamSuperShieldedBlockMaterial(newTeam)
-                );  
+                );
             }
             else
             {

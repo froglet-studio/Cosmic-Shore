@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     /// Ties any impactor → Prism by stealing with the impactor's identity.
-    public abstract class StealPrismEffectBaseSO<TImpactor> 
+    public abstract class StealPrismEffectBaseSO<TImpactor>
         : ImpactEffectSO<TImpactor, PrismImpactor>
         where TImpactor : class, IImpactor
     {

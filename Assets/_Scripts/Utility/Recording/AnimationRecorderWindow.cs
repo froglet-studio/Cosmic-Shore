@@ -9,6 +9,7 @@ using UnityEngine.Timeline;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor;
+using static UnityEditor.EditorGUILayout;
 
 namespace CosmicShore.Utility
 {
@@ -17,7 +18,7 @@ namespace CosmicShore.Utility
     /// animation clips in a given timeline.
     /// </summary>
     [InitializeOnLoadAttribute]
-    public class AnimationRecorder : EditorWindow
+    public class AnimationRecorderWindow : EditorWindow
     {
         /// <summary>
         /// The name of the serialized property for the track name in the data holder
@@ -29,7 +30,7 @@ namespace CosmicShore.Utility
         /// The name of the serialized property for the salt currently in use by
         /// the utility. Can be changed by this code but not by the user.
         /// </summary>
-        private const string SaltField= "salt";
+        private const string SaltField = "salt";
 
         /// <summary>
         /// The name of the serialized property for the playable director
@@ -54,7 +55,7 @@ namespace CosmicShore.Utility
         /// The name of the serialized property that refrences the timeline asset,
         /// as stored in the data holder object, for use by Unity's property finder.
         /// </summary>
-        private const string TimelineAsset = "TimelineAsset";
+        private const string TimelineAsset = "timelineAsset";
 
         /// <summary>
         /// The name of the serialized property for the path of the parent of the folder where the assets used by this
@@ -74,34 +75,21 @@ namespace CosmicShore.Utility
         /// </summary>
         private static bool _registeredPlayCallbacks;
 
-        /// <summary>
-        /// A reference to the object that contains the data holder for the present session.
-        /// </summary>
-        private DataHolder holder;
+        private static GameObject _recordingSystemGameObject;
 
         /// <summary>
-        /// A property that will either return a refrence to a holder, or do its best to instantiate
+        /// A property that will either return a reference to a holder, or do its best to instantiate
         /// one and then return it.
         /// </summary>
         /// <value>holder</value>
-        private DataHolder Holder
-        {
-            get
-            {
-                if (holder != null)
-                {
-                    return holder;
-                }
-                return holder;
-            }
-        }
+        private RecordingDataHolder Holder { get; set; }
 
         /// <summary>
         /// The name of the game object that will have the data holder as its component.
         /// This is used to find the object in question. That name should only be held
         /// by the object that contains the data holder.
         /// </summary>
-        private static readonly string AnimationRecorderName = "Animation Recorder";
+        private const string AnimationRecorderName = "Animation Recorder";
 
         /// <summary>
         /// A reference to the data holder that unity can use to handle serialized properties.
@@ -132,6 +120,13 @@ namespace CosmicShore.Utility
         private int recordingNumber;
 
         /// <summary>
+        /// The salt used to keep each recording session distinct.
+        ///
+        /// <seealso href="https://en.wikipedia.org/wiki/Salt_(cryptography)">Definition of salt on wikipedia</seealso>
+        /// </summary>
+        private string salt;
+
+        /// <summary>
         /// A collection of every recorder, each one associated with a new game object to track.
         /// </summary>
         private static readonly List<GameObjectRecorder> Recorders = new();
@@ -148,13 +143,9 @@ namespace CosmicShore.Utility
         private const string NumberFormat = "D4";
 
         /// <summary>
-        /// The salt used to keep each recording session distinct.
-        ///
-        /// <seealso href="https://en.wikipedia.org/wiki/Salt_(cryptography)">Definition of salt on wikipedia</seealso>
+        /// Where the timeline object should be stored, unless overridden.
         /// </summary>
-        private string salt;
-
-        private readonly string defaultTimelinePath = "Assets/_Scripts/Utility/Recording/DefaultTimeline.playable";
+        private const string DefaultTimelinePath = "Assets/_Scripts/Utility/Recording/DefaultTimeline.playable";
 
         /// <summary>
         /// Creates the menu item "Window/Animation Recorder" and sets it to open the Animation Recorder
@@ -163,7 +154,7 @@ namespace CosmicShore.Utility
         [MenuItem("Window/Animation Recorder")]
         public static void ShowWindow()
         {
-            EditorWindow.GetWindow(typeof(AnimationRecorder), false, AnimationRecorderName);
+            EditorWindow.GetWindow(typeof(AnimationRecorderWindow), false, AnimationRecorderName);
         }
 
         /// <summary>
@@ -172,13 +163,16 @@ namespace CosmicShore.Utility
         /// </summary>
         public void OnEnable()
         {
+            _recordingSystemGameObject = new GameObject("Recording system");
+            Holder = _recordingSystemGameObject.AddComponent<RecordingDataHolder>();
             _serializedObject ??= new SerializedObject(Holder);
             if (_registeredPlayCallbacks)
             {
                 return;
             }
+
             EditorApplication.playModeStateChanged += OnPlaymodeChangeState;
-                _registeredPlayCallbacks = true;
+            _registeredPlayCallbacks = true;
         }
 
         /// <summary>
@@ -186,46 +180,80 @@ namespace CosmicShore.Utility
         /// </summary>
         public void OnGUI()
         {
-            EditorGUILayout.PropertyField(_serializedObject.FindProperty(Director), new GUIContent("Playable Director Container"));
-            GUI.enabled = (_serializedObject.FindProperty(Director).objectReferenceValue != null) && !_isRecording;
-            GUILayout.BeginVertical();
-            EditorGUILayout.PropertyField(_serializedObject.FindProperty(ObjectsToTrack), new GUIContent("Objects to track"));
-            EditorGUILayout.PropertyField(_serializedObject.FindProperty(RecordingDelay), new GUIContent("Delay between snapshots"));
-            EditorGUILayout.PropertyField(_serializedObject.FindProperty(TrackName), new GUIContent("Name of recording"));
-            EditorGUILayout.PropertyField(_serializedObject.FindProperty(TimelineAsset), new GUIContent("Asset for this timeline"));
-            EditorGUILayout.PropertyField(_serializedObject.FindProperty(AssetsParentPath), new GUIContent("Parent of data directory"));
-            EditorGUILayout.PropertyField(_serializedObject.FindProperty(AssetsDirectoryName), new GUIContent("Name of data directory"));
-            GUI.enabled = false;
-            EditorGUILayout.PropertyField(_serializedObject.FindProperty(SaltField), new GUIContent("Current salt"));
-            _serializedObject.ApplyModifiedProperties();
-            GUILayout.EndVertical();
-
-            GUILayout.Space(LayoutVerticalGap);
-            if (!ReadyToRecord())
+            try
             {
-                GUILayout.Label("Not ready: no setting can be 0 or null");
-
+                _OnGUI();
             }
-            if (!Application.isPlaying)
+            catch (NullReferenceException e)
             {
-                GUILayout.Label("Not available: recording is only possible in Play mode.");
+                Debug.LogWarning($"Something is null that shouldn't be:\n{e.StackTrace}");
             }
-            GUI.enabled = ReadyToRecord() && !_isRecording && EditorApplication.isPlaying;
-            var recordingDelay = _serializedObject.FindProperty("recordingDelay").floatValue;
+        }
+
+        /// <summary>
+        /// Called every frame for the utility's window. Displays  the interface.
+        /// </summary>
+        private void _OnGUI()
+        {
+            GUILayout.BeginVertical("box");
+            try 
+            {
+                PropertyField(_serializedObject.FindProperty(Director),
+                    new GUIContent("Playable Director Container"));
+                GUI.enabled = (_serializedObject.FindProperty(Director).objectReferenceValue != null) && !_isRecording;
+                PropertyField(_serializedObject.FindProperty(ObjectsToTrack),
+                    new GUIContent("Objects to track"));
+                PropertyField(_serializedObject.FindProperty(RecordingDelay),
+                    new GUIContent("Delay between snapshots"));
+                PropertyField(_serializedObject.FindProperty(TrackName),
+                    new GUIContent("Name of recording"));
+                PropertyField(_serializedObject.FindProperty(TimelineAsset),
+                    new GUIContent("Asset for this timeline"));
+                PropertyField(_serializedObject.FindProperty(AssetsParentPath),
+                    new GUIContent("Parent of data directory"));
+                PropertyField(_serializedObject.FindProperty(AssetsDirectoryName),
+                    new GUIContent("Name of data directory"));
+                GUI.enabled = false;
+                PropertyField(_serializedObject.FindProperty(SaltField), new GUIContent("Current salt"));
+                _serializedObject.ApplyModifiedProperties();
+
+                Space(LayoutVerticalGap);
+                if (!ReadyToRecord())
+                {
+                    GUILayout.Label("Not ready: no setting can be 0 or null");
+                }
+
+                if (!Application.isPlaying)
+                {
+                    GUILayout.Label("Not available: recording is only possible in Play mode.");
+                }
+
+                GUI.enabled = ReadyToRecord() && !_isRecording && EditorApplication.isPlaying;
+                var recordingDelay = _serializedObject.FindProperty("recordingDelay").floatValue;
+                GUI.enabled = true;
+        }
+        finally
+
+        {
+                GUILayout.EndVertical();
+            }
             if (GUILayout.Button("Start Recording", EditorStyles.miniButton))
             {
                 _isRecording = true;
                 SetupRecording();
+                var recordingDelay = _serializedObject.FindProperty("recordingDelay").floatValue;
                 _timer = recordingDelay;
                 animationStart = Time.time;
             }
-            GUILayout.Space(LayoutVerticalGap * 2);
+
+            Space(LayoutVerticalGap * 2);
             GUI.enabled = _isRecording;
             if (GUILayout.Button("Stop Recording", EditorStyles.miniButton))
             {
                 _isRecording = false;
                 EndRecording();
             }
+
             // Stop recording when play stops.
             _isRecording = _isRecording && Application.isPlaying;
         }
@@ -236,17 +264,19 @@ namespace CosmicShore.Utility
         /// </summary>
         public void Update()
         {
-            float recordingDelay = 1;
+            var recordingDelay = _serializedObject.FindProperty("recordingDelay").floatValue;
             if (!_isRecording)
             {
                 return;
             }
+
             if (_timer <= 0)
             {
                 TakeSnapshot();
                 _timer = recordingDelay;
                 return;
             }
+
             _timer -= Time.deltaTime;
         }
 
@@ -256,12 +286,13 @@ namespace CosmicShore.Utility
         private void SetupRecording()
         {
             Recorders.Clear();
-            IEnumerator objectsToTrackEnumerator = _serializedObject.FindProperty(ObjectsToTrack).GetEnumerator();
+            var objectsToTrackEnumerator = _serializedObject.FindProperty(ObjectsToTrack).GetEnumerator();
+            using var objectsToTrackEnumerator1 = objectsToTrackEnumerator as IDisposable;
             while (objectsToTrackEnumerator.MoveNext())
             {
-                SerializedProperty serializedObjectToTrack = (SerializedProperty) objectsToTrackEnumerator.Current;
-                Animator currentAnimator = serializedObjectToTrack.objectReferenceValue as Animator;
-                GameObject currentGameObject = currentAnimator.gameObject;
+                var serializedObjectToTrack = (SerializedProperty)objectsToTrackEnumerator.Current;
+                var currentAnimator = serializedObjectToTrack?.objectReferenceValue as Animator;
+                var currentGameObject = currentAnimator?.gameObject;
                 GameObjectRecorder gameObjectRecorder = new(currentGameObject);
                 gameObjectRecorder.BindComponentsOfType<Transform>(currentGameObject, true);
                 Recorders.Add(gameObjectRecorder);
@@ -278,7 +309,7 @@ namespace CosmicShore.Utility
             while (recordersEnumerator.MoveNext())
             {
                 GameObjectRecorder currentRecorder = recordersEnumerator.Current;
-                currentRecorder.TakeSnapshot(recordingDelay);
+                currentRecorder?.TakeSnapshot(recordingDelay);
             }
         }
 
@@ -286,7 +317,7 @@ namespace CosmicShore.Utility
         /// Called when the user stops the animation. Saves all the data necessary to add the new entries
         /// to the timeline.
         /// </summary>
-        private void EndRecording()
+        private static void EndRecording()
         {
             var currentAssetsParent = _serializedObject.FindProperty(AssetsParentPath).stringValue;
             var currentAssetsFolderName = _serializedObject.FindProperty(AssetsDirectoryName).stringValue;
@@ -295,25 +326,27 @@ namespace CosmicShore.Utility
             {
                 AssetDatabase.CreateFolder(currentAssetsParent, currentAssetsFolderName);
             }
+
             IEnumerator<GameObjectRecorder> recordersEnumerator = Recorders.GetEnumerator();
             while (recordersEnumerator.MoveNext())
             {
-                GameObjectRecorder currentRecorder = recordersEnumerator.Current;
-                GameObject currentGameObject = currentRecorder?.root;
+                var currentRecorder = recordersEnumerator.Current;
+                var currentGameObject = currentRecorder?.root;
                 if (!currentRecorder || !currentGameObject)
                 {
                     Debug.LogWarning("Something in the recording is null that shouldn't be.");
                     return;
                 }
+
                 AnimationClip animationClip = new();
                 currentRecorder.SaveToClip(animationClip);
                 AssetDatabase.CreateAsset(animationClip, Path.Combine(assetsFolderFullPath,
                     $"{currentGameObject.name}.asset"));
             }
         }
-        
+
         /// <summary>
-        /// The full path of the current animaiton asset.
+        /// The full path of the current animation asset.
         ///
         /// A "new recording" happens when the user stops recording and starts again within one play session.
         /// </summary>
@@ -335,8 +368,9 @@ namespace CosmicShore.Utility
         /// </summary>
         private void BuildTimelineData()
         {
-            PlayableDirector director = _serializedObject.FindProperty(Director).objectReferenceValue as PlayableDirector;
-            TimelineAsset currentTimelineAsset = _serializedObject.FindProperty(TimelineAsset).objectReferenceValue as TimelineAsset;
+            var director = _serializedObject.FindProperty(Director).objectReferenceValue as PlayableDirector;
+            var currentTimelineAsset = _serializedObject.FindProperty(TimelineAsset).objectReferenceValue
+                as TimelineAsset;
             var assetsParentPath = _serializedObject.FindProperty(AssetsParentPath).stringValue;
             var assetsDirectoryName = _serializedObject.FindProperty(AssetsDirectoryName).stringValue;
             for (var currentRecordingNumber = 0; currentRecordingNumber < recordingNumber; currentRecordingNumber++)
@@ -352,9 +386,11 @@ namespace CosmicShore.Utility
                         Debug.LogWarning("Something in the recording is null that shouldn't be.");
                         return;
                     }
+
                     var currentAnimator = currentGameObject.GetComponent<Animator>();
-                    var animationTrack = currentTimelineAsset?.CreateTrack<AnimationTrack>($"{currentGameObject.name} #{crn}");
-                    string newAssetPath = GameObjectAssetPath(currentGameObject, currentRecordingNumber);
+                    var animationTrack =
+                        currentTimelineAsset?.CreateTrack<AnimationTrack>($"{currentGameObject.name} #{crn}");
+                    var newAssetPath = GameObjectAssetPath(currentGameObject, currentRecordingNumber);
                     Debug.Log($"new asset path: {newAssetPath}");
                     var animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(newAssetPath);
                     animationTrack?.CreateClip(animationClip);
@@ -363,6 +399,7 @@ namespace CosmicShore.Utility
                         Debug.LogWarning("Something in the recording is null that shouldn't be.");
                         return;
                     }
+
                     director.SetGenericBinding(animationTrack, currentAnimator);
                     AssetDatabase.SaveAssets();
                 }
@@ -384,7 +421,7 @@ namespace CosmicShore.Utility
                 .objectReferenceValue as TimelineAsset;
             var recordingDelay = _serializedObject.FindProperty(RecordingDelay).floatValue;
             return
-                !animators.MoveNext()  &&
+                !animators.MoveNext() &&
                 trackName != "" &&
                 recordingDelay > 0 &&
                 assetsParentPath != "" &&
@@ -402,19 +439,23 @@ namespace CosmicShore.Utility
             {
                 BuildTimelineData();
             }
+
             if (state == PlayModeStateChange.EnteredPlayMode)
             {
                 recordingNumber = 0;
                 var director = _serializedObject.FindProperty(Director).objectReferenceValue as PlayableDirector;
                 var currentGameObject = director?.gameObject;
-                var sceneData = currentGameObject?.GetComponent<DataHolder>();
+                var sceneData = currentGameObject?.GetComponent<RecordingDataHolder>();
                 if (!sceneData)
                 {
                     Debug.LogWarning("Something in the recording is null that shouldn't be with the saving of data.");
                     return;
                 }
-                sceneData.salt = GenerateSalt();
+
+                sceneData.salt = GenerateSalt(); // Saved 
+                salt = sceneData.salt;
             }
+
             if (state == PlayModeStateChange.ExitingPlayMode && _isRecording)
             {
                 EndRecording();
@@ -425,7 +466,6 @@ namespace CosmicShore.Utility
         {
             var salt = new System.Random().Next();
             return Convert.ToBase64String(BitConverter.GetBytes(salt)).TrimEnd('=');
-
         }
 
         private void SetupRecordingSystem()
@@ -433,11 +473,13 @@ namespace CosmicShore.Utility
             var gameObject = GameObject.Find(AnimationRecorderName);
             if (gameObject == null)
             {
-                Debug.LogWarning($"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
+                Debug.LogWarning(
+                    $"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
                 gameObject = new GameObject(AnimationRecorderName);
             }
-            var sceneData = gameObject.GetComponent<DataHolder>();
-            holder = sceneData;
+
+            var sceneData = gameObject.GetComponent<RecordingDataHolder>();
+            Holder = sceneData;
             if (gameObject.GetComponent<PlayableDirector>())
             {
                 return;
@@ -448,10 +490,10 @@ namespace CosmicShore.Utility
             sceneData.salt = newSalt;
             var newAssetPath = Path.Combine(sceneData.assetsParentPath, AssetsDirectoryName,
                 $"NewTimeline.{newSalt}.playable");
-            AssetDatabase.CopyAsset(defaultTimelinePath, newAssetPath);
+            AssetDatabase.CopyAsset(DefaultTimelinePath, newAssetPath);
             var newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
-            holder.director = director;
-            holder.timelineAsset = newTimelineAsset;
+            Holder.director = director;
+            Holder.timelineAsset = newTimelineAsset;
             director.playableAsset = newTimelineAsset;
         }
     }

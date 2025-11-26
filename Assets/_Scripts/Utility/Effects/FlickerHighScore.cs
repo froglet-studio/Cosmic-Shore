@@ -4,21 +4,14 @@ using UnityEngine.UI;
 
 public class FlickerHighScore : MonoBehaviour
 {
-    [SerializeField]
-    Image highScoreImageFull;
-    [SerializeField]
-    Image highScoreImageOne;
-    [SerializeField]
-    Image highScoreImageTwo;
-    [SerializeField]
-    Image highScoreImageThree;
+    [SerializeField] Image highScoreImageFull;
+    [SerializeField] Image highScoreImageOne;
+    [SerializeField] Image highScoreImageTwo;
+    [SerializeField] Image highScoreImageThree;
 
-    [SerializeField]
-    private float fullWaitTime = 2.9f;
-    [SerializeField]
-    private float minWaitTime = 0.01f;
-    [SerializeField]
-    private float maxWaitTime = 0.25f;
+    [SerializeField] private float fullWaitTime = 2.9f;
+    [SerializeField] private float minWaitTime = 0.01f;
+    [SerializeField] private float maxWaitTime = 0.25f;
 
     // Start is called before the first frame update
     void Start()
@@ -31,8 +24,7 @@ public class FlickerHighScore : MonoBehaviour
     {
         while (gameObject.activeInHierarchy)
         {
-            
-            int randNum = Random.Range(0,4);
+            int randNum = Random.Range(0, 4);
 
             switch (randNum)
             {
@@ -64,7 +56,6 @@ public class FlickerHighScore : MonoBehaviour
                     highScoreImageThree.enabled = true;
                     yield return new WaitForSeconds(minWaitTime);
                     break;
-                
             }
         }
     }

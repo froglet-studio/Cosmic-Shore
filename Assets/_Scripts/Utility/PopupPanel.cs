@@ -10,20 +10,16 @@ namespace CosmicShore.Utilities
     /// </summary>
     public class PopupPanel : MonoBehaviour
     {
-        [SerializeField]
-        private TextMeshProUGUI _titleText;
+        [SerializeField] private TextMeshProUGUI _titleText;
 
-        [SerializeField]
-        private TextMeshProUGUI _mainText;
+        [SerializeField] private TextMeshProUGUI _mainText;
 
-        [SerializeField]
-        private Button _confirmButton;
+        [SerializeField] private Button _confirmButton;
 
         /*[SerializeField]
         private GameObject _loadingSpinner;*/
 
-        [SerializeField]
-        private CanvasGroup _canvasGroup;
+        [SerializeField] private CanvasGroup _canvasGroup;
 
         private bool _isDisplaying;
         public bool IsDisplaying => _isDisplaying;

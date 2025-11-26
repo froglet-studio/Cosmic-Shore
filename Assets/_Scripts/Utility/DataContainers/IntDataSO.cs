@@ -7,5 +7,4 @@ namespace CosmicShore.Utilities
     public class IntDataSO : GenericDataSO<int>
     {
     }
-
 }

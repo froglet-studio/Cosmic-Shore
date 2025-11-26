@@ -14,17 +14,13 @@ namespace CosmicShore.Core
     {
         const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = .5f;
 
-        [SerializeField]
-        SceneNameListSO _sceneNames;
-        
-        [SerializeField] 
-        SO_GameList AllGames;
-        
-        [SerializeField]
-        MiniGameDataSO miniGameData;
+        [SerializeField] SceneNameListSO _sceneNames;
 
-        [SerializeField]
-        ScriptableEventBool _onSceneTransition;
+        [SerializeField] SO_GameList AllGames;
+
+        [SerializeField] MiniGameDataSO miniGameData;
+
+        [SerializeField] ScriptableEventBool _onSceneTransition;
 
         private void OnEnable()
         {
@@ -43,11 +39,11 @@ namespace CosmicShore.Core
         public void ReturnToMainMenu() => StartCoroutine(StartSceneRoutine(_sceneNames.MainMenuScene));
 
         void LaunchGame() => StartCoroutine(StartSceneRoutine(miniGameData.SceneName));
-        
+
         IEnumerator StartSceneRoutine(string sceneName)
         {
             _onSceneTransition.Raise(false);
-            
+
             yield return new WaitForSecondsRealtime(WAIT_FOR_SECONDS_BEFORE_SCENELOAD);
             SceneManager.LoadScene(sceneName);
         }

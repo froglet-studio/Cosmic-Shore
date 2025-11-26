@@ -6,7 +6,7 @@ namespace CosmicShore.Game.Arcade
     public class ShipCollisionTurnMonitor : TurnMonitor
     {
         [SerializeField] int Collisions;
-        
+
         // Use MiniGameData for player info.
         // [SerializeField] MiniGame Game;
         // [SerializeField] R_Player hostileShip;
@@ -18,7 +18,7 @@ namespace CosmicShore.Game.Arcade
 
             return StatsManager.Instance.PlayerStats[Game.ActivePlayer.PlayerName].SkimmerShipCollisions >= Collisions;*/
 
-            return true;        // TEMP
+            return true; // TEMP
         }
 
         public override void StartMonitor()
@@ -35,7 +35,8 @@ namespace CosmicShore.Game.Arcade
 
         void UpdateUI()
         {
-            var message = ""; //TEMP - ((int)((hostileShip.Ship.Transform.position - Game.ActivePlayer.Ship.Transform.position).magnitude/10f)).ToString();
+            var
+                message = ""; //TEMP - ((int)((hostileShip.Ship.Transform.position - Game.ActivePlayer.Ship.Transform.position).magnitude/10f)).ToString();
             onUpdateTurnMonitorDisplay.Raise(message);
         }
     }

@@ -1,4 +1,3 @@
 public class GrowSkimmerAction : GrowActionBase
 {
-
 }

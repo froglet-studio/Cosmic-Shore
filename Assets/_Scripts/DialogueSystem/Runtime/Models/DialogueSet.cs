@@ -16,6 +16,5 @@ namespace CosmicShore.DialogueSystem.Models
         public List<DialogueLine> lines = new List<DialogueLine>();
 
         public RewardData rewardData;
-
     }
 }

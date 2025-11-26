@@ -5,27 +5,28 @@ using UnityEngine;
 
 public class ChargeBoostAction : ShipAction
 {
-    [Header("Charge Boost Settings")]
-    [SerializeField] float maxBoostMultiplier   = 3f;   // stronger top-end boost
-    [SerializeField] float maxNormalizedCharge  = 5f;   // capacity in 'units'
+    [Header("Charge Boost Settings")] [SerializeField]
+    float maxBoostMultiplier = 3f; // stronger top-end boost
 
-    [Header("Timing (seconds)")]
-    [SerializeField] float chargeTimeToFull     = 2.0f;
+    [SerializeField] float maxNormalizedCharge = 5f; // capacity in 'units'
+
+    [Header("Timing (seconds)")] [SerializeField]
+    float chargeTimeToFull = 2.0f;
+
     [SerializeField] float dischargeTimeToEmpty = 2.5f;
 
-    [Tooltip("Tick cadence for UI/physics updates")]
-    [SerializeField] float tickSeconds = 0.05f;
+    [Tooltip("Tick cadence for UI/physics updates")] [SerializeField]
+    float tickSeconds = 0.05f;
 
-    [Header("Resource slot holding the charged units (0..maxNormalizedCharge)")]
-    [SerializeField] int boostBoostResourceIndex = 0;
+    [Header("Resource slot holding the charged units (0..maxNormalizedCharge)")] [SerializeField]
+    int boostBoostResourceIndex = 0;
 
-    [Header("Optional Safety")]
-    [SerializeField] float rechargeCooldownSeconds = 0f;
+    [Header("Optional Safety")] [SerializeField]
+    float rechargeCooldownSeconds = 0f;
 
-    [Header("Debug")]
-    [SerializeField] bool verbose = false;
+    [Header("Debug")] [SerializeField] bool verbose = false;
 
-    private bool  _charging;
+    private bool _charging;
     private float _cooldownUntilUtc;
 
     public event Action<float> OnChargeStarted, OnChargeProgress, OnDischargeStarted, OnDischargeProgress;
@@ -33,8 +34,10 @@ public class ChargeBoostAction : ShipAction
 
     public float MaxChargeUnits => maxNormalizedCharge;
 
-    float ChargePerSecond    => (chargeTimeToFull     > 0f) ? (maxNormalizedCharge / chargeTimeToFull)     : maxNormalizedCharge;
-    float DischargePerSecond => (dischargeTimeToEmpty > 0f) ? (maxNormalizedCharge / dischargeTimeToEmpty) : maxNormalizedCharge;
+    float ChargePerSecond => (chargeTimeToFull > 0f) ? (maxNormalizedCharge / chargeTimeToFull) : maxNormalizedCharge;
+
+    float DischargePerSecond =>
+        (dischargeTimeToEmpty > 0f) ? (maxNormalizedCharge / dischargeTimeToEmpty) : maxNormalizedCharge;
 
     public override void StartAction()
     {
@@ -162,5 +165,8 @@ public class ChargeBoostAction : ShipAction
     }
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
-    void Log(string msg) { if (verbose) Debug.Log($"[ChargeBoostAction] {msg}", this); }
+    void Log(string msg)
+    {
+        if (verbose) Debug.Log($"[ChargeBoostAction] {msg}", this);
+    }
 }

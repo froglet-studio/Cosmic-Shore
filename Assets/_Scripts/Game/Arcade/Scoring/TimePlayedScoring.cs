@@ -5,7 +5,9 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class TimePlayedScoring : BaseScoring
     {
-        public TimePlayedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        public TimePlayedScoring(MiniGameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier)
+        {
+        }
 
         public override void CalculateScore()
         {
@@ -14,7 +16,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                 playerScore.Score += (Time.time - miniGameData.TurnStartTime) * scoreMultiplier;
             }
         }
-        
+
 
         /*public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {

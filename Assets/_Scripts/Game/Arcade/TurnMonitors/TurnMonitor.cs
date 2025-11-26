@@ -9,20 +9,17 @@ namespace CosmicShore.Game.Arcade
 {
     public abstract class TurnMonitor : MonoBehaviour
     {
-        [Header("Timing")]
-        [SerializeField] protected float _updateInterval = 1f;
-        
-        [SerializeField]
-        protected MiniGameDataSO miniGameData;
+        [Header("Timing")] [SerializeField] protected float _updateInterval = 1f;
 
-        [Header("UI/Event")]
-        [SerializeField] protected ScriptableEventString onUpdateTurnMonitorDisplay;
+        [SerializeField] protected MiniGameDataSO miniGameData;
+
+        [Header("UI/Event")] [SerializeField] protected ScriptableEventString onUpdateTurnMonitorDisplay;
 
         bool isRunning;
         bool isPaused;
 
         CancellationTokenSource _cts;
-        
+
         // ---- Public API ---------------------------------------------------
 
         /// <summary>Starts the turn monitor loop (no-op if already running).</summary>
@@ -40,11 +37,11 @@ namespace CosmicShore.Game.Arcade
         {
             if (isPaused)
                 return;
-            
+
             // End-of-turn check
-            if (!CheckForEndOfTurn()) 
+            if (!CheckForEndOfTurn())
                 return;
-            
+
             RestrictedUpdate();
             OnTurnEnded();
             Pause(); // exits loop on next iteration
@@ -55,8 +52,14 @@ namespace CosmicShore.Game.Arcade
         {
             if (!isRunning) return;
 
-            try { _cts?.Cancel(); }
-            catch { /* ignore */ }
+            try
+            {
+                _cts?.Cancel();
+            }
+            catch
+            {
+                /* ignore */
+            }
             finally
             {
                 _cts?.Dispose();
@@ -66,7 +69,7 @@ namespace CosmicShore.Game.Arcade
         }
 
         /// <summary>Pauses periodic updates until Resume() is called.</summary>
-        public void Pause()  => isPaused = true;
+        public void Pause() => isPaused = true;
 
         /// <summary>Resumes periodic updates if paused.</summary>
         public void Resume() => isPaused = false;
@@ -88,13 +91,19 @@ namespace CosmicShore.Game.Arcade
         public abstract bool CheckForEndOfTurn();
 
         /// <summary>Called periodically according to UpdateInterval (while not paused).</summary>
-        protected virtual void RestrictedUpdate() {}
+        protected virtual void RestrictedUpdate()
+        {
+        }
 
         /// <summary>Called exactly once when CheckForEndOfTurn becomes true.</summary>
-        protected virtual void OnTurnEnded() { }
+        protected virtual void OnTurnEnded()
+        {
+        }
 
         /// <summary>Override to reset any subclass counters/state on ResetMonitor.</summary>
-        protected virtual void ResetState() { }
+        protected virtual void ResetState()
+        {
+        }
 
         // ---- Internal loop -----------------------------------------------
 
@@ -114,14 +123,14 @@ namespace CosmicShore.Game.Arcade
 
                     // One tick
                     RestrictedUpdate();
-                    
+
                     // Wait for next tick (game-time)
                     if (_updateInterval > 0f)
                         await UniTask.WaitForSeconds(_updateInterval, cancellationToken: token);
-                        /*await UniTask.Delay(TimeSpan.FromSeconds(_updateInterval),
-                                            DelayType.DeltaTime,
-                                            PlayerLoopTiming.Update,
-                                            token);*/
+                    /*await UniTask.Delay(TimeSpan.FromSeconds(_updateInterval),
+                                        DelayType.DeltaTime,
+                                        PlayerLoopTiming.Update,
+                                        token);*/
                     else
                         await UniTask.Yield(PlayerLoopTiming.Update, token);
                 }
