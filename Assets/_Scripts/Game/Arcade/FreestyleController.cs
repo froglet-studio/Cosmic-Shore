@@ -38,15 +38,14 @@ namespace CosmicShore.Game.Arcade
 
         protected override void SetupNewTurn() 
         {
-            RaiseToggleReadyButtonEvent(true);
-            
             if(resetEnvironmentOnEachTurn) 
                 ResetEnvironment();
             
             base.SetupNewTurn();
         }
 
-        void ResetEnvironment() {
+        void ResetEnvironment() 
+        {
             segmentSpawner.NumberOfSegments   = numberOfSegments;
             segmentSpawner.StraightLineLength = straightLineLength;
             segmentSpawner.Initialize();
