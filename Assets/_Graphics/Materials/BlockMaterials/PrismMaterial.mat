@@ -100,16 +100,19 @@ Material:
     - _DetailNormalMapScale: 1
     - _Distance: 100000
     - _DstBlend: 0
+    - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
     - _ExplosionAmount: 0
     - _ExplosiveRotation: 0.05
     - _ExplosiveSpead: 0.4
+    - _Frequency: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Opacity: 0
+    - _OscillationDampening: 50
     - _Parallax: 0.005
     - _Proximity: 80
     - _QueueControl: 0
@@ -120,6 +123,7 @@ Material:
     - _SpecularHighlights: 1
     - _SqrDistance: 100000
     - _SrcBlend: 1
+    - _SrcBlendAlpha: 1
     - _Surface: 0
     - _WorkflowMode: 1
     - _ZTest: 4
