@@ -12,7 +12,7 @@ namespace CosmicShore.Game.Arcade
         {
             gameData.InitializeGame();
             gameData.InvokeClientReady();
-            RaiseToggleReadyButtonEvent(true);
+            SetupNewRound();
         }
         
         void OnDisable() 
@@ -21,19 +21,16 @@ namespace CosmicShore.Game.Arcade
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
         }
         
-        protected override void OnCountdownTimerEnded()
-        {
-            SetupNewRound();
-            gameData.SetPlayersActive();
-            gameData.StartTurn();
-        }
-
         protected override void SetupNewRound()
         {
-            if (gameData.RoundsPlayed >= 1)
-                RaiseToggleReadyButtonEvent(true);
-
+            gameData.InvokeMiniGameRoundStarted();
             base.SetupNewRound();
+        }
+        
+        protected override void OnCountdownTimerEnded()
+        {
+            gameData.SetPlayersActive();
+            gameData.StartTurn();
         }
 
         protected override void EndTurn()
