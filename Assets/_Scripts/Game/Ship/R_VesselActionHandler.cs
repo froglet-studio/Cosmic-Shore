@@ -33,8 +33,8 @@ namespace CosmicShore.Game
         private readonly Dictionary<InputEvents, CancellationTokenSource> _muteEndCts = new();
         readonly List<ShipActionSO> _runtimeInstances = new();
         
-        // TODO - Unnecessary events added.
-        // Remove and Use _onButtonPressed and _onButtonReleased.
+        // TODO - Unnecessary events added. OnInputEventStarted, OnInputEventStopped
+        // Remove the ones below and Use _onButtonPressed and _onButtonReleased.
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
@@ -59,8 +59,8 @@ namespace CosmicShore.Game
             // TODO - These are not static events, so unsubscribe is not necessary,
             // but better to do it for safety. but not on OnDisable, as few references will be missing,
             // better to do it earlier.
-            /*if (vesselStatus.IsLocalUser)
-                vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;*/
+            if (vesselStatus.IsLocalUser)
+                vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
         }
 
         public override void OnNetworkDespawn()
