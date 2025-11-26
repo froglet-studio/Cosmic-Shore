@@ -810,7 +810,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c3f54abda8145ecabf7c85253cab9ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 0}
+  vesselPrismController: {fileID: 5613657713013293844}
   seedAssemblerExecutor: {fileID: 0}
   stationarySeedConfig: {fileID: 0}
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
@@ -1112,7 +1112,8 @@ MonoBehaviour:
   YScaler: 1
   ZScaler: 1
   nonBoostingScaleMultiplier: 2
-  nonBoostingGapMultiplier: 4
+  nonBoostingHalfGapMultiplier: 3
+  nonBoostSpawnDelayMultiplier: 2
 --- !u!114 &647308514974513799
 MonoBehaviour:
   m_ObjectHideFlags: 0
