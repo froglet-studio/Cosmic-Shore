@@ -29,8 +29,8 @@ namespace CosmicShore.App.UI.Controllers
             public Pose Pose;
             public Quaternion BlockRot;
             public Vector3 Course;
-            public float Speed;
             public bool WasAIPilot;
+            public bool WasActive;
         }
 
         private Snapshot snap;
@@ -45,55 +45,135 @@ namespace CosmicShore.App.UI.Controllers
         }
 
         // ---------------------------------------------------------
-        // CARD COLLECTION
-        // ---------------------------------------------------------
-        private void CollectCards()
-        {
-            _cards.Clear();
-
-            for (int i = 0; i < ui.ShipCardContainer.childCount; i++)
-            {
-                var card = ui.ShipCardContainer.GetChild(i).GetComponent<ShipCardView>();
-                if (!card) continue;
-
-                card.Clicked -= OnCardClicked;
-                card.Clicked += OnCardClicked;
-                _cards.Add(card);
-            }
-        }
-
-        // ---------------------------------------------------------
         // OPEN PANEL
         // ---------------------------------------------------------
         public void Open()
         {
-            if (_cards.Count == 0) CollectCards();
-
-            var currentClass = gameData?.selectedVesselClass ? 
-                               gameData.selectedVesselClass.Value :
-                               CurrentVessel.VesselStatus.VesselType;
-
-            _selectedCard = null;
-
-            foreach (var c in _cards)
+            EnsureCardsCollected();
+            DetermineCurrentSelection();
+            EnsureFallbackSelection();
+            ApplySnapshotAndShowUI();
+        }
+        
+        // ---------------------------------------------------------
+        // RESUME CLICK
+        // ---------------------------------------------------------
+        public void OnResumeButtonClicked()
+        {
+            if (!_selectedCard)
             {
-                bool isSel = (c.VesselClass == currentClass);
-                c.SetSelected(isSel);
-
-                if (isSel) _selectedCard = c;
+                GoBackToGame();
+                return;
             }
 
-            if (_selectedCard == null && _cards.Count > 0)
+            PushSelectionToGameData(_selectedCard);
+
+            var targetClass = _selectedCard.VesselClass;
+            var currentClass = CurrentVessel.VesselStatus.VesselType;
+
+            if (IsSameVesselClass(targetClass, currentClass) || 
+                !TrySpawnReplacementVessel(targetClass, out var newVessel))
             {
-                _selectedCard = _cards[0];
-                _selectedCard.SetSelected(true);
-                PushSelectionToGameData(_selectedCard);
+                GoBackToGame();
+                return;
             }
 
-            SaveSnapshotAndActivateAIMode();
-            ui.Show();
+            ReplacePlayerVessel(newVessel);
+            GoBackToGame();
         }
 
+        public void OnPauseButtonClicked() => ui.Hide();
+
+        // ----------------------
+        // Helper Methods
+        // ----------------------
+
+        private bool IsSameVesselClass(VesselClassType target, VesselClassType current) =>
+            target == current;
+        
+        private bool TrySpawnReplacementVessel(VesselClassType targetClass, out IVessel newVessel)
+        {
+            if (vesselSpawner.SpawnShip(targetClass, out newVessel)) 
+                return true;
+            
+            Debug.LogError($"Failed to spawn {targetClass}");
+            return false;
+        }
+        
+        private void ReplacePlayerVessel(IVessel newVessel)
+        {
+            var oldVessel = CurrentVessel;
+            InitializeNewVessel(newVessel);
+            TransferSnapshotStateToNewVessel(newVessel);
+            ActivateNewPlayerVessel(newVessel);
+            oldVessel.DestroyVessel();
+        }
+        
+        private void InitializeNewVessel(IVessel newVessel)
+        {
+            Player.ChangeVessel(newVessel);
+            newVessel.Initialize(Player, snap.WasAIPilot);
+            VesselInitializeHelper.SetShipProperties(themeManagerData, newVessel);
+        }
+        
+        private void TransferSnapshotStateToNewVessel(IVessel newVessel)
+        {
+            newVessel.SetPose(snap.Pose);
+            newVessel.VesselStatus.blockRotation = snap.BlockRot;
+            newVessel.VesselStatus.Course = snap.Course;
+        }
+
+        private void ActivateNewPlayerVessel(IVessel newVessel)
+        {
+            if (!snap.WasActive)
+                return;
+            
+            Player.ResetForPlay();
+            Player.StartPlayer();
+        }
+        
+        private void EnsureCardsCollected()
+        {
+            if (_cards.Count == 0)
+                CollectCards();
+        }
+
+        private void DetermineCurrentSelection()
+        {
+            var currentClass = CurrentVessel.VesselStatus.VesselType;
+            _selectedCard = null;
+
+            foreach (var card in _cards)
+            {
+                bool isSelected = (card.VesselClass == currentClass);
+                card.SetSelected(isSelected);
+
+                if (isSelected)
+                    _selectedCard = card;
+            }
+        }
+
+        private void EnsureFallbackSelection()
+        {
+            if (_selectedCard != null)
+                return;
+
+            if (_cards.Count == 0)
+                return;
+
+            _selectedCard = _cards[0];
+            _selectedCard.SetSelected(true);
+
+            PushSelectionToGameData(_selectedCard);
+        }
+
+        private void ApplySnapshotAndShowUI()
+        {
+            SaveSnapshotOfCurrentVessel();
+            ui.Show();
+            ActivateAIModeInLocalVessel();
+        }
+        
         // ---------------------------------------------------------
         // CARD CLICKED
         // ---------------------------------------------------------
@@ -120,89 +200,60 @@ namespace CosmicShore.App.UI.Controllers
         // ---------------------------------------------------------
         // SNAPSHOT
         // ---------------------------------------------------------
-        private void SaveSnapshotAndActivateAIMode()
+        private void SaveSnapshotOfCurrentVessel()
         {
             var vs = CurrentVessel.VesselStatus;
 
             snap.Pose = new Pose(vs.Transform.position, vs.Transform.rotation);
             snap.BlockRot = vs.blockRotation;
             snap.Course = vs.Course;
-            snap.Speed = vs.Speed;
             snap.WasAIPilot = vs.AutoPilotEnabled;
+            snap.WasActive = vs.Player.IsActive;
+        }
 
+        void ActivateAIModeInLocalVessel()
+        {
+            if (!snap.WasActive)
+                return;
+            
             if (!snap.WasAIPilot)
                 CurrentVessel.ToggleAIPilot(true);
 
             Player.InputController.SetPause(true);
         }
-        
-        // ---------------------------------------------------------
-        // RESUME CLICK
-        // ---------------------------------------------------------
-        public void OnResumeButtonClicked()
-        {
-            if (_selectedCard == null)
-            {
-                GoBackToGame();
-                return;
-            }
-
-            var targetClass = _selectedCard.VesselClass;
-            var currentClass = CurrentVessel.VesselStatus.VesselType;
-
-            PushSelectionToGameData(_selectedCard);
-
-            if (targetClass == currentClass)
-            {
-                GoBackToGame();
-                return;
-            }
-
-            // Spawn new ship
-            if (!vesselSpawner.SpawnShip(targetClass, out var newVessel))
-            {
-                Debug.LogError($"Failed to spawn {targetClass}");
-                GoBackToGame();
-                return;
-            }
-
-            var old = CurrentVessel;
-
-            newVessel.Initialize(Player, snap.WasAIPilot);
-            PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, newVessel);
-
-            Player.ChangeVessel(newVessel);
-            Player.ResetForPlay();
-
-            newVessel.SetPose(snap.Pose);
-            newVessel.VesselStatus.blockRotation = snap.BlockRot;
-            newVessel.VesselStatus.Course = snap.Course;
-
-            Player.StartPlayer();
-            old.DestroyVessel();
-            
-            GoBackToGame();
-        }
-
-        public void OnCloseButtonClicked() => GoBackToGame();
-
-        public void HideUI()
-        {
-            ui.Hide();
-            CurrentVessel?.ToggleAIPilot(snap.WasAIPilot);
-        }
 
         void GoBackToGame()
         {
             ui.Hide();
-            ActivatePlayerWithDelay().Forget();
+            ActivatePlayerModeInLocalVesselWithDelay().Forget();
         }
         
-        async UniTaskVoid ActivatePlayerWithDelay()
+        async UniTaskVoid ActivatePlayerModeInLocalVesselWithDelay()
         {
+            if (!snap.WasActive)
+                return;
+            
             await UniTask.Yield();
             CurrentVessel?.ToggleAIPilot(snap.WasAIPilot);
             Player?.InputController.SetPause(false);
+        }
+        
+        // ---------------------------------------------------------
+        // CARD COLLECTION
+        // ---------------------------------------------------------
+        private void CollectCards()
+        {
+            _cards.Clear();
+
+            for (int i = 0; i < ui.ShipCardContainer.childCount; i++)
+            {
+                var card = ui.ShipCardContainer.GetChild(i).GetComponent<ShipCardView>();
+                if (!card) continue;
+
+                card.Clicked -= OnCardClicked;
+                card.Clicked += OnCardClicked;
+                _cards.Add(card);
+            }
         }
     }
 }

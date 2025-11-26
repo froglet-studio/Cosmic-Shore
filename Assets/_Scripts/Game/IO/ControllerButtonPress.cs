@@ -32,8 +32,14 @@ namespace CosmicShore.Game.IO
         EventSystem eventSystem;
         ScreenSwitcher screenSwitcher;
         Button button;
+        
+        bool _wasCanvasGroupInteractableLastFrame;
+        
         void Start()
         {
+            if (canvasGroup)
+                _wasCanvasGroupInteractableLastFrame = canvasGroup.interactable;
+            
             eventSystem = FindAnyObjectByType<EventSystem>();
             screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             button = GetComponent<Button>();
@@ -92,8 +98,15 @@ namespace CosmicShore.Game.IO
         {
             // Remove the null check -> after making sure every place of ControllerButtonPress has a canvas group
             // reference added to them
-            if (canvasGroup && !canvasGroup.interactable)
-                return;
+
+            if (canvasGroup)
+            {
+                bool wasInteractableLastFrame = _wasCanvasGroupInteractableLastFrame;
+                _wasCanvasGroupInteractableLastFrame = canvasGroup.interactable;    
+                
+                if (!wasInteractableLastFrame)
+                    return;
+            }
             
             if (screenSwitcher != null)
             {
