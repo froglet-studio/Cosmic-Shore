@@ -127,19 +127,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f76793d2a031124f900d060d1bbb2bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
-    type: 3}
-  TrailBlockProperties:
+  prismProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
-    speedDebuffAmount: 0.1
-    trailBlock: {fileID: 0}
+    speedDebuffAmount: 0
+    prism: {fileID: 0}
     Index: 0
     IsShielded: 0
     IsSuperShielded: 0
     IsDangerous: 1
     IsTransparent: 0
     TimeCreated: 0
+    DefaultLayerName: TrailBlocks
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
@@ -156,7 +155,7 @@ MonoBehaviour:
     type: 2}
   _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: b5c1a6869a63cbf469f649a5c0b811fc,
     type: 2}
-  _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
+  OnBlockImpactedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
   LifeForm: {fileID: 0}
   spindle: {fileID: 0}
@@ -228,10 +227,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a83a5b15530145f2b806342c2109654e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prismShipEffectsSO: []
-  prismProjectileEffectsSO: []
-  prismSkimmerEffectsSO: []
-  prismExplosionEffectsSO: []
   Prism: {fileID: 5825274168078934928}
 --- !u!114 &8557224297166561418
 MonoBehaviour:

@@ -923,6 +923,30 @@ PrefabInstance:
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
       objectReference: {fileID: 0}
+    - target: {fileID: 1092805373, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
+      propertyPath: activationButton
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1092805374, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1092805374, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
+      value: 
+      objectReference: {fileID: 646541528}
+    - target: {fileID: 1092805374, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
+      value: Show
+      objectReference: {fileID: 0}
+    - target: {fileID: 1092805374, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
+      value: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 1092805374, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 1203736746, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
@@ -999,7 +1023,7 @@ PrefabInstance:
     - target: {fileID: 2578401360066863000, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2833300470156687357, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1256,7 +1280,7 @@ PrefabInstance:
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1287,7 +1311,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Target
       value: 
-      objectReference: {fileID: 7118097780360227049}
+      objectReference: {fileID: 646541528}
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[3].m_Target
@@ -1316,7 +1340,7 @@ PrefabInstance:
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_MethodName
-      value: Open
+      value: Hide
       objectReference: {fileID: 0}
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1336,7 +1360,7 @@ PrefabInstance:
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_TargetAssemblyTypeName
-      value: CosmicShore.App.UI.Controllers.OverviewPanel, Assembly-CSharp
+      value: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1360,9 +1384,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[3].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 5497835174443352333, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: canvasGroup
+      value: 
+      objectReference: {fileID: 1675941807}
     - target: {fileID: 5497835174634480093, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -1547,7 +1581,7 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 547474316}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1633193130}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b60804daa69172f468c76a40afdaaa28, type: 3}
@@ -1702,6 +1736,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 623613338}
   m_CullTransparentMesh: 1
+--- !u!114 &646541528 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5497835174634480091, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 547474316}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa08588b33df93c4fb866d88d19a5a42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &768259777
 GameObject:
   m_ObjectHideFlags: 0
@@ -2346,7 +2392,6 @@ MonoBehaviour:
   _spawnTransforms:
   - {fileID: 877481971}
   _spawnAIAtStart: 0
-  _overviewPanel: {fileID: 7118097780360227049}
 --- !u!114 &945887370 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8975221766650826670, guid: a51d3a28670d8e64fbdb568abd6769e2,
@@ -3877,6 +3922,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 7118097780360227047}
 --- !u!114 &1430653665
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3945,17 +3991,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 1633193130}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 7118097780360227049}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Controllers.OverviewPanelController,
+          Assembly-CSharp
+        m_MethodName: OnPauseButtonClicked
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
-          m_BoolArgument: 1
+          m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1430653666
 MonoBehaviour:
@@ -4075,6 +4122,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 7118097780360227047}
 --- !u!114 &1434128018
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4119,10 +4167,23 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 958415293643709711}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 7118097780360227049}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Controllers.OverviewPanelController,
+          Assembly-CSharp
+        m_MethodName: OnResumeButtonClicked
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 646541528}
+        m_TargetAssemblyTypeName: CosmicShore.Game.UI.MiniGameHUD, Assembly-CSharp
+        m_MethodName: Show
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -4657,12 +4718,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1575596404}
   m_CullTransparentMesh: 1
---- !u!1 &1633193130 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2578401360066863000, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 547474316}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1655328213
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4776,6 +4831,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 061f308768b5b564bbb0f130d1a8f02e, type: 3}
+--- !u!225 &1675941807 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 5016443529595071928, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 547474316}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1692904585
 GameObject:
   m_ObjectHideFlags: 0
@@ -5405,13 +5466,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 130a014759df4174a8f98be48ad847ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panelRoot: {fileID: 958415293643709711}
   panelCanvasGroup: {fileID: 7118097780360227047}
   shipCardContainer: {fileID: 141986485}
-  resumeButton: {fileID: 1434128018}
-  closeButton: {fileID: 1430653665}
-  titleText: {fileID: 0}
-  subtitleText: {fileID: 0}
 --- !u!114 &7118097780360227049
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5424,7 +5480,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5138961e178c77744932577386da56f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  refs: {fileID: 7118097780360227048}
+  ui: {fileID: 7118097780360227048}
   vesselSpawner: {fileID: 945887370}
   themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

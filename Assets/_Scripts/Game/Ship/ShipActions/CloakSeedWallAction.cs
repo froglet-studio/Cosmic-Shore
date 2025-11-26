@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore
@@ -352,8 +353,8 @@ namespace CosmicShore
             var shipUp   = shipTf ? shipTf.up : Vector3.up;
             var course   = Vessel?.VesselStatus?.Course ?? Vector3.zero;
             
-            if (course.sqrMagnitude > 0.0001f)
-                return Quaternion.LookRotation(course.normalized, shipUp);
+            if (SafeLookRotation.TryGet(course, shipUp, out var rotation, this))
+                return rotation;
 
             return shipTf ? shipTf.rotation : Quaternion.identity;
         }

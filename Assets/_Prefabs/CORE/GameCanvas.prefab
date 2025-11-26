@@ -299,7 +299,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ActiveMenuScreens: 
   ActiveModalWindows: 
-  activationButton: 7
+  activationButton: 6
   activationButtonImage: {fileID: 7807410459988682646}
   TriangleButtonSprite: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
     type: 3}
@@ -1939,12 +1939,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Pause_Menu_Panel
       objectReference: {fileID: 0}
-    - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
-        type: 3}
-      propertyPath: gameData
-      value: 
-      objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
-        type: 2}
     - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
       propertyPath: MiniGameHUD

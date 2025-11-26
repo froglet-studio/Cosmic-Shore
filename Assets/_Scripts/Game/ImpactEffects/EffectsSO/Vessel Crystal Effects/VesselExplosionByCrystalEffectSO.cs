@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
@@ -6,6 +7,8 @@ namespace CosmicShore.Game
     [CreateAssetMenu(fileName = "VesselExplosionByOmniCrystal", menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselExplosionByCrystalEffectSO")]
     public class VesselExplosionByCrystalEffectSO : VesselCrystalEffectSO
     {
+        public static event Action<VesselImpactor> OnCrystalExplosionTriggered;
+        
         [SerializeField]
         AOEExplosion[] _aoePrefabs;
 
@@ -23,18 +26,6 @@ namespace CosmicShore.Game
         [SerializeField] 
         Vector3 _spawnOffset = new Vector3(0, 0, -5f); 
         
-        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor crystalImpactee)
-        {
-            ExplosionHelper.CreateExplosion(
-                _aoePrefabs,
-                vesselImpactor,
-                _minExplosionScale,
-                _maxExplosionScale,
-                _aoeExplosionMaterial,
-                _resourceIndex, 
-                _spawnOffset);
-        }
-        
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
             ExplosionHelper.CreateExplosion(
@@ -45,6 +36,11 @@ namespace CosmicShore.Game
                 _aoeExplosionMaterial,
                 _resourceIndex, 
                 _spawnOffset);
+
+            if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Rhino)
+            {
+                OnCrystalExplosionTriggered?.Invoke(vesselImpactor);
+            }
         }
     }
 }

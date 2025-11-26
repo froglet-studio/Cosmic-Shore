@@ -1,5 +1,5 @@
 using CosmicShore.SOAP;
-using Obvious.Soap;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -10,13 +10,11 @@ namespace CosmicShore.Game
         CellDataSO cellData;
         
         [SerializeField] GameObject snow;
-        // [SerializeField] Vector3 crystalSize = new Vector3(500, 500, 500);
         [SerializeField] int shardDistance = 100;
 
         [Header("Optional Fields")] [SerializeField]
         bool lookAt;
 
-        // [SerializeField] Vector3 newOrigin;
         // Transform crystalTransform;
         GameObject[,,] crystalLattice;
         readonly float nodeScaler = 10;
@@ -39,7 +37,6 @@ namespace CosmicShore.Game
             cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowSize;
         }
 
-        // public void Initialize(Transform ct, float sphereRadius)
         public void Initialize()
         {
             // crystalTransform = CrystalManager.Instance.GetCrystalTransform();
@@ -101,8 +98,10 @@ namespace CosmicShore.Game
                             var maxDistance = Mathf.Max(shardsX, shardsY) * shardDistance;
                             float clampedDistance = Mathf.Clamp(reject.magnitude, 0, maxDistance);
                             normalizedDistance = clampedDistance / maxDistance;
-                            if (lookAt) shard.transform.rotation = Quaternion.LookRotation(-reject.normalized);
-                            else shard.transform.rotation = Quaternion.LookRotation(targetAxis);
+                            if (lookAt) 
+                                SafeLookRotation.TrySet(shard.transform, -reject.normalized, shard);
+                            else 
+                                SafeLookRotation.TrySet(shard.transform, targetAxis, shard);
                         }
 
                         shard.transform.localScale = Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +

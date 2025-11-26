@@ -124,7 +124,6 @@ namespace CosmicShore.Game
         {
             if (interactivePrismPool == null) { Debug.LogWarning("[PrismFactory] interactivePrismPool not set."); return null; }
             var prism = interactivePrismPool.Get(data.SpawnPosition, data.Rotation, interactivePrismPool.transform);
-            // if (prism) ConfigureForTeam(prism.gameObject, data.ownDomain);
             return prism ? prism.gameObject : null;
         }
             
@@ -132,7 +131,6 @@ namespace CosmicShore.Game
         {
             if (dolphinPrismPool == null) { Debug.LogWarning("[PrismFactory] dolphinPrismPool not set."); return null; }
             var prism = dolphinPrismPool.Get(data.SpawnPosition, data.Rotation, dolphinPrismPool.transform);
-            // if (prism) ConfigureForTeam(prism.gameObject, data.ownDomain);
             return prism ? prism.gameObject : null;
         }
 
@@ -140,7 +138,6 @@ namespace CosmicShore.Game
         {
             if (serpentPrismPool == null) { Debug.LogWarning("[PrismFactory] serpentPrismPool not set."); return null; }
             var prism = serpentPrismPool.Get(data.SpawnPosition, data.Rotation, serpentPrismPool.transform);
-            // if (prism) ConfigureForTeam(prism.gameObject, data.ownDomain);
             return prism ? prism.gameObject : null;
         }
 
@@ -148,7 +145,6 @@ namespace CosmicShore.Game
         {
             if (sparrowPrismPool == null) { Debug.LogWarning("[PrismFactory] sparrowPrismPool not set."); return null; }
             var prism = sparrowPrismPool.Get(data.SpawnPosition, data.Rotation, sparrowPrismPool.transform);
-            // if (prism) ConfigureForTeam(prism.gameObject, data.ownDomain);
             return prism ? prism.gameObject : null;
         }
 
@@ -156,7 +152,6 @@ namespace CosmicShore.Game
         {
             if (mantaPrismPool == null) { Debug.LogWarning("[PrismFactory] mantaPrismPool not set."); return null; }
             var prism = mantaPrismPool.Get(data.SpawnPosition, data.Rotation, mantaPrismPool.transform);
-            // if (prism) ConfigureForTeam(prism.gameObject, data.ownDomain);
             return prism ? prism.gameObject : null;
         }
 
@@ -164,7 +159,6 @@ namespace CosmicShore.Game
         {
             if (squirrelPrismPool == null) { Debug.LogWarning("[PrismFactory] squirrelPrismPool not set."); return null; }
             var prism = squirrelPrismPool.Get(data.SpawnPosition, data.Rotation, squirrelPrismPool.transform);
-            // if (prism) ConfigureForTeam(prism.gameObject, data.ownDomain);
             return prism ? prism.gameObject : null;
         }
 
@@ -172,13 +166,13 @@ namespace CosmicShore.Game
         {
             if (rhinoPrismPool == null) { Debug.LogWarning("[PrismFactory] rhinoPrismPool not set."); return null; }
             var prism = rhinoPrismPool.Get(data.SpawnPosition, data.Rotation, rhinoPrismPool.transform);
-            // if (prism) ConfigureForTeam(prism.gameObject, data.ownDomain);
             return prism ? prism.gameObject : null;
         }
         
         GameObject SpawnExplosion(PrismEventData data)
         {
             var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
+            obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
             obj.TriggerExplosion(data.Velocity);
             return obj.gameObject;
@@ -187,6 +181,7 @@ namespace CosmicShore.Game
         GameObject SpawnImplosion(PrismEventData data)
         {
             var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
+            obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
             obj.StartImplosion(data.TargetTransform);
             return obj.gameObject;

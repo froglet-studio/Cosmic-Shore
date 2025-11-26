@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.IO;
+﻿using System;
+using CosmicShore.Game.IO;
 using CosmicShore.SOAP;
 using Unity.Netcode;
 using UnityEngine;
@@ -7,6 +8,8 @@ namespace CosmicShore.Game
 {
     public class InputStatus : NetworkBehaviour, IInputStatus
     {
+        public event Action<bool> OnToggleInputPaused;
+        
         //–––––––––––––––––––––––––––––––––––––––––
         // Inspector-driven events & controller (unchanged)
         [SerializeField] ScriptableEventInputEvents _onButtonPressed;
@@ -97,7 +100,16 @@ namespace CosmicShore.Game
         public bool Paused
         {
             get => IsSpawned ? n_paused.Value : _pausedLocal;
-            set { if (IsSpawned && IsOwner) n_paused.Value = value; else _pausedLocal = value; }
+            set
+            {
+                if (IsSpawned && IsOwner) 
+                    n_paused.Value = value;
+                else
+                {
+                    _pausedLocal = value;
+                    OnToggleInputPaused?.Invoke(value);
+                }
+            }
         }
 
         public bool IsGyroEnabled
@@ -203,6 +215,16 @@ namespace CosmicShore.Game
         }
 
         public Quaternion GetGyroRotation() => InputController.GetGyroRotation();
+        
+        public override void OnNetworkSpawn()
+        {
+            n_paused.OnValueChanged += OnNetworkPausedValueChanged;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            n_paused.OnValueChanged -= OnNetworkPausedValueChanged;
+        }
 
         public void ResetForReplay()
         {
@@ -240,5 +262,7 @@ namespace CosmicShore.Game
             SingleTouchValue = Vector2.zero;
             ThreeDPosition = Vector3.zero;
         }
+        
+        void OnNetworkPausedValueChanged(bool oldValue, bool newValue) => OnToggleInputPaused?.Invoke(newValue);
     }
 }

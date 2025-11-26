@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e57fa2a27454859bed9179d2ae11531, type: 3}
+  m_Name: MantaSilhouetteConfig
+  m_EditorClassIdentifier: 
+  worldToUIScale: 2
+  imageScale: 0.02
+  flow: 1
+  columnRotationOffsetDeg: 0
+  minColumns: 26
+  smooth: 1
+  smoothingSeconds: 0.08
+  thicknessMultiplier: 80
+  lengthMultiplier: 80
+  gapMultiplier: 2.4
+  columnGapMultiplier: 1.3
+  useDomainPaletteColors: 1
+  domainPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
+  enableDangerVisual: 1
+  dangerBlockPrefab: {fileID: 5776304996075792891, guid: aad956930fb933f4b82b992b1bc2b773,
+    type: 3}
+  dangerColor: {r: 1, g: 0.25, b: 0.2, a: 0.78431374}

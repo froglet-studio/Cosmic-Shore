@@ -137,6 +137,11 @@ namespace CosmicShore.Game
             SpawnLife();
         }
 
+        internal Transform GetCrystalTransform()
+        {
+            return cellData.CrystalTransform;
+        }
+
         void AssignCellType() 
         {
             if (CellTypes is { Count: > 0 })

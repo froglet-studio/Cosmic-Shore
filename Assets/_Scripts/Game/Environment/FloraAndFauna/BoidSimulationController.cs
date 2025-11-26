@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections;
 using CosmicShore.Game;
 using CosmicShore.SOAP;
+using CosmicShore.Utility;
 using UnityEngine.Serialization;
 
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
@@ -148,7 +149,7 @@ public class BoidSImulationController : MonoBehaviour
             if (entity.type == Entity.ENTITY_TYPE_BOID)
             {
                 boids[i].transform.position = entity.position;
-                boids[i].transform.LookAt(entity.velocity.normalized);
+                SafeLookRotation.TrySet(boids[i].transform, entity.velocity, boids[i], logError: false);
             }
         }
     }
@@ -233,7 +234,8 @@ public class BoidSImulationController : MonoBehaviour
 
     public void CreateBoid(Vector3 position, Vector3 direction)
     {
-        Prism newBoid = Instantiate(boidPrefab, position, Quaternion.LookRotation(direction));
+        SafeLookRotation.TryGet(direction, out var initialRotation, boidPrefab);
+        Prism newBoid = Instantiate(boidPrefab, position, initialRotation);
         newBoid.transform.SetParent(transform);
         newBoid.Initialize();
 

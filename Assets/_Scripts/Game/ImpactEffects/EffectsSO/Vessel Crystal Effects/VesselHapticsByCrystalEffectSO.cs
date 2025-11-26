@@ -7,8 +7,8 @@ namespace CosmicShore.Game
     public class VesselHapticsByCrystalEffectSO : VesselCrystalEffectSO
     {
         [SerializeField] HapticSpec _haptic;
-
-        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor crystalImpactee)
+        
+        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
             _haptic.PlayIfManual(vesselImpactor.Vessel.VesselStatus);
         }

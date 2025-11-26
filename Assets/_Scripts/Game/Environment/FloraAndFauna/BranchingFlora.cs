@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Game;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore
@@ -51,7 +52,7 @@ namespace CosmicShore
             }
             //activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
             SeedBranches(); // add more truncks
-            transform.rotation = Quaternion.LookRotation(cellData.CrystalTransform.position); // cell.GetCrystal().transform.position
+            SafeLookRotation.TrySet(transform, cellData.CrystalTransform.position, transform); // cell.GetCrystal().transform.position
         }
 
         void SeedBranches()
@@ -88,7 +89,8 @@ namespace CosmicShore
                         if (SecondarySpawn && !hasPlantedSecondary)
                         {
                             var distance = newHealthblock.transform.position - crystal.transform.position;
-                            var newLifeform = Instantiate(SecondarySpawn, crystal.transform.position + (2 * distance), Quaternion.LookRotation(-distance), this.transform);
+                            var newLifeform = Instantiate(SecondarySpawn, crystal.transform.position + (2 * distance), Quaternion.identity, this.transform);
+                            SafeLookRotation.TrySet(newLifeform.transform, -distance, newLifeform);
                             newLifeform.cell = cell;
                             newLifeform.domain = domain;
                             newLifeform.goal = newHealthblock.transform.position;
@@ -100,12 +102,13 @@ namespace CosmicShore
                     {
                         int numBranches = Random.Range(minBranches, maxBranches + 1);
                         for (int i = 0; i < numBranches; i++)
-                        {
-                            newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
-                            ScaleAndPositionBranch(ref newBranch, branch);
+                            {
+                                newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
+                                ScaleAndPositionBranch(ref newBranch, branch);
 
-                            if (goal != Vector3.zero) newBranch.gameObject.transform.rotation = Quaternion.LookRotation(goal - transform.position) * RandomVectorRotation(minBranchAngle, maxBranchAngle);   
-                            else newBranch.gameObject.transform.localRotation = RandomVectorRotation(minBranchAngle, maxBranchAngle); //* branch.gameObject.transform.rotation;
+                                if (goal != Vector3.zero && SafeLookRotation.TryGet(goal - transform.position, out var branchRotation, newBranch.gameObject))
+                                    newBranch.gameObject.transform.rotation = branchRotation * RandomVectorRotation(minBranchAngle, maxBranchAngle);   
+                                else newBranch.gameObject.transform.localRotation = RandomVectorRotation(minBranchAngle, maxBranchAngle); //* branch.gameObject.transform.rotation;
                          
 
                             AddSpindle(newBranch.gameObject.GetComponent<Spindle>());

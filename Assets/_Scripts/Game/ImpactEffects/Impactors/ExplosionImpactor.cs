@@ -69,6 +69,8 @@ namespace CosmicShore.Game
                     prism.ActivateShield(2f);
                 return;
             }
+
+            if (prism.prismProperties.IsDangerous) return;
             
             if (explosion.AnonymousExplosion) // Vessel Status will be null here
                 prism.Damage(impactVector, Domains.None, "🔥GuyFawkes🔥", devastating);

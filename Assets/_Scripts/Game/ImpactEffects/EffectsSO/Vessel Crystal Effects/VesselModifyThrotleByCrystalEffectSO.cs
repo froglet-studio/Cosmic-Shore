@@ -7,10 +7,10 @@ namespace CosmicShore.Game
     {
         [SerializeField]
         float _speedModifierDuration;
-
-        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactor crystalImpactee)
+        
+        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
-            vesselImpactor.Vessel.VesselStatus.VesselTransformer.ModifyThrottle(crystalImpactee.Crystal.crystalProperties.speedBuffAmount, _speedModifierDuration);
+            vesselImpactor.Vessel.VesselStatus.VesselTransformer.ModifyThrottle(data.SpeedBuffAmount, _speedModifierDuration);
         }
     }
 }

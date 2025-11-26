@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -156,7 +157,7 @@ namespace CosmicShore.Game.Projectiles
             Vector3 direction = customDirection ?? transform.forward;
             Vector3 spawnPos  = containerTransform.position;   // using container for spawn point
 
-            Quaternion rotation = Quaternion.LookRotation(direction);
+            SafeLookRotation.TryGet(direction, out var rotation, this);
 
             // keep existing behavior: spawn under container
             var projectile = projectileFactory.GetProjectile(energy, spawnPos, rotation, containerTransform);

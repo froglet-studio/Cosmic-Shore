@@ -123,6 +123,7 @@ namespace CosmicShore.SOAP
 
         public void ResetRuntimeData()
         {
+            IsTurnRunning = false;
             Players.Clear();
             RoundStatsList.Clear();
             TurnStartTime = 0f;
