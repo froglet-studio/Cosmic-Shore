@@ -21,10 +21,10 @@ MonoBehaviour:
     Max: 0
     element: 0
   baseBlockScale: {x: 10, y: 1, z: 1}
-  numberOfRays: 10
-  blocksPerRay: 10
-  minRadius: 25
-  maxRadius: 50
+  numberOfRays: 12
+  blocksPerRay: 12
+  minRadius: 50
+  maxRadius: 70
   raySpread: 30
   growthRate: 0.05
   scaleCurve:
