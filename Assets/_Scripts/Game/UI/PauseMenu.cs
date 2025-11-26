@@ -20,9 +20,6 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField] 
         ScriptableEventNoParam _onClickToRestartButton;
         
-        /*[SerializeField] 
-        MiniGameHUD MiniGameHUD;*/
-        
         [SerializeField]
         GameDataSO gameData;
         
@@ -30,6 +27,11 @@ namespace CosmicShore.App.UI.Screens
         CanvasGroup canvasGroup;
 
         GameSetting gameSetting;
+
+        /// <summary>
+        /// stores if the local player input was paused before entering pause menu.
+        /// </summary>
+        bool wasLocalPlayerInputPausedBefore;
 
         void Awake() => Hide();
         
@@ -50,16 +52,12 @@ namespace CosmicShore.App.UI.Screens
 
         public void OnClickMultiplayerResumeGameButton()
         {
-            // MiniGameHUD.ToggleView(true);
-            // gameData.LocalPlayer.InputController.SetPause(false);
             TogglePlayerPauseWithDelay(false);
             Hide();
         }
 
         public void OnClickMultiplayerPauseButton()
         {
-            // MiniGameHUD.ToggleView(false);
-            // gameData.LocalPlayer.InputController.SetPause(true);
             TogglePlayerPauseWithDelay(true);
             Show();
         }
@@ -70,9 +68,10 @@ namespace CosmicShore.App.UI.Screens
         public void OnClickResumeGameButton()
         {
             PauseSystem.TogglePauseGame(false);
-            // MiniGameHUD.ToggleView(true);
-            TogglePlayerPauseWithDelay(false);
             Hide();
+            
+            if (!wasLocalPlayerInputPausedBefore)
+                TogglePlayerPauseWithDelay(false);
         }
 
         /// <summary>
@@ -81,9 +80,11 @@ namespace CosmicShore.App.UI.Screens
         public void OnClickPauseGameButton()
         {
             PauseSystem.TogglePauseGame(true);
-            // MiniGameHUD.ToggleView(false);
-            TogglePlayerPauseWithDelay(true);
             Show();
+            
+            wasLocalPlayerInputPausedBefore = gameData.LocalPlayer.InputStatus.Paused;
+            if (!wasLocalPlayerInputPausedBefore)
+                TogglePlayerPauseWithDelay(true);
         }
 
         public void OnClickMainMenu() => _onClickToMainMenu.Raise();
