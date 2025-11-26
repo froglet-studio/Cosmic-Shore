@@ -35,24 +35,13 @@ namespace CosmicShore.Game.Projectiles
                 return;
             }
 
-            // Push timing from config into the base AOEExplosion fields
             ExplosionDuration = config.ExplosionDuration;
             ExplosionDelay    = config.ExplosionDelay;
 
-            // Interpret MaxScale as some overall bound if you want
-            if (config.MaxRadius <= 0f && MaxScale > 0f)
-            {
-                // If config maxRadius is not set, derive from base MaxScale
-                // (optional – can be removed if you always set MaxRadius in config).
-            }
-
             rayDirection = transform.forward;
 
-            // Ensure curve is never null at runtime
             if (config.ScaleCurve == null || config.ScaleCurve.length == 0)
             {
-                // This won't modify the asset; just guard usage later.
-                // We'll just use a linear fallback when we read it.
             }
         }
 
@@ -135,7 +124,7 @@ namespace CosmicShore.Game.Projectiles
                     : Mathf.Lerp(1f, 0.5f, tNorm); // fallback
 
                 // Depth scale
-                float depth = config.DepthScale != null ? config.DepthScale.Value : 1f;
+                float depth = config.DepthScale?.Value ?? 1f;
                 Vector3 baseScale = config.BaseBlockScale;
                 baseScale.z *= depth;
 
@@ -169,8 +158,7 @@ namespace CosmicShore.Game.Projectiles
         // Prism spawning & configuration
         // --------------------------------------------------------------------
 
-        private Prism CreateBlock(
-            Vector3 position,
+        private void CreateBlock(Vector3 position,
             Vector3 forward,
             Vector3 up,
             string blockId,
@@ -198,14 +186,14 @@ namespace CosmicShore.Game.Projectiles
             if (!ret.SpawnedObject)
             {
                 Debug.LogWarning("[AOEDangerHemisphereBlocks] PrismFactory returned null; spawn aborted.");
-                return null;
+                return;
             }
 
             var prism = ret.SpawnedObject.GetComponent<Prism>();
             if (!prism)
             {
                 Debug.LogWarning("[AOEDangerHemisphereBlocks] Spawned object missing Prism component.");
-                return null;
+                return;
             }
 
             prism.ownerID = OwnerIdBase + blockId + position;
@@ -217,15 +205,13 @@ namespace CosmicShore.Game.Projectiles
                 prism,
                 targetScale,
                 config.GrowthRate,
-                config.DangerMaterial,
+                config.ThemeManagerDataContainer.GetTeamDangerousBlockMaterial(Domain),
                 config.MarkShielded,
                 config.MarkDangerous
             ).Forget();
 
             prism.Trail = trail;
             trail.Add(prism);
-
-            return prism;
         }
 
         private static async UniTaskVoid MakeDangerousAsync(
@@ -253,7 +239,7 @@ namespace CosmicShore.Game.Projectiles
             }
 
             // Apply danger material to all renderers
-            if (dangerMat != null)
+            if (dangerMat)
             {
                 var renderers = prism.GetComponentsInChildren<MeshRenderer>(true);
                 foreach (var r in renderers)
