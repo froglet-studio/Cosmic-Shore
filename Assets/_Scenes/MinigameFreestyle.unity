@@ -3994,7 +3994,7 @@ MonoBehaviour:
       - m_Target: {fileID: 7118097780360227049}
         m_TargetAssemblyTypeName: CosmicShore.App.UI.Controllers.OverviewPanelController,
           Assembly-CSharp
-        m_MethodName: HideUI
+        m_MethodName: OnPauseButtonClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
