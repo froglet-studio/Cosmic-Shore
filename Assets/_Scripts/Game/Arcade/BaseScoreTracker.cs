@@ -8,7 +8,7 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Arcade
 {
-    public abstract class BaseScoreTracker : NetworkBehaviour
+    public abstract class BaseScoreTracker : NetworkBehaviour, IScoreTracker
     {
         [SerializeField] protected ScriptableEventNoParam OnClickToMainMenu; 
         [SerializeField] protected GameDataSO gameData;
@@ -84,10 +84,25 @@ namespace CosmicShore.Game.Arcade
             }
         }
 
+        public void CalculateTotalScore(string playerName)
+        {
+            if (!gameData.TryGetRoundStats(playerName, out var roundStats))
+                return;
+
+            float totalScore = 0;
+            foreach (var scoring in scoringArray)
+                totalScore += scoring.Score;
+            
+            roundStats.Score = totalScore;
+        }
+
         BaseScoring CreateScoring(ScoringModes mode, float multiplier)
         {
             return mode switch
             {
+                ScoringModes.PrismsCreated => new PrismsCreatedScoring(this, gameData, multiplier),
+                ScoringModes.HostilePrismsDestroyed => new HostilePrismsDestroyedScoring(this, gameData, multiplier),
+                ScoringModes.FriendlyPrismsDestroyed => new FriendlyPrismsDestroyedScoring(this, gameData, multiplier),
                 ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(gameData, multiplier),
                 ScoringModes.FriendlyVolumeDestroyedScoring => new FriendlyVolumeDestroyedScoring(gameData, multiplier), 
                 ScoringModes.VolumeCreated => new VolumeCreatedScoring(gameData, multiplier),
@@ -105,7 +120,7 @@ namespace CosmicShore.Game.Arcade
         }
         #endregion
     }
-    
+
     [Serializable]
     public struct ScoringConfig
     {

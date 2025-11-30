@@ -1,13 +1,19 @@
+using System;
+using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.SOAP;
 
-namespace CosmicShore.Game.Arcade.Scoring
+namespace CosmicShore.Game.Arcade
 {
-    public class VolumeCreatedScoring : BaseScoring
+    internal class PrismsCreatedScoring : BaseScoring
     {
-        float lastVolumeCreated;
-        
-        public VolumeCreatedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        protected IScoreTracker ScoreTracker;
 
+        public PrismsCreatedScoring(IScoreTracker tracker, GameDataSO gameData, float multiplier) : base(gameData,
+            multiplier)
+        {
+            ScoreTracker = tracker;
+        }
+        
         public override void Subscribe()
         {
             foreach (var playerScore in GameData.RoundStatsList)
@@ -15,7 +21,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                     return;
 
-                roundStats.OnVolumeCreatedChanged += UpdateScore;
+                roundStats.OnBlocksCreatedChanged += UpdateScore;
             }
         }
 
@@ -26,16 +32,14 @@ namespace CosmicShore.Game.Arcade.Scoring
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                     return;
 
-                roundStats.OnVolumeCreatedChanged -= UpdateScore;
-                lastVolumeCreated = 0;
+                roundStats.OnBlocksCreatedChanged -= UpdateScore;
             }
         }
 
         void UpdateScore(IRoundStats roundStats)
         {
-            var volumeDelta = roundStats.VolumeCreated - lastVolumeCreated;
-            roundStats.Score += volumeDelta * scoreMultiplier;
-            lastVolumeCreated = roundStats.VolumeCreated;
+            Score = roundStats.BlocksCreated * scoreMultiplier;
+            ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }
 }
