@@ -199,9 +199,6 @@ namespace CosmicShore.Core
 
         public void PrismVolumeModified(PrismStats prismStats)
         {
-            // Issue having related to prism volume modification.
-            return;
-            
             if (!allowRecord) return;
 
             var ownerPlayerName = prismStats.PlayerName;
