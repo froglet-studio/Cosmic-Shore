@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TransparentBlockMaterial
+  m_Name: TransparentPrismMaterial
   m_Shader: {fileID: -6465566751694194690, guid: de59ec1f616f51044a23e6c1368d6660,
     type: 3}
   m_Parent: {fileID: 0}
@@ -150,7 +150,7 @@ Material:
     - _DarkColor: {r: 0, g: 0.03327561, b: 0.06655122, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Spread: {r: 0.3, g: 0.3, b: 0.3, a: 0}
+    - _Spread: {r: 0.05, g: 0.05, b: 0.05, a: 0}
     - _Velocity: {r: 0.01, g: 0, b: 0, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _spread: {r: 0.2, g: 0.2, b: 0.2, a: 0}
