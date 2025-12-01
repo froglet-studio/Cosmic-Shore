@@ -8,6 +8,7 @@ namespace CosmicShore.Game.Arcade.Scoring
     [System.Serializable]
     public abstract class BaseScoring
     {
+        public float Score { get; protected set; }
         protected float scoreMultiplier;
 
         protected GameDataSO GameData;

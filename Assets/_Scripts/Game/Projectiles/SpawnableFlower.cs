@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
-
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -100,7 +100,10 @@ namespace CosmicShore.Game.Projectiles
             //Block.ownerId = Vessel.Player.PlayerUUID;
             //Block.PlayerName = Vessel.Player.PlayerName;
             Block.ownerID = "public";
-            Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
+            if (SafeLookRotation.TryGet(lookPosition, up, out var rotation, Block))
+                Block.transform.SetPositionAndRotation(position, rotation);
+            else
+                Block.transform.position = position;
             //Block.GetComponent<MeshRenderer>().material = material;
             Block.ownerID = /*Block.ownerId +*/ ownerId + position;
             Block.TargetScale = blockScale;

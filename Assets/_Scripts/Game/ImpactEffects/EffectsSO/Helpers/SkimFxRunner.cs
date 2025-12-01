@@ -1,6 +1,7 @@
 using System.Threading;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -54,9 +55,10 @@ namespace CosmicShore.Game
 
                     Vector3 distance = prism.transform.position - shipTransform.position;
                     particle.transform.localScale = new Vector3(1f, 1f, distance.magnitude);
-                    particle.transform.SetPositionAndRotation(
-                        shipTransform.position,
-                        Quaternion.LookRotation(distance, prism.transform.up));
+                    if (SafeLookRotation.TryGet(distance, prism.transform.up, out var rotation, prism, logError: false))
+                        particle.transform.SetPositionAndRotation(shipTransform.position, rotation);
+                    else
+                        particle.transform.position = shipTransform.position;
 
                     progress += speed * Time.deltaTime;
                     if (progress >= particleDurationAtSpeedOne)

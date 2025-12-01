@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9fe2ea192311406aa229554909fba385, type: 3}
-  m_Name: VesselSpinBySkyBurstProjectileEffect
+  m_Name: VesselSpinBySparrowSkyBurstProjectileEffect
   m_EditorClassIdentifier: 
   spinSpeed: 1
   useGentleSpin: 1

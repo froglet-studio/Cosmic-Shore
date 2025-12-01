@@ -1,8 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using CosmicShore.Game;
+using CosmicShore.Utility;
 using UnityEngine;
-using UnityEngine.Device;
 
 namespace CosmicShore
 {
@@ -24,8 +22,8 @@ namespace CosmicShore
 
         protected override void RotateShip()
         {
-            Quaternion newRotation = Quaternion.LookRotation(VesselStatus.Course, Vector3.back);
-            transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, LERP_AMOUNT * Time.deltaTime);
+            if (SafeLookRotation.TryGet(VesselStatus.Course, Vector3.back, out var newRotation, this))
+                transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, LERP_AMOUNT * Time.deltaTime);
         }
 
     }

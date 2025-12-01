@@ -1,9 +1,10 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Utilities;
+using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -137,10 +138,12 @@ namespace CosmicShore.Game.Projectiles
                 return null;
             }
 
-            PrismEventData data = new PrismEventData
+            SafeLookRotation.TryGet(forward, up, out var rotation, this);
+
+            var data = new PrismEventData
             {
                 ownDomain       = Domain,
-                Rotation        = Quaternion.LookRotation(forward, up),
+                Rotation        = rotation,
                 SpawnPosition   = position,
                 Scale           = targetScale,
                 Velocity        = Vector3.zero,

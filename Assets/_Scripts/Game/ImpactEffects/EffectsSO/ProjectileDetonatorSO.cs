@@ -2,6 +2,7 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -68,8 +69,11 @@ namespace CosmicShore.Game
 
             if (!proj) return; // could have been pooled meanwhile
 
-            if (req.FaceExitVelocity && proj.Velocity.sqrMagnitude > 1e-6f)
-                rot = Quaternion.LookRotation(proj.Velocity.normalized, Vector3.up);
+            if (req.FaceExitVelocity && proj.Velocity.sqrMagnitude > 1e-6f &&
+                SafeLookRotation.TryGet(proj.Velocity, Vector3.up, out var velocityRotation, proj))
+            {
+                rot = velocityRotation;
+            }
 
             float charge01    = Mathf.Clamp01(proj.Charge);
             float targetScale = Mathf.Lerp(req.MinScale, req.MaxScale, charge01);

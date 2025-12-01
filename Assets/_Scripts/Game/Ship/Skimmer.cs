@@ -4,6 +4,9 @@ using CosmicShore.Core;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Game.IO;
+using CosmicShore.Utility;
+using CosmicShore.Utility.ClassExtensions;
+using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Game
 {
@@ -35,19 +38,26 @@ namespace CosmicShore.Game
         public IVesselStatus VesselStatus { get; private set; }
         public Domains Domain => VesselStatus.Domain;
         public bool AffectSelf => affectSelf;
+        public bool IsInitialized => VesselStatus is { Player: { IsActive: true } };
 
         float _appliedScale;
         float _sweetSpot;
         float _sqrRadius;
         float _initialGap;
         float _boosterTimer;
+        bool isResizingScale;
 
-        public bool IsInitialized => VesselStatus is { Player: { IsActive: true } };
 
         void Update()
         {
             if (!IsInitialized) return;
             ApplyScaleIfChanged();   
+        }
+        
+        private void OnDestroy()
+        {
+            // Ensures any scaling tasks for this specific transform are cancelled
+            transform.CancelResize();
         }
 
         public void Initialize(IVesselStatus vesselStatus)
@@ -82,16 +92,14 @@ namespace CosmicShore.Game
             MakeBoosters(prism);
         }
 
-        // TODO - Remove it later, this logic is transferred to skimmer impactor and crystal
-        /*public void TryVacuumCrystal(Crystal crystal)
+        public async UniTaskVoid ResizeForSeconds(float multiplier, float durationSeconds)
         {
-            if (!vacuumCrystal || !crystal) return;
+            if (isResizingScale) return;
 
-            crystal.transform.position = Vector3.MoveTowards(
-                crystal.transform.position,
-                transform.position,
-                vaccumAmount * Time.deltaTime / crystal.transform.lossyScale.x);
-        }*/
+            isResizingScale = true;
+            await transform.ResizeForSeconds(multiplier, durationSeconds);
+            isResizingScale = false;
+        }
         
         void ApplyScaleIfChanged()
         {
@@ -168,9 +176,10 @@ namespace CosmicShore.Game
                 Vector3 worldPos = blockTransform.position + localPos;
  
                 
-                var marker = nudgeShardPoolManager?.Get(
-                    worldPos,
-                    Quaternion.LookRotation(blockTransform.forward, localPos), nudgeShardPoolManager.transform);
+                if (!SafeLookRotation.TryGet(blockTransform.forward, localPos, out var rotation, blockTransform))
+                    continue;
+
+                var marker = nudgeShardPoolManager?.Get(worldPos, rotation, nudgeShardPoolManager.transform);
 
                 if (!marker) break;
                 

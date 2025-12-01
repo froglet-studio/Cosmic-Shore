@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -56,8 +57,18 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         var Block = Instantiate(prism);
         Block.ChangeTeam(actualDomain);
         Block.ownerID = "public";
-        if (relativeLook) Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(flip ? position - lookPosition : lookPosition - position, up));
-        else Block.transform.SetPositionAndRotation(position, Quaternion.identity);
+        if (relativeLook)
+        {
+            Vector3 forward = flip ? position - lookPosition : lookPosition - position;
+            if (SafeLookRotation.TryGet(forward, up, out var rotation, Block))
+                Block.transform.SetPositionAndRotation(position, rotation);
+            else
+                Block.transform.position = position;
+        }
+        else
+        {
+            Block.transform.SetPositionAndRotation(position, Quaternion.identity);
+        }
         Block.transform.SetParent(container.transform, false);
         Block.ownerID = blockId;
         Block.TargetScale = scale;

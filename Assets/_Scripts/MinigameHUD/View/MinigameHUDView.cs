@@ -19,7 +19,6 @@ namespace CosmicShore.Game.UI
         [SerializeField] private GameObject pip;
         [SerializeField] private GameObject silhouette;
         [SerializeField] private GameObject trailDisplay;
-        [SerializeField] private ButtonPanel buttonPanel;
         [SerializeField] private CanvasGroup connectingPanelCanvasGroup; 
         [SerializeField] private CanvasGroup canvasGroup;
         

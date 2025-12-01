@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -70,7 +71,10 @@ namespace CosmicShore.Game.Arcade
             var Block = Instantiate(prism);
             Block.ChangeTeam(ActivePlayer.Domain);
             // Block.ownerID = LocalPlayer.PlayerUUID;
-            Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
+            if (SafeLookRotation.TryGet(lookPosition - transform.position, transform.forward, out var rotation, Block))
+                Block.transform.SetPositionAndRotation(position, rotation);
+            else
+                Block.transform.position = position;
             // Block.ownerID = Block.ownerID + position;
             Block.TargetScale = blockScale;
             Block.Trail = trail;

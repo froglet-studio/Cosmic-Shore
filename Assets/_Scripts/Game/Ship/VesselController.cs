@@ -40,10 +40,7 @@ namespace CosmicShore.Game
 
         public override void OnDestroy()
         {
-            if (VesselStatus.Player.IsLocalUser)
-            {
-                OnBeforeDestroyed?.Invoke();
-            }
+            OnBeforeDestroyed?.Invoke();
         }
 
         public override void OnNetworkSpawn()

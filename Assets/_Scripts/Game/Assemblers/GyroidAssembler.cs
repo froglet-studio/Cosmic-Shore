@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Utility.ClassExtensions;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore
@@ -523,8 +524,12 @@ namespace CosmicShore
 
         private Quaternion CalculateRotation(GyroidBondMate mate)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(mate.DeltaForward.x * transform.right + mate.DeltaForward.y * transform.up + mate.DeltaForward.z * transform.forward + transform.forward,
-                                                                mate.DeltaUp.x * transform.right + mate.DeltaUp.y * transform.up + mate.DeltaUp.z * transform.forward + transform.up);
+            Vector3 forward = mate.DeltaForward.x * transform.right + mate.DeltaForward.y * transform.up + mate.DeltaForward.z * transform.forward + transform.forward;
+            Vector3 up = mate.DeltaUp.x * transform.right + mate.DeltaUp.y * transform.up + mate.DeltaUp.z * transform.forward + transform.up;
+
+            if (!SafeLookRotation.TryGet(forward, up, out var targetRotation, mate.Mate ? mate.Mate.gameObject : gameObject))
+                return mate.Mate ? mate.Mate.transform.rotation : transform.rotation;
+
             return targetRotation;
         }
 

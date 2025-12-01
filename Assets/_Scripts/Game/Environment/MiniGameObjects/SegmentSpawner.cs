@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Models.Enums;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 
 public class SegmentSpawner : MonoBehaviour
@@ -188,7 +189,7 @@ public class SegmentSpawner : MonoBehaviour
                         // Spawn the branch object
                         GameObject branch = SpawnRandomBranch();
                         branch.transform.position = currentDisplacement + branchDirection * branchLength;
-                        branch.transform.rotation = Quaternion.LookRotation(branchDirection);
+                        SafeLookRotation.TrySet(branch.transform, branchDirection, branch);
 
                         // Recursively spawn branches for the current branch
                         SpawnBranches(branch, maxDepth - 1, branchDirection, branchLength);
@@ -324,7 +325,7 @@ public class SegmentSpawner : MonoBehaviour
                 // Spawn the branch object
                 GameObject branch = SpawnRandomBranch();
                 branch.transform.position = parent.transform.position + branchDirection * branchLength;
-                branch.transform.rotation = Quaternion.LookRotation(branchDirection);
+                SafeLookRotation.TrySet(branch.transform, branchDirection, branch);
 
                 // Recursively spawn branches for the current branch
                 SpawnBranches(branch, depth - 1, branchDirection, branchLength);
