@@ -2482,11 +2482,11 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   golfRules: 0
   scoringConfigs:
-  - Mode: 1
+  - Mode: 12
     Multiplier: 1
-  - Mode: 0
+  - Mode: 13
     Multiplier: 1
-  - Mode: 11
+  - Mode: 14
     Multiplier: 1
 --- !u!114 &1628508337
 MonoBehaviour:
