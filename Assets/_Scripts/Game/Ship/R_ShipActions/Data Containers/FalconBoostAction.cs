@@ -5,24 +5,24 @@ using UnityEngine;
 namespace CosmicShore
 {
     [CreateAssetMenu(fileName = "FalconBoostAction", menuName = "ScriptableObjects/Vessel Actions/FalconBoost")]
-    public class Falcon : ShipActionSO
+    public class FalconBoostAction : ShipActionExecutorBase
     {
-        public override void Initialize(IVessel ship)
+        void Initialize(IVessel ship)
         {
-            base.Initialize(ship);
+            //base.Initialize(ship);
         }
 
-        public override void StartAction(ActionExecutorRegistry execs)
+     void StartAction(ActionExecutorRegistry execs)
         {
-            if (ShipStatus == null) return;
-            ShipStatus.Boosting = true;
-            ShipStatus.IsStationary = false;
+            //if (ShipStatus == null) return;
+            //ShipStatus.Boosting = true;
+            //ShipStatus.IsStationary = false;
         }
 
-        public override void StopAction(ActionExecutorRegistry execs)
+        void StopAction(ActionExecutorRegistry execs)
         {
-            if (ShipStatus == null) return;
-            ShipStatus.Boosting = false;
+            //if (ShipStatus == null) return;
+            //ShipStatus.Boosting = false;
         }
 
 

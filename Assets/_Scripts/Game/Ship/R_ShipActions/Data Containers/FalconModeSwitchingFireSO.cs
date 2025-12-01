@@ -9,18 +9,25 @@ namespace CosmicShore.Game
         [Header("Actions")]
         [SerializeField] private ShipActionSO normalFire;     // FullAutoActionSO
         [SerializeField] private ShipActionSO ringFire; // FullAutoBlockShootActionSO
-        [SerializeField] private ShipActionExecutorBase ringMovement; // PLACEHOLDER
+        [SerializeField] private ShipActionSO ringMovement; // PLACEHOLDER
         private ShipActionSO _active;
+        private IVesselStatus status;
 
-        public override void StartAction(ActionExecutorRegistry registry)
+
+        public override void Initialize(IVessel ship)
         {
-            _active = ShipStatus is { IsTranslationRestricted: true } ? ringFire : normalFire ;
-            _active?.StartAction(registry);
+            base.Initialize(ship);
+            status = ship.VesselStatus;
+        }
+        public override void StartAction(ActionExecutorRegistry registry,IVesselStatus vesselStatus)
+        {
+            _active = vesselStatus is { IsTranslationRestricted: true } ? ringFire : normalFire;
+            _active?.StartAction(registry, status);
         }
 
-        public override void StopAction(ActionExecutorRegistry registry)
+        public override void StopAction(ActionExecutorRegistry registry, IVesselStatus vesselStatus)
         {
-            _active?.StopAction(registry);
+            _active?.StopAction(registry, status);
             _active = null;
         }
     }

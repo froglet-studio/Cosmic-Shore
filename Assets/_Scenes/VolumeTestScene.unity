@@ -708,7 +708,7 @@ MonoBehaviour:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 988902179}
   _initializeDatas:
-  - vesselClass: 11
+  - vesselClass: 9
     domain: 4
     PlayerName: Professional Frog
     IsAI: 0
