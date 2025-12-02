@@ -9,11 +9,11 @@ namespace CosmicShore.Game.UI
     {
         [SerializeField] GameDataSO gameData;
 
-        [Header("Own Player Rows")]
+        [Header("Own Player Rows (Local User)")]
         [SerializeField] DuellCellStatsRowUIController ownRound1Row;
         [SerializeField] DuellCellStatsRowUIController ownRound2Row;
 
-        [Header("Opponent Rows")]
+        [Header("Opponent Rows (Other User)")]
         [SerializeField] DuellCellStatsRowUIController opponentRound1Row;
         [SerializeField] DuellCellStatsRowUIController opponentRound2Row;
 
@@ -31,16 +31,16 @@ namespace CosmicShore.Game.UI
         {
             gameData.OnMiniGameTurnStarted.OnRaised += OnMiniGameTurnStarted;
             gameData.OnMiniGameRoundEnd.OnRaised += OnMiniGameRoundEnd;
-            gameData.OnWinnerCalculated += OnWinnerCalculated;
-            
-            Hide();
+
+            ResetStateAndUI();   // full cleanup when this UI is enabled
         }
 
         void OnDisable()
         {
             gameData.OnMiniGameTurnStarted.OnRaised -= OnMiniGameTurnStarted;
             gameData.OnMiniGameRoundEnd.OnRaised -= OnMiniGameRoundEnd;
-            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+
+            UnsubscribeFromRoundStats();
         }
 
         private void Update()
@@ -66,27 +66,48 @@ namespace CosmicShore.Game.UI
 
         void OnMiniGameTurnStarted()
         {
-            // You can keep hiding here if you want it auto-hidden per turn
-            Hide();
+            // New duel starting? Do a FULL cleanup once, at the very beginning.
+            if (gameData.RoundsPlayed == 0)
+            {
+                ResetStateAndUI();
+            }
+
             TrySubscribeToRoundStats();
+            RefreshAllRows();   // make sure we always draw with latest data at turn start
         }
 
         void OnMiniGameRoundEnd()
         {
-            // At the end of a round, we snapshot round 1 results
+            // At the end of the FIRST round, snapshot round 1 results.
+            // NOTE: we do NOT clear any rows here; we just capture data.
             if (gameData.RoundsPlayed == 1)
                 CaptureRound1Snapshots();
 
             RefreshAllRows();
-            Show();
+            Show(); // make sure it's visible at round end
         }
 
-        void OnWinnerCalculated()
+        // ─────────────────────────────────────────
+        // STATE RESET
+        // ─────────────────────────────────────────
+
+        void ResetStateAndUI()
         {
-            // At end of duel, just ensure UI is visible with final data
-            RefreshAllRows();
-            Show();
+            // logical state
+            round1SnapshotCaptured = false;
+
+            for (int i = 0; i < round1Snapshots.Length; i++)
+                round1Snapshots[i] = default;
+
             UnsubscribeFromRoundStats();
+
+            // UI rows
+            if (ownRound1Row) ownRound1Row.CleanupUI();
+            if (ownRound2Row) ownRound2Row.CleanupUI();
+            if (opponentRound1Row) opponentRound1Row.CleanupUI();
+            if (opponentRound2Row) opponentRound2Row.CleanupUI();
+
+            Hide();     // scoreboard starts hidden; player can toggle it
         }
 
         // ─────────────────────────────────────────
@@ -161,7 +182,10 @@ namespace CosmicShore.Game.UI
 
         void RefreshAllRows()
         {
-            if (gameData.Players.Count != 2 || gameData.RoundStatsList.Count != 2)
+            if (gameData.Players == null ||
+                gameData.RoundStatsList == null ||
+                gameData.Players.Count != 2 ||
+                gameData.RoundStatsList.Count != 2)
             {
                 // In case called too early
                 return;
@@ -181,35 +205,26 @@ namespace CosmicShore.Game.UI
                     continue;
                 }
 
-                // RoundsPlayed semantics:
-                //  - 0 or 1: we are in Round1 or just finished Round1
-                //  - 2: we are in Round2 or just finished Round2
-                if (gameData.RoundsPlayed <= 1)
+                if (!round1SnapshotCaptured)
                 {
-                    // Live / final stats for Round 1
+                    // We are in ROUND 1 (or between start and end of round 1):
+                    //  - Round 1 row shows live data
+                    //  - Round 2 row stays empty
                     rowRound1.Data = BuildRound1Data(stats);
                     rowRound1.UpdateRow();
 
-                    // Round 2 row empty (or keep last, depending on your preference)
                     rowRound2.CleanupUI();
                 }
-                else // RoundsPlayed >= 2
+                else
                 {
-                    // Row1 shows frozen round1 snapshot (captured at Round1 end)
-                    if (round1SnapshotCaptured)
-                    {
-                        rowRound1.Data = round1Snapshots[i];
-                        rowRound1.UpdateRow();
-                    }
-                    else
-                    {
-                        // Fallback: if no snapshot, derive from current (shouldn't normally happen)
-                        rowRound1.Data = BuildRound1Data(stats);
-                        rowRound1.UpdateRow();
-                    }
+                    // ROUND 2 (or after round 1 is finished):
+                    //  - Round 1 row shows frozen snapshot from end of round 1
+                    //  - Round 2 row shows "round-2 only" delta = current cumulative – round1 snapshot
+                    var baseData = round1Snapshots[i];
 
-                    // Row2 shows round2-only delta = total - round1Snapshot
-                    var baseData = round1SnapshotCaptured ? round1Snapshots[i] : default;
+                    rowRound1.Data = baseData;
+                    rowRound1.UpdateRow();
+
                     rowRound2.Data = BuildRound2DeltaData(stats, baseData);
                     rowRound2.UpdateRow();
                 }
