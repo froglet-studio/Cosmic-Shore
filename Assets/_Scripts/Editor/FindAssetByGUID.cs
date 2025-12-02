@@ -292,7 +292,7 @@ public class FindAssetByGUID : EditorWindow
 
     private long GetFileID(Object obj)
     {
-        return Unsupported.GetLocalIdentifierInFile(obj.GetInstanceID());
+        return (long) Unsupported.GetLocalIdentifierInFileForPersistentObject(obj);
     }
      
     private string GetHierarchyPath(GameObject obj)
