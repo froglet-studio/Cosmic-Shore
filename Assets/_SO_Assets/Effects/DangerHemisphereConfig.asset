@@ -52,7 +52,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   prismSpawnEvent: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
-  markShielded: 1
+  markShielded: 0
   markDangerous: 1
   themeManagerDataContainer: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628,
     type: 2}

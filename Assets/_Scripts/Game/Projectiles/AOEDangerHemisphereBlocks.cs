@@ -170,8 +170,6 @@ namespace CosmicShore.Game.Projectiles
 
             var data = new PrismEventData
             {
-                // Domain is passed to the factory if it needs it,
-                // but we do NOT assign prism.Domain on the instance.
                 ownDomain       = Domain,
                 Rotation        = rotation,
                 SpawnPosition   = position,
