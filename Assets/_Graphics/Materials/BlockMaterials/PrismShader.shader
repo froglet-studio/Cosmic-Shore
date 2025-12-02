@@ -2,7 +2,7 @@ Shader "BlockShaders/Prism"
 {
     Properties
     {
-        _Spread ("Spread", Vector) = (0.3, 0.3, 0.3)
+        _Spread ("Spread", Vector) = (0.05, 0.05, 0.05)
         _DistanceThreshold ("Distance Threshold", float) = 100000
     }
 
