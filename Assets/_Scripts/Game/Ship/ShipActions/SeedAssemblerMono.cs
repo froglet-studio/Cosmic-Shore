@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
 using UnityEngine;
 
 namespace CosmicShore
@@ -15,12 +12,6 @@ namespace CosmicShore
         [SerializeField] private float enhancementsPerFullAmmo = 4f;
         [SerializeField] private Assembler assembler;  
         [SerializeField] private int depth = 50;
-        [SerializeField] private int resourceIndex = 0;
-
-        private Game.VesselPrismController controller;
-        private Assembler currentAssembler;
-        private IVessel vessel;
-
 
         public override void StartAction()
         {
@@ -29,7 +20,5 @@ namespace CosmicShore
         public override void StopAction()
         {
         }
-
-     
     }
 }

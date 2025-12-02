@@ -10,7 +10,6 @@ public class ZoomOutAction : ShipAction
     [Min(0)] [SerializeField]
     private float zoomOutMultiplier = 6f;
     [Min(0)] [SerializeField] private float zoomInMultiplier  = 1f;
-    [SerializeField] private bool debugLogs = false;
 
     private enum ZoomDir
     {
@@ -35,15 +34,12 @@ public class ZoomOutAction : ShipAction
     {
         if (!Vessel.VesselStatus.AutoPilotEnabled)
         {
-
         }
     }
 
     public void AddProvider(IScaleProvider provider)
     {
-        // if (Vessel.VesselStatus.AutoPilotEnabled) return;
         _scaleSource = provider;
-        // Debug.Log("Initialized Zoom Out Action"); 
     }
 
     private void LateUpdate()

@@ -21,9 +21,6 @@ namespace CosmicShore.Game
         [SerializeField] private Color overheatingColor;
         [SerializeField] private Color blockedInputColor = Color.red;
 
-        [Header("Drain animation (unused now, but kept if you want to tweak later)")]
-        [SerializeField] private float drainSpeed = 0.04f;
-
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
         [SerializeField] private ScriptableEventInputEventBlock onInputEventBlocked;
@@ -31,8 +28,6 @@ namespace CosmicShore.Game
         Coroutine _heatFillLoop;
         
         private readonly Dictionary<InputEvents, Coroutine> _blockEnforcers = new();
-
-        private R_VesselActionHandler _handler;
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
