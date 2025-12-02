@@ -12,20 +12,14 @@ namespace CosmicShore.Game
         [SerializeField] private GrowSkimmerActionExecutor growSkimmerExecutor;
 
         int _slowedCount;
+        private IVesselStatus _vesselStatus;
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
-
+            _vesselStatus = vesselStatus;
             if (!view)
                 view = baseView as RhinoVesselHUDView;
-
-            if (!growSkimmerExecutor && vesselStatus != null)
-            {
-                growSkimmerExecutor = vesselStatus.ShipTransform
-                    ? vesselStatus.ShipTransform.GetComponentInChildren<GrowSkimmerActionExecutor>(true)
-                    : null;
-            }
 
             Subscribe();
         }
@@ -37,6 +31,7 @@ namespace CosmicShore.Game
 
         void Subscribe()
         {
+            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsNetworkOwner) return;
             if (growSkimmerExecutor != null)
                 growSkimmerExecutor.OnScaleChanged += HandleSkimmerScaleChanged;
 
@@ -46,6 +41,7 @@ namespace CosmicShore.Game
 
         void Unsubscribe()
         {
+            if (_vesselStatus.IsInitializedAsAI) return;
             if (growSkimmerExecutor != null)
                 growSkimmerExecutor.OnScaleChanged -= HandleSkimmerScaleChanged;
 
@@ -69,36 +65,24 @@ namespace CosmicShore.Game
             view.SetSkimmerIconScale01(t);
         }
 
-        // Crystal collision → explosion spawn
         void HandleCrystalExplosion(VesselImpactor vesselImpactor)
         {
             if (!view) return;
-
-            // Optional: filter to this vessel only, if you have _vesselStatus in base
-            // if (vesselImpactor.Vessel.VesselStatus != _vesselStatus) return;
-
+            
             _slowedCount = 0;
+            
             view.SetSlowedCount(_slowedCount);
-
-            // Turn crystal green, show text, auto-reset & hide text in 2 seconds
             view.FlashCrystalActivated(2f);
-
-            // Line stays neutral until we actually slow someone
             view.ResetLineIcon();
         }
 
-        // Explosion slows ships
         void HandleVesselSlowedByExplosion(VesselImpactor impactor, ExplosionImpactor impactee)
         {
             if (!view) return;
 
-            // Optional: filter to this vessel only
-            // if (impactor.Vessel.VesselStatus != _vesselStatus) return;
-
             _slowedCount++;
+            
             view.SetSlowedCount(_slowedCount);
-
-            // Line icon red → back to normal in 2 seconds
             view.FlashLineIconActive(2f);
         }
 
