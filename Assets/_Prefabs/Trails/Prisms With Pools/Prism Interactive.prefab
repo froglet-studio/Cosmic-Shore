@@ -256,7 +256,7 @@ MonoBehaviour:
   _disableAfterSubscribing: 0
   _eventResponses:
   - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+    ScriptableEvent: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
     Response:
       m_PersistentCalls:
         m_Calls:
