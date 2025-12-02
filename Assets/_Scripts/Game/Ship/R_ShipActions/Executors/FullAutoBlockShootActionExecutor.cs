@@ -22,26 +22,18 @@ namespace CosmicShore.Game
 
         private IVesselStatus _status;
         private CancellationTokenSource _cts;
-        private CancellationToken _lifetimeToken;
 
         #region Unity Lifecycle
-        private void Awake()
-        {
-            // Token that is cancelled when this component is destroyed
-            _lifetimeToken = this.GetCancellationTokenOnDestroy();
-        }
-
         private void OnEnable()
         {
-            if (OnMiniGameTurnEnd != null)
+            if (OnMiniGameTurnEnd)
                 OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
         }
 
         private void OnDisable()
         {
             End();
-
-            if (OnMiniGameTurnEnd != null)
+            if (OnMiniGameTurnEnd)
                 OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
         }
         #endregion
@@ -50,7 +42,6 @@ namespace CosmicShore.Game
         public override void Initialize(IVesselStatus vesselStatus)
         {
             _status = vesselStatus;
-
             if (muzzles == null || muzzles.Length == 0)
                 muzzles = new[] { _status.ShipTransform };
         }
@@ -59,26 +50,21 @@ namespace CosmicShore.Game
         #region Public API
         public void Begin(FullAutoBlockShootActionSO so)
         {
-            End();
+            if (_cts != null) return;
 
-            if (!isActiveAndEnabled)
-                return;
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(
+                this.GetCancellationTokenOnDestroy());
 
-            _cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeToken);
-            var token = _cts.Token;
-
-            FireLoopAsync(so, token).Forget();
+            FireLoopAsync(so, _cts.Token).Forget();
         }
 
         public void End()
         {
-            if (_cts == null)
-                return;
+            if (_cts == null) return;
 
             try
             {
-                if (!_cts.IsCancellationRequested)
-                    _cts.Cancel();
+                _cts.Cancel();
             }
             catch
             {
@@ -89,12 +75,7 @@ namespace CosmicShore.Game
             _cts = null;
         }
 
-        private void OnTurnEndOfMiniGame()
-        {
-            // (Optional) temp debug:
-            Debug.Log("[FullAutoBlockShootActionExecutor] Turn end received. Stopping auto fire.");
-            End();
-        }
+        private void OnTurnEndOfMiniGame() => End();
         #endregion
 
         #region Core Loop
@@ -103,12 +84,6 @@ namespace CosmicShore.Game
             if (!blockFactory)
             {
                 Debug.LogError("[FullAutoBlockShootActionExecutor] BlockFactory not assigned.");
-                return;
-            }
-
-            if (_status == null)
-            {
-                Debug.LogError("[FullAutoBlockShootActionExecutor] No IVesselStatus assigned.");
                 return;
             }
 
@@ -121,9 +96,6 @@ namespace CosmicShore.Game
                 {
                     foreach (var m in muzzles)
                     {
-                        if (token.IsCancellationRequested)
-                            break;
-
                         if (!m) continue;
 
                         var domainAtShot = _status.Domain;
@@ -137,17 +109,12 @@ namespace CosmicShore.Game
 
                         prism.transform.SetParent(null, true);
                         prism.transform.localScale = so.BlockScale;
+                        //prism.ownerID = _status.PlayerName; 
+                        prism.ChangeTeam(domainAtShot); 
+                        prism.RegisterProjectileCreated(_status.PlayerName); 
 
-                        prism.ChangeTeam(domainAtShot);
-                        prism.RegisterProjectileCreated(_status.PlayerName);
-
-                        // Use the SAME token as the fire loop, so End() cancels these too
-                        SetupPrismVisualAsync(
-                            prism,
-                            domainAtShot,
-                            spawnVisibilityDelay,
-                            token
-                        ).Forget();
+                        SetupPrismVisualAsync(prism, domainAtShot, spawnVisibilityDelay,
+                            this.GetCancellationTokenOnDestroy()).Forget();
 
                         if (so.DisableCollidersOnLaunch)
                         {
@@ -155,7 +122,6 @@ namespace CosmicShore.Game
                             foreach (var col in rootColliders)
                                 col.enabled = false;
                         }
-
                         var childProjectile = prism.GetComponentInChildren<Projectile>();
                         if (childProjectile)
                         {
@@ -165,11 +131,14 @@ namespace CosmicShore.Game
                                 projCol.enabled = true;
 
                             if (childProjectile.TryGetComponent<Rigidbody>(out var rb))
+                            {
                                 rb.isKinematic = false;
+                            }
                         }
 
                         float travelDistance = UnityEngine.Random.Range(so.MinStopDistance, so.MaxStopDistance);
 
+                        var movementToken = this.GetCancellationTokenOnDestroy();
                         MoveAndAnchorAsync(
                             prism.transform,
                             m.forward,
@@ -178,7 +147,7 @@ namespace CosmicShore.Game
                             so.DisableCollidersOnLaunch,
                             prism,
                             childProjectile,
-                            token
+                            movementToken
                         ).Forget();
                     }
 
@@ -219,11 +188,12 @@ namespace CosmicShore.Game
 
                 var mr = matAnim.MeshRenderer;
                 mr.enabled = false;
-                prism.Domain                = domain;
-                matAnim.IsAnimating         = false;
-                matAnim.AnimationProgress   = 1f;
+                prism.Domain = domain;
+                matAnim.IsAnimating        = false;
+                matAnim.AnimationProgress  = 1f;
                 matAnim.OnAnimationComplete = null;
                 matAnim.MarkMaterialsDirty();
+
                 matAnim.SetTransparency(false);
 
                 if (delaySeconds > 0f)
@@ -236,16 +206,18 @@ namespace CosmicShore.Game
                 }
                 else
                 {
+    
                     await UniTask.Yield(PlayerLoopTiming.Update, token);
                 }
 
-                if (!prism || !prism.gameObject.activeInHierarchy || token.IsCancellationRequested)
+                if (!prism || !prism.gameObject.activeInHierarchy)
                     return;
 
                 mr.enabled = true;
             }
             catch (OperationCanceledException)
             {
+
             }
             catch (Exception e)
             {
@@ -255,19 +227,8 @@ namespace CosmicShore.Game
         #endregion
 
         #region Movement / Anchor
-        private async UniTaskVoid MoveAndAnchorAsync(
-            Transform block,
-            Vector3 dir,
-            float speed,
-            float distance,
-            bool reactivateCollidersAtEnd,
-            Prism prism,
-            Projectile childProjectile,
-            CancellationToken token)
+        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 dir, float speed, float distance, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, CancellationToken token)
         {
-            if (!block)
-                return;
-
             Vector3 start  = block.position;
             Vector3 target = start + dir.normalized * distance;
 
@@ -285,11 +246,8 @@ namespace CosmicShore.Game
                         target,
                         speed * Time.deltaTime);
 
-                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                    await UniTask.Yield(PlayerLoopTiming.Update);
                 }
-
-                if (token.IsCancellationRequested)
-                    return;
 
                 if (reactivateCollidersAtEnd && prism && prism.gameObject.activeInHierarchy)
                 {
@@ -304,7 +262,9 @@ namespace CosmicShore.Game
                         projCol.gameObject.SetActive(false);
 
                     if (childProjectile.TryGetComponent<Rigidbody>(out var rb))
-                        rb.isKinematic = true;
+                    {
+                        rb.isKinematic     = true;
+                    }
                 }
             }
             catch (OperationCanceledException)
