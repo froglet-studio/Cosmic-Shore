@@ -1999,9 +1999,9 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  PitchScaler: 70
-  YawScaler: 70
-  RollScaler: 70
+  PitchScaler: 90
+  YawScaler: 90
+  RollScaler: 90
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:

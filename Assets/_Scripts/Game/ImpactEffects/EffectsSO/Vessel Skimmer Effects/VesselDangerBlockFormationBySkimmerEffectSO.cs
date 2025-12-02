@@ -34,20 +34,9 @@ namespace CosmicShore.Game
             if (!victimTransform)
                 return;
 
-            if (!dangerHemispherePrefab)
-            {
-                Debug.LogError("[VesselDangerBlockFormationBySkimmerEffectSO] dangerHemispherePrefab is not assigned.");
-                return;
-            }
-
             var victimPos   = victimTransform.position;
             var cellManager = CellControlManager.Instance;
             var cell = cellManager.GetNearestCell(victimPos);
-            if (cell == null)
-            {
-                Debug.LogWarning("[VesselDangerBlockFormationBySkimmerEffectSO] GetNearestCell returned null.");
-                return;
-            }
 
             var targetPos = cell.GetCrystalTransform().position;
 
@@ -61,20 +50,15 @@ namespace CosmicShore.Game
             var dirToTarget = toTarget.normalized;
             Quaternion rotation = Quaternion.LookRotation(dirToTarget, Vector3.up);
 
-            var aoeGo = Object.Instantiate(dangerHemispherePrefab, victimPos, rotation);
+            var aoeGo = Instantiate(dangerHemispherePrefab, victimPos, rotation);
             var aoe   = aoeGo.GetComponent<AOEDangerHemisphereBlocks>();
-            if (!aoe)
-            {
-                Debug.LogError("[VesselDangerBlockFormationBySkimmerEffectSO] dangerHemispherePrefab has no AOEDangerHemisphereBlocks.");
-                return;
-            }
 
             var init = new AOEExplosion.InitializeStruct
             {
-                OwnDomain           = victimStatus.Domain, // mostly for factory logic; prisms themselves are "danger"
+                OwnDomain           = attackerStatus.Domain,
                 AnnonymousExplosion = false,
                 Vessel              = victimVessel,
-                OverrideMaterial    = null,        // AOEDangerHemisphereBlocks sets its own danger material
+                OverrideMaterial    = null,       
                 MaxScale            = aoe.MaxScale,
                 SpawnPosition       = victimPos,
                 SpawnRotation       = rotation
