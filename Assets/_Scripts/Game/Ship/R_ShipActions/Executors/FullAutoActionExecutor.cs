@@ -12,98 +12,171 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     [Header("Scene Refs")]
     [SerializeField] private Gun gun;
     [SerializeField] private Transform[] muzzles;
-    [SerializeField]
-    public ScriptableEventNoParam OnMiniGameTurnEnd;
+
+    [Header("Events")]
+    [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
 
     private IVesselStatus _status;
     private ResourceSystem _resources;
 
     private CancellationTokenSource _cts;
+    private CancellationToken _lifetimeToken;
 
-    void OnEnable()
+    #region Unity Lifecycle
+    private void Awake()
     {
-        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        // Token that is cancelled when this component is destroyed
+        _lifetimeToken = this.GetCancellationTokenOnDestroy();
     }
 
-    void OnDisable()
+    private void OnEnable()
+    {
+        if (OnMiniGameTurnEnd != null)
+            OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+    }
+
+    private void OnDisable()
     {
         End();
-        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+
+        if (OnMiniGameTurnEnd != null)
+            OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
-    
+    #endregion
+
+    #region ShipActionExecutorBase
     public override void Initialize(IVesselStatus shipStatus)
     {
-        _status = shipStatus;
+        _status    = shipStatus;
         _resources = shipStatus.ResourceSystem;
+
+        if (!_resources)
+        {
+            Debug.LogError("[FullAutoActionExecutor] ResourceSystem is missing on vessel.");
+        }
+
         gun?.Initialize(shipStatus);
 
         if ((muzzles == null || muzzles.Length == 0) && gun != null)
             muzzles = new[] { gun.transform };
     }
+    #endregion
 
+    #region Public API
     public void Begin(FullAutoActionSO so)
     {
-        if (_cts != null || !gun) return;
+        // Always stop any previous loop before starting a new one
+        End();
 
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(
-            this.GetCancellationTokenOnDestroy());
-        
-        FireLoopAsync(so, _cts.Token).Forget(); // Fire and forget with cancellation
+        if (!isActiveAndEnabled)
+            return;
+
+        if (!gun)
+        {
+            Debug.LogError("[FullAutoActionExecutor] Gun reference not assigned.");
+            return;
+        }
+
+        if (_resources == null)
+        {
+            Debug.LogError("[FullAutoActionExecutor] No ResourceSystem available.");
+            return;
+        }
+
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeToken);
+        var token = _cts.Token;
+
+        FireLoopAsync(so, token).Forget();
     }
 
     public void End()
     {
-        if (_cts == null) return;
+        if (_cts == null)
+            return;
 
-        _cts.Cancel();
+        try
+        {
+            if (!_cts.IsCancellationRequested)
+                _cts.Cancel();
+        }
+        catch
+        {
+            // no-op
+        }
+
         _cts.Dispose();
         _cts = null;
     }
-    
-    void OnTurnEndOfMiniGame()
+
+    private void OnTurnEndOfMiniGame()
     {
+        // Optional debug:
+        // Debug.Log("[FullAutoActionExecutor] Turn end received. Stopping full-auto.");
         End();
     }
+    #endregion
 
+    #region Core Loop
     private async UniTaskVoid FireLoopAsync(FullAutoActionSO so, CancellationToken token)
     {
-        float interval = 1f / Mathf.Max(0.01f, so.FiringRate);
+        if (muzzles == null || muzzles.Length == 0)
+        {
+            Debug.LogError("[FullAutoActionExecutor] No muzzles assigned.");
+            return;
+        }
 
-        var ammoIndex = so.AmmoIndex;
-        var ammoCost = so.AmmoCost;
-        var inherit = so.Inherit;
+        var interval = 1f / Mathf.Max(0.01f, so.FiringRate);
+
+        var   ammoIndex       = so.AmmoIndex;
+        var ammoCost        = so.AmmoCost;
+        var  inherit         = so.Inherit;
         var projectileScale = so.ProjectileScale;
-        var projectileTime = so.ProjectileTime;
-        var firingPattern = so.FiringPattern;
-        var energy = so.Energy;
-        var speedValue = so.SpeedValue.Value;
+        var projectileTime  = so.ProjectileTime;
+        var   firingPattern   = so.FiringPattern;
+        var energy          = so.Energy;
+        var speedValue      = so.SpeedValue.Value;
 
         try
         {
             while (!token.IsCancellationRequested)
             {
-                // Check resource before firing
+                if (_resources == null || _resources.Resources == null || ammoIndex < 0 || ammoIndex >= _resources.Resources.Count)
+                {
+                    Debug.LogError("[FullAutoActionExecutor] Invalid resource index or ResourceSystem.");
+                    return;
+                }
+
                 var res = _resources.Resources[ammoIndex];
+
                 if (res.CurrentAmount >= ammoCost)
                 {
-                    var inheritVel = inherit ? _status.Course * _status.Speed : Vector3.zero;
+                    var inheritVel = inherit && _status != null
+                        ? _status.Course * _status.Speed
+                        : Vector3.zero;
 
                     for (int i = 0, count = muzzles.Length; i < count; i++)
                     {
+                        if (token.IsCancellationRequested)
+                            break;
+
                         if (!gun || !gun.gameObject)
                         {
-                            Debug.LogError("No active gun found!");
+                            Debug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
                             return;
                         }
 
                         if (!gun.isActiveAndEnabled)
                         {
-                            Debug.LogError("No active gun found!");
+                            // No gun to fire, but don't hard-crash the loop
                             continue;
                         }
-                        
+
+                        var muzzle = muzzles[i];
+                        if (!muzzle)
+                            continue;
+
                         gun.FireGun(
-                            muzzles[i],
+                            muzzle,
                             speedValue,
                             inheritVel,
                             projectileScale,
@@ -118,8 +191,8 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
                 }
 
-                // wait exactly for interval duration
-                await UniTask.Delay(TimeSpan.FromSeconds(interval),
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(interval),
                     DelayType.DeltaTime,
                     PlayerLoopTiming.PreLateUpdate,
                     token);
@@ -127,13 +200,12 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         }
         catch (OperationCanceledException)
         {
-            // normal stop
+            // Normal stop path
         }
         catch (Exception e)
         {
             Debug.LogError($"[FullAutoActionExecutor] Loop error: {e}");
         }
     }
-
-
+    #endregion
 }

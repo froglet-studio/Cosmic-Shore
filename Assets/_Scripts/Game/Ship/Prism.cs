@@ -317,6 +317,31 @@ namespace CosmicShore.Core
 
         // public void Steal(string playerName, Teams team) => Steal(playerName, team);
         public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
+        
+        public void RegisterProjectileCreated(string playerName)
+        {
+            if (string.IsNullOrEmpty(playerName))
+                playerName = DEFAULT_PLAYER_NAME;
+
+            PlayerName = playerName;
+            ownerID    = playerName;
+
+            prismProperties.position = transform.position;
+            prismProperties.prism    = this;
+            prismProperties.Trail    = Trail;
+            prismProperties.TimeCreated = Time.time;
+            prismProperties.volume   = Mathf.Max(
+                scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f,
+                1f);
+
+            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            _onTrailBlockCreatedEventChannel.Raise(new PrismStats
+            {
+                PlayerName = PlayerName,
+                Volume     = prismProperties.volume,
+            });
+        }
+
 
         // Restoration
         public void Restore()

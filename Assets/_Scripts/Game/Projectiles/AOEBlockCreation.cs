@@ -49,7 +49,7 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
-        private async UniTaskVoid ExplodeAsync(CancellationToken ct)
+        protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
             try
             {

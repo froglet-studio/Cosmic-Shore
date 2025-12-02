@@ -8,7 +8,6 @@ namespace CosmicShore
     public class SpawnableComet : SpawnableAbstractBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-        [FormerlySerializedAs("team")] [SerializeField] Domains domain = Domains.Blue;
         static int CometsSpawned = 0;
 
         #region Attributes for Explosion Parameters
