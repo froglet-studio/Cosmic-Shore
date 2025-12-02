@@ -203,7 +203,7 @@ namespace CosmicShore.Game.Projectiles
                 prism,
                 targetScale,
                 config.GrowthRate,
-                config.ThemeManagerDataContainer.GetTeamDangerousBlockMaterial(Domain),
+                config.ThemeManagerDataContainer.BaseMaterialSet.DangerousBlockMaterial,
                 config.MarkShielded,
                 config.MarkDangerous
             ).Forget();
