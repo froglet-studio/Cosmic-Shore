@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -12,20 +13,18 @@ namespace CosmicShore.Game
         [SerializeField] private GrowSkimmerActionExecutor growSkimmerExecutor;
 
         int _slowedCount;
+        private IVesselStatus _vesselStatus;
+
+        // Track unique victims per explosion
+        readonly HashSet<IVesselStatus> _uniqueSlowedThisExplosion = new HashSet<IVesselStatus>();
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
+            _vesselStatus = vesselStatus;
 
             if (!view)
                 view = baseView as RhinoVesselHUDView;
-
-            if (!growSkimmerExecutor && vesselStatus != null)
-            {
-                growSkimmerExecutor = vesselStatus.ShipTransform
-                    ? vesselStatus.ShipTransform.GetComponentInChildren<GrowSkimmerActionExecutor>(true)
-                    : null;
-            }
 
             Subscribe();
         }
@@ -37,20 +36,28 @@ namespace CosmicShore.Game
 
         void Subscribe()
         {
+            if (_vesselStatus == null) return;
+            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
+
             if (growSkimmerExecutor != null)
                 growSkimmerExecutor.OnScaleChanged += HandleSkimmerScaleChanged;
 
             VesselExplosionByCrystalEffectSO.OnCrystalExplosionTriggered += HandleCrystalExplosion;
             VesselChangeSpeedByExplosionEffectSO.OnVesselSlowedByExplosion += HandleVesselSlowedByExplosion;
+            VesselDamageBySkimmerEffectSO.OnSkimmerDebuffApplied += HandleSkimmerDebuffApplied;
         }
 
         void Unsubscribe()
         {
+            if (_vesselStatus == null) return;
+            if (_vesselStatus.IsInitializedAsAI) return;
+
             if (growSkimmerExecutor != null)
                 growSkimmerExecutor.OnScaleChanged -= HandleSkimmerScaleChanged;
 
             VesselExplosionByCrystalEffectSO.OnCrystalExplosionTriggered -= HandleCrystalExplosion;
             VesselChangeSpeedByExplosionEffectSO.OnVesselSlowedByExplosion -= HandleVesselSlowedByExplosion;
+            VesselDamageBySkimmerEffectSO.OnSkimmerDebuffApplied -= HandleSkimmerDebuffApplied;
         }
 
         #region Handlers
@@ -69,37 +76,49 @@ namespace CosmicShore.Game
             view.SetSkimmerIconScale01(t);
         }
 
-        // Crystal collision → explosion spawn
+        // When crystal explosion spawns
         void HandleCrystalExplosion(VesselImpactor vesselImpactor)
         {
             if (!view) return;
 
-            // Optional: filter to this vessel only, if you have _vesselStatus in base
+            // Optional: only if this explosion belongs to our Rhino
             // if (vesselImpactor.Vessel.VesselStatus != _vesselStatus) return;
 
             _slowedCount = 0;
+            _uniqueSlowedThisExplosion.Clear();
+
             view.SetSlowedCount(_slowedCount);
-
-            // Turn crystal green, show text, auto-reset & hide text in 2 seconds
             view.FlashCrystalActivated(2f);
-
-            // Line stays neutral until we actually slow someone
             view.ResetLineIcon();
         }
 
-        // Explosion slows ships
+        // When explosion slows ships
         void HandleVesselSlowedByExplosion(VesselImpactor impactor, ExplosionImpactor impactee)
         {
             if (!view) return;
 
-            // Optional: filter to this vessel only
-            // if (impactor.Vessel.VesselStatus != _vesselStatus) return;
+            // Optional: ensure explosion came from our Rhino by checking its source vessel if available
+            // if (impactee.SourceVesselStatus != _vesselStatus) return;
 
-            _slowedCount++;
-            view.SetSlowedCount(_slowedCount);
+            var victimStatus = impactor?.Vessel?.VesselStatus;
+            if (victimStatus != null && !_uniqueSlowedThisExplosion.Contains(victimStatus))
+            {
+                _uniqueSlowedThisExplosion.Add(victimStatus);
+                _slowedCount++;
+                view.SetSlowedCount(_slowedCount);
+            }
 
-            // Line icon red → back to normal in 2 seconds
+            // Even if already slowed, we can still re-flash the line icon
             view.FlashLineIconActive(2f);
+        }
+
+        // When our Rhino’s skimmer applies input debuff
+        void HandleSkimmerDebuffApplied(IVesselStatus attacker, IVesselStatus victim, float duration)
+        {
+            if (!view) return;
+            if (attacker != _vesselStatus) return; // only show for this Rhino
+
+            view.ShowDebuffTimer(duration);
         }
 
         #endregion

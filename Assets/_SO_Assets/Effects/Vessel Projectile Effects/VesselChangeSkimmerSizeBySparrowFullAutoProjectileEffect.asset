@@ -15,3 +15,4 @@ MonoBehaviour:
   vesselTypesToImpact: 03000000
   sizeMultiplier: 0.7
   duration: 3
+  growSkimmerAction: {fileID: 11400000, guid: 31c202b40f38b944e8ab2f5b474777e2, type: 2}

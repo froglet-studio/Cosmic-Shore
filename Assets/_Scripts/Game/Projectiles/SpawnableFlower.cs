@@ -16,7 +16,6 @@ namespace CosmicShore.Game.Projectiles
         static int ObjectsSpawned = 0;
 
         Material material;
-        Domains domain;
         public Material Material { get { return material; } set { material = new Material(value); } }
         public Domains Domain { get => domain; set => domain = value; }
 

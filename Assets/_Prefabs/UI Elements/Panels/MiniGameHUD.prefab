@@ -321,7 +321,6 @@ MonoBehaviour:
   pip: {fileID: 5023401565743585470}
   silhouette: {fileID: 1247642187047997787}
   trailDisplay: {fileID: 2224701857737343022}
-  buttonPanel: {fileID: 0}
   connectingPanelCanvasGroup: {fileID: 905686185806101728}
   canvasGroup: {fileID: 2175773387299378547}
 --- !u!114 &5651620619432189945
@@ -962,7 +961,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab5bb3a7e3f94a54c9f2436c5d375c16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  upperBound: 300000
+  upperBound: 50000
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!114 &2112953550736196232
 MonoBehaviour:

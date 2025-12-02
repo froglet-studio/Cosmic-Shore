@@ -1,4 +1,6 @@
-﻿using CosmicShore.Game;
+﻿using System;
+using CosmicShore.Game;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "GrowSkimmerAction", menuName = "ScriptableObjects/Vessel Actions/Grow Skimmer")]
@@ -18,6 +20,30 @@ public class GrowSkimmerActionSO : ShipActionSO
     public float ShrinkRate => shrinkRate.Value;
     public bool ApplyBoostWhileGrowing => applyBoostWhileGrowing;
     public float BoostMultiplier => boostMultiplier.Value;
+
+    
+    bool _isMaxSizeDebuffed;
+    float _originalMaxSize;
+    
+    /// <summary>
+    /// Temporarily scales the max skimmer size by sizeMultiplier, then restores it after durationSeconds.
+    /// </summary>
+    public async UniTaskVoid ApplyMaxSizeDebuff(float sizeMultiplier, float durationSeconds)
+    {
+        if (_isMaxSizeDebuffed)
+            return;
+
+        _isMaxSizeDebuffed = true;
+        _originalMaxSize = maxSize.Value;
+
+        var safeMultiplier = Mathf.Max(0.01f, sizeMultiplier);
+        maxSize.Value = _originalMaxSize * safeMultiplier;
+
+        await UniTask.Delay(TimeSpan.FromSeconds(durationSeconds));
+
+        maxSize.Value = _originalMaxSize;
+        _isMaxSizeDebuffed = false;
+    }
 
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<GrowSkimmerActionExecutor>()?.Begin(this, vesselStatus);
