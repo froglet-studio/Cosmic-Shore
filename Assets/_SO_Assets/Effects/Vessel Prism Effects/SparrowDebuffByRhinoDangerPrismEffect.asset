@@ -9,11 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 705084082c1d0b44b88bc848b03e4732, type: 3}
-  m_Name: VesselChangeSpeedByExplosionEffect
+  m_Script: {fileID: 11500000, guid: 01649857b31543c89b893e1170ff302c, type: 3}
+  m_Name: SparrowDebuffByRhinoDangerPrismEffect
   m_EditorClassIdentifier: 
-  _amount: 0.1
-  _duration: 3
   inputToMute: 7
-  muteSeconds: 3
+  muteSeconds: 5
   forceStopIfActive: 1
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
