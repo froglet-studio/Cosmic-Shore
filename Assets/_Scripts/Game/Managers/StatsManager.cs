@@ -158,8 +158,8 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            var victimPlayerName = prismStats.OtherPlayerName;
-            var attackingPlayerName = prismStats.PlayerName;
+            var attackingPlayerName = prismStats.OtherPlayerName;
+            var victimPlayerName = prismStats.PlayerName;
             
             if (!gameData.TryGetRoundStats(attackingPlayerName, out IRoundStats attackerPlayerStats))
                 return;
@@ -168,18 +168,20 @@ namespace CosmicShore.Core
                 return;
             
             attackerPlayerStats.BlocksDestroyed++;
-            if (attackingPlayerName == victimPlayerName)
-                attackerPlayerStats.FriendlyPrismsDestroyed++;
-            else
-                attackerPlayerStats.HostilePrismsDestroyed++;
             attackerPlayerStats.TotalVolumeDestroyed += prismStats.Volume;
-            if (attackingPlayerName == victimPlayerName)
-                attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
-            else
-                attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
-            
             victimPlayerStats.PrismsRemaining--;
             victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+
+            if (attackingPlayerName == victimPlayerName)
+            {
+                attackerPlayerStats.FriendlyPrismsDestroyed++;
+                attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
+            }
+            else
+            {
+                attackerPlayerStats.HostilePrismsDestroyed++;
+                attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
+            }
         }
 
         public void PrismRestored(PrismStats prismStats)

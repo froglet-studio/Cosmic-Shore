@@ -6,15 +6,6 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(Projectile))]
     public class ProjectileImpactor : ImpactorBase
     {
-        [SerializeField]
-        VesselProjectileEffectSO[] projectileShipEffects;
-        [SerializeField]
-        ProjectilePrismEffectSO[]  projectilePrismEffects; 
-        [SerializeField]
-        ProjectileMineEffectSO[] projectileMineEffects;
-        [SerializeField]
-        ProjectileEndEffectSO[] projectileEndEffects;
-
         [SerializeField] private ProjectileImpactorDataContainerSO projectileImpactorDataContainer;
 
         public Projectile Projectile { get; private set; }

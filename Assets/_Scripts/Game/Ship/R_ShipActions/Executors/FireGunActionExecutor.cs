@@ -8,6 +8,7 @@ using UnityEngine;
 public class FireGunActionExecutor : ShipActionExecutorBase
 {
     public event Action OnGunFired;
+    public event Action<float> OnAmmoChanged;  // NEW
 
     [Header("Scene Refs")]
     [SerializeField] Gun gun;
@@ -70,6 +71,8 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
         if (gun != null)
             gun.Initialize(shipStatus);
+
+        OnAmmoChanged?.Invoke(Ammo01);
     }
 
     public void Fire(FireGunActionSO so, IVesselStatus status)
@@ -80,6 +83,8 @@ public class FireGunActionExecutor : ShipActionExecutorBase
         _soRef = so;
         _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
 
+        OnAmmoChanged?.Invoke(Ammo01);
+
         var gunTf = gun ? gun.transform : transform;
         _worldMuzzleAnchor.SetPositionAndRotation(gunTf.position, gunTf.rotation);
 
@@ -88,11 +93,11 @@ public class FireGunActionExecutor : ShipActionExecutorBase
         OnGunFired?.Invoke();
 
         gun.FireGun(
-            _worldMuzzleAnchor,        
+            _worldMuzzleAnchor,
             so.Speed,
             inheritedVelocityWS,
             so.ProjectileScale,
-            true,                      
+            true,
             so.ProjectileTime.Value,
             0,
             FiringPatterns.Default,
@@ -104,5 +109,6 @@ public class FireGunActionExecutor : ShipActionExecutorBase
     void OnTurnEndOfMiniGame()
     {
         _soRef = null;
+        OnAmmoChanged?.Invoke(Ammo01);
     }
 }

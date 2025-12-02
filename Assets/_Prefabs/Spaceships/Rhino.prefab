@@ -657,7 +657,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.293958, g: 0.31132078, b: 0.21293166, a: 1}
+  m_Color: {r: 0.3301887, g: 0.3301887, b: 0.3301887, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -12896,7 +12896,22 @@ PrefabInstance:
     - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
         type: 3}
       propertyPath: debuffDefaultColor.a
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
+        type: 3}
+      propertyPath: debuffDefaultColor.b
+      value: 0.33333334
+      objectReference: {fileID: 0}
+    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
+        type: 3}
+      propertyPath: debuffDefaultColor.g
+      value: 0.33333334
+      objectReference: {fileID: 0}
+    - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
+        type: 3}
+      propertyPath: debuffDefaultColor.r
+      value: 0.33333334
       objectReference: {fileID: 0}
     - target: {fileID: 5161366343835098938, guid: 2656b477a4af7304180e65f2848a84b3,
         type: 3}
