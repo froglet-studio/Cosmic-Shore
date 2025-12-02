@@ -9,7 +9,7 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
     protected System.Random rng = new System.Random();
     protected int Seed;
     protected List<Trail> trails = new List<Trail>();
-    [FormerlySerializedAs("Team")] public Domains domain = Domains.Blue;
+    [FormerlySerializedAs("Team"), FormerlySerializedAs("team")] public Domains domain = Domains.Blue;
     public abstract GameObject Spawn();
 
     public virtual GameObject Spawn(int intensityLevel = 1)

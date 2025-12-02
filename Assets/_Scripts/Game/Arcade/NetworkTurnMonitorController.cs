@@ -26,8 +26,9 @@ namespace CosmicShore.Game.Arcade
             UnsubscribeFromEvents();
         }
 
-        protected virtual void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
         }
     }
 }
