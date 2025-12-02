@@ -32,11 +32,13 @@ namespace CosmicShore
         void OnEnable()
         {
             VesselChangeSpeedByExplosionEffectSO.OnExplosionDebuffApplied += OnExplosionDebuffApplied;
+            SparrowDebuffByRhinoDangerPrismEffectSO.OnExplosionDebuffApplied += OnExplosionDebuffApplied;
         }
 
         void OnDisable()
         {
             VesselChangeSpeedByExplosionEffectSO.OnExplosionDebuffApplied -= OnExplosionDebuffApplied;
+            SparrowDebuffByRhinoDangerPrismEffectSO.OnExplosionDebuffApplied -= OnExplosionDebuffApplied;
         }
 
         private void OnExplosionDebuffApplied(IVessel victimVessel, float duration)

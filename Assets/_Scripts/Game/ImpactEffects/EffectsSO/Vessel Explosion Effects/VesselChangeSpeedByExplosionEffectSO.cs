@@ -14,7 +14,7 @@ namespace CosmicShore.Game
         /// attacker-independent visual debuff: who was hit & for how long
         /// </summary>
         public static event Action<IVessel, float> OnExplosionDebuffApplied;
-        public static event Action<VesselImpactor, ExplosionImpactor> OnVesselSlowedByExplosion;
+        public static event Action<VesselImpactor> OnVesselSlowedByExplosion;
 
         [Header("Victim Input Suppression")]
         [SerializeField] private InputEvents inputToMute = InputEvents.RightStickAction;
@@ -37,7 +37,7 @@ namespace CosmicShore.Game
                     handler.StopShipControllerActions(inputToMute);
             }
             OnExplosionDebuffApplied?.Invoke(victimVessel, muteSeconds);
-            OnVesselSlowedByExplosion?.Invoke(impactor, impactee);
+            OnVesselSlowedByExplosion?.Invoke(impactor);
         }
     }
 }

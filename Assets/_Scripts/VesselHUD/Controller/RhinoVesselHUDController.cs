@@ -37,6 +37,7 @@ namespace CosmicShore.Game
         {
             if (_vesselStatus == null) return;
             VesselChangeSpeedByExplosionEffectSO.OnVesselSlowedByExplosion += HandleVesselSlowedByExplosion;
+            SparrowDebuffByRhinoDangerPrismEffectSO.OnVesselSlowedByRhinoDangerPrism += HandleVesselSlowedByExplosion;
             if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
 
             if (growSkimmerExecutor != null)
@@ -50,6 +51,7 @@ namespace CosmicShore.Game
         {
             if (_vesselStatus == null) return;
             VesselChangeSpeedByExplosionEffectSO.OnVesselSlowedByExplosion -= HandleVesselSlowedByExplosion;
+            SparrowDebuffByRhinoDangerPrismEffectSO.OnVesselSlowedByRhinoDangerPrism += HandleVesselSlowedByExplosion;
             if (_vesselStatus.IsInitializedAsAI|| !_vesselStatus.IsLocalUser) return;
 
             if (growSkimmerExecutor != null)
@@ -87,7 +89,7 @@ namespace CosmicShore.Game
             view.ResetLineIcon();
         }
         
-        void HandleVesselSlowedByExplosion(VesselImpactor impactor, ExplosionImpactor impactee)
+        void HandleVesselSlowedByExplosion(VesselImpactor impactor)
         {
             if (!view) return;
 
