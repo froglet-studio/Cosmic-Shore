@@ -191,7 +191,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   firePeriod: 0.2
   sideLength: 2
-  barrelLength: 2
+  barrelLength: 1
   projectileFactory: {fileID: 6530681738383227403}
 --- !u!1 &2241439963300921865
 GameObject:
@@ -312,7 +312,7 @@ MonoBehaviour:
   - {fileID: 5078300575574787067}
   blockFactory: {fileID: 5112862195692938605}
   spawnVisibilityDelay: 0.1
-  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
 --- !u!1 &3140989280476861951
 GameObject:
   m_ObjectHideFlags: 0
@@ -413,7 +413,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gun: {fileID: 1086101504276561688}
   projectileContainer: {fileID: 5753371459927063969}
-  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
 --- !u!1 &3538467135756948443
 GameObject:
   m_ObjectHideFlags: 0
@@ -815,7 +815,7 @@ MonoBehaviour:
   stationarySeedConfig: {fileID: 0}
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
     type: 2}
-  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
 --- !u!1 &8279817603024118164
 GameObject:
   m_ObjectHideFlags: 0
@@ -1227,7 +1227,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 0}
+  vesselPrismController: {fileID: 5613657713013293844}
   driftTrailAction: {fileID: 0}
   trailDisplayContainer: {fileID: 4625218033296401838}
   blockPrefab: {fileID: 0}
@@ -1619,7 +1619,7 @@ PrefabInstance:
     - target: {fileID: 8829720438174963281, guid: bcc16e719ed112a40b9794c2dcad9748,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.42959595
+      value: 0.42956543
       objectReference: {fileID: 0}
     - target: {fileID: 8829720438174963281, guid: bcc16e719ed112a40b9794c2dcad9748,
         type: 3}
@@ -2352,7 +2352,7 @@ PrefabInstance:
     - target: {fileID: 220384674327949564, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.18243408
+      value: 0.18249512
       objectReference: {fileID: 0}
     - target: {fileID: 484270461778895976, guid: f0a24806a0485254389f97d4c93f7615,
         type: 3}
