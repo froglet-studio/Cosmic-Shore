@@ -1,14 +1,18 @@
-using CosmicShore.Core;
 using CosmicShore.SOAP;
-using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Scoring
 {
     public class HostileVolumeDestroyedScoring : BaseScoring
     {
-        float lastVolumeDestroyed;
-        
-        public HostileVolumeDestroyedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        protected IScoreTracker ScoreTracker;
+
+        public HostileVolumeDestroyedScoring(
+            IScoreTracker tracker,
+            GameDataSO data,
+            float scoreMultiplier) : base(data, scoreMultiplier)
+        {
+            ScoreTracker = tracker;
+        }
 
         public override void Subscribe()
         {
@@ -29,16 +33,14 @@ namespace CosmicShore.Game.Arcade.Scoring
                     return;
 
                 roundStats.OnHostileVolumeDestroyedChanged -= UpdateScore;
-                lastVolumeDestroyed = 0;
             }
         }
 
         void UpdateScore(IRoundStats roundStats)
         {
-            var volumeDelta = roundStats.HostileVolumeDestroyed - lastVolumeDestroyed;
-            roundStats.Score += volumeDelta * scoreMultiplier;
-            lastVolumeDestroyed = roundStats.HostileVolumeDestroyed;
-            
+            // Reward destroying enemy volume
+            Score = roundStats.HostileVolumeDestroyed * scoreMultiplier;
+            ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }
 }
