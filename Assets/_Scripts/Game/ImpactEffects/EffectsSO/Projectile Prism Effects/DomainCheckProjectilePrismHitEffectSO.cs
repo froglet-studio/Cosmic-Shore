@@ -20,7 +20,6 @@ namespace CosmicShore.Game
 
         [Header("Factories")]
         [SerializeField]
-        [Tooltip("Factory that owns the moving block prisms, used to return the shooter block on hit.")]
         private BlockProjectileFactory blockFactory;
 
         public override void Execute(ProjectileImpactor impactor, PrismImpactor prismImpactee)
@@ -29,34 +28,40 @@ namespace CosmicShore.Game
                 return;
 
             var targetPrism = prismImpactee.Prism;
+            var projectile  = impactor.Projectile;
 
-            var projectile = impactor.Projectile;
-            
             var shooterPrism = projectile.GetComponentInParent<Prism>();
-            Domains shooterDomain = shooterPrism.Domain;
-            Domains targetDomain  = targetPrism.Domain;
+            if (!shooterPrism)
+            {
+                impactor.ExecuteEndEffects();
+                return;
+            }
 
+            var shooterDomain = shooterPrism.Domain;
+            var targetDomain  = targetPrism.Domain;
 
-            if (allowFriendlyPassThrough && shooterDomain == targetDomain)
+            var shooterName = shooterPrism.PlayerName;
+            if (string.IsNullOrEmpty(shooterName))
+                shooterName = shooterPrism.ownerID;
+
+            if (allowFriendlyPassThrough && Equals(shooterDomain, targetDomain))
                 return;
 
-            // Enemy hit: compute impact vector from projectile velocity
-            Vector3 impactVector = projectile.Velocity;
+            var impactVector = projectile.Velocity;
 
             targetPrism.Damage(
                 impactVector: impactVector,
                 domain: shooterDomain,
-                playerName: "PrismProjectile",
+                playerName: shooterName,
                 devastate: false);
 
-            if (destroyShooterPrism && shooterPrism != null && shooterPrism != targetPrism)
+            if (destroyShooterPrism && shooterPrism && !Equals(shooterPrism, targetPrism))
             {
                 shooterPrism.Damage(
-                    impactVector: -impactVector,
+                    impactVector: impactVector,
                     domain: shooterDomain,
-                    playerName: "PrismProjectile",
+                    playerName: shooterName, 
                     devastate: false);
-
 
                 if (blockFactory != null)
                 {
@@ -64,7 +69,6 @@ namespace CosmicShore.Game
                 }
             }
 
-            // End projectile VFX / lifecycle
             impactor.ExecuteEndEffects();
         }
     }

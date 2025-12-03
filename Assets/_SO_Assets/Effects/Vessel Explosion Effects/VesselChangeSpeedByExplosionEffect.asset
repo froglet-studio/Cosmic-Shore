@@ -14,3 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _amount: 0.1
   _duration: 3
+  inputToMute: 7
+  muteSeconds: 3
+  forceStopIfActive: 1

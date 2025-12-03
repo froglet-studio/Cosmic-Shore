@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfe83d0ee7f84f9d9844f1e9824e8565, type: 3}
   m_Name: FullAutoBlockShootAction
   m_EditorClassIdentifier: 
-  fireRate: 2.5
-  blockSpeed: 90
+  fireRate: 14
+  blockSpeed: 150
   minStopDistance: 90
-  maxStopDistance: 100
-  blockScale: {x: 1, y: 0.5, z: 15}
+  maxStopDistance: 120
+  blockScale: {x: 0.8, y: 0.5, z: 5}
   rotationOffsetEuler: {x: 0, y: 0, z: 0}
   prismType: 2
   disableCollidersOnLaunch: 1

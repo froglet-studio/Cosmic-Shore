@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
@@ -18,7 +19,7 @@ namespace CosmicShore.Game
         [SerializeField] private Material blueMineMaterial;
         [SerializeField] private float explodeAfterSeconds = 20f;
         [SerializeField] protected List<MineModelData> mineModels;
-        [SerializeField] private Collider collider;
+        [FormerlySerializedAs("collider")] [SerializeField] private Collider mineCollider;
         [SerializeField] protected GameObject SpentMinePrefab;
 
         public bool isplayer;
@@ -69,7 +70,7 @@ namespace CosmicShore.Game
 
         private void Explode(Vector3 velocity)
         {
-            collider.enabled = false;
+            mineCollider.enabled = false;
             foreach (var modelData in mineModels)
             {
                 _tempMaterial = new Material(modelData.explodingMaterial);

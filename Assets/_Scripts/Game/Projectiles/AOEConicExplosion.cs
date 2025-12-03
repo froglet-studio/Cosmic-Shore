@@ -92,13 +92,9 @@ namespace CosmicShore.Game.Projectiles
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
-
-                Destroy(gameObject);
             }
             catch (OperationCanceledException)
             {
-                // clean cancel
-                Destroy(gameObject);
             }
         }
     }

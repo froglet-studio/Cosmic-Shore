@@ -9,7 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d39b2a60f9c810048bd3a7ebd779feab, type: 3}
-  m_Name: VesselSpinByProjectileEffect
+  m_Script: {fileID: 11500000, guid: 52e145ca18f64c589ef3e15140e74d33, type: 3}
+  m_Name: VesselDangerBlockFormationBySkimmerEffect
   m_EditorClassIdentifier: 
-  spinSpeed: 0.2
+  dangerHemispherePrefab: {fileID: 2768328826796316037, guid: c3ab658461bdc764ea9f7da47252c0ba,
+    type: 3}
+  massCentroidDomain: 1

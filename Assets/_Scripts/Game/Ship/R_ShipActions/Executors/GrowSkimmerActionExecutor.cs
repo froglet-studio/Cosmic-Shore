@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
@@ -16,6 +17,8 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
     Coroutine _loop;
     bool _growing;
 
+    public event Action<float, float, float> OnScaleChanged; 
+    float _maxWorldZ;
     public float MinScale => _minWorldZ;
     public float CurrentScale => (skimmerRoot ? skimmerRoot.lossyScale.z : 1f);
     
@@ -38,14 +41,22 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
             skimmerRoot = shipStatus?.ShipTransform;
 
         _minWorldZ = skimmerRoot ? skimmerRoot.lossyScale.z : 1f;
+        _maxWorldZ = _minWorldZ;
+        
+        RaiseScaleChanged();
     }
 
     public void Begin(GrowSkimmerActionSO so, IVesselStatus status)
     {
         if (!skimmerRoot) return;
+
         _growing = true;
+        _maxWorldZ = so.MaxSize;
+
         if (_loop != null) StopCoroutine(_loop);
         _loop = StartCoroutine(GrowLoop(so));
+
+        RaiseScaleChanged();
     }
 
     public void End()
@@ -95,7 +106,11 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
         worldZ += (increase ? +1f : -1f) * rate * Time.deltaTime;
         worldZ = increase ? Mathf.Min(worldZ, limit) : Mathf.Max(worldZ, limit);
         float localZ = worldZ / parentZ;
-        var s = skimmerRoot.localScale; s = Vector3.one * localZ; skimmerRoot.localScale = s;
+        var s = skimmerRoot.localScale; 
+        s = Vector3.one * localZ; 
+        skimmerRoot.localScale = s;
+
+        RaiseScaleChanged();
     }
 
     void SetWorldZ(float worldZ)
@@ -103,12 +118,22 @@ public class GrowSkimmerActionExecutor : ShipActionExecutorBase, IScaleProvider
         float parentZ = (skimmerRoot && skimmerRoot.parent) ? skimmerRoot.parent.lossyScale.z : 1f;
         float localZ = worldZ / parentZ;
         skimmerRoot.localScale = Vector3.one * localZ;
+
+        RaiseScaleChanged();
     }
     
     public void ResetToMinScale()
     {
         if (!skimmerRoot) return;
         SetWorldZ(MinScale);
+    }
+    
+    void RaiseScaleChanged()
+    {
+        if (OnScaleChanged == null || !skimmerRoot) return;
+        var current = CurrentScale;
+        if (_maxWorldZ <= _minWorldZ) _maxWorldZ = _minWorldZ + 0.001f; // safety
+        OnScaleChanged.Invoke(current, _minWorldZ, _maxWorldZ);
     }
 
 }

@@ -109,6 +109,9 @@ namespace CosmicShore.Game
 
                         prism.transform.SetParent(null, true);
                         prism.transform.localScale = so.BlockScale;
+                        //prism.ownerID = _status.PlayerName; 
+                        prism.ChangeTeam(domainAtShot); 
+                        prism.RegisterProjectileCreated(_status.PlayerName); 
 
                         SetupPrismVisualAsync(prism, domainAtShot, spawnVisibilityDelay,
                             this.GetCancellationTokenOnDestroy()).Forget();
@@ -165,7 +168,7 @@ namespace CosmicShore.Game
         }
         #endregion
 
-        #region Visual Setup (no flash)
+        #region Visual Setup
         private async UniTaskVoid SetupPrismVisualAsync(
             Prism prism,
             Domains domain,
@@ -210,7 +213,6 @@ namespace CosmicShore.Game
                 if (!prism || !prism.gameObject.activeInHierarchy)
                     return;
 
-                // Now show the mesh with the correct, final material – no flash
                 mr.enabled = true;
             }
             catch (OperationCanceledException)

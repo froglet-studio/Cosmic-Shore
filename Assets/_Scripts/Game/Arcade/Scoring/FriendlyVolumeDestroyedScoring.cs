@@ -4,7 +4,15 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class FriendlyVolumeDestroyedScoring : BaseScoring
     {
-        public FriendlyVolumeDestroyedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        protected IScoreTracker ScoreTracker;
+
+        public FriendlyVolumeDestroyedScoring(
+            IScoreTracker tracker,
+            GameDataSO data,
+            float scoreMultiplier) : base(data, scoreMultiplier)
+        {
+            ScoreTracker = tracker;
+        }
 
         public override void Subscribe()
         {
@@ -30,7 +38,9 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         void UpdateScore(IRoundStats roundStats)
         {
-            roundStats.Score = roundStats.FriendlyVolumeDestroyed * scoreMultiplier;
+            // Penalty: destroying your own / friendly volume
+            Score = -roundStats.FriendlyVolumeDestroyed * scoreMultiplier;
+            ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }
 }

@@ -123,7 +123,7 @@ namespace CosmicShore.Game
             _renderer.SetPropertyBlock(_mpb);
 
             Vector3 initialPosition = transform.position;
-            const float maxDuration = 7f;
+            const float maxDuration = 5f;
             float duration = 0f;
 
             try

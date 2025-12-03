@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Game.IO;
 using CosmicShore.Utility;
+using CosmicShore.Utility.ClassExtensions;
+using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Game
 {
@@ -20,9 +21,8 @@ namespace CosmicShore.Game
         [SerializeField] bool affectSelf = true;
 
         [Header("FX / Viz")]
-        [SerializeField] float particleDurationAtSpeedOne = 300f;
         [SerializeField] bool visible;
-        [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
+        [SerializeField] ElementalFloat Scale = new(1);
         [SerializeField] NudgeShardPoolManager nudgeShardPoolManager;
         [SerializeField] int markerDistance = 70;
 
@@ -30,25 +30,28 @@ namespace CosmicShore.Game
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] float AOEPeriod;
         [SerializeField] private Material lineMaterial;
-
-        [SerializeField] int resourceIndex = 0;
         
         public IVesselStatus VesselStatus { get; private set; }
         public Domains Domain => VesselStatus.Domain;
         public bool AffectSelf => affectSelf;
+        public bool IsInitialized => VesselStatus is { Player: { IsActive: true } };
 
         float _appliedScale;
         float _sweetSpot;
-        float _sqrRadius;
-        float _initialGap;
         float _boosterTimer;
+        bool isResizingScale;
 
-        public bool IsInitialized => VesselStatus is { Player: { IsActive: true } };
 
         void Update()
         {
             if (!IsInitialized) return;
             ApplyScaleIfChanged();   
+        }
+        
+        private void OnDestroy()
+        {
+            // Ensures any scaling tasks for this specific transform are cancelled
+            transform.CancelResize();
         }
 
         public void Initialize(IVesselStatus vesselStatus)
@@ -56,15 +59,10 @@ namespace CosmicShore.Game
             VesselStatus = vesselStatus;
             
             _sweetSpot = transform.localScale.x / 4f;
-            _sqrRadius = transform.localScale.x * transform.localScale.x / 4f;
 
             ApplyScaleIfChanged();
             BindElementalFloats(VesselStatus.Vessel);
 
-            // if (visible)
-            //     GetComponent<MeshRenderer>().material = new Material(VesselStatus.SkimmerMaterial);
-
-            _initialGap = VesselStatus.VesselPrismController.Gap;
             if (nudgeShardPoolManager) nudgeShardPoolManager.transform.parent = VesselStatus?.Player?.Transform;
         }
 
@@ -83,16 +81,14 @@ namespace CosmicShore.Game
             MakeBoosters(prism);
         }
 
-        // TODO - Remove it later, this logic is transferred to skimmer impactor and crystal
-        /*public void TryVacuumCrystal(Crystal crystal)
+        public async UniTaskVoid ResizeForSeconds(float multiplier, float durationSeconds)
         {
-            if (!vacuumCrystal || !crystal) return;
+            if (isResizingScale) return;
 
-            crystal.transform.position = Vector3.MoveTowards(
-                crystal.transform.position,
-                transform.position,
-                vaccumAmount * Time.deltaTime / crystal.transform.lossyScale.x);
-        }*/
+            isResizingScale = true;
+            await transform.ResizeForSeconds(multiplier, durationSeconds);
+            isResizingScale = false;
+        }
         
         void ApplyScaleIfChanged()
         {
@@ -114,8 +110,6 @@ namespace CosmicShore.Game
 
             // last element
             VisualizeTubeAroundBlock(nextBlocks[^1]);
-
-            if (markerCount == 1) return;
 
             float stepSize = (float)(nextBlocks.Count - 1) / (markerCount - 1);
             for (int i = 1; i < markerCount - 1; i++)
@@ -139,7 +133,7 @@ namespace CosmicShore.Game
             if (idx > 0)
                 return block.Trail.LookAhead(idx, 0, forward, distance);
 
-            return block.Trail.LookAhead(idx, 0, forward, distance);
+            return block.Trail.LookAhead(idx, 0, backward, distance);
         }
 
         public static float ComputeGaussian(float x, float b, float c)

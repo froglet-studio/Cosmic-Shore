@@ -31,8 +31,6 @@ namespace CosmicShore
         [SerializeField] private bool requireExistingTrailBlock = true;
 
         [Header("Ghost Vessel")]
-        [SerializeField] private float  ghostLifetime       = 0f;  // 0 = same as cooldown
-        [SerializeField] private float  ghostScaleMultiplier = 1f;
         [SerializeField] private Material ghostMaterialOverride;
         [Tooltip("Applied after reading vessel rotation; use (0,180,0) if baked mesh is flipped.")]
         [SerializeField] private Vector3 ghostEulerOffset = new Vector3(0f, 180f, 0f);

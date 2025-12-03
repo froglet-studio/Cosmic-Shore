@@ -33,8 +33,8 @@ namespace CosmicShore.Game
         private readonly Dictionary<InputEvents, CancellationTokenSource> _muteEndCts = new();
         readonly List<ShipActionSO> _runtimeInstances = new();
         
-        // TODO - Unnecessary events added.
-        // Remove and Use _onButtonPressed and _onButtonReleased.
+        // TODO - Unnecessary events added. OnInputEventStarted, OnInputEventStopped
+        // Remove the ones below and Use _onButtonPressed and _onButtonReleased.
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
@@ -55,6 +55,12 @@ namespace CosmicShore.Game
         {
             if (!IsSpawned) ShipHelper.DestroyRuntimeActions(_runtimeInstances);
             UnsubscribeFromInputEvents();
+            
+            // TODO - These are not static events, so unsubscribe is not necessary,
+            // but better to do it for safety. but not on OnDisable, as few references will be missing,
+            // better to do it earlier.
+            if (vesselStatus.IsLocalUser)
+                vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
         }
 
         public override void OnNetworkDespawn()
@@ -72,12 +78,14 @@ namespace CosmicShore.Game
         public void Initialize(IVesselStatus v)
         {
             vesselStatus = v;
-
             if (_executors) _executors.InitializeAll(vesselStatus);
 
             _runtimeInstances.Clear();
             ShipHelper.InitializeShipControlActions(vesselStatus, _inputEventShipActions, _shipControlActions);
             ShipHelper.InitializeClassResourceActions(vesselStatus, _resourceEventClassActions, _classResourceActions);
+            
+            if (vesselStatus.IsLocalUser)
+                vesselStatus.InputStatus.OnToggleInputPaused += OnToggleInputPaused;
         }
 
         public void PerformShipControllerActions(InputEvents controlType)
@@ -113,7 +121,7 @@ namespace CosmicShore.Game
                 actions[i].StopAction(_executors, vesselStatus);
         }
 
-
+        void OnToggleInputPaused(bool toggle) => ToggleSubscription(!toggle);
 
         bool HasAction(InputEvents inputEvent) =>
             _shipControlActions.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
@@ -170,7 +178,7 @@ namespace CosmicShore.Game
 
         #region Mute Input
 
-        public bool IsInputMuted(InputEvents ie) =>
+        bool IsInputMuted(InputEvents ie) =>
             _inputMuteUntil.TryGetValue(ie, out var until) && Time.time < until;
 
         public void MuteInput(InputEvents ie, float seconds)

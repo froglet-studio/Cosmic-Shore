@@ -19,10 +19,10 @@ MonoBehaviour:
   minColumns: 10
   smooth: 1
   smoothingSeconds: 0.08
-  thicknessMultiplier: 180
-  lengthMultiplier: 200
+  thicknessMultiplier: 60
+  lengthMultiplier: 60
   gapMultiplier: 1
-  columnGapMultiplier: 3.5
+  columnGapMultiplier: 2.5
   useDomainPaletteColors: 1
   domainPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   enableDangerVisual: 1

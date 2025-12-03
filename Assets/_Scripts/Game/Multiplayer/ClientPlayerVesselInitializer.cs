@@ -50,7 +50,7 @@ namespace CosmicShore.Game
             var networkShip = NetworkVesselClientCache.GetInstanceByClientId(clientId);
             networkPlayer.InitializeForMultiplayerMode(networkShip);
             networkShip.Initialize(networkPlayer, false);
-            PlayerVesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
+            VesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
             gameData.AddPlayer(networkPlayer);
         }
         

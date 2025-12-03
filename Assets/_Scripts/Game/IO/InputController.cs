@@ -14,14 +14,6 @@ namespace CosmicShore.Game.IO
     /// </summary>
     public class InputController : MonoBehaviour
     {
-        struct JoystickData
-        {
-            public Vector2 joystickStart;
-            public int touchIndex;
-            public Vector2 joystickNormalizedOffset;
-            public Vector2 clampedPosition;
-        }
-
         public IInputStatus InputStatus { get; private set; }
 
         [SerializeField] public bool Portrait;

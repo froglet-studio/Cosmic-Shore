@@ -126,8 +126,6 @@ namespace CosmicShore.Game.UI
         }
 
         // Public methods you may call externally: 
-        // TODO -> Use Canvas Group, dont activate/deactivate game objects -> expensive.
-        public void ToggleView(bool toggle) => view.ToggleView(toggle);
         public void Show() => view.ToggleView(true);
         public void Hide() => view.ToggleView(false);
         

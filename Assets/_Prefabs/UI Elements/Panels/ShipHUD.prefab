@@ -260,20 +260,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa08588b33df93c4fb866d88d19a5a42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  view: {fileID: 0}
+  gameData: {fileID: 0}
+  view: {fileID: 7363510702798268052}
   onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
     type: 2}
   onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
     type: 2}
-  onBottomEdgeButtonsEnabled: {fileID: 11400000, guid: 35a6ae3b150ffb845a6aeaf106abb2ba,
-    type: 2}
-  onButton1Pressed: {fileID: 0}
-  onButton1Released: {fileID: 0}
-  onButton2Pressed: {fileID: 0}
-  onButton2Released: {fileID: 0}
-  onButton3Pressed: {fileID: 0}
-  onButton3Released: {fileID: 0}
   onSilhouetteInitialized: {fileID: 0}
+  OnResetForReplay: {fileID: 0}
 --- !u!114 &7363510702798268052
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -286,39 +280,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 726155bbf4139474dbf25b978b006c3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  miniGameType: 0
   scoreDisplay: {fileID: 0}
   leftNumberDisplay: {fileID: 0}
   rightNumberDisplay: {fileID: 0}
   roundTimeDisplay: {fileID: 0}
   countdownDisplay: {fileID: 0}
   readyButton: {fileID: 0}
-  countdownTimer: {fileID: 0}
   pip: {fileID: 0}
   silhouette: {fileID: 0}
   trailDisplay: {fileID: 0}
-  buttonPanel: {fileID: 0}
-  button1: {fileID: 0}
-  button2: {fileID: 0}
-  button3: {fileID: 0}
-  OnButton1Pressed:
-    m_PersistentCalls:
-      m_Calls: []
-  OnButton2Pressed:
-    m_PersistentCalls:
-      m_Calls: []
-  OnButton3Pressed:
-    m_PersistentCalls:
-      m_Calls: []
-  OnButton1Released:
-    m_PersistentCalls:
-      m_Calls: []
-  OnButton2Released:
-    m_PersistentCalls:
-      m_Calls: []
-  OnButton3Released:
-    m_PersistentCalls:
-      m_Calls: []
+  connectingPanelCanvasGroup: {fileID: 0}
+  canvasGroup: {fileID: 0}
 --- !u!114 &6435682087160953486
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -852,6 +824,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 0}
   AButtonSprite: {fileID: 0}
   XButtonSprite: {fileID: 0}
+  canvasGroup: {fileID: 0}
 --- !u!1 &1720411787054395008
 GameObject:
   m_ObjectHideFlags: 0
@@ -2355,7 +2328,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6345820074854757599}
   - component: {fileID: 3856891590483725876}
-  - component: {fileID: 6645979302720496098}
   m_Layer: 5
   m_Name: ResourceDisplayGroup
   m_TagString: Untagged
@@ -2412,25 +2384,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 1
   m_ChildScaleHeight: 1
   m_ReverseArrangement: 0
---- !u!114 &6645979302720496098
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8572936486883757852}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ba5b639bb0748b4eb5c2240c35c6901, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  anchorMin: {x: 0.5, y: 0}
-  anchorMax: {x: 0.5, y: 0}
-  position: {x: 0, y: -180}
-  portraitAnchorMin: {x: 1, y: 0}
-  portraitAnchorMax: {x: 1, y: 0}
-  portraitPosition: {x: 360, y: -90}
 --- !u!1 &8984243158138603434
 GameObject:
   m_ObjectHideFlags: 0

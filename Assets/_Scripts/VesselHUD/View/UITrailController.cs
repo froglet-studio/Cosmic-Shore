@@ -16,8 +16,6 @@ namespace CosmicShore.Game
 
         [Header("Layout (Pixels)")]
         [SerializeField] private Vector2 blockSizePx = new(30f, 30f);
-        [SerializeField] private float   rowSpacingPx = 6f;      // kept for parity (not used directly)
-        [SerializeField] private float   columnGapPx  = 16f;     // kept for parity (not used directly)
         [SerializeField] private float   scaleMultiplier = 1f;
 
         [Header("Behaviour")]
@@ -47,8 +45,7 @@ namespace CosmicShore.Game
         private bool _subDrift;
         private IVesselStatus _status;
 
-        private float Eff1(float v)  => v * Mathf.Max(0.01f, scaleMultiplier);
-        private Vector2 Eff2(Vector2 v) => v * Mathf.Max(0.01f, scaleMultiplier);
+        private Vector2 Eff1(Vector2 v) => v * Mathf.Max(0.01f, scaleMultiplier);
 
         public void Initialize(IVesselStatus status)
         {
@@ -157,7 +154,7 @@ namespace CosmicShore.Game
                     var block = Instantiate(_blockPrefab, colRT, false);
                     var brt = (RectTransform)block.transform;
                     brt.localScale = Vector3.zero;
-                    brt.sizeDelta  = Eff2(blockSizePx);
+                    brt.sizeDelta  = Eff1(blockSizePx);
                     _pool[i, j] = block;
                 }
             }
@@ -191,7 +188,7 @@ namespace CosmicShore.Game
 
             if (_pool == null || _columns == 0)
             {
-                if (wavelengthPx < 1f) wavelengthPx = Eff2(blockSizePx).x; // force something sane
+                if (wavelengthPx < 1f) wavelengthPx = Eff1(blockSizePx).x; // force something sane
                 int needed = Mathf.CeilToInt(width / Mathf.Max(1f, wavelengthPx)) + 2;
                 if (verboseLogs) Debug.Log($"[UITrailController] BuildPool — width:{width:F1} px, wavelengthPx:{wavelengthPx:F3}, columns:{needed}");
                 BuildPool(needed);
@@ -217,7 +214,7 @@ namespace CosmicShore.Game
                 var brt = (RectTransform)block.transform;
                 float y = (j == 0) ? (-xShiftPx) : (xShiftPx);
                 brt.localPosition = new Vector3(0f, y, 0f);
-                brt.sizeDelta     = Eff2(blockSizePx);
+                brt.sizeDelta     = Eff1(blockSizePx);
                 brt.localScale    = (j == 0) ? headScaleRow0 : headScaleRow1;
             }
 
