@@ -21,38 +21,43 @@ namespace CosmicShore.Game
         [SerializeField] private Color overheatingColor;
         [SerializeField] private Color blockedInputColor = Color.red;
 
-        [Header("Drain animation (unused now, but kept if you want to tweak later)")]
-        [SerializeField] private float drainSpeed = 0.04f;
-
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
         [SerializeField] private ScriptableEventInputEventBlock onInputEventBlocked;
 
         Coroutine _heatFillLoop;
-        
-        private readonly Dictionary<InputEvents, Coroutine> _blockEnforcers = new();
+        Coroutine _initialAmmoRoutine;
 
-        private R_VesselActionHandler _handler;
+        private readonly Dictionary<InputEvents, Coroutine> _blockEnforcers = new();
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
             view = view ? view : baseView as SparrowHUDView;
 
-            if (view && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
+            if (view && !view.isActiveAndEnabled) 
+                view.gameObject.SetActive(true);
 
-            if (stationaryModeChanged) stationaryModeChanged.OnRaised += HandleStationaryModeChanged;
+            if (stationaryModeChanged) 
+                stationaryModeChanged.OnRaised += HandleStationaryModeChanged;
             HandleStationaryModeChanged(vesselStatus.IsTranslationRestricted);
 
-            if (onInputEventBlocked) onInputEventBlocked.OnRaised += HandleInputEventBlocked;
+            if (onInputEventBlocked) 
+                onInputEventBlocked.OnRaised += HandleInputEventBlocked;
 
-            if (overheatingExecutor == null) return;
-            overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
-            overheatingExecutor.OnOverheated         += OnOverheated;
-            overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
-            overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
+            if (overheatingExecutor != null)
+            {
+                overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
+                overheatingExecutor.OnOverheated         += OnOverheated;
+                overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
+                overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
 
-            ApplyBoostVisual(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
+                ApplyBoostVisual(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
+            }
+
+            if (fireGunExecutor == null) return;
+            fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
+            _initialAmmoRoutine = StartCoroutine(InitialAmmoPaintRoutine());
         }
 
         private void OnDestroy()
@@ -71,7 +76,26 @@ namespace CosmicShore.Game
             if (onInputEventBlocked)
                 onInputEventBlocked.OnRaised -= HandleInputEventBlocked;
 
+            if (fireGunExecutor != null)
+                fireGunExecutor.OnAmmoChanged -= HandleAmmoChanged;
+
+            if (_initialAmmoRoutine != null)
+                StopCoroutine(_initialAmmoRoutine);
+
             StopHeatFillLoop();
+        }
+
+        // ---------- Initial ammo paint ----------
+
+        private IEnumerator InitialAmmoPaintRoutine()
+        {
+            yield return null;
+
+            var sprite = view.missileIcons[2];
+            if (sprite)
+                view.missileIcon.sprite = sprite;
+
+            _initialAmmoRoutine = null;
         }
 
         // ---------- Block logic (unchanged) ----------
@@ -129,26 +153,15 @@ namespace CosmicShore.Game
             int idx = isStationary ? 1 : 0;
             var sprite = view.weaponModeIcons[idx];
             if (!sprite) return;
-            view.weaponModeIcon.sprite = sprite;
+            view.weaponModeIcon.sprite  = sprite;
             view.weaponModeIcon.enabled = true;
         }
 
-        // ---------- Heat event handling (UPDATED) ----------
+        // ---------- Heat event handling (unchanged) ----------
 
-        void OnHeatBuildStarted()
-        {
-            StartHeatFillLoop();
-        }
-
-        void OnOverheated()
-        {
-            StartHeatFillLoop();
-        }
-
-        void OnHeatDecayStarted()
-        {
-            StartHeatFillLoop();
-        }
+        void OnHeatBuildStarted()   => StartHeatFillLoop();
+        void OnOverheated()         => StartHeatFillLoop();
+        void OnHeatDecayStarted()   => StartHeatFillLoop();
 
         void OnHeatDecayCompleted()
         {
@@ -195,16 +208,17 @@ namespace CosmicShore.Game
                 : Mathf.Approximately(shown01, 1f) ? boostFullColor : boostNormalColor;
         }
 
-        private void Update()
+        // ---------- Ammo HUD (event-driven) ----------
+
+        private void HandleAmmoChanged(float ammo01)
         {
-            if (!view) return;
-            if (fireGunExecutor)
-                PaintMissilesFromAmmo01(fireGunExecutor.Ammo01);
+            PaintMissilesFromAmmo01(ammo01);
         }
 
         private void PaintMissilesFromAmmo01(float ammo01)
         {
-            if (!view.missileIcon || view.missileIcons == null || view.missileIcons.Length == 0) return;
+            if (!view || !view.missileIcon || view.missileIcons == null || view.missileIcons.Length == 0) 
+                return;
 
             int maxState = view.missileIcons.Length - 1;
             int state = Mathf.Clamp(

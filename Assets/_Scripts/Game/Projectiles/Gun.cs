@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using CosmicShore.Core;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
@@ -16,7 +15,6 @@ namespace CosmicShore.Game.Projectiles
         [Header("Gun Settings")]
         [SerializeField] private float firePeriod = 0.2f;
         [SerializeField] private float sideLength = 2f;
-        [SerializeField] private float barrelLength = 2f;
 
         [Header("Dependencies")]
         [SerializeField] private ProjectileFactory projectileFactory;

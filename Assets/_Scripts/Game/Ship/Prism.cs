@@ -179,7 +179,7 @@ namespace CosmicShore.Core
             
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
-                PlayerName = PlayerName,
+                OwnName = PlayerName,
                 Volume = prismProperties.volume,
             });
 
@@ -217,7 +217,7 @@ namespace CosmicShore.Core
                 ActivateShield(2.0f);
         }
 
-        protected virtual GameObject SetupDestruction(Domains domain, string playerName, bool devastate = false)
+        protected virtual GameObject SetupDestruction(Domains domain, string attackerPlayerName, bool devastate = false)
         {
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
@@ -231,9 +231,9 @@ namespace CosmicShore.Core
             // Stats tracking
             _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
-                PlayerName = playerName,
+                OwnName = PlayerName,
                 Volume = prismProperties.volume,
-                OtherPlayerName = prismProperties.prism.PlayerName,
+                AttackerName = attackerPlayerName,
             });
 
             // Cell control management
@@ -337,7 +337,7 @@ namespace CosmicShore.Core
             gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
-                PlayerName = PlayerName,
+                OwnName = PlayerName,
                 Volume     = prismProperties.volume,
             });
         }
@@ -350,9 +350,9 @@ namespace CosmicShore.Core
             {
                 _onTrailBlockRestoredEventChannel.Raise(new PrismStats
                 {
-                    PlayerName = PlayerName,
+                    OwnName = PlayerName,
                     Volume = prismProperties.volume,
-                    OtherPlayerName = prismProperties.prism.PlayerName,
+                    AttackerName = prismProperties.prism.PlayerName,
                 });
 
                 if (CellControlManager.Instance != null)

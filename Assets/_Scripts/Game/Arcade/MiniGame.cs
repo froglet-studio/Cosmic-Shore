@@ -1,4 +1,3 @@
-using CosmicShore.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,7 +12,6 @@ using CosmicShore.App.Systems;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.App.Systems.Xp;
-using System.Linq;
 using UnityEngine.Serialization;
 
 
@@ -72,7 +70,6 @@ namespace CosmicShore.Game.Arcade
 
         // PlayerId Tracking
         int activePlayerId;
-        int RemainingPlayersActivePlayerIndex = -1;
         protected List<int> RemainingPlayers = new();
         protected bool gameRunning;
 
