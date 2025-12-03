@@ -29,7 +29,8 @@ namespace CosmicShore.Game
         [SerializeField] private ScriptableEventInputEventBlock onInputEventBlocked;
 
         Coroutine _heatFillLoop;
-        
+        Coroutine _initialAmmoRoutine;
+
         private readonly Dictionary<InputEvents, Coroutine> _blockEnforcers = new();
 
         private R_VesselActionHandler _handler;
@@ -61,7 +62,7 @@ namespace CosmicShore.Game
 
             if (fireGunExecutor == null) return;
             fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
-            HandleAmmoChanged(fireGunExecutor.Ammo01);
+            _initialAmmoRoutine = StartCoroutine(InitialAmmoPaintRoutine());
         }
 
         private void OnDestroy()
@@ -83,7 +84,23 @@ namespace CosmicShore.Game
             if (fireGunExecutor != null)
                 fireGunExecutor.OnAmmoChanged -= HandleAmmoChanged;
 
+            if (_initialAmmoRoutine != null)
+                StopCoroutine(_initialAmmoRoutine);
+
             StopHeatFillLoop();
+        }
+
+        // ---------- Initial ammo paint ----------
+
+        private IEnumerator InitialAmmoPaintRoutine()
+        {
+            yield return null;
+
+            var sprite = view.missileIcons[2];
+            if (sprite)
+                view.missileIcon.sprite = sprite;
+
+            _initialAmmoRoutine = null;
         }
 
         // ---------- Block logic (unchanged) ----------
@@ -147,20 +164,9 @@ namespace CosmicShore.Game
 
         // ---------- Heat event handling (unchanged) ----------
 
-        void OnHeatBuildStarted()
-        {
-            StartHeatFillLoop();
-        }
-
-        void OnOverheated()
-        {
-            StartHeatFillLoop();
-        }
-
-        void OnHeatDecayStarted()
-        {
-            StartHeatFillLoop();
-        }
+        void OnHeatBuildStarted()   => StartHeatFillLoop();
+        void OnOverheated()         => StartHeatFillLoop();
+        void OnHeatDecayStarted()   => StartHeatFillLoop();
 
         void OnHeatDecayCompleted()
         {
@@ -207,7 +213,7 @@ namespace CosmicShore.Game
                 : Mathf.Approximately(shown01, 1f) ? boostFullColor : boostNormalColor;
         }
 
-        // ---------- Ammo HUD (NEW event-driven path) ----------
+        // ---------- Ammo HUD (event-driven) ----------
 
         private void HandleAmmoChanged(float ammo01)
         {

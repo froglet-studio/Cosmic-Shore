@@ -99,8 +99,11 @@ namespace CosmicShore.Core
         {
             var r = Resources[index];
             float min = 0f;
+            float prev = r.CurrentAmount;
             float max = r.MaxAmount;
             r.CurrentAmount = Mathf.Clamp(amount, min, max);
+            if (!Mathf.Approximately(prev, r.CurrentAmount))
+                EmitResourceChanged(index);
         }
 
 
