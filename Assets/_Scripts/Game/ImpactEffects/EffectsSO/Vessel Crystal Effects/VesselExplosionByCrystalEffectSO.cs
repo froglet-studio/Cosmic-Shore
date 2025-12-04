@@ -14,9 +14,6 @@ namespace CosmicShore.Game
 
         public static event Action<VesselImpactor> OnMantaFlowerExplosion;
 
-        [SerializeField]
-        AOEExplosion[] _aoePrefabs;
-
 
         [Header("Explosion Settings")]
         [SerializeField] private AOEExplosion[] _aoePrefabs;

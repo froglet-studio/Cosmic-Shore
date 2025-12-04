@@ -2289,6 +2289,9 @@ MonoBehaviour:
   trailDisplayContainer: {fileID: 5007938818474930393}
   blockPrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
     type: 3}
+  overlayPrefab: {fileID: 5050906385865299522, guid: c7921835b74c8764d8b42c8fcff1279f,
+    type: 3}
+  overlayDuration: 1
   config: {fileID: 11400000, guid: e2b6ec3dc3232114cb1376a276d772a1, type: 2}
   silhouetteRoot: {fileID: 0}
   jawTop: {fileID: 0}
