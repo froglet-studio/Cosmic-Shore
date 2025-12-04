@@ -9,11 +9,13 @@ using UnityEngine.AdaptivePerformance;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Utility.Recording
 {
 
     public class AnimationRecorderProcess : MonoBehaviour
     {
+        #region Member variables.
+        
         /// <summary>
         /// The salt used to keep each recording session distinct.
         ///
@@ -25,20 +27,73 @@ namespace CosmicShore.Utility
         /// Whether the callbacks for when the editor changes state is registered.
         /// It should only be necessary to register it once until the editor is closed.
         /// </summary>
-        private static bool _registeredPlayCallbacks;
+        private bool _registeredPlayCallbacks;
         
         /// <summary>
-        /// The name of the serialized property for the track name in the data holder
-        /// object, for use by by Unity's property finder.
+        /// A collection of every recorder, each one associated with a new game object to track.
         /// </summary>
-        internal const string TrackName = "trackName";
-        
+        private readonly List<GameObjectRecorder> Recorders = new();
+                
         /// <summary>
         /// Number for each recording of the same object.
         /// If object X is recorded 3 times in one session, add 0, 1, and 2 to each of its
         /// recording's temp files.
         /// </summary>
         private int recordingNumber;
+        
+        /// <summary>
+        /// A property that will either return a reference to a holder, or do its best to instantiate
+        /// one and then return it.
+        /// </summary>
+        private RecordingDataHolder Holder { get; set; }
+        
+        // /// <summary>
+        // /// Where the timeline object should be stored, unless overridden.
+        // /// </summary>
+        // private const string DefaultTimelinePath = "Assets/_Scripts/Utility/Recording/DefaultTimeline.playable";
+        
+        /// <summary>
+        /// A reference to the data holder that unity can use to handle serialized properties.
+        /// </summary>
+        internal SerializedObject RecorderSerializedObject;
+        
+        /// <summary>
+        /// Format in which to convert the number of each recording assets to a string,
+        /// with the right numbers of leading zeros.
+        /// </summary>
+        private const string NumberFormat = "D4";
+        
+        /// <summary>
+        /// Whether the utility is in the process of recording.
+        /// </summary>
+        internal bool IsRecording { get; private set; }
+        
+        /// <summary>
+        /// When recording, time until the next snapshot. When this _timer reaches 0, the utility
+        /// takes a new snapshot.
+        /// </summary>
+        private float _timer;
+        
+        // /// <summary>
+        // /// Moment when the current recording started.
+        // /// </summary>
+        // private float animationStart;
+        
+        /// <summary>
+        /// The name of the game object that will have the data holder as its component.
+        /// This is used to find the object in question. That name should only be held
+        /// by the object that contains the data holder.
+        /// </summary>
+        public const string AnimationRecorderName = "Animation Recorder";
+        
+        #endregion
+
+        #region Names of serialized object properties
+        /// <summary>
+        /// The name of the serialized property for the track name in the data holder
+        /// object, for use by by Unity's property finder.
+        /// </summary>
+        internal const string TrackName = "trackName";
 
         /// <summary>
         /// The name of the serialized property for the salt currently in use by
@@ -82,62 +137,85 @@ namespace CosmicShore.Utility
         /// recorder are stored, for use by Unity's property finder.
         /// </summary>
         internal const string AssetsDirectoryName = "assetsDirectoryName";
+        #endregion
         
-        /// <summary>
-        /// A collection of every recorder, each one associated with a new game object to track.
-        /// </summary>
-        private static readonly List<GameObjectRecorder> Recorders = new();
+        #region Prepare for recording
         
-        /// <summary>
-        /// A property that will either return a reference to a holder, or do its best to instantiate
-        /// one and then return it.
-        /// </summary>
-        private RecordingDataHolder Holder { get; set; }
-        
-        // /// <summary>
-        // /// Where the timeline object should be stored, unless overridden.
-        // /// </summary>
-        // private const string DefaultTimelinePath = "Assets/_Scripts/Utility/Recording/DefaultTimeline.playable";
-        
-        /// <summary>
-        /// A reference to the data holder that unity can use to handle serialized properties.
-        /// </summary>
-        internal static SerializedObject RecorderSerializedObject;
-        
-        /// <summary>
-        /// Format in which to convert the number of each recording assets to a string,
-        /// with the right numbers of leading zeros.
-        /// </summary>
-        private const string NumberFormat = "D4";
-        
-        /// <summary>
-        /// Whether the utility is in the process of recording.
-        /// </summary>
-        internal static bool IsRecording { get; private set; }
-        
-        /// <summary>
-        /// When recording, time until the next snapshot. When this _timer reaches 0, the utility
-        /// takes a new snapshot.
-        /// </summary>
-        private static float _timer;
-        
-        // /// <summary>
-        // /// Moment when the current recording started.
-        // /// </summary>
-        // private float animationStart;
-        
-        /// <summary>
-        /// The name of the game object that will have the data holder as its component.
-        /// This is used to find the object in question. That name should only be held
-        /// by the object that contains the data holder.
-        /// </summary>
-        public const string AnimationRecorderName = "Animation Recorder";
+        internal void StartRecording()
+        {
+            IsRecording = true;
+            SetupRecording();
+            _timer = Holder.recordingDelay;
 
+        }
+        
+        private static string GenerateSalt()
+        {
+            var salt = new System.Random().Next();
+            return Convert.ToBase64String(BitConverter.GetBytes(salt)).TrimEnd('=');
+        }
+        
+        public int RecordingNumber
+        {
+            get => recordingNumber;
+            set => recordingNumber = value;
+        }
+
+        /// <summary>
+        /// The full path of the current animation asset.
+        ///
+        /// A "new recording" happens when the user stops recording and starts again within one play session.
+        /// </summary>
+        /// <param name="index">Which recording, if more than one in this session, in which this animation belongs.</param>
+        /// <returns></returns>
+        private string GameObjectAssetPath(int index)
+        {
+            var currentAssetsParentPath = Holder.assetsParentPath;
+            var currentAssetsDirectoryName = Holder.assetsDirectoryName;
+            var crn = index.ToString(NumberFormat);
+            return Path.Combine(currentAssetsParentPath, currentAssetsDirectoryName,
+                $"{gameObject.name}.{crn}.{salt}.asset");
+        }
+
+        internal void SetupRecordingSystem2()
+        {
+            var newSalt = GenerateSalt();
+            // var newAssetPath = Path.Combine(sceneData.assetsParentPath, AssetsDirectoryName,
+            //     $"NewTimeline.{newSalt}.playable");
+            // AssetDatabase.CopyAsset(DefaultTimelinePath, newAssetPath);
+            // Holder.director = director;
+            // var newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
+            // Holder.timelineAsset = newTimelineAsset;
+            // director.playableAsset = newTimelineAsset;
+        }
+        
+        /// <summary>
+        /// Helper method that returns whether there are enough settings available to start recording.
+        /// </summary>
+        /// <returns>Whether there are enough settings available to start recording.</returns>
+        internal bool ReadyToRecord()
+        {
+            return
+                Holder.trackName != "" &&
+                Holder.recordingDelay > 0 &&
+                Holder.assetsParentPath != "" &&
+                Holder.assetsDirectoryName != "" &&
+                !Holder.timelineAsset;
+        }
+        
+        /// <summary>
+        /// Makes sure that none of the elements needed for a recording are null.
+        /// Called at several points while the current utility is running.
+        /// This method should  not overwrite existing data.
+        /// </summary>
         internal void Initialize()
         {
-            Holder ??= gameObject.AddComponent<RecordingDataHolder>();
+            Holder ??= gameObject.GetOrAddComponent<RecordingDataHolder>();
             RecorderSerializedObject ??= new SerializedObject(Holder);
-            Holder.director ??= gameObject.AddComponent<PlayableDirector>();
+            var playableDirector = gameObject.GetOrAddComponent<PlayableDirector>();
+            Holder.director ??= playableDirector;
+            Debug.Log($"Holder : {Holder.name} :: playableDirector :  {playableDirector.playableAsset.name}");
+            Debug.Log($"Holder : {Holder.name} :: Holder.director : {Holder.director.name}");
             var newAssetPath = GameObjectAssetPath(recordingNumber);
             var newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
             Holder.timelineAsset = newTimelineAsset;
@@ -163,21 +241,59 @@ namespace CosmicShore.Utility
         private void SetupRecording()
         {
             Recorders.Clear();
-            foreach (Animator objectToTrack in Holder.objectsToTrack)
+            foreach (var objectToTrack in Holder.objectsToTrack)
             {
                 GameObjectRecorder gameObjectRecorder = new(gameObject);
                 gameObjectRecorder.BindComponentsOfType<Transform>(gameObject, true);
                 Recorders.Add(gameObjectRecorder);
             }
         }
+        #endregion
+
+        #region Finish recording
+
+        /// <summary>
+        /// Called when the user stops the animation. Saves all the data necessary to add the new entries
+        /// to the timeline.
+        /// </summary>
+        internal void EndRecording()
+        {
+            
+            IsRecording = false;
+            var currentAssetsParent = Holder.assetsParentPath;
+            var currentAssetsFolderName = Holder.assetsDirectoryName;
+            var assetsFolderFullPath = Path.Combine(currentAssetsParent, currentAssetsFolderName);
+            if (AssetDatabase.GetMainAssetTypeAtPath(assetsFolderFullPath) == null)
+            {
+                AssetDatabase.CreateFolder(currentAssetsParent, currentAssetsFolderName);
+            }
+
+            IEnumerator<GameObjectRecorder> recordersEnumerator = Recorders.GetEnumerator();
+            while (recordersEnumerator.MoveNext())
+            {
+                var currentRecorder = recordersEnumerator.Current;
+                var currentGameObject = currentRecorder?.root;
+                if (!currentRecorder || !currentGameObject)
+                {
+                    Debug.LogWarning("Something in the recording is null that shouldn't be.");
+                    return;
+                }
+
+                AnimationClip animationClip = new();
+                currentRecorder.SaveToClip(animationClip);
+                AssetDatabase.CreateAsset(animationClip, Path.Combine(assetsFolderFullPath,
+                    $"{currentGameObject.name}.asset"));
+            }
+        }
+        #endregion
         
-                /// <summary>
+        #region Proceed with recording
+        /// <summary>
         /// Run when the editor returns to edit mode. Adds new items to the timeline based
         /// on the saved data.
         /// </summary>
         private void BuildTimelineData()
         {
-            var director = Holder.director;
             var currentTimelineAsset = Holder.timelineAsset;
             for (var currentRecordingNumber = 0; currentRecordingNumber < recordingNumber; currentRecordingNumber++)
             {
@@ -194,13 +310,13 @@ namespace CosmicShore.Utility
                     Debug.Log($"new asset path: {newAssetPath}");
                     var animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(newAssetPath);
                     animationTrack?.CreateClip(animationClip);
-                    if (!director)
+                    if (!Holder.director)
                     {
                         Debug.LogWarning("Something in the recording is null that shouldn't be.");
                         return;
                     }
 
-                    director.SetGenericBinding(animationTrack, currentAnimator);
+                    Holder.director.SetGenericBinding(animationTrack, currentAnimator);
                     AssetDatabase.SaveAssets();
                 }
             }
@@ -235,94 +351,6 @@ namespace CosmicShore.Utility
                     throw new ArgumentOutOfRangeException(nameof(state), state, null);
             }
         }
-
-        internal void StartRecording()
-        {
-            IsRecording = true;
-            SetupRecording();
-            _timer = Holder.recordingDelay;
-
-        }
-       
-        
-        /// <summary>
-        /// Called when the user stops the animation. Saves all the data necessary to add the new entries
-        /// to the timeline.
-        /// </summary>
-        internal void EndRecording()
-        {
-            
-            IsRecording = false;
-            var currentAssetsParent = Holder.assetsParentPath;
-            var currentAssetsFolderName = Holder.assetsDirectoryName;
-            var assetsFolderFullPath = Path.Combine(currentAssetsParent, currentAssetsFolderName);
-            if (AssetDatabase.GetMainAssetTypeAtPath(assetsFolderFullPath) == null)
-            {
-                AssetDatabase.CreateFolder(currentAssetsParent, currentAssetsFolderName);
-            }
-
-            IEnumerator<GameObjectRecorder> recordersEnumerator = Recorders.GetEnumerator();
-            while (recordersEnumerator.MoveNext())
-            {
-                var currentRecorder = recordersEnumerator.Current;
-                var currentGameObject = currentRecorder?.root;
-                if (!currentRecorder || !currentGameObject)
-                {
-                    Debug.LogWarning("Something in the recording is null that shouldn't be.");
-                    return;
-                }
-
-                AnimationClip animationClip = new();
-                currentRecorder.SaveToClip(animationClip);
-                AssetDatabase.CreateAsset(animationClip, Path.Combine(assetsFolderFullPath,
-                    $"{currentGameObject.name}.asset"));
-            }
-        }
-        
-        
-        /// <summary>
-        /// The full path of the current animation asset.
-        ///
-        /// A "new recording" happens when the user stops recording and starts again within one play session.
-        /// </summary>
-        /// <param name="index">Which recording, if more than one in this session, in which this animation belongs.</param>
-        /// <returns></returns>
-        private string GameObjectAssetPath(int index)
-        {
-            var currentAssetsParentPath = Holder.assetsParentPath;
-            var currentAssetsDirectoryName = Holder.assetsDirectoryName;
-            var crn = index.ToString(NumberFormat);
-            return Path.Combine(currentAssetsParentPath, currentAssetsDirectoryName,
-                $"{gameObject.name}.{crn}.{salt}.asset");
-        }
-        
-        
-        internal void SetupRecordingSystem2()
-        {
-            var newSalt = GenerateSalt();
-            // var newAssetPath = Path.Combine(sceneData.assetsParentPath, AssetsDirectoryName,
-            //     $"NewTimeline.{newSalt}.playable");
-            // AssetDatabase.CopyAsset(DefaultTimelinePath, newAssetPath);
-            // Holder.director = director;
-            // var newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
-            // Holder.timelineAsset = newTimelineAsset;
-            // director.playableAsset = newTimelineAsset;
-        }
-        
-        
-        /// <summary>
-        /// Helper method that returns whether there are enough settings available to start recording.
-        /// </summary>
-        /// <returns>Whether there are enough settings available to start recording.</returns>
-        internal bool ReadyToRecord()
-        {
-            return
-                Holder.trackName != "" &&
-                Holder.recordingDelay > 0 &&
-                Holder.assetsParentPath != "" &&
-                Holder.assetsDirectoryName != "" &&
-                !Holder.timelineAsset;
-        }
         
         /// <summary>
         /// Takes a snapshot for each currently tracked game objects.
@@ -338,20 +366,6 @@ namespace CosmicShore.Utility
             }
         }
         
-        
-        private static string GenerateSalt()
-        {
-            var salt = new System.Random().Next();
-            return Convert.ToBase64String(BitConverter.GetBytes(salt)).TrimEnd('=');
-        }
-        
-        // // Start is called once before the first execution of Update after the MonoBehaviour is created
-        // void Start()
-        // {
-        //
-        // }
-        //
-
         /// <summary>
         /// This update method works as a replacement for Coroutines, which are not available
         /// in the current context.
@@ -373,5 +387,6 @@ namespace CosmicShore.Utility
 
             _timer -= Time.deltaTime;
         }
+        #endregion
     }
 }

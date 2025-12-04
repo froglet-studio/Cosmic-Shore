@@ -5,7 +5,7 @@ using UnityEditor;
 using static UnityEditor.EditorGUILayout;
 
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Utility.Recording
 {
     using ARP = AnimationRecorderProcess;
 
@@ -16,6 +16,8 @@ namespace CosmicShore.Utility
     [InitializeOnLoadAttribute]
     public class AnimationRecorderWindow : EditorWindow
     {
+        private Func<string, GameObject> FindOrCreateGameObject => AnimationRecorderUtilities.FindOrCreateGameObject;
+
         private static GameObject _recordingSystemGameObject;
         
         /// <summary>
@@ -54,9 +56,9 @@ namespace CosmicShore.Utility
         /// </summary>
         public void OnEnable()
         {
-            _recordingSystemGameObject ??= new GameObject("Recording system");
-            _recorderProcess ??= _recordingSystemGameObject.AddComponent<ARP>();
-            _serializedObject = ARP.RecorderSerializedObject;
+            _recordingSystemGameObject = FindOrCreateGameObject(ARP.AnimationRecorderName);
+            _recorderProcess = _recordingSystemGameObject.GetOrAddComponent<ARP>();
+            _serializedObject = _recorderProcess.RecorderSerializedObject;
         }
 
         /// <summary>
@@ -82,17 +84,17 @@ namespace CosmicShore.Utility
             if (_serializedObject == null)
             {
                 _recorderProcess.Initialize();
-                _serializedObject = ARP.RecorderSerializedObject;
+                _serializedObject = _recorderProcess.RecorderSerializedObject;
             }
             GUILayout.BeginVertical("box");
             try 
             {
                 PropertyField(_serializedObject.FindProperty(ARP.Director),
                     new GUIContent("Playable  Container"));
-                Debug.Log($"{((_serializedObject.FindProperty(ARP.Director).objectReferenceValue) ? (_serializedObject.FindProperty(ARP.Director).objectReferenceValue.ToString()) : "null")} :: ARP.IsRecording : {ARP.IsRecording}");
+                Debug.Log($"{((_serializedObject.FindProperty(ARP.Director).objectReferenceValue) ? (_serializedObject.FindProperty(ARP.Director).objectReferenceValue.ToString()) : "null")} :: ARP.IsRecording : {_recorderProcess.IsRecording}");
                 Debug.Log("here");
                 GUI.enabled = (_serializedObject.FindProperty(ARP.Director).objectReferenceValue != null) 
-                              && !ARP.IsRecording;
+                              && !_recorderProcess.IsRecording;
                 PropertyField(_serializedObject.FindProperty(ARP.ObjectsToTrack),
                     new GUIContent("Objects to track"));
                 PropertyField(_serializedObject.FindProperty(ARP.RecordingDelay),
@@ -120,7 +122,7 @@ namespace CosmicShore.Utility
                     GUILayout.Label("Not available: recording is only possible in Play mode.");
                 }
 
-                GUI.enabled = _recorderProcess.ReadyToRecord() && !ARP.IsRecording && EditorApplication.isPlaying;
+                GUI.enabled = _recorderProcess.ReadyToRecord() && !_recorderProcess.IsRecording && EditorApplication.isPlaying;
                 var recordingDelay = _serializedObject.FindProperty("recordingDelay").floatValue;
                 GUI.enabled = true;
             }
@@ -134,7 +136,7 @@ namespace CosmicShore.Utility
             }
 
             Space(LayoutVerticalGap * 2);
-            GUI.enabled = ARP.IsRecording;
+            GUI.enabled = _recorderProcess.IsRecording;
             if (GUILayout.Button("Stop Recording", EditorStyles.miniButton))
             {
                 _recorderProcess.EndRecording();
