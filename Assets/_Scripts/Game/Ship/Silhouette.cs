@@ -16,8 +16,13 @@ namespace CosmicShore
         [SerializeField] private Transform  trailDisplayContainer;
         [SerializeField] private GameObject blockPrefab;
 
+        [Header("Manta Flower Overlay")]
+        [SerializeField] private GameObject overlayPrefab;
+        [SerializeField] private float overlayDuration = 1f;
+
         [Header("Config")]
         [SerializeField] private SilhouetteConfigSO config;
+
 
         // NEW: silhouette root & jaw refs
         [Header("Silhouette Root & Jaws")]
@@ -67,6 +72,9 @@ namespace CosmicShore
 
             // subscribe to resource stream once we have _resources (Initialize)
             TrySubscribeResources();
+
+            //subscibe to MantaFlowerExplosion
+            VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion += HandleMantaFlowerExplosion;
         }
 
         void OnDisable()
@@ -84,6 +92,9 @@ namespace CosmicShore
             }
 
             TryUnsubscribeResources();
+
+            // unsubscribe from MantaFlowerExplosion
+            VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
         }
 
         public void Initialize(IVesselStatus status, VesselHUDView hudView)
@@ -436,6 +447,21 @@ namespace CosmicShore
                     }
                 }
             }
+        }
+        private void HandleMantaFlowerExplosion(VesselImpactor vessel)
+        {
+            if (trailDisplayContainer == null || overlayPrefab == null) return;
+
+            // Instantiate overlay on the container
+            var overlay = Instantiate(overlayPrefab, trailDisplayContainer, false);
+
+            // Center it
+            overlay.transform.localPosition = Vector3.zero;
+            overlay.transform.localScale = Vector3.one;
+
+            // Optional: destroy after a duration
+            if (overlayDuration > 0f)
+                Destroy(overlay, overlayDuration);
         }
     }
 }

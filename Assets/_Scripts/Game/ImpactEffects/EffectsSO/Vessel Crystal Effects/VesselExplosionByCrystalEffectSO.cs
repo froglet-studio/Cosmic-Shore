@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
@@ -6,6 +7,9 @@ namespace CosmicShore.Game
     [CreateAssetMenu(fileName = "VesselExplosionByOmniCrystal", menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselExplosionByCrystalEffectSO")]
     public class VesselExplosionByCrystalEffectSO : VesselCrystalEffectSO
     {
+        public static event Action<VesselImpactor> OnCrystalExplosionTriggered;
+        public static event Action<VesselImpactor> OnMantaFlowerExplosion;
+
         [SerializeField]
         AOEExplosion[] _aoePrefabs;
 
@@ -33,6 +37,15 @@ namespace CosmicShore.Game
                 _aoeExplosionMaterial,
                 _resourceIndex, 
                 _spawnOffset);
+
+            if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Rhino)
+            {
+                OnCrystalExplosionTriggered?.Invoke(vesselImpactor);
+            }
+            if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Manta)
+            {
+                OnMantaFlowerExplosion?.Invoke(vesselImpactor);
+            }
         }
     }
 }
