@@ -1,3 +1,4 @@
+using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
 
 namespace CosmicShore.Utility
@@ -21,7 +22,7 @@ namespace CosmicShore.Utility
             rotation = Quaternion.identity;
 
             if (logError)
-                Debug.LogError($"ZERO LOOK ROTATION detected on {(context ? context.name : "unknown object")}");
+                DebugExtensions.LogErrorColored($"ZERO LOOK ROTATION detected on {(context ? context.name : "unknown object")}", Color.magenta);
 
             return false;
         }

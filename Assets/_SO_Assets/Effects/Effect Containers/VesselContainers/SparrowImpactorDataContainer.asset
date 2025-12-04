@@ -16,8 +16,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0eeacb2160b3fdd4c8ab9e7ec37b0371, type: 2}
   - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
   - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
+  - {fileID: 11400000, guid: 5fc2331a92e0b9a4b92f1d03c99669f5, type: 2}
   vesselCrystalEffects:
   - {fileID: 11400000, guid: dcf9d69a52b65c1438af3861b7c89e07, type: 2}
-  vesselSkimmerEffects:
-  - {fileID: 11400000, guid: 48300753e6e071a4cb4949fba42b3075, type: 2}
-  - {fileID: 11400000, guid: 224f409e205128348824afd5e899eb60, type: 2}
+  vesselSkimmerEffects: []

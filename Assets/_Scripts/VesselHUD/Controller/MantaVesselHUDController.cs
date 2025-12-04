@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using CosmicShore.Game.UI.Toast;
+﻿using CosmicShore.Game.UI.Toast;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -89,27 +88,10 @@ namespace CosmicShore.Game
                 accent: view.HighLightColor
             );
         }
-        
-        IEnumerator CountdownAndConfirm(SkimmerImpactor who)
-        {
-            if (view.OverchargeCountdownContainer) view.OverchargeCountdownContainer.SetActive(true);
-
-            for (int i = 3; i >= 1; i--)
-            {
-                if (view.OverChargeCountdownText) view.OverChargeCountdownText.text = i.ToString();
-                yield return new WaitForSeconds(1f);
-            }
-
-            overchargeSO.ConfirmOvercharge(who);
-
-            if (view.OverchargeCountdownContainer) view.OverchargeCountdownContainer.SetActive(false);
-
-            _countdownCR = null;
-        }
 
         void HandleOvercharge(SkimmerImpactor who)
         {
-            if (who != skimmer);
+            if (who != skimmer) return;
             toastChannel.ShowPrefix(prefix:"OVERCHARGED!", duration:4.5f,accent : _overchargeTextColor);
         }
 

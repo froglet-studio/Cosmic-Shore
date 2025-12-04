@@ -35,6 +35,11 @@ namespace CosmicShore.Game
         bool HasLiveProjectiles { get; set; }
         bool IsOverheating { get; set; }
         IPlayer Player { get; set; }
+        /// <summary>
+        /// Local User in singleplayer is the player providing input, not AI.
+        /// In Multiplayer, it is the Owner Client providing input.
+        /// </summary>
+        bool IsLocalUser  => Player.IsLocalUser;
         string PlayerName
         {
             get

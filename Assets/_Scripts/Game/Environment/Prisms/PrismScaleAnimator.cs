@@ -134,7 +134,7 @@ namespace CosmicShore.Core
                 new PrismStats
                 {
                     Volume = deltaVolume,
-                    PlayerName = prism.PlayerName,
+                    OwnName = prism.PlayerName,
                 });
 
             if (prism == null) return;

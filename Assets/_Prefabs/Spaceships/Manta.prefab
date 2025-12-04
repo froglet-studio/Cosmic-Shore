@@ -2134,8 +2134,8 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  PitchScaler: 40
-  YawScaler: 20
+  PitchScaler: 50
+  YawScaler: 30
   RollScaler: 100
   RotationThrottleScaler: 0.2
 --- !u!114 &874579555101021522

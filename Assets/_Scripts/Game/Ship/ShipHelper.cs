@@ -59,7 +59,6 @@ namespace CosmicShore.Game
 
         public static void DestroyRuntimeActions(List<ShipActionSO> runtimeInstances)
         {
-            //ActionInstanceFactory.DestroyInstances(runtimeInstances);
             runtimeInstances?.Clear();
         }
 
@@ -130,35 +129,5 @@ namespace CosmicShore.Game
                 }
             }
         }
-
-        // Deprecated - New Impact Effect System has been implemented. Remove it once all tested.
-        /*public static void ExecuteImpactEffect(
-            IEnumerable<IImpactEffect> effects, 
-            ImpactEffectData impactEffectData, 
-            CrystalProperties crystalProperties = default, 
-            PrismProperties prismProperties = null)
-        {
-            foreach (IImpactEffect effect in effects)
-            {
-                if (effect is null)
-                    continue;
-
-                switch (effect)
-                {
-                    case IBaseImpactEffect baseImpactEffect:
-                        baseImpactEffect.Execute(impactEffectData);
-                        break;
-                    case ICrystalImpactEffect crystalImpactEffect:
-                        crystalImpactEffect.Execute(impactEffectData, crystalProperties);
-                        break;
-                    case ITrailBlockImpactEffect trailBlockImpactEffect:
-                        trailBlockImpactEffect.Execute(impactEffectData, prismProperties);
-                        break;
-                    default:
-                        Debug.LogWarning($"Unknown impact effect type: {effect.GetType()}");
-                        break;
-                }
-            }
-        }*/
     }
 }

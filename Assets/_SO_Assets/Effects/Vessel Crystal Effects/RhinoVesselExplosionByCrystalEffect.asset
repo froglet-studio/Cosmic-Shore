@@ -19,3 +19,4 @@ MonoBehaviour:
   _resourceIndex: 0
   _aoeExplosionMaterial: {fileID: 0}
   _spawnOffset: {x: 0, y: 0, z: -5}
+  _explosionCooldown: 0.5

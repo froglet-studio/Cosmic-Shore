@@ -5,7 +5,6 @@ using CosmicShore.Core;
 using CosmicShore.Core.Visuals;
 using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -14,8 +13,6 @@ namespace CosmicShore.Game
     {
         public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);
         public event BlockCreationHandler OnBlockCreated;
-
-        const string playerNamePropertyKey = "playerName";
 
         [SerializeField] private PrismEventChannelWithReturnSO _onPrismSpawnedEventChannel;
 
@@ -34,7 +31,6 @@ namespace CosmicShore.Game
         float wavelength;
 
         [Header("Block Scaling")]
-        [SerializeField] int MaxNearbyBlockCount = 10;
         [SerializeField] float minBlockScale = 1f;
         [SerializeField] float maxBlockScale = 1f;
 
@@ -64,9 +60,6 @@ namespace CosmicShore.Game
         public float XScaler = 1f;
         public float YScaler = 1f;
         public float ZScaler = 1f;
-
-        // Charm
-        bool isCharmed;
 
         // Cancellation
         CancellationTokenSource cts;
@@ -110,7 +103,7 @@ namespace CosmicShore.Game
         }
         
         /// <summary>
-        /// Stops ALL ongoing async operations (spawn loop, delayed restarts, lerps, charms)
+        /// Stops ALL ongoing async operations (spawn loop, delayed restarts, lerps)
         /// and disables further spawning until re-initialized or a new CTS is created.
         /// </summary>
         public void StopSpawn()
@@ -128,12 +121,6 @@ namespace CosmicShore.Game
         public void ToggleBlockWaitTime(bool extended)
         {
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
-        }
-
-        public void Charm(float duration)
-        {
-            isCharmed = true;
-            _ = CharmAsync(duration, cts.Token);
         }
 
         public void SetNormalizedXScale(float normalized)
@@ -181,12 +168,6 @@ namespace CosmicShore.Game
                 float finalDelay = ApplyBoostSpawnDelay(clamped);
                 await UniTask.Delay(TimeSpan.FromSeconds(finalDelay), cancellationToken: ct);
             }
-        }
-
-        async UniTaskVoid CharmAsync(float duration, CancellationToken ct)
-        {
-            await UniTask.Delay(TimeSpan.FromSeconds(duration), cancellationToken: ct);
-            isCharmed = false;
         }
 
         async UniTask LerpXScalerAsync(float from, float to, float duration, CancellationToken ct)
@@ -242,12 +223,6 @@ namespace CosmicShore.Game
             // Target scale (also sent in event; set here for gameplay logic)
             prism.TargetScale = scale;
 
-            // Owner / charm
-            
-            // TODO - Later need to reimplement charm
-            // bool charm = isCharmed && tempVessel != null;
-            // string creatorId = charm ? vesselStatus.Player.PlayerUUID : ownerId;
-            // prism.ownerID = creatorId;
             prism.ownerID = vesselStatus.PlayerName;
 
             // Team
@@ -284,98 +259,6 @@ namespace CosmicShore.Game
             // Events
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
             OnBlockSpawned?.Invoke(prism);
-        }
-
-        void CreateBlockWithGrow(float halfGap, Trail prisms)
-        {
-            if (_onPrismSpawnedEventChannel == null)
-            {
-                Debug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
-                return;
-            }
-
-            // --- Scale from BaseScale ---
-            Vector3 scale = ApplyBoostScale(new Vector3(
-                BaseScale.x * XScaler / 2f - Mathf.Abs(halfGap),
-                BaseScale.y * YScaler,
-                BaseScale.z * ZScaler
-            ));
-
-
-            // --- Position & Rotation ---
-            float xShift = (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - vesselStatus.Course * offset + vesselStatus.ShipTransform.right * xShift;
-            Quaternion rot = vesselStatus.blockRotation;
-
-            // --- When grow completes, swap to Interactive prism via factory ---
-            void OnGrowCompleted()
-            {
-                var ret2 = _onPrismSpawnedEventChannel.RaiseEvent(new PrismEventData
-                {
-                    ownDomain     = vesselStatus.Domain,
-                    Rotation      = rot,
-                    SpawnPosition = pos,
-                    Scale         = scale,
-                    PrismType     = prismType
-                });
-
-                if (!ret2.SpawnedObject || !ret2.SpawnedObject.TryGetComponent(out Prism prism))
-                {
-                    Debug.LogError("[PrismSpawner] Grow completion spawn missing Prism component.");
-                    return;
-                }
-
-                prism.TargetScale = scale;
-
-                /*bool charm = isCharmed && tempVessel != null;
-                string creatorId = charm ? vesselStatus.Player.PlayerUUID : vesselStatus.PlayerName;
-                if (string.IsNullOrEmpty(creatorId)) creatorId = vesselStatus.Player?.PlayerUUID ?? string.Empty;
-
-                prism.ownerID = creatorId;*/
-                prism.ownerID = vesselStatus.PlayerName;
-                prism.ChangeTeam(vesselStatus.Domain);
-
-                prism.waitTime = waitTillOutsideSkimmer
-                    ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
-                    : waitTime;
-
-                if (shielded) prism.prismProperties.IsShielded = true;
-                
-                if (_dangerMode)
-                {
-                    try { prism.prismProperties.IsDangerous = true; } catch { /* ignore */ }
-
-                    if (_dangerMaterial && prism.TryGetComponent<Renderer>(out var rend))
-                    {
-                        if (_dangerBlendSeconds > 0f)
-                            MaterialBlendUtility.BeginBlend(rend, _dangerMaterial, _dangerBlendSeconds, _dangerAppend);
-                        else
-                            rend.sharedMaterial = _dangerMaterial;
-                    }
-                }
-
-
-                prisms.Add(prism);
-                prism.prismProperties.Index = (ushort)prisms.TrailList.IndexOf(prism);
-                prism.Initialize(vesselStatus.PlayerName);
-
-                OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
-                OnBlockSpawned?.Invoke(prism);
-            }
-
-            // --- Raise Grow prism (dummy visual first) ---
-            var eventData = new PrismEventData
-            {
-                ownDomain       = vesselStatus.Domain,
-                Rotation        = rot,
-                SpawnPosition   = pos,
-                Scale           = scale,
-                TargetTransform = transform, // current jet transform
-                PrismType       = PrismType.Grow,
-                OnGrowCompleted = OnGrowCompleted
-            };
-
-            _onPrismSpawnedEventChannel.RaiseEvent(eventData);
         }
 
         public List<Prism> GetLastTwoBlocks()

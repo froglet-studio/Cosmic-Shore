@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace CosmicShore.Game
 {
@@ -7,6 +8,8 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselDamageBySkimmerEffectSO")]
     public sealed class VesselDamageBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
+        public static event Action<IVesselStatus, IVesselStatus, float> OnSkimmerDebuffApplied;
+
         [Header("Victim Input Suppression")]
         [SerializeField, Tooltip("Which input to block on the victim (e.g., Fire or RightStick).")]
         private InputEvents inputToMute = InputEvents.RightStickAction;
@@ -19,17 +22,22 @@ namespace CosmicShore.Game
 
         public override void Execute(VesselImpactor vesselImpactor, SkimmerImpactor skimmerImpactee)
         {
-            var victimStatus = vesselImpactor?.Vessel?.VesselStatus;
-            var attackerStatus =  skimmerImpactee.Skimmer.VesselStatus ;
+            var victimStatus   = vesselImpactor?.Vessel?.VesselStatus;
+            var attackerStatus = skimmerImpactee.Skimmer.VesselStatus;
+
             if (attackerStatus == null) return;
             if (attackerStatus.VesselType != VesselClassType.Rhino) return;
 
             if (victimStatus == null) return;
+
             var handler = victimStatus.ActionHandler;
             handler.MuteInput(inputToMute, muteSeconds);
 
             if (forceStopIfActive)
                 handler.StopShipControllerActions(inputToMute);
+
+            // Notify HUDs
+            OnSkimmerDebuffApplied?.Invoke(attackerStatus, victimStatus, muteSeconds);
         }
     }
 }

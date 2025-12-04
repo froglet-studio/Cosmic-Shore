@@ -2,7 +2,7 @@ using CosmicShore.Core;
 
 namespace CosmicShore.Game
 {
-    public static class PlayerVesselInitializeHelper
+    public static class VesselInitializeHelper
     {
         public static void SetShipProperties(ThemeManagerDataContainerSO themeManagerData, IVessel vessel, SO_Captain so_captain = null)
         {

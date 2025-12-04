@@ -4,9 +4,16 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class VolumeCreatedScoring : BaseScoring
     {
-        public VolumeCreatedScoring(GameDataSO data, float scoreMultiplier) : base(data, scoreMultiplier) { }
+        protected IScoreTracker ScoreTracker;
 
-        float lastVolumeCreated;
+        public VolumeCreatedScoring(
+            IScoreTracker tracker,
+            GameDataSO data,
+            float scoreMultiplier) : base(data, scoreMultiplier)
+        {
+            ScoreTracker = tracker;
+        }
+
         public override void Subscribe()
         {
             foreach (var playerScore in GameData.RoundStatsList)
@@ -26,14 +33,14 @@ namespace CosmicShore.Game.Arcade.Scoring
                     return;
 
                 roundStats.OnVolumeCreatedChanged -= UpdateScore;
-                lastVolumeCreated = 0;
             }
         }
 
         void UpdateScore(IRoundStats roundStats)
         {
-            var newVolumeCreated = roundStats.VolumeCreated - lastVolumeCreated;
-            roundStats.Score += newVolumeCreated * scoreMultiplier;
+            // Positive score for volume created
+            Score = roundStats.VolumeCreated * scoreMultiplier;
+            ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }
 }

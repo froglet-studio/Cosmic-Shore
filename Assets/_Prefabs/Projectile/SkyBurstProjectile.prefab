@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 7613428080012511999}
   - component: {fileID: 2638094848372366872}
   - component: {fileID: 5884936712578775408}
+  - component: {fileID: 6406560027159531842}
   m_Layer: 12
   m_Name: SkyBurstProjectile
   m_TagString: Projectile
@@ -4972,11 +4973,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectileShipEffects: []
-  projectilePrismEffects: []
-  projectileMineEffects: []
-  projectileEndEffects:
-  - {fileID: 11400000, guid: 45ad00737624ad24488231f779f85f4e, type: 2}
   projectileImpactorDataContainer: {fileID: 11400000, guid: ccf25d21ccd6d0c4287cc4e2796b9ba8,
     type: 2}
 --- !u!114 &5884936712578775408
@@ -4992,3 +4988,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   impactorObject: {fileID: 2638094848372366872}
+--- !u!114 &6406560027159531842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7877928849292311340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d93ba61543949824db31c7cb89b4f009, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _binding: 0
+  _disableAfterSubscribing: 0
+  _eventResponses:
+  - Delay: 0
+    ScriptableEvent: {fileID: 11400000, guid: eadb3425134abb341a2ebc617fa5604a, type: 2}
+    Response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 7613428080012511999}
+          m_TargetAssemblyTypeName: CosmicShore.Game.Projectiles.Projectile, Assembly-CSharp
+          m_MethodName: ReturnToFactory
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2

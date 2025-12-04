@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 
@@ -13,7 +14,7 @@ namespace CosmicShore.Game.Projectiles
         [Header("Explosion Settings")]
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
-        [SerializeField] MeshRenderer renderer;
+        [FormerlySerializedAs("renderer")] [SerializeField] MeshRenderer meshRenderer;
 
         protected Vector3 MaxScaleVector;
         protected float Inertia = 70;
@@ -29,8 +30,13 @@ namespace CosmicShore.Game.Projectiles
 
         private void Awake()
         { 
-            if (!renderer)
-                renderer = GetComponent<MeshRenderer>();
+            if (!meshRenderer)
+                meshRenderer = GetComponent<MeshRenderer>();
+        }
+        
+        private void OnDestroy()
+        {
+            CancelExplosion();
         }
 
         public virtual void Initialize(InitializeStruct initStruct)
@@ -87,8 +93,8 @@ namespace CosmicShore.Game.Projectiles
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
                 
-                if (renderer)
-                    renderer.material = Material;
+                if (meshRenderer)
+                    meshRenderer.material = Material;
 
                 float time = 0f;
 
@@ -115,8 +121,8 @@ namespace CosmicShore.Game.Projectiles
         
         private void OnValidate()
         {
-            renderer = GetComponent<MeshRenderer>();
-            if (!renderer)
+            meshRenderer = GetComponent<MeshRenderer>();
+            if (!meshRenderer)
             {
                 Debug.LogError("No mesh renderer found!");
             }
