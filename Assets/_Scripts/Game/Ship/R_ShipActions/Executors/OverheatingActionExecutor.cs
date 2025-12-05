@@ -15,7 +15,8 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
 
     [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
     [SerializeField] private ScriptableEventBool StationaryModeChanged;
-
+    bool HasHeatResource => _heatResource != null && _resources != null;
+    
     IVesselStatus _status;
     ResourceSystem _resources;
     Resource _heatResource;
@@ -81,17 +82,31 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     public void StopOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
     {
         _registry = registry;
-        if (_isOverheating) return;
+
+        if (!HasHeatResource)
+        {
+            so.WrappedAction?.StopAction(_registry, status);
+            return;
+        }
+        
+        if (_isOverheating)
+            return;
 
         End();
 
         so.WrappedAction?.StopAction(_registry, status);
 
+        if (_heatResource.CurrentAmount <= 0f)
+        {
+            _heatResource.CurrentAmount = 0f;
+            return;
+        }
+
         OnHeatDecayStarted?.Invoke();
         _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
         DecayHeatRoutineAsync(so, _cts.Token).Forget();
     }
-
+    
     private void HandleStationaryModeChanged(bool isStationary)
     {
         if (!isStationary || _status == null) return;
@@ -182,10 +197,18 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
     {
         try
         {
+            if (!HasHeatResource)
+            {
+                OnHeatDecayCompleted?.Invoke();
+                return;
+            }
+
             while (_heatResource.CurrentAmount > 0)
             {
                 _resources.ChangeResourceAmount(so.HeatResourceIndex, -so.HeatDecayRate.Value);
-                await UniTask.Delay(TimeSpan.FromSeconds(0.1f),
+
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(0.1f),
                     DelayType.DeltaTime,
                     PlayerLoopTiming.Update,
                     token);
@@ -194,12 +217,11 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
             _heatResource.CurrentAmount = 0;
             OnHeatDecayCompleted?.Invoke();
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             Debug.LogError($"[Overheating] DecayHeat error: {e}");
         }
     }
+
 }

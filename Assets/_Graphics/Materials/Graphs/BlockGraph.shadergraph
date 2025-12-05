@@ -65,6 +65,9 @@
         },
         {
             "m_Id": "bf72471b0fb44ec5992f054ad6136e8f"
+        },
+        {
+            "m_Id": "8a00174c4bf7414baab62ebb8b62e80a"
         }
     ],
     "m_GroupDatas": [],
@@ -138,6 +141,20 @@
                     "m_Id": "29293a660f974d03ac78d2934da36aaf"
                 },
                 "m_SlotId": -2025661586
+            }
+        },
+        {
+            "m_OutputSlot": {
+                "m_Node": {
+                    "m_Id": "8a00174c4bf7414baab62ebb8b62e80a"
+                },
+                "m_SlotId": 1
+            },
+            "m_InputSlot": {
+                "m_Node": {
+                    "m_Id": "29293a660f974d03ac78d2934da36aaf"
+                },
+                "m_SlotId": -584583489
             }
         },
         {
@@ -352,7 +369,13 @@
             "m_Id": "3aa31501036f4ee9bba7322aedba5d79"
         },
         {
+            "m_Id": "347a670c290b4b83be9dc03f20aba548"
+        },
+        {
             "m_Id": "9b0837dec6c84c389bd7d612cf0cce9b"
+        },
+        {
+            "m_Id": "e14688969a704584b85a0f892c019fd3"
         },
         {
             "m_Id": "fe16a9a3d36b4a84be1934d9f012518e"
@@ -374,7 +397,8 @@
         "d3f8f90a-91f8-4bf0-ad7b-7c049c610270",
         "824d70d3-f384-4b57-8f3c-5ea9ffada0ea",
         "deab7e29-d6f6-43d8-8694-c745383c7d31",
-        "a0ab5901-6f75-4d11-89c9-d647f757510c"
+        "a0ab5901-6f75-4d11-89c9-d647f757510c",
+        "496abb86-31fe-4df0-9193-65c656efd81f"
     ],
     "m_PropertyIds": [
         -2025661586,
@@ -383,10 +407,41 @@
         -327781693,
         -1964764633,
         -372703135,
-        -1505908726
+        -1505908726,
+        -584583489
     ],
     "m_Dropdowns": [],
     "m_DropdownSelectedEntries": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
+    "m_ObjectId": "2bb48baf08ab481a96d0f85c69cbf509",
+    "m_Id": 1,
+    "m_DisplayName": "Out_Vector1",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "OutVector1",
+    "m_StageCapability": 3,
+    "m_Value": 0.0,
+    "m_DefaultValue": 0.0,
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
+    "m_ObjectId": "347a670c290b4b83be9dc03f20aba548",
+    "m_Id": -584583489,
+    "m_DisplayName": "SqrDistance",
+    "m_SlotType": 0,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "_SqrDistance",
+    "m_StageCapability": 3,
+    "m_Value": 0.0,
+    "m_DefaultValue": 0.0,
+    "m_Labels": []
 }
 
 {
@@ -711,6 +766,44 @@
     "m_SupportsLODCrossFade": false,
     "m_CustomEditorGUI": "",
     "m_SupportVFX": false
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.SubGraphNode",
+    "m_ObjectId": "8a00174c4bf7414baab62ebb8b62e80a",
+    "m_Group": {
+        "m_Id": ""
+    },
+    "m_Name": "Sqr Distance Sub Graph",
+    "m_DrawState": {
+        "m_Expanded": true,
+        "m_Position": {
+            "serializedVersion": "2",
+            "x": 162.00001525878907,
+            "y": -1851.9998779296875,
+            "width": 209.3333282470703,
+            "height": 281.333251953125
+        }
+    },
+    "m_Slots": [
+        {
+            "m_Id": "2bb48baf08ab481a96d0f85c69cbf509"
+        }
+    ],
+    "synonyms": [],
+    "m_Precision": 0,
+    "m_PreviewExpanded": true,
+    "m_DismissedVersion": 0,
+    "m_PreviewMode": 0,
+    "m_CustomColors": {
+        "m_SerializableColors": []
+    },
+    "m_SerializedSubGraph": "{\n    \"subGraph\": {\n        \"fileID\": -5475051401550479605,\n        \"guid\": \"9a1c93633fd560847bde596dbf7353ab\",\n        \"type\": 3\n    }\n}",
+    "m_PropertyGuids": [],
+    "m_PropertyIds": [],
+    "m_Dropdowns": [],
+    "m_DropdownSelectedEntries": []
 }
 
 {
@@ -1092,6 +1185,29 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
+    "m_ObjectId": "e14688969a704584b85a0f892c019fd3",
+    "m_Id": 3,
+    "m_DisplayName": "Spread_value",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "Spread_value",
+    "m_StageCapability": 3,
+    "m_Value": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_DefaultValue": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.BlockNode",
     "m_ObjectId": "e465cb540a214f1e9ca429bd498051c8",
     "m_Group": {
@@ -1129,10 +1245,10 @@
     "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
     "m_ObjectId": "ea5615f10a8549c6b9404deadf0144b1",
     "m_Id": -2025661586,
-    "m_DisplayName": "SqrDistance",
+    "m_DisplayName": "MaxSqrDistance",
     "m_SlotType": 0,
     "m_Hidden": false,
-    "m_ShaderOutputName": "_SqrDistance",
+    "m_ShaderOutputName": "_MaxSqrDistance",
     "m_StageCapability": 3,
     "m_Value": 0.0,
     "m_DefaultValue": 0.0,
