@@ -1,6 +1,3 @@
-using System;
-using CosmicShore.Core;
-using CosmicShore.Models.Enums;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -10,16 +7,17 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Explosion/VesselChangeSpeedByExplosionEffectSO")]
     public class VesselChangeSpeedByExplosionEffectSO : VesselExplosionEffectSO
     {
-        /// <summary>
-        /// attacker-independent visual debuff: who was hit & for how long
-        /// </summary>
-        public static event Action<IVessel, float> OnExplosionDebuffApplied;
-        public static event Action<VesselImpactor> OnVesselSlowedByExplosion;
+        [Header("Events")]
+        [SerializeField]
+        private ScriptableEventExplosionDebuffApplied explosionDebuffAppliedEvent;
+
+        [SerializeField]
+        private ScriptableEventVesselImpactor vesselSlowedByExplosionEvent;
 
         [Header("Victim Input Suppression")]
-        [SerializeField] private InputEvents inputToMute = InputEvents.RightStickAction;
-        [SerializeField] private float muteSeconds = 3f;
-        [SerializeField] private bool forceStopIfActive = true;
+        [SerializeField] private InputEvents inputToMute   = InputEvents.RightStickAction;
+        [SerializeField] private float       muteSeconds   = 3f;
+        [SerializeField] private bool        forceStopIfActive = true;
 
         public override void Execute(VesselImpactor impactor, ExplosionImpactor impactee)
         {
@@ -36,8 +34,14 @@ namespace CosmicShore.Game
                 if (forceStopIfActive)
                     handler.StopShipControllerActions(inputToMute);
             }
-            OnExplosionDebuffApplied?.Invoke(victimVessel, muteSeconds);
-            OnVesselSlowedByExplosion?.Invoke(impactor);
+
+            if (explosionDebuffAppliedEvent != null)
+            {
+                var payload = new ExplosionDebuffPayload(victimVessel, muteSeconds);
+                explosionDebuffAppliedEvent.Raise(payload);
+            }
+
+            vesselSlowedByExplosionEvent?.Raise(impactor);
         }
     }
 }

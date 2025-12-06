@@ -12,6 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01649857b31543c89b893e1170ff302c, type: 3}
   m_Name: SparrowDebuffByRhinoDangerPrismEffect
   m_EditorClassIdentifier: 
+  vesselSlowedByRhinoDangerPrismEvent: {fileID: 11400000, guid: 43bba8c2cc614a641b5b0fe5d261a033,
+    type: 2}
+  explosionDebuffAppliedEvent: {fileID: 11400000, guid: 03dcc42300e09614fb6a4bdffeb21fd3,
+    type: 2}
   inputToMute: 7
   muteSeconds: 5
   forceStopIfActive: 1

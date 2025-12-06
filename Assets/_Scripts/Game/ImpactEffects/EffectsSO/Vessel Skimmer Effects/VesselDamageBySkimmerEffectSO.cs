@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CosmicShore.Game
 {
@@ -8,7 +7,7 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselDamageBySkimmerEffectSO")]
     public sealed class VesselDamageBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
-        public static event Action<IVesselStatus, IVesselStatus, float> OnSkimmerDebuffApplied;
+        [SerializeField] private ScriptableEventSkimmerDebuffApplied skimmerDebuffAppliedEvent;
 
         [Header("Victim Input Suppression")]
         [SerializeField, Tooltip("Which input to block on the victim (e.g., Fire or RightStick).")]
@@ -37,7 +36,8 @@ namespace CosmicShore.Game
                 handler.StopShipControllerActions(inputToMute);
 
             // Notify HUDs
-            OnSkimmerDebuffApplied?.Invoke(attackerStatus, victimStatus, muteSeconds);
+            skimmerDebuffAppliedEvent?.Raise(
+                new SkimmerDebuffPayload(attackerStatus, victimStatus, muteSeconds));
         }
     }
 }
