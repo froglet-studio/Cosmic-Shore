@@ -71,11 +71,14 @@ namespace CosmicShore.Game.Projectiles
 
         void CancelExplosion()
         {
-            if (explosionCts is not { IsCancellationRequested: false }) 
+            if (explosionCts == null)
                 return;
-            
-            explosionCts.Cancel();
+
+            if (!explosionCts.IsCancellationRequested)
+                explosionCts.Cancel();
+
             explosionCts.Dispose();
+            explosionCts = null;
         }
 
         public Vector3 CalculateImpactVector(Vector3 impacteePosition)
@@ -92,7 +95,12 @@ namespace CosmicShore.Game.Projectiles
             try
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
-                
+
+                // Explosion might already be despawned; bail early if so
+                if (!this || ct.IsCancellationRequested)
+                    return;
+
+                var cachedTransform = transform;
                 if (meshRenderer)
                     meshRenderer.material = Material;
 
@@ -102,11 +110,15 @@ namespace CosmicShore.Game.Projectiles
                 {
                     ct.ThrowIfCancellationRequested();
 
+                    // Seeing null pointers from destroyed objects here sometimes -- bail out if so
+                    if (!this || cachedTransform == null)
+                        return;
+
                     time += Time.deltaTime;
                     float t = time / ExplosionDuration;
                     float ease = Mathf.Sin(t * PI_OVER_TWO);
 
-                    transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
+                    cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
 
                     if (Material != null)
                         Material.SetFloat("_Opacity", 1 - ease);
@@ -114,7 +126,8 @@ namespace CosmicShore.Game.Projectiles
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
-                Destroy(gameObject);
+                if (this)
+                    Destroy(gameObject);
             }
             catch (OperationCanceledException) { }
         }
