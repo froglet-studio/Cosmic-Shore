@@ -2576,9 +2576,6 @@ MonoBehaviour:
   view: {fileID: 5470374086122723936}
   consumeBoostExecutor: {fileID: 2460618104011007721}
   shieldResourceIndex: 0
-  pipFull: {r: 1, g: 1, b: 1, a: 1}
-  pipConsuming: {r: 0.3, g: 1, b: 0.3, a: 1}
-  pipEmpty: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &7965853245772039612
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3375,7 +3372,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7800325436931231227}
   - component: {fileID: 2943419612712333960}
-  - component: {fileID: 5386391956911707453}
   - component: {fileID: 7082255767492626153}
   m_Layer: 0
   m_Name: ShipHUDContainer
@@ -3428,37 +3424,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!114 &5386391956911707453
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9084521984956080798}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9efdd6a152b8fc740bd5ecf121e515e7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  hudVariants:
-  - vesselType: 2
-    prefab: {fileID: 7878827982810303965, guid: 3a48a770e15885e4dbc159855aebb73e,
-      type: 3}
-  - vesselType: 1
-    prefab: {fileID: 7886290077738051211, guid: ce0291905886e0b45b571bb9c51c0d19,
-      type: 3}
-  - vesselType: 3
-    prefab: {fileID: 2256384011482571480, guid: 2656b477a4af7304180e65f2848a84b3,
-      type: 3}
-  - vesselType: 7
-    prefab: {fileID: 6610183749247337817, guid: af7b78e6bb3a8394f88f24bb0e31667a,
-      type: 3}
-  - vesselType: 11
-    prefab: {fileID: 604172407275932085, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
-  - vesselType: 6
-    prefab: {fileID: 2092273636776193303, guid: c1572db06ad4244469ad3f25d86940b8,
-      type: 3}
-  contentTransform: {fileID: 7800325436931231227}
 --- !u!114 &7082255767492626153
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3901,6 +3866,9 @@ MonoBehaviour:
   boostPip2: {fileID: 4793470977653661268}
   boostPip3: {fileID: 8898638695196731009}
   boostPip4: {fileID: 5254409461533313133}
+  pipFullColor: {r: 1, g: 1, b: 1, a: 1}
+  pipConsumingColor: {r: 0.3, g: 1, b: 0.3, a: 1}
+  pipEmptyColor: {r: 1, g: 1, b: 1, a: 0.25}
 --- !u!224 &8467111919413194998 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4789951449404768566, guid: af7b78e6bb3a8394f88f24bb0e31667a,
