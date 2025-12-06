@@ -752,7 +752,6 @@ MonoBehaviour:
   vaccumAmount: 50
   vacuumCrystal: 1
   affectSelf: 0
-  particleDurationAtSpeedOne: 300
   visible: 0
   Scale:
     Enabled: 0
@@ -765,7 +764,6 @@ MonoBehaviour:
   AOEPrefab: {fileID: 0}
   AOEPeriod: 0
   lineMaterial: {fileID: 0}
-  resourceIndex: 0
 --- !u!1 &2969734681862394597
 GameObject:
   m_ObjectHideFlags: 0
@@ -2268,7 +2266,6 @@ MonoBehaviour:
   _shipInstance: {fileID: 8572760576837465265}
   _shipHUDController: {fileID: 9121591686382397393}
   _vesselHUDView: {fileID: 5470374086122723936}
-  shipHUDContainer: {fileID: 5386391956911707453}
   boostMultiplier: 4
   _name: Serpent
   vesselType: 7
@@ -2322,7 +2319,6 @@ MonoBehaviour:
   initialWavelength: 2
   minWavelength: 2
   defaultWaitTime: 0.2
-  MaxNearbyBlockCount: 70
   minBlockScale: 1
   maxBlockScale: 4
   waitTillOutsideSkimmer: 0
@@ -3804,14 +3800,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 5470374086122723936}
-    - targetCorrespondingSourceObject: {fileID: 6610183749247337817, guid: af7b78e6bb3a8394f88f24bb0e31667a,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7237713388083863}
-    - targetCorrespondingSourceObject: {fileID: 6610183749247337817, guid: af7b78e6bb3a8394f88f24bb0e31667a,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7261650085594846340}
   m_SourcePrefab: {fileID: 100100000, guid: af7b78e6bb3a8394f88f24bb0e31667a, type: 3}
 --- !u!224 &1775870881170808980 stripped
 RectTransform:
@@ -3913,50 +3901,6 @@ MonoBehaviour:
   boostPip2: {fileID: 4793470977653661268}
   boostPip3: {fileID: 8898638695196731009}
   boostPip4: {fileID: 5254409461533313133}
---- !u!114 &7237713388083863
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7801497893982467225}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0070706274c44ba4b87b98ec1ac94b5f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  silhouetteContainer: {fileID: 0}
-  silhouetteParts: []
-  driftTrailAction: {fileID: 0}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  jawResourceIndex: -1
-  debugDot: 0
---- !u!114 &7261650085594846340
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7801497893982467225}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8734d021ade4a7390ca25cdad361b6b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 0}
-  driftTrailAction: {fileID: 0}
-  trailDisplayContainer: {fileID: 0}
-  blockSizePx: {x: 30, y: 30}
-  rowSpacingPx: 6
-  columnGapPx: 16
-  scaleMultiplier: 1
-  swingBlocks: 0
-  pixelsPerWorldUnit: 2
-  imageScale: 0.02
-  hardColumnCap: 256
-  ignoreOwnershipChecks: 1
-  verboseLogs: 1
 --- !u!224 &8467111919413194998 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4789951449404768566, guid: af7b78e6bb3a8394f88f24bb0e31667a,
