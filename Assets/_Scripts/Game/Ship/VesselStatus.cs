@@ -54,9 +54,6 @@ namespace CosmicShore.Game
             set => _vesselHUDView = value;
         }
 
-        [SerializeField] 
-        ShipHUDContainer shipHUDContainer;
-
         [SerializeField] protected float boostMultiplier = 4f;
         public float BoostMultiplier
         {
