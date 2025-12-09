@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Entities;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -50,7 +51,7 @@ namespace CosmicShore.Utility.Recording
         // /// <summary>
         // /// Where the timeline object should be stored, unless overridden.
         // /// </summary>
-        // private const string DefaultTimelinePath = "Assets/_Scripts/Utility/Recording/DefaultTimeline.playable";
+        private const string DefaultTimelinePath = "Assets/_Scripts/Utility/Recording/DefaultTimeline.playable";
         
         /// <summary>
         /// A reference to the data holder that unity can use to handle serialized properties.
@@ -177,17 +178,16 @@ namespace CosmicShore.Utility.Recording
                 $"{gameObject.name}.{crn}.{salt}.asset");
         }
 
-        internal void SetupRecordingSystem2()
-        {
-            var newSalt = GenerateSalt();
-            // var newAssetPath = Path.Combine(sceneData.assetsParentPath, AssetsDirectoryName,
-            //     $"NewTimeline.{newSalt}.playable");
-            // AssetDatabase.CopyAsset(DefaultTimelinePath, newAssetPath);
-            // Holder.director = director;
-            // var newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
-            // Holder.timelineAsset = newTimelineAsset;
-            // director.playableAsset = newTimelineAsset;
-        }
+        // internal void SetupRecordingSystem2()
+        // {
+        //     var newSalt = GenerateSalt();
+        //     var newAssetPath = Path.Combine(AssetsParentPath, AssetsDirectoryName,
+        //          $"NewTimeline.{newSalt}.playable");
+        //     AssetDatabase.CopyAsset(DefaultTimelinePath, newAssetPath);
+        //     var newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
+        //      Holder.timelineAsset = newTimelineAsset;
+        //     director.playableAsset = newTimelineAsset;
+        // }
         
         /// <summary>
         /// Helper method that returns whether there are enough settings available to start recording.
@@ -202,7 +202,7 @@ namespace CosmicShore.Utility.Recording
                 Holder.assetsDirectoryName != "" &&
                 !Holder.timelineAsset;
         }
-        
+
         /// <summary>
         /// Makes sure that none of the elements needed for a recording are null.
         /// Called at several points while the current utility is running.
@@ -211,15 +211,23 @@ namespace CosmicShore.Utility.Recording
         internal void Initialize()
         {
             Holder ??= gameObject.GetOrAddComponent<RecordingDataHolder>();
-            RecorderSerializedObject ??= new SerializedObject(Holder);
+            // The null-coalescing operator does not seem to work with Unity game objects.
+            if (RecorderSerializedObject == null)
+            {
+                RecorderSerializedObject = new SerializedObject(Holder);
+            }
             var playableDirector = gameObject.GetOrAddComponent<PlayableDirector>();
-            Holder.director ??= playableDirector;
-            Debug.Log($"Holder : {Holder.name} :: playableDirector :  {playableDirector.playableAsset.name}");
-            Debug.Log($"Holder : {Holder.name} :: Holder.director : {Holder.director.name}");
-            var newAssetPath = GameObjectAssetPath(recordingNumber);
-            var newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
-            Holder.timelineAsset = newTimelineAsset;
-            Holder.director.playableAsset = newTimelineAsset;
+            Holder.director = playableDirector;
+            // The null-coalescing operator does not seem to work with Unity game objects.
+            if (Holder.director.playableAsset == null)
+            {
+                var newAssetPath = GameObjectAssetPath(recordingNumber);
+                var newTimelineAsset = ScriptableObject.CreateInstance<TimelineAsset>();
+                AssetDatabase.CreateAsset(newTimelineAsset, newAssetPath);
+                Holder.timelineAsset = newTimelineAsset;
+                Holder.director.playableAsset = newTimelineAsset;
+                AssetDatabase.SaveAssets();
+            }
         }
         
         private void OnEnable()
@@ -275,7 +283,6 @@ namespace CosmicShore.Utility.Recording
                 var currentGameObject = currentRecorder?.root;
                 if (!currentRecorder || !currentGameObject)
                 {
-                    Debug.LogWarning("Something in the recording is null that shouldn't be.");
                     return;
                 }
 

@@ -17,7 +17,11 @@ namespace CosmicShore.Utility.Recording
         public static ComponentType GetOrAddComponent<ComponentType>(this GameObject gameObject) where ComponentType : Component
         {
             ComponentType component = gameObject.GetComponent<ComponentType>();
-            component ??= gameObject.AddComponent<ComponentType>();
+            if (component != null)
+            {
+                return component;
+            }
+            component = gameObject.AddComponent<ComponentType>();
             return component;
         }
 

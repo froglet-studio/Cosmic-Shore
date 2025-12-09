@@ -56,7 +56,12 @@ namespace CosmicShore.Utility.Recording
         /// </summary>
         public void OnEnable()
         {
-            _recordingSystemGameObject = FindOrCreateGameObject(ARP.AnimationRecorderName);
+            // The null-coalescing operator does not work with Unity game objects, apparently.
+            _recordingSystemGameObject = GameObject.Find(ARP.AnimationRecorderName);
+            if (_recordingSystemGameObject == null)
+            {
+                _recordingSystemGameObject = new GameObject(ARP.AnimationRecorderName);
+            }
             _recorderProcess = _recordingSystemGameObject.GetOrAddComponent<ARP>();
             _serializedObject = _recorderProcess.RecorderSerializedObject;
         }
@@ -91,8 +96,6 @@ namespace CosmicShore.Utility.Recording
             {
                 PropertyField(_serializedObject.FindProperty(ARP.Director),
                     new GUIContent("Playable  Container"));
-                Debug.Log($"{((_serializedObject.FindProperty(ARP.Director).objectReferenceValue) ? (_serializedObject.FindProperty(ARP.Director).objectReferenceValue.ToString()) : "null")} :: ARP.IsRecording : {_recorderProcess.IsRecording}");
-                Debug.Log("here");
                 GUI.enabled = (_serializedObject.FindProperty(ARP.Director).objectReferenceValue != null) 
                               && !_recorderProcess.IsRecording;
                 PropertyField(_serializedObject.FindProperty(ARP.ObjectsToTrack),
