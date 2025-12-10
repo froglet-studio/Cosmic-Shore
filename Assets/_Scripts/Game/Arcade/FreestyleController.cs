@@ -17,14 +17,19 @@ namespace CosmicShore.Game.Arcade
         [Header("Helix Optional")]
         [SerializeField] SpawnableHelix helix;
         [SerializeField] float helixIntensityScaling = 1.3f;
-        
+        [SerializeField] int Seed = 0;
+
 
         int numberOfSegments => scaleSegmentsWithIntensity ? baseNumberOfSegments * gameData.SelectedIntensity : baseNumberOfSegments;
         int straightLineLength => scaleLengthWithIntensity ? baseStraightLineLength / gameData.SelectedIntensity : baseStraightLineLength;
         
         protected override void OnCountdownTimerEnded()
         {
-            segmentSpawner.Seed = Random.Range(int.MinValue,int.MaxValue);
+            if (Seed != 0)
+                segmentSpawner.Seed = Seed;
+            else
+                segmentSpawner.Seed = Random.Range(int.MinValue,int.MaxValue);
+            
             if (helix)
             {
                 helix.firstOrderRadius = helix.secondOrderRadius = gameData.SelectedIntensity.Value / helixIntensityScaling;
