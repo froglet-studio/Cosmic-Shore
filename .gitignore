@@ -78,3 +78,4 @@ crashlytics-build.properties
 /Assets/Graphics/Materials/Shaders/DitheringVolumeDisplayShader.shader.meta
 /ProjectSettings/BurstAotSettings_StandaloneLinux64.json
 /.utmp/RelWithDebInfo/5w1g6i5s
+/.editorconfig

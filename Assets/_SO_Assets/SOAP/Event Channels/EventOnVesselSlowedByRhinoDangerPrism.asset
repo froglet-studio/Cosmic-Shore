@@ -9,11 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bb59b788d8e4ae1a21a990fd2c26a68, type: 3}
-  m_Name: VesselDamageBySkimmerEffect
+  m_Script: {fileID: 11500000, guid: 8e5f9dc8a97942dfbed63bc8e0a95ac0, type: 3}
+  m_Name: EventOnVesselSlowedByRhinoDangerPrism
   m_EditorClassIdentifier: 
-  skimmerDebuffAppliedEvent: {fileID: 11400000, guid: dd0765fd710ff984f961c3b1ad3ef4dd,
-    type: 2}
-  inputToMute: 1
-  muteSeconds: 5
-  forceStopIfActive: 1
+  CategoryIndex: 0
+  Description: 
+  _debugLogEnabled: 0
+  _debugValue: {fileID: 0}

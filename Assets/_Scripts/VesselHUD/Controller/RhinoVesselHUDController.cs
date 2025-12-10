@@ -12,9 +12,15 @@ namespace CosmicShore.Game
         [Header("Rhino – Scene Refs")]
         [SerializeField] private GrowSkimmerActionExecutor growSkimmerExecutor;
 
+        [Header("Events (SOAP)")]
+        [SerializeField] private ScriptableEventVesselImpactor rhinoCrystalExplosionEvent;
+        [SerializeField] private ScriptableEventVesselImpactor vesselSlowedByExplosionEvent;
+        [SerializeField] private ScriptableEventVesselImpactor vesselSlowedByRhinoDangerPrismEvent;
+        [SerializeField] private ScriptableEventSkimmerDebuffApplied skimmerDebuffAppliedEvent;
+
         int _slowedCount;
-        private IVesselStatus _vesselStatus;
-        
+        IVesselStatus _vesselStatus;
+
         readonly HashSet<IVesselStatus> _uniqueSlowedThisExplosion = new();
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
@@ -36,50 +42,55 @@ namespace CosmicShore.Game
         void Subscribe()
         {
             if (_vesselStatus == null) return;
-            VesselChangeSpeedByExplosionEffectSO.OnVesselSlowedByExplosion += HandleVesselSlowedByExplosion;
-            SparrowDebuffByRhinoDangerPrismEffectSO.OnVesselSlowedByRhinoDangerPrism += HandleVesselSlowedByExplosion;
+            
+            if (vesselSlowedByExplosionEvent != null)
+                vesselSlowedByExplosionEvent.OnRaised += HandleVesselSlowedByExplosion;
+
+            if (vesselSlowedByRhinoDangerPrismEvent != null)
+                vesselSlowedByRhinoDangerPrismEvent.OnRaised += HandleVesselSlowedByExplosion;
+
+            if (rhinoCrystalExplosionEvent != null)
+                rhinoCrystalExplosionEvent.OnRaised += HandleCrystalExplosion;
+
             if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
 
             if (growSkimmerExecutor != null)
                 growSkimmerExecutor.OnScaleChanged += HandleSkimmerScaleChanged;
 
-            VesselExplosionByCrystalEffectSO.OnCrystalExplosionTriggered += HandleCrystalExplosion;
-            VesselDamageBySkimmerEffectSO.OnSkimmerDebuffApplied += HandleSkimmerDebuffApplied;
+            if (skimmerDebuffAppliedEvent != null)
+                skimmerDebuffAppliedEvent.OnRaised += HandleSkimmerDebuffApplied;
         }
 
         void Unsubscribe()
         {
             if (_vesselStatus == null) return;
-            VesselChangeSpeedByExplosionEffectSO.OnVesselSlowedByExplosion -= HandleVesselSlowedByExplosion;
-            SparrowDebuffByRhinoDangerPrismEffectSO.OnVesselSlowedByRhinoDangerPrism += HandleVesselSlowedByExplosion;
-            if (_vesselStatus.IsInitializedAsAI|| !_vesselStatus.IsLocalUser) return;
+
+            if (vesselSlowedByExplosionEvent != null)
+                vesselSlowedByExplosionEvent.OnRaised -= HandleVesselSlowedByExplosion;
+
+            if (vesselSlowedByRhinoDangerPrismEvent != null)
+                vesselSlowedByRhinoDangerPrismEvent.OnRaised -= HandleVesselSlowedByExplosion;
+
+            if (rhinoCrystalExplosionEvent != null)
+                rhinoCrystalExplosionEvent.OnRaised -= HandleCrystalExplosion;
+
+            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
 
             if (growSkimmerExecutor != null)
                 growSkimmerExecutor.OnScaleChanged -= HandleSkimmerScaleChanged;
 
-            VesselExplosionByCrystalEffectSO.OnCrystalExplosionTriggered -= HandleCrystalExplosion;
-            VesselDamageBySkimmerEffectSO.OnSkimmerDebuffApplied -= HandleSkimmerDebuffApplied;
+            if (skimmerDebuffAppliedEvent != null)
+                skimmerDebuffAppliedEvent.OnRaised -= HandleSkimmerDebuffApplied;
         }
 
         #region Handlers
 
-        void HandleSkimmerScaleChanged(float current, float min, float max)
-        {
-            if (!view) return;
+        void HandleSkimmerScaleChanged(float current, float min, float max) { }
 
-            if (Mathf.Approximately(max, min))
-            {
-                view.SetSkimmerIconScale01(0f);
-                return;
-            }
-
-            var t = Mathf.InverseLerp(min, max, current);
-            view.SetSkimmerIconScale01(t);
-        }
-        
         void HandleCrystalExplosion(VesselImpactor vesselImpactor)
         {
             if (!view) return;
+            if(_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
 
             _slowedCount = 0;
             _uniqueSlowedThisExplosion.Clear();
@@ -88,7 +99,7 @@ namespace CosmicShore.Game
             view.FlashCrystalActivated(2f);
             view.ResetLineIcon();
         }
-        
+
         void HandleVesselSlowedByExplosion(VesselImpactor impactor)
         {
             if (!view) return;
@@ -99,17 +110,17 @@ namespace CosmicShore.Game
                 _slowedCount++;
                 view.SetSlowedCount(_slowedCount);
             }
-            
+
             if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
             view.FlashLineIconActive(2f);
         }
-        
-        void HandleSkimmerDebuffApplied(IVesselStatus attacker, IVesselStatus victim, float duration)
+
+        void HandleSkimmerDebuffApplied(SkimmerDebuffPayload payload)
         {
             if (!view) return;
-            if (attacker != _vesselStatus) return;
+            if (payload.Attacker != _vesselStatus) return;
 
-            view.ShowDebuffTimer(duration);
+            view.ShowDebuffTimer(payload.Duration);
         }
 
         #endregion
