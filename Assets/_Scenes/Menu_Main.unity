@@ -1349,6 +1349,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1001 &42383432
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8810,6 +8811,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &287286999
 GameObject:
   m_ObjectHideFlags: 0
@@ -20425,6 +20427,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &653457794
 GameObject:
   m_ObjectHideFlags: 0
@@ -23914,6 +23917,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &744068659
 GameObject:
   m_ObjectHideFlags: 0
@@ -24153,6 +24157,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &750747924
 GameObject:
   m_ObjectHideFlags: 0
@@ -25743,6 +25748,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!114 &780511788
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26829,6 +26835,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &815638250
 GameObject:
   m_ObjectHideFlags: 0
@@ -39645,6 +39652,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &1199326492
 GameObject:
   m_ObjectHideFlags: 0
@@ -45389,6 +45397,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &1390625705
 GameObject:
   m_ObjectHideFlags: 0
@@ -46535,6 +46544,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &1420836298
 GameObject:
   m_ObjectHideFlags: 0
@@ -49998,6 +50008,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &1521018741
 GameObject:
   m_ObjectHideFlags: 0
@@ -54739,6 +54750,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &1617861857
 GameObject:
   m_ObjectHideFlags: 0
@@ -64748,6 +64760,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &1940086309
 GameObject:
   m_ObjectHideFlags: 0
@@ -66816,6 +66829,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!114 &1981057469
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71875,6 +71889,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &2131686435
 GameObject:
   m_ObjectHideFlags: 0
@@ -75219,6 +75234,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!114 &984313371815066543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84237,6 +84253,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &4125016652926271360
 GameObject:
   m_ObjectHideFlags: 0
@@ -89578,6 +89595,7 @@ MonoBehaviour:
   BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
   AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
   XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
+  canvasGroup: {fileID: 0}
 --- !u!1 &5711891767760469768
 GameObject:
   m_ObjectHideFlags: 0
@@ -91641,7 +91659,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: 235.14633}
+  m_AnchoredPosition: {x: -32, y: 186.98045}
   m_SizeDelta: {x: 64, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &5840560526580898137
@@ -91691,7 +91709,7 @@ MonoBehaviour:
   m_Padding:
     m_Left: 0
     m_Right: 0
-    m_Top: 0
+    m_Top: 5
     m_Bottom: 0
   m_ChildAlignment: 1
   m_Spacing: 12
@@ -91764,7 +91782,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fadc06dfc9d7ae042a097c714d04f107, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShipList: {fileID: 11400000, guid: 17dcd58a38dad2a498afe518e6a0bb58, type: 2}
+  ShipList: {fileID: 11400000, guid: 2d47dcbe86d43e94daf7006ed9dc5431, type: 2}
   ShipSelectionContainer: {fileID: 5840560526580898136}
   ShipSelectionScrollView: {fileID: 5840560527428797610}
   ShipSelectCardPrefab: {fileID: 6510446657241822326, guid: 12b4f046973446e409abdfb148bd3aa0,
@@ -92129,6 +92147,7 @@ MonoBehaviour:
   contentContainer: {fileID: 5840560526580898137}
   minVelocity: 5
   enableSnapVelocity: 15
+  scrollThreshold: 3
 --- !u!1 &5840560527617744870
 GameObject:
   m_ObjectHideFlags: 0

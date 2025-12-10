@@ -20,6 +20,7 @@ namespace CosmicShore.App.UI
         [SerializeField] GameObject contentContainer;
         [SerializeField] float minVelocity = 5f;
         [SerializeField] float enableSnapVelocity = 15f;
+        [SerializeField] int scrollThreshold = 3;
 
         List<GameObject> itemList = new();
         Vector2 previousVelocity;
@@ -45,6 +46,15 @@ namespace CosmicShore.App.UI
 
             int itemCount = itemList.Count;
             if (itemCount == 0) return;
+
+            if (itemCount <= scrollThreshold)
+            {
+                // Disable the scroll functionality if there are not enough items
+                scrollRect.vertical = false;
+                isInitialized = true;
+                return;
+            }
+
 
             // Cache the item height and spacing for performance
             itemHeightWithSpacing = itemList[0].GetComponent<RectTransform>().rect.height + verticalLayoutGroup.spacing;
