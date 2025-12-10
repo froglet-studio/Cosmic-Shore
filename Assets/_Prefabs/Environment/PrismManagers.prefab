@@ -10,10 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1103671803537511715}
   - component: {fileID: 2957204558970048637}
-  - component: {fileID: 185262522276167810}
-  - component: {fileID: 1833392587067844435}
   m_Layer: 0
-  m_Name: PrismPools
+  m_Name: PrismExplosionPool
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -47,46 +45,58 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 8796858733488306809, guid: 1263d2306dde455092dc34161380df92, type: 3}
-  defaultCapacity: 10
-  maxSize: 100
+  defaultCapacity: 1500
+  maxSize: 1500
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
+  bufferSizeTarget: 1500
   maxInstantiateRate: 20
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
---- !u!114 &185262522276167810
+--- !u!1 &3054734599440363953
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4529950062307902514}
+  - component: {fileID: 8898303293369989754}
+  m_Layer: 0
+  m_Name: PrismImplosionPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4529950062307902514
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3054734599440363953}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1296536794816885170}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8898303293369989754
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2164293737434073950}
+  m_GameObject: {fileID: 3054734599440363953}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 221c66eade1245ac9da5308ad56662ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 6685113723044457391, guid: bd8a259abee95ec4895562e6bb8aae76, type: 3}
-  defaultCapacity: 10
-  maxSize: 100
-  enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
-  baseInstantiateRate: 5
-  maxAddsPerFrame: 4
---- !u!114 &1833392587067844435
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2164293737434073950}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f381cf090404919a975c8491ac56dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  prefab: {fileID: 4563009547826722997, guid: 4f41edde676403347bb3700cf3ab244c, type: 3}
   defaultCapacity: 10
   maxSize: 100
   enableBufferMaintenance: 1
@@ -127,6 +137,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1103671803537511715}
+  - {fileID: 4529950062307902514}
+  - {fileID: 5462738484875299522}
   - {fileID: 2601527385536708987}
   - {fileID: 1248110658297772383}
   - {fileID: 2564532999472763000}
@@ -177,12 +189,64 @@ MonoBehaviour:
   mantaPrismPool: {fileID: 3761354775784624735}
   squirrelPrismPool: {fileID: 8989571643823224049}
   rhinoPrismPool: {fileID: 5971521908923506387}
-  interactivePrismPool: {fileID: 1833392587067844435}
+  interactivePrismPool: {fileID: 9074561462353123205}
   explosionPool: {fileID: 2957204558970048637}
-  implosionPool: {fileID: 185262522276167810}
+  implosionPool: {fileID: 8898303293369989754}
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
+--- !u!1 &6139463132727567238
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5462738484875299522}
+  - component: {fileID: 9074561462353123205}
+  m_Layer: 0
+  m_Name: PrismInteractivePool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5462738484875299522
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6139463132727567238}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1296536794816885170}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9074561462353123205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6139463132727567238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f381cf090404919a975c8491ac56dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 4563009547826722997, guid: 4f41edde676403347bb3700cf3ab244c, type: 3}
+  defaultCapacity: 10
+  maxSize: 100
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 20
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
 --- !u!1001 &932426676636423097
 PrefabInstance:
   m_ObjectHideFlags: 0
