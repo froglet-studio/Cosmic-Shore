@@ -7,50 +7,66 @@ namespace CosmicShore
 {
     public class SlowShipViewer : MonoBehaviour
     {
+        [Header("Visuals")]
         [SerializeField] private Material trailViewerMaterial;
         [SerializeField] private float fallbackDuration = 3f;
 
-        private LineRenderer lineRenderer;
+        [Header("Events")]
+        [Tooltip("Explosion debuff events to listen to (e.g., ExplosionEffect, Rhino Prism debuff).")]
+        [SerializeField] private ScriptableEventExplosionDebuffApplied[] explosionDebuffEvents;
 
-        private struct ActiveLink
+        LineRenderer _lineRenderer;
+
+        struct ActiveLink
         {
             public Transform target;
             public float expireTime;
         }
 
-        private readonly List<ActiveLink> _links = new();
+        readonly List<ActiveLink> _links = new();
 
         void Awake()
         {
-            lineRenderer = gameObject.AddComponent<LineRenderer>();
-            lineRenderer.material   = trailViewerMaterial;
-            lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
-            lineRenderer.positionCount = 2;
-            lineRenderer.enabled   = false;
+            _lineRenderer = gameObject.AddComponent<LineRenderer>();
+            _lineRenderer.material      = trailViewerMaterial;
+            _lineRenderer.startWidth    = _lineRenderer.endWidth = 0.1f;
+            _lineRenderer.positionCount = 2;
+            _lineRenderer.enabled       = false;
         }
 
         void OnEnable()
         {
-            VesselChangeSpeedByExplosionEffectSO.OnExplosionDebuffApplied += OnExplosionDebuffApplied;
-            SparrowDebuffByRhinoDangerPrismEffectSO.OnExplosionDebuffApplied += OnExplosionDebuffApplied;
+            if (explosionDebuffEvents == null) return;
+
+            foreach (var evt in explosionDebuffEvents)
+            {
+                if (evt == null) continue;
+                evt.OnRaised += OnExplosionDebuffApplied;
+            }
         }
 
         void OnDisable()
         {
-            VesselChangeSpeedByExplosionEffectSO.OnExplosionDebuffApplied -= OnExplosionDebuffApplied;
-            SparrowDebuffByRhinoDangerPrismEffectSO.OnExplosionDebuffApplied -= OnExplosionDebuffApplied;
+            if (explosionDebuffEvents == null) return;
+
+            foreach (var evt in explosionDebuffEvents)
+            {
+                if (evt == null) continue;
+                evt.OnRaised -= OnExplosionDebuffApplied;
+            }
         }
 
-        private void OnExplosionDebuffApplied(IVessel victimVessel, float duration)
+        void OnExplosionDebuffApplied(ExplosionDebuffPayload payload)
         {
+            var victimVessel = payload.Vessel;
+            var duration     = payload.Duration;
+
             if (victimVessel == null)
                 return;
 
             if (victimVessel.Transform == transform)
                 return;
 
-            Debug.Log($"Explosion Debuffed");
-            
             _links.Add(new ActiveLink
             {
                 target     = victimVessel.Transform,
@@ -60,6 +76,7 @@ namespace CosmicShore
 
         void Update()
         {
+            // prune expired / null links
             for (int i = _links.Count - 1; i >= 0; i--)
             {
                 if (!_links[i].target || Time.time > _links[i].expireTime)
@@ -68,7 +85,7 @@ namespace CosmicShore
 
             if (_links.Count == 0)
             {
-                lineRenderer.enabled = false;
+                _lineRenderer.enabled = false;
                 return;
             }
 
@@ -82,20 +99,19 @@ namespace CosmicShore
                 if (d2 < bestDistSqr)
                 {
                     bestDistSqr = d2;
-                    bestTarget = link.target;
+                    bestTarget  = link.target;
                 }
             }
 
             if (!bestTarget)
             {
-                lineRenderer.enabled = false;
+                _lineRenderer.enabled = false;
                 return;
             }
 
-            lineRenderer.enabled = true;
-            lineRenderer.SetPosition(0, transform.position);
-            lineRenderer.SetPosition(1, bestTarget.position);
+            _lineRenderer.enabled = true;
+            _lineRenderer.SetPosition(0, transform.position);
+            _lineRenderer.SetPosition(1, bestTarget.position);
         }
-
     }
 }

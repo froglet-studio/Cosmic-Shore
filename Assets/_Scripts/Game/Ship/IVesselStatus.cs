@@ -77,7 +77,7 @@ namespace CosmicShore.Game
         Skimmer NearFieldSkimmer { get; }
         Skimmer FarFieldSkimmer { get; }
         GameObject OrientationHandle { get; }
-        Silhouette Silhouette { get; }
+        SilhouetteController Silhouette { get; }
         Material ShipMaterial { get; set; }
         Material SkimmerMaterial { get; set; }
         float Speed { get; set; }
