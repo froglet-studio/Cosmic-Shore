@@ -20,7 +20,7 @@ namespace CosmicShore.Game
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(VesselTransformer))]
     [RequireComponent(typeof(AIPilot))]
-    [RequireComponent(typeof(Silhouette))]
+    [RequireComponent(typeof(SilhouetteController))]
     [RequireComponent(typeof(VesselCameraCustomizer))]
     [RequireComponent(typeof(VesselAnimation))]
     [RequireComponent(typeof(R_VesselActionHandler))]
@@ -160,12 +160,12 @@ namespace CosmicShore.Game
             }
         }
 
-        Silhouette _silhouette;
-        public Silhouette Silhouette
+        SilhouetteController _silhouette;
+        public SilhouetteController Silhouette
         {
             get
             {
-                _silhouette = _silhouette != null ? _silhouette : gameObject.GetOrAdd<Silhouette>();
+                _silhouette = _silhouette != null ? _silhouette : gameObject.GetOrAdd<SilhouetteController>();
                 return _silhouette;
             }
         }

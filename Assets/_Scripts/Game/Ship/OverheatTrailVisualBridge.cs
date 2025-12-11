@@ -4,13 +4,13 @@ using UnityEngine;
 public class OverheatTrailVisualBridge : MonoBehaviour
 {
     [SerializeField] private OverheatingActionExecutor overheating;
-    [SerializeField] private CosmicShore.Silhouette    silhouette;
+    [SerializeField] private CosmicShore.SilhouetteController    silhouette;
     [SerializeField] private SilhouetteConfigSO        config;
 
     void Awake()
     {
         if (!overheating) overheating = GetComponent<OverheatingActionExecutor>();
-        if (!silhouette)  silhouette  = GetComponentInChildren<Silhouette>(true);
+        if (!silhouette)  silhouette  = GetComponentInChildren<SilhouetteController>(true);
     }
 
     void OnEnable()

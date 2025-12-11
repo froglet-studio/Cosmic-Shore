@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
@@ -11,6 +12,9 @@ namespace CosmicShore.Game
     {
         [Header("Events")]
         [SerializeField] private ScriptableEventVesselImpactor rhinoCrystalExplosionEvent;
+
+        public static event Action<VesselImpactor> OnMantaFlowerExplosion;
+
 
         [Header("Explosion Settings")]
         [SerializeField] private AOEExplosion[] _aoePrefabs;
@@ -54,6 +58,11 @@ namespace CosmicShore.Game
             if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Rhino)
             {
                 rhinoCrystalExplosionEvent?.Raise(vesselImpactor);
+            }
+            
+            if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Manta)
+            {
+                OnMantaFlowerExplosion?.Invoke(vesselImpactor);
             }
         }
     }

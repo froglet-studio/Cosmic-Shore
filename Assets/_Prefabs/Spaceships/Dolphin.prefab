@@ -2624,17 +2624,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselPrismController: {fileID: 509996660808769138}
   driftTrailAction: {fileID: 1396157652283013214}
-  trailDisplayContainer: {fileID: 6223442238412242697}
-  blockPrefab: {fileID: 0}
   config: {fileID: 11400000, guid: 24c3d542313e98e4cbc5c759fa60be10, type: 2}
-  silhouetteRoot: {fileID: 7318639533368661048}
-  jawTop: {fileID: 639922495428989031}
-  jawBottom: {fileID: 8741541425519103338}
-  jawMaxOffset: 40
-  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
-  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
-  jawTintTargets: []
   energyResourceIndex: 0
+  view: {fileID: 257326519381942953}
 --- !u!114 &8590080875247618286
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4063,7 +4055,11 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 6223442238412242697}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4250806807686435711, guid: 3a48a770e15885e4dbc159855aebb73e,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 257326519381942953}
   m_SourcePrefab: {fileID: 100100000, guid: 3a48a770e15885e4dbc159855aebb73e, type: 3}
 --- !u!114 &117603555638778835 stripped
 MonoBehaviour:
@@ -4071,7 +4067,7 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 7851735137950422542}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 6200068849325999473}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bfe50a85c2fc4a0dbbc18e27313573fb, type: 3}
@@ -4083,3 +4079,34 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 7851735137950422542}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &6200068849325999473 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4250806807686435711, guid: 3a48a770e15885e4dbc159855aebb73e,
+    type: 3}
+  m_PrefabInstance: {fileID: 7851735137950422542}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &257326519381942953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6200068849325999473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47e75593b0dd60a4f8eeade919affa5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trailDisplayContainer: {fileID: 6223442238412242697}
+  blockPrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
+    type: 3}
+  silhouetteRoot: {fileID: 7318639533368661048}
+  jawTop: {fileID: 639922495428989031}
+  jawBottom: {fileID: 8741541425519103338}
+  jawMaxOffset: 40
+  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
+  jawTintTargets: []
+  config: {fileID: 11400000, guid: 24c3d542313e98e4cbc5c759fa60be10, type: 2}
+  overlayPrefab: {fileID: 0}
+  overlayDuration: 1
