@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    // TODO - DEPRECATED SCRIPT, Use FreestyleController instead
+    // TODO - DEPRECATED SCRIPT, Use SinglePlayerFreestyleController instead
     public class CourseMiniGame : MiniGame
     {
         // [SerializeField] Crystal Crystal;

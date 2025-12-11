@@ -5,7 +5,7 @@ namespace CosmicShore.Game.Arcade
 {
     /// <summary>Concrete mini‑game that spawns a trail course of segments and a crystal pickup.
     /// </summary>
-    public class FreestyleController : SinglePlayerMiniGameControllerBase
+    public class SinglePlayerFreestyleController : SinglePlayerMiniGameControllerBase
     {
         [SerializeField] SegmentSpawner segmentSpawner;
         [SerializeField] int baseNumberOfSegments = 10;
