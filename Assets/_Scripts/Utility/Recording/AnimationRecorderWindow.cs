@@ -62,7 +62,13 @@ namespace CosmicShore.Utility.Recording
             {
                 _recordingSystemGameObject = new GameObject(ARP.AnimationRecorderName);
             }
+            InstantiateRecorderProcess();
+        }
+
+        private void InstantiateRecorderProcess()
+        {
             _recorderProcess = _recordingSystemGameObject.GetOrAddComponent<ARP>();
+            _recorderProcess.Initialize();
             _serializedObject = _recorderProcess.RecorderSerializedObject;
         }
 
@@ -86,7 +92,11 @@ namespace CosmicShore.Utility.Recording
         /// </summary>
         private void _OnGUI()
         {
-            if (_serializedObject == null)
+            if (_recorderProcess == null)
+            {
+                InstantiateRecorderProcess();
+            }
+            else if (_serializedObject == null)
             {
                 _recorderProcess.Initialize();
                 _serializedObject = _recorderProcess.RecorderSerializedObject;

@@ -355,7 +355,7 @@ namespace CosmicShore.Utility.Recording
                 case PlayModeStateChange.ExitingEditMode:
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(state), state, null);
+                    // throw new ArgumentOutOfRangeException(nameof(state), state, null);
             }
         }
         
@@ -394,6 +394,15 @@ namespace CosmicShore.Utility.Recording
 
             _timer -= Time.deltaTime;
         }
+        #endregion
+        
+        #region Unity methods
+
+        void Awake()
+        {
+            DontDestroyOnLoad(this.gameObject);
+        }
+        
         #endregion
     }
 }
