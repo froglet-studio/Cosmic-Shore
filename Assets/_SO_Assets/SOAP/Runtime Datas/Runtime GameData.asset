@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ccff787dc643e6d48a46c1b58af79d00, type: 3}
-  m_Name: GameData
+  m_Name: Runtime GameData
   m_EditorClassIdentifier: 
   OnMiniGameRoundStarted: {fileID: 11400000, guid: 97086a0eecde5df4783ba65b3b12f3a2,
     type: 2}

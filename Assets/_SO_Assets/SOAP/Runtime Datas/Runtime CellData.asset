@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 951007c8ff7c416db4dd943ff4c87124, type: 3}
-  m_Name: CellData
+  m_Name: Runtime CellData
   m_EditorClassIdentifier: 
   CellType: {fileID: 11400000, guid: 5ce96f4772e6a7941ab472e13d16a96f, type: 2}
   Cell: {fileID: 0}
