@@ -3,15 +3,8 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    /// <summary>
-    /// MiniGame is deprecated, use new architecture and create WildLifeBlitz mini game from there.
-    /// </summary>
-    public class WildlifeBlitzMiniGame : MiniGame
+    public class WildlifeBlitzMiniGame : SinglePlayerMiniGameControllerBase
     {
-        // [SerializeField] Crystal Crystal;
-        // [SerializeField] Vector3 CrystalStartPosition;
-        // [SerializeField] Cell node;
-        
         [SerializeField]
         CellDataSO cellData; 
 
@@ -20,14 +13,9 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SO_CellType Intensity3Cell;
         [SerializeField] SO_CellType Intensity4Cell;
 
-        // public static new VesselClassType PlayerVesselType = VesselClassType.Rhino;
-
-        protected override void Awake()
+        protected override void Start()
         {
-            base.Awake();
-            
-            // TODO - CellData should contain cell information.
-            cellData.CellType = IntensityLevel switch
+            cellData.CellType = gameData.SelectedIntensity.Value switch
             {
                 1 => Intensity1Cell,
                 2 => Intensity2Cell,
@@ -35,15 +23,8 @@ namespace CosmicShore.Game.Arcade
                 4 => Intensity4Cell,
                 _ => Intensity1Cell
             };
-        }
-
-        protected override void SetupTurn()
-        {
-            base.SetupTurn();
-
-            // VesselPrismController.ClearTrails();
-            // Crystal.transform.position = CrystalStartPosition;
-
+            
+            base.Start();
         }
     }
 }

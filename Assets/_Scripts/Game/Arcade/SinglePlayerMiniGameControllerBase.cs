@@ -8,7 +8,7 @@ namespace CosmicShore.Game.Arcade
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
         }
         
-        void Start()
+        protected virtual void Start()
         {
             gameData.InitializeGame();
             gameData.InvokeClientReady();
