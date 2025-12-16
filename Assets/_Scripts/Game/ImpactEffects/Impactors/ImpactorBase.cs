@@ -24,6 +24,5 @@ namespace CosmicShore.Game
             
             AcceptImpactee(impacteeCollider.Impactor);
         }
-
     }
 }
