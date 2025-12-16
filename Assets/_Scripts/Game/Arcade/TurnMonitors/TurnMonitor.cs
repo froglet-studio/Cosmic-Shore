@@ -16,9 +16,10 @@ namespace CosmicShore.Game.Arcade
         
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         protected GameDataSO gameData;
-
+        
         [Header("UI/Event")]
-        [SerializeField] protected ScriptableEventString onUpdateTurnMonitorDisplay;
+        [SerializeField] 
+        protected ScriptableEventString onUpdateTurnMonitorDisplay;
 
         bool isRunning;
 

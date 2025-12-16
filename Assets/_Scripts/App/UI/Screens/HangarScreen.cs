@@ -70,7 +70,7 @@ namespace CosmicShore.App.UI.Screens
 
             ShipSelectionScrollView.Initialize(true);
 
-            StartCoroutine(SelectShipCoroutine(ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectNavLink>()));
+            StartCoroutine(SelectFirstShipCoroutine());
         }
 
         public void SelectShip(int index)
@@ -97,7 +97,7 @@ namespace CosmicShore.App.UI.Screens
             // populate the abilities/overview views
             foreach (var ability in SelectedShip.Abilities) ability.Ship = selectedShip;
             AbilitiesView.AssignModels(SelectedShip.Abilities.ConvertAll(x => (ScriptableObject)x));
-            CaptainsView.AssignModels(SelectedShip.Captains.ConvertAll(x => (ScriptableObject) x));
+            //CaptainsView.AssignModels(SelectedShip.Captains.ConvertAll(x => (ScriptableObject) x));
         }
 
         public void DisplayTrainingModal()
@@ -106,9 +106,11 @@ namespace CosmicShore.App.UI.Screens
             HangarTrainingModal.ModalWindowIn();
         }
 
-        IEnumerator SelectShipCoroutine(HangarShipSelectNavLink shipSelectCard)
+        IEnumerator SelectFirstShipCoroutine()
         {
-            yield return new WaitForEndOfFrame();
+            yield return null; // new WaitForSeconds(2);
+            var shipSelectCard = ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectNavLink>();
+            Debug.Log($"Starting SelectShipCoroutine: {shipSelectCard.name}, {shipSelectCard.Ship.Name}");
             shipSelectCard.Select();
         }
     }

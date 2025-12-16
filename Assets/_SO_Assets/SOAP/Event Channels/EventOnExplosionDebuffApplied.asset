@@ -9,8 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e0bffacb84dc644d908e074b263f51b, type: 3}
-  m_Name: MIssionGames_Deprecated
+  m_Script: {fileID: 11500000, guid: c136da57c1da4941909c4ca08f29a908, type: 3}
+  m_Name: EventOnExplosionDebuffApplied
   m_EditorClassIdentifier: 
-  Games:
-  - {fileID: 11400000, guid: 6f7bd40de6b623748a4b8ec3a4ce8c9d, type: 2}
+  CategoryIndex: 0
+  Description: 
+  _debugLogEnabled: 0
+  _debugValue:
+    Duration: 0

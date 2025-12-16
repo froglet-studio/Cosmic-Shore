@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
@@ -11,28 +12,25 @@ namespace CosmicShore.Game
 {
     public class Cell : MonoBehaviour
     {
+        enum CellTypeChoiceOptions
+        {
+            Random,
+            IntensityWise
+        }
+        
         [SerializeField] public int ID;
 
-        [SerializeField] List<SO_CellType> CellTypes;
+        [SerializeField] 
+        List<SO_CellType> CellTypes;
+        
+        [SerializeField]
+        CellTypeChoiceOptions cellTypeChoiceOptions = CellTypeChoiceOptions.Random;
         
         [SerializeField]
         CellDataSO cellData;
         SO_CellType cellType => cellData.CellType;
         
-        /*SO_CellType cellType;
-        public SO_CellType CellType
-        {
-            get => cellType;
-            set
-            {
-                cellType = value;
-                AssignCellType();
-            }
-        }*/
-
-        // SnowChanger SnowChanger;
         GameObject membrane;
-        GameObject nucleus; // TODO: Use radius to spawn/move crystal
 
         [SerializeField] int FloraTypeCount = 2;
         [SerializeField] bool spawnJade = true;
@@ -45,39 +43,14 @@ namespace CosmicShore.Game
         [SerializeField] float baseFaunaSpawnTime = 60f;
 
         [SerializeField] bool hasRandomFloraAndFauna;
-
-        /*[SerializeField]
-        ScriptableEventNoParam OnCellItemsUpdated;*/
         
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
 
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new Dictionary<Domains, BlockCountDensityGrid>();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new Dictionary<Domains, BlockVolumeDensityGrid>();
-        // public List<CellItem> CellItems { get; private set; }
 
         Dictionary<Domains, float> teamVolumes = new Dictionary<Domains, float>();
-
-        // int _itemsAdded;
-
-        void Awake()
-        {
-            /*if (cellType == null)
-            {
-                AssignCellType();
-            }*/
-
-            cellData.Cell = this;
-            AssignCellType();
-
-            // TODO: handle Blue?
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };  // TODO: Store this as a constant somewhere (where?).
-            foreach (Domains t in teams)
-            {
-                countGrids.Add(t, new BlockCountDensityGrid(t));
-                //volumeGrids.Add(t, new BlockVolumeDensityGrid(t));
-            }
-        }
 
         private void OnEnable()
         {
@@ -94,38 +67,25 @@ namespace CosmicShore.Game
 
         void Initialize()
         {
+            cellData.Cell = this;
+            AssignCellType();
+
+            // TODO: handle Blue?
+            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };  // TODO: Store this as a constant somewhere (where?).
+            foreach (Domains t in teams)
+            {
+                countGrids.Add(t, new BlockCountDensityGrid(t));
+            }
+            
             normalizeWeights();
 
             var cellType = cellData.CellType;
             membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
-            nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
-            
-            // CrystalManager.Instance.Initialize();
-            // SnowChanger.Initialize(crystalManager.GetCrystalTransform(), crystalManager.GetSphereRadius());
-            
-            // TODO - Remove execution dependency of initializationbetween CrystalManager and SnowChanger
-            /*SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
-            SnowChanger.Initialize();
-            SnowChanger.SetOrigin(transform.position);*/
-
+            Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
             teamVolumes.Add(Domains.Jade, 0);
             teamVolumes.Add(Domains.Ruby, 0);
             teamVolumes.Add(Domains.Gold, 0);
             teamVolumes.Add(Domains.Blue, 0);
-
-            /*Crystal.SetOrigin(transform.position);
-
-            if (cellType != null)
-            {
-                foreach (var modifier in cellType.CellModifiers)
-                {
-                    modifier.Apply(this);
-                }
-                SpawnLife();
-            }
-            TryInitializeAndAdd(crystalManager.Crystal);
-            Crystal.gameObject.SetActive(true);
-            crystalManager.ToggleCrstalActive(true);*/
         }
         
         void OnCrystalSpawnedInCell()
@@ -144,10 +104,19 @@ namespace CosmicShore.Game
 
         void AssignCellType() 
         {
-            if (CellTypes is { Count: > 0 })
+            if (CellTypes.Count == 0)
             {
-                cellData.CellType = CellTypes[Random.Range(0, CellTypes.Count)];
+                Debug.LogError("No cell types found to assign to cell!");
+                return;
             }
+
+            int index = cellTypeChoiceOptions switch
+            {
+                CellTypeChoiceOptions.Random => Random.Range(0, CellTypes.Count),
+                CellTypeChoiceOptions.IntensityWise => Mathf.Clamp(gameData.SelectedIntensity.Value - 1, 0, CellTypes.Count - 1),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+            cellData.CellType = CellTypes[index];
 
             if (!cellData.CellType)
             {
@@ -273,38 +242,6 @@ namespace CosmicShore.Game
 
             return teamVolumes[domain];
         }
-
-        /*public Teams ControllingTeam
-        {
-            /// TODO: replace this with below. This is a temporary fix to the issue of a single node not being able to accurately determine team volume
-
-            get
-            {
-                if (!miniGameData.TryGetTeamRemainingVolume(Teams.Jade, out float greenVolume))
-                    return
-
-                var greenVolume =
-                    StatsManager.Instance is not null && StatsManager.Instance.TeamStats.ContainsKey(Teams.Jade)
-                        ? StatsManager.Instance.TeamStats[Teams.Jade].VolumeRemaining
-                        : 0f;
-                var redVolume = StatsManager.Instance is not null && StatsManager.Instance.TeamStats.ContainsKey(Teams.Ruby)
-                    ? StatsManager.Instance.TeamStats[Teams.Ruby].VolumeRemaining
-                    : 0f;
-                var goldVolume =
-                    StatsManager.Instance is not null && StatsManager.Instance.TeamStats.ContainsKey(Teams.Gold)
-                        ? StatsManager.Instance.TeamStats[Teams.Gold].VolumeRemaining
-                        : 0f;
-
-                if (greenVolume > redVolume && greenVolume > goldVolume)
-                    return Teams.Jade;
-                else if (redVolume > greenVolume && redVolume > goldVolume)
-                    return Teams.Ruby;
-                else if (goldVolume > greenVolume && goldVolume > redVolume)
-                    return Teams.Gold;
-                else
-                    return Teams.None;
-            }
-        }*/
         
         IEnumerator SpawnFlora(FloraConfiguration floraConfiguration, bool spawnJade = true)
         {
