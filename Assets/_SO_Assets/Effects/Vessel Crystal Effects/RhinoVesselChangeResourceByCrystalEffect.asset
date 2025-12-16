@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: RhinoVesselChangeResourceByCrystalEffect
   m_EditorClassIdentifier: 
   _change:
-    _resourceIndex: 0
+    _resourceIndex: 1
     _resourceAmount: 1
     _overrideAmount: 1
