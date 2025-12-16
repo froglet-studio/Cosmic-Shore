@@ -10,7 +10,7 @@ namespace CosmicShore.Game
         [SerializeField] private RhinoVesselHUDView view;
 
         [Header("Rhino – Scene Refs")]
-        [SerializeField] private GrowSkimmerActionExecutor growSkimmerExecutor;
+        [SerializeField] private ShieldSkimmerScaleDriver growSkimmerExecutor;
 
         [Header("Events (SOAP)")]
         [SerializeField] private ScriptableEventVesselImpactor rhinoCrystalExplosionEvent;

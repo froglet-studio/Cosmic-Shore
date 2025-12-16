@@ -9,10 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4f2b4a9e547340738acea36e1ca44d66, type: 3}
-  m_Name: VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect
+  m_Script: {fileID: 11500000, guid: 13ac00fa30d540ed9c99231cc9c3bd3f, type: 3}
+  m_Name: SkimmerAddShieldByPrismEffect
   m_EditorClassIdentifier: 
-  vesselTypesToImpact: 03000000
-  sizeMultiplier: 0.7
-  duration: 3
-  scaleConfig: {fileID: 11400000, guid: 1885bb8aa7a8b5b41bfca5a1e6a9ee79, type: 2}
+  shieldIndex: 1
+  addScaleUnits: 2
