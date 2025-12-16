@@ -339,6 +339,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: cellTypeChoiceOptions
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: 'CellTypes.Array.data[0]'
       value: 
       objectReference: {fileID: 11400000, guid: fc1dfd288c13e2545983602d112e1cef,
@@ -361,6 +366,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: c0d91a46a5132ca4fa63a3bd185c1056,
         type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: faunaSpawnVolumeThreshold
+      value: 500
+      objectReference: {fileID: 0}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_Name

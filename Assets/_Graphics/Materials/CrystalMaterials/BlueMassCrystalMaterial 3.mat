@@ -57,10 +57,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats:
-    - _Start: 1
-    - _Stop: 0.6
-    - _opacity: 0.15
+    m_Floats: []
     m_Colors:
     - _BrightCrystalColor: {r: 0.6186958, g: 0.67797554, b: 0.9150943, a: 0.9411765}
     - _DullCrystalColor: {r: 0, g: 0.038817562, b: 0.6509434, a: 0.9411765}

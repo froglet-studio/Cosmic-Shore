@@ -6,6 +6,9 @@ namespace CosmicShore
 {
     public class Spindle : MonoBehaviour
     {
+        private static readonly int PhaseOffsetID = Shader.PropertyToID("_Phase");
+        private MaterialPropertyBlock propertyBlock;
+
         public Renderer RenderedObject;
         [SerializeField] Spindle parentSpindle;
         public LifeForm LifeForm;
@@ -22,11 +25,21 @@ namespace CosmicShore
 
         IEnumerator Start()
         {
+
             if (RenderedObject.sharedMaterial == null)
             {
                 Debug.LogError($"{gameObject.name}: RenderedObject does not have a valid material at Start.");
                 yield break;
             }
+
+            propertyBlock = new MaterialPropertyBlock();
+
+            // Set random offset once at spawn
+            float randomOffset = Random.Range(0f, Mathf.PI * 2f);
+
+            RenderedObject.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
+            RenderedObject.SetPropertyBlock(propertyBlock);
 
             // Cache the original shared material
             originalMaterial = RenderedObject.sharedMaterial;
