@@ -86,6 +86,7 @@ namespace CosmicShore
                         ScaleAndPositionBranch(ref newBranch, branch);
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthPrism>();
                         AddHealthBlock(newHealthblock);
+                        newHealthblock.Initialize();
                         if (SecondarySpawn && !hasPlantedSecondary)
                         {
                             var distance = newHealthblock.transform.position - crystal.transform.position;
