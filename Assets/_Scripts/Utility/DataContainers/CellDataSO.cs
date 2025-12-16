@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
@@ -15,6 +16,8 @@ namespace CosmicShore.SOAP
         
         [SerializeField] 
         public ScriptableEventNoParam OnCellItemsUpdated;
+        
+        public Dictionary<int, CellStats> CellStatsList = new();
         
         public SO_CellType CellType;
         public Cell Cell;
