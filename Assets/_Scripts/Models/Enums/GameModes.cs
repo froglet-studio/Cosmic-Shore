@@ -32,4 +32,5 @@ public enum GameModes
     ProtectMission = 27,
     MultiplayerFreestyle = 28,
     MultiplayerCellularDuel = 29,
+    Multiplayer2v2CoOpVsAI = 30,
 }
