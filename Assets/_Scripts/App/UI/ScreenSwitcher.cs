@@ -234,25 +234,25 @@ namespace CosmicShore.App.UI
 
         public void OnDrag(PointerEventData data)
         {
-            transform.position = panelLocation - new Vector3(data.pressPosition.x - data.position.x, 0, 0);
+            //transform.position = panelLocation - new Vector3(data.pressPosition.x - data.position.x, 0, 0);
         }
 
         public void OnEndDrag(PointerEventData data)
         {
-            float percentage = (data.pressPosition.x - data.position.x) / Screen.width;
-
-            if (percentage >= percentThreshold && currentScreen < GetScreenCount() - 1)
-                NavigateRight();
-            else if (percentage <= -percentThreshold && currentScreen > 0)
-                NavigateLeft();
-            else
-            {
-                // Reset back to current screen
-                if (navigateCoroutine != null)
-                    StopCoroutine(navigateCoroutine);
-
-                navigateCoroutine = StartCoroutine(SmoothMove(transform.position, panelLocation, easing));
-            }
+            // float percentage = (data.pressPosition.x - data.position.x) / Screen.width;
+            //
+            // if (percentage >= percentThreshold && currentScreen < GetScreenCount() - 1)
+            //     NavigateRight();
+            // else if (percentage <= -percentThreshold && currentScreen > 0)
+            //     NavigateLeft();
+            // else
+            // {
+            //     // Reset back to current screen
+            //     if (navigateCoroutine != null)
+            //         StopCoroutine(navigateCoroutine);
+            //
+            //     navigateCoroutine = StartCoroutine(SmoothMove(transform.position, panelLocation, easing));
+            // }
         }
 
         #endregion
