@@ -20516,7 +20516,7 @@ MonoBehaviour:
       - m_Target: {fileID: 1847035622}
         m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
           Assembly-CSharp
-        m_MethodName: BackToConfigurationScreen
+        m_MethodName: OnBackFromGameSelectView
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -118837,6 +118837,7 @@ MonoBehaviour:
   contentContainer: {fileID: 5840560526580898137}
   minVelocity: 5
   enableSnapVelocity: 15
+  scrollThreshold: 3
 --- !u!1 &5840560527617744870
 GameObject:
   m_ObjectHideFlags: 0

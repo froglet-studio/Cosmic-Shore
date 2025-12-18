@@ -257,8 +257,6 @@ namespace CosmicShore.App.UI.Modals
             }
 
             SO_Ship chosen = null;
-
-            // 1) Try last selected from GameDataSO
             if (gameData && gameData.selectedVesselClass)
             {
                 var prevType = gameData.selectedVesselClass.Value;
@@ -266,8 +264,7 @@ namespace CosmicShore.App.UI.Modals
                     chosen = _availableShips.FirstOrDefault(s => s.Class == prevType);
             }
 
-            // 2) Try last loadout for this game
-            if (!chosen && _selectedGame != null)
+            if (!chosen && _selectedGame)
             {
                 var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode).Loadout;
                 var loadoutVT = loadout.VesselType;
@@ -278,7 +275,6 @@ namespace CosmicShore.App.UI.Modals
                 }
             }
 
-            // 3) Prefer Dolphin as default if available
             if (!chosen)
                 chosen = _availableShips.FirstOrDefault(s => s.Class == VesselClassType.Dolphin);
 
@@ -287,7 +283,7 @@ namespace CosmicShore.App.UI.Modals
                 chosen = _availableShips[0];
 
             config.SelectedShip = chosen;
-            SyncGameDataShip(chosen);        // ⬅️ NEW: write back into GameData
+            SyncGameDataShip(chosen);
             RefreshShipSummaryView();
         }
 
@@ -298,10 +294,6 @@ namespace CosmicShore.App.UI.Modals
             var models = _availableShips.Cast<ScriptableObject>().ToList();
 
             vesselShipSelectionView.AssignModels(models);
-
-            // IMPORTANT: do NOT call Select(index) here, it was causing
-            // Select -> UpdateView re-entrancy and wrong selection.
-            // We just let the ShipSelectionView read from GameData / config.
             vesselShipSelectionView.UpdateView();
         }
 
@@ -384,12 +376,10 @@ namespace CosmicShore.App.UI.Modals
             SyncGameDataConfig();   // ⬅️ mirror to GameData
             RaiseConfigChanged();
         }
-
-        // External systems can change config then raise this event;
-        // we just keep the ship summary in sync for now.
+        
         void HandleConfigChangedExternal()
         {
-            if (!gameObject.activeInHierarchy || config == null) return;
+            if (!gameObject.activeInHierarchy || !config) return;
             if (config.SelectedGame != _selectedGame) return;
 
             RefreshShipSummaryView();
@@ -485,6 +475,11 @@ namespace CosmicShore.App.UI.Modals
         public void OnBackFromSquadMateSelectionClicked()
         {
             ShowGameDetailScreen();
+        }
+
+        public void OnBackFromGameSelectView()
+        {
+            ShowConfigurationScreen();
         }
 
         // Start Game button on Screen 2
