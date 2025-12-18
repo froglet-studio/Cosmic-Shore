@@ -104,15 +104,15 @@ Material:
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
-    - _CellDensity: 5
+    - _CellDensity: 1.5
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5
-    - _DeathAnimation: 0
+    - _DeathAnimation: -0
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _Distance: 1000000
+    - _Distance: 400000
     - _DstBlend: 10
     - _DstBlendAlpha: 10
     - _EnvironmentReflections: 1
@@ -138,11 +138,11 @@ Material:
     - _ZWriteControl: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 0, g: 0.038388666, b: 0.9056604, a: 1}
+    - _BrightColor: {r: 0.36976376, g: 0.39671606, b: 0.9559748, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Color1: {r: 0.12177405, g: 0.09870085, b: 1.4946162, a: 0.9411765}
     - _Color2: {r: 0, g: 0, b: 1.3019608, a: 1}
-    - _DullColor: {r: 0.43081754, g: 0.44888973, b: 1, a: 1}
+    - _DullColor: {r: 0, g: 0.027586222, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []

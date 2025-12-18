@@ -379,6 +379,9 @@
         },
         {
             "m_Id": "fe16a9a3d36b4a84be1934d9f012518e"
+        },
+        {
+            "m_Id": "8f6fe68f496b41ed9d8cb8fa965b1ab7"
         }
     ],
     "synonyms": [],
@@ -863,6 +866,29 @@
         "m_SerializableColors": []
     },
     "m_SerializedDescriptor": "SurfaceDescription.AlphaClipThreshold"
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
+    "m_ObjectId": "8f6fe68f496b41ed9d8cb8fa965b1ab7",
+    "m_Id": 4,
+    "m_DisplayName": "ReducedSpreadValue",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "ReducedSpreadValue",
+    "m_StageCapability": 3,
+    "m_Value": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_DefaultValue": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_Labels": []
 }
 
 {
