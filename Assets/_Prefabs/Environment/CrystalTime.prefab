@@ -93,9 +93,9 @@ MonoBehaviour:
     type: 3}
   crystalModels:
   - model: {fileID: 3792360532212070197}
-    defaultMaterial: {fileID: 2100000, guid: 6e9b15f827bcc1943a958d55538e790d, type: 2}
-    explodingMaterial: {fileID: 2100000, guid: 6e9b15f827bcc1943a958d55538e790d, type: 2}
-    inactiveMaterial: {fileID: 2100000, guid: dd71abb5d85f02a4a8c2f41b424ce6d1, type: 2}
+    defaultMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
+    inactiveMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
     spaceCrystalAnimator: {fileID: 0}
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 0

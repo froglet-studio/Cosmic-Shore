@@ -78,8 +78,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OwnTeam: -1
+  ownDomain: -1
   ItemType: 1
+  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
   crystalProperties:
     crystal: {fileID: 6588436222817790495}
     fuelAmount: 0.01
@@ -97,17 +98,9 @@ MonoBehaviour:
     explodingMaterial: {fileID: 2100000, guid: dd71abb5d85f02a4a8c2f41b424ce6d1, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
     spaceCrystalAnimator: {fileID: 0}
-  shipImpactEffects: 0
-  RespawnOnImpact: 0
-  ImpactHapticType: 0
+  allowVesselImpactEffect: 1
+  allowRespawnOnImpact: 0
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  crystalImpactEffects: 080000000b000000
-  _crystalImpactEffects:
-  - {fileID: 11400000, guid: 0a8a71abbf0902548b5547287e998e8f, type: 2}
-  - {fileID: 11400000, guid: 777ffc4b1f0c4d84d842912b63a857f2, type: 2}
-  AOEPrefab: {fileID: 0}
-  maxExplosionScale: 0
-  AOEExplosionMaterial: {fileID: 0}
 --- !u!82 &6588436222817790494
 AudioSource:
   m_ObjectHideFlags: 0
@@ -119,7 +112,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: -5826038557329902450, guid: 1cf03307ae00ea44284cc75693abbb07,
     type: 2}
-  m_audioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
+  m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1

@@ -100,16 +100,14 @@ namespace CosmicShore.Game
             slowedCountText.text = count.ToString();
         }
 
-        public void ResetCrystalIcon()
+        private void ResetCrystalIcon()
         {
             if (crystalIcon)
                 crystalIcon.color = crystalDefaultColor;
 
-            if (slowedCountText)
-            {
-                slowedCountText.text = "0";
-                slowedCountText.gameObject.SetActive(false);
-            }
+            if (!slowedCountText) return;
+            slowedCountText.text = "0";
+            slowedCountText.gameObject.SetActive(false);
         }
 
         #endregion
@@ -164,7 +162,7 @@ namespace CosmicShore.Game
 
             debuffIcon.color = debuffActiveColor;
 
-            float remaining = duration;
+            var remaining = duration;
 
             while (remaining > 0f)
             {
@@ -180,7 +178,7 @@ namespace CosmicShore.Game
             _debuffRoutine = null;
         }
 
-        public void ResetDebuffIcon()
+        private void ResetDebuffIcon()
         {
             if (debuffIcon)
             {
@@ -188,16 +186,14 @@ namespace CosmicShore.Game
                 debuffIcon.gameObject.SetActive(false);
             }
 
-            if (debuffTimerText)
-            {
-                debuffTimerText.text = string.Empty;
-                debuffTimerText.gameObject.SetActive(false);
-            }
+            if (!debuffTimerText) return;
+            debuffTimerText.text = string.Empty;
+            debuffTimerText.gameObject.SetActive(false);
         }
 
         #endregion
 
-        public void ResetAllRhinoStates()
+        private void ResetAllRhinoStates()
         {
             ResetSkimmerIcon();
             ResetCrystalIcon();

@@ -129,7 +129,6 @@ namespace CosmicShore.Core
             meshRenderer.enabled = false;
 
             scaleAnimator.Initialize();
-            // CreateBlock();
             StartCoroutine(CreateBlockCoroutine());
 
             // Apply initial states if needed

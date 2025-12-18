@@ -55,7 +55,6 @@ namespace CosmicShore.SOAP
         public bool IsMultiplayerMode;
         public List<IPlayer> Players = new();
         public List<IRoundStats> RoundStatsList = new();
-        public Dictionary<int, CellStats> CellStatsList = new();
         public HashSet<Transform> SlowedShipTransforms = new();
         public float TurnStartTime;
         public bool IsTurnRunning { get; private set; }

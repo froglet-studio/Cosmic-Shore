@@ -10,7 +10,11 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselExplosionByCrystalEffectSO")]
     public class VesselExplosionByCrystalEffectSO : VesselCrystalEffectSO
     {
-        public static event Action<VesselImpactor> OnCrystalExplosionTriggered;
+        [Header("Events")]
+        [SerializeField] private ScriptableEventVesselImpactor rhinoCrystalExplosionEvent;
+
+        public static event Action<VesselImpactor> OnMantaFlowerExplosion;
+
 
         [Header("Explosion Settings")]
         [SerializeField] private AOEExplosion[] _aoePrefabs;
@@ -25,7 +29,7 @@ namespace CosmicShore.Game
         [SerializeField] private float _explosionCooldown = 0.15f;
 
         private static readonly Dictionary<VesselImpactor, float> _lastExplosionTimeByImpactor
-            = new Dictionary<VesselImpactor, float>();
+            = new ();
 
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
@@ -37,9 +41,7 @@ namespace CosmicShore.Game
             if (_lastExplosionTimeByImpactor.TryGetValue(vesselImpactor, out var lastTime))
             {
                 if (now - lastTime < _explosionCooldown)
-                {
                     return;
-                }
             }
 
             _lastExplosionTimeByImpactor[vesselImpactor] = now;
@@ -55,7 +57,12 @@ namespace CosmicShore.Game
 
             if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Rhino)
             {
-                OnCrystalExplosionTriggered?.Invoke(vesselImpactor);
+                rhinoCrystalExplosionEvent?.Raise(vesselImpactor);
+            }
+            
+            if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Manta)
+            {
+                OnMantaFlowerExplosion?.Invoke(vesselImpactor);
             }
         }
     }

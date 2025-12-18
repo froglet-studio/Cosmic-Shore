@@ -41,10 +41,10 @@ namespace CosmicShore.Core
     public class StatsManager : Singleton<StatsManager>
     {
         [SerializeField]
-        List<GameObject> EndOfRoundStatContainers;
+        GameDataSO gameData;
         
         [SerializeField]
-        GameDataSO gameData;
+        CellDataSO cellData;
 
         protected bool allowRecord = true;
         
@@ -52,7 +52,7 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            var cellStatsList = gameData.CellStatsList;
+            var cellStatsList = cellData.CellStatsList;
             
             if (!cellStatsList.ContainsKey(cellID))
                 cellStatsList[cellID] = new CellStats();
@@ -66,7 +66,7 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            var cellStatsList = gameData.CellStatsList;
+            var cellStatsList = cellData.CellStatsList;
             
             if (!cellStatsList.ContainsKey(cellID))
                 cellStatsList[cellID] = new CellStats();

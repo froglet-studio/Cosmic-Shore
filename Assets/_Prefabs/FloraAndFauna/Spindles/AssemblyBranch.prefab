@@ -58,6 +58,9 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -131,3 +134,4 @@ MonoBehaviour:
   RenderedObject: {fileID: 1875768354922200056}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 0}
+  retainSpindle: 0
