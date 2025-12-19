@@ -1,4 +1,4 @@
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 
 namespace CosmicShore.Game.Arcade.Scoring
 {

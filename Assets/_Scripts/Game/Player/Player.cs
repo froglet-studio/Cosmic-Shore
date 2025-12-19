@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Game.IO;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using CosmicShore.Utility.ClassExtensions;
 using Unity.Collections;
 using Unity.Netcode;

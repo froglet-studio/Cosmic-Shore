@@ -1,4 +1,4 @@
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game

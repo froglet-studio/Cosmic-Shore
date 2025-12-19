@@ -1,6 +1,6 @@
 using System;
 using CosmicShore.Models.Enums;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Unity.Netcode;
 using UnityEngine;
 

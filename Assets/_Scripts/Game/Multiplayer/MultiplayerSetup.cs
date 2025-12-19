@@ -7,7 +7,7 @@ using Unity.Netcode;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Obvious.Soap;
 using UnityEngine.Serialization;

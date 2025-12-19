@@ -1,5 +1,5 @@
 using System;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.InputSystem;
 

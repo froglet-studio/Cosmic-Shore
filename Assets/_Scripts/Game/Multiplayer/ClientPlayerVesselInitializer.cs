@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading;
 using CosmicShore.App.Systems;
 using CosmicShore.Core;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
@@ -48,8 +48,7 @@ namespace CosmicShore.Game
         {
             var networkPlayer = NetworkPlayerClientCache.GetInstanceByClientId(clientId);
             var networkShip = NetworkVesselClientCache.GetInstanceByClientId(clientId);
-            networkPlayer.InitializeForMultiplayerMode(networkShip);
-            networkShip.Initialize(networkPlayer, false);
+            networkPlayer.InitializeForMultiplayerMode(networkShip, false);
             VesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
             gameData.AddPlayer(networkPlayer);
         }
@@ -61,7 +60,6 @@ namespace CosmicShore.Game
                 return;
             
             gameData.InvokeClientReady();
-                
         }
     }
 }

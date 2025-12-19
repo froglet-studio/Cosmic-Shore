@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;

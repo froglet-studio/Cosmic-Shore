@@ -4,7 +4,7 @@ using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 
 

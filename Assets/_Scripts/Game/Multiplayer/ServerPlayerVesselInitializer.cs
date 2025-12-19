@@ -1,6 +1,5 @@
 ﻿using System;
 using CosmicShore.Soap;
-using CosmicShore.SOAP;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using Unity.Netcode;

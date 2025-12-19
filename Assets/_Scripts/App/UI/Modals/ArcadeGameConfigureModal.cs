@@ -4,7 +4,7 @@ using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.SOAP;                     // ⬅️ NEW: for GameDataSO
+using CosmicShore.Soap;                     // ⬅️ NEW: for GameDataSO
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;

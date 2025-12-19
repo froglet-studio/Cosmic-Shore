@@ -2,7 +2,7 @@ using System.Linq;
 using UnityEngine;
 using TMPro;
 using CosmicShore.Core;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.UI

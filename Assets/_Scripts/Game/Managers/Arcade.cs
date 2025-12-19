@@ -6,7 +6,7 @@ using CosmicShore.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;

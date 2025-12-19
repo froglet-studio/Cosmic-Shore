@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
 
-namespace CosmicShore.SOAP
+namespace CosmicShore.Soap
 {
     [AddComponentMenu("Soap/EventListeners/EventListener" + nameof(PipData))]
     public class EventListenerPipData : EventListenerGeneric<PipData>

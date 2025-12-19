@@ -1,4 +1,4 @@
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
 
