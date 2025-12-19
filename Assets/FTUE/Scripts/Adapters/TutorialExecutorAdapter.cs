@@ -14,7 +14,7 @@ public class TutorialExecutorAdapter : MonoBehaviour, ITutorialExecutor
     [SerializeField] private GameObject missionsGameObject;
     [SerializeField] private List<CallToActionTarget> gameCards;
     [SerializeField] private ScreenSwitcher screenSwitcher;
-    [SerializeField] private IAnimator animator;  // assign your FTUEIntroAnimatorAdapter here
+    [SerializeField] private IAnimator animator; 
     [SerializeField] private TutorialFlowController flowController;
 
     public void SetupPreIntroUI()
@@ -26,7 +26,7 @@ public class TutorialExecutorAdapter : MonoBehaviour, ITutorialExecutor
 
     public void PrepareArcadeScreen()
     {
-        screenSwitcher.OnClickArcadeNav();
+        //screenSwitcher.OnClickArcadeNav();
         LockAllExceptFreestyle();
     }
 

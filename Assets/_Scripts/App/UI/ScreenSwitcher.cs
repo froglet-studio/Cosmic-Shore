@@ -18,9 +18,9 @@ namespace CosmicShore.App.UI
         public enum MenuScreens
         {
             STORE = 0,
-            ARCADE = 1,
-            HOME = 2,
-            PORT = 3,
+            ARK = 1,
+            HOME   = 2,
+            PORT   = 3,
             HANGAR = 4,
         }
 
@@ -32,52 +32,81 @@ namespace CosmicShore.App.UI
 
             // ARCADE MODALS
             ARCADE_GAME_CONFIGURE = 1,
-            DAILY_CHALLENGE = 2,
+            DAILY_CHALLENGE       = 2,
 
             // HOME MODALS
-            PROFILE = 3,
-            PROFILE_ICON_SELECT = 4,
-            SETTINGS = 5,
-            XP_TRACK = 6,
+            PROFILE                = 3,
+            PROFILE_ICON_SELECT    = 4,
+            SETTINGS               = 5,
+            XP_TRACK               = 6,
 
             // PORT MODALS
-            FACTION_MISSION = 7,
+            FACTION_MISSION        = 7,
             SQUAD_MEMBER_CONFIGURE = 8,
 
             // HANGAR MODALS
-            HANGAR_TRAINING = 9,
+            HANGAR_TRAINING        = 9,
         }
 
-        [SerializeField] float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
-        [SerializeField] float easing = 0.5f; // Makes the transition less jarring
-        [SerializeField] int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
-        [SerializeField] List<ModalWindows> activeModalStack = new();
+        [System.Serializable]
+        public class ScreenEntry
+        {
+            public MenuScreens id;
+            public RectTransform root;
+        }
 
-        [SerializeField] Transform NavBar;
-        [SerializeField] HangarScreen HangarMenu;
-        [SerializeField] LeaderboardsMenu LeaderboardMenu;
+        [Header("Swipe Settings")]
+        [SerializeField] private float percentThreshold = 0.2f; // Smaller = more sensitive
+        [SerializeField] private float easing = 0.5f;           // Slide duration
 
-        Vector3 panelLocation;
-        Coroutine navigateCoroutine;
+        [Header("State")]
+        [SerializeField] private int currentScreen; // index into visual order
+        [SerializeField] private List<ModalWindows> activeModalStack = new();
 
-        const int STORE = (int)MenuScreens.STORE;
-        const int PORT = (int)MenuScreens.PORT;
-        const int HOME = (int)MenuScreens.HOME;
-        const int HANGAR = (int)MenuScreens.HANGAR;
-        const int ARCADE = (int)MenuScreens.ARCADE;
+        [Header("Screens (manual mapping)")]
+        [Tooltip("Explicit mapping of MenuScreens enum to their root panels.\nIf left empty, will fall back to transform children order.")]
+        [SerializeField] private List<ScreenEntry> screens = new();
 
-        [SerializeField] Image NavBarLine;
-        [SerializeField] List<Sprite> NavBarLineSprites;
+        [Header("Scene References")]
+        [SerializeField] private Transform NavBar;
+        [SerializeField] private HangarScreen HangarMenu;
+        [SerializeField] private LeaderboardsMenu LeaderboardMenu;
+
+        [Header("Arcade Panel (separate)")]
+        [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
+        [SerializeField] private GameObject arcadePanelRoot;
+
+        private Vector3 panelLocation;
+        private Coroutine navigateCoroutine;
+
+        // Old constants kept for compatibility
+        private const int STORE  = (int)MenuScreens.STORE;
+        private const int ARCADE = (int)MenuScreens.ARK;
+        private const int HOME   = (int)MenuScreens.HOME;
+        private const int PORT   = (int)MenuScreens.PORT;
+        private const int HANGAR = (int)MenuScreens.HANGAR;
+
+        [Header("Nav Bar Line")]
+        [SerializeField] private Image NavBarLine;
+        [SerializeField] private List<Sprite> NavBarLineSprites;
+
+        [Header("Nav Tab Icons (optional)")]
+        [Tooltip("Active images for each screen index (visual order: 0,1,2,...)")]
+        [SerializeField] private List<GameObject> NavActiveImages;
+        [Tooltip("Inactive images for each screen index (visual order: 0,1,2,...)")]
+        [SerializeField] private List<GameObject> NavInactiveImages;
 
         [Header("Modal Windows")]
-        [SerializeField] List<ModalWindowManager> Modals;
-        [SerializeField] ModalWindowManager ArcadeGameConfigureModal;
-        [SerializeField] ModalWindowManager DailyChallengeModal;
-        [SerializeField] ModalWindowManager HangarTrainingGameModal;
-        [SerializeField] ModalWindowManager FactionMissionModal;
+        [SerializeField] private List<ModalWindowManager> Modals;
+        [SerializeField] private ModalWindowManager ArcadeGameConfigureModal;
+        [SerializeField] private ModalWindowManager DailyChallengeModal;
+        [SerializeField] private ModalWindowManager HangarTrainingGameModal;
+        [SerializeField] private ModalWindowManager FactionMissionModal;
 
-        static string ReturnToScreenPrefKey = "ReturnToScreen";
-        static string ReturnToModalPrefKey = "ReturnToModal";
+        private static readonly string ReturnToScreenPrefKey = "ReturnToScreen";
+        private static readonly string ReturnToModalPrefKey  = "ReturnToModal";
+
+        #region Modal Stack API
 
         public void PushModal(ModalWindows modalType)
         {
@@ -87,13 +116,17 @@ namespace CosmicShore.App.UI
 
         public void PopModal()
         {
+            if (activeModalStack.Count == 0)
+                return;
+
             activeModalStack.RemoveAt(activeModalStack.Count - 1);
 
-            if (activeModalStack.Count == 0)
-                SetReturnToModal(ModalWindows.NONE);
-            else
-                SetReturnToModal(activeModalStack.Last());
+            SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last());
         }
+
+        #endregion
+
+        #region Return State / Queries
 
         public void SetReturnToScreen(MenuScreens screen)
         {
@@ -107,10 +140,11 @@ namespace CosmicShore.App.UI
                 PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
             else
                 PlayerPrefs.SetInt(ReturnToModalPrefKey, (int)modal);
+
             PlayerPrefs.Save();
         }
-        
-        public static void ClearReturnState()
+
+        private static void ClearReturnState()
         {
             PlayerPrefs.DeleteKey(ReturnToScreenPrefKey);
             PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
@@ -119,7 +153,7 @@ namespace CosmicShore.App.UI
         
         public bool ScreenIsActive(MenuScreens screen)
         {
-            return currentScreen == (int)screen;
+            return GetScreenIdForIndex(currentScreen) == screen;
         }
 
         public bool ModalIsActive(ModalWindows modal)
@@ -131,23 +165,42 @@ namespace CosmicShore.App.UI
         }
 
         [RuntimeInitializeOnLoadMethod]
-        static void RunOnStart()
+        private static void RunOnStart()
         {
             ClearReturnState();
         }
 
-        void Start()
+        #endregion
+
+        #region Unity Lifecycle
+
+        private void Awake()
         {
+            if (screens == null || screens.Count == 0)
+            {
+                Debug.LogWarning(
+                    "[ScreenSwitcher] 'screens' list is empty. " +
+                    "Falling back to transform children order. " +
+                    "You can manually assign screens in the inspector for full control."
+                );
+            }
+        }
+
+        private void Start()
+        {
+            panelLocation = transform.position;
+
             if (PlayerPrefs.HasKey(ReturnToScreenPrefKey))
             {
-                var screen = PlayerPrefs.GetInt(ReturnToScreenPrefKey);
-                NavigateTo(screen, false);
+                var screenEnumInt = PlayerPrefs.GetInt(ReturnToScreenPrefKey);
+                var screenEnum = (MenuScreens)screenEnumInt;
+                NavigateTo(screenEnum, false);
                 PlayerPrefs.DeleteKey(ReturnToScreenPrefKey);
                 PlayerPrefs.Save();
             }
             else
             {
-                NavigateTo(HOME, false);
+                NavigateTo(MenuScreens.HOME, false);
             }
 
             if (PlayerPrefs.HasKey(ReturnToModalPrefKey))
@@ -156,169 +209,305 @@ namespace CosmicShore.App.UI
             }
         }
 
-        IEnumerator LaunchModalCoroutine()
+        private IEnumerator LaunchModalCoroutine()
         {
             yield return new WaitForEndOfFrame();
             var modalType = PlayerPrefs.GetInt(ReturnToModalPrefKey);
-            foreach (var modal in Modals)
+            foreach (var modal in Modals.Where(modal => modal.ModalType == (ModalWindows)modalType))
             {
-                if (modal.ModalType == (ModalWindows)modalType)
-                    modal.ModalWindowIn();
+                modal.ModalWindowIn();
             }
-            /*
-            switch ((ModalWindows)modalType)
-            {
-                case ModalWindows.ARCADE_GAME_CONFIGURE:
-                    ArcadeGameConfigureModal.ModalWindowIn();
-                    break;
-                case ModalWindows.DAILY_CHALLENGE:
-                    DailyChallengeModal.ModalWindowIn();
-                    break;
-                case ModalWindows.HANGAR_TRAINING:
-                    HangarTrainingGameModal.ModalWindowIn();
-                    break;
-                case ModalWindows.FACTION_MISSION:
-                    FactionMissionModal.ModalWindowIn();
-                    break;
-            }
-            */
-            //PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
-            //PlayerPrefs.Save();
         }
 
-        void Update()
+        private void Update()
         {
-            if (Gamepad.current != null)
-            {
-                if (Gamepad.current.leftTrigger.wasPressedThisFrame)
-                    NavigateLeft();
-                if (Gamepad.current.rightTrigger.wasPressedThisFrame)
-                    NavigateRight();
-            }
+            if (Gamepad.current == null) return;
+            if (Gamepad.current.leftTrigger.wasPressedThisFrame)
+                NavigateLeft();
+            if (Gamepad.current.rightTrigger.wasPressedThisFrame)
+                NavigateRight();
         }
+
+        #endregion
+
+        #region Drag Handling
 
         public void OnDrag(PointerEventData data)
         {
-            transform.position = panelLocation - new Vector3(data.pressPosition.x - data.position.x, 0, 0);
+            //transform.position = panelLocation - new Vector3(data.pressPosition.x - data.position.x, 0, 0);
         }
 
         public void OnEndDrag(PointerEventData data)
         {
-            float percentage = (data.pressPosition.x - data.position.x) / Screen.width;
-
-            if (percentage >= percentThreshold && currentScreen < transform.childCount - 1)
-                NavigateRight();
-            else if (percentage <= -percentThreshold && currentScreen > 0)
-                NavigateLeft();
-            else
-            {
-                // Reset back to current screen
-                if (navigateCoroutine != null)
-                    StopCoroutine(navigateCoroutine);
-
-                navigateCoroutine = StartCoroutine(SmoothMove(transform.position, panelLocation, easing));
-            }
+            // float percentage = (data.pressPosition.x - data.position.x) / Screen.width;
+            //
+            // if (percentage >= percentThreshold && currentScreen < GetScreenCount() - 1)
+            //     NavigateRight();
+            // else if (percentage <= -percentThreshold && currentScreen > 0)
+            //     NavigateLeft();
+            // else
+            // {
+            //     // Reset back to current screen
+            //     if (navigateCoroutine != null)
+            //         StopCoroutine(navigateCoroutine);
+            //
+            //     navigateCoroutine = StartCoroutine(SmoothMove(transform.position, panelLocation, easing));
+            // }
         }
 
-        public void NavigateTo(int ScreenIndex, bool animate = true)
+        #endregion
+
+        #region Screen Mapping Helpers
+
+        private int GetScreenCount()
         {
-            ScreenIndex = Mathf.Clamp(ScreenIndex, 0, transform.childCount - 1);
+            if (screens != null && screens.Count > 0)
+                return screens.Count;
+
+            return transform.childCount;
+        }
+
+        private MenuScreens GetScreenIdForIndex(int index)
+        {
+            if (screens is not { Count: > 0 }) return (MenuScreens)index;
+            if (index >= 0 && index < screens.Count && screens[index] != null)
+                return screens[index].id;
+
+            // Fallback: assume enum value matches visual index
+            return (MenuScreens)index;
+        }
+
+        private int GetIndexForScreen(MenuScreens screen)
+        {
+            if (screens != null && screens.Count > 0)
+            {
+                int idx = screens.FindIndex(s => s != null && s.id == screen);
+                if (idx >= 0) return idx;
+
+                Debug.LogWarning($"[ScreenSwitcher] Screen '{screen}' not found in screens list. Falling back to enum value index.");
+            }
+
+            return (int)screen;
+        }
+
+        #endregion
+
+        #region Navigation Core
+
+        private void NavigateTo(MenuScreens screen, bool animate = true)
+        {
+
+            // if (screen == MenuScreens.ARK)
+            // {
+            //     OpenArcadePanel();
+            //     return;
+            // }
+
+            int index = GetIndexForScreen(screen);
+            NavigateTo(index, animate);
+        }
+
+        private void NavigateTo(int ScreenIndex, bool animate = true)
+        {
+            int max = GetScreenCount() - 1;
+            if (max < 0)
+            {
+                Debug.LogError("[ScreenSwitcher] No screens available. Please configure the 'screens' list or add child panels.");
+                return;
+            }
+
+            ScreenIndex = Mathf.Clamp(ScreenIndex, 0, max);
 
             if (ScreenIndex == currentScreen)
                 return;
 
-            if (ScreenIndex == ARCADE)
-                UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
+            // Map index → logical enum id
+            MenuScreens screenId = GetScreenIdForIndex(ScreenIndex);
 
-            if (ScreenIndex == HANGAR)
+            switch (screenId)
             {
-                UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
-                HangarMenu.LoadView();
+                // If someone tries to navigate to the ARCADE index,
+                // treat it as opening the separate arcade panel instead of sliding.
+                // case MenuScreens.ARK:
+                //     OpenArcadePanel();
+                //     return;
+                case MenuScreens.HANGAR:
+                {
+                    UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
+                    if (HangarMenu)
+                        HangarMenu.LoadView();
+                    break;
+                }
             }
 
-            if (ScreenIndex == HOME)
+            if (screenId == MenuScreens.HOME)
                 PauseSystem.TogglePauseGame(false);
             else
                 PauseSystem.TogglePauseGame(true);
 
+            // Slide effect: 1 screen width per index
             Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
             panelLocation = newLocation;
 
             if (animate)
             {
-                GetComponent<MenuAudio>().PlayAudio();
+                var menuAudio = GetComponent<MenuAudio>();
+                if (menuAudio)
+                    menuAudio.PlayAudio();
+
                 if (navigateCoroutine != null)
                     StopCoroutine(navigateCoroutine);
                 navigateCoroutine = StartCoroutine(SmoothMove(transform.position, newLocation, easing));
             }
             else
+            {
                 transform.position = newLocation;
+            }
 
             currentScreen = ScreenIndex;
-            SetReturnToScreen((MenuScreens)currentScreen);
+            SetReturnToScreen(screenId);
             UpdateNavBar(currentScreen);
         }
 
+        #endregion
+
+        #region Arcade Panel Logic
+
+        private void OpenArcadePanel()
+        {
+            UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
+            if (arcadePanelRoot)
+            {
+                arcadePanelRoot.SetActive(true);
+            }
+        }
+
+        #endregion
+
+        #region Nav Button Handlers (legacy, kept)
+
         public void OnClickStoreNav()
         {
-            NavigateTo(STORE);
+            NavigateTo(MenuScreens.STORE);
         }
+
         public void OnClickPortNav()
         {
-            LeaderboardMenu.LoadView();
-            NavigateTo(PORT);
+            if (LeaderboardMenu != null)
+                LeaderboardMenu.LoadView();
+
+            NavigateTo(MenuScreens.PORT);
         }
+
         public void OnClickHomeNav()
         {
-            NavigateTo(HOME);
+            NavigateTo(MenuScreens.HOME);
         }
+
         public void OnClickHangarNav()
         {
-            //HangarMenu.LoadView();
-            NavigateTo(HANGAR);
+            NavigateTo(MenuScreens.HANGAR);
         }
+
+        public void OnClickArkNav()
+        {
+            NavigateTo(MenuScreens.ARK);
+        }
+
         public void OnClickArcadeNav()
         {
-            NavigateTo(ARCADE);
+            OpenArcadePanel();
         }
-        public void NavigateLeft()
+
+        public void OnClickLeftArrow()
+        {
+            NavigateLeft();
+        }
+
+        public void OnClickRightArrow()
+        {
+            NavigateRight();
+        }
+
+        private void NavigateLeft()
         {
             if (currentScreen <= 0)
                 return;
 
             NavigateTo(currentScreen - 1);
         }
-        public void NavigateRight()
+
+        private void NavigateRight()
         {
-            if (currentScreen >= transform.childCount - 1)
+            if (currentScreen >= GetScreenCount() - 1)
                 return;
 
             NavigateTo(currentScreen + 1);
         }
-        void UpdateNavBar(int index)
+
+
+        #endregion
+
+        #region NavBar & Icons
+
+        private void UpdateNavBar(int index)
         {
-            // Deselect them all
-            for (var i = 0; i < NavBar.childCount; i++)
+            if (NavBar)
             {
-                NavBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
-                NavBar.GetChild(i).GetChild(1).gameObject.SetActive(false);
+                for (var i = 0; i < NavBar.childCount; i++)
+                {
+                    var child = NavBar.GetChild(i);
+                    if (child.childCount < 2) continue;
+
+                    child.GetChild(0).gameObject.SetActive(true);
+                    child.GetChild(1).gameObject.SetActive(false);
+                }
+
+                if (index >= 0 && index < NavBar.childCount)
+                {
+                    var active = NavBar.GetChild(index);
+                    if (active.childCount >= 2)
+                    {
+                        active.GetChild(0).gameObject.SetActive(false);
+                        active.GetChild(1).gameObject.SetActive(true);
+                    }
+                }
             }
 
-            // Select the one
-            NavBar.GetChild(index).GetChild(0).gameObject.SetActive(false);
-            NavBar.GetChild(index).GetChild(1).gameObject.SetActive(true);
+            if (NavBarLine &&
+                NavBarLineSprites != null &&
+                index >= 0 && index < NavBarLineSprites.Count)
+            {
+                NavBarLine.sprite = NavBarLineSprites[index];
+            }
 
-            NavBarLine.sprite = NavBarLineSprites[index];
+            for (int i = 0; i < NavActiveImages.Count; i++)
+            {
+                bool isActive = (i == index);
+
+                if (NavActiveImages[i])
+                    NavActiveImages[i].SetActive(isActive);
+
+                if (i < NavInactiveImages.Count && NavInactiveImages[i])
+                    NavInactiveImages[i].SetActive(!isActive);
+            }
         }
-        IEnumerator SmoothMove(Vector3 startpos, Vector3 endpos, float seconds)
+
+        #endregion
+
+        #region Helpers
+
+        private IEnumerator SmoothMove(Vector3 startpos, Vector3 endpos, float seconds)
         {
             float t = 0f;
-            while (t <= 1.0)
+            while (t <= 1.0f)
             {
                 t += Time.unscaledDeltaTime / seconds;
                 transform.position = Vector3.Lerp(startpos, endpos, Mathf.SmoothStep(0f, 1f, t));
                 yield return null;
             }
         }
+
+        #endregion
     }
 }
