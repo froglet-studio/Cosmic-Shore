@@ -24,7 +24,7 @@ namespace CosmicShore.Game
             IPlayer player = (IPlayer)Instantiate(_playerPrefab);
             vesselSpawner.SpawnShip(data.vesselClass, out IVessel ship);
             player.InitializeForSinglePlayerMode(data, ship);
-            ship.Initialize(player, data.IsAI);
+            ship.Initialize(player);
             VesselInitializeHelper.SetShipProperties(_themeManagerData, ship);
 
             return player;

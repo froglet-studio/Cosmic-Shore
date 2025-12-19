@@ -172,7 +172,7 @@ namespace CosmicShore.Core
             victimPlayerStats.PrismsRemaining--;
             victimPlayerStats.VolumeRemaining -= prismStats.Volume;
 
-            if (attackingPlayerName == victimPlayerName)
+            if (attackingPlayerName == victimPlayerName || attackerPlayerStats.Domain == victimPlayerStats.Domain)
             {
                 attackerPlayerStats.FriendlyPrismsDestroyed++;
                 attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;

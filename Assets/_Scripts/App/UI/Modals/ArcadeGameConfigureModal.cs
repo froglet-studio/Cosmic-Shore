@@ -266,7 +266,7 @@ namespace CosmicShore.App.UI.Modals
 
             if (!chosen && _selectedGame)
             {
-                var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode).Loadout;
+                var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode, _selectedGame.IsMultiplayer).Loadout;
                 var loadoutVT = loadout.VesselType;
 
                 if (loadoutVT != VesselClassType.Random)
