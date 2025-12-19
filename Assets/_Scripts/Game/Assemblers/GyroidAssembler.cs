@@ -124,6 +124,11 @@ namespace CosmicShore
                         Position = newPosition,
                         Rotation = newRotation,
                         BlockType = bondMateData.BlockType,
+                        IsDangerous = 
+                            bondMateData.BlockType == GyroidBlockType.GEs ||
+                            bondMateData.BlockType == GyroidBlockType.DE ||
+                            bondMateData.BlockType == GyroidBlockType.EG ||
+                            bondMateData.BlockType == GyroidBlockType.EsD,
                         Depth = depth - 1
                     };
                 

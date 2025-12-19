@@ -12,6 +12,7 @@ namespace CosmicShore
         public bool CanGrow;
         public Vector3 Position;
         public Quaternion Rotation;
+        public bool IsDangerous;
         public int Depth;
     }
 
@@ -125,6 +126,7 @@ namespace CosmicShore
                 newHealthPrism.transform.SetParent(newSpindle.transform, false);
                 newHealthPrism.transform.localPosition = Vector3.zero;
                 newHealthPrism.transform.localRotation = Quaternion.identity;
+                if (growthInfo.IsDangerous) newHealthPrism.MakeDangerous();
                 newHealthPrism.Initialize();
                 
                 newBranch.gameObject = newSpindle.gameObject;
