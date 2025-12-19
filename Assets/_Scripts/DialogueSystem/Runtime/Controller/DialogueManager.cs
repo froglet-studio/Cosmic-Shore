@@ -1,112 +1,115 @@
 using System.Collections;
 using UnityEngine;
 using CosmicShore.DialogueSystem.Models;
+using CosmicShore.DialogueSystem.Events;
 using CosmicShore.DialogueSystem.View;
-using System;
 
 namespace CosmicShore.DialogueSystem.Controller
 {
-    public class DialogueManager : MonoBehaviour
+    public sealed class DialogueManager : MonoBehaviour
     {
-        public static DialogueManager Instance;
+        [Header("Data")]
+        [SerializeField] private DialogueSetLibrary dialogueLibrary;
 
-        [Header("References")]
-        [SerializeField] private DialogueUIController _uiController;
-        [SerializeField] private Canvas _dialogueCanvas;
-        [SerializeField] private DialogueSetLibrary _dialogueLibrary;
-        [SerializeField] private GameObject _mainGameCanvas;
+        [Header("View Resolution")]
+        [SerializeField] private DialogueViewResolver viewResolver;
 
-        private Coroutine _currentSequence;
+        [Header("Event Channels")]
+        [SerializeField] private DialogueEventChannel dialogueEventChannel;
 
-        private void Awake()
+        [Header("Optional Canvas Control")]
+        [SerializeField] private GameObject mainGameCanvas;
+        [SerializeField] private Canvas dialogueCanvas;
+
+        Coroutine _currentSequence;
+        IDialogueView _activeView;
+        bool _isPlaying;
+
+        public bool IsPlaying => _isPlaying;
+
+        void OnEnable()
         {
-            if (Instance == null)
-                Instance = this;
-            else if (Instance != this)
-                Destroy(gameObject);
+            if (dialogueEventChannel != null)
+                dialogueEventChannel.OnDialogueRequested += HandleDialogueRequested;
         }
 
-        /// <summary>
-        /// Play dialogue set by its unique ID.
-        /// </summary>
+        void OnDisable()
+        {
+            if (dialogueEventChannel != null)
+                dialogueEventChannel.OnDialogueRequested -= HandleDialogueRequested;
+        }
+
+        void HandleDialogueRequested(string setId)
+        {
+            PlayDialogueById(setId);
+        }
+
         public void PlayDialogueById(string setId)
         {
-            var set = _dialogueLibrary.GetSetById(setId);
+            var set = dialogueLibrary.GetSetById(setId);
             if (set == null)
             {
-                Debug.LogWarning($"DialogueManager: No DialogueSet found with ID '{setId}'.");
+                Debug.LogWarning($"DialogueManager ({gameObject.scene.name}): No DialogueSet found with ID '{setId}'.");
                 return;
             }
+
             PlayDialogueSet(set);
         }
 
-        /// <summary>
-        /// Play a dialogue set (reference).
-        /// </summary>
         public void PlayDialogueSet(DialogueSet set)
         {
-            if (set == null || set.lines.Count == 0)
+            if (set == null || set.lines == null || set.lines.Count == 0)
             {
-                Debug.LogWarning("DialogueManager: No lines in this set.");
+                Debug.LogWarning("DialogueManager: DialogueSet is null or has no lines.");
                 return;
             }
 
             if (_currentSequence != null)
                 StopCoroutine(_currentSequence);
 
-            // Activate the dialogue canvas
-            if (_dialogueCanvas != null)
+            _activeView = viewResolver.ResolveView(set);
+            if (_activeView == null)
             {
-                _mainGameCanvas.SetActive(false);
-                _dialogueCanvas.gameObject.SetActive(true);
+                Debug.LogError($"DialogueManager: No view found for channel {set.channel}.");
+                return;
             }
 
-            _currentSequence = StartCoroutine(PlaySequence(set));
+            if (dialogueCanvas != null)
+            {
+                if (mainGameCanvas) mainGameCanvas.SetActive(false);
+                dialogueCanvas.gameObject.SetActive(true);
+            }
+
+            _isPlaying = true;
+            _currentSequence = StartCoroutine(RunSequence(set));
         }
 
-        private IEnumerator PlaySequence(DialogueSet set)
+        IEnumerator RunSequence(DialogueSet set)
         {
+            _activeView.ShowDialogueSet(set);
+
             for (int i = 0; i < set.lines.Count; i++)
             {
                 var line = set.lines[i];
-                bool isLeft = (i % 2 == 0);
-                if (set.mode == DialogueModeType.Monologue)
-                    _uiController.ShowMonologue(set, line, OnNextRequested);
-                else if (set.mode == DialogueModeType.Dialogue)
-                    _uiController.ShowDialogue(set, line, OnNextRequested, isLeft);
+                bool lineDone = false;
 
-                yield return new WaitUntil(() => _uiController.WaitingForNextPressed);
-                _uiController.ResetWaitingForNext();
-
-                yield return new WaitForSeconds(0.1f);
+                _activeView.ShowLine(set, line, () => lineDone = true);
+                yield return new WaitUntil(() => lineDone);
             }
 
-            // Dialogue complete, hide UI and canvas
-            Debug.Log("<color=blue> DialogueComplete");
+            bool hideDone = false;
+            _activeView.Hide(() => hideDone = true);
+            yield return new WaitUntil(() => hideDone);
 
-            bool wasMono = set.mode == DialogueModeType.Monologue;
-            _uiController.HideWithAnimation(wasMono, () =>
+            if (dialogueCanvas != null)
             {
-                if (_dialogueCanvas != null)
-                {
-                    _mainGameCanvas.SetActive(true);
-                    Debug.Log("<color=green> Hide With Animation");
-                    _dialogueCanvas.gameObject.SetActive(false);
-                }
+                if (mainGameCanvas) mainGameCanvas.SetActive(true);
+                dialogueCanvas.gameObject.SetActive(false);
+            }
 
-                _currentSequence = null;
-            });
-        }
-
-        private void OnNextRequested()
-        {
-
-        }
-
-        [ContextMenu("PlayDefualtSet")]
-        public void PlayDefaultSetLibrary()
-        {
-            PlayDialogueById("Monologue");
+            _activeView = null;
+            _currentSequence = null;
+            _isPlaying = false;
         }
     }
 }

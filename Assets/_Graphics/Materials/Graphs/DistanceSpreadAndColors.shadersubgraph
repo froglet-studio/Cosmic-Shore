@@ -214,13 +214,13 @@
                 "m_Node": {
                     "m_Id": "391012acd8ec4115b2065c0027422cf5"
                 },
-                "m_SlotId": 2
+                "m_SlotId": 3
             },
             "m_InputSlot": {
                 "m_Node": {
                     "m_Id": "06af65ce3b3444e78f72650616b95a1e"
                 },
-                "m_SlotId": 5
+                "m_SlotId": 6
             }
         },
         {
@@ -545,10 +545,10 @@
             "m_Id": "c9a4c7ff5b6e468888334626a9f50cd7"
         },
         {
-            "m_Id": "ca101414b16d41aeb15f4df54c61ecd2"
+            "m_Id": "59d6bd435ac246ec8861957233a956e7"
         },
         {
-            "m_Id": "59d6bd435ac246ec8861957233a956e7"
+            "m_Id": "fa11e2582f5747acb5f30d3f43a1fa00"
         }
     ],
     "synonyms": [],
@@ -947,29 +947,6 @@
 
 {
     "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "2e8456813fcf46ad9e041d6537857335",
-    "m_Id": 2,
-    "m_DisplayName": "SpreadValue",
-    "m_SlotType": 1,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "SpreadValue",
-    "m_StageCapability": 3,
-    "m_Value": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_DefaultValue": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_Labels": []
-}
-
-{
-    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.SubGraphNode",
     "m_ObjectId": "2e98eca3e0814f5ba41c95f3c82618ae",
     "m_Group": {
@@ -1212,7 +1189,7 @@
             "m_Id": "fd4388edf9804e098bc360816c0ac4d4"
         },
         {
-            "m_Id": "2e8456813fcf46ad9e041d6537857335"
+            "m_Id": "8c55efc0092b43278a10d5400263414d"
         }
     ],
     "synonyms": [],
@@ -1811,6 +1788,29 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
+    "m_ObjectId": "8c55efc0092b43278a10d5400263414d",
+    "m_Id": 3,
+    "m_DisplayName": "ReducedSpreadValue",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "ReducedSpreadValue",
+    "m_StageCapability": 3,
+    "m_Value": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_DefaultValue": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.DynamicVectorMaterialSlot",
     "m_ObjectId": "8d4a16e23a6f4fd0a9f58a4ac7bb2eb4",
     "m_Id": 0,
@@ -2313,29 +2313,6 @@
 
 {
     "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "ca101414b16d41aeb15f4df54c61ecd2",
-    "m_Id": 5,
-    "m_DisplayName": "SpreadValue",
-    "m_SlotType": 0,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "SpreadValue",
-    "m_StageCapability": 3,
-    "m_Value": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_DefaultValue": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_Labels": []
-}
-
-{
-    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.BranchNode",
     "m_ObjectId": "cd70a4d5d5bc4f41b5d5988d943e8344",
     "m_Group": {
@@ -2555,10 +2532,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 408.73382568359377,
-            "y": 1140.68896484375,
-            "width": 0.0,
-            "height": 0.0
+            "x": 248.6667022705078,
+            "y": 1085.333251953125,
+            "width": 127.33332824707031,
+            "height": 78.666748046875
         }
     },
     "m_Slots": [
@@ -2715,6 +2692,29 @@
     "m_SlotType": 1,
     "m_Hidden": false,
     "m_ShaderOutputName": "Out",
+    "m_StageCapability": 3,
+    "m_Value": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_DefaultValue": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
+    "m_ObjectId": "fa11e2582f5747acb5f30d3f43a1fa00",
+    "m_Id": 6,
+    "m_DisplayName": "ReducedSpreadValue",
+    "m_SlotType": 0,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "ReducedSpreadValue",
     "m_StageCapability": 3,
     "m_Value": {
         "x": 0.0,

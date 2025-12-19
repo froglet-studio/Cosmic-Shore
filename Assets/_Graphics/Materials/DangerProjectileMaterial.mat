@@ -39,10 +39,10 @@ Material:
     - _ZWrite: 0
     - _ZWriteControl: 0
     m_Colors:
-    - _BrightColor: {r: 1.1035324, g: 0.13533874, b: 0.17187443, a: 1}
+    - _BrightColor: {r: 1.1489906, g: 0.08310299, b: 0.121397965, a: 1}
     - _Color1: {r: 1.1089643, g: 5.992157, b: 0.43921548, a: 0.9411765}
     - _Color2: {r: 0.0040939027, g: 0.012799058, b: 0.6509434, a: 1}
-    - _DarkColor: {r: 0.106918216, g: 0.015661078, b: 0, a: 1}
+    - _DarkColor: {r: 0.30817598, g: 0.013093073, b: 0, a: 1}
     - _DullColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
