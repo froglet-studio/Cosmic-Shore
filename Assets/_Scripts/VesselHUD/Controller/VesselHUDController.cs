@@ -46,6 +46,19 @@ namespace CosmicShore.Game
         
         public void SetBlockPrefab(GameObject prefab)
         {
+            if (prefab == null)
+            {
+                Debug.LogError("Block prefab is NULL!");
+                return;
+            }
+
+            if (silhouette == null)
+            {
+                Debug.LogError("HUD blockContainer is NULL!");
+                return;
+            }
+
+
             _view.TrailBlockPrefab = prefab;
             silhouette.SetBlockPrefab(prefab);
         }

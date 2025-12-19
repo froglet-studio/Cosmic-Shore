@@ -1,47 +1,50 @@
-using CosmicShore.Game.Projectiles;
-using Cysharp.Threading.Tasks;
+using CosmicShore.Game;
 using Obvious.Soap;
+using System.Diagnostics;
 using System.Threading;
 using UnityEngine;
-//using static Unity.Cinemachine.InputAxisControllerBase<T>;
 
-namespace CosmicShore.Game
+
+namespace CosmicShore
 {
-    
-    public class FalconsTrailExecutor : ShipActionExecutorBase
+    public class FalconBoostActionExecutor : ShipActionExecutorBase
     {
-
         private IVesselStatus _status;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
         private CancellationTokenSource _cts;
-        [SerializeField] VesselPrismController controller;
+
+
 
         void OnEnable()
         {
-            Debug.LogError("Trail Started");
+            if (_status == null) return;
+            _status.IsBoosting = true;
+            _status.VesselTransformer?.ModifyVelocity(_status.Course, 100f);
+            _status.IsStationary = false;
+
+
             OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
         }
 
         void OnDisable()
         {
-            End();
+            if (_status == null) return;
+            _status.IsBoosting = false;
             OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
         }
 
         public override void Initialize(IVesselStatus shipStatus)
         {
-            _status = shipStatus;
-            if (controller == null)
-                controller = shipStatus?.VesselPrismController;
 
+            base.Initialize(_status);
 
 
         }
 
 
-        public void Begin(FalconTrailSO so)
+        public void Begin(FalconBoostSO so)
         {
-            Debug.LogError("Trail Started");
+            //Debug.LogError("Boost Started");
         }
 
         public void End()
@@ -57,9 +60,5 @@ namespace CosmicShore.Game
         {
             End();
         }
-
-
-
-
     }
 }

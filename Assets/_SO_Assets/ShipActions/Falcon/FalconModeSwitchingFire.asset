@@ -14,4 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   normalFire: {fileID: 11400000, guid: 072a19a85e76fe34ab83b891e8536d4d, type: 2}
   ringFire: {fileID: 11400000, guid: 70bb78e655ba1bb46974f267422f41d2, type: 2}
-  ringMovement: {fileID: 0}
+  ringMovement: {fileID: 11400000, guid: 7caaa738ebf3f84419462429a1a2e45b, type: 2}
+  stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
+    type: 2}
