@@ -2,22 +2,29 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    [CreateAssetMenu(fileName = "VesselChangeSkimmerSizeByProjectileEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Projectile/VesselChangeSkimmerSizeByProjectileEffectSO")]
+    [CreateAssetMenu(
+        fileName = "VesselChangeSkimmerSizeByProjectileEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel - Projectile/VesselChangeSkimmerSizeByProjectileEffectSO")]
     public class VesselChangeSkimmerSizeByProjectileEffectSO : VesselProjectileEffectSO
     {
-        [SerializeField] private float sizeMultiplier = 0.5f; // set in Inspector
+        [Header("Debuff Settings")]
+        [SerializeField] private float sizeMultiplier = 0.5f;   // how much to scale max size (e.g. 0.5 = half)
+        [SerializeField] private float duration = 3f;           // seconds
 
-        [SerializeField] private float duration = 3f;
-        
+        [Header("Scale Driver Config Reference")]
+        [SerializeField] private ShieldSkimmerScaleConfigSO scaleConfig; // assign in Inspector
+
         public override void Execute(VesselImpactor impactor, ProjectileImpactor impactee)
         {
-            var vesselStatus = impactor.Vessel.VesselStatus;
-            
+            var vesselStatus = impactor?.Vessel?.VesselStatus;
+            if (vesselStatus == null) return;
+
             if (!IsVesselAllowedToImpact(vesselStatus.VesselType, vesselTypesToImpact))
                 return;
-            
-            var vesselSkimmer = vesselStatus.NearFieldSkimmer;
-            vesselSkimmer.ResizeForSeconds(sizeMultiplier, duration);
+
+            if (!scaleConfig) return;
+
+            _ = scaleConfig.ApplyMaxSizeDebuff(sizeMultiplier, duration);
         }
     }
 }

@@ -115,6 +115,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 1
+    - _AlphaToMask: 0
     - _BUILTIN_QueueControl: 0
     - _BUILTIN_QueueOffset: 0
     - _Blend: 0
@@ -128,6 +129,7 @@ Material:
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
+    - _DstBlendAlpha: 10
     - _Ease: 0
     - _EnvironmentReflections: 1
     - _Float: 0.099
@@ -150,8 +152,9 @@ Material:
     - _SpecularHighlights: 1
     - _Speed: 0.1
     - _SrcBlend: 5
-    - _Start: 0.98
-    - _Stop: 1.03
+    - _SrcBlendAlpha: 1
+    - _Start: 1.03
+    - _Stop: 0.98
     - _Surface: 1
     - _WorkflowMode: 1
     - _ZTest: 4
@@ -168,5 +171,6 @@ Material:
     - _DullCrystalColor: {r: 0.021153718, g: 0.05660379, b: 0.017443933, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

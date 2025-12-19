@@ -33,7 +33,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3, y: 3, z: 10}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 20}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -168,14 +168,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectileShipEffects:
-  - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
-  projectilePrismEffects:
-  - {fileID: 11400000, guid: 2564c4fefc3011b43a28e573899e7889, type: 2}
-  projectileMineEffects:
-  - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}
-  projectileEndEffects:
-  - {fileID: 11400000, guid: 2db231afba6d20240aaec6c4c9876672, type: 2}
   projectileImpactorDataContainer: {fileID: 11400000, guid: c876b418c4188d546996eaabb11d0f26,
     type: 2}
 --- !u!114 &6501871947578768307

@@ -19,20 +19,31 @@ namespace CosmicShore.Game
         [Header("Rhino – Slow Line Icon")]
         [SerializeField] private Image lineIcon;
 
+        [Header("Rhino – Debuff Icon")]
+        [SerializeField] private Image debuffIcon;
+        [SerializeField] private TextMeshProUGUI debuffTimerText;
+
         [Header("Default Colors")]
         [SerializeField] private Color crystalDefaultColor = Color.white;
         [SerializeField] private Color crystalActivatedColor = Color.green;
         [SerializeField] private Color lineDefaultColor = Color.white;
         [SerializeField] private Color lineActivatedColor = Color.red;
+        [SerializeField] private Color debuffDefaultColor = Color.white;
+        [SerializeField] private Color debuffActiveColor = Color.cyan;
 
         Coroutine _crystalRoutine;
         Coroutine _lineRoutine;
+        Coroutine _debuffRoutine;
 
         void OnEnable()
         {
-            // Ensure starting state is "idle"
             if (slowedCountText)
                 slowedCountText.gameObject.SetActive(false);
+
+            if (debuffIcon)
+                debuffIcon.gameObject.SetActive(false);
+            if (debuffTimerText)
+                debuffTimerText.gameObject.SetActive(false);
 
             ResetAllRhinoStates();
         }
@@ -56,11 +67,6 @@ namespace CosmicShore.Game
 
         #region Crystal Icon + Count
 
-        /// <summary>
-        /// Called when the crystal explosion is triggered.
-        /// Turns crystal green and shows count text, then after duration
-        /// restores default color and hides the text.
-        /// </summary>
         public void FlashCrystalActivated(float duration)
         {
             if (!crystalIcon) return;
@@ -68,13 +74,11 @@ namespace CosmicShore.Game
             if (_crystalRoutine != null)
                 StopCoroutine(_crystalRoutine);
 
-            if(!gameObject.activeInHierarchy) return;
             _crystalRoutine = StartCoroutine(CrystalRoutine(duration));
         }
 
         IEnumerator CrystalRoutine(float duration)
         {
-            // Activate state
             crystalIcon.color = crystalActivatedColor;
 
             if (slowedCountText)
@@ -82,7 +86,6 @@ namespace CosmicShore.Game
 
             yield return new WaitForSeconds(duration);
 
-            // Back to normal
             crystalIcon.color = crystalDefaultColor;
 
             if (slowedCountText)
@@ -97,26 +100,20 @@ namespace CosmicShore.Game
             slowedCountText.text = count.ToString();
         }
 
-        public void ResetCrystalIcon()
+        private void ResetCrystalIcon()
         {
             if (crystalIcon)
                 crystalIcon.color = crystalDefaultColor;
 
-            if (slowedCountText)
-            {
-                slowedCountText.text = "0";
-                slowedCountText.gameObject.SetActive(false);
-            }
+            if (!slowedCountText) return;
+            slowedCountText.text = "0";
+            slowedCountText.gameObject.SetActive(false);
         }
 
         #endregion
 
         #region Line Icon
 
-        /// <summary>
-        /// Called when a vessel is slowed by the explosion.
-        /// Turns line icon red, then after duration returns to default color.
-        /// </summary>
         public void FlashLineIconActive(float duration)
         {
             if (!lineIcon) return;
@@ -146,11 +143,62 @@ namespace CosmicShore.Game
 
         #endregion
 
-        public void ResetAllRhinoStates()
+        #region Debuff Icon + Timer
+
+        public void ShowDebuffTimer(float duration)
+        {
+            if (!debuffIcon || !debuffTimerText) return;
+
+            if (_debuffRoutine != null)
+                StopCoroutine(_debuffRoutine);
+
+            _debuffRoutine = StartCoroutine(DebuffRoutine(duration));
+        }
+
+        IEnumerator DebuffRoutine(float duration)
+        {
+            debuffIcon.gameObject.SetActive(true);
+            debuffTimerText.gameObject.SetActive(true);
+
+            debuffIcon.color = debuffActiveColor;
+
+            var remaining = duration;
+
+            while (remaining > 0f)
+            {
+                debuffTimerText.text = Mathf.CeilToInt(remaining).ToString();
+                yield return null;
+                remaining -= Time.deltaTime;
+            }
+
+            debuffIcon.color = debuffDefaultColor;
+            debuffIcon.gameObject.SetActive(false);
+            debuffTimerText.gameObject.SetActive(false);
+
+            _debuffRoutine = null;
+        }
+
+        private void ResetDebuffIcon()
+        {
+            if (debuffIcon)
+            {
+                debuffIcon.color = debuffDefaultColor;
+                debuffIcon.gameObject.SetActive(false);
+            }
+
+            if (!debuffTimerText) return;
+            debuffTimerText.text = string.Empty;
+            debuffTimerText.gameObject.SetActive(false);
+        }
+
+        #endregion
+
+        private void ResetAllRhinoStates()
         {
             ResetSkimmerIcon();
             ResetCrystalIcon();
             ResetLineIcon();
+            ResetDebuffIcon();
         }
     }
 }

@@ -77,9 +77,9 @@ namespace CosmicShore.Core
             onPrismStolen.Raise(
                 new PrismStats
                 {
-                    PlayerName = playerName,
+                    OwnName = playerName,
                     Volume = prism.Volume,
-                    OtherPlayerName = prism.PlayerName
+                    AttackerName = prism.PlayerName
                 });
             /*if (StatsManager.Instance != null)
                 {

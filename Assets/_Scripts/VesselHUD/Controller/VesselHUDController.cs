@@ -9,7 +9,7 @@ namespace CosmicShore.Game
         private VesselHUDView _view;
 
         [Header("Legacy Silhouette")]
-        [SerializeField] private Silhouette silhouette;
+        [SerializeField] private SilhouetteController silhouette;
 
         private void OnDestroy()
         {

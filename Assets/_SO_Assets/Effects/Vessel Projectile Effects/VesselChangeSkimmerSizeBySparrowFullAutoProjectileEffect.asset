@@ -15,3 +15,4 @@ MonoBehaviour:
   vesselTypesToImpact: 03000000
   sizeMultiplier: 0.7
   duration: 3
+  scaleConfig: {fileID: 11400000, guid: 1885bb8aa7a8b5b41bfca5a1e6a9ee79, type: 2}

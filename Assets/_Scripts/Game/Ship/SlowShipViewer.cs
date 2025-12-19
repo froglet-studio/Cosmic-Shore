@@ -1,56 +1,117 @@
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game;
-using CosmicShore.SOAP;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
-    [RequireComponent(typeof(IVesselStatus))]
     public class SlowShipViewer : MonoBehaviour
     {
-        [FormerlySerializedAs("miniGameData")] [SerializeField]
-        GameDataSO gameData;
-        
-        [SerializeField] Material trailViewerMaterial;
+        [Header("Visuals")]
+        [SerializeField] private Material trailViewerMaterial;
+        [SerializeField] private float fallbackDuration = 3f;
 
-        LineRenderer lineRenderer;
-        Transform target;
-        
-        void Start()
+        [Header("Events")]
+        [Tooltip("Explosion debuff events to listen to (e.g., ExplosionEffect, Rhino Prism debuff).")]
+        [SerializeField] private ScriptableEventExplosionDebuffApplied[] explosionDebuffEvents;
+
+        LineRenderer _lineRenderer;
+
+        struct ActiveLink
         {
-            lineRenderer = gameObject.AddComponent<LineRenderer>();
-            lineRenderer.material = trailViewerMaterial;
-            lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
+            public Transform target;
+            public float expireTime;
+        }
+
+        readonly List<ActiveLink> _links = new();
+
+        void Awake()
+        {
+            _lineRenderer = gameObject.AddComponent<LineRenderer>();
+            _lineRenderer.material      = trailViewerMaterial;
+            _lineRenderer.startWidth    = _lineRenderer.endWidth = 0.1f;
+            _lineRenderer.positionCount = 2;
+            _lineRenderer.enabled       = false;
+        }
+
+        void OnEnable()
+        {
+            if (explosionDebuffEvents == null) return;
+
+            foreach (var evt in explosionDebuffEvents)
+            {
+                if (evt == null) continue;
+                evt.OnRaised += OnExplosionDebuffApplied;
+            }
+        }
+
+        void OnDisable()
+        {
+            if (explosionDebuffEvents == null) return;
+
+            foreach (var evt in explosionDebuffEvents)
+            {
+                if (evt == null) continue;
+                evt.OnRaised -= OnExplosionDebuffApplied;
+            }
+        }
+
+        void OnExplosionDebuffApplied(ExplosionDebuffPayload payload)
+        {
+            var victimVessel = payload.Vessel;
+            var duration     = payload.Duration;
+
+            if (victimVessel == null)
+                return;
+
+            if (victimVessel.Transform == transform)
+                return;
+
+            _links.Add(new ActiveLink
+            {
+                target     = victimVessel.Transform,
+                expireTime = Time.time + (duration > 0 ? duration : fallbackDuration)
+            });
         }
 
         void Update()
         {
-            target = null;
-            lineRenderer.SetPosition(0, transform.position);
-            lineRenderer.enabled = false;
-
-            // TODO - Can't have LocalPlayer as static
-            // if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.LocalPlayer && Player.LocalPlayer.Vessel.VesselStatus == vesselStatus)
+            // prune expired / null links
+            for (int i = _links.Count - 1; i >= 0; i--)
             {
-                var distance = float.PositiveInfinity;
-                foreach (var shipTransform in gameData.SlowedShipTransforms)
+                if (!_links[i].target || Time.time > _links[i].expireTime)
+                    _links.RemoveAt(i);
+            }
+
+            if (_links.Count == 0)
+            {
+                _lineRenderer.enabled = false;
+                return;
+            }
+
+            Transform bestTarget = null;
+            float bestDistSqr = float.PositiveInfinity;
+
+            foreach (var link in _links)
+            {
+                if (!link.target) continue;
+                float d2 = (link.target.position - transform.position).sqrMagnitude;
+                if (d2 < bestDistSqr)
                 {
-                    if (shipTransform == transform) continue;
-                    float tempDistance;     
-                    tempDistance = (shipTransform.position - transform.position).magnitude;
-                    if (tempDistance < distance)
-                    {
-                        distance = tempDistance;
-                        target = shipTransform;
-                    }
-                }
-                if (target != null)
-                {
-                    lineRenderer.SetPosition(1, target.position);
-                    lineRenderer.enabled = true;
+                    bestDistSqr = d2;
+                    bestTarget  = link.target;
                 }
             }
+
+            if (!bestTarget)
+            {
+                _lineRenderer.enabled = false;
+                return;
+            }
+
+            _lineRenderer.enabled = true;
+            _lineRenderer.SetPosition(0, transform.position);
+            _lineRenderer.SetPosition(1, bestTarget.position);
         }
     }
 }

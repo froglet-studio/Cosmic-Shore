@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a148940713548a4b5905021dc45785b, type: 3}
   m_Name: RhinoVesselExplosionByCrystalEffect
   m_EditorClassIdentifier: 
+  rhinoCrystalExplosionEvent: {fileID: 11400000, guid: 1fbf77fcd936a8f4f840e07af36d8504,
+    type: 2}
   _aoePrefabs:
   - {fileID: 5915562654621825366, guid: d568a14301490e54280955b50673f884, type: 3}
   _minExplosionScale: 200
@@ -19,3 +21,4 @@ MonoBehaviour:
   _resourceIndex: 0
   _aoeExplosionMaterial: {fileID: 0}
   _spawnOffset: {x: 0, y: 0, z: -5}
+  _explosionCooldown: 0.5

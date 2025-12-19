@@ -1,8 +1,6 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
-
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.Environment.MiniGameObjects
 {
@@ -11,7 +9,11 @@ namespace CosmicShore.Environment.MiniGameObjects
         static int SegmentsSpawned = 0;
         private bool isLooping = false;
         private GameObject container;
-        [FormerlySerializedAs("Team")] [SerializeField] Domains domain = Domains.Gold;
+
+        private void Reset()
+        {
+            domain = Domains.Gold;
+        }
 
         public override GameObject Spawn()
         {

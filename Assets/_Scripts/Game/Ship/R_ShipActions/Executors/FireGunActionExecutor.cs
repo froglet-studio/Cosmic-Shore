@@ -8,6 +8,7 @@ using UnityEngine;
 public class FireGunActionExecutor : ShipActionExecutorBase
 {
     public event Action OnGunFired;
+    public event Action<float> OnAmmoChanged;
 
     [Header("Scene Refs")]
     [SerializeField] Gun gun;
@@ -16,6 +17,9 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
     [Header("Events")]
     [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
+    [Header("Ammo")]
+    [SerializeField] private int defaultAmmoIndex = 2;
 
     IVesselStatus _status;
     ResourceSystem _resources;
@@ -36,29 +40,38 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
     void OnEnable()
     {
-        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) 
+            OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
     }
 
     void OnDisable()
     {
-        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) 
+            OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
 
     void OnDestroy()
     {
         if (_worldMuzzleAnchor)
             Destroy(_worldMuzzleAnchor.gameObject);
+
+        if (_resources != null)
+            _resources.OnResourceChanged -= HandleResourceChanged;
     }
 
     public float Ammo01
     {
         get
         {
-            if (!_resources || _resources.Resources == null) return 0f;
-            var index = _soRef ? _soRef.AmmoIndex : 0;
-            if (index < 0 || index >= _resources.Resources.Count) return 0f;
+            var index = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
+
+            if (index < 0 || index >= _resources.Resources.Count) 
+                return 0f;
+
             var res = _resources.Resources[index];
-            if (res == null || res.MaxAmount <= 0f) return 0f;
+            if (res == null || res.MaxAmount <= 0f) 
+                return 0f;
+
             return Mathf.Clamp01(res.CurrentAmount / res.MaxAmount);
         }
     }
@@ -68,8 +81,20 @@ public class FireGunActionExecutor : ShipActionExecutorBase
         _status    = shipStatus;
         _resources = shipStatus.ResourceSystem;
 
+        _resources.OnResourceChanged -= HandleResourceChanged;
+        _resources.OnResourceChanged += HandleResourceChanged;
+
         if (gun != null)
             gun.Initialize(shipStatus);
+    }
+
+    void HandleResourceChanged(int index, float current, float max)
+    {
+        var ammoIndex = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
+        if (index != ammoIndex) 
+            return;
+
+        OnAmmoChanged?.Invoke(Ammo01);
     }
 
     public void Fire(FireGunActionSO so, IVesselStatus status)
@@ -80,6 +105,8 @@ public class FireGunActionExecutor : ShipActionExecutorBase
         _soRef = so;
         _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
 
+        OnAmmoChanged?.Invoke(Ammo01);
+
         var gunTf = gun ? gun.transform : transform;
         _worldMuzzleAnchor.SetPositionAndRotation(gunTf.position, gunTf.rotation);
 
@@ -88,11 +115,11 @@ public class FireGunActionExecutor : ShipActionExecutorBase
         OnGunFired?.Invoke();
 
         gun.FireGun(
-            _worldMuzzleAnchor,        
+            _worldMuzzleAnchor,
             so.Speed,
             inheritedVelocityWS,
             so.ProjectileScale,
-            true,                      
+            true,
             so.ProjectileTime.Value,
             0,
             FiringPatterns.Default,
@@ -104,5 +131,6 @@ public class FireGunActionExecutor : ShipActionExecutorBase
     void OnTurnEndOfMiniGame()
     {
         _soRef = null;
+        OnAmmoChanged?.Invoke(Ammo01);
     }
 }

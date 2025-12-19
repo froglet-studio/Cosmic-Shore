@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8bb59b788d8e4ae1a21a990fd2c26a68, type: 3}
   m_Name: VesselDamageBySkimmerEffect
   m_EditorClassIdentifier: 
+  skimmerDebuffAppliedEvent: {fileID: 11400000, guid: dd0765fd710ff984f961c3b1ad3ef4dd,
+    type: 2}
   inputToMute: 1
   muteSeconds: 5
   forceStopIfActive: 1

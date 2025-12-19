@@ -12,8 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc36c2b096d34285bbbcee77a170cada, type: 3}
   m_Name: SparrowPrismProjectileImpactContainer
   m_EditorClassIdentifier: 
-  projectileShipEffects: []
+  projectileShipEffects:
+  - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
+  - {fileID: 11400000, guid: b1c4870f9bbd480479d87eb7b71c7c54, type: 2}
   projectilePrismEffects:
   - {fileID: 11400000, guid: 4a7e177e7648c4f48afc533c7bb76c8b, type: 2}
-  projectileMineEffects: []
+  projectileMineEffects:
+  - {fileID: 11400000, guid: c5e5a7edf72873e4da8db16fdac85190, type: 2}
   projectileEndEffects: []

@@ -20,10 +20,6 @@ namespace CosmicShore.Game
         [SerializeField] private Vector3 crystalSize = new Vector3(500, 500, 500);
         [SerializeField] private int shardDistance = 100;
 
-        [Header("Optional Look Target (no Crystal needed)")]
-        [SerializeField] private bool aimAtTarget = false;
-        [SerializeField] private Vector3 worldTarget = new Vector3(0, 0, 50);
-
         private readonly System.Type _snowType = typeof(SnowChanger);
 
         void Start()
@@ -60,13 +56,7 @@ namespace CosmicShore.Game
 
                 // Make sure it builds its lattice right away (Crystal can be null)
                 sc.SetOrigin(pos);
-                // sc.Initialize(null, 1);
                 sc.Initialize();
-
-                // if (aimAtTarget)
-                // {
-                //     sc.PointAtPosition(worldTarget);
-                // }
 
                 count++;
             }

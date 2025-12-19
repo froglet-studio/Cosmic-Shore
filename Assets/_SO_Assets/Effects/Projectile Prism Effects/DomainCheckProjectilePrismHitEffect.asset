@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f443b4c0d22409f978aba00dcd98e64, type: 3}
   m_Name: DomainCheckProjectilePrismHitEffect
   m_EditorClassIdentifier: 
-  allowFriendlyPassThrough: 1
+  allowFriendlyPassThrough: 0
   destroyShooterPrism: 1
+  blockFactory: {fileID: 0}

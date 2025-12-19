@@ -1,29 +1,33 @@
-﻿using System.Collections;
-using CosmicShore.Game.UI.Toast;
+﻿using CosmicShore.Game.UI.Toast;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     public class MantaVesselHUDController : VesselHUDController
     {
-        [Header("View")] [SerializeField] private MantaVesselHUDView view;
+        [Header("View")]
+        [SerializeField] private MantaVesselHUDView view;
 
-        [Header("Effect Source (SO)")] [SerializeField]
-        private SkimmerOverchargeCollectPrismEffectSO overchargeSO;
+        [Header("Effect Source (SO)")]
+        [SerializeField] private SkimmerOverchargeCollectPrismEffectSO overchargeSO;
 
-        [Header("Skimmer binding")] [SerializeField]
-        private SkimmerImpactor skimmer;
+        [Header("Skimmer binding")]
+        [SerializeField] private SkimmerImpactor skimmer;
 
-        [Header("UI Toasts")] [SerializeField] private ToastChannel toastChannel;
+        [Header("UI Toasts")]
+        [SerializeField] private ToastChannel toastChannel;
 
-        private int _max = 1;
-        private Coroutine _countdownCR;
-        private readonly Color _overchargeTextColor = Color.red;
+        int _max = 1;
+        readonly Color _overchargeTextColor = Color.red;
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
+            if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser) return;
+            
             base.Initialize(vesselStatus, baseView);
-            view = view != null ? view : baseView as MantaVesselHUDView;
+
+            if (!view)
+                view = baseView as MantaVesselHUDView;
 
             if (overchargeSO == null || skimmer == null || view == null)
             {
@@ -31,54 +35,37 @@ namespace CosmicShore.Game
                 return;
             }
 
-            overchargeSO.OnCountChanged += HandleCountChanged;
-            overchargeSO.OnReadyToOvercharge += HandleReadyToOvercharge;
-            overchargeSO.OnOvercharge += HandleOvercharge;
-            overchargeSO.OnCooldownStarted += HandleCooldownStarted;
+            _max = Mathf.Max(1, overchargeSO.MaxBlockHits);
+            view.InitializeOvercharge(_max);
 
-            view.FillImage.fillAmount = 0f;
-            view.FillImage.color = view.NormalColor;
-            if (view.OverchargeCountdownContainer) view.OverchargeCountdownContainer.SetActive(false);
-            SetCounter(0, overchargeSO.MaxBlockHits);
+            overchargeSO.OnCountChanged      += HandleCountChanged;
+            overchargeSO.OnReadyToOvercharge += HandleReadyToOvercharge;
+            overchargeSO.OnOvercharge        += HandleOvercharge;
+            overchargeSO.OnCooldownStarted   += HandleCooldownStarted;
         }
 
-        private void OnDestroy()
+        void OnDestroy()
         {
-            if (overchargeSO != null)
-            {
-                overchargeSO.OnCountChanged -= HandleCountChanged;
-                overchargeSO.OnReadyToOvercharge -= HandleReadyToOvercharge;
-                overchargeSO.OnOvercharge -= HandleOvercharge;
-                overchargeSO.OnCooldownStarted -= HandleCooldownStarted;
-            }
-
-            if (_countdownCR != null) StopCoroutine(_countdownCR);
-            _countdownCR = null;
+            if (overchargeSO == null) return;
+            overchargeSO.OnCountChanged      -= HandleCountChanged;
+            overchargeSO.OnReadyToOvercharge -= HandleReadyToOvercharge;
+            overchargeSO.OnOvercharge        -= HandleOvercharge;
+            overchargeSO.OnCooldownStarted   -= HandleCooldownStarted;
         }
 
         void HandleCountChanged(SkimmerImpactor who, int count, int max)
         {
-            if (who != skimmer) return;
+            if (who != skimmer || view == null) 
+                return;
 
             _max = Mathf.Max(1, max);
-            SetCounter(count, _max);
-
-            float fill = (float)count / _max;
-            view.FillImage.fillAmount = fill;
-            view.FillImage.color = (count >= _max) ? view.HighLightColor : view.NormalColor;
-
-            // toastChannel?.Raise(
-            //     new ToastRequest(
-            //         message: $"Overcharge {count}/{_max}",
-            //         duration: 1.2f,
-            //         animation: ToastAnimation.SlideFromRight
-            //     )
-            // );
+            view.SetOverchargeCount(count, _max);
         }
 
         void HandleReadyToOvercharge(SkimmerImpactor who)
         {
-            if (who != skimmer) return;
+            if (who != skimmer || view == null) 
+                return;
 
             toastChannel?.ShowCountdown(
                 prefix: "Overcharging in",
@@ -89,44 +76,25 @@ namespace CosmicShore.Game
                 accent: view.HighLightColor
             );
         }
-        
-        IEnumerator CountdownAndConfirm(SkimmerImpactor who)
-        {
-            if (view.OverchargeCountdownContainer) view.OverchargeCountdownContainer.SetActive(true);
-
-            for (int i = 3; i >= 1; i--)
-            {
-                if (view.OverChargeCountdownText) view.OverChargeCountdownText.text = i.ToString();
-                yield return new WaitForSeconds(1f);
-            }
-
-            overchargeSO.ConfirmOvercharge(who);
-
-            if (view.OverchargeCountdownContainer) view.OverchargeCountdownContainer.SetActive(false);
-
-            _countdownCR = null;
-        }
 
         void HandleOvercharge(SkimmerImpactor who)
         {
-            if (who != skimmer);
-            toastChannel.ShowPrefix(prefix:"OVERCHARGED!", duration:4.5f,accent : _overchargeTextColor);
+            if (who != skimmer) 
+                return;
+
+            toastChannel?.ShowPrefix(
+                prefix: "OVERCHARGED!",
+                duration: 4.5f,
+                accent: _overchargeTextColor
+            );
         }
 
         void HandleCooldownStarted(SkimmerImpactor who, float seconds)
         {
-            if (who != skimmer) return;
+            if (who != skimmer || view == null) 
+                return;
 
-            SetCounter(0, _max);
-            view.FillImage.fillAmount = 0f;
-            view.FillImage.color = view.NormalColor;
-            if (view.OverchargeCountdownContainer) view.OverchargeCountdownContainer.SetActive(false);
-        }
-
-        void SetCounter(int count, int max)
-        {
-            if (view?.OverchargePrismCount)
-                view.OverchargePrismCount.text = $"{count}";
+            view.ResetOvercharge(_max);
         }
     }
 }

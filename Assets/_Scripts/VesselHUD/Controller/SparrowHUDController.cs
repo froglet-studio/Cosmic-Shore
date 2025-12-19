@@ -1,8 +1,6 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using Obvious.Soap;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
@@ -15,49 +13,66 @@ namespace CosmicShore.Game
         [SerializeField] private FireGunActionExecutor fireGunExecutor;
         [SerializeField] private OverheatingActionExecutor overheatingExecutor;
 
-        [Header("Colors")]
-        [SerializeField] private Color boostNormalColor;
-        [SerializeField] private Color boostFullColor;
-        [SerializeField] private Color overheatingColor;
-        [SerializeField] private Color blockedInputColor = Color.red;
-
-        [Header("Drain animation (unused now, but kept if you want to tweak later)")]
-        [SerializeField] private float drainSpeed = 0.04f;
-
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
         [SerializeField] private ScriptableEventInputEventBlock onInputEventBlocked;
 
         Coroutine _heatFillLoop;
-        
-        private readonly Dictionary<InputEvents, Coroutine> _blockEnforcers = new();
-
-        private R_VesselActionHandler _handler;
+        Coroutine _initialAmmoRoutine;
+        IVesselStatus _vesselStatus;
 
         public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
         {
             base.Initialize(vesselStatus, baseView);
-            view = view ? view : baseView as SparrowHUDView;
+            _vesselStatus = vesselStatus;
+            if (!view)
+                view = baseView as SparrowHUDView;
 
-            if (view && !view.isActiveAndEnabled) view.gameObject.SetActive(true);
+            if (!view) return;
 
-            if (stationaryModeChanged) stationaryModeChanged.OnRaised += HandleStationaryModeChanged;
-            HandleStationaryModeChanged(vesselStatus.IsTranslationRestricted);
+            if (!view.isActiveAndEnabled)
+                view.gameObject.SetActive(true);
 
-            if (onInputEventBlocked) onInputEventBlocked.OnRaised += HandleInputEventBlocked;
-
-            if (overheatingExecutor == null) return;
-            overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
-            overheatingExecutor.OnOverheated         += OnOverheated;
-            overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
-            overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
-
-            ApplyBoostVisual(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
+            view.Initialize();
+            Subscribe();
         }
 
-        private void OnDestroy()
+        void Subscribe()
         {
-            if (overheatingExecutor != null)
+            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
+            
+            if (stationaryModeChanged)
+            {
+                stationaryModeChanged.OnRaised += HandleStationaryModeChanged;
+                HandleStationaryModeChanged(_vesselStatus.IsTranslationRestricted);
+            }
+
+            if (onInputEventBlocked)
+                onInputEventBlocked.OnRaised += HandleInputEventBlocked;
+
+            if (overheatingExecutor)
+            {
+                overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
+                overheatingExecutor.OnOverheated         += OnOverheated;
+                overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
+                overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
+
+                // Initial paint of boost bar to current state
+                view.SetBoostState(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
+            }
+
+            // --- Ammo / missiles ---
+
+            if (fireGunExecutor == null) return;
+            fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
+            _initialAmmoRoutine = StartCoroutine(InitialAmmoPaintRoutine());
+        }
+
+        void OnDestroy()
+        {
+            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
+            
+            if (overheatingExecutor)
             {
                 overheatingExecutor.OnHeatBuildStarted   -= OnHeatBuildStarted;
                 overheatingExecutor.OnOverheated         -= OnOverheated;
@@ -71,89 +86,60 @@ namespace CosmicShore.Game
             if (onInputEventBlocked)
                 onInputEventBlocked.OnRaised -= HandleInputEventBlocked;
 
+            if (fireGunExecutor != null)
+                fireGunExecutor.OnAmmoChanged -= HandleAmmoChanged;
+
+            if (_initialAmmoRoutine != null)
+                StopCoroutine(_initialAmmoRoutine);
+
             StopHeatFillLoop();
         }
 
-        // ---------- Block logic (unchanged) ----------
+        #region Initial ammo paint
 
-        private void HandleInputEventBlocked(InputEventBlockPayload p)
+        private IEnumerator InitialAmmoPaintRoutine()
         {
-            if (!view || view.highlights == null) return;
+            yield return null;
 
-            var image = FindHighlightImage(p.Input);
-            if (!image) return;
+            if (view)
+                view.InitializeMissileIcon();
 
-            if (p.Started)
-            {
-                if (_blockEnforcers.TryGetValue(p.Input, out var running) && running != null)
-                    StopCoroutine(running);
-                _blockEnforcers[p.Input] = StartCoroutine(EnforceBlockedHighlight(image, p.Input));
-            }
-            else if (p.Ended)
-            {
-                if (_blockEnforcers.TryGetValue(p.Input, out var running) && running != null)
-                    StopCoroutine(running);
-                _blockEnforcers.Remove(p.Input);
-
-                image.color   = Color.white;
-                image.enabled = false;
-            }
+            _initialAmmoRoutine = null;
         }
 
-        private IEnumerator EnforceBlockedHighlight(Image img, InputEvents input)
+        #endregion
+
+        #region Input block HUD
+
+        private void HandleInputEventBlocked(InputEventBlockPayload payload)
         {
-            while (true)
-            {
-                if (!img) yield break;
-                img.enabled = true;
-                img.color   = blockedInputColor;
-                yield return null;
-            }
+            if (!view) return;
+            view.HandleInputEventBlocked(payload);
         }
 
-        private Image FindHighlightImage(InputEvents ev)
-        {
-            for (int i = 0; i < view.highlights.Count; i++)
-                if (view.highlights[i].input == ev)
-                    return view.highlights[i].image;
-            return null;
-        }
+        #endregion
 
-        // ---------- Weapon mode (unchanged) ----------
+        #region Weapon mode HUD
 
         private void HandleStationaryModeChanged(bool isStationary)
         {
-            if (!view || !view.weaponModeIcon || view.weaponModeIcons == null || view.weaponModeIcons.Length < 2)
-                return;
-
-            int idx = isStationary ? 1 : 0;
-            var sprite = view.weaponModeIcons[idx];
-            if (!sprite) return;
-            view.weaponModeIcon.sprite = sprite;
-            view.weaponModeIcon.enabled = true;
+            if (!view) return;
+            view.SetWeaponMode(isStationary);
         }
 
-        // ---------- Heat event handling (UPDATED) ----------
+        #endregion
 
-        void OnHeatBuildStarted()
-        {
-            StartHeatFillLoop();
-        }
+        #region Heat / boost HUD
 
-        void OnOverheated()
-        {
-            StartHeatFillLoop();
-        }
-
-        void OnHeatDecayStarted()
-        {
-            StartHeatFillLoop();
-        }
+        void OnHeatBuildStarted() => StartHeatFillLoop();
+        void OnOverheated()       => StartHeatFillLoop();
+        void OnHeatDecayStarted() => StartHeatFillLoop();
 
         void OnHeatDecayCompleted()
         {
             StopHeatFillLoop();
-            ApplyBoostVisual(overheatingExecutor ? overheatingExecutor.Heat01 : 0f, false);
+            if (overheatingExecutor && view)
+                view.SetBoostState(overheatingExecutor.Heat01, false);
         }
 
         void StartHeatFillLoop()
@@ -171,50 +157,31 @@ namespace CosmicShore.Game
             }
         }
 
-        IEnumerator HeatFillRoutine()
+        private IEnumerator HeatFillRoutine()
         {
-            var img = view?.boostFill;
-            if (!img || !overheatingExecutor) yield break;
+            if (!view || !overheatingExecutor) yield break;
 
             while (true)
             {
                 float heat = Mathf.Clamp01(overheatingExecutor.Heat01);
                 bool  hot  = overheatingExecutor.IsOverheating;
-                ApplyBoostVisual(heat, hot);
+
+                view.SetBoostState(heat, hot);
+
                 yield return new WaitForSeconds(0.05f);
             }
         }
 
-        void ApplyBoostVisual(float shown01, bool overheated)
-        {
-            if (!view?.boostFill) return;
+        #endregion
 
-            view.boostFill.fillAmount = Mathf.Clamp01(shown01);
-            view.boostFill.color = overheated
-                ? overheatingColor
-                : Mathf.Approximately(shown01, 1f) ? boostFullColor : boostNormalColor;
-        }
+        #region Ammo HUD
 
-        private void Update()
+        private void HandleAmmoChanged(float ammo01)
         {
             if (!view) return;
-            if (fireGunExecutor)
-                PaintMissilesFromAmmo01(fireGunExecutor.Ammo01);
+            view.SetMissilesFromAmmo01(ammo01);
         }
 
-        private void PaintMissilesFromAmmo01(float ammo01)
-        {
-            if (!view.missileIcon || view.missileIcons == null || view.missileIcons.Length == 0) return;
-
-            int maxState = view.missileIcons.Length - 1;
-            int state = Mathf.Clamp(
-                Mathf.RoundToInt(Mathf.Clamp01(ammo01) * maxState),
-                0, maxState);
-
-            var sprite = view.missileIcons[state];
-            if (sprite)
-                view.missileIcon.sprite = sprite;
-            view.missileIcon.enabled = true;
-        }
+        #endregion
     }
 }

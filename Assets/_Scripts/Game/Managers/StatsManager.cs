@@ -25,9 +25,9 @@ namespace CosmicShore.Core
     [Serializable]
     public struct PrismStats
     {
-        public string PlayerName;
+        public string OwnName;
         public float Volume;
-        public string OtherPlayerName;
+        public string AttackerName;
     }
 
     [Serializable]
@@ -41,10 +41,10 @@ namespace CosmicShore.Core
     public class StatsManager : Singleton<StatsManager>
     {
         [SerializeField]
-        List<GameObject> EndOfRoundStatContainers;
+        GameDataSO gameData;
         
         [SerializeField]
-        GameDataSO gameData;
+        CellDataSO cellData;
 
         protected bool allowRecord = true;
         
@@ -52,7 +52,7 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            var cellStatsList = gameData.CellStatsList;
+            var cellStatsList = cellData.CellStatsList;
             
             if (!cellStatsList.ContainsKey(cellID))
                 cellStatsList[cellID] = new CellStats();
@@ -66,7 +66,7 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            var cellStatsList = gameData.CellStatsList;
+            var cellStatsList = cellData.CellStatsList;
             
             if (!cellStatsList.ContainsKey(cellID))
                 cellStatsList[cellID] = new CellStats();
@@ -145,7 +145,7 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            if (!gameData.TryGetRoundStats(prismStats.PlayerName, out var roundStats))
+            if (!gameData.TryGetRoundStats(prismStats.OwnName, out var roundStats))
                 return;
 
             roundStats.BlocksCreated++;
@@ -158,8 +158,8 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            var victimPlayerName = prismStats.OtherPlayerName;
-            var attackingPlayerName = prismStats.PlayerName;
+            var attackingPlayerName = prismStats.AttackerName;
+            var victimPlayerName = prismStats.OwnName;
             
             if (!gameData.TryGetRoundStats(attackingPlayerName, out IRoundStats attackerPlayerStats))
                 return;
@@ -168,25 +168,27 @@ namespace CosmicShore.Core
                 return;
             
             attackerPlayerStats.BlocksDestroyed++;
-            if (attackingPlayerName == victimPlayerName)
-                attackerPlayerStats.FriendlyPrismsDestroyed++;
-            else
-                attackerPlayerStats.HostilePrismsDestroyed++;
             attackerPlayerStats.TotalVolumeDestroyed += prismStats.Volume;
-            if (attackingPlayerName == victimPlayerName)
-                attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
-            else
-                attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
-            
             victimPlayerStats.PrismsRemaining--;
             victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+
+            if (attackingPlayerName == victimPlayerName)
+            {
+                attackerPlayerStats.FriendlyPrismsDestroyed++;
+                attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
+            }
+            else
+            {
+                attackerPlayerStats.HostilePrismsDestroyed++;
+                attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
+            }
         }
 
         public void PrismRestored(PrismStats prismStats)
         {
             if (!allowRecord) return;
 
-            var restoringPlayerName = prismStats.PlayerName;
+            var restoringPlayerName = prismStats.OwnName;
 
             if (!gameData.TryGetRoundStats(restoringPlayerName, out IRoundStats roundStats))
                 return;
@@ -201,7 +203,7 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            var ownerPlayerName = prismStats.PlayerName;
+            var ownerPlayerName = prismStats.OwnName;
             
             if (!gameData.TryGetRoundStats(ownerPlayerName, out IRoundStats roundStats))
                 return;
@@ -214,7 +216,7 @@ namespace CosmicShore.Core
         {
             if (!allowRecord) return;
 
-            var stealingPlayerName = prismStats.PlayerName;
+            var stealingPlayerName = prismStats.OwnName;
             if (!gameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
                 return;
             
@@ -223,7 +225,7 @@ namespace CosmicShore.Core
             stealingPlayerStats.VolumeStolen += prismStats.Volume;
             stealingPlayerStats.VolumeRemaining += prismStats.Volume;
 
-            var victimPlayerName = prismStats.OtherPlayerName;
+            var victimPlayerName = prismStats.AttackerName;
             if (!gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
                 return;
             

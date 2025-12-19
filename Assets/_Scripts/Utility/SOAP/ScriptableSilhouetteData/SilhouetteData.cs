@@ -8,7 +8,7 @@ namespace CosmicShore.Utilities
     [Serializable]
     public struct SilhouetteData
     {
-        public Silhouette Sender;
+        public SilhouetteController Sender;
         public bool IsSilhouetteActive;
         public bool IsTrailDisplayActive;
         public List<GameObject> Silhouettes;

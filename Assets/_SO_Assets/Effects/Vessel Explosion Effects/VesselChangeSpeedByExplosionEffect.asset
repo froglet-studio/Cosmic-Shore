@@ -12,5 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 705084082c1d0b44b88bc848b03e4732, type: 3}
   m_Name: VesselChangeSpeedByExplosionEffect
   m_EditorClassIdentifier: 
-  _amount: 0.1
-  _duration: 3
+  explosionDebuffAppliedEvent: {fileID: 11400000, guid: 03dcc42300e09614fb6a4bdffeb21fd3,
+    type: 2}
+  vesselSlowedByExplosionEvent: {fileID: 11400000, guid: 00ae8d23a4f7cb84995945e5fe7bf801,
+    type: 2}
+  inputToMute: 7
+  muteSeconds: 3
+  forceStopIfActive: 1

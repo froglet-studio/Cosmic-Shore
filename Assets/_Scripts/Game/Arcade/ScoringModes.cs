@@ -13,7 +13,7 @@ namespace CosmicShore.Game.Arcade
         OmniCrystalsCollected = 8,
         ElementalCrystalsCollected = 9,
         CrystalsCollectedScaleWithSize,
-        FriendlyVolumeDestroyedScoring,
+        FriendlyVolumeDestroyed,
         PrismsCreated,
         HostilePrismsDestroyed,
         FriendlyPrismsDestroyed,

@@ -1,7 +1,6 @@
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game;
-using UnityEngine.InputSystem.LowLevel;
 
 public class GunVesselTransformer : VesselTransformer
 {
@@ -64,9 +63,8 @@ public class GunVesselTransformer : VesselTransformer
 
     void Slide()
     {
-        // TODO: magic numbers
+        // TODO: magic number
         float lookThreshold = -.6f;
-        float zeroPosition = .2f;
 
         // TODO - Vessel components should not be accessing InputStatus directly.
         // var throttle = (InputStatus.XDiff - zeroPosition) / (1 - zeroPosition);
