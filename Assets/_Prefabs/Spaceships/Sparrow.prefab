@@ -1175,7 +1175,7 @@ MonoBehaviour:
   prismType: 2
   initialWavelength: 7
   minWavelength: 7
-  defaultWaitTime: 0
+  defaultWaitTime: 3
   minBlockScale: 1
   maxBlockScale: 4
   waitTillOutsideSkimmer: 1
@@ -1310,17 +1310,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselPrismController: {fileID: 5613657713013293844}
   driftTrailAction: {fileID: 0}
-  trailDisplayContainer: {fileID: 4625218033296401838}
-  blockPrefab: {fileID: 0}
   config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
-  silhouetteRoot: {fileID: 0}
-  jawTop: {fileID: 0}
-  jawBottom: {fileID: 0}
-  jawMaxOffset: 40
-  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
-  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
-  jawTintTargets: []
   energyResourceIndex: 0
+  view: {fileID: 0}
 --- !u!114 &4780908095115307824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2955,12 +2947,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 297f560e4f6d4fec848862cfd2c41581, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!224 &4625218033296401838 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 1676850338109438981, guid: f0a24806a0485254389f97d4c93f7615,
-    type: 3}
-  m_PrefabInstance: {fileID: 6302028140178659755}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6723389074232520642
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2973,6 +2959,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: TrailEmpty
+      objectReference: {fileID: 0}
+    - target: {fileID: 6798498245059046558, guid: ef25530d9073ecc48a31d7bc0700e2c2,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key0.b
+      value: 0.899371
+      objectReference: {fileID: 0}
+    - target: {fileID: 6798498245059046558, guid: ef25530d9073ecc48a31d7bc0700e2c2,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key0.g
+      value: 0.6530037
+      objectReference: {fileID: 0}
+    - target: {fileID: 6798498245059046558, guid: ef25530d9073ecc48a31d7bc0700e2c2,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key0.r
+      value: 0.12161289
       objectReference: {fileID: 0}
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
