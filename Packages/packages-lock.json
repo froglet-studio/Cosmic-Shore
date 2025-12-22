@@ -422,6 +422,16 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.services.cloudsave": {
+      "version": "3.4.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.services.core": "1.12.5",
+        "com.unity.services.authentication": "3.3.1"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.services.core": {
       "version": "1.14.0",
       "depth": 1,
