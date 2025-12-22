@@ -389,10 +389,7 @@ namespace CosmicShore.App.UI.Modals
             {
                 iconId = profile.ProfileIconId;
             }
-            else if (gameData)
-            {
-                iconId = gameData.LocalPlayerAvatarId;
-            }
+
             
             if (profileIconList.profileIcons == null || profileIconList.profileIcons.Count == 0)
                 return;
