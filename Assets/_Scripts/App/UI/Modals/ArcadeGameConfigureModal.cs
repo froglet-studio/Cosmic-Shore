@@ -4,7 +4,7 @@ using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Soap;                     // ⬅️ NEW: for GameDataSO
+using CosmicShore.Soap;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
@@ -21,11 +21,11 @@ namespace CosmicShore.App.UI.Modals
         [Header("Config State")]
         [SerializeField] private ArcadeGameConfigSO  config;
         [SerializeField] private ScriptableEventNoParam configChangedEvent;
-        [SerializeField] private ScriptableEventNoParam openShipSelectionScreenEvent;
         [SerializeField] private ScriptableEventNoParam startGameRequestedEvent;
 
         [Header("Shared Game Data")]
-        [SerializeField] private GameDataSO gameData;   // ⬅️ NEW: hook into GameDataSO
+        [SerializeField] private GameDataSO gameData;
+        [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
         [Header("External Views")]
         [SerializeField] private ArcadeExploreView arcadeExploreView;
@@ -39,8 +39,6 @@ namespace CosmicShore.App.UI.Modals
         [Header("Screens (right side)")]
         [SerializeField] private GameObject configurationDetailView; // Screen 1
         [SerializeField] private GameObject gameDetailView;          // Screen 2
-        [SerializeField] private GameObject squadMateSelectionView;  // Screen 3
-        [SerializeField] private GameObject vesselSelectionView;     // Screen 4
 
         [Header("Screen 1 – Configuration Controls")]
         [SerializeField] private List<PlayerCountButton>     playerCountButtons = new(4);
@@ -55,17 +53,19 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] private TMP_Text shipNameText;
         [SerializeField] private TMP_Text shipConfigurationText;
         [SerializeField] private TMP_Text shipVesselNameText;
-        
-        [SerializeField] private Image iconInVesselSelectionView;
+
+        [Tooltip("Optional secondary icon (e.g. config screen).")]
         [SerializeField] private Image iconInConfigurationSelectionView;
 
-        [Header("Screen 4 – Vessel Selection Grid")]
-        [SerializeField] private ShipSelectionView vesselShipSelectionView;
+        [Tooltip("Optional icon in the game-detail view.")]
+        [SerializeField] private Image iconInGameDetailView;
 
+        // Runtime state
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
 
         readonly List<SO_Ship> _availableShips = new();
+        int _currentShipIndex = -1;
 
         #region Unity lifecycle
 
@@ -91,9 +91,6 @@ namespace CosmicShore.App.UI.Modals
             foreach (var playerCountButton in playerCountButtons)
                 playerCountButton.OnSelect += HandlePlayerCountSelected;
 
-            if (vesselShipSelectionView != null)
-                vesselShipSelectionView.OnSelect += HandleShipSelectedFromGrid;
-
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
         }
@@ -105,9 +102,6 @@ namespace CosmicShore.App.UI.Modals
 
             foreach (var playerCountButton in playerCountButtons)
                 playerCountButton.OnSelect -= HandlePlayerCountSelected;
-
-            if (vesselShipSelectionView != null)
-                vesselShipSelectionView.OnSelect -= HandleShipSelectedFromGrid;
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -138,9 +132,7 @@ namespace CosmicShore.App.UI.Modals
             InitializeConfigFromGameDefaults(selectedGame);
             InitializeGameMetaView(selectedGame);
             InitializeScreen1Controls(selectedGame);
-            InitializeDefaultShipFromAvailable();   // ⬅️ now also syncs to GameData
-
-            SetupVesselSelectionViewModels();
+            InitializeDefaultShipFromAvailable();
 
             ShowConfigurationScreen();
             RaiseConfigChanged();
@@ -155,7 +147,7 @@ namespace CosmicShore.App.UI.Modals
             config.Intensity   = game.MinIntensity;
             config.PlayerCount = game.MinPlayers;
 
-            SyncGameDataConfig();   // ⬅️ NEW: mirror to GameData
+            SyncGameDataConfig();
         }
 
         void InitializeGameMetaView(SO_ArcadeGame game)
@@ -250,13 +242,14 @@ namespace CosmicShore.App.UI.Modals
         {
             if (_availableShips.Count == 0)
             {
-                config.SelectedShip = null;
-                SyncGameDataShip(null);
-                RefreshShipSummaryView();
+                _currentShipIndex = -1;
+                SetSelectedShipInternal(null);
                 return;
             }
 
             SO_Ship chosen = null;
+
+            // 1) last selected from GameDataSO
             if (gameData && gameData.selectedVesselClass)
             {
                 var prevType = gameData.selectedVesselClass.Value;
@@ -264,79 +257,50 @@ namespace CosmicShore.App.UI.Modals
                     chosen = _availableShips.FirstOrDefault(s => s.Class == prevType);
             }
 
+            // 2) saved loadout vessel type
             if (!chosen && _selectedGame)
             {
-                var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode).Loadout;
+                var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode, _selectedGame.IsMultiplayer).Loadout;
                 var loadoutVT = loadout.VesselType;
 
                 if (loadoutVT != VesselClassType.Random)
-                {
                     chosen = _availableShips.FirstOrDefault(s => s.Class == loadoutVT);
-                }
             }
 
+            // 3) Dolphin is the default ship
             if (!chosen)
                 chosen = _availableShips.FirstOrDefault(s => s.Class == VesselClassType.Dolphin);
 
-            // 4) Fallback: first available
+            // 4) fallback
             if (!chosen)
                 chosen = _availableShips[0];
 
-            config.SelectedShip = chosen;
-            SyncGameDataShip(chosen);
-            RefreshShipSummaryView();
-        }
-
-        void SetupVesselSelectionViewModels()
-        {
-            if (!vesselShipSelectionView) return;
-
-            var models = _availableShips.Cast<ScriptableObject>().ToList();
-
-            vesselShipSelectionView.AssignModels(models);
-            vesselShipSelectionView.UpdateView();
+            _currentShipIndex = Mathf.Max(0, _availableShips.IndexOf(chosen));
+            SetSelectedShipInternal(chosen);
         }
 
         #endregion
 
         #region Screen switching
 
-        void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen,
-                             GameObject squadScreen, GameObject vesselScreen)
+        void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen)
         {
             if (configurationDetailView)
                 configurationDetailView.SetActive(configurationDetailView == configScreen);
 
             if (gameDetailView)
                 gameDetailView.SetActive(gameDetailView == gameDetailScreen);
-
-            if (squadMateSelectionView)
-                squadMateSelectionView.SetActive(squadMateSelectionView == squadScreen);
-
-            if (vesselSelectionView)
-                vesselSelectionView.SetActive(vesselSelectionView == vesselScreen);
         }
 
         void ShowConfigurationScreen()
         {
-            SetScreenActive(configurationDetailView, null, null, null);
+            SetScreenActive(configurationDetailView, null);
         }
 
         void ShowGameDetailScreen()
         {
-            SetScreenActive(null, gameDetailView, null, null);
+            SetScreenActive(null, gameDetailView);
             RefreshShipSummaryView();
-        }
-
-        void ShowSquadMateSelectionScreen()
-        {
-            SetScreenActive(null, null, squadMateSelectionView, null);
-        }
-
-        void ShowVesselSelectionScreen()
-        {
-            SetScreenActive(null, null, null, vesselSelectionView);
-            SetupVesselSelectionViewModels();
         }
 
         #endregion
@@ -356,7 +320,7 @@ namespace CosmicShore.App.UI.Modals
                 button.SetSelected(button.Intensity == intensity);
             }
 
-            SyncGameDataConfig();   // ⬅️ mirror to GameData
+            SyncGameDataConfig();
             RaiseConfigChanged();
         }
 
@@ -373,10 +337,10 @@ namespace CosmicShore.App.UI.Modals
                 button.SetSelected(button.Count == playerCount);
             }
 
-            SyncGameDataConfig();   // ⬅️ mirror to GameData
+            SyncGameDataConfig();
             RaiseConfigChanged();
         }
-        
+
         void HandleConfigChangedExternal()
         {
             if (!gameObject.activeInHierarchy || !config) return;
@@ -392,16 +356,51 @@ namespace CosmicShore.App.UI.Modals
 
         #endregion
 
-        #region Vessel selection (Screen 4)
+        #region Ship selection (Prev / Next)
 
-        void HandleShipSelectedFromGrid(SO_Ship ship)
+        public void OnNextShipClicked()
         {
-            if (!config) return;
+            if (_availableShips.Count == 0) return;
 
-            config.SelectedShip = ship;
-            SyncGameDataShip(ship);     // ⬅️ keep GameData in sync
-            RefreshShipSummaryView();
+            if (_currentShipIndex < 0)
+                _currentShipIndex = 0;
+            else
+                _currentShipIndex = (_currentShipIndex + 1) % _availableShips.Count;
+
+            var ship = _availableShips[_currentShipIndex];
+            SetSelectedShipInternal(ship);
             RaiseConfigChanged();
+        }
+
+        public void OnPreviousShipClicked()
+        {
+            if (_availableShips.Count == 0) return;
+
+            if (_currentShipIndex < 0)
+                _currentShipIndex = 0;
+            else
+                _currentShipIndex = (_currentShipIndex - 1 + _availableShips.Count) % _availableShips.Count;
+
+            var ship = _availableShips[_currentShipIndex];
+            SetSelectedShipInternal(ship);
+            RaiseConfigChanged();
+        }
+
+        void SetSelectedShipInternal(SO_Ship ship)
+        {
+            if (config)
+                config.SelectedShip = ship;
+
+            SyncGameDataShip(ship);
+
+            // Also broadcast via ScriptableVariable<int> so other Views can react
+            if (shipClassTypeVariable != null)
+            {
+                var classIndex = ship ? (int)ship.Class : (int)VesselClassType.Dolphin;
+                shipClassTypeVariable.Value = classIndex;
+            }
+
+            RefreshShipSummaryView();
         }
 
         #endregion
@@ -415,17 +414,15 @@ namespace CosmicShore.App.UI.Modals
 
         void RefreshShipSummaryView(SO_Ship ship)
         {
+            // Icons
+            Sprite icon = ship && ship.IconActive ? ship.IconActive : null;
+
             if (shipPlaceholderIcon)
             {
-                if (ship && ship.IconActive)
+                if (icon != null)
                 {
                     shipPlaceholderIcon.enabled = true;
-                    shipPlaceholderIcon.sprite  = ship.IconActive;
-
-                    if (iconInConfigurationSelectionView)
-                        iconInConfigurationSelectionView.sprite = ship.IconActive;
-                    if (iconInVesselSelectionView)
-                        iconInVesselSelectionView.sprite = ship.IconActive;
+                    shipPlaceholderIcon.sprite  = icon;
                 }
                 else
                 {
@@ -433,7 +430,14 @@ namespace CosmicShore.App.UI.Modals
                 }
             }
 
-            var nameText = ship ? ship.Name : "SELECT SHIP";
+            if (iconInConfigurationSelectionView)
+                iconInConfigurationSelectionView.sprite = icon;
+
+            if (iconInGameDetailView)
+                iconInGameDetailView.sprite = icon;
+
+            // Text
+            string nameText = ship ? ship.Name : "SELECT SHIP";
 
             if (shipNameText)
                 shipNameText.text = nameText;
@@ -451,32 +455,7 @@ namespace CosmicShore.App.UI.Modals
             ShowGameDetailScreen();
         }
 
-        // Screen 2 → Screen 3
-        public void OnOpenSquadMateSelectionClicked()
-        {
-            ShowSquadMateSelectionScreen();
-        }
-
-        // Screen 3 → Screen 4
-        public void OnOpenVesselSelectionClicked()
-        {
-            // Optional hook if you want another view to react
-            openShipSelectionScreenEvent?.Raise();
-            ShowVesselSelectionScreen();
-        }
-
-        // Screen 4 → Screen 3
-        public void OnBackFromVesselSelectionClicked()
-        {
-            ShowSquadMateSelectionScreen();
-        }
-
-        // Screen 3 → Screen 2
-        public void OnBackFromSquadMateSelectionClicked()
-        {
-            ShowGameDetailScreen();
-        }
-
+        // Screen 2 → Screen 1 (Back button)
         public void OnBackFromGameSelectView()
         {
             ShowConfigurationScreen();
@@ -523,21 +502,15 @@ namespace CosmicShore.App.UI.Modals
             if (!gameData || !gameData.selectedVesselClass)
                 return;
 
-            if (ship)
-            {
-                gameData.selectedVesselClass.Value = ship.Class;
+            VesselClassType targetClass = ship ? ship.Class : VesselClassType.Dolphin;
 
-                if (gameData.VesselClassSelectedIndex)
-                    gameData.VesselClassSelectedIndex.Value = (int)ship.Class;
-            }
-            else
-            {
-                // fallback to Dolphin if nothing is selected
-                gameData.selectedVesselClass.Value = VesselClassType.Dolphin;
+            gameData.selectedVesselClass.Value = targetClass;
 
-                if (gameData.VesselClassSelectedIndex)
-                    gameData.VesselClassSelectedIndex.Value = (int)VesselClassType.Dolphin;
-            }
+            if (gameData.VesselClassSelectedIndex)
+                gameData.VesselClassSelectedIndex.Value = (int)targetClass;
+
+            if (shipClassTypeVariable != null)
+                shipClassTypeVariable.Value = (int)targetClass;
         }
 
         #endregion
