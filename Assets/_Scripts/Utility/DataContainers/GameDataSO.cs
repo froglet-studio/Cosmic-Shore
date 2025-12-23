@@ -49,6 +49,7 @@ namespace CosmicShore.Soap
         // Game Config / State
         public string SceneName;
         public GameModes GameMode;
+        public string LocalPlayerDisplayName;
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
