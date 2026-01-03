@@ -778,7 +778,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6557045720525393826}
-  - component: {fileID: 5582900316631961953}
   m_Layer: 0
   m_Name: ShipHUDPrefab
   m_TagString: Untagged
@@ -813,45 +812,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &5582900316631961953
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3323122711064239023}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 57dc27a3f7264d548b51007c0615f701, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  effects: {fileID: 0}
-  hudType: 11
-  resourceDisplays:
-  - ResourceName: Heat
-    Display: {fileID: 9113988487928913097}
-  - ResourceName: FullAuto
-    Display: {fileID: 4027605072104359083}
-  - ResourceName: Missiles
-    Display: {fileID: 150703734494501974}
-  - ResourceName: ExhaustBarrage
-    Display: {fileID: 7041236646995190146}
-  silhouetteContainer: {fileID: 4627163686263994494}
-  trailContainer: {fileID: 8980597912827605018}
-  psIconRoot: {fileID: 2086617415635028028}
-  xboxIconRoot: {fileID: 1005613640110903854}
-  serpentBoostButton: {fileID: 0}
-  serpentWallDisplayButton: {fileID: 0}
-  dolphinBoostFeedback: {fileID: 0}
-  mantaBoostButton: {fileID: 0}
-  mantaBoost2Button: {fileID: 0}
-  rhinoBoostFeedback: {fileID: 0}
-  squirrelBoostDisplay: {fileID: 0}
-  sparrowFullAutoAction: {fileID: 7742791924345763954}
-  sparrowOverheatingBoostAction: {fileID: 5663004877632254753}
-  sparrowSkyBurstMissileAction: {fileID: 464487735061350074}
-  sparrowExhaustBarrage: {fileID: 641829373696348122}
-  buttonIconMappings: []
 --- !u!1 &4045851199162090215
 GameObject:
   m_ObjectHideFlags: 0

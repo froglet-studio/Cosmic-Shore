@@ -1078,11 +1078,7 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 6170892365461866388}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3323122711064239023, guid: bc09c07dcb0724842a327c887609f156,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3457102679745209743}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bc09c07dcb0724842a327c887609f156, type: 3}
 --- !u!224 &3412957971693408596 stripped
 RectTransform:
@@ -1090,47 +1086,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 8476352183690256118}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &6610183749247337817 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3323122711064239023, guid: bc09c07dcb0724842a327c887609f156,
-    type: 3}
-  m_PrefabInstance: {fileID: 8476352183690256118}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &3457102679745209743
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6610183749247337817}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 57dc27a3f7264d548b51007c0615f701, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  effects: {fileID: 0}
-  hudType: 7
-  resourceDisplays:
-  - ResourceName: Wall Seeds
-    Display: {fileID: 2695167840701937088}
-  - ResourceName: Fuel Pellets
-    Display: {fileID: 2671096847325640786}
-  silhouetteContainer: {fileID: 7277748476972212419}
-  trailContainer: {fileID: 7950429970536442718}
-  psIconRoot: {fileID: 4307188901509612615}
-  xboxIconRoot: {fileID: 2318935073279052150}
-  serpentBoostButton: {fileID: 7090403262909044987}
-  serpentWallDisplayButton: {fileID: 6875924332061672232}
-  dolphinBoostFeedback: {fileID: 0}
-  mantaBoostButton: {fileID: 0}
-  mantaBoost2Button: {fileID: 0}
-  rhinoBoostFeedback: {fileID: 0}
-  squirrelBoostDisplay: {fileID: 0}
-  sparrowFullAutoAction: {fileID: 0}
-  sparrowOverheatingBoostAction: {fileID: 0}
-  sparrowSkyBurstMissileAction: {fileID: 0}
-  sparrowExhaustBarrage: {fileID: 0}
-  buttonIconMappings: []
 --- !u!1001 &9080380028743660798
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1331,18 +1286,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 6875924332061672232}
   m_SourcePrefab: {fileID: 100100000, guid: eae510c1f9f999a4985c85fff770ec97, type: 3}
---- !u!114 &2695167840701937088 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
-    type: 3}
-  m_PrefabInstance: {fileID: 9080380028743660798}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3162412769696891332}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &3162412769696891332 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6188183580559045946, guid: eae510c1f9f999a4985c85fff770ec97,

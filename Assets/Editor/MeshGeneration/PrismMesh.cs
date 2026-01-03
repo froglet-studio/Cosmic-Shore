@@ -35,8 +35,8 @@ public static class PrismMeshGenerator
             (Vector3.back,     new Vector3(s,-s,-s), new Vector3(-s,-s,-s), new Vector3(-s, s,-s), new Vector3(s, s,-s)),
             (Vector3.left,     new Vector3(-s,-s,-s), new Vector3(-s,-s, s), new Vector3(-s, s, s), new Vector3(-s, s,-s)),
             (Vector3.right,    new Vector3(s,-s, s), new Vector3(s,-s,-s), new Vector3(s, s,-s), new Vector3(s, s, s)),
-            (Vector3.up,       new Vector3(-s, s, s), new Vector3(s, s, s), new Vector3(s, s,-s), new Vector3(-s, s,-s)),
-            (Vector3.down,     new Vector3(-s,-s,-s), new Vector3(s,-s,-s), new Vector3(s,-s, s), new Vector3(-s,-s, s))
+            (Vector3.down,     new Vector3(-s,-s,-s), new Vector3(s,-s,-s), new Vector3(s,-s, s), new Vector3(-s,-s, s)),
+            (Vector3.up,       new Vector3(-s, s, s), new Vector3(s, s, s), new Vector3(s, s,-s), new Vector3(-s, s,-s))
         };
 
         // 6 faces * 4 triangles * 3 verts = 72 verts

@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-9011461653752510071
+--- !u!114 &-678043604062724229
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}
@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SuctionMaterial
+  m_Name: SuctionTestMat
   m_Shader: {fileID: -6465566751694194690, guid: ba81f239cd8660e47b1b52247719049a,
     type: 3}
   m_Parent: {fileID: 0}
@@ -57,7 +57,7 @@ Material:
     - _AlphaToMask: 0
     - _Blend: 0
     - _CastShadows: 1
-    - _Cull: 2
+    - _Cull: 0
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _Duration: 0
@@ -75,7 +75,7 @@ Material:
     m_Colors:
     - _BrightColor: {r: 0, g: 0, b: 0, a: 0}
     - _DarkColor: {r: 0, g: 0, b: 0, a: 0}
-    - _Location: {r: 0, g: 0, b: 0, a: 0}
+    - _Location: {r: 10, g: 0, b: 0, a: 0}
     - _Spread: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -101,6 +101,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
     - _DstBlendAlpha: 10
+    - _Duration: 0
     - _EnvironmentReflections: 1
     - _ExplosionAmount: 0.08
     - _ExplosiveRotation: 0.2
@@ -108,7 +109,9 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _InversePartialDuration: 5
     - _LerpAmount: 0
+    - _MaxSqrDistance: 100000
     - _Metallic: 0
     - _Move: 0
     - _OcclusionStrength: 1
@@ -123,6 +126,7 @@ Material:
     - _SqrDistance: 100000
     - _SrcBlend: 5
     - _SrcBlendAlpha: 1
+    - _StartTime: 0
     - _State: 0
     - _Surface: 1
     - _WorkflowMode: 1
@@ -156,10 +160,13 @@ Material:
     - _Color2: {r: 0, g: 0.02352941, b: 0.05490196, a: 0}
     - _DarkColor: {r: 0, g: 0.03327561, b: 0.06655122, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Location: {r: 0, g: 0, b: 0, a: 0}
+    - _Location: {r: 2, g: 0, b: 0, a: 0}
+    - _PullDirection2: {r: 0, g: 1, b: 3, a: 0}
+    - _PullDirections1: {r: 2, g: 4, b: 5, a: 0}
     - _SinkLocation: {r: 0, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Spread: {r: 1.25, g: 0.07, b: 0.31, a: 0}
+    - _Spread: {r: 0.1, g: 0.1, b: 0.1, a: 0}
+    - _SuctionLocation: {r: 5, g: 0, b: 0, a: 0}
     - _Velocity: {r: 0.01, g: 0, b: 0, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _location: {r: 0, g: 0, b: 0, a: 0}
