@@ -109,9 +109,9 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _InversePartialDuration: 5
+    - _InversePartialDuration: 4
     - _LerpAmount: 0
-    - _MaxSqrDistance: 100000
+    - _MaxSqrDistance: 300
     - _Metallic: 0
     - _Move: 0
     - _OcclusionStrength: 1

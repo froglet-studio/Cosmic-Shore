@@ -8,7 +8,7 @@ namespace CosmicShore
         public void ApplySuctionToTarget(GameObject target, Vector3 slocation, float duration = 5)
         {
             // Determine Necessary Information
-            float inverse_partial = 6 / duration;
+            float inverse_partial = (float)24 / duration;
             int[] face_order = GenerateFaceOrder(target, slocation);
             Material suction_material = new Material(suction_material_base);
 

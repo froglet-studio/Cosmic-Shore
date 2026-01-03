@@ -214,6 +214,20 @@
         {
             "m_OutputSlot": {
                 "m_Node": {
+                    "m_Id": "548ced03a7454b4cbe7b93f526c85a19"
+                },
+                "m_SlotId": 2
+            },
+            "m_InputSlot": {
+                "m_Node": {
+                    "m_Id": "86ec573d876348a39b9993fe926c725f"
+                },
+                "m_SlotId": -569009134
+            }
+        },
+        {
+            "m_OutputSlot": {
+                "m_Node": {
                     "m_Id": "5537784feee041d282ace6bd268fd996"
                 },
                 "m_SlotId": 0
@@ -633,6 +647,21 @@
         "y": 0.0,
         "z": 0.0
     },
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
+    "m_ObjectId": "1611a463929542628af8ecf2b8033306",
+    "m_Id": 2,
+    "m_DisplayName": "TriangleID",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "TriangleID",
+    "m_StageCapability": 1,
+    "m_Value": 0.0,
+    "m_DefaultValue": 0.0,
     "m_Labels": []
 }
 
@@ -1105,6 +1134,9 @@
         },
         {
             "m_Id": "4505766b1b694ea0a9a33e0e114952a8"
+        },
+        {
+            "m_Id": "1611a463929542628af8ecf2b8033306"
         }
     ],
     "synonyms": [],
@@ -1734,6 +1766,9 @@
             "m_Id": "88c0e89a2de7488487efe7099b3b8af3"
         },
         {
+            "m_Id": "9f0f2f8c7ae14922973acb11182d1396"
+        },
+        {
             "m_Id": "cfbeae3f8a90433dba212621c53c0b2e"
         },
         {
@@ -1769,7 +1804,8 @@
         "6605b7ac-0c57-4e17-90f8-0e9d1b052c92",
         "4b8596fb-0dc5-4469-a542-d44191b30ed2",
         "8d57ae63-19e5-4017-96fa-d312c112a867",
-        "2790d80b-3951-4fb5-ac9f-7550e6ec76ca"
+        "2790d80b-3951-4fb5-ac9f-7550e6ec76ca",
+        "5bce18f5-4a7f-4583-a13f-1d9239f14552"
     ],
     "m_PropertyIds": [
         1970096410,
@@ -1788,7 +1824,8 @@
         657475184,
         -1674155510,
         -1204068399,
-        -232353264
+        -232353264,
+        -569009134
     ],
     "m_Dropdowns": [],
     "m_DropdownSelectedEntries": []
@@ -1958,6 +1995,21 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
+    "m_ObjectId": "9f0f2f8c7ae14922973acb11182d1396",
+    "m_Id": -569009134,
+    "m_DisplayName": "TriangleID",
+    "m_SlotType": 0,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "_TriangleID",
+    "m_StageCapability": 3,
+    "m_Value": 0.0,
+    "m_DefaultValue": 0.0,
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.PropertyNode",
     "m_ObjectId": "a6347ecd3d99486a884e6d0ce66dfd05",
     "m_Group": {
@@ -2043,7 +2095,7 @@
     "m_ShaderOutputName": "B",
     "m_StageCapability": 3,
     "m_Value": {
-        "x": 6.0,
+        "x": 12.0,
         "y": 1.0,
         "z": 1.0,
         "w": 1.0
