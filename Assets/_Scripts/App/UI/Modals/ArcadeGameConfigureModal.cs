@@ -77,12 +77,6 @@ namespace CosmicShore.App.UI.Modals
             Instance = this;
         }
 
-        void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
-
         void OnEnable()
         {
             foreach (var intensityButton in intensityButtons)
@@ -117,12 +111,6 @@ namespace CosmicShore.App.UI.Modals
         public void SetSelectedGame(SO_ArcadeGame selectedGame)
         {
             _selectedGame = selectedGame;
-
-            if (config == null)
-            {
-                Debug.LogError("[ArcadeGameConfigureModal] Missing ArcadeGameConfigSO.");
-                return;
-            }
 
             config.ResetState();
             config.SelectedGame = selectedGame;
@@ -179,7 +167,6 @@ namespace CosmicShore.App.UI.Modals
 
         void InitializeScreen1Controls(SO_ArcadeGame game)
         {
-            // Intensity
             for (int i = 0; i < intensityButtons.Count; i++)
             {
                 var button = intensityButtons[i];
@@ -208,7 +195,7 @@ namespace CosmicShore.App.UI.Modals
             }
 
             if (teamsValueText)
-                teamsValueText.text = "1"; // fixed for now
+                teamsValueText.text = "1";
         }
 
         void BuildAvailableShips(SO_ArcadeGame game)
@@ -230,14 +217,7 @@ namespace CosmicShore.App.UI.Modals
 
             _availableShips.AddRange(ships);
         }
-
-        /// <summary>
-        /// Decide which ship is selected by default:
-        /// 1) Last selected (GameDataSO.selectedVesselClass) if available
-        /// 2) Loadout's VesselType if available
-        /// 3) Dolphin if available
-        /// 4) First available ship
-        /// </summary>
+        
         void InitializeDefaultShipFromAvailable()
         {
             if (_availableShips.Count == 0)
@@ -249,7 +229,6 @@ namespace CosmicShore.App.UI.Modals
 
             SO_Ship chosen = null;
 
-            // 1) last selected from GameDataSO
             if (gameData && gameData.selectedVesselClass)
             {
                 var prevType = gameData.selectedVesselClass.Value;
