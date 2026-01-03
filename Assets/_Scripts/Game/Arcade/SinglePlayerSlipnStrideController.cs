@@ -6,7 +6,7 @@ namespace CosmicShore.Game.Arcade
     /// Slip'n'Stride: spawns a trail-course (segments) with optional helix shaping.
     /// Ported from the deprecated CourseMiniGame into the new SinglePlayerMiniGameControllerBase flow.
     /// </summary>
-    public sealed class SinglePlayerSlipnStrideController : SinglePlayerMiniGameControllerBase
+    public class SinglePlayerSlipnStrideController : SinglePlayerMiniGameControllerBase
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
