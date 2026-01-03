@@ -34,19 +34,12 @@ namespace CosmicShore.Game
         Coroutine _crystalRoutine;
         Coroutine _lineRoutine;
         Coroutine _debuffRoutine;
-
-        void OnEnable()
+        
+        public override void Initialize()
         {
-            if (slowedCountText)
-                slowedCountText.gameObject.SetActive(false);
-
-            if (debuffIcon)
-                debuffIcon.gameObject.SetActive(false);
-            if (debuffTimerText)
-                debuffTimerText.gameObject.SetActive(false);
-
             ResetAllRhinoStates();
         }
+
 
         #region Skimmer Icon
 

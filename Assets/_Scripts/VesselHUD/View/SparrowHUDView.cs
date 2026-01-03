@@ -27,7 +27,7 @@ namespace CosmicShore.Game
 
         readonly Dictionary<InputEvents, Coroutine> _blockEnforcers = new();
 
-        public void Initialize()
+        public override void Initialize()
         {
             if (missileIcon)
                 missileIcon.enabled = false;
@@ -50,9 +50,6 @@ namespace CosmicShore.Game
 
         #region Missiles
 
-        /// <summary>
-        /// Initial paint: assume "full clip" visual.
-        /// </summary>
         public void InitializeMissileIcon()
         {
             if (!missileIcon || missileIcons == null || missileIcons.Length == 0)
@@ -105,9 +102,6 @@ namespace CosmicShore.Game
 
         #region Weapon Mode
 
-        /// <summary>
-        /// false = normal, true = stationary/alt mode.
-        /// </summary>
         public void SetWeaponMode(bool isStationary)
         {
             if (!weaponModeIcon || weaponModeIcons == null || weaponModeIcons.Length < 2)
@@ -117,7 +111,7 @@ namespace CosmicShore.Game
             var sprite = weaponModeIcons[idx];
             if (!sprite) return;
 
-            weaponModeIcon.sprite  = sprite;
+            weaponModeIcon.sprite = sprite;
             weaponModeIcon.enabled = true;
         }
 
@@ -125,9 +119,6 @@ namespace CosmicShore.Game
 
         #region Blocked Input Highlights
 
-        /// <summary>
-        /// Entry point used by controller, keeps all visual logic here.
-        /// </summary>
         public void HandleInputEventBlocked(InputEventBlockPayload payload)
         {
             if (payload.Started)
@@ -157,7 +148,7 @@ namespace CosmicShore.Game
             var img = FindHighlightImage(input);
             if (!img) return;
 
-            img.color   = Color.white;
+            img.color = Color.white;
             img.enabled = false;
         }
 
@@ -175,7 +166,7 @@ namespace CosmicShore.Game
             {
                 if (!img) yield break;
                 img.enabled = true;
-                img.color   = blockedInputColor;
+                img.color = blockedInputColor;
                 yield return null;
             }
         }

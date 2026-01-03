@@ -2438,8 +2438,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 6691152058983638505}
-  _shipHUDController: {fileID: 2145686236205056283}
-  _vesselHUDView: {fileID: 117603555638778835}
+  vesselHUDController: {fileID: 2145686236205056283}
   boostMultiplier: 4
   _name: Dolphin
   vesselType: 2
@@ -2736,6 +2735,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a295644207f14186b2ff576845c4842a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseView: {fileID: 117603555638778835}
   silhouette: {fileID: 8438934208232307470}
   view: {fileID: 117603555638778835}
   energyResourceIndex: 0

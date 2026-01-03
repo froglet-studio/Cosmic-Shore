@@ -13,13 +13,14 @@ namespace CosmicShore.Game
 
         int _stepsMinusOne;
 
-        public void Initialize()
+        public override void Initialize()
         {
             _stepsMinusOne = Mathf.Max(0, (chargeSteps?.Count ?? 0) - 1);
 
             if (chargeBoostImage)
                 chargeBoostImage.enabled = false;
         }
+
 
         /// <summary>
         /// 0–1 normalized charge → choose correct sprite.

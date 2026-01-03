@@ -2359,8 +2359,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 8374620423313890364}
-  _shipHUDController: {fileID: 2171807218592972036}
-  _vesselHUDView: {fileID: 7033107979473629901}
+  vesselHUDController: {fileID: 2171807218592972036}
   boostMultiplier: 4
   _name: Rhino
   vesselType: 3
@@ -2648,6 +2647,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c636825408af4ed7bb3bc74ab877922d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseView: {fileID: 7033107979473629901}
   silhouette: {fileID: 4796952059166273496}
   view: {fileID: 7033107979473629901}
   growSkimmerExecutor: {fileID: 5087576590319522259}

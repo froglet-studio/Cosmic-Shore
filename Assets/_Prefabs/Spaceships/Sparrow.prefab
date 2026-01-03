@@ -1121,8 +1121,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 5625026016231715243}
-  _shipHUDController: {fileID: 223934081028988333}
-  _vesselHUDView: {fileID: 4159619328234506921}
+  vesselHUDController: {fileID: 223934081028988333}
   boostMultiplier: 4
   _name: Sparrow
   vesselType: 11
@@ -1415,6 +1414,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1938f2b097540e7abd1e4210d446545, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseView: {fileID: 4159619328234506921}
   silhouette: {fileID: 838706159439259027}
   view: {fileID: 4159619328234506921}
   fireGunExecutor: {fileID: 4658886838346608747}

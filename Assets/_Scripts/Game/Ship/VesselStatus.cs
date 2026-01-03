@@ -44,15 +44,17 @@ namespace CosmicShore.Game
         }
         
         [SerializeField]
-        MonoBehaviour _shipHUDController;
-        public IVesselHUDController VesselHUDController => _shipHUDController as IVesselHUDController;
-        
-        [SerializeField] VesselHUDView _vesselHUDView;
-        public VesselHUDView VesselHUDView
+        MonoBehaviour vesselHUDController;
+        public IVesselHUDController VesselHUDController
         {
-            get => _vesselHUDView;
-            set => _vesselHUDView = value;
+            get
+            {
+                if (vesselHUDController is IVesselHUDController c) return c;
+                Debug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
+                return null;
+            }
         }
+
 
         [SerializeField] protected float boostMultiplier = 4f;
         public float BoostMultiplier

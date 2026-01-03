@@ -1,53 +1,71 @@
-using System;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     public class VesselHUDController : MonoBehaviour, IVesselHUDController
     {
-        private R_VesselActionHandler _actions;
-        private VesselHUDView _view;
+        [Header("Base View (fallback)")]
+        [SerializeField] private VesselHUDView baseView;
 
         [Header("Legacy Silhouette")]
         [SerializeField] private SilhouetteController silhouette;
 
-        private void OnDestroy()
-        {
-            UnsubscribeFromEvents();
-        }
+        protected R_VesselActionHandler Actions { get; private set; }
+        protected VesselHUDView View => baseView;
 
-        public virtual void Initialize(IVesselStatus vesselStatus, VesselHUDView view)
+        private void OnDestroy() => UnsubscribeFromEvents();
+
+        public virtual void Initialize(IVesselStatus vesselStatus)
         {
-            _view   = view;
-            _actions = vesselStatus.ActionHandler;
+            Actions = vesselStatus.ActionHandler;
+
+            if (!baseView)
+                baseView = GetComponentInChildren<VesselHUDView>(true);
+
+            if (baseView && !baseView.isActiveAndEnabled)
+                baseView.gameObject.SetActive(true);
+
+            baseView?.Initialize();
         }
 
         public void SubscribeToEvents()
         {
-            _actions.OnInputEventStarted += HandleStart;
-            _actions.OnInputEventStopped += HandleStop;
+            if (!Actions || !baseView) return;
+            Actions.OnInputEventStarted += HandleStart;
+            Actions.OnInputEventStopped += HandleStop;
         }
 
         public void UnsubscribeFromEvents()
         {
-            _actions.OnInputEventStarted -= HandleStart;
-            _actions.OnInputEventStopped -= HandleStop;
+            if (!Actions) return;
+            Actions.OnInputEventStarted -= HandleStart;
+            Actions.OnInputEventStopped -= HandleStop;
         }
 
+        public void ShowHUD() => baseView?.Show();
+        public void HideHUD() => baseView?.Hide();
+
         private void HandleStart(InputEvents ev) => Toggle(ev, true);
-        private void HandleStop (InputEvents ev) => Toggle(ev, false);
+        private void HandleStop(InputEvents ev)  => Toggle(ev, false);
 
         private void Toggle(InputEvents ev, bool on)
         {
-            for (var i = 0; i < _view.highlights.Count; i++)
-                if (_view.highlights[i].input == ev)
-                    _view.highlights[i].image.enabled = on;
+            if (!baseView) return;
+
+            foreach (var h in baseView.highlights)
+            {
+                if (h.input == ev && h.image)
+                    h.image.enabled = on;
+            }
         }
-        
+
         public void SetBlockPrefab(GameObject prefab)
         {
-            _view.TrailBlockPrefab = prefab;
-            silhouette.SetBlockPrefab(prefab);
+            if (baseView != null)
+                baseView.TrailBlockPrefab = prefab;
+
+            if (silhouette != null)
+                silhouette.SetBlockPrefab(prefab);
         }
     }
 }
