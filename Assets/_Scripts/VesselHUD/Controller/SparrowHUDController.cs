@@ -21,26 +21,24 @@ namespace CosmicShore.Game
         Coroutine _initialAmmoRoutine;
         IVesselStatus _vesselStatus;
 
-        public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus)
         {
-            base.Initialize(vesselStatus, baseView);
+            base.Initialize(vesselStatus);
             _vesselStatus = vesselStatus;
+
             if (!view)
-                view = baseView as SparrowHUDView;
+                view = View as SparrowHUDView;
 
             if (!view) return;
 
-            if (!view.isActiveAndEnabled)
-                view.gameObject.SetActive(true);
-
-            view.Initialize();
             Subscribe();
         }
+
 
         void Subscribe()
         {
             if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
-            
+
             if (stationaryModeChanged)
             {
                 stationaryModeChanged.OnRaised += HandleStationaryModeChanged;
@@ -57,21 +55,19 @@ namespace CosmicShore.Game
                 overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
                 overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
 
-                // Initial paint of boost bar to current state
                 view.SetBoostState(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
             }
-
-            // --- Ammo / missiles ---
 
             if (fireGunExecutor == null) return;
             fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
             _initialAmmoRoutine = StartCoroutine(InitialAmmoPaintRoutine());
         }
 
-        void OnDestroy()
+        void OnDisable()
         {
-            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
-            
+            if (_vesselStatus != null && (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser))
+                return;
+
             if (overheatingExecutor)
             {
                 overheatingExecutor.OnHeatBuildStarted   -= OnHeatBuildStarted;
@@ -95,21 +91,12 @@ namespace CosmicShore.Game
             StopHeatFillLoop();
         }
 
-        #region Initial ammo paint
-
         private IEnumerator InitialAmmoPaintRoutine()
         {
             yield return null;
-
-            if (view)
-                view.InitializeMissileIcon();
-
+            view?.InitializeMissileIcon();
             _initialAmmoRoutine = null;
         }
-
-        #endregion
-
-        #region Input block HUD
 
         private void HandleInputEventBlocked(InputEventBlockPayload payload)
         {
@@ -117,19 +104,11 @@ namespace CosmicShore.Game
             view.HandleInputEventBlocked(payload);
         }
 
-        #endregion
-
-        #region Weapon mode HUD
-
         private void HandleStationaryModeChanged(bool isStationary)
         {
             if (!view) return;
             view.SetWeaponMode(isStationary);
         }
-
-        #endregion
-
-        #region Heat / boost HUD
 
         void OnHeatBuildStarted() => StartHeatFillLoop();
         void OnOverheated()       => StartHeatFillLoop();
@@ -167,21 +146,14 @@ namespace CosmicShore.Game
                 bool  hot  = overheatingExecutor.IsOverheating;
 
                 view.SetBoostState(heat, hot);
-
                 yield return new WaitForSeconds(0.05f);
             }
         }
-
-        #endregion
-
-        #region Ammo HUD
 
         private void HandleAmmoChanged(float ammo01)
         {
             if (!view) return;
             view.SetMissilesFromAmmo01(ammo01);
         }
-
-        #endregion
     }
 }

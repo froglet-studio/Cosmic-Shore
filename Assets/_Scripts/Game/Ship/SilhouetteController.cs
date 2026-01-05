@@ -70,7 +70,7 @@ namespace CosmicShore
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion -= HandleMantaFlowerExplosion;
         }
 
-        public void Initialize(IVesselStatus status, VesselHUDView hudView)
+        public void Initialize(IVesselStatus status)
         {
             _status = status;
             _vessel = status?.Vessel;

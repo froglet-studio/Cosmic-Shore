@@ -6,17 +6,6 @@ using Unity.Services.Authentication;
 
 namespace YourGame.Services.Auth
 {
-    /// <summary>
-    /// UGS Authentication bootstrap + API wrapper.
-    /// - Initializes UGS
-    /// - Auto signs in anonymously at startup
-    /// - Placeholders for future sign-in providers
-    ///
-    /// Usage:
-    /// 1) Put this on a GameObject in your first scene (e.g. "AppBootstrap").
-    /// 2) Enable "Auto Sign In Anonymously".
-    /// 3) Reference this component via serialized fields (avoid FindObjectOfType).
-    /// </summary>
     public class AuthenticationController : MonoBehaviour
     {
         public enum AuthState
@@ -36,14 +25,14 @@ namespace YourGame.Services.Auth
         [Header("Debug")]
         [SerializeField] private bool verboseLogs = true;
 
-        public AuthState State { get; private set; } = AuthState.NotInitialized;
+        private AuthState State { get; set; } = AuthState.NotInitialized;
 
-        public bool IsSignedIn => AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn;
+        private bool IsSignedIn => AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn;
         public string PlayerId => IsSignedIn ? AuthenticationService.Instance.PlayerId : string.Empty;
-        public string SessionTokenExists => AuthenticationService.Instance != null && AuthenticationService.Instance.SessionTokenExists ? "Yes" : "No";
+        private string SessionTokenExists => AuthenticationService.Instance != null && AuthenticationService.Instance.SessionTokenExists ? "Yes" : "No";
 
-        public event Action<string> OnSignedIn;                 // playerId
-        public event Action<string> OnSignInFailed;             // error message
+        public event Action<string> OnSignedIn;           
+        public event Action<string> OnSignInFailed;     
         public event Action OnSignedOut;
 
         bool _startupAttempted;

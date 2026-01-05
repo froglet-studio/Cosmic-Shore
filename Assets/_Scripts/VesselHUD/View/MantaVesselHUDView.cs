@@ -23,15 +23,16 @@ namespace CosmicShore.Game
         /// <summary>
         /// Called by controller once on Initialize.
         /// </summary>
-        public void InitializeOvercharge(int maxBlockHits)
+        public override void Initialize()
         {
             if (fillImage)
             {
                 fillImage.fillAmount = 0f;
-                fillImage.color      = normalColor;
+                fillImage.color = normalColor;
             }
 
-            SetOverchargeCount(0, maxBlockHits);
+            if (overchargePrismCount)
+                overchargePrismCount.text = "0";
 
             if (overchargeCountdownContainer)
                 overchargeCountdownContainer.SetActive(false);
@@ -39,6 +40,7 @@ namespace CosmicShore.Game
             if (overchargeCountdownText)
                 overchargeCountdownText.text = string.Empty;
         }
+
 
         /// <summary>
         /// Updates prism count text + radial fill + highlight color.

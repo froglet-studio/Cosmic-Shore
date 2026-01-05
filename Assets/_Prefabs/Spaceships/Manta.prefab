@@ -2187,8 +2187,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 7318663848403301360}
-  _shipHUDController: {fileID: 6733957700513663958}
-  _vesselHUDView: {fileID: 2835891913121360755}
+  vesselHUDController: {fileID: 6733957700513663958}
   boostMultiplier: 4
   _name: Manta
   vesselType: 1
@@ -2487,6 +2486,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1079422f73b5424b97437619fdccad2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseView: {fileID: 2835891913121360755}
   silhouette: {fileID: 2731003324702047408}
   view: {fileID: 2835891913121360755}
   overchargeSO: {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}

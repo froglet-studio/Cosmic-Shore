@@ -2264,8 +2264,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 8572760576837465265}
-  _shipHUDController: {fileID: 9121591686382397393}
-  _vesselHUDView: {fileID: 5470374086122723936}
+  vesselHUDController: {fileID: 9121591686382397393}
   boostMultiplier: 4
   _name: Serpent
   vesselType: 7
@@ -2449,17 +2448,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  trailDisplayContainer: {fileID: 0}
-  blockPrefab: {fileID: 0}
   config: {fileID: 0}
-  silhouetteRoot: {fileID: 0}
-  jawTop: {fileID: 0}
-  jawBottom: {fileID: 0}
-  jawMaxOffset: 40
-  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
-  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
-  jawTintTargets: []
   energyResourceIndex: 0
+  view: {fileID: 0}
 --- !u!114 &705402283976800655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2572,6 +2563,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99148a7d0df947b0969a4432426d77a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseView: {fileID: 5470374086122723936}
   silhouette: {fileID: 2731003324702047408}
   view: {fileID: 5470374086122723936}
   consumeBoostExecutor: {fileID: 2460618104011007721}

@@ -20,31 +20,26 @@ namespace CosmicShore.Game
         int _max = 1;
         readonly Color _overchargeTextColor = Color.red;
 
-        public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus)
         {
-            if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser) return;
-            
-            base.Initialize(vesselStatus, baseView);
+            base.Initialize(vesselStatus);
 
             if (!view)
-                view = baseView as MantaVesselHUDView;
+                view = View as MantaVesselHUDView;
 
-            if (overchargeSO == null || skimmer == null || view == null)
-            {
-                Debug.LogWarning("[MantaHUD] Missing references.");
-                return;
-            }
+            if (_statusIsNotLocal(vesselStatus)) return; 
 
             _max = Mathf.Max(1, overchargeSO.MaxBlockHits);
-            view.InitializeOvercharge(_max);
-
             overchargeSO.OnCountChanged      += HandleCountChanged;
             overchargeSO.OnReadyToOvercharge += HandleReadyToOvercharge;
             overchargeSO.OnOvercharge        += HandleOvercharge;
             overchargeSO.OnCooldownStarted   += HandleCooldownStarted;
         }
 
-        void OnDestroy()
+        static bool _statusIsNotLocal(IVesselStatus s) => s.IsInitializedAsAI || !s.IsLocalUser;
+
+
+        void OnDisable()
         {
             if (overchargeSO == null) return;
             overchargeSO.OnCountChanged      -= HandleCountChanged;
