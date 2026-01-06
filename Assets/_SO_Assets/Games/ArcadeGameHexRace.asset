@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameHexRace
   m_EditorClassIdentifier: 
-  Mode: 13
-  DisplayName: Slip N Stride
+  Mode: 31
+  IsMultiplayer: 0
+  DisplayName: Hex Race
   Description: Find the fastest path to the crystal by skimming trails for a speed
     boost.
   IconActive: {fileID: 21300000, guid: 9842120c8e297c64d8e6e9bed82feeb5, type: 3}
@@ -22,7 +23,7 @@ MonoBehaviour:
   PreviewClip: {fileID: 241334157148977051, guid: b2779f5eadc28b4429d1fcb4d5f9f731,
     type: 3}
   GolfScoring: 1
-  SceneName: MinigameSlipNStride
+  SceneName: MinigameHexRace
   Captains:
   - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
   MinPlayers: 1

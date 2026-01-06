@@ -74,6 +74,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11
+  - enabled: 1
+    path: Assets/_Scenes/MinigameHexRace.unity
+    guid: be8d695fcae317d49bfa8106b819196a
   - enabled: 0
     path: Assets/_Scenes/MinigameDenial.unity
     guid: 1fdeb06d41efdd846944913993ffc627
