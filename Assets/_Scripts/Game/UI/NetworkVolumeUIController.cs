@@ -1,4 +1,4 @@
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Unity.Netcode;
 using UnityEngine;
 using Cysharp.Threading.Tasks;

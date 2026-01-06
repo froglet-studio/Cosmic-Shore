@@ -2,7 +2,7 @@ using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using UnityEngine;

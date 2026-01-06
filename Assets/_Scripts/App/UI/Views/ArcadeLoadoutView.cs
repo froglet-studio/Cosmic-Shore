@@ -104,7 +104,7 @@ namespace CosmicShore.App.UI.Views
         public void OnClickPlayButton() 
         {
             Loadout loadout = LoadoutSystem.GetActiveLoadout();
-            Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false);
+            Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
         }
 
         // Sets ShipTypes

@@ -3,7 +3,7 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 using System.Collections;
 using CosmicShore.Game;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using CosmicShore.Utility;
 using UnityEngine.Serialization;
 

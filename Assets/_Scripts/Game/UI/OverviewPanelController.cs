@@ -4,7 +4,7 @@ using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 
 
@@ -112,7 +112,7 @@ namespace CosmicShore.App.UI.Controllers
         private void InitializeNewVessel(IVessel newVessel)
         {
             Player.ChangeVessel(newVessel);
-            newVessel.Initialize(Player, snap.WasAIPilot);
+            newVessel.Initialize(Player);
             VesselInitializeHelper.SetShipProperties(themeManagerData, newVessel);
         }
         

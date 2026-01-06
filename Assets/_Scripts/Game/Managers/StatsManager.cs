@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using CosmicShore.Utilities;
 
 
@@ -160,34 +160,28 @@ namespace CosmicShore.Core
 
             var attackingPlayerName = prismStats.AttackerName;
             var victimPlayerName = prismStats.OwnName;
-
-            var hasAttacker = gameData.TryGetRoundStats(attackingPlayerName, out var attackerPlayerStats);
-            var hasVictim = gameData.TryGetRoundStats(victimPlayerName, out var victimPlayerStats);
-
-            if (hasAttacker)
-            {
-                attackerPlayerStats.BlocksDestroyed++;
-                attackerPlayerStats.TotalVolumeDestroyed += prismStats.Volume;
-
-                var isFriendly =
-                    attackingPlayerName == victimPlayerName ||
-                    (hasVictim && attackerPlayerStats.Domain == victimPlayerStats.Domain);
-
-                if (isFriendly)
-                {
-                    attackerPlayerStats.FriendlyPrismsDestroyed++;
-                    attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
-                }
-                else
-                {
-                    attackerPlayerStats.HostilePrismsDestroyed++;
-                    attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
-                }
-            }
-
-            if (!hasVictim) return;
+            
+            if (!gameData.TryGetRoundStats(attackingPlayerName, out IRoundStats attackerPlayerStats))
+                return;
+            
+            if (!gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
+                return;
+            
+            attackerPlayerStats.BlocksDestroyed++;
+            attackerPlayerStats.TotalVolumeDestroyed += prismStats.Volume;
             victimPlayerStats.PrismsRemaining--;
             victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+
+            if (attackingPlayerName == victimPlayerName)
+            {
+                attackerPlayerStats.FriendlyPrismsDestroyed++;
+                attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
+            }
+            else
+            {
+                attackerPlayerStats.HostilePrismsDestroyed++;
+                attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
+            }
         }
 
         public void PrismRestored(PrismStats prismStats)

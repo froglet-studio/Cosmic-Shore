@@ -6,7 +6,7 @@ using CosmicShore.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -82,7 +82,7 @@ namespace CosmicShore.Core
             */
         }
 
-        public void LaunchArcadeGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
+        public void LaunchArcadeGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isMultiplayer, bool isDailyChallenge = false)
         {
             gameData.ResourceCollection = shipResources;
             gameData.IsDailyChallenge = isDailyChallenge;
@@ -90,7 +90,7 @@ namespace CosmicShore.Core
             gameData.IsMission = false;
             gameData.GameMode = gameMode;
             
-            gameData.IsMultiplayerMode = SO_Game.IsMultiplayerModes(gameMode);
+            gameData.IsMultiplayerMode = isMultiplayer;
             gameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
             gameData.InvokeGameLaunch();
 

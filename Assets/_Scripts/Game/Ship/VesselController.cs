@@ -1,6 +1,6 @@
 using System;
 using CosmicShore.Models.Enums;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -69,7 +69,7 @@ namespace CosmicShore.Game
             n_BlockRotation.Value = VesselStatus.blockRotation;
         }
 
-        public void Initialize(IPlayer player, bool enableAIPilot)
+        public void Initialize(IPlayer player)
         {
             VesselStatus.Player = player;
             VesselStatus.VesselAnimation.Initialize(VesselStatus);
@@ -88,7 +88,7 @@ namespace CosmicShore.Game
             }
             else
             {
-                InitializeForSinglePlayerMode(enableAIPilot);
+                InitializeForSinglePlayerMode();
             }
             
             VesselStatus.ResetForPlay();
@@ -194,6 +194,7 @@ namespace CosmicShore.Game
         {
             VesselStatus.Player = player;
 
+            // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)
             {
                 VesselStatus.VesselHUDController.UnsubscribeFromEvents();
@@ -278,7 +279,7 @@ namespace CosmicShore.Game
             if (VesselStatus.FarFieldSkimmer)
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
             
-            if (!IsOwner) 
+            if (!vesselStatus.Player.IsMultiplayerOwner) 
                 return;
             
             VesselStatus.VesselCameraCustomizer.Initialize(this);
@@ -292,7 +293,7 @@ namespace CosmicShore.Game
 
         }
         
-        void InitializeForSinglePlayerMode(bool enableAIPilot)
+        void InitializeForSinglePlayerMode()
         {
             if (VesselStatus.NearFieldSkimmer) 
                 VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
@@ -303,7 +304,8 @@ namespace CosmicShore.Game
             VesselStatus.Silhouette.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.ToggleActive(true);
             
-            if (!enableAIPilot)
+            bool isInitializedAsAI = vesselStatus.IsInitializedAsAI;
+            if (!isInitializedAsAI)
             {
                 VesselStatus.ActionHandler.ToggleSubscription(true);
                 VesselStatus.VesselHUDController.ShowHUD();
@@ -318,7 +320,7 @@ namespace CosmicShore.Game
             // AIPilot will be initialized both in User controlled / AI Vessels
             // Multiplayer modes will also have auto-pilot initialized
             
-            VesselStatus.AIPilot.Initialize(enableAIPilot, this);
+            VesselStatus.AIPilot.Initialize(isInitializedAsAI, this);
         }
 
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;

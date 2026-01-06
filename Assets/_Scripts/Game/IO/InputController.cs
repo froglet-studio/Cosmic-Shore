@@ -55,9 +55,13 @@ namespace CosmicShore.Game.IO
             
             // Toggle the fullscreen state if the Escape key was pressed this frame on windows
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            if (Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (!Application.isFocused) return;
+
+            var kb = Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame)
                 Screen.fullScreen = !Screen.fullScreen;
 #endif
+            
             if (InputStatus.Paused)
                 return;
 

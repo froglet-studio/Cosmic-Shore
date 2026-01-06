@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
-  m_Name: ArcadeGameMultiplayerCellularDuel
+  m_Name: ArcadeGameMultiplayer2v2CoOpVsAI
   m_EditorClassIdentifier: 
-  Mode: 29
+  Mode: 30
   IsMultiplayer: 1
-  DisplayName: Online Duel for the Cell
-  Description: Engage in a tug-of-war to gain control over the contested cell. Player
-    with the most mass wins.
+  DisplayName: Online 2v2 CoOp vs AI
+  Description: Engage in a tug-of-war with friend against two AI vessels to gain
+    control over the contested cell. Player with the most mass wins.
   IconActive: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
   IconInactive: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
   CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
     type: 3}
   GolfScoring: 0
-  SceneName: MinigameDuelForCellMultiplayer_Gameplay
+  SceneName: ArcadeGameMultiplayer2v2CoOpVsAI
   Captains:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
   - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}

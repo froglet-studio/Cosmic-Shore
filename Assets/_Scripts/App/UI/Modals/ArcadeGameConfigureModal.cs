@@ -4,7 +4,7 @@ using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
@@ -239,7 +239,7 @@ namespace CosmicShore.App.UI.Modals
             // 2) saved loadout vessel type
             if (!chosen && _selectedGame)
             {
-                var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode).Loadout;
+                var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode, _selectedGame.IsMultiplayer).Loadout;
                 var loadoutVT = loadout.VesselType;
 
                 if (loadoutVT != VesselClassType.Random)

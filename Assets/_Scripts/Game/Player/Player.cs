@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Game.IO;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using CosmicShore.Utility.ClassExtensions;
 using Unity.Collections;
 using Unity.Netcode;
@@ -61,9 +61,11 @@ namespace CosmicShore.Game
         public IInputStatus InputStatus => InputController.InputStatus;
 
         public Transform Transform => transform;
+        public bool IsMultiplayerOwner => IsSpawned && IsOwner && !IsInitializedAsAI;
         public bool IsNetworkOwner => IsSpawned && IsOwner;
         public bool IsNetworkClient => IsSpawned && !IsOwner;
-        public bool IsLocalUser => IsNetworkOwner || (!IsInitializedAsAI && !IsNetworkClient);
+        public bool IsSinglePlayerOwner => !IsSpawned && !IsInitializedAsAI;
+        public bool IsLocalUser => IsMultiplayerOwner || IsSinglePlayerOwner;
        
         IPlayer.InitializeData InitializeData;
         
@@ -83,9 +85,9 @@ namespace CosmicShore.Game
         /// <summary>
         /// TODO -> A temp way to initialize in multiplayer, try for better approach.
         /// </summary>
-        public void InitializeForMultiplayerMode(IVessel vessel)
+        public void InitializeForMultiplayerMode(IVessel vessel, bool initializeAsAI)
         {
-            IsInitializedAsAI = false;
+            IsInitializedAsAI = initializeAsAI;
             Domain = NetTeam.Value;
             Name = NetName.Value.ToString();
             Vessel = vessel;

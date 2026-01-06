@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.App.Profile;       // UgsPlayerProfileService
 using CosmicShore.App.UI.Modals;
-using CosmicShore.SOAP;              // GameDataSO
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;

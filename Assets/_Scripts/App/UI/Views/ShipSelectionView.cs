@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.App.UI.Views

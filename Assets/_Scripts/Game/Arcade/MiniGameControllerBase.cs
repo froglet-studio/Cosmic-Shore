@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;

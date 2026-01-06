@@ -1,5 +1,5 @@
 using CosmicShore.Game;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore

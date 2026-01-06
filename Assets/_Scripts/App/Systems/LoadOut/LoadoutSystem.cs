@@ -73,7 +73,7 @@ namespace CosmicShore.App.Systems.Loadout
             SetLoadout(loadout, ActiveLoadoutIndex);
         }
 
-        public static ArcadeGameLoadout LoadGameLoadout(GameModes mode)
+        public static ArcadeGameLoadout LoadGameLoadout(GameModes mode, bool isMultiplayer)
         {
             for (var i = 0; i < gameLoadouts.Count; i++)
             {
@@ -83,7 +83,7 @@ namespace CosmicShore.App.Systems.Loadout
                 }
             }
 
-            return new ArcadeGameLoadout(mode, new Loadout(0, 0, 0, 0));
+            return new ArcadeGameLoadout(mode, new Loadout(0, 0, 0, 0, isMultiplayer));
         }
 
         public static void SaveGameLoadOut(GameModes mode, Loadout loadout)

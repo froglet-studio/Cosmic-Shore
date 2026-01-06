@@ -24,7 +24,7 @@ namespace CosmicShore.Game
         /// In singleplayer mode, always false
         /// </summary>
         bool IsNetworkClient { get; }
-        void Initialize(IPlayer player, bool enableAIPilot = false);
+        void Initialize(IPlayer player);
         void PerformShipControllerActions(InputEvents @event);
         void StopShipControllerActions(InputEvents @event);
         void Teleport(Transform transform);
