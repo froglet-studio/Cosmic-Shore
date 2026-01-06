@@ -4,7 +4,7 @@ using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.SOAP
+namespace CosmicShore.Soap
 {
     [CreateAssetMenu(
         fileName = "scriptable_variable_" + nameof(CellDataSO),

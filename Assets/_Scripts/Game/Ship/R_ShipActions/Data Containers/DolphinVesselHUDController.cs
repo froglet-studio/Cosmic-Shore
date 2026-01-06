@@ -14,20 +14,12 @@ namespace CosmicShore.Game
 
         ResourceSystem _resources;
 
-        public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus)
         {
-            base.Initialize(vesselStatus, baseView);
+            base.Initialize(vesselStatus);
 
             if (!view)
-                view = baseView as DolphinVesselHUDView;
-
-            if (view != null)
-            {
-                if (!view.isActiveAndEnabled)
-                    view.gameObject.SetActive(true);
-
-                view.Initialize();
-            }
+                view = View as DolphinVesselHUDView;
 
             _resources = vesselStatus?.ResourceSystem;
             if (_resources == null || view == null)
@@ -35,8 +27,7 @@ namespace CosmicShore.Game
 
             _resources.OnResourceChanged += HandleResourceChanged;
 
-            // Initial sync
-            if (energyResourceIndex >= 0 && energyResourceIndex < _resources.Resources.Count)
+            if ((uint)energyResourceIndex < _resources.Resources.Count)
             {
                 var r = _resources.Resources[energyResourceIndex];
                 SetFromAmounts(r.CurrentAmount, r.MaxAmount);
@@ -46,6 +37,7 @@ namespace CosmicShore.Game
                 view.SetChargeStepIndex(0);
             }
         }
+
 
         void OnDisable()
         {

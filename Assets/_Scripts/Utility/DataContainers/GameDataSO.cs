@@ -11,7 +11,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using IPlayer = CosmicShore.Game.IPlayer;
 
-namespace CosmicShore.SOAP
+namespace CosmicShore.Soap
 {
     /// <summary>
     /// Every MiniGame in the project should use the same asset of this SO.
@@ -49,6 +49,7 @@ namespace CosmicShore.SOAP
         // Game Config / State
         public string SceneName;
         public GameModes GameMode;
+        public string LocalPlayerDisplayName;
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
@@ -187,7 +188,7 @@ namespace CosmicShore.SOAP
             
             p.ResetForPlay();
             
-            if (p.IsNetworkOwner)
+            if (p.IsMultiplayerOwner)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
         }
         
@@ -207,7 +208,7 @@ namespace CosmicShore.SOAP
 
         public void SetNonOwnerPlayersActiveInNewClient()
         {
-            foreach (var player in Players.Where(player => !player.IsNetworkOwner))
+            foreach (var player in Players.Where(player => !player.IsMultiplayerOwner))
                 player.StartPlayer();
         }
 

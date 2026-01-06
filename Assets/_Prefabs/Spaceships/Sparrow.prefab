@@ -1121,8 +1121,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 5625026016231715243}
-  _shipHUDController: {fileID: 223934081028988333}
-  _vesselHUDView: {fileID: 4159619328234506921}
+  vesselHUDController: {fileID: 223934081028988333}
   boostMultiplier: 4
   _name: Sparrow
   vesselType: 11
@@ -1312,7 +1311,7 @@ MonoBehaviour:
   driftTrailAction: {fileID: 0}
   config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
   energyResourceIndex: 0
-  view: {fileID: 0}
+  view: {fileID: 7416581124810081342}
 --- !u!114 &4780908095115307824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1415,6 +1414,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1938f2b097540e7abd1e4210d446545, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseView: {fileID: 4159619328234506921}
   silhouette: {fileID: 838706159439259027}
   view: {fileID: 4159619328234506921}
   fireGunExecutor: {fileID: 4658886838346608747}
@@ -2927,7 +2927,11 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8096229903681595441}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2707401190942586943, guid: f0a24806a0485254389f97d4c93f7615,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7416581124810081342}
   m_SourcePrefab: {fileID: 100100000, guid: f0a24806a0485254389f97d4c93f7615, type: 3}
 --- !u!224 &434181841133139353 stripped
 RectTransform:
@@ -2941,12 +2945,49 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 6302028140178659755}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 6302028140178659756}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 297f560e4f6d4fec848862cfd2c41581, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!224 &4625218033296401838 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1676850338109438981, guid: f0a24806a0485254389f97d4c93f7615,
+    type: 3}
+  m_PrefabInstance: {fileID: 6302028140178659755}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6302028140178659756 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2707401190942586943, guid: f0a24806a0485254389f97d4c93f7615,
+    type: 3}
+  m_PrefabInstance: {fileID: 6302028140178659755}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7416581124810081342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6302028140178659756}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47e75593b0dd60a4f8eeade919affa5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trailDisplayContainer: {fileID: 4625218033296401838}
+  blockPrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
+    type: 3}
+  silhouetteRoot: {fileID: 0}
+  jawTop: {fileID: 0}
+  jawBottom: {fileID: 0}
+  jawMaxOffset: 40
+  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
+  jawTintTargets: []
+  config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
+  overlayPrefab: {fileID: 0}
+  overlayDuration: 1
 --- !u!1001 &6723389074232520642
 PrefabInstance:
   m_ObjectHideFlags: 0

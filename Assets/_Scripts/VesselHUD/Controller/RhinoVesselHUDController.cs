@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class RhinoVesselHUDController : VesselHUDController
+    public sealed class RhinoVesselHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private RhinoVesselHUDView view;
@@ -18,23 +17,28 @@ namespace CosmicShore.Game
         [SerializeField] private ScriptableEventVesselImpactor vesselSlowedByRhinoDangerPrismEvent;
         [SerializeField] private ScriptableEventSkimmerDebuffApplied skimmerDebuffAppliedEvent;
 
-        int _slowedCount;
-        IVesselStatus _vesselStatus;
+        private int _slowedCount;
+        private IVesselStatus _vesselStatus;
 
         readonly HashSet<IVesselStatus> _uniqueSlowedThisExplosion = new();
 
-        public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
+        private bool IsHudAllowed =>
+            _vesselStatus is { IsInitializedAsAI: false, IsLocalUser: true };
+
+        public override void Initialize(IVesselStatus vesselStatus)
         {
-            base.Initialize(vesselStatus, baseView);
+            base.Initialize(vesselStatus);
             _vesselStatus = vesselStatus;
 
             if (!view)
-                view = baseView as RhinoVesselHUDView;
+                view = View as RhinoVesselHUDView;
+
+            view?.Initialize();
 
             Subscribe();
         }
 
-        void OnDestroy()
+        void OnDisable()
         {
             Unsubscribe();
         }
@@ -42,7 +46,7 @@ namespace CosmicShore.Game
         void Subscribe()
         {
             if (_vesselStatus == null) return;
-            
+
             if (vesselSlowedByExplosionEvent != null)
                 vesselSlowedByExplosionEvent.OnRaised += HandleVesselSlowedByExplosion;
 
@@ -52,7 +56,7 @@ namespace CosmicShore.Game
             if (rhinoCrystalExplosionEvent != null)
                 rhinoCrystalExplosionEvent.OnRaised += HandleCrystalExplosion;
 
-            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
+            if (!IsHudAllowed) return;
 
             if (growSkimmerExecutor != null)
                 growSkimmerExecutor.OnScaleChanged += HandleSkimmerScaleChanged;
@@ -74,7 +78,7 @@ namespace CosmicShore.Game
             if (rhinoCrystalExplosionEvent != null)
                 rhinoCrystalExplosionEvent.OnRaised -= HandleCrystalExplosion;
 
-            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
+            if (!IsHudAllowed) return;
 
             if (growSkimmerExecutor != null)
                 growSkimmerExecutor.OnScaleChanged -= HandleSkimmerScaleChanged;
@@ -85,12 +89,20 @@ namespace CosmicShore.Game
 
         #region Handlers
 
-        void HandleSkimmerScaleChanged(float current, float min, float max) { }
+        void HandleSkimmerScaleChanged(float current, float min, float max)
+        {
+            if (!IsHudAllowed || !view) return;
+
+            float t = 0f;
+            if (max > min)
+                t = Mathf.Clamp01((current - min) / (max - min));
+
+            view.SetSkimmerIconScale01(t);
+        }
 
         void HandleCrystalExplosion(VesselImpactor vesselImpactor)
         {
-            if (!view) return;
-            if(_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
+            if (!IsHudAllowed || !view) return;
 
             _slowedCount = 0;
             _uniqueSlowedThisExplosion.Clear();
@@ -102,7 +114,7 @@ namespace CosmicShore.Game
 
         void HandleVesselSlowedByExplosion(VesselImpactor impactor)
         {
-            if (!view) return;
+            if (!IsHudAllowed || !view) return;
 
             var victimStatus = impactor?.Vessel?.VesselStatus;
             if (victimStatus != null && _uniqueSlowedThisExplosion.Add(victimStatus))
@@ -111,13 +123,13 @@ namespace CosmicShore.Game
                 view.SetSlowedCount(_slowedCount);
             }
 
-            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
             view.FlashLineIconActive(2f);
         }
 
         void HandleSkimmerDebuffApplied(SkimmerDebuffPayload payload)
         {
-            if (!view) return;
+            if (!IsHudAllowed || !view) return;
+
             if (payload.Attacker != _vesselStatus) return;
 
             view.ShowDebuffTimer(payload.Duration);

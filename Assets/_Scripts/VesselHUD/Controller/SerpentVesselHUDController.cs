@@ -17,23 +17,19 @@ namespace CosmicShore.Game
         IVesselStatus  _status;
         ResourceSystem _rs;
 
-        public override void Initialize(IVesselStatus vesselStatus, VesselHUDView baseView)
+        public override void Initialize(IVesselStatus vesselStatus)
         {
-            base.Initialize(vesselStatus, baseView);
+            base.Initialize(vesselStatus);
             _status = vesselStatus;
 
             if (!view)
-                view = baseView as SerpentVesselHUDView;
+                view = View as SerpentVesselHUDView;
 
-            if (view)
-            {
-                if (!view.gameObject.activeSelf)
-                    view.gameObject.SetActive(true);
+            if (!view) return;
 
-                view.InitializeHUD();
-            }
             Subscribe();
         }
+
 
         void Subscribe()
         {
@@ -66,7 +62,7 @@ namespace CosmicShore.Game
             );
         }
 
-        void OnDestroy()
+        void OnDisable()
         {
             if (_rs != null)
                 _rs.OnResourceChanged -= HandleResourceChanged;

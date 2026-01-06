@@ -17,7 +17,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/MinigameCatNMouse.unity
     guid: 7c96c2e0191410b4195d294d6205569c
-  - enabled: 0
+  - enabled: 1
     path: Assets/_Scenes/MinigameSlipNStride.unity
     guid: 309d1ff4cb0ddbd499fa0eab2474c236
   - enabled: 0
@@ -74,6 +74,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11
+  - enabled: 1
+    path: Assets/_Scenes/MinigameHexRace.unity
+    guid: be8d695fcae317d49bfa8106b819196a
   - enabled: 0
     path: Assets/_Scenes/MinigameDenial.unity
     guid: 1fdeb06d41efdd846944913993ffc627
@@ -101,6 +104,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDuelForCellMultiplayer_Gameplay.unity
     guid: 1a4008204ec60f0449e6434e03c6db67
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
+    guid: a596bbcaeca9b07498a4875cacea431c
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}

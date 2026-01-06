@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
 using System;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Obvious.Soap;
 
 namespace CosmicShore.Game.AI

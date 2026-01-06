@@ -24,9 +24,11 @@ namespace CosmicShore.Game
         Image[]    _boostPips;
         Coroutine[] _pipAnim;
 
-        void Awake()
+        public override void Initialize()
         {
             BuildBoostPipCache();
+            InitializeShieldHUD();
+            InitializeBoostPips();
         }
 
         void BuildBoostPipCache()

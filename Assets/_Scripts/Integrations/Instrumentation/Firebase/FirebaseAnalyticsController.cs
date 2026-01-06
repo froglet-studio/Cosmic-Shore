@@ -2,7 +2,7 @@ using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Utilities;
 
 #if !UNITY_WEBGL
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Firebase;
 using Firebase.Analytics;
 #endif

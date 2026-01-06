@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using CosmicShore.Core;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
@@ -282,7 +283,7 @@ namespace CosmicShore.Game
                 if (controllingVolume > faunaSpawnVolumeThreshold)
                 {
                     var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
-                    newPopulation.domain = controllingTeamStat.Item1; // ControllingTeam;
+                    newPopulation.domain = GetHostileDomainToLocal();// ControllingTeam;
                     newPopulation.Goal = cellData.CrystalTransform.position;
                     yield return new WaitForSeconds(baseFaunaSpawnTime);
                 }
@@ -291,6 +292,15 @@ namespace CosmicShore.Game
                     yield return new WaitForSeconds(2);
                 }
             } 
+        }
+        
+        Domains GetHostileDomainToLocal()
+        {
+            var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
+
+            // pick any domain that isn't local (randomize if you want)
+            var candidates = new[] { Domains.Ruby, Domains.Gold, Domains.Blue, Domains.Jade };
+            return candidates.First(d => d != local);
         }
     }
 }

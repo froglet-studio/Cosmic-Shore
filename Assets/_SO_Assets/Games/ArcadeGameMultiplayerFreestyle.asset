@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameMultiplayerFreestyle
   m_EditorClassIdentifier: 
   Mode: 28
+  IsMultiplayer: 1
   DisplayName: Multiplayer Freestyle
   Description: No rules, time, or score. Do what you want for as long as you like.
     This is not a game; enjoy the toy.
@@ -23,7 +24,6 @@ MonoBehaviour:
     type: 3}
   GolfScoring: 0
   SceneName: MinigameFreestyleMultiplayer_Gameplay
-  MaxPlayersForMultiplayer: 4
   Captains:
   - {fileID: 11400000, guid: 0d57b8e9eb4fb7a4b8db5456bb5f3530, type: 2}
   - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}

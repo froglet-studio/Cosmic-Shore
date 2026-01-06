@@ -48,7 +48,7 @@ namespace CosmicShore.Core
         ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
 
         [SerializeField]
-        PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
+        internal PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
 
         public Action<Prism> OnReturnToPool;
 
@@ -64,7 +64,7 @@ namespace CosmicShore.Core
 
         // public IPlayer Player;
         string _playerName;
-        public string PlayerName { get; private set; }
+        public string PlayerName { get; internal set; }
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;

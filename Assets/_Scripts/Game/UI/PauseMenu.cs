@@ -1,7 +1,7 @@
 using CosmicShore.App.Systems;
 using UnityEngine;
 using CosmicShore.Core;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 

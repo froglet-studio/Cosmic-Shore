@@ -350,8 +350,8 @@ GameObject:
   - component: {fileID: 4248184753307651523}
   - component: {fileID: 2800655758706162833}
   - component: {fileID: 2643412773408452782}
-  - component: {fileID: 7874551534278607383}
   - component: {fileID: 7965853245772039612}
+  - component: {fileID: 5649393235309590662}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -535,8 +535,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 3202054749536864766}
-  _shipHUDController: {fileID: 7874551534278607383}
-  _vesselHUDView: {fileID: 8405677031294957519}
+  vesselHUDController: {fileID: 5649393235309590662}
   boostMultiplier: 4
   _name: Squirrel
   vesselType: 6
@@ -709,17 +708,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselPrismController: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
-  trailDisplayContainer: {fileID: 0}
-  blockPrefab: {fileID: 0}
   config: {fileID: 0}
-  silhouetteRoot: {fileID: 0}
-  jawTop: {fileID: 0}
-  jawBottom: {fileID: 0}
-  jawMaxOffset: 40
-  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
-  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
-  jawTintTargets: []
   energyResourceIndex: 0
+  view: {fileID: 0}
 --- !u!114 &6989089190155014109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -813,19 +804,6 @@ MonoBehaviour:
   vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c65db9958c064485be49a2183f263,
     type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}
---- !u!114 &7874551534278607383
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2134c837bdb00594d80fc211aa9d0c12, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  silhouette: {fileID: 6013884537839217096}
 --- !u!114 &7965853245772039612
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -840,6 +818,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactor: {fileID: 2643412773408452782}
+--- !u!114 &5649393235309590662
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 002a4e51f3b840e3b397dac7b84f1a9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseView: {fileID: 3383634205702517725}
+  silhouette: {fileID: 6013884537839217096}
+  view: {fileID: 3383634205702517725}
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1246,7 +1239,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2092273636776193303, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8405677031294957519}
+      addedObject: {fileID: 3383634205702517725}
   m_SourcePrefab: {fileID: 100100000, guid: c1572db06ad4244469ad3f25d86940b8, type: 3}
 --- !u!224 &3344272964263981488 stripped
 RectTransform:
@@ -1260,7 +1253,7 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 5152493367006660778}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &8405677031294957519
+--- !u!114 &3383634205702517725
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1269,7 +1262,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 6523581306461791677}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1f5e4a52c454e0c4398be29c296def5c, type: 3}
+  m_Script: {fileID: 11500000, guid: 42ea7ca85d2643f3acf399c76f93c8c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   highlights: []

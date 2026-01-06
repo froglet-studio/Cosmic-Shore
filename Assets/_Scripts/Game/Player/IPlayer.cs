@@ -22,13 +22,22 @@ namespace CosmicShore.Game
         /// </summary>
         bool IsInitializedAsAI { get; }
         /// <summary>
+        /// In singleplayer mode, true when not initialized as AI,
+        /// In multiplayer mode -> always false.
+        /// </summary>
+        public bool IsSinglePlayerOwner { get; }
+        /// <summary>
         /// In multiplayer mode, true -> owner client, false -> other clients
+        /// In singleplayer mode, always false.
+        /// </summary>
+        public bool IsMultiplayerOwner { get; }
+        /// <summary>
+        /// In multiplayer mode, true -> owner client, can be AI also (in case of server), false -> other client
         /// In singleplayer mode, always false.
         /// </summary>
         public bool IsNetworkOwner { get; }
         /// <summary>
-        /// In multiplayer mode, true -> non-owner client, false -> owner client
-        /// In singleplayer mode, always false
+        /// In multiplayer mode, true -> non owner clients, can be AI also, false -> owner client.
         /// </summary>
         public bool IsNetworkClient { get; }
         /// <summary>

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading;
 using CosmicShore.App.Systems;
 using CosmicShore.Core;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
@@ -44,12 +44,52 @@ namespace CosmicShore.Game
             InitializePlayerAndVessel(clientId);
         }
         
+        [ClientRpc]
+        internal void InitializeAIPlayerAndVesselInThisClient_ClientRpc(
+            ulong aiPlayerNetObjectId,
+            ulong aiVesselNetObjectId,
+            ClientRpcParams clientRpcParams = default)
+        {
+            InitializeAIByNetIds(aiPlayerNetObjectId, aiVesselNetObjectId, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        private async UniTaskVoid InitializeAIByNetIds(ulong playerId, ulong vesselId, System.Threading.CancellationToken token)
+        {
+            var sm = NetworkManager.Singleton.SpawnManager;
+
+            await UniTask.WaitUntil(
+                () => sm.SpawnedObjects.ContainsKey(playerId) && sm.SpawnedObjects.ContainsKey(vesselId),
+                cancellationToken: token
+            );
+
+            if (token.IsCancellationRequested) return;
+
+            var playerNO = sm.SpawnedObjects[playerId];
+            var vesselNO = sm.SpawnedObjects[vesselId];
+
+            var networkPlayer = playerNO.GetComponent<Player>();
+            var networkShip = vesselNO.GetComponent<IVessel>();
+
+            if (!networkPlayer || networkShip == null)
+            {
+                Debug.LogError("[ClientPlayerVesselInitializer] AI Player/Vessel components missing.");
+                return;
+            }
+
+            // Reuse your existing initialization logic (recommended)
+            networkPlayer.InitializeForMultiplayerMode(networkShip, true);
+            networkShip.Initialize(networkPlayer);
+            VesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
+            gameData.AddPlayer(networkPlayer);
+        }
+
+        
         void InitializePlayerAndVessel(ulong clientId)
         {
             var networkPlayer = NetworkPlayerClientCache.GetInstanceByClientId(clientId);
             var networkShip = NetworkVesselClientCache.GetInstanceByClientId(clientId);
-            networkPlayer.InitializeForMultiplayerMode(networkShip);
-            networkShip.Initialize(networkPlayer, false);
+            networkPlayer.InitializeForMultiplayerMode(networkShip, false);
+            networkShip.Initialize(networkPlayer);
             VesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
             gameData.AddPlayer(networkPlayer);
         }
@@ -61,7 +101,6 @@ namespace CosmicShore.Game
                 return;
             
             gameData.InvokeClientReady();
-                
         }
     }
 }

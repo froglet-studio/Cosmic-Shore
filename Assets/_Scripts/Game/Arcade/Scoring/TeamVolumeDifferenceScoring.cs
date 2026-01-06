@@ -1,6 +1,6 @@
 using System.Linq;
 using CosmicShore.Core;
-using CosmicShore.SOAP;
+using CosmicShore.Soap;
 using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 

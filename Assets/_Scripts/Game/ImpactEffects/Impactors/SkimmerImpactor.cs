@@ -28,9 +28,25 @@ namespace CosmicShore.Game
         private int ActivelySkimmingBlockCount;
         [HideInInspector]
         public float CombinedWeight; // exposed for effects that need it
-    
+
         // ------------------------------------------------------------------
         // Trigger callbacks moved here
+
+        float scale;
+        float sqrSweetSpot;
+        float sigma;
+
+        float minMaturePrismSqrDistance;
+        Prism minMaturePrism;
+        PrismImpactor minPrismImpactor;
+
+        private void Start()
+        {
+
+            scale = skimmer.transform.localScale.x;
+            sqrSweetSpot = scale * scale / 16f;
+            sigma = sqrSweetSpot / 2.355f;
+        }
 
         void OnTriggerStay(Collider other)
         {
@@ -55,21 +71,32 @@ namespace CosmicShore.Game
 
             // choose “mature & nearest” block per your old logic
             // if (Time.time - prism.prismProperties.TimeCreated <= 4f) return;
-            bool isMature = (Time.time - prism.prismProperties.TimeCreated) > 0.25f;
+             if ((Time.time - prism.prismProperties.TimeCreated) < 0.25f) return;
             
             float sqrDistance = (skimmer.transform.position - other.transform.position).sqrMagnitude;
+            
+            minMaturePrismSqrDistance = Mathf.Min(minMaturePrismSqrDistance, sqrDistance);
+            
 
-            float scale = skimmer.transform.localScale.x;
-            float sqrSweetSpot = scale * scale / 16f;
-            float sigma = sqrSweetSpot / 2.355f; 
 
-            float distanceWeight = Skimmer.ComputeGaussian(sqrDistance, sqrSweetSpot, sigma);
-            float directionWeight = Vector3.Dot(skimmer.VesselStatus.Transform.forward, prism.transform.forward);
+            if (sqrDistance != minMaturePrismSqrDistance) return;
 
-            float maturityFactor = isMature ? 1f : 0.35f;
-            CombinedWeight = maturityFactor * distanceWeight * Mathf.Abs(directionWeight);
-            // tick stay effects (centralized)
-            ExecuteBlockStayEffects(CombinedWeight, prismImpactor);
+            minMaturePrism = prism;
+            minPrismImpactor = prismImpactor;
+        }
+
+        private void FixedUpdate()
+        {
+            if (minMaturePrism)
+            {
+                float distanceWeight = Skimmer.ComputeGaussian(minMaturePrismSqrDistance, sqrSweetSpot, sigma);
+                float directionWeight = Vector3.Dot(skimmer.VesselStatus.Transform.forward, minMaturePrism.transform.forward);
+
+                ExecuteBlockStayEffects(distanceWeight * Mathf.Abs(directionWeight), minPrismImpactor);
+            }
+            minMaturePrism = null;
+            minPrismImpactor = null;
+            minMaturePrismSqrDistance = Mathf.Infinity;
         }
 
         void OnTriggerExit(Collider other)

@@ -1,4 +1,6 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
+using CosmicShore.Utilities;
 using UnityEngine;
 
 namespace CosmicShore
@@ -13,7 +15,7 @@ namespace CosmicShore
         public override void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
             base.Initialize(playerName);
-
+        
             if (LifeForm)
                 LifeForm.AddHealthBlock(this);
 

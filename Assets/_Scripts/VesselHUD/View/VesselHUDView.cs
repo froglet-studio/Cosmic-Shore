@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.Game
 {
-    public class VesselHUDView : MonoBehaviour
+    public abstract class VesselHUDView : MonoBehaviour
     {
         [Serializable]
         public struct HighlightBinding
@@ -15,7 +15,7 @@ namespace CosmicShore.Game
         }
 
         [Header("Button highlights")] public List<HighlightBinding> highlights = new();
-
+        public abstract void Initialize();
         public void Show() => gameObject.SetActive(true);
         public void Hide() => gameObject.SetActive(false);
 
