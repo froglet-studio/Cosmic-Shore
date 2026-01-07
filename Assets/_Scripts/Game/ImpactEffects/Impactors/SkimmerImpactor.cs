@@ -33,7 +33,7 @@ namespace CosmicShore.Game
         // Trigger callbacks moved here
 
         float scale;
-        float sqrSweetSpot;
+        public float SqrSweetSpot;
         float sigma;
 
         float minMaturePrismSqrDistance;
@@ -44,8 +44,8 @@ namespace CosmicShore.Game
         {
 
             scale = skimmer.transform.localScale.x;
-            sqrSweetSpot = scale * scale / 16f;
-            sigma = sqrSweetSpot / 2.355f;
+            SqrSweetSpot = scale * scale / 16f;
+            sigma = SqrSweetSpot / 2.355f;
         }
 
         void OnTriggerStay(Collider other)
@@ -89,7 +89,7 @@ namespace CosmicShore.Game
         {
             if (minMaturePrism)
             {
-                float distanceWeight = Skimmer.ComputeGaussian(minMaturePrismSqrDistance, sqrSweetSpot, sigma);
+                float distanceWeight = Skimmer.ComputeGaussian(minMaturePrismSqrDistance, SqrSweetSpot, sigma);
                 float directionWeight = Vector3.Dot(skimmer.VesselStatus.Transform.forward, minMaturePrism.transform.forward);
 
                 ExecuteBlockStayEffects(distanceWeight * Mathf.Abs(directionWeight), minPrismImpactor);

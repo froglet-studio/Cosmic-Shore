@@ -558,7 +558,7 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
-  DefaultThrottleScaler: 43
+  DefaultThrottleScaler: 60
   ThrottleScalerMultiplier:
     Enabled: 1
     Value: 1
@@ -567,7 +567,7 @@ MonoBehaviour:
     element: 4
   PitchScaler: 150
   YawScaler: 150
-  RollScaler: 110
+  RollScaler: 180
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -1521,25 +1521,25 @@ PrefabInstance:
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: skimmerPrismStayEffectsSO.Array.size
-      value: 6
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[0]'
       value: 
-      objectReference: {fileID: 11400000, guid: ae5fbd6bb4e31d345bcaa605742e56fb,
+      objectReference: {fileID: 11400000, guid: 7eca7b054e4b5384abdd56fec25bf26c,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[1]'
       value: 
-      objectReference: {fileID: 11400000, guid: 7eca7b054e4b5384abdd56fec25bf26c,
+      objectReference: {fileID: 11400000, guid: ae5fbd6bb4e31d345bcaa605742e56fb,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: 'skimmerPrismStayEffectsSO.Array.data[2]'
       value: 
-      objectReference: {fileID: 11400000, guid: 9fdfa3e5cb6a248429871209d7826175,
+      objectReference: {fileID: 11400000, guid: 5b541da6f9beb3f4ebf8ca70b4d105d1,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
