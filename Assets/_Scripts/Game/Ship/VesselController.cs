@@ -75,10 +75,13 @@ namespace CosmicShore.Game
             VesselStatus.VesselAnimation.Initialize(VesselStatus);
             VesselStatus.VesselPrismController.Initialize(VesselStatus);
             VesselStatus.Customization.Initialize(VesselStatus);
+            
             if (!VesselStatus.CameraFollowTarget) 
                 VesselStatus.CameraFollowTarget = transform;
+            
             VesselStatus.ActionHandler.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.Initialize(this);
+            VesselStatus.AIPilot.Initialize(this);
             VesselStatus.VesselHUDController.Initialize(VesselStatus);
             VesselStatus.VesselHUDController.HideHUD();
             
@@ -320,7 +323,6 @@ namespace CosmicShore.Game
             // AIPilot will be initialized both in User controlled / AI Vessels
             // Multiplayer modes will also have auto-pilot initialized
             
-            VesselStatus.AIPilot.Initialize(isInitializedAsAI, this);
         }
 
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;

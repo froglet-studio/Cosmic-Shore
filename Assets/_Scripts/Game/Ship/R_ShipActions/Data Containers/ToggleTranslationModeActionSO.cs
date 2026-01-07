@@ -8,8 +8,6 @@ public sealed class ToggleTranslationModeActionSO : ShipActionSO
     [SerializeField] private Mode stationaryMode = Mode.Serpent;
     public Mode StationaryMode => stationaryMode;
 
-    public override bool IsEdgeTriggered => true; // press-only
-
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
         var exec = execs.Get<ToggleTranslationModeActionExecutor>();

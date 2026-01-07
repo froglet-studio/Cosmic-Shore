@@ -5,11 +5,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "BoostAction", menuName = "ScriptableObjects/Vessel Actions/Boost")]
 public class BoostActionSO : ShipActionSO
 {
-    public override void Initialize(IVessel ship)
-    {
-        base.Initialize(ship);
-    }
-    
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
         if (vesselStatus == null) return;

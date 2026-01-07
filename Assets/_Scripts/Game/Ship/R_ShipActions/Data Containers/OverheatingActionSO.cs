@@ -25,10 +25,10 @@ public class OverheatingActionSO : ShipActionSO
     public Vector3 OverheatScaleMultiplier => overheatScaleMultiplier;
     public float ScaleLerpSeconds => scaleLerpSeconds;
 
-    public override void Initialize(IVessel ship)
+    public override void Initialize(IVesselStatus vs)
     {
-        base.Initialize(ship);
-        wrappedAction?.Initialize(ship);
+        base.Initialize(vs);
+        wrappedAction?.Initialize(vs);
     }
     
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)

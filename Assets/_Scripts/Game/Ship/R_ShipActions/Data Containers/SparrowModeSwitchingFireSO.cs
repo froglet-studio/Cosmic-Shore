@@ -15,23 +15,17 @@ namespace CosmicShore.Game
         private ShipActionSO _active;
         private ActionExecutorRegistry _registry;
         private bool _isHeld;
-        IVesselStatus _vesselStatus;
 
-        public override void Initialize(IVessel ship)
+        public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vs)
         {
-            base.Initialize(ship);
-            _vesselStatus = ship.VesselStatus;
-        }
-
-        public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-        {
+            base.Initialize(vs);
+            
             _isHeld = true;
             _registry = execs;
 
             _active = vesselStatus is { IsTranslationRestricted: true } ? stationaryFire : normalFire;
             _active?.StartAction(execs, vesselStatus);
-
-
+            
             stationaryModeChanged.OnRaised += OnStationaryModeChanged;
         }
 
@@ -51,9 +45,9 @@ namespace CosmicShore.Game
             if (!_isHeld || !_registry)
                 return;
 
-            _active?.StopAction(_registry, _vesselStatus);
+            _active?.StopAction(_registry, vesselStatus);
             _active = isTranslationRestricted ? stationaryFire : normalFire;
-            _active?.StartAction(_registry, _vesselStatus);
+            _active?.StartAction(_registry, vesselStatus);
         }
     }
 }
