@@ -195,7 +195,7 @@ namespace CosmicShore.Game
             InputController.SetPause(toggle);
 
         void ToggleInputIdle(bool toggle) =>
-            _inputController.SetIdle(toggle);
+            InputController.SetIdle(toggle);
         
         void OnNetTeamDomainChanged(Domains previousValue, Domains newValue) =>
             Domain = newValue;
