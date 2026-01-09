@@ -555,6 +555,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   toggleManualThrottle: 0
+  decayBoost: 1
+  MaxBoostMultiplier: 5
+  BoostDecayRate: 0.001
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
@@ -1445,17 +1448,17 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 50
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 50
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 50
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -1511,7 +1514,7 @@ PrefabInstance:
         type: 3}
       propertyPath: skimmerImpactorDataContainer
       value: 
-      objectReference: {fileID: 11400000, guid: d40f04f9802277f498d8d89958622788,
+      objectReference: {fileID: 11400000, guid: 643af834f1bcd9946903ac2c71d6d8ff,
         type: 2}
     - target: {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
