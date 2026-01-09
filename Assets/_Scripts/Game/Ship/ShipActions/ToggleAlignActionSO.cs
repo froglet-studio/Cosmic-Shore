@@ -8,11 +8,11 @@ public sealed class ToggleAlignActionSO : ShipActionSO
     [SerializeField] private bool setInitialOnInitialize = false;
     [SerializeField] private bool initialAlignmentEnabled = true;
 
-    public override void Initialize(IVessel ship)
+    public override void Initialize(IVesselStatus vs)
     {
-        base.Initialize(ship);
-        if (setInitialOnInitialize && ship.VesselStatus != null)
-            ship.VesselStatus.AlignmentEnabled = initialAlignmentEnabled;
+        base.Initialize(vs);
+        if (setInitialOnInitialize && vs != null)
+            vs.AlignmentEnabled = initialAlignmentEnabled;
     }
 
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)

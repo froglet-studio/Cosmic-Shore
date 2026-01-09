@@ -6,28 +6,40 @@ using UnityEngine;
 public static class DomainAssigner
 {
     private static List<Domains> availableDomains = new ();
+    private static Dictionary<Domains, int> availableDomainsCount = new();
 
     /// <summary>
     /// Picks a unique random team from all Domains (excluding None, Unassigned, Blue).
     /// If all are already assigned, logs an error and returns Domains.Unassigned.
     /// </summary>
-    public static Domains GetAvailableDomain()
+    static Domains GetAvailableDomain()
+    {
+        int idx = UnityEngine.Random.Range(0, availableDomains.Count);
+        var chosen = availableDomains[idx];
+
+        // Mark it as used
+        availableDomains.RemoveAt(idx);
+        return chosen;
+    }
+    
+    /// <summary>
+    /// TEMP Method to assign domains to players based on game modes,
+    /// later need to transfer this logic to support all game modes and co-op
+    /// with specified player count per domain
+    /// </summary>
+    public static Domains GetDomainsByGameModes(GameModes gameMode)
     {
         // If no teams left, return error
         if (availableDomains.Count == 0)
         {
             Initialize();
         }
+        
+        if (gameMode != GameModes.Multiplayer2v2CoOpVsAI)
+            return GetAvailableDomain();
 
-        // Pick a random unassigned team
-        int idx = UnityEngine.Random.Range(0, availableDomains.Count);
-        var chosen = availableDomains[idx];
-
-        // Mark it as used
-        availableDomains.RemoveAt(idx);
-
-        Debug.Log($"[DomainAssigner] ✅ Assigned unique domain: {chosen}");
-        return chosen;
+        // Considering in co-op modes, all local users will be assigned to Jade Domain
+        return Domains.Jade;
     }
 
     /// <summary>

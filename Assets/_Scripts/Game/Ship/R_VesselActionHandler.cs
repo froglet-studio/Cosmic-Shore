@@ -82,7 +82,7 @@ namespace CosmicShore.Game
 
             _runtimeInstances.Clear();
             ShipHelper.InitializeShipControlActions(vesselStatus, _inputEventShipActions, _shipControlActions);
-            ShipHelper.InitializeClassResourceActions(vesselStatus, _resourceEventClassActions, _classResourceActions);
+            ShipHelper.InitializeClassResourceActions(_resourceEventClassActions, _classResourceActions);
             
             if (vesselStatus.IsLocalUser)
                 vesselStatus.InputStatus.OnToggleInputPaused += OnToggleInputPaused;

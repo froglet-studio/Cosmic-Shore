@@ -149,9 +149,9 @@ namespace CosmicShore.Game.AI
             _targetPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
         }
 
-        public void Initialize(bool enableAutoPilot, IVessel vessel)
+        public void Initialize(IVessel v)
         {
-            this.vessel = vessel;
+            vessel = v;
 
             foreach (var ability in abilities)
             {
@@ -160,13 +160,10 @@ namespace CosmicShore.Game.AI
 
                 var inst = Instantiate(asset);
                 inst.name = $"{asset.name} [AI:{vessel.VesselStatus.PlayerName}]";
-                inst.Initialize(vessel);             
-                ability.Ability = inst;           
+                inst.Initialize(VesselStatus);             
+                ability.Ability = inst;
             }
-            // TODO - Even a player can have autopilot mode enabled. So we initialize anyway.
-            /*if (!AutoPilotEnabled)
-                return;*/
-
+            
             _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;

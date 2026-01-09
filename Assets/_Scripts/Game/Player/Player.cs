@@ -18,22 +18,18 @@ namespace CosmicShore.Game
         
         public static List<IPlayer> NppList { get; } = new();
         
-        public NetworkVariable<VesselClassType> NetDefaultShipType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        public NetworkVariable<Domains> NetTeam = new();
-        public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); 
-        // public NetworkVariable<bool> NetIsActive  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        
-        // bool _isActive;
+        public NetworkVariable<VesselClassType> NetDefaultVesselType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<Domains> NetDomain = new();
+        public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<ulong> NetVesselId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         
         public Domains Domain { get; private set; }
         public string Name { get; private set; }
         public string PlayerUUID => Name;
+        public ulong PlayerNetId { get; private set; }
         public IVessel Vessel { get; private set; }
         public bool IsActive { get; private set; }
-        /*{
-            get => IsSpawned ? NetIsActive.Value   : _isActive;
-            private set { if (IsSpawned && IsOwner) NetIsActive.Value   = value; else _isActive = value; }
-        }*/
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
         public bool IsInitializedAsAI { get; private set; }
 
@@ -85,10 +81,10 @@ namespace CosmicShore.Game
         /// <summary>
         /// TODO -> A temp way to initialize in multiplayer, try for better approach.
         /// </summary>
-        public void InitializeForMultiplayerMode(IVessel vessel, bool initializeAsAI)
+        public void InitializeForMultiplayerMode(IVessel vessel)
         {
-            IsInitializedAsAI = initializeAsAI;
-            Domain = NetTeam.Value;
+            IsInitializedAsAI = NetIsAI.Value;
+            Domain = NetDomain.Value;
             Name = NetName.Value.ToString();
             Vessel = vessel;
 
@@ -97,37 +93,33 @@ namespace CosmicShore.Game
             
             RoundStats.Name = Name;
             RoundStats.Domain = Domain;
+            
+            SetGameObjectName();
         }
         
         public override void OnNetworkSpawn()
         {
             NppList.Add(this);
-            gameObject.name = "Player_" + OwnerClientId;
             
-            NetTeam.OnValueChanged += OnNetTeamDomainChanged;
+            NetDomain.OnValueChanged += OnNetDomainChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
-            // NetIsActive.OnValueChanged += OnIsActiveValueChanged;
-            
-            if (IsOwner)
-            {
-                NetDefaultShipType.Value = gameData.selectedVesselClass.Value;
-                InputController.Initialize();
-                NetName.Value = AuthenticationService.Instance.PlayerName;
-            }
 
-            if (IsServer)
-            {
-                NetTeam.Value = DomainAssigner.GetAvailableDomain();
-            }
+            PlayerNetId = NetworkObjectId;
+
+            if (!IsLocalUser) 
+                return;
+            
+            NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+            InputController.Initialize();
+            NetName.Value = AuthenticationService.Instance.PlayerName;
         }
         
         public override void OnNetworkDespawn()
         {
             NppList.Remove(this);
             
-            NetTeam.OnValueChanged -= OnNetTeamDomainChanged;
+            NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
-            // NetIsActive.OnValueChanged -= OnIsActiveValueChanged;
         }
 
 
@@ -176,17 +168,11 @@ namespace CosmicShore.Game
             InputStatus.ResetForReplay();
         }
 
-        public void ChangeVessel(IVessel vessel)
-        {
+        public void ChangeVessel(IVessel vessel) =>
             Vessel = vessel;
-        }
 
-        void ToggleActive(bool active)
-        {
-            /*if (IsNetworkClient)
-                return;*/
+        void ToggleActive(bool active) =>
             IsActive = active;
-        }
 
         void ToggleAIPilot(bool toggle) => 
             Vessel.ToggleAIPilot(toggle);
@@ -195,18 +181,22 @@ namespace CosmicShore.Game
             InputController.SetPause(toggle);
 
         void ToggleInputIdle(bool toggle) =>
-            _inputController.SetIdle(toggle);
+            InputController.SetIdle(toggle);
         
-        void OnNetTeamDomainChanged(Domains previousValue, Domains newValue) =>
+        void OnNetDomainChanged(Domains previousValue, Domains newValue) =>
             Domain = newValue;
         
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>
             Name = newValue.ToString();
-
-        void OnIsActiveValueChanged(bool previousValue, bool newValue)
+        
+        void SetGameObjectName()
         {
-            /*if (newValue && IsNetworkClient)
-                StartPlayer();*/
+            string playerName;
+            if (IsInitializedAsAI)
+                playerName = "AI";
+            else
+                playerName = "Player_" + OwnerClientId;
+            gameObject.name = playerName;
         }
     }
 }
