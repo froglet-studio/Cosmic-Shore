@@ -558,6 +558,7 @@ MonoBehaviour:
   decayBoost: 1
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.05
+  driftDamping: 0.03
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
@@ -744,9 +745,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 9105512684531825410}
   _inputEventShipActions:
-  - InputEvent: 3
+  - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: b2fa0204b6187cd4d82c188b79a3d59b, type: 2}
+    - {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}

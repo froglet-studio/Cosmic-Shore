@@ -15,6 +15,8 @@ public class VesselTransformer : MonoBehaviour
     [SerializeField] float MaxBoostMultiplier = 5f;
     [SerializeField] float BoostDecayRate = 0.1f;
 
+    [SerializeField] float driftDamping = 0f;
+
     #region Vessel
     protected IVessel Vessel;
     protected IVesselStatus VesselStatus => Vessel?.VesselStatus;
@@ -220,7 +222,8 @@ public class VesselTransformer : MonoBehaviour
 
         // If drifting, keep direction; otherwise, go straight
         VesselStatus.Course = VesselStatus.IsDrifting
-            ? (speed * VesselStatus.Course + velocityShift).normalized
+            ? Vector3.Slerp(speed * VesselStatus.Course + velocityShift, transform.forward,
+                driftDamping).normalized
             : transform.forward;
 
         transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;
