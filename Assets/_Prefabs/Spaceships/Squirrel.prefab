@@ -557,7 +557,7 @@ MonoBehaviour:
   toggleManualThrottle: 0
   decayBoost: 1
   MaxBoostMultiplier: 5
-  BoostDecayRate: 0.001
+  BoostDecayRate: 0.05
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
