@@ -96,7 +96,7 @@ namespace CosmicShore.Game.Arcade
             var player0 = Player.NppList[0];
             var player1 = Player.NppList[1];
             
-            // swap the vessel types from player.NetDefaultShipType.Value
+            // swap the vessel types from player.NetDefaultVesselType.Value
             if (!player0.Vessel.Transform.TryGetComponent(out NetworkObject no0))
             {
                 Debug.LogError("No network object found in vessel. This should not happen!");

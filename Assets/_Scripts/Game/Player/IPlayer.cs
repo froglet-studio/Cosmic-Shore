@@ -27,7 +27,7 @@ namespace CosmicShore.Game
         /// </summary>
         public bool IsSinglePlayerOwner { get; }
         /// <summary>
-        /// In multiplayer mode, true -> owner client, false -> other clients
+        /// In multiplayer mode, true -> owner client, false -> other clients and AIs
         /// In singleplayer mode, always false.
         /// </summary>
         public bool IsMultiplayerOwner { get; }

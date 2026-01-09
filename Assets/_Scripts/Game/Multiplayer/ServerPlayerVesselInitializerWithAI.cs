@@ -25,35 +25,28 @@ namespace CosmicShore.Game
         [Tooltip(("The informations needed to spawn AI"))]
         [SerializeField] private IPlayer.InitializeData[] aiInitializeDatas;
 
-        private readonly List<AISpawnInfo> _aiSpawns = new();
-
-        private struct AISpawnInfo
+        protected override void OnClientConnected(ulong clientId)
         {
-            public int AiIndex;
-            public IPlayer.InitializeData InitializeData;
-            public ulong PlayerNetId;
-            public ulong VesselNetId;
+            SpawnVesselAndInitializeWithPlayer(clientId).Forget();
         }
 
-        protected override void OnServerReady()
+        async UniTaskVoid SpawnVesselAndInitializeWithPlayer(ulong clientId)
         {
-            base.OnServerReady();
-
-            if (!spawnAIOnServerReady)
-                return;
-
-            SpawnAIs_ServerOwned().Forget();
+            // Check if server is joined or other client,
+            // if server, then only spawn AIs, for other client, just spawn the player's vessels.
+            if (clientId == NetworkManager.Singleton.LocalClientId && spawnAIOnServerReady)
+            {
+                SpawnAIs_ServerOwned();
+            
+                // Give a second to ensure spawned AIs are visible in SpawnManager on server and connected clients,
+                // then we spawn the player's vessels, and initialize all players and AIs together.
+                await UniTask.WaitForSeconds(1f, true);
+            }
+            
+            DelayedSpawnVesselForPlayer(clientId).Forget();
         }
 
-        protected override void OnAfterInitializeAllPlayersInNewClient(ulong newClientId)
-        {
-            base.OnAfterInitializeAllPlayersInNewClient(newClientId);
-
-            // Late-join: after human clones init, also init AI clones in the new client.
-            SendInitializeAIsToClient(newClientId);
-        }
-
-        private async UniTaskVoid SpawnAIs_ServerOwned()
+        private void SpawnAIs_ServerOwned()
         {
             if (!NetworkManager.Singleton || !NetworkManager.Singleton.IsServer)
                 return;
@@ -63,8 +56,6 @@ namespace CosmicShore.Game
                 Debug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
                 return;
             }
-
-            _aiSpawns.Clear();
 
             for (int i = 0; i < aiInitializeDatas.Length; i++)
             {
@@ -94,9 +85,10 @@ namespace CosmicShore.Game
                 if (aiVesselType == VesselClassType.Any || aiVesselType == VesselClassType.Random)
                     aiVesselType = VesselClassType.Sparrow;
                     
-                aiPlayer.NetDefaultShipType.Value = aiVesselType;
+                aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = data.PlayerName;
-                aiPlayer.NetTeam.Value = data.domain;
+                aiPlayer.NetDomain.Value = data.domain;
+                aiPlayer.NetIsAI.Value = true;
 
                 // 2) Spawn AI Vessel (server-owned)
                 if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
@@ -104,21 +96,7 @@ namespace CosmicShore.Game
                     aiPlayerNO.Despawn(true);
                     continue;
                 }
-
-                _aiSpawns.Add(new AISpawnInfo
-                {
-                    AiIndex = i,
-                    InitializeData = data,
-                    PlayerNetId = aiPlayerNO.NetworkObjectId,
-                    VesselNetId = aiVesselNO.NetworkObjectId
-                });
             }
-
-            // Give a tiny frame to ensure spawned objects are visible in SpawnManager on host.
-            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate);
-
-            // Init AI for all currently connected clients (host included).
-            SendInitializeAIsToAllClients();
         }
 
         private Transform GetSpawnTransformForAI(int aiIndex)
@@ -137,7 +115,7 @@ namespace CosmicShore.Game
         {
             vesselNO = null;
 
-            var vesselType = aiPlayer.NetDefaultShipType.Value;
+            var vesselType = aiPlayer.NetDefaultVesselType.Value;
 
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
             {
@@ -151,42 +129,13 @@ namespace CosmicShore.Game
                 return false;
             }
 
-            var ship = Instantiate(shipNetworkObject);
+            vesselNO = Instantiate(shipNetworkObject);
 
             // Place at AI player position (or tweak as needed)
-            ship.transform.SetPositionAndRotation(aiPlayer.transform.position, aiPlayer.transform.rotation);
-
-            ship.Spawn(true); // server-owned
-
-            vesselNO = ship;
+            vesselNO.transform.SetPositionAndRotation(aiPlayer.transform.position, aiPlayer.transform.rotation);
+            vesselNO.Spawn(true); // server-owned
+            aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
             return true;
-        }
-
-        private void SendInitializeAIsToAllClients()
-        {
-            if (!NetworkManager.Singleton || !NetworkManager.Singleton.IsServer)
-                return;
-
-            foreach (var cc in NetworkManager.Singleton.ConnectedClientsList)
-                SendInitializeAIsToClient(cc.ClientId);
-        }
-
-        private void SendInitializeAIsToClient(ulong targetClientId)
-        {
-            if (_aiSpawns.Count == 0 || clientPlayerVesselInitializer == null)
-                return;
-
-            var send = new ClientRpcSendParams { TargetClientIds = new[] { targetClientId } };
-            var rpcParams = new ClientRpcParams { Send = send };
-
-            foreach (var ai in _aiSpawns)
-            {
-                clientPlayerVesselInitializer.InitializeAIPlayerAndVesselInThisClient_ClientRpc(
-                    ai.PlayerNetId,
-                    ai.VesselNetId,
-                    rpcParams
-                );
-            }
         }
     }
 }

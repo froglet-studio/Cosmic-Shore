@@ -18,7 +18,7 @@ namespace CosmicShore.Game
         
         public event Action OnInitialized;
         public event Action OnBeforeDestroyed;
-
+        
         IVesselStatus vesselStatus;
         public IVesselStatus VesselStatus
         {
@@ -71,6 +71,12 @@ namespace CosmicShore.Game
 
         public void Initialize(IPlayer player)
         {
+            if (VesselStatus.Player != null)
+            {
+                Debug.LogError("Double initialization not allowed!");
+                return;
+            }
+            
             VesselStatus.Player = player;
             VesselStatus.VesselAnimation.Initialize(VesselStatus);
             VesselStatus.VesselPrismController.Initialize(VesselStatus);
@@ -85,13 +91,21 @@ namespace CosmicShore.Game
             VesselStatus.VesselHUDController.Initialize(VesselStatus);
             VesselStatus.VesselHUDController.HideHUD();
             
-            if (IsSpawned)
+            if (VesselStatus.NearFieldSkimmer) 
+                VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
+
+            if (VesselStatus.FarFieldSkimmer) 
+                VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
+            
+            VesselStatus.Silhouette.Initialize(VesselStatus);
+            VesselStatus.VesselTransformer.ToggleActive(true);
+            
+            if (player.IsLocalUser)
             {
-                InitializeForMultiplayerMode();
-            }
-            else
-            {
-                InitializeForSinglePlayerMode();
+                VesselStatus.ActionHandler.ToggleSubscription(true);
+                VesselStatus.VesselCameraCustomizer.Initialize(this);
+                VesselStatus.VesselHUDController.SubscribeToEvents();
+                VesselStatus.VesselHUDController.ShowHUD();
             }
             
             VesselStatus.ResetForPlay();
@@ -273,57 +287,6 @@ namespace CosmicShore.Game
             AddSlowedShipTransformToGameData_Local();
         void AddSlowedShipTransformToGameData_Local() =>
             gameData?.SlowedShipTransforms.Add(transform);
-
-        void InitializeForMultiplayerMode()
-        {
-            if (VesselStatus.NearFieldSkimmer)
-                VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
-
-            if (VesselStatus.FarFieldSkimmer)
-                VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
-            
-            if (!vesselStatus.Player.IsMultiplayerOwner) 
-                return;
-            
-            VesselStatus.VesselCameraCustomizer.Initialize(this);
-            VesselStatus.Silhouette.Initialize(VesselStatus);
-
-            VesselStatus.VesselTransformer.ToggleActive(true);
-            VesselStatus.ActionHandler.ToggleSubscription(true);
-            VesselStatus.VesselHUDController.SubscribeToEvents();
-
-            VesselStatus.VesselHUDController.HideHUD();
-
-        }
-        
-        void InitializeForSinglePlayerMode()
-        {
-            if (VesselStatus.NearFieldSkimmer) 
-                VesselStatus.NearFieldSkimmer.Initialize(VesselStatus);
-
-            if (VesselStatus.FarFieldSkimmer) 
-                VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
-
-            VesselStatus.Silhouette.Initialize(VesselStatus);
-            VesselStatus.VesselTransformer.ToggleActive(true);
-            
-            bool isInitializedAsAI = vesselStatus.IsInitializedAsAI;
-            if (!isInitializedAsAI)
-            {
-                VesselStatus.ActionHandler.ToggleSubscription(true);
-                VesselStatus.VesselHUDController.ShowHUD();
-
-                VesselStatus.VesselCameraCustomizer.Initialize(this);
-                VesselStatus.VesselHUDController.SubscribeToEvents();
-            }
-            
-            // TODO - Currently AIPilot's update should run only after SingleStickVesselTransformer
-            // sets SingleStickControls to true/false. Try finding a solution to remove this
-            // sequential dependency.
-            // AIPilot will be initialized both in User controlled / AI Vessels
-            // Multiplayer modes will also have auto-pilot initialized
-            
-        }
 
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
