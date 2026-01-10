@@ -12,5 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 601cddb7a156cfa4bb117ea205f7ecaa, type: 3}
   m_Name: SkimmerBoostPrismEffect
   m_EditorClassIdentifier: 
-  _speedModifierValue: 0.01
-  _maxBoostMultiplier: 5
+  addPerHit: 0.1
+  boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
+    type: 2}
+  boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}
+  boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
