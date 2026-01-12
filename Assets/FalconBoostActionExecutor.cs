@@ -13,15 +13,18 @@ namespace CosmicShore
         public ScriptableEventNoParam OnMiniGameTurnEnd;
         private CancellationTokenSource _cts;
 
+        [SerializeField] private FullAutoActionExecutor FullAutoActionExecutor;
+        [SerializeField] private Transform[] muzzlesMain;
+        [SerializeField] private Transform[] muzzlesSecondary;
 
 
         void OnEnable()
         {
             if (_status == null) return;
             _status.IsBoosting = true;
-            _status.VesselTransformer?.ModifyVelocity(_status.Course, 100f);
+            _status.VesselTransformer?.ModifyVelocity(_status.Course * 100.0f, 1000);
             _status.IsStationary = false;
-
+            ChooseGuns();
 
             OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
         }
@@ -51,14 +54,30 @@ namespace CosmicShore
         {
             if (_cts == null) return;
 
+            ChooseGuns();
             _cts.Cancel();
             _cts.Dispose();
             _cts = null;
+
         }
 
         void OnTurnEndOfMiniGame()
         {
             End();
+        }
+
+        void ChooseGuns()
+        {
+         
+            if (_status.IsBoosting)
+            {
+                FullAutoActionExecutor.setGuns(muzzlesSecondary);
+            }
+            else
+            {
+                FullAutoActionExecutor.setGuns(muzzlesMain);
+            }
+            
         }
     }
 }

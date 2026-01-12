@@ -208,4 +208,12 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         }
     }
     #endregion
+
+
+    //modfiy guns transforms via script
+    public void setGuns(Transform[] newMuzzle)
+    {
+        muzzles = newMuzzle;
+    }
+   
 }
