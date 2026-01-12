@@ -188,7 +188,7 @@ namespace CosmicShore.Soap
             
             p.ResetForPlay();
             
-            if (p.IsMultiplayerOwner)
+            if (!p.IsNetworkClient)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
         }
         

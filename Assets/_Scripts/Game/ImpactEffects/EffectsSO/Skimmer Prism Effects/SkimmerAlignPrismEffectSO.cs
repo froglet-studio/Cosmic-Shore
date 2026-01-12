@@ -1,69 +1,117 @@
 ﻿using CosmicShore.Core;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(
-        fileName = "SkimmerAlignPrismEffect_Minimal",
+        fileName = "SkimmerAlignPrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerAlignPrismEffect")]
     public class SkimmerAlignPrismEffectSO : SkimmerPrismEffectSO
     {
-        [Header("Simple Controls")]
-        [SerializeField, Range(0.5f, 2.0f)] private float lockGain   = 2f;  // stronger = locks easier
-        [SerializeField, Range(6f, 18f)]    private float turnSpeed  = 12f;    // lower = turns faster
-        [SerializeField, Range(2f, 10f)]    private float stickiness = 10f;     // higher = holds ring tighter
+        [Header("Alignment")]
+        private float direction;
 
-        const int   KLookAhead     = 6;
-        const int   KBackStep      = 2;
-        const int   KAnchorIndex   = 3;
-        const float KFacingBiasMin = 0.3f;          
-        const float KMinAngular    = 0.004f;       
-        const float KMargin        = 2f;            
+        [SerializeField, Range(5f, 30f), Tooltip("Higher = slower rotation (old default was 15)")]
+        private float alignDivisor = 15f;
+
+        [Header("Position Nudging")]
+        [SerializeField, Range(1f, 8f), Tooltip("Nudge force magnitude (old default was 4)")]
+        private float nudgeForce = 4f;
+
+        [SerializeField, Range(0.5f, 5f), Tooltip("Margin around sweet spot (old default was 3)")]
+        private float sweetSpotMargin = 3f;
+
+        [Header("Look-Ahead")]
+        [SerializeField, Range(1, 4)]
+        private int backStep = 0;
+
+        //[SerializeField, Range(5, 10)]
+        //private int lookAhead = 6;
+
+        [SerializeField, Range(0, 3)]
+        private float LookAheadTime = .5f;
+
+        [SerializeField, Range(3, 6), Tooltip("Which block to use for tube forward direction")]
+        private int forwardReferenceIndex = 4;
+
+        private const int MinBlocksRequired = 3;
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var skimmer = impactor.Skimmer;
-            var ship    = skimmer.VesselStatus;
-            var prism   = prismImpactee.Prism;
+            var ship = skimmer.VesselStatus;
+            var prism = prismImpactee.Prism;
+
             if (prism == null || prism.Trail == null) return;
 
-            var idx        = prism.prismProperties.Index;
-            var nextBlocks = prism.Trail.LookAhead(idx, -KBackStep, TrailFollowerDirection.Forward, KLookAhead);
-            if (nextBlocks == null || nextBlocks.Count == 0) return;
+            var nextPrisms = FindNextBlocks(prism, ship.Speed * LookAheadTime);
+            //var idx = prism.prismProperties.Index;
+            //var nextBlocks = prism.Trail.LookAhead(idx, -backStep, TrailFollowerDirection.Forward, lookAhead);
 
-            var anchor       = Mathf.Min(KAnchorIndex, nextBlocks.Count - 1);
-            var anchorBlock  = nextBlocks[anchor];
-            var toFirst      = nextBlocks[0].transform.position - skimmer.transform.position;
-            var toFirstN     = toFirst.normalized;
+            if (nextPrisms == null || nextPrisms.Count < MinBlocksRequired) return;
 
-            var scale     = skimmer.transform.localScale.x;
-            var sweet     = Mathf.Max(0.01f, scale * 0.25f);
-            var sqrSweet  = sweet * sweet;
-            var sqrDist   = (skimmer.transform.position - anchorBlock.transform.position).sqrMagnitude;
+            var xform = skimmer.transform;
 
-            var nudge = stickiness; 
-            if (sqrDist < sqrSweet - KMargin)
-                ship.VesselTransformer.ModifyVelocity(-toFirstN * nudge, Time.deltaTime * 2f);
-            else if (sqrDist > sqrSweet + KMargin)
-                ship.VesselTransformer.ModifyVelocity( toFirstN * nudge, Time.deltaTime * 2f);
+            // === Position Nudging (preserve sweet spot behavior) ===
+            var toNextBlock = nextPrisms[0].transform.position - xform.position;
+            var toNextBlockNorm = toNextBlock.normalized;
+            var sqrDist = toNextBlock.sqrMagnitude;
 
-            var tubeForward = anchorBlock.transform.forward;
-            var facing    = Mathf.Clamp01(Vector3.Dot(ship.Transform.forward, tubeForward));
-            facing          = Mathf.Max(facing, KFacingBiasMin);
+            // Use the skimmer's sweet spot if available, otherwise estimate
+            var sqrSweetSpot = impactor.SqrSweetSpot;
+            var angularAxis = Vector3.Cross(xform.forward, toNextBlockNorm).normalized;
+            var radialAlignment = Vector3.Dot(toNextBlockNorm, xform.up);
+            var angularWeight = radialAlignment > 0 ? (1 - Mathf.Abs(radialAlignment)) : -(1 - Mathf.Abs(radialAlignment));
+            direction = Vector3.Dot(xform.forward, nextPrisms[0].transform.forward) >= 0 ? 1f : -1f;
 
-            var w = Mathf.Clamp01(impactor.CombinedWeight * lockGain) * facing;
+            if (sqrDist < sqrSweetSpot - sweetSpotMargin)
+            {
+                //ship.VesselTransformer.ModifyVelocity(-toNextBlockNorm * nudgeForce, Time.deltaTime * 2f);
+                //ship.VesselTransformer.ModifyVelocity(angularAxis * angularWeight * nudgeForce, Time.deltaTime * 2f);
+            }
+            else if (sqrDist > sqrSweetSpot + sweetSpotMargin)
+            {
+                //ship.VesselTransformer.ModifyVelocity(toNextBlockNorm * nudgeForce, Time.deltaTime * 2f);
+                //ship.VesselTransformer.ModifyVelocity(angularAxis * angularWeight * nudgeForce, Time.deltaTime * 2f);
+            }
 
-            var targetForward = Vector3.Slerp(
-                skimmer.transform.forward,
-                tubeForward,
-                w
+            // === Alignment (preserve original Lerp behavior) ===
+            //var refIndex = Mathf.Min(forwardReferenceIndex, nextPrisms.Count - 1);
+            var tubeForward = nextPrisms[nextPrisms.Count - 1].transform.forward;
+
+            // Original used Lerp with directionWeight applied to tubeForward
+            var targetForward = Vector3.Lerp(
+                xform.forward,
+                direction * tubeForward,
+                impactor.CombinedWeight
             );
 
-            var isInside = Vector3.Dot(toFirstN, skimmer.transform.up) > 0f;
-            var  targetUp = isInside ? toFirstN : -toFirstN;
+            // Determine inside/outside for up vector
+            var targetUp = Vector3.Lerp(
+                xform.up,
+                radialAlignment > 0 ? toNextBlockNorm : -toNextBlockNorm,
+                Mathf.Abs(radialAlignment) * impactor.CombinedWeight
+            );
 
-            var ang = Mathf.Max(KMinAngular, (ship.Speed / Mathf.Max(0.001f, turnSpeed)) * Time.deltaTime);
-            ship.VesselTransformer.GentleSpinShip(targetForward, targetUp, ang);
+            // Original align speed formula
+            var alignSpeed = ship.Speed * Time.deltaTime / alignDivisor;
+
+            ship.VesselTransformer.GentleSpinShip(targetForward, targetUp, alignSpeed);
+        }
+
+        List<Prism> FindNextBlocks(Prism minMatureBlock, float distance = 100f)
+        {
+            if (minMatureBlock.Trail == null) return new List<Prism> { minMatureBlock };
+            var minIndex = minMatureBlock.prismProperties.Index;
+            List<Prism> nextBlocks;
+            if (direction < 0 && minIndex > 0)
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Backward, distance);
+            else if (direction > 0 && minIndex < minMatureBlock.Trail.TrailList.Count - 1)
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
+            else
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
+            return nextBlocks;
         }
     }
 }

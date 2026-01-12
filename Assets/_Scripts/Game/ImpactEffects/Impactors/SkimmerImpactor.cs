@@ -16,8 +16,8 @@ namespace CosmicShore.Game
         [SerializeField]
         private SkimmerImpactorDataContainerSO skimmerImpactorDataContainer;
 
-        [Header("Block-Stay effects (tick while skimming)")] [SerializeField]
-        SkimmerPrismEffectSO[] skimmerPrismStayEffectsSO; // TODO -> Add to the container
+        //[Header("Block-Stay effects (tick while skimming)")] [SerializeField]
+        //SkimmerPrismEffectSO[] skimmerPrismStayEffectsSO; // TODO -> Add to the container
 
         [Header("Refs")] [SerializeField] private Skimmer skimmer;
         public Skimmer Skimmer => skimmer;
@@ -25,28 +25,28 @@ namespace CosmicShore.Game
 
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
-        private int ActivelySkimmingBlockCount;
-        [HideInInspector]
+        //private int ActivelySkimmingBlockCount;
+        //[HideInInspector]
         public float CombinedWeight; // exposed for effects that need it
 
         // ------------------------------------------------------------------
         // Trigger callbacks moved here
 
-        float scale;
-        float sqrSweetSpot;
-        float sigma;
+        //float scale;
+        public float SqrSweetSpot;
+        //float sigma;
 
-        float minMaturePrismSqrDistance;
-        Prism minMaturePrism;
-        PrismImpactor minPrismImpactor;
+        //float minMaturePrismSqrDistance;
+        //Prism minMaturePrism;
+        //PrismImpactor minPrismImpactor;
 
-        private void Start()
-        {
+        //private void Start()
+        //{
 
-            scale = skimmer.transform.localScale.x;
-            sqrSweetSpot = scale * scale / 16f;
-            sigma = sqrSweetSpot / 2.355f;
-        }
+        //    scale = skimmer.transform.localScale.x;
+        //    SqrSweetSpot = scale * scale / 16f;
+        //    sigma = SqrSweetSpot / 2.355f;
+        //}
 
         void OnTriggerStay(Collider other)
         {
@@ -61,43 +61,43 @@ namespace CosmicShore.Game
                 // no return; a Crystal may also have a TrailBlock? (unlikely, safe to continue)
             }
 
-            // TrailBlock: compute combined weight & run stay effects
-            if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
-            var prism = prismImpactor.Prism;
-            if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
+            //// TrailBlock: compute combined weight & run stay effects
+            //if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
+            //var prism = prismImpactor.Prism;
+            //if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
-            // ensure we started skimming
-            StartSkimIfNeeded(prism.ownerID);
+            //// ensure we started skimming
+            //StartSkimIfNeeded(prism.ownerID);
 
-            // choose “mature & nearest” block per your old logic
-            // if (Time.time - prism.prismProperties.TimeCreated <= 4f) return;
-             if ((Time.time - prism.prismProperties.TimeCreated) < 0.25f) return;
+            //// choose “mature & nearest” block per your old logic
+            //// if (Time.time - prism.prismProperties.TimeCreated <= 4f) return;
+            // if ((Time.time - prism.prismProperties.TimeCreated) < 0.25f) return;
             
-            float sqrDistance = (skimmer.transform.position - other.transform.position).sqrMagnitude;
+            //float sqrDistance = (skimmer.transform.position - other.transform.position).sqrMagnitude;
             
-            minMaturePrismSqrDistance = Mathf.Min(minMaturePrismSqrDistance, sqrDistance);
+            //minMaturePrismSqrDistance = Mathf.Min(minMaturePrismSqrDistance, sqrDistance);
             
 
 
-            if (sqrDistance != minMaturePrismSqrDistance) return;
+            //if (sqrDistance != minMaturePrismSqrDistance) return;
 
-            minMaturePrism = prism;
-            minPrismImpactor = prismImpactor;
+            //minMaturePrism = prism;
+            //minPrismImpactor = prismImpactor;
         }
 
-        private void FixedUpdate()
-        {
-            if (minMaturePrism)
-            {
-                float distanceWeight = Skimmer.ComputeGaussian(minMaturePrismSqrDistance, sqrSweetSpot, sigma);
-                float directionWeight = Vector3.Dot(skimmer.VesselStatus.Transform.forward, minMaturePrism.transform.forward);
+        //private void FixedUpdate()
+        //{
+        //    if (minMaturePrism)
+        //    {
+        //        float distanceWeight = Skimmer.ComputeGaussian(minMaturePrismSqrDistance, SqrSweetSpot, sigma);
+        //        float directionWeight = Vector3.Dot(skimmer.VesselStatus.Transform.forward, minMaturePrism.transform.forward);
 
-                ExecuteBlockStayEffects(distanceWeight * Mathf.Abs(directionWeight), minPrismImpactor);
-            }
-            minMaturePrism = null;
-            minPrismImpactor = null;
-            minMaturePrismSqrDistance = Mathf.Infinity;
-        }
+        //        ExecuteBlockStayEffects(distanceWeight * Mathf.Abs(directionWeight), minPrismImpactor);
+        //    }
+        //    minMaturePrism = null;
+        //    minPrismImpactor = null;
+        //    minMaturePrismSqrDistance = Mathf.Infinity;
+        //}
 
         void OnTriggerExit(Collider other)
         {
@@ -110,7 +110,7 @@ namespace CosmicShore.Game
 
             if (!_skimStartTimes.Remove(prism.ownerID)) return;
 
-            ActivelySkimmingBlockCount = Mathf.Max(0, ActivelySkimmingBlockCount - 1);
+            //ActivelySkimmingBlockCount = Mathf.Max(0, ActivelySkimmingBlockCount - 1);
 
             // if (ActivelySkimmingBlockCount < 1)
             //     ExecuteBlockStayEffects(0f, prismImpactor); // stop effects when no longer skimming anything
@@ -169,23 +169,23 @@ namespace CosmicShore.Game
         // ------------------------------------------------------------------
         // Internals
 
-        void ExecuteBlockStayEffects(float combinedWeight, PrismImpactor prismImpactor)
-        {
-            CombinedWeight = combinedWeight;
+        //void ExecuteBlockStayEffects(float combinedWeight, PrismImpactor prismImpactor)
+        //{
+        //    CombinedWeight = combinedWeight;
 
-            if (skimmerPrismStayEffectsSO == null || skimmerPrismStayEffectsSO.Length == 0)
-                return;
+        //    if (skimmerPrismStayEffectsSO == null || skimmerPrismStayEffectsSO.Length == 0)
+        //        return;
 
-            // Run as self-effects. Effects can cast `impactor` to SkimmerImpactor and read `CombinedWeight`.
-            foreach (var t in skimmerPrismStayEffectsSO)
-                t?.Execute(this, prismImpactor);
-        }
+        //    // Run as self-effects. Effects can cast `impactor` to SkimmerImpactor and read `CombinedWeight`.
+        //    foreach (var t in skimmerPrismStayEffectsSO)
+        //        t?.Execute(this, prismImpactor);
+        //}
 
         void StartSkimIfNeeded(string ownerId)
         {
             if (_skimStartTimes.ContainsKey(ownerId)) return;
             _skimStartTimes.Add(ownerId, Time.time);
-            ActivelySkimmingBlockCount++;
+            //ActivelySkimmingBlockCount++;
         }
     }
 }

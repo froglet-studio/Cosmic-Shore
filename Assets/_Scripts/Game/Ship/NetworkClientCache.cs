@@ -88,11 +88,11 @@ namespace CosmicShore.Game
         /// <summary>
         /// Returns the first active instance whose OwnerClientId matches the given clientId.
         /// </summary>
-        public static T GetInstanceByClientId(ulong clientId)
+        public static T GetInstanceByClientId(ulong networkId)
         {
             foreach (var inst in s_ActiveInstances)
             {
-                if (inst.OwnerClientId == clientId)
+                if (inst.NetworkObjectId == networkId)
                     return inst;
             }
             return null;

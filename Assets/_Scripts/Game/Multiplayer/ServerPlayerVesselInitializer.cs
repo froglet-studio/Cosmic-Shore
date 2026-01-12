@@ -65,8 +65,6 @@ namespace CosmicShore.Game
 
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkVesselClientCache.OnNewInstanceAdded += OnNewVesselClientAdded;
-
-            OnServerReady();
         }
 
         /// <summary>
@@ -86,18 +84,6 @@ namespace CosmicShore.Game
 
         // ----------------------------
         // Hook points for derived classes
-        // ----------------------------
-
-        /// <summary>
-        /// Server is ready (after subscriptions + spawn positions). Good place to spawn server-owned entities (AI).
-        /// </summary>
-        protected virtual void OnServerReady() { }
-
-        /// <summary>
-        /// Called after the new client receives "initialize all players/vessels" RPC.
-        /// Derived classes can push additional late-join sync here (e.g., AI).
-        /// </summary>
-        protected virtual void OnAfterInitializeAllPlayersInNewClient(ulong newClientId) { }
 
         // ----------------------------
         // Lobby full check (human vessels)
@@ -116,19 +102,13 @@ namespace CosmicShore.Game
         // ----------------------------
         protected virtual void OnClientConnected(ulong clientId)
         {
-            SpawnVesselAndInitializeWithPlayer(clientId);
-        }
-
-        protected virtual void SpawnVesselAndInitializeWithPlayer(ulong clientId)
-        {
-            Debug.Log($"[ServerPlayerVesselInitializer] Client {clientId} connected → syncing vessels.");
             DelayedSpawnVesselForPlayer(clientId).Forget();
         }
 
         // ----------------------------
         // Spawn vessel for a new client after short delay
         // ----------------------------
-        protected virtual async UniTaskVoid DelayedSpawnVesselForPlayer(ulong clientId)
+        protected async UniTaskVoid DelayedSpawnVesselForPlayer(ulong clientId)
         {
             try
             {
@@ -147,31 +127,36 @@ namespace CosmicShore.Game
                     Debug.LogError($"[ServerPlayerVesselInitializer] Player component missing on {clientId}");
                     return;
                 }
+                
+                player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                player.NetIsAI.Value = false;
 
                 // Spawn initial vessel if type already chosen
-                if (player.NetDefaultShipType.Value != VesselClassType.Random)
+                if (player.NetDefaultVesselType.Value == VesselClassType.Random)
                 {
-                    SpawnVesselForPlayer(clientId, player);
+                    Debug.LogWarning("Vessel type not set, setting default dolphin");
+                    player.NetDefaultVesselType.Value = VesselClassType.Dolphin;
                 }
+                SpawnVesselForPlayer(clientId, player);
 
                 await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
-
+                
                 foreach (var clientPair in NetworkManager.Singleton.ConnectedClientsList)
                 {
-                    // Existing clients: initialize just the NEW client's clone
+                    // Existing clients: initialize just the NEW joined client's clone (Player) in the existing clients.
                     if (clientPair.ClientId != clientId)
                     {
                         var target = new ClientRpcSendParams
                         {
                             TargetClientIds = new[] { clientPair.ClientId }
                         };
-
-                        clientPlayerVesselInitializer.InitializeNewPlayerAndVesselInThisClient_ClientRpc(
+                        
+                        clientPlayerVesselInitializer.InitializeNewClientsOwnerPlayerAndVesselInExistingClient_ClientRpc(
                             clientId,
                             new ClientRpcParams { Send = target }
                         );
                     }
-                    // New client: initialize ALL existing clones
+                    // New client: initialize ALL existing clones (Players and AIs) in the new client.
                     else
                     {
                         var target = new ClientRpcSendParams
@@ -182,9 +167,6 @@ namespace CosmicShore.Game
                         clientPlayerVesselInitializer.InitializeAllPlayersAndVesselsInThisNewClient_ClientRpc(
                             new ClientRpcParams { Send = target }
                         );
-
-                        // Derived classes can push extra late-join sync here (AI, etc.)
-                        OnAfterInitializeAllPlayersInNewClient(clientId);
                     }
                 }
             }
@@ -197,9 +179,9 @@ namespace CosmicShore.Game
         // ----------------------------
         // Vessel spawning logic
         // ----------------------------
-        protected virtual void SpawnVesselForPlayer(ulong clientId, Player networkPlayer)
+        void SpawnVesselForPlayer(ulong clientId, Player networkPlayer)
         {
-            VesselClassType vesselTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
+            VesselClassType vesselTypeToSpawn = networkPlayer.NetDefaultVesselType.Value;
 
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselTypeToSpawn, out Transform shipPrefabTransform))
             {
@@ -213,8 +195,9 @@ namespace CosmicShore.Game
                 return;
             }
 
-            var networkShip = Instantiate(shipNetworkObject);
-            networkShip.SpawnWithOwnership(clientId, true);
+            var networkVessel = Instantiate(shipNetworkObject);
+            networkVessel.SpawnWithOwnership(clientId, true);
+            networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
         }
     }
 }

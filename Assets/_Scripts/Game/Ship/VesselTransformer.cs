@@ -11,6 +11,11 @@ public class VesselTransformer : MonoBehaviour
     protected const float LERP_AMOUNT = 1.5f;
 
     [SerializeField] protected bool toggleManualThrottle;
+    [SerializeField] protected bool decayBoost = false;
+    [SerializeField] float MaxBoostMultiplier = 5f;
+    [SerializeField] float BoostDecayRate = 0.1f;
+
+    [SerializeField] float driftDamping = 0f;
 
     #region Vessel
     protected IVessel Vessel;
@@ -54,6 +59,7 @@ public class VesselTransformer : MonoBehaviour
 
         VesselStatus.blockRotation = transform.rotation;
 
+        if (decayBoost) DecayBoost();
         RotateShip();
         
         if(VesselStatus.IsTranslationRestricted)
@@ -63,7 +69,25 @@ public class VesselTransformer : MonoBehaviour
         ApplyVelocityModifiers();
         MoveShip();
     }
-    
+
+    protected virtual void DecayBoost()
+    {
+        if (VesselStatus == null) return;
+
+        if (VesselStatus.BoostMultiplier > 1f)
+        {
+            // Decay toward 1.0
+            VesselStatus.BoostMultiplier = Mathf.Max(1f,
+                VesselStatus.BoostMultiplier - BoostDecayRate * Time.deltaTime);
+        }
+        else if (VesselStatus.BoostMultiplier < 1f)
+        {
+            // Also handle if it somehow goes below 1
+            VesselStatus.BoostMultiplier = Mathf.Min(1f,
+                VesselStatus.BoostMultiplier + BoostDecayRate * Time.deltaTime);
+        }
+    }
+
     // ----------------------------- Initialization -----------------------------
     public virtual void Initialize(IVessel vessel)
     {
@@ -198,7 +222,8 @@ public class VesselTransformer : MonoBehaviour
 
         // If drifting, keep direction; otherwise, go straight
         VesselStatus.Course = VesselStatus.IsDrifting
-            ? (speed * VesselStatus.Course + velocityShift).normalized
+            ? Vector3.Slerp(speed * VesselStatus.Course + velocityShift, transform.forward,
+                driftDamping).normalized
             : transform.forward;
 
         transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;

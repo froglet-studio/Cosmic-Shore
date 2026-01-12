@@ -25,8 +25,6 @@ public class ConsumeBoostActionSO : ShipActionSO
     public int ResourceIndex => resourceIndex;
     public float ResourceCost => resourceCost;
 
-    public override void ResetRuntime() {  }
-
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         => execs?.Get<ConsumeBoostActionExecutor>()?.Consume(this, vesselStatus);
 

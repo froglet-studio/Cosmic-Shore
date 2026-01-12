@@ -27,15 +27,14 @@ namespace CosmicShore.Game
 
                 foreach (var asset in map.ShipActions)
                 {
-                    if (asset == null) continue;
-                    asset.Initialize(vesselStatus.Vessel);
+                    if (!asset) continue;
+                    asset.Initialize(vesselStatus);
                     list.Add(asset);
                 }
             }
         }
 
         public static void InitializeClassResourceActions(
-            IVesselStatus vesselStatus,
             List<ResourceEventShipActionMapping> resourceEventShipActionMappings,
             Dictionary<ResourceEvents, List<ShipActionSO>> classResourceActions)
         {

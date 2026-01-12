@@ -4,13 +4,13 @@ using UnityEngine;
 
 public abstract class ShipActionSO : ScriptableObject
 {
-    public virtual void Initialize(IVessel ship)
-    {
+    protected IVesselStatus vesselStatus { get; private set; }
+    
+    public virtual void Initialize(IVesselStatus vs) => vesselStatus = vs;
+    
+    /*{ TODO : Not sure what it does, was inside virtual Initialize method.
         // ElementalFloatBinder.BindAndClone(this, ship, GetType().Name);
-    }
-
-    public virtual void ResetRuntime() { }
-    public virtual bool IsEdgeTriggered => false;
+    }*/
 
     /// <summary>
     /// Stateless: vessel context is passed in each call.
