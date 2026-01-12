@@ -17,6 +17,9 @@ public class VesselTransformer : MonoBehaviour
 
     [SerializeField] float driftDamping = 0f;
 
+    [Header("Events")]
+    [SerializeField] private ScriptableEventBoostChanged boostChanged;
+
     #region Vessel
     protected IVessel Vessel;
     protected IVesselStatus VesselStatus => Vessel?.VesselStatus;
@@ -74,18 +77,15 @@ public class VesselTransformer : MonoBehaviour
     {
         if (VesselStatus == null) return;
 
-        if (VesselStatus.BoostMultiplier > 1f)
-        {
             // Decay toward 1.0
-            VesselStatus.BoostMultiplier = Mathf.Max(1f,
+        VesselStatus.BoostMultiplier = Mathf.Max(1f,
                 VesselStatus.BoostMultiplier - BoostDecayRate * Time.deltaTime);
-        }
-        else if (VesselStatus.BoostMultiplier < 1f)
+
+        boostChanged?.Raise(new BoostChangedPayload
         {
-            // Also handle if it somehow goes below 1
-            VesselStatus.BoostMultiplier = Mathf.Min(1f,
-                VesselStatus.BoostMultiplier + BoostDecayRate * Time.deltaTime);
-        }
+            BoostMultiplier = VesselStatus.BoostMultiplier,
+            MaxMultiplier = MaxBoostMultiplier
+        });
     }
 
     // ----------------------------- Initialization -----------------------------
@@ -223,7 +223,7 @@ public class VesselTransformer : MonoBehaviour
         // If drifting, keep direction; otherwise, go straight
         VesselStatus.Course = VesselStatus.IsDrifting
             ? Vector3.Slerp(VesselStatus.Course, transform.forward,
-                driftDamping).normalized
+                driftDamping * Time.deltaTime).normalized
             : transform.forward;
 
         transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;

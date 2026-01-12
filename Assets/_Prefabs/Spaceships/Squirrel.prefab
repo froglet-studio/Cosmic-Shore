@@ -906,8 +906,9 @@ MonoBehaviour:
   toggleManualThrottle: 0
   decayBoost: 1
   MaxBoostMultiplier: 5
-  BoostDecayRate: 0.05
-  driftDamping: 0.025
+  BoostDecayRate: 0.4
+  driftDamping: 0.03
+  boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
@@ -919,7 +920,7 @@ MonoBehaviour:
     Max: 2.5
     element: 4
   PitchScaler: 150
-  YawScaler: 150
+  YawScaler: 130
   RollScaler: 180
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
@@ -1940,17 +1941,17 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 20
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 20
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 20
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
