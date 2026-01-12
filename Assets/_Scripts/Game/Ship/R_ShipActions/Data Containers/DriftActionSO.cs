@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "DriftAction", menuName = "ScriptableObjects/Vessel Actions/Drift")]
 public class DriftActionSO : ShipActionSO
 {
-    const float Mult = 1.5f;
+    [SerializeField] float Mult = 1.5f;
 
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {

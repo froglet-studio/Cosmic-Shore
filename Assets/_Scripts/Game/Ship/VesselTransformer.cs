@@ -222,7 +222,7 @@ public class VesselTransformer : MonoBehaviour
 
         // If drifting, keep direction; otherwise, go straight
         VesselStatus.Course = VesselStatus.IsDrifting
-            ? Vector3.Slerp(speed * VesselStatus.Course + velocityShift, transform.forward,
+            ? Vector3.Slerp(VesselStatus.Course, transform.forward,
                 driftDamping).normalized
             : transform.forward;
 
