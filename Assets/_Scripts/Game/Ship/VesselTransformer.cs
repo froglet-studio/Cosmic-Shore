@@ -78,8 +78,10 @@ public class VesselTransformer : MonoBehaviour
         if (VesselStatus == null) return;
 
             // Decay toward 1.0
-        VesselStatus.BoostMultiplier = Mathf.Max(1f,
-                VesselStatus.BoostMultiplier - BoostDecayRate * Time.deltaTime);
+        
+        VesselStatus.BoostMultiplier = VesselStatus.BoostMultiplier > 1 ? 
+                VesselStatus.BoostMultiplier - BoostDecayRate * Time.deltaTime:
+                Mathf.Min(1f, VesselStatus.BoostMultiplier + BoostDecayRate * Time.deltaTime);
 
         boostChanged?.Raise(new BoostChangedPayload
         {

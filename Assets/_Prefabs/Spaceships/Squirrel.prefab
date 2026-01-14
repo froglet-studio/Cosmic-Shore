@@ -885,7 +885,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 3202054749536864766}
   vesselHUDController: {fileID: 5649393235309590662}
-  boostMultiplier: 4
+  boostMultiplier: 1
   _name: Squirrel
   vesselType: 6
   _nearFieldSkimmer: {fileID: 708149374973573223}
@@ -1098,6 +1098,9 @@ MonoBehaviour:
   - InputEvent: 2
     ShipActions:
     - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 11400000, guid: bfb901d2faf450b47be3d0de84754ee8, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
@@ -2129,6 +2132,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: markerDistance
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: onSkimmerShipImpact
       value: 
       objectReference: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
@@ -2428,8 +2436,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 5.79, y: 4.58, z: 0.84}
-  m_Center: {x: 0.78, y: 0, z: -0.14}
+  m_Size: {x: 2.79, y: 3.93, z: 0.55}
+  m_Center: {x: -0.12, y: 0, z: -0.15}
 --- !u!114 &6601861652366263925
 MonoBehaviour:
   m_ObjectHideFlags: 0
