@@ -36,17 +36,52 @@ namespace CosmicShore
         
         [SerializeField]
         ScriptableEventInt onLifeFormDestroyed;
+        [SerializeField] private bool autoInitialize = true;
+        private bool initialized;
+        protected virtual void Start()
+        {
+            if (!autoInitialize || initialized) return;
+
+            // if something else already initialized us, this.cell will be set
+            if (cell == null)
+                cell = CellControlManager.Instance.GetNearestCell(transform.position);
+
+            Initialize(cell);
+        }
 
         public virtual void Initialize(Cell cell)
         {
+            if (initialized) return;
+            initialized = true;
+
             if (shieldPeriod > 0) StartCoroutine(ShieldRegen());
             crystal = GetComponentInChildren<Crystal>();
-            
             this.cell = cell;
-            // StatsManager.Instance.LifeformCreated(cell.ID);
+
+            BindEmbeddedParts();  
+
             onLifeFormCreated?.Raise(cell.ID);
         }
 
+        private void BindEmbeddedParts()
+        {
+            var embeddedSpindles = GetComponentsInChildren<Spindle>(true);
+            foreach (var sp in embeddedSpindles)
+            {
+                if (!sp) continue;
+                AddSpindle(sp);
+            }
+
+            var embeddedHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
+            foreach (var hp in embeddedHealthPrisms)
+            {
+                if (!hp) continue; 
+                hp.LifeForm = this;
+                hp.ChangeTeam(domain);
+                hp.Initialize("fauna");
+            }
+        }
+        
         public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
             healthBlocks.Add(healthPrism);
@@ -126,7 +161,13 @@ namespace CosmicShore
         public void SetTeam(Domains domain)
         {
             this.domain = domain;
+
+            // propagate to any already-existing health prisms (prefab embedded or spawned)
+            var allHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
+            foreach (var hp in allHealthPrisms)
+                hp.ChangeTeam(domain);
         }
+
 
         IEnumerator ShieldRegen()
         {

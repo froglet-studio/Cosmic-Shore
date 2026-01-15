@@ -22,8 +22,13 @@ namespace CosmicShore
         protected virtual void Start()
         {
             cell = CellControlManager.Instance.GetNearestCell(transform.position);
+
+            if (domain == Domains.Unassigned)
+                Debug.LogWarning($"{name}: Population domain is Unassigned. Assign it before spawning fauna, or set it on the prefab.");
+
             StartCoroutine(UpdateGoal());
         }
+
 
         void CalculateTeamWeights()
         {
