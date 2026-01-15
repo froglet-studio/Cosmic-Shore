@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameMultiplayerWildlifeBlitz
   m_EditorClassIdentifier: 
   Mode: 32
-  IsMultiplayer: 0
+  IsMultiplayer: 1
   DisplayName: Multiplayer Co-Op Wildlife Blitz
   Description: Kill and collect
   IconActive: {fileID: 21300000, guid: 576d21301c622e9489beb58263f393cb, type: 3}
@@ -25,8 +25,8 @@ MonoBehaviour:
   SceneName: MinigameWildlifeBlitzMultuplayerCoOp
   Captains:
   - {fileID: 11400000, guid: 38f86662381aa0c4da8018fa5fc4e62a, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 3
+  MinPlayers: 2
+  MaxPlayers: 2
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 430

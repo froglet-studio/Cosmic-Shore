@@ -554,8 +554,6 @@ GameObject:
   - component: {fileID: 1078953705}
   - component: {fileID: 1078953712}
   - component: {fileID: 1078953723}
-  - component: {fileID: 1078953716}
-  - component: {fileID: 1078953722}
   - component: {fileID: 1078953710}
   - component: {fileID: 1078953713}
   - component: {fileID: 1078953715}
@@ -564,6 +562,10 @@ GameObject:
   - component: {fileID: 1078953719}
   - component: {fileID: 1078953718}
   - component: {fileID: 1078953717}
+  - component: {fileID: 1078953725}
+  - component: {fileID: 1078953724}
+  - component: {fileID: 1078953727}
+  - component: {fileID: 1078953726}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -657,23 +659,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
---- !u!114 &1078953716
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d1250cee23043d4affa7a4a1e734646, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  monitors:
-  - {fileID: 1078953710}
-  - {fileID: 0}
 --- !u!114 &1078953717
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -713,8 +698,8 @@ MonoBehaviour:
     Response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.MultipalyerMiniGameControllerBase,
+        - m_Target: {fileID: 1078953727}
+          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.MultiplayerCellularDuelController,
             Assembly-CSharp
           m_MethodName: OnClickReturnToMainMenu
           m_Mode: 1
@@ -731,8 +716,8 @@ MonoBehaviour:
     Response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: CosmicShore.Core.GameManager, Assembly-CSharp
+        - m_Target: {fileID: 1078953726}
+          m_TargetAssemblyTypeName: CosmicShore.Core.NetworkGameManager, Assembly-CSharp
           m_MethodName: ReturnToMainMenu
           m_Mode: 1
           m_Arguments:
@@ -760,7 +745,7 @@ MonoBehaviour:
     Response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 0}
+        - m_Target: {fileID: 1078953726}
           m_TargetAssemblyTypeName: CosmicShore.Core.NetworkGameManager, Assembly-CSharp
           m_MethodName: RestartGame
           m_Mode: 1
@@ -805,7 +790,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   monitors:
-  - {fileID: 1078953719}
+  - {fileID: 1078953710}
 --- !u!114 &1078953721
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -825,26 +810,6 @@ MonoBehaviour:
   scoringConfigs:
   - Mode: 0
     Multiplier: 1
---- !u!114 &1078953722
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 02faeedae059440e8696ef18fae1bab2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  numberOfRounds: 1
-  numberOfTurnsPerRound: 1
-  countdownTimer: {fileID: 1556114764}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
-    type: 2}
-  multiplayerSetup: {fileID: 1300603919}
 --- !u!114 &1078953723
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -858,6 +823,77 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1078953724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc7ff967d6770d241a956a121fdcfa63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+--- !u!114 &1078953725
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  clientPlayerVesselInitializer: {fileID: 1078953724}
+  vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
+    type: 2}
+  _playerOrigins:
+  - {fileID: 1194123993}
+  - {fileID: 696378175}
+--- !u!114 &1078953726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c61849e71a534a9ba501f484f0f0b54b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  _sceneNames: {fileID: 11400000, guid: 1134fe3d3d53eb5478bfadbe98dc1004, type: 2}
+  AllGames: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _onSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
+--- !u!114 &1078953727
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30818ff9c6fd4bdc9faf15be45a66b2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  numberOfRounds: 1
+  numberOfTurnsPerRound: 1
+  countdownTimer: {fileID: 1556114764}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
+    type: 2}
+  multiplayerSetup: {fileID: 1300603919}
 --- !u!1 &1192541910
 GameObject:
   m_ObjectHideFlags: 0
@@ -1394,7 +1430,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1078953727}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
@@ -1408,7 +1444,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.WildlifeBlitzMiniGame, Assembly-CSharp
+      value: CosmicShore.Game.Arcade.MultiplayerCellularDuelController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}

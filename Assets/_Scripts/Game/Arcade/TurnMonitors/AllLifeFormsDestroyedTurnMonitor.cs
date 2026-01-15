@@ -17,6 +17,7 @@ namespace CosmicShore.Game.Arcade
 
         public override void StartMonitor()
         {
+            base.StartMonitor();
             UpdateUI();
         }
 
