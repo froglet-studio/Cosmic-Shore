@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SquirrelImpactorDataContainer
   m_EditorClassIdentifier: 
   vesselPrismEffects:
-  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
+  - {fileID: 11400000, guid: 243d6d82ba7f20146a70bdc112b9a278, type: 2}
   - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
   - {fileID: 11400000, guid: 04f85a1f6b06b9248827bf8740168b2b, type: 2}
   - {fileID: 11400000, guid: 6c233c580949b13419f068454c74a110, type: 2}

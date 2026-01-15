@@ -15,7 +15,7 @@ public class VesselTransformer : MonoBehaviour
     [SerializeField] float MaxBoostMultiplier = 5f;
     [SerializeField] float BoostDecayRate = 0.1f;
 
-    [SerializeField] float driftDamping = 0f;
+    [HideInInspector] public float DriftDamping = 0f;
 
     [Header("Events")]
     [SerializeField] private ScriptableEventBoostChanged boostChanged;
@@ -225,7 +225,7 @@ public class VesselTransformer : MonoBehaviour
         // If drifting, keep direction; otherwise, go straight
         VesselStatus.Course = VesselStatus.IsDrifting
             ? Vector3.Slerp(VesselStatus.Course, transform.forward,
-                driftDamping * Time.deltaTime).normalized
+                DriftDamping * Time.deltaTime).normalized
             : transform.forward;
 
         transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;

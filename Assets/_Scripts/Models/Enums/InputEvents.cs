@@ -11,5 +11,8 @@ public enum InputEvents
     Button2Action = 7,                  // A or Onscreen UI buttons
     Button3Action = 8,                  // B or Onscreen UI buttons
     NodeTapAction = 9,                  // 
-    SelfTapAction = 10,                 // 
+    SelfTapAction = 10,
+    OnlyRightStickAction = 11,
+    OnlyLeftStickAction = 12,
+    BothSticksAction = 13// 
 }

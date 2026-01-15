@@ -126,22 +126,6 @@ namespace CosmicShore.Game.IO
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
             wasButton3Pressed = isButton3Pressed;
 
-            // Left Trigger - Left Shift
-            bool isLeftTriggerPressed = keyboard.leftShiftKey.isPressed;
-            if (isLeftTriggerPressed && !wasLeftTriggerPressed)
-                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-            if (!isLeftTriggerPressed && wasLeftTriggerPressed)
-                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-            wasLeftTriggerPressed = isLeftTriggerPressed;
-
-            // Right Trigger - Right Shift
-            bool isRightTriggerPressed = keyboard.rightShiftKey.isPressed;
-            if (isRightTriggerPressed && !wasRightTriggerPressed)
-                inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-            if (!isRightTriggerPressed && wasRightTriggerPressed)
-                inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-            wasRightTriggerPressed = isRightTriggerPressed;
-
             // Flip Action - E key (Right Shoulder on gamepad)
             bool isFlipPressed = keyboard.eKey.isPressed;
             if (isFlipPressed && !wasFlipPressed)
@@ -149,6 +133,63 @@ namespace CosmicShore.Game.IO
             if (!isFlipPressed && wasFlipPressed)
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
             wasFlipPressed = isFlipPressed;
+
+
+            // Left Trigger - Left Shift
+            bool isLeftTriggerPressed = keyboard.leftShiftKey.isPressed;
+            bool leftJustPressed = isLeftTriggerPressed && !wasLeftTriggerPressed;
+            bool leftJustReleased = !isLeftTriggerPressed && wasLeftTriggerPressed;
+
+            if (leftJustPressed)
+                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
+            if (leftJustReleased)
+                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
+
+            // Right Trigger - Right Shift
+            bool isRightTriggerPressed = keyboard.rightShiftKey.isPressed;
+            bool rightJustPressed = isRightTriggerPressed && !wasRightTriggerPressed;
+            bool rightJustReleased = !isRightTriggerPressed && wasRightTriggerPressed;
+
+            if (rightJustPressed)
+                inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
+            if (rightJustReleased)
+                inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
+
+            // BothSticksAction Released
+            if ((leftJustReleased && rightJustReleased)
+                || (leftJustReleased && isRightTriggerPressed)
+                || (rightJustReleased && isLeftTriggerPressed))
+                inputStatus.OnButtonReleased.Raise(InputEvents.BothSticksAction);
+
+            // OnlyLeftStickAction Released
+            if ((leftJustReleased && !isRightTriggerPressed)
+                || (rightJustPressed && isLeftTriggerPressed))
+                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
+
+            // OnlyRightStickAction Released
+            if ((rightJustReleased && !isLeftTriggerPressed)
+                || (leftJustPressed && isRightTriggerPressed))
+                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
+
+            // OnlyLeftStickAction Pressed
+            if ((leftJustPressed && !isRightTriggerPressed)
+                || (rightJustReleased && isLeftTriggerPressed))
+                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
+
+            // OnlyRightStickAction Pressed
+            if ((rightJustPressed && !isLeftTriggerPressed)
+                || (leftJustReleased && isRightTriggerPressed))
+                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
+
+            // BothSticksAction Pressed
+            if ((leftJustPressed && rightJustPressed)
+                || (leftJustPressed && isRightTriggerPressed)
+                || (rightJustPressed && isLeftTriggerPressed))
+                inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
+
+            // Update previous state
+            wasLeftTriggerPressed = isLeftTriggerPressed;
+            wasRightTriggerPressed = isRightTriggerPressed;
         }
 
         private void Reparameterize()

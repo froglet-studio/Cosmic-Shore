@@ -81,22 +81,68 @@ namespace CosmicShore.Game.IO
                 // vessel.PerformShipControllerActions(InputEvents.FlipAction);
             if (Gamepad.current.rightShoulder.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
-                // vessel.StopShipControllerActions(InputEvents.FlipAction);
+            // vessel.StopShipControllerActions(InputEvents.FlipAction);
 
             // Triggers for stick actions
-            if (Gamepad.current.leftTrigger.wasPressedThisFrame)
-                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-                // vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
-            if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
-                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-                // vessel.StopShipControllerActions(InputEvents.LeftStickAction);
+            var leftTrigger = Gamepad.current.leftTrigger;
+            var rightTrigger = Gamepad.current.rightTrigger;
 
-            if (Gamepad.current.rightTrigger.wasPressedThisFrame)
+            bool leftJustPressed = leftTrigger.wasPressedThisFrame;
+            bool leftJustReleased = leftTrigger.wasReleasedThisFrame;
+            bool leftHeld = leftTrigger.isPressed;
+
+            bool rightJustPressed = rightTrigger.wasPressedThisFrame;
+            bool rightJustReleased = rightTrigger.wasReleasedThisFrame;
+            bool rightHeld = rightTrigger.isPressed;
+
+            // Individual trigger events
+            if (leftJustPressed)
+                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
+            if (leftJustReleased)
+                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
+            if (rightJustPressed)
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-                // vessel.PerformShipControllerActions(InputEvents.RightStickAction);
-            if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
+            if (rightJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-                // vessel.StopShipControllerActions(InputEvents.RightStickAction);
+
+            // BothSticksAction Released
+            if ((leftJustReleased && rightJustReleased)
+                || (leftJustReleased && rightHeld)
+                || (rightJustReleased && leftHeld))
+                inputStatus.OnButtonReleased.Raise(InputEvents.BothSticksAction);
+
+            // OnlyLeftStickAction Released
+            if ((leftJustReleased && !rightHeld)
+                || (rightJustPressed && leftHeld))
+                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
+
+            // OnlyRightStickAction Released
+            if ((rightJustReleased && !leftHeld)
+                || (leftJustPressed && rightHeld))
+                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
+
+            // OnlyLeftStickAction Pressed
+            if ((leftJustPressed && !rightHeld)
+                || (rightJustReleased && leftHeld))
+                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
+
+            // OnlyRightStickAction Pressed
+            if ((rightJustPressed && !leftHeld)
+                || (leftJustReleased && rightHeld))
+                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
+
+            // BothSticksAction Pressed
+            if ((leftJustPressed && rightJustPressed)
+                || (leftJustPressed && rightHeld)
+                || (rightJustPressed && leftHeld))
+                inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
+
+
+
+            // vessel.StopShipControllerActions(InputEvents.OnlyLeftStickAction);
+
+
+            // vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
         }
 
         private void Reparameterize()
