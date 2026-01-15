@@ -907,7 +907,7 @@ MonoBehaviour:
   decayBoost: 1
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.3
-  driftDamping: 1
+  DriftDamping: 0
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -919,9 +919,9 @@ MonoBehaviour:
     Min: 1
     Max: 2.5
     element: 4
-  PitchScaler: 150
-  YawScaler: 130
-  RollScaler: 180
+  PitchScaler: 120
+  YawScaler: 120
+  RollScaler: 130
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -1095,12 +1095,15 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 9105512684531825410}
   _inputEventShipActions:
-  - InputEvent: 2
+  - InputEvent: 11
     ShipActions:
     - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
-  - InputEvent: 1
+  - InputEvent: 12
     ShipActions:
-    - {fileID: 11400000, guid: bfb901d2faf450b47be3d0de84754ee8, type: 2}
+    - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
+  - InputEvent: 13
+    ShipActions:
+    - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
