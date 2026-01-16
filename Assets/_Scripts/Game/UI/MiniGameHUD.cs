@@ -60,7 +60,6 @@ namespace CosmicShore.Game.UI
 
         void OnMiniGameTurnStarted()
         {
-            
             localRoundStats = gameData.LocalRoundStats;
             localRoundStats.OnScoreChanged += UpdateScoreUI;
         }
@@ -69,6 +68,7 @@ namespace CosmicShore.Game.UI
         {
             localRoundStats.OnScoreChanged -= UpdateScoreUI;
             UpdateTurnMonitorDisplay(string.Empty);
+            UpdateLifeformCounterDisplay(string.Empty);
         }
 
         void UpdateScoreUI()
@@ -131,10 +131,12 @@ namespace CosmicShore.Game.UI
         
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
+        public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
         
         void CleanupUI()
         {
             UpdateTurnMonitorDisplay(string.Empty);
+            UpdateLifeformCounterDisplay(string.Empty);
             view.UpdateScoreUI("0");
         }
         

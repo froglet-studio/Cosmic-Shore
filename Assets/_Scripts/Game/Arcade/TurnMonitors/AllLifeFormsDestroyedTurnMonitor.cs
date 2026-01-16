@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Soap;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -8,6 +9,8 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] 
         CellDataSO cellData;
+        [SerializeField]
+        private ScriptableEventString onLifeFormCounterUpdatedEvent;
         
         public override bool CheckForEndOfTurn()
         {
@@ -29,7 +32,7 @@ namespace CosmicShore.Game.Arcade
         void UpdateUI()
         {
             string message = (cellData.CellStatsList[cellData.Cell.ID].LifeFormsInCell).ToString();
-            onUpdateTurnMonitorDisplay.Raise(message);
+            onLifeFormCounterUpdatedEvent.Raise(message);
         }
     }
 }

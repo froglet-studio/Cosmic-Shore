@@ -21,9 +21,11 @@ namespace CosmicShore.Game.UI
         [SerializeField] private GameObject trailDisplay;
         [SerializeField] private CanvasGroup connectingPanelCanvasGroup; 
         [SerializeField] private CanvasGroup canvasGroup;
+        [SerializeField] private TMP_Text lifeFormCounter;
         
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
+        public void UpdateLifeFormCounter(string message) => lifeFormCounter.text = message;
 
         public void ToggleView(bool active)
         {
