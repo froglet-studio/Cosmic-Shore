@@ -22,7 +22,9 @@ namespace CosmicShore
         [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
-
+        [Header("Health Prism Scaling")]
+        [SerializeField] Vector3 defaultHealthPrismTargetScale = new Vector3(4f, 4f, 1f);
+        
         [FormerlySerializedAs("Team")] public Domains domain;
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
         protected Crystal crystal;
@@ -38,6 +40,8 @@ namespace CosmicShore
         ScriptableEventInt onLifeFormDestroyed;
         [SerializeField] private bool autoInitialize = true;
         private bool initialized;
+        protected virtual Vector3 GetHealthPrismTargetScale() => defaultHealthPrismTargetScale;
+        
         protected virtual void Start()
         {
             if (!autoInitialize || initialized) return;
@@ -78,15 +82,21 @@ namespace CosmicShore
                 if (!hp) continue; 
                 hp.LifeForm = this;
                 hp.ChangeTeam(domain);
+                hp.TargetScale = GetHealthPrismTargetScale();
                 hp.Initialize("fauna");
             }
         }
         
         public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
+            if (!healthPrism) return;
+
             healthBlocks.Add(healthPrism);
+
             healthPrism.ChangeTeam(domain);
             healthPrism.LifeForm = this;
+            healthPrism.TargetScale = GetHealthPrismTargetScale();
+
             healthPrism.ownerID = $"{this} + {healthPrism} + {healthBlocks.Count}";
             CheckIfMature();
         }

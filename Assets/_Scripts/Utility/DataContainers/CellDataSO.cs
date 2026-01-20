@@ -11,27 +11,40 @@ namespace CosmicShore.Soap
         menuName = "ScriptableObjects/DataContainers/" + nameof(CellDataSO))]
     public class CellDataSO : ScriptableObject
     {
-        [SerializeField]
-        public ScriptableEventNoParam OnCrystalSpawned;
-        
-        [SerializeField] 
-        public ScriptableEventNoParam OnCellItemsUpdated;
-        
+        [SerializeField] public ScriptableEventNoParam OnCrystalSpawned;
+        [SerializeField] public ScriptableEventNoParam OnCellItemsUpdated;
+
         public Dictionary<int, CellStats> CellStatsList = new();
-        
+
         public SO_CellType CellType;
         public Cell Cell;
         public Transform CellTransform => Cell.transform;
+
         public List<CellItem> CellItems;
         public Crystal Crystal;
         public Transform CrystalTransform => Crystal.transform;
         public float CrystalRadius => Crystal.SphereRadius;
 
+        public void EnsureCellStats(int cellId)
+        {
+            if (CellStatsList == null)
+                CellStatsList = new Dictionary<int, CellStats>();
+
+            if (!CellStatsList.ContainsKey(cellId))
+                CellStatsList[cellId] = new CellStats { LifeFormsInCell = 0 };
+        }
+
+        public int GetLifeFormsInCellSafe(int cellId)
+        {
+            EnsureCellStats(cellId);
+            return CellStatsList[cellId].LifeFormsInCell;
+        }
+
         public void ResetRuntimeData()
         {
             CellType = null;
             Cell = null;
-            CellItems.Clear();
+            if (CellItems != null) CellItems.Clear();
             Crystal = null;
         }
     }

@@ -1,4 +1,3 @@
-using CosmicShore.Core;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;
@@ -7,15 +6,25 @@ namespace CosmicShore.Game.Arcade
 {
     public class AllLifeFormsDestroyedTurnMonitor : TurnMonitor
     {
-        [SerializeField] 
-        CellDataSO cellData;
-        [SerializeField]
-        private ScriptableEventString onLifeFormCounterUpdatedEvent;
-        
+        [SerializeField] CellDataSO cellData;
+        [SerializeField] ScriptableEventString onLifeFormCounterUpdatedEvent;
+
+        int CurrentCellIdOrMinusOne()
+        {
+            if (!cellData || !cellData.Cell) return -1;
+            return cellData.Cell.ID;
+        }
+
+        int GetLifeFormsSafe()
+        {
+            int id = CurrentCellIdOrMinusOne();
+            if (id < 0) return 0;
+            return cellData.GetLifeFormsInCellSafe(id);
+        }
+
         public override bool CheckForEndOfTurn()
         {
-            // Check if any life forms exist in the current node
-            return cellData.CellStatsList[cellData.Cell.ID].LifeFormsInCell <= 0;
+            return GetLifeFormsSafe() <= 0;
         }
 
         public override void StartMonitor()
@@ -31,7 +40,7 @@ namespace CosmicShore.Game.Arcade
 
         void UpdateUI()
         {
-            string message = (cellData.CellStatsList[cellData.Cell.ID].LifeFormsInCell).ToString();
+            string message = GetLifeFormsSafe().ToString();
             onLifeFormCounterUpdatedEvent.Raise(message);
         }
     }
