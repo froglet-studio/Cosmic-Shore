@@ -221,6 +221,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 1648936725651798775}
+  OnCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c, type: 2}
 --- !u!114 &8400525145747189571
 MonoBehaviour:
   m_ObjectHideFlags: 0
