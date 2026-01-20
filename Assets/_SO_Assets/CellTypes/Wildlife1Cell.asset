@@ -29,8 +29,15 @@ MonoBehaviour:
     SpawnProbability: 1
     initialSpawnCount: 2
     OverrideDefaultPlantPeriod: 1
-    NewPlantPeriod: 9999999
+    NewPlantPeriod: 99999
   SupportedFauna:
   - Population: {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b,
       type: 3}
+    InitialFloraSpawnCount: 1
     SpawnProbability: 1
+  IntensityLifeFormConfiguration:
+    FloraInitialDelaySeconds: 0
+    FaunaInitialDelaySeconds: 5
+    FloraSpawnIntervalSeconds: 2
+    FaunaSpawnIntervalSeconds: 4
+    SpawnJade: 1
