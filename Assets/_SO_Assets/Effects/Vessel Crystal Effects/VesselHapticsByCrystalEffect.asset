@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 988338ad26d138d4bad865024ec86c7d, type: 3}
   m_Name: VesselHapticsByCrystalEffect
   m_EditorClassIdentifier: 
-  _hapticType: 4
+  _haptic:
+    _type: 4
