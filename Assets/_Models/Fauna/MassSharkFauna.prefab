@@ -767,15 +767,9 @@ MonoBehaviour:
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}
   autoInitialize: 1
-  Population: {fileID: 0}
-  detectionRadius: 100
-  separationRadius: 100
-  consumeRadius: 40
-  behaviorUpdateRate: 2
-  separationWeight: 20
-  goalWeight: 2
-  minSpeed: 25
-  maxSpeed: 35
+  Population: {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b,
+    type: 3}
+  data: {fileID: 11400000, guid: 5f3927d8b054d1240bbf798a389b9007, type: 2}
   Phase: 0
 --- !u!1 &3561311450035280578
 GameObject:
