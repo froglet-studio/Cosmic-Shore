@@ -16,7 +16,7 @@ MonoBehaviour:
   Description: lots of branches
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
-  MembranePrefab: {fileID: 1922600126866330691, guid: cc093c630f151024085eed5c663e467f,
+  MembranePrefab: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
     type: 3}
   NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
     type: 3}
@@ -27,10 +27,17 @@ MonoBehaviour:
   SupportedFlora:
   - Flora: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5, type: 3}
     SpawnProbability: 1
-    initialSpawnCount: 6
+    initialSpawnCount: 8
     OverrideDefaultPlantPeriod: 1
     NewPlantPeriod: 9999999
   SupportedFauna:
   - Population: {fileID: 8812619448024686939, guid: 3b344872fac297f448d202dd574c2a3e,
       type: 3}
+    InitialFloraSpawnCount: 3
     SpawnProbability: 1
+  IntensityLifeFormConfiguration:
+    FloraInitialDelaySeconds: 0
+    FaunaInitialDelaySeconds: 10
+    FloraSpawnIntervalSeconds: 2
+    FaunaSpawnIntervalSeconds: 4
+    SpawnJade: 1
