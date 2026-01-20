@@ -1,70 +1,89 @@
 using UnityEngine;
 using System.Collections.Generic;
-using CosmicShore;
 
-public class LightFaunaManager : Population
+namespace CosmicShore
 {
-    [Header("Spawn Settings")]
-    [SerializeField] LightFauna lightFaunaPrefab;
-    [SerializeField] int spawnCount = 10;
-    [SerializeField] float spawnRadius = 10f;
-    
-    [Header("Formation Settings")]
-    [SerializeField] float formationSpread = 5f;
-    [SerializeField] float PhaseIncrease;
-
-
-    private List<LightFauna> activeFauna = new List<LightFauna>();
-
-    protected override void Start()
+    public class LightFaunaManager : Population
     {
-        base.Start();
-        SpawnGroup();
-    }
+        [Header("Prefab (keep here)")]
+        [SerializeField] LightFauna lightFaunaPrefab;
 
-    void SpawnGroup()
-    {
-        for (int i = 0; i < spawnCount; i++)
-        {
-            Vector3 randomOffset = Random.insideUnitSphere * spawnRadius;
-            randomOffset.y = 0; // Keep spawns on same plane
-            
-            Vector3 spawnPosition = transform.position + randomOffset;
-            
-            LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
-            fauna.domain = domain;
-            fauna.Population = this;
-            fauna.Phase = PhaseIncrease*i;
-            fauna.Initialize(cell);
-            
-            activeFauna.Add(fauna);
-        }
+        [Header("Data (all tuning lives here)")]
+        [SerializeField] LightFaunaManagerDataSO managerData;
 
-        // Set initial formation positions
-        for (int i = 0; i < activeFauna.Count; i++)
-        {
-            float angle = (i * 360f / activeFauna.Count) * Mathf.Deg2Rad;
-            Vector3 formationOffset = new Vector3(
-                Mathf.Cos(angle) * formationSpread,
-                0,
-                Mathf.Sin(angle) * formationSpread
-            );
-            activeFauna[i].transform.position = transform.position + formationOffset;
-        }
-    }
+        private readonly List<LightFauna> activeFauna = new List<LightFauna>();
 
-    public void RemoveFauna(LightFauna fauna)
-    {
-        if (activeFauna.Contains(fauna))
+        protected override void Start()
         {
-            activeFauna.Remove(fauna);
-            Destroy(fauna.gameObject);
-        }
-
-        // Optional: Respawn if count gets too low
-        if (activeFauna.Count < spawnCount / 2)
-        {
+            base.Start();
             SpawnGroup();
+        }
+
+        void SpawnGroup()
+        {
+            if (!managerData)
+            {
+                Debug.LogError($"{nameof(LightFaunaManager)} on {name} is missing {nameof(LightFaunaManagerDataSO)}.");
+                return;
+            }
+
+            if (!lightFaunaPrefab)
+            {
+                Debug.LogError($"{nameof(LightFaunaManager)} on {name} is missing LightFauna prefab reference.");
+                return;
+            }
+
+            int count = Mathf.Max(0, managerData.spawnCount);
+            float radius = Mathf.Max(0f, managerData.spawnRadius);
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 randomOffset = Random.insideUnitSphere * radius;
+                randomOffset.y = 0f;
+
+                Vector3 spawnPosition = transform.position + randomOffset;
+
+                LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
+                fauna.domain = domain;
+                fauna.Population = this;
+                fauna.Phase = managerData.phaseIncrease * i;
+                fauna.Initialize(cell);
+
+                activeFauna.Add(fauna);
+            }
+
+            // Formation
+            if (activeFauna.Count > 0)
+            {
+                float spread = Mathf.Max(0f, managerData.formationSpread);
+
+                for (int i = 0; i < activeFauna.Count; i++)
+                {
+                    float angle = (i * 360f / activeFauna.Count) * Mathf.Deg2Rad;
+                    Vector3 formationOffset = new Vector3(
+                        Mathf.Cos(angle) * spread,
+                        0f,
+                        Mathf.Sin(angle) * spread
+                    );
+
+                    activeFauna[i].transform.position = transform.position + formationOffset;
+                }
+            }
+        }
+
+        public void RemoveFauna(LightFauna fauna)
+        {
+            if (activeFauna.Contains(fauna))
+            {
+                activeFauna.Remove(fauna);
+                Destroy(fauna.gameObject);
+            }
+
+            // Optional: Respawn if count gets too low (kept behavior)
+            if (managerData && activeFauna.Count < Mathf.Max(0, managerData.spawnCount / 2))
+            {
+                SpawnGroup();
+            }
         }
     }
 }

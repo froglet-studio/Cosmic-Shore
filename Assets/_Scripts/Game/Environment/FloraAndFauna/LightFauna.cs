@@ -1,29 +1,16 @@
 using UnityEngine;
 using System.Collections;
-using CosmicShore.Core;
 using CosmicShore;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utility;
 
 public class LightFauna : Fauna
 {
     const string PLAYER_NAME = "light fauna";
-    
-    [Header("Detection Settings")]
-    [SerializeField] float detectionRadius = 100.0f;
-    //[SerializeField] float cohesionRadius = 8.0f;
-    [SerializeField] float separationRadius = 100.0f;
-    [SerializeField] float consumeRadius = 40.0f;
-    [SerializeField] float behaviorUpdateRate = 2.0f;
 
-    [Header("Behavior Weights")]
-    [SerializeField] float separationWeight = 100f;
-    //[SerializeField] float cohesionWeight = 1.0f;
-    [SerializeField] float goalWeight = 1.5f;
-
-    [Header("Movement")]
-    [SerializeField] float minSpeed = 3.0f;
-    [SerializeField] float maxSpeed = 6.0f;
+    [Header("Data")]
+    [SerializeField] private LightFaunaDataSO data;
 
     private Vector3 currentVelocity;
     private Vector3 desiredDirection;
@@ -34,6 +21,16 @@ public class LightFauna : Fauna
     public override void Initialize(Cell cell)
     {
         base.Initialize(cell);
+
+        if (!data)
+        {
+            Debug.LogError($"{nameof(LightFauna)} on {name} is missing {nameof(CosmicShore.LightFaunaDataSO)}.");
+            return;
+        }
+
+        float minSpeed = Mathf.Max(0f, data.minSpeed);
+        float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
+
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         StartCoroutine(UpdateBehaviorCoroutine());
     }
@@ -42,31 +39,40 @@ public class LightFauna : Fauna
     {
         while (true)
         {
-            yield return new WaitForSeconds(behaviorUpdateRate + Phase);
-            UpdateBehavior();          
+            if (!data)
+                yield break;
+
+            yield return new WaitForSeconds(Mathf.Max(0f, data.behaviorUpdateRate + Phase));
+            UpdateBehavior();
         }
     }
 
     void UpdateBehavior()
     {
+        if (!data || Population == null)
+            return;
+
         Vector3 separation = Vector3.zero;
-        Vector3 cohesion = Vector3.zero;
         Vector3 goalDirection = (Population.Goal - transform.position).normalized;
-        
+
         int neighborCount = 0;
         float averageSpeed = 0f;
 
+        float detectionRadius = Mathf.Max(0f, data.detectionRadius);
+        float separationRadius = Mathf.Max(0f, data.separationRadius);
+        float consumeRadius = Mathf.Max(0f, data.consumeRadius);
+
         var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
-        
+
         foreach (var collider in nearbyColliders)
         {
-            if (collider.gameObject == gameObject) continue;
+            if (!collider || collider.gameObject == gameObject) continue;
 
             Vector3 diff = transform.position - collider.transform.position;
             float distance = diff.magnitude;
-            if (distance == 0) continue;
+            if (distance <= 0f) continue;
 
-            // Hande Ships
+            // Handle Ships
             if (collider.TryGetComponent(out IVesselStatus _))
             {
                 neighborCount++;
@@ -74,48 +80,43 @@ public class LightFauna : Fauna
                 continue;
             }
 
-            // Handle other fauna
+            // Handle other fauna/health prisms
             var otherHealthBlock = collider.GetComponent<HealthPrism>();
             if (otherHealthBlock)
             {
                 if (otherHealthBlock.LifeForm == this) continue;
+
                 neighborCount++;
-                //cohesion += collider.transform.position;
-                
+
                 if (distance < separationRadius)
-                {
                     separation += diff.normalized / distance;
-                }
-                if (distance < consumeRadius && otherHealthBlock.LifeForm.domain != domain) 
-                    // otherHealthBlock.Damage(currentVelocity, Team, "light fauna", true);
+
+                if (distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
                     otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
+
                 continue;
             }
 
             // Handle blocks
             Prism block = collider.GetComponent<Prism>();
             if (block && block.Domain != domain && distance < consumeRadius)
-            {
                 block.Consume(transform, domain, PLAYER_NAME, true);
-            }
         }
 
-        if (neighborCount > 0)
-        {
-            //cohesion = ((cohesion / neighborCount) - transform.position).normalized;
-            averageSpeed = averageSpeed > 0 ? averageSpeed / neighborCount : currentVelocity.magnitude;
-        }
-        else
-        {
-            averageSpeed = currentVelocity.magnitude;
-        }
+        averageSpeed = neighborCount > 0
+            ? (averageSpeed > 0 ? averageSpeed / neighborCount : currentVelocity.magnitude)
+            : currentVelocity.magnitude;
 
-        // Combine behaviors
-        desiredDirection = ((separation * separationWeight) + 
-                          //(cohesion * cohesionWeight) + 
-                          (goalDirection * goalWeight)).normalized;
+        float separationWeight = Mathf.Max(0f, data.separationWeight);
+        float goalWeight = Mathf.Max(0f, data.goalWeight);
+
+        desiredDirection = ((separation * separationWeight) + (goalDirection * goalWeight)).normalized;
+
+        float minSpeed = Mathf.Max(0f, data.minSpeed);
+        float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
 
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
+
         if (currentVelocity != Vector3.zero && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
             desiredRotation = rotation;
         else
@@ -125,7 +126,10 @@ public class LightFauna : Fauna
     void Update()
     {
         transform.position += currentVelocity * Time.deltaTime;
-        var t = Mathf.Clamp(Time.deltaTime * 5f, 0, .99f);
+
+        float lerpSpeed = data ? Mathf.Max(0f, data.rotationLerpSpeed) : 5f;
+        var t = Mathf.Clamp(Time.deltaTime * lerpSpeed, 0f, 0.99f);
+
         transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, t);
     }
 
