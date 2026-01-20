@@ -44,13 +44,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86d5ae3a13a97e34c8b793386d8b4f37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  miniGameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  Team: 2
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  domain: 2
   goalUpdateInterval: 5
   Goal: {x: 0, y: 0, z: 0}
   lightFaunaPrefab: {fileID: 5351160486092638538, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
     type: 3}
-  spawnCount: 4
+  spawnCount: 2
   spawnRadius: 10
   formationSpread: 50
   PhaseIncrease: 0.2
