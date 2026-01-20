@@ -24,7 +24,20 @@ namespace CosmicShore.Game
 
         [ClientRpc]
         void ExecuteCrystalImpact_ClientRpc(CrystalImpactData data) =>
-            vesselImpactor.ExecuteCrystalImpact(data);
+            vesselImpactor.ExecuteOmniCrystalImpact(data);
+        
+        public void ExecuteOnHitElementalCrystal(CrystalImpactData data)
+        {
+            ExecuteElementalCrystalImpact_ServerRpc(data);
+        }
+
+        [ServerRpc]
+        void ExecuteElementalCrystalImpact_ServerRpc(CrystalImpactData data) =>
+            ExecuteElementalCrystalImpact_ClientRpc(data);
+
+        [ClientRpc]
+        void ExecuteElementalCrystalImpact_ClientRpc(CrystalImpactData data) =>
+            vesselImpactor.ExecuteElementalCrystalImpact(data);
 
         void OnValidate()
         {

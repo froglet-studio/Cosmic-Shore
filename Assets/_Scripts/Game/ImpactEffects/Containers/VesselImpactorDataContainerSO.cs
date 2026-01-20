@@ -8,16 +8,21 @@ namespace CosmicShore.Game
     public class VesselImpactorDataContainerSO : ScriptableObject
     {
         public VesselPrismEffectSO[] VesselPrismEffects => vesselPrismEffects;
-
         public VesselCrystalEffectSO[] VesselCrystalEffects => vesselCrystalEffects;
+
+        public VesselCrystalEffectSO[] VesselElementalCrystalEffects => vesselElementalCrystalEffects;
+
         public VesselSkimmerEffectsSO[] VesselSkimmerEffects => vesselSkimmerEffects;
+
+        [FormerlySerializedAs("shipPrismEffects")]
+        [SerializeField] VesselPrismEffectSO[] vesselPrismEffects;
+
+        [FormerlySerializedAs("vesselOmniCrystalEffects")]
+        [FormerlySerializedAs("shipOmniCrystalEffects")]
+        [SerializeField] VesselCrystalEffectSO[] vesselCrystalEffects;
         
-        [FormerlySerializedAs("shipPrismEffects")] [SerializeField]
-        VesselPrismEffectSO[] vesselPrismEffects;
-        
-        [FormerlySerializedAs("vesselOmniCrystalEffects")] [FormerlySerializedAs("shipOmniCrystalEffects")] [SerializeField]
-        VesselCrystalEffectSO[] vesselCrystalEffects;
-        [SerializeField]
-        VesselSkimmerEffectsSO[] vesselSkimmerEffects;
+        [SerializeField] VesselCrystalEffectSO[] vesselElementalCrystalEffects;
+
+        [SerializeField] VesselSkimmerEffectsSO[] vesselSkimmerEffects;
     }
 }
