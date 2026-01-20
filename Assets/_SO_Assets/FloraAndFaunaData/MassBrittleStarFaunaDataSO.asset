@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34ff5921d2e247ff9716e66242269962, type: 3}
   m_Name: MassBrittleStarFaunaDataSO
   m_EditorClassIdentifier: 
-  detectionRadius: 100
-  separationRadius: 100
+  detectionRadius: 70
+  separationRadius: 70
   consumeRadius: 40
   behaviorUpdateRate: 2
-  separationWeight: 20
-  goalWeight: 1.5
-  minSpeed: 25
-  maxSpeed: 35
+  separationWeight: 10
+  goalWeight: 2
+  minSpeed: 15
+  maxSpeed: 25
   rotationLerpSpeed: 5

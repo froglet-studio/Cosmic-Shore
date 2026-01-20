@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e85e79f3b9d64adc958c0da3575922e2, type: 3}
   m_Name: MassBrittleStarPopulationDataSO
   m_EditorClassIdentifier: 
-  spawnCount: 2
+  spawnCount: 4
   spawnRadius: 10
   formationSpread: 50
-  phaseIncrease: 0.2
+  phaseIncrease: 0.3

@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  domain: 2
+  domain: 4
   goalUpdateInterval: 5
   Goal: {x: 0, y: 0, z: 0}
   lightFaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824,

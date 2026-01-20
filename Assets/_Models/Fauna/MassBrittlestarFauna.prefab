@@ -608,7 +608,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
-  healthPrism: {fileID: 0}
+  healthPrism: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+    type: 3}
   spindle: {fileID: 0}
   healthBlocksForMaturity: 1
   minHealthBlocks: 0
