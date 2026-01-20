@@ -25,8 +25,12 @@ namespace CosmicShore.Game.UI
         
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
-        public void UpdateLifeFormCounter(string message) => lifeFormCounter.text = message;
-
+        public void UpdateLifeFormCounter(string message) 
+        {
+            if (lifeFormCounter)
+                lifeFormCounter.text = message;
+        }
+        
         public void ToggleView(bool active)
         {
             canvasGroup.alpha = active ? 1 : 0;
