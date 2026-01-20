@@ -613,22 +613,15 @@ MonoBehaviour:
   healthBlocksForMaturity: 1
   minHealthBlocks: 0
   shieldPeriod: 0
-  defaultHealthPrismTargetScale: {x: 4, y: 4, z: 1}
+  defaultHealthPrismTargetScale: {x: 2, y: 7, z: 2}
   domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}
   autoInitialize: 1
-  Population: {fileID: 0}
-  healthPrismTargetScale: {x: 1, y: 4, z: 1}
-  detectionRadius: 70
-  separationRadius: 70
-  consumeRadius: 40
-  behaviorUpdateRate: 2
-  separationWeight: 10
-  goalWeight: 2
-  minSpeed: 15
-  maxSpeed: 25
+  Population: {fileID: 1594903950002975183, guid: cf5d9d162b969ed4e92bf8388c703723,
+    type: 3}
+  data: {fileID: 11400000, guid: eef0ed7d081bc854ebbeb3b75668eab4, type: 2}
   Phase: 0
 --- !u!1 &3284225655831354852
 GameObject:
