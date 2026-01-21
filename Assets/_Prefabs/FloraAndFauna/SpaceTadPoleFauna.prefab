@@ -52,10 +52,12 @@ MonoBehaviour:
   healthBlocksForMaturity: 1
   minHealthBlocks: 0
   shieldPeriod: 0
+  defaultHealthPrismTargetScale: {x: 1, y: 1, z: 7}
   domain: 3
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}
+  autoInitialize: 1
   Population: {fileID: 0}
   cohesionRadius: 20
   behaviorUpdateRate: 3
