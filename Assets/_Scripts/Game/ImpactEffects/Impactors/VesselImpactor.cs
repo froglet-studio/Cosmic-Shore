@@ -67,10 +67,21 @@ namespace CosmicShore.Game
 
         public void ExecuteElementalCrystalImpact(CrystalImpactData data)
         {
-            if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselElementalCrystalEffects)) return;
-            foreach (var effect in vesselImpactorDataContainerSO.VesselElementalCrystalEffects)
+            VesselCrystalEffectSO[] effects = data.Element switch
+            {
+                Element.Mass   => vesselImpactorDataContainerSO.VesselMassCrystalEffects,
+                Element.Charge => vesselImpactorDataContainerSO.VesselChargeCrystalEffects,
+                Element.Space  => vesselImpactorDataContainerSO.VesselSpaceCrystalEffects,
+                Element.Time   => vesselImpactorDataContainerSO.VesselTimeCrystalEffects,
+                _ => null
+            };
+
+            if (!DoesEffectExist(effects)) return;
+
+            foreach (var effect in effects)
                 effect.Execute(this, data);
         }
+
 
         void OnValidate()
         {

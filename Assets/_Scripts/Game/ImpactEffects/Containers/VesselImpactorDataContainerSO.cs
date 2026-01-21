@@ -9,8 +9,10 @@ namespace CosmicShore.Game
     {
         public VesselPrismEffectSO[] VesselPrismEffects => vesselPrismEffects;
         public VesselCrystalEffectSO[] VesselCrystalEffects => vesselCrystalEffects;
-
-        public VesselCrystalEffectSO[] VesselElementalCrystalEffects => vesselElementalCrystalEffects;
+        public VesselCrystalEffectSO[] VesselMassCrystalEffects => vesselMassCrystalEffects;
+        public VesselCrystalEffectSO[] VesselChargeCrystalEffects => vesselChargeCrystalEffects;
+        public VesselCrystalEffectSO[] VesselSpaceCrystalEffects => vesselSpaceCrystalEffects;
+        public VesselCrystalEffectSO[] VesselTimeCrystalEffects => vesselTimeCrystalEffects;
 
         public VesselSkimmerEffectsSO[] VesselSkimmerEffects => vesselSkimmerEffects;
 
@@ -21,7 +23,10 @@ namespace CosmicShore.Game
         [FormerlySerializedAs("shipOmniCrystalEffects")]
         [SerializeField] VesselCrystalEffectSO[] vesselCrystalEffects;
         
-        [SerializeField] VesselCrystalEffectSO[] vesselElementalCrystalEffects;
+        [SerializeField] private VesselCrystalEffectSO[] vesselMassCrystalEffects;
+        [SerializeField] private VesselCrystalEffectSO[] vesselChargeCrystalEffects;
+        [SerializeField] private VesselCrystalEffectSO[] vesselSpaceCrystalEffects;
+        [SerializeField] private VesselCrystalEffectSO[] vesselTimeCrystalEffects;
 
         [SerializeField] VesselSkimmerEffectsSO[] vesselSkimmerEffects;
     }
