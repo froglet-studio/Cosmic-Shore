@@ -16,39 +16,37 @@ public class BoidManager : Population
     public Transform Mound;
 
     public List<Boid> Boids;
-
-
+    
     public Trail boidTrail = new();
 
     protected override void Start()
     {
-        //Weights = new List<float> { 1, 1, 1, 1 };
+        base.Start();
+
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
-            SafeLookRotation.TryGet(Vector3.Cross(spawnPosition,Vector3.forward), out var initialRotation, boidPrefab);
-            Boid newBoid = Instantiate(boidPrefab, spawnPosition, initialRotation);
-            newBoid.transform.SetParent(transform);
+            SafeLookRotation.TryGet(Vector3.Cross(spawnPosition, Vector3.forward), out var initialRotation, boidPrefab);
+
+            Boid newBoid = Instantiate(boidPrefab, spawnPosition, initialRotation, transform);
             newBoid.Population = this;
             newBoid.domain = domain;
-            var block = newBoid.GetComponentInChildren<Prism>();
+            newBoid.normalizedIndex = (float)i / numberOfBoids;
 
-            if (Mound)
+            newBoid.Initialize(cell);
+
+            Boids.Add(newBoid);
+
+            var block = newBoid.GetComponentInChildren<Prism>(true);
+            if (block)
             {
-                newBoid.Mound = Mound;
+                boidTrail.Add(block);
+                block.ChangeTeam(domain);
+                block.Trail = boidTrail;
             }
 
-            //newBoid.DefaultGoal = node.GetClosestItem(spawnPosition).transform;
-
-            boidTrail.Add(block);
-            block.ChangeTeam(domain);
-            block.Trail = boidTrail;
-            
-            newBoid.normalizedIndex = (float)i / numberOfBoids;
-            Boids.Add(newBoid);
+            if (Mound)
+                newBoid.Mound = Mound;
         }
-
-        base.Start();
     }
-
 }

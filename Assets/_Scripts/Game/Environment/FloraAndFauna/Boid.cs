@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Core;
 using CosmicShore;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utility;
 
@@ -18,7 +18,7 @@ public class Boid : Fauna
     [SerializeField] float cohesionRadius = 10.0f;
     [SerializeField] float behaviorUpdateRate = 1.5f;
     [SerializeField] float separationRadius = 5f;
-    [SerializeField ] float trailBlockInteractionRadius = 10f;
+    [SerializeField] float trailBlockInteractionRadius = 10f;
 
     [Header("Behavior Weights")]
     [SerializeField] float separationWeight = 1.5f;
@@ -26,7 +26,7 @@ public class Boid : Fauna
     [SerializeField] float cohesionWeight = 1.0f;
     [SerializeField] float goalWeight = 1.0f;
 
-    [Header("Speed Settings")] 
+    [Header("Speed Settings")]
     [SerializeField] float minSpeed = 2.0f;
     [SerializeField] float maxSpeed = 5.0f;
 
@@ -49,29 +49,45 @@ public class Boid : Fauna
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
-    BoxCollider BlockCollider;
+    BoxCollider blockCollider;
 
     List<Collider> separatedBoids = new List<Collider>();
-
+    HealthPrism embeddedHealthPrism;
 
     public override void Initialize(Cell cell)
     {
-        AddSpindle(spindle);
-        BlockCollider = healthPrism.GetComponent<BoxCollider>();
-        currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
+        base.Initialize(cell);
+
+        embeddedHealthPrism = GetComponentInChildren<HealthPrism>(true);
+        if (!embeddedHealthPrism)
+        {
+            Debug.LogError($"{nameof(Boid)} on {name} has no embedded HealthPrism in children. Scaling cannot work.");
+            return;
+        }
+
+        blockCollider = embeddedHealthPrism.GetComponent<BoxCollider>();
+        if (!blockCollider)
+            Debug.LogWarning($"{nameof(Boid)} on {name}: embedded HealthPrism has no BoxCollider.");
+
+        embeddedHealthPrism.ChangeTeam(domain);
+
+        currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
-        healthPrism.Domain = domain;
     }
 
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)
     {
-        yield return new WaitForSeconds(initialDelay);
+        if (initialDelay > 0f)
+            yield return new WaitForSeconds(initialDelay);
 
         while (true)
         {
-            if (!isAttached && Population.Goal != null) target = Population.Goal;
-            // TODO add visual effect here leaving behind particles. and zoom ahead but decay in speed
+            if (!isAttached)
+            {
+                target = Population ? Population.Goal : target;
+            }
+
             CalculateBehavior();
             yield return new WaitForSeconds(behaviorUpdateRate);
         }
@@ -83,10 +99,12 @@ public class Boid : Fauna
         {
             desiredDirection = (target - transform.position).normalized;
             currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
+
             if (SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
                 desiredRotation = rotation;
             else
                 desiredRotation = transform.rotation;
+
             return;
         }
 
@@ -99,14 +117,16 @@ public class Boid : Fauna
         float averageSpeed = 0.0f;
         separatedBoids.Clear();
 
-        //LayerMask
         var boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
-        var ColliderCount = boidsInVicinity.Length;
-        for (int i = 0; i < ColliderCount; i++)
+        int colliderCount = boidsInVicinity.Length;
+
+        for (int i = 0; i < colliderCount; i++)
         {
             Collider collider = boidsInVicinity[i];
+            if (!collider) continue;
 
-            if (collider.gameObject == BlockCollider.gameObject) continue;
+            // Ignore our own collider (if present)
+            if (blockCollider && collider.gameObject == blockCollider.gameObject) continue;
 
             Boid otherBoid = collider.GetComponentInParent<Boid>();
             Prism otherPrism = collider.GetComponent<Prism>();
@@ -117,8 +137,7 @@ public class Boid : Fauna
 
             if (otherBoid)
             {
-                float weight = 1; // Placeholder for potential weight logic
-                cohesion += -diff.normalized * weight / distance;
+                cohesion += -diff.normalized / distance;
                 alignment += collider.transform.forward;
 
                 if (distance < separationRadius)
@@ -130,10 +149,9 @@ public class Boid : Fauna
             }
             else if (otherPrism)
             {
-                //float blockWeight = Population.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized / distance;
 
-                if (distance < trailBlockInteractionRadius && otherPrism.Domain != healthPrism.Domain)
+                if (distance < trailBlockInteractionRadius && embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain)
                 {
                     foreach (var effect in collisionEffects)
                     {
@@ -147,19 +165,17 @@ public class Boid : Fauna
                                         isAttached = true;
                                         target = otherPrism.transform.position;
                                         otherPrism.Grow(-1);
-                                        healthPrism.Grow(1);
-                                        if (healthPrism.IsLargest) StartCoroutine(AddToMoundCoroutine());
+                                        embeddedHealthPrism.Grow(1);
+                                        if (embeddedHealthPrism.IsLargest) StartCoroutine(AddToMoundCoroutine());
                                     }
-                                    else target = DefaultGoal.position;
+                                    else if (DefaultGoal) target = DefaultGoal.position;
                                 }
                                 break;
+
                             case BoidCollisionEffects.Explode:
-                                if ((currentVelocity * healthPrism.Volume).x == Mathf.Infinity || (currentVelocity * healthPrism.Volume).x == Mathf.NegativeInfinity)
-                                {
-                                    Debug.LogError($"Infinite velocity on block collision detected! velocity:({currentVelocity.x},{currentVelocity.y},{currentVelocity.z})");
-                                    break;
-                                }
-                                otherPrism.Damage(currentVelocity * healthPrism.Volume, healthPrism.Domain, healthPrism.PlayerName + " boid", true);
+                                if (embeddedHealthPrism)
+                                    otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
+                                        embeddedHealthPrism.PlayerName + " boid", true);
                                 break;
                         }
                     }
@@ -177,25 +193,26 @@ public class Boid : Fauna
 
         averageSpeed = separatedBoids.Count > 0 ? averageSpeed / separatedBoids.Count : currentVelocity.magnitude;
 
-        desiredDirection = ((separation * separationWeight) + (alignment * alignmentWeight) + (cohesion * cohesionWeight) + (goalDirection * goalWeight) + blockAttraction).normalized;
+        desiredDirection = ((separation * separationWeight)
+                           + (alignment * alignmentWeight)
+                           + (cohesion * cohesionWeight)
+                           + (goalDirection * goalWeight)
+                           + blockAttraction).normalized;
+
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
-        if (SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this))
-            desiredRotation = desiredRot;
-        else
-            desiredRotation = transform.rotation;
+
+        desiredRotation = SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this) ? desiredRot : transform.rotation;
     }
 
-    protected override void Spawn()
-    {
-        throw new System.NotImplementedException();
-    }
+    protected override void Spawn() { }
 
     IEnumerator AddToMoundCoroutine()
     {
         isAttached = false;
         isTraveling = true;
 
-        target = Mound.position;
+        if (Mound) target = Mound.position;
+
         float scanRadius = 30f;
 
         Collider[] colliders = new Collider[0];
@@ -205,7 +222,6 @@ public class Boid : Fauna
             int layerMask = 1 << layerIndex;
             colliders = Physics.OverlapSphere(transform.position, scanRadius, layerMask);
 
-            //colliders = Physics.OverlapSphere(transform.position, 1f, LayerMask.NameToLayer("Mound"));
             GyroidAssembler nakedEdge = null;
             foreach (var collider in colliders)
             {
@@ -216,36 +232,32 @@ public class Boid : Fauna
                     nakedEdge.preferedBlocks.Enqueue(gyroidBlock1);
                     gyroidBlock1.Prism = newBlock1;
 
-                    //(var newBlock2, var gyroidBlock2) = NewBlock();
-                    //nakedEdge.preferedBlocks.Enqueue(gyroidBlock2);
-                    //gyroidBlock2.GyroidBlock = newBlock2;
-
                     nakedEdge.Depth = 1;
                     nakedEdge.StartBonding();
                     break;
                 }
             }
+
             if (!nakedEdge) colliders = new Collider[0];
             yield return null;
         }
 
         isTraveling = false;
-        healthPrism.IsLargest = false;
-        healthPrism.DeactivateShields();
-        healthPrism.Grow(-3);
+
+        if (!embeddedHealthPrism) yield break;
+        embeddedHealthPrism.IsLargest = false;
+        embeddedHealthPrism.DeactivateShields();
+        embeddedHealthPrism.Grow(-3);
     }
 
-    (Prism, GyroidAssembler) NewBlock()
+    private (Prism, GyroidAssembler) NewBlock()
     {
         var newBlock = Instantiate(healthPrism, transform.position, transform.rotation, Population.transform);
-        newBlock.ChangeTeam(healthPrism.Domain);
+        newBlock.ChangeTeam(domain);
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
-        newBlock.prismProperties = new()
-        {
-            prism = newBlock
-        };
+        newBlock.prismProperties = new() { prism = newBlock };
         var gyroidBlock = newBlock.gameObject.AddComponent<GyroidAssembler>();
-        return (newBlock,gyroidBlock);
+        return (newBlock, gyroidBlock);
     }
 
     void Update()
