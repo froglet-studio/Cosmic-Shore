@@ -225,6 +225,12 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: randomSpawnProfile
+      value: 
+      objectReference: {fileID: 11400000, guid: 4abc50b8711720a41a64db5db3604ee1,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: CellTypes.Array.size
       value: 4
       objectReference: {fileID: 0}
@@ -607,6 +613,7 @@ MonoBehaviour:
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  onLifeFormCounterUpdatedEvent: {fileID: 0}
 --- !u!114 &1078953712
 MonoBehaviour:
   m_ObjectHideFlags: 0
