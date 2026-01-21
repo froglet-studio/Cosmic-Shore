@@ -56,6 +56,7 @@ namespace CosmicShore.Soap
         public bool IsMultiplayerMode;
         public List<IPlayer> Players = new();
         public List<IRoundStats> RoundStatsList = new();
+        public List<DomainStats> DomainStatsList = new();
         public HashSet<Transform> SlowedShipTransforms = new();
         public float TurnStartTime;
         public bool IsTurnRunning { get; private set; }
@@ -198,6 +199,63 @@ namespace CosmicShore.Soap
                 RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
             else
                 RoundStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+        }
+
+        public void SortDomainStats(bool golfRules)
+        {
+            if (golfRules)
+                DomainStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
+            else
+                DomainStatsList.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+        }
+
+        public void CalculateDomainStats(bool golfRules)
+        {
+            if (DomainStatsList == null)
+                DomainStatsList = new List<DomainStats>();
+            else
+                DomainStatsList.Clear();
+
+            if (RoundStatsList == null || RoundStatsList.Count == 0)
+                return;
+
+            // Sum per-domain
+            var totals = new Dictionary<Domains, float>();
+
+            foreach (var roundStat in RoundStatsList)
+            {
+                if (totals.TryGetValue(roundStat.Domain, out var current))
+                    totals[roundStat.Domain] = current + roundStat.Score;
+                else
+                    totals.Add(roundStat.Domain, roundStat.Score);
+            }
+
+            // Convert to DomainStatsList
+            foreach (var kvp in totals)
+            {
+                var score = kvp.Value;
+                
+                DomainStatsList.Add(new DomainStats
+                {
+                    Domain = kvp.Key,
+                    Score = score,
+                });
+            }
+
+            SortDomainStats(golfRules);
+        }
+
+        public bool IsLocalDomain(Domains domain) => 
+            LocalPlayer != null && domain == LocalPlayer.Domain;
+        
+        public bool IsLocalDomainWinner(out DomainStats stats)
+        {
+            stats = default;
+            foreach (var stat in DomainStatsList.Where(stat => stat.Domain == LocalPlayer.Domain))
+            {
+                stats = stat;
+            }
+            return stats.Domain == LocalPlayer.Domain;
         }
         
         public void SetPlayersActive()

@@ -5,90 +5,28 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MultiplayerCellularDuelController : MultiplayerMiniGameControllerBase
+    public class MultiplayerCellularDuelController : MultiplayerDomainGamesController
     {
-        private int readyClientCount;
-        
-        public void OnClickReturnToMainMenu()
-        {
-            CloseSession_ServerRpc();
-        }
-        
-        protected override void OnCountdownTimerEnded()
-        {
-            if (!IsServer)
-                return;
-
-            OnCountdownTimerEnded_ClientRpc();
-        }
-
-        [ClientRpc]
-        void OnCountdownTimerEnded_ClientRpc()
-        {
-            gameData.SetPlayersActive();
-            gameData.StartTurn(); 
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void CloseSession_ServerRpc()
-        {
-            multiplayerSetup.LeaveSession().Forget();
-        }
-        
-        protected override void OnReadyClicked_()
-        {
-            RaiseToggleReadyButtonEvent(false);
-            // Debug.Log($"{NetworkManager.Singleton.LocalClientId} is ready!");
-            OnReadyClicked_ServerRpc();
-        }
-        
-        [ServerRpc(RequireOwnership = false)]
-        void OnReadyClicked_ServerRpc()
-        {
-            readyClientCount++;
-            if (!readyClientCount.Equals(gameData.SelectedPlayerCount))
-                return;
-
-            readyClientCount = 0;
-            OnReadyClicked_ClientRpc();
-        }
-
-        [ClientRpc]
-        void OnReadyClicked_ClientRpc()
-        {
-            StartCountdownTimer();
-        }
-
         protected override void SetupNewRound()
         {
             bool allowSwap = gameData.RoundsPlayed > 0;
             if (allowSwap)
-                ChangeOwnershipOfVessels();
-            
-            SetupNewRound_ClientRpc(allowSwap);
-        }
-        
-        [ClientRpc]
-        void SetupNewRound_ClientRpc(bool allowSwap)
-        {
-            if (allowSwap)
+            {
+                if (IsServer)
+                    ChangeOwnershipOfVessels();
+                
                 gameData.SwapVessels();
+            }
             
-            RaiseToggleReadyButtonEvent(true);
             base.SetupNewRound();
         }
         
         protected override void OnResetForReplay()
         {
-            ChangeOwnershipOfVessels();
-            OnResetForReplay_ClientRpc();
-            base.OnResetForReplay();
-        }
-
-        [ClientRpc]
-        void OnResetForReplay_ClientRpc()
-        {
+            if (IsServer)
+                ChangeOwnershipOfVessels();    
             gameData.SwapVessels();
+            base.OnResetForReplay();
         }
 
         void ChangeOwnershipOfVessels()

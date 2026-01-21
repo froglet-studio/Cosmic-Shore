@@ -64,6 +64,7 @@ namespace CosmicShore.Game.Arcade
         protected void SortAndInvokeResults()
         {
             gameData.SortRoundStats(golfRules);
+            gameData.CalculateDomainStats(golfRules);
             gameData.InvokeWinnerCalculated();
         }
 

@@ -74,17 +74,5 @@ namespace CosmicShore.Game.Arcade
                 Debug.Log($"[Freestyle][Client] Removed player '{playerName}'.");
             }
         }
-        
-        protected override void SetupNewRound()
-        {
-            SetupNewRound_ClientRpc();
-        }
-        
-        [ClientRpc]
-        void SetupNewRound_ClientRpc()
-        {
-            // RaiseToggleReadyButtonEvent(true);
-            base.SetupNewRound();
-        }
     }
 }
