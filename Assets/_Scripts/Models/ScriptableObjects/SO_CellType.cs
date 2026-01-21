@@ -27,6 +27,18 @@ namespace CosmicShore.Game
         public List<FloraConfiguration> SupportedFlora = new List<FloraConfiguration>();
         public List<PopulationConfiguration> SupportedFauna = new List<PopulationConfiguration>();
 
+        [Flags]
+        public enum DomainMask
+        {
+            None = 0,
+            Jade = 1 << 0,
+            Ruby = 1 << 1,
+            Gold = 1 << 2,
+            Blue = 1 << 3,
+
+            All = Jade | Ruby | Gold | Blue
+        }
+        
         [Serializable]
         public class LifeFormConfiguration
         {
@@ -40,7 +52,15 @@ namespace CosmicShore.Game
             [Min(0f)] public float FloraSpawnIntervalSeconds = 0f;
             [Tooltip("Seconds between each population spawn (within the initial fauna batch). 0 = spawn all instantly.")]
             [Min(0f)] public float FaunaSpawnIntervalSeconds = 0f;
+            [Header("Domain Rules")]
+            [Tooltip("Which domains are allowed for FLORA spawned by this cell type.")]
+            public DomainMask AllowedFloraDomains = DomainMask.All;
 
+            [Tooltip("Which domains are allowed for FAUNA populations spawned by this cell type.")]
+            public DomainMask AllowedFaunaDomains = DomainMask.All;
+
+            [Tooltip("If ON, spawned fauna populations will never use the local player's domain.")]
+            public bool FaunaExcludeLocalDomain = true;
             [Header("Domain")]
             [Tooltip("If ON, Jade can be chosen for spawned flora domains. If OFF, Jade is excluded.")]
             public bool SpawnJade = true;
