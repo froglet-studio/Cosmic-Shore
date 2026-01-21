@@ -1,3 +1,4 @@
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -10,24 +11,14 @@ namespace CosmicShore.Game
         protected override void ShowSinglePlayerView()
         {
             base.ShowSinglePlayerView();
-            if (gameData.Players.Count > 2)
-            {
-                Debug.LogError("Cannot have more than two players in Duel Cell");
-                return;
-            }
-
-            string opponent = null;
-            foreach (var player in gameData.Players)
-            {
-                if (player.IsLocalUser)
-                    continue;
-                opponent = player.Name;
-            }
-
-            if (!gameData.TryGetRoundStats(opponent, out IRoundStats stats))
-                return;
+            DomainStats opponentStats = new();
             
-            OppponentScoreTextField.text = ((int)stats.Score).ToString();
+            foreach (var stat in gameData.DomainStatsList.Where(stat => !gameData.IsLocalDomain(stat.Domain)))
+            {
+                opponentStats = stat;
+            }
+            
+            OppponentScoreTextField.text = ((int)opponentStats.Score).ToString();
         }
     }
 }

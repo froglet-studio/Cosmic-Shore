@@ -69,25 +69,17 @@ namespace CosmicShore.Game
             MultiplayerView.gameObject.SetActive(false);
             SingleplayerView.gameObject.SetActive(false);
         }
-
-        protected virtual bool TryGetWinner(out IRoundStats roundStats, out bool localIsWinner) =>
-            gameData.TryGetWinner(out roundStats, out localIsWinner);
         
         protected virtual void ShowSinglePlayerView()
         {
-            if (!TryGetWinner(out  IRoundStats roundStats, out bool localIsWinner))
-                return;
-                
+            bool won = gameData.IsLocalDomainWinner(out DomainStats localDomainStats);
             // Setup Banner
+            var bannerText = won ? "WON" : "DEFEAT";
             BannerImage.color = SinglePlayerBannerColor;
-            
-            if (!localIsWinner)
-                BannerText.text = "DEFEAT";
-            else
-                BannerText.text = "WON";
+            BannerText.text = bannerText;
 
             // Populate this run's Score
-            var playerScore = roundStats.Score; // Mathf.Max(roundStats.Score, 0);
+            var playerScore = localDomainStats.Score; // Mathf.Max(roundStats.Score, 0);
             SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
 
             // TODO: pull actual high Score

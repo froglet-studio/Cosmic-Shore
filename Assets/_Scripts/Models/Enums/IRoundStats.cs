@@ -144,4 +144,10 @@ namespace CosmicShore.Game
             Button3AbilityActiveTime = 0f;
         }
     }
+
+    public struct DomainStats
+    {
+        public Domains Domain;
+        public float Score;
+    }
 }

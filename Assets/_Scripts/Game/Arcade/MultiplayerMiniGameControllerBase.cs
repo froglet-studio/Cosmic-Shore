@@ -28,19 +28,22 @@ namespace CosmicShore.Game.Arcade
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
                 gameData.OnSessionStarted += SubscribeToSessionEvents;
-                gameData.OnResetForReplay.OnRaised += OnResetForReplay;
             }
+            
+            gameData.OnResetForReplay.OnRaised += OnResetForReplay;
             
             InitializeAfterDelay().Forget();
         }
 
         public override void OnNetworkDespawn()
         {
-            if (!IsServer)
-                return;
+            if (IsServer)
+            {
+                gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
+                gameData.OnSessionStarted -= SubscribeToSessionEvents;    
+            }
 
-            gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
-            gameData.OnSessionStarted -= SubscribeToSessionEvents;
+            
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
         }
 
