@@ -3053,8 +3053,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 1196320470979252114}
-  OnCrystalCollected: {fileID: 0}
-  elementalCrystalShipEffects: []
 --- !u!4 &1196320470979252112 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
