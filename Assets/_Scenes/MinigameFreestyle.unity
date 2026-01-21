@@ -3081,6 +3081,7 @@ MonoBehaviour:
   scaleSegmentsWithIntensity: 1
   helix: {fileID: 0}
   helixIntensityScaling: 1.3
+  Seed: 0
 --- !u!114 &1078953714
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3759,6 +3760,12 @@ PrefabInstance:
       propertyPath: Crystal
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: randomSpawnProfile
+      value: 
+      objectReference: {fileID: 11400000, guid: 4abc50b8711720a41a64db5db3604ee1,
+        type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_Name
