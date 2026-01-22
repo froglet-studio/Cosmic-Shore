@@ -23,10 +23,10 @@ namespace CosmicShore.Game.Animation
             currentRoll = Mathf.Lerp(currentRoll, roll, animationSpeed * Time.deltaTime);
             currentThrottle = Mathf.Lerp(currentThrottle, throttle, animationSpeed * Time.deltaTime);
 
-            animator.SetFloat("Pitch", -currentPitch);
-            animator.SetFloat("Yaw", currentYaw);
-            animator.SetFloat("Roll", currentRoll);
-            animator.SetFloat("Throttle", currentThrottle);
+            animator.SetFloat("Pitch", -currentPitch*2);
+            animator.SetFloat("Yaw", currentYaw*2);
+            animator.SetFloat("Roll", currentRoll * 2);
+            animator.SetFloat("Throttle", currentThrottle * 2);
         }
 
         protected override void Idle()

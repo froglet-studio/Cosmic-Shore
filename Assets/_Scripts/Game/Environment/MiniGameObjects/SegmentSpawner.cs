@@ -157,8 +157,15 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.position = new Vector3(Radius * Mathf.Sin(spawnedItemCount),
                                                          Radius * Mathf.Cos(spawnedItemCount),
                                                          spawnedItemCount * StraightLineLength) + origin + transform.position;
-                spawned.transform.Rotate(Vector3.forward + (((float)Random.value - .4f) * Vector3.right)
-                                                         + (((float)Random.value - .4f) * Vector3.up), (float)Random.value * 180);
+                spawned.transform.Rotate(Vector3.forward + (((float)Random.value - .5f) * Vector3.right)
+                                                         + (((float)Random.value - .5f) * Vector3.up), (float)Random.value * 180);
+                return;
+            case PositioningScheme.HexRing:
+                spawned.transform.position = new Vector3(Radius * Mathf.Sin(spawnedItemCount),
+                                                         Radius * Mathf.Cos(spawnedItemCount),
+                                                         spawnedItemCount * StraightLineLength) + origin + transform.position;
+                spawned.transform.rotation = Quaternion.Euler(0, (float)Random.value * 0, 0) * spawned.transform.rotation;
+                spawned.transform.rotation = Quaternion.Euler(0,0, (float)Random.value * 360) * spawned.transform.rotation;
                 return;
             case PositioningScheme.KinkyLineBranching:
 

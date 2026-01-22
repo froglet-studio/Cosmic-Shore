@@ -19,6 +19,7 @@ namespace CosmicShore.Models.Enums
         SpiralTower = 14,
         HoneycombGrid = 15,
         HilbertCurveLSystem = 16,
-        SavedMaze = 17
+        SavedMaze = 17,
+        HexRing = 18
     }
 }
