@@ -266,7 +266,10 @@ public class SegmentSpawner : MonoBehaviour
                         Quaternion.Euler(0, 0, RotationAmount) * (mazeData[IntensityLevel - 1].walls[spawnedItemCount].position + origin + transform.position),
                         Quaternion.Euler(0, 0, RotationAmount) * mazeData[IntensityLevel - 1].walls[spawnedItemCount].rotation);
                 }
-                return;    
+                return;
+            case PositioningScheme.AtOriginNoRotation:
+                spawned.transform.SetPositionAndRotation(origin + transform.position, Quaternion.identity);
+                return;
         }
     }
 
