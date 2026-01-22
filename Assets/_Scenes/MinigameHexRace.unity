@@ -617,7 +617,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 2
+  CrystalCollisions: 30
   hostileCollection: 0
 --- !u!114 &1078953711
 MonoBehaviour:
@@ -718,6 +718,15 @@ MonoBehaviour:
     type: 3}
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  crystalPositions:
+  - {x: 700, y: 0, z: 0}
+  - {x: 500, y: 0, z: 500}
+  - {x: 0, y: 0, z: 700}
+  - {x: -500, y: 0, z: 500}
+  - {x: -700, y: 0, z: 0}
+  - {x: -500, y: 0, z: -500}
+  - {x: 0, y: 0, z: -700}
+  - {x: 500, y: 0, z: -500}
 --- !u!114 &1078953716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -996,7 +1005,7 @@ Transform:
   m_GameObject: {fileID: 1192541910}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 970}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1297,7 +1306,7 @@ PrefabInstance:
         type: 3}
       propertyPath: randomSpawnProfile
       value: 
-      objectReference: {fileID: 11400000, guid: 4abc50b8711720a41a64db5db3604ee1,
+      objectReference: {fileID: 11400000, guid: 5d05ceb9b047c3b499be3bbd45c036f6,
         type: 2}
     - target: {fileID: 7701641087306297103, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
