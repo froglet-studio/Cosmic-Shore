@@ -40,4 +40,5 @@ MonoBehaviour:
     FaunaInitialDelaySeconds: 5
     FloraSpawnIntervalSeconds: 0
     FaunaSpawnIntervalSeconds: 4
-    SpawnJade: 1
+    FloraExcludeLocalDomain: 1
+    FaunaExcludeLocalDomain: 1
