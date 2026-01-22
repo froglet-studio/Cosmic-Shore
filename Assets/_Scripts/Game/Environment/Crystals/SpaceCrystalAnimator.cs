@@ -63,11 +63,6 @@ namespace CosmicShore
 
         IEnumerator CollectRoutine()
         {
-            if (crystalRenderer == null)
-            {
-                yield break;
-            }
-
             // Pulse both blendshapes to 100 quickly
             float t = 0f;
             while (t < collectDuration)
