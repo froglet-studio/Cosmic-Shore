@@ -1,5 +1,3 @@
-using CosmicShore.Core;
-using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -9,19 +7,23 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int CrystalCollisions;
         [SerializeField] bool hostileCollection;
 
-        public override bool CheckForEndOfTurn()
+        IRoundStats roundStats;
+        
+        public override void StartMonitor()
         {
-            if (!gameData.TryGetActivePlayerStats(out IPlayer _, out IRoundStats roundStats))
-                return false;
-
-            return roundStats.OmniCrystalsCollected >= CrystalCollisions;
+            if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out roundStats))
+                Debug.LogError("No round stats found for local player");
+            
+            base.StartMonitor();
         }
+        
+        public override bool CheckForEndOfTurn() =>
+            roundStats.OmniCrystalsCollected >= CrystalCollisions;
 
-        /*public override void StartMonitor()
+        protected override void RestrictedUpdate()
         {
-            // TODO: perhaps coerce stats manager to create an entry for the player here
-        }*/
-
-        protected override void RestrictedUpdate() { }
+            string message = (CrystalCollisions - roundStats.OmniCrystalsCollected).ToString();
+            onUpdateTurnMonitorDisplay.Raise(message);
+        }
     }
 }

@@ -53,7 +53,12 @@ public class LightFauna : Fauna
             return;
 
         Vector3 separation = Vector3.zero;
-        Vector3 goalDirection = (Population.Goal - transform.position).normalized;
+        Vector3 goal = Population.Goal;
+
+        if (!IsFinite(goal) || goal.sqrMagnitude < 0.001f)
+            goal = cellData && cellData.CrystalTransform ? cellData.CrystalTransform.position : cell.transform.position;
+
+        Vector3 goalDirection = (goal - transform.position).normalized;
 
         int neighborCount = 0;
         float averageSpeed = 0f;
@@ -137,4 +142,7 @@ public class LightFauna : Fauna
     {
         // Implement spawn behavior if needed
     }
+    
+    static bool IsFinite(Vector3 v) =>
+        float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
 }

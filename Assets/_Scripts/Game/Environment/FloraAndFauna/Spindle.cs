@@ -17,16 +17,28 @@ namespace CosmicShore
         HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
-        Material originalMaterial; // Store the original shared material
-        Material temporaryMaterial; // Temporary material for animations
+        Material originalMaterial;
+        Material temporaryMaterial;
         Coroutine condenseCoroutine;
 
         bool dying = false;
+        
+        [SerializeField] bool permanentWither = true;
+        bool isPermanentlyWithered = false;
+
+        void OnEnable()
+        {
+            if (!isPermanentlyWithered) return;
+            if (RenderedObject) RenderedObject.enabled = false;
+            StopAllCoroutines();
+        }
 
         IEnumerator Start()
         {
+            if (isPermanentlyWithered)
+                yield break;
 
-            if (RenderedObject.sharedMaterial == null)
+            if (RenderedObject == null || RenderedObject.sharedMaterial == null)
             {
                 Debug.LogError($"{gameObject.name}: RenderedObject does not have a valid material at Start.");
                 yield break;
@@ -34,17 +46,14 @@ namespace CosmicShore
 
             propertyBlock = new MaterialPropertyBlock();
 
-            // Set random offset once at spawn
             float randomOffset = Random.Range(0f, Mathf.PI * 2f);
-
             RenderedObject.GetPropertyBlock(propertyBlock);
             propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
             RenderedObject.SetPropertyBlock(propertyBlock);
 
-            // Cache the original shared material
             originalMaterial = RenderedObject.sharedMaterial;
-
             condenseCoroutine = StartCoroutine(CondenseCoroutine());
+
             if (LifeForm) LifeForm.AddSpindle(this);
             parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
             if (parentSpindle) parentSpindle.AddSpindle(this);
@@ -52,6 +61,7 @@ namespace CosmicShore
 
         public void AddHealthBlock(HealthPrism healthPrism)
         {
+            if (isPermanentlyWithered) return;
             healthBlocks.Add(healthPrism);
             healthPrism.LifeForm = LifeForm;
         }
@@ -59,10 +69,12 @@ namespace CosmicShore
         public void RemoveHealthBlock(HealthPrism healthPrism)
         {
             healthBlocks.Remove(healthPrism);
+            CheckForLife();
         }
 
         public void AddSpindle(Spindle spindle)
         {
+            if (isPermanentlyWithered) return;
             spindles.Add(spindle);
             spindle.parentSpindle = this;
         }
@@ -70,13 +82,17 @@ namespace CosmicShore
         public void RemoveSpindle(Spindle spindle)
         {
             spindles.Remove(spindle);
+            CheckForLife(); 
         }
 
         public void CheckForLife()
         {
-            if (!dying && healthBlocks.Count < 1 && spindles.Count < 1)
+            if (dying || isPermanentlyWithered) return;
+
+            if (healthBlocks.Count < 1 && spindles.Count < 1)
             {
                 dying = true;
+                if (permanentWither) isPermanentlyWithered = true;
                 EvaporateSpindle();
             }
         }
@@ -89,26 +105,17 @@ namespace CosmicShore
 
         void RestoreOriginalMaterial()
         {
-            //Debug.Log($"TemporaryMaterial - RestoreOriginalMaterial:{gameObject.GetInstanceID()}");
-            // Restore the original shared material
-            RenderedObject.material = originalMaterial;
+            if (RenderedObject) RenderedObject.material = originalMaterial;
 
-            // Clean up the temporary material
-            if (temporaryMaterial != null)
-            {
-                Destroy(temporaryMaterial);
-                temporaryMaterial = null;
-            }
+            if (!temporaryMaterial) return;
+            Destroy(temporaryMaterial);
+            temporaryMaterial = null;
         }
-
 
         void UseTemporaryMaterial()
         {
-            //Debug.Log($"TemporaryMaterial - UseTemporaryMaterial:{gameObject.GetInstanceID()}");
-
-            // Create a new temporary material based on the original material
             temporaryMaterial = new Material(originalMaterial);
-            RenderedObject.material = temporaryMaterial;
+            if (RenderedObject) RenderedObject.material = temporaryMaterial;
         }
 
         IEnumerator EvaporateCoroutine()
@@ -119,8 +126,7 @@ namespace CosmicShore
                 condenseCoroutine = null;
             }
 
-            //Debug.Log($"TemporaryMaterial - EvaporateCoroutine:{gameObject.GetInstanceID()}");
-            UseTemporaryMaterial(); // Switch to the temporary material
+            UseTemporaryMaterial();
 
             float deathAnimation = 0f;
             float animationSpeed = 1f;
@@ -128,67 +134,69 @@ namespace CosmicShore
             {
                 yield return null;
 
-                if (temporaryMaterial == null)
-                {
-                    //Debug.LogError($"TemporaryMaterial creation failed: {gameObject.GetInstanceID()}");
-                    yield break;
-                }
+                if (temporaryMaterial == null) yield break;
 
                 temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
             }
 
+            RestoreOriginalMaterial();
+            if (RenderedObject) RenderedObject.enabled = false;
+
+            DisableSpindle();
+
             if (retainSpindle)
             {
+                // kept for pooling, but will never condense again due to isPermanentlyWithered
                 gameObject.SetActive(false);
-                DisableSpindle();
             }
-            else Destroy(gameObject);
+            else
+            {
+                Destroy(gameObject);
+            }
         }
 
         IEnumerator CondenseCoroutine()
         {
-            //Debug.Log($"TemporaryMaterial - CondenseCoroutine:{gameObject.GetInstanceID()}");
-            UseTemporaryMaterial(); // Switch to the temporary material
+            if (isPermanentlyWithered) yield break; 
+
+            UseTemporaryMaterial();
 
             float deathAnimation = 1f;
             float animationSpeed = 1f;
             while (deathAnimation > 0f)
             {
+                if (isPermanentlyWithered) yield break;
                 temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation -= Time.deltaTime * animationSpeed;
                 yield return null;
             }
 
             temporaryMaterial.SetFloat("_DeathAnimation", 0);
-            RestoreOriginalMaterial(); // Switch back to the original material
+            RestoreOriginalMaterial();
         }
 
         void DisableSpindle()
         {
-            //Debug.Log($"TemporaryMaterial - DisableSpindle:{gameObject.GetInstanceID()}");
             RestoreOriginalMaterial();
 
-            // check if scene is still loaded
-            if (gameObject.scene.isLoaded)
+            if (!gameObject.scene.isLoaded) return;
+
+            if (parentSpindle)
             {
-                if (parentSpindle)
-                {
-                    parentSpindle.RemoveSpindle(this);
-                    parentSpindle.CheckForLife();
-                    LifeForm.RemoveSpindle(this);
-                }
-                else
-                {
-                    LifeForm.RemoveSpindle(this);
-                    LifeForm.CheckIfDead();
-                }
+                parentSpindle.RemoveSpindle(this);
+                parentSpindle.CheckForLife();
+            }
+
+            if (LifeForm)
+            {
+                LifeForm.RemoveSpindle(this);
+                LifeForm.CheckIfDead();
             }
         }
 
         void OnDestroy()
         {
-            //Debug.Log($"TemporaryMaterial - OnDestroy:{gameObject.GetInstanceID()}");
             DisableSpindle();
         }
     }

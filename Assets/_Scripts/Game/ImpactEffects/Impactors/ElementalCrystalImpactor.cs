@@ -5,7 +5,7 @@ namespace CosmicShore.Game
 {
     public class ElementalCrystalImpactor : CrystalImpactor
     {
-        VesselCrystalEffectSO[] elementalCrystalShipEffects;
+        SkimmerCrystalEffectSO[] elementalCrystalShipEffects;
 
         bool isImpacting;
 
@@ -14,47 +14,45 @@ namespace CosmicShore.Game
             if (isImpacting) return;
             if (Crystal.IsExploding) return;
 
-            if (impactee is not VesselImpactor shipImpactee)
+            if (impactee is not SkimmerImpactor skimmerImpactor)
                 return;
 
             isImpacting = true;
             WaitForImpact().Forget();
 
-            if (!TryCollect(shipImpactee))
-                return;
+            // if (!TryCollect(skimmerImpactor))
+            //     return;
 
             if (DoesEffectExist(elementalCrystalShipEffects))
             {
                 var data = CrystalImpactData.FromCrystal(Crystal);
                 foreach (var effect in elementalCrystalShipEffects)
-                    effect.Execute(shipImpactee, data);
+                    effect.Execute(skimmerImpactor, this);
             }
 
-            HandleCrystalVisualAndLifetime(shipImpactee);
+            HandleCrystalVisualAndLifetime(skimmerImpactor);
         }
 
-        bool TryCollect(VesselImpactor vesselImpactee)
+        bool TryCollect(SkimmerImpactor skimmerImpactor)
         {
-            var shipStatus = vesselImpactee.Vessel.VesselStatus;
+            var shipStatus = skimmerImpactor.Skimmer.VesselStatus;
             return Crystal.CanBeCollected(shipStatus.Domain);
         }
 
-        void HandleCrystalVisualAndLifetime(VesselImpactor shipImpactee)
+        void HandleCrystalVisualAndLifetime(SkimmerImpactor skimmerImpactor)
         {
-            var shipStatus = shipImpactee.Vessel.VesselStatus;
+            var shipStatus = skimmerImpactor.Skimmer.VesselStatus;
             var element = Crystal.crystalProperties.Element;
 
-            if (element == Element.Space)
-            {
-                PlaySpaceCollectAndDestroy().Forget();
-            }
-            
-            Crystal.Explode(new Crystal.ExplodeParams {
-                Course = shipStatus.Course,
-                Speed = shipStatus.Speed,
-                PlayerName = shipStatus.PlayerName
-            });
-            Crystal.gameObject.SetActive(false);
+            PlaySpaceCollectAndDestroy().Forget();
+
+            // Crystal.Explode(new Crystal.ExplodeParams
+            // {
+            //     Course = shipStatus.Course,
+            //     Speed = shipStatus.Speed,
+            //     PlayerName = shipStatus.PlayerName
+            // });
+            //Crystal.gameObject.SetActive(false);
         }
 
         async UniTaskVoid PlaySpaceCollectAndDestroy()
@@ -70,11 +68,10 @@ namespace CosmicShore.Game
                 for (int i = 0; i < models.Count; i++)
                 {
                     var md = models[i];
-                    if (md.model != null && md.spaceCrystalAnimator != null)
-                    {
-                        md.spaceCrystalAnimator.PlayCollect();
-                        delay = Mathf.Max(delay, md.spaceCrystalAnimator.TotalCollectTime);
-                    }
+                    if (md.model == null) continue;
+                    if (md.spaceCrystalAnimator == null) continue;
+                    md.spaceCrystalAnimator.PlayCollect();
+                    delay = Mathf.Max(delay, md.spaceCrystalAnimator.TotalCollectTime);
                 }
             }
         }

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public  class IntensityWiseLifeSpawner : ICellLifeSpawner
+    public class IntensityWiseLifeSpawner : ICellLifeSpawner
     {
         Coroutine floraRoutine;
         Coroutine faunaRoutine;
@@ -18,7 +18,7 @@ namespace CosmicShore.Game
 
             var cfg = cellType.IntensityLifeFormConfiguration;
 
-            floraRoutine = host.StartCoroutine(SpawnInitialFlora(host, cellType, cellData, cfg));
+            floraRoutine = host.StartCoroutine(SpawnInitialFlora(host, cellType, cellData, gameData, cfg));
             faunaRoutine = host.StartCoroutine(SpawnInitialPopulations(host, cellData, gameData, cellType, cfg));
         }
 
@@ -27,41 +27,49 @@ namespace CosmicShore.Game
             if (!host) return;
 
             if (floraRoutine != null) { host.StopCoroutine(floraRoutine); floraRoutine = null; }
-
-            if (faunaRoutine == null) return;
-            host.StopCoroutine(faunaRoutine); faunaRoutine = null;
+            if (faunaRoutine != null) { host.StopCoroutine(faunaRoutine); faunaRoutine = null; }
         }
 
-        IEnumerator SpawnInitialFlora(Cell host, SO_CellType cellType, CellDataSO cellData, SO_CellType.LifeFormConfiguration lifeFormConfiguration)
+        IEnumerator SpawnInitialFlora(
+            Cell host,
+            SO_CellType cellType,
+            CellDataSO cellData,
+            GameDataSO gameData,
+            SO_CellType.LifeFormConfiguration cfg)
         {
-            if (lifeFormConfiguration.FloraInitialDelaySeconds > 0f)
-                yield return new WaitForSeconds(lifeFormConfiguration.FloraInitialDelaySeconds);
+            if (cfg.FloraInitialDelaySeconds > 0f)
+                yield return new WaitForSeconds(cfg.FloraInitialDelaySeconds);
 
             if (cellType.SupportedFlora == null || cellType.SupportedFlora.Count == 0)
                 yield break;
 
+            // Pick ONE flora config based on SpawnProbability
             var floraConfig = PickWeighted(cellType.SupportedFlora, f => f.SpawnProbability);
             if (floraConfig == null || !floraConfig.Flora)
                 yield break;
 
             int count = Mathf.Max(0, floraConfig.initialSpawnCount);
 
-            var allowedMask = lifeFormConfiguration.AllowedFloraDomains;
-            if (!lifeFormConfiguration.SpawnJade)
-                allowedMask &= ~SO_CellType.DomainMask.Jade;
+            var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
+            Domains? excluded = cfg.FloraExcludeLocalDomain ? local : (Domains?)null;
 
             for (int i = 0; i < count; i++)
             {
                 var newFlora = Object.Instantiate(floraConfig.Flora, host.transform.position, Quaternion.identity);
-                newFlora.domain = DomainPicker.PickRandom(allowedMask);
+                newFlora.domain = PickRandomDomain(excluded);
                 newFlora.Initialize(host);
 
-                if (lifeFormConfiguration.FloraSpawnIntervalSeconds > 0f && i < count - 1)
-                    yield return new WaitForSeconds(lifeFormConfiguration.FloraSpawnIntervalSeconds);
+                if (cfg.FloraSpawnIntervalSeconds > 0f && i < count - 1)
+                    yield return new WaitForSeconds(cfg.FloraSpawnIntervalSeconds);
             }
         }
 
-        IEnumerator SpawnInitialPopulations(Cell host, CellDataSO cellData, GameDataSO gameData, SO_CellType cellType, SO_CellType.LifeFormConfiguration cfg)
+        IEnumerator SpawnInitialPopulations(
+            Cell host,
+            CellDataSO cellData,
+            GameDataSO gameData,
+            SO_CellType cellType,
+            SO_CellType.LifeFormConfiguration cfg)
         {
             if (cfg.FaunaInitialDelaySeconds > 0f)
                 yield return new WaitForSeconds(cfg.FaunaInitialDelaySeconds);
@@ -81,8 +89,7 @@ namespace CosmicShore.Game
                 for (int i = 0; i < populationCount; i++)
                 {
                     var pop = Object.Instantiate(populationConfiguration.Population, host.transform.position, Quaternion.identity);
-
-                    pop.domain = DomainPicker.PickRandom(cfg.AllowedFaunaDomains, excluded);
+                    pop.domain = PickRandomDomain(excluded);
                     pop.Goal = cellData.CrystalTransform.position;
 
                     if (cfg.FaunaSpawnIntervalSeconds > 0f && i < populationCount - 1)
@@ -91,12 +98,34 @@ namespace CosmicShore.Game
             }
         }
 
+        // ------------------------------------------------------------
+        // Domain selection without flags/masks:
+        // Pick uniformly from Jade/Ruby/Gold/Blue, optionally excluding one.
+        // ------------------------------------------------------------
+        static Domains PickRandomDomain(Domains? excluded)
+        {
+            var candidates = new List<Domains>(4)
+            {
+                Domains.Jade,
+                Domains.Ruby,
+                Domains.Gold,
+                Domains.Blue
+            };
+
+            if (excluded.HasValue)
+                candidates.Remove(excluded.Value);
+
+            if (candidates.Count == 0)
+                return Domains.Jade;
+
+            return candidates[Random.Range(0, candidates.Count)];
+        }
+
         static T PickWeighted<T>(IReadOnlyList<T> items, System.Func<T, float> weightSelector)
         {
             if (items == null || items.Count == 0) return default;
 
             float total = items.Sum(t => Mathf.Max(0f, weightSelector(t)));
-
             if (total <= 0f) return items[0];
 
             float roll = Random.value * total;

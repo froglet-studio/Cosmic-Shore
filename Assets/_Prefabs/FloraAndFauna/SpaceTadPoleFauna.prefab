@@ -52,7 +52,6 @@ MonoBehaviour:
   healthBlocksForMaturity: 1
   minHealthBlocks: 0
   shieldPeriod: 0
-  defaultHealthPrismTargetScale: {x: 1, y: 1, z: 7}
   domain: 3
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
@@ -329,6 +328,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5294544041139789144, guid: 32182c0d19e344b4c9a9b332052037e6,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5753173635696888826, guid: 32182c0d19e344b4c9a9b332052037e6,
         type: 3}
