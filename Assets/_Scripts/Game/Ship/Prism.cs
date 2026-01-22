@@ -51,7 +51,9 @@ namespace CosmicShore.Core
         internal PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
 
         public Action<Prism> OnReturnToPool;
-
+        private bool _initialized;
+        private Vector3 _lastDestructionScale = Vector3.one;
+        
         public Domains Domain
         {
             get => teamManager?.Domain ?? Domains.Unassigned;
@@ -73,7 +75,6 @@ namespace CosmicShore.Core
         private PrismStateManager stateManager;
         private MeshRenderer meshRenderer;
         private BoxCollider blockCollider;
-
         // Public accessors for backward compatibility
         public Vector3 TargetScale
         {
@@ -124,14 +125,20 @@ namespace CosmicShore.Core
 
         public virtual void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
+            if (_initialized) return;
+            _initialized = true;
             PlayerName = playerName;
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
-            scaleAnimator.Initialize();
-            StartCoroutine(CreateBlockCoroutine());
+            var authoredTargetScale = scaleAnimator ? scaleAnimator.TargetScale : transform.localScale;
+            if (authoredTargetScale == Vector3.zero)
+                authoredTargetScale = transform.localScale;
 
-            // Apply initial states if needed
+            scaleAnimator.Initialize();
+            scaleAnimator.SetTargetScale(authoredTargetScale);
+            StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
+
             if (prismProperties.IsShielded) ActivateShield();
             if (prismProperties.IsDangerous) MakeDangerous();
         }
@@ -155,43 +162,37 @@ namespace CosmicShore.Core
             prismProperties.TimeCreated = Time.time;
             gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
 
-            // Initialize volume immediately to prevent zero-volume explosions
-            prismProperties.volume = 1f; // Set a default non-zero volume
+            prismProperties.volume = 1f;
         }
 
-        private IEnumerator CreateBlockCoroutine()
+        private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
         {
             yield return new WaitForSeconds(waitTime);
+
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
-            // Set initial target scale before beginning growth animation
             if (scaleAnimator.TargetScale == Vector3.zero)
-            {
-                scaleAnimator.SetTargetScale(Vector3.one);
-            }
+                scaleAnimator.SetTargetScale(authoredTargetScale);
 
-            // Update volume before growth animation starts
             prismProperties.volume = scaleAnimator.GetCurrentVolume();
 
             scaleAnimator.BeginGrowthAnimation();
-            
+
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,
                 Volume = prismProperties.volume,
             });
 
-            // TODO - Use Event Channel
             if (CellControlManager.Instance)
             {
                 CellControlManager.Instance.AddBlock(Domain, prismProperties);
 
-                // Setup team node tracking after block is fully initialized
                 Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
-                System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
+                Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
                 {
-                    if (t != Domain && targetCell != null)
+                    if (t != Domain && targetCell)
                         targetCell.countGrids[t].AddBlock(this);
                 });
             }
@@ -218,16 +219,22 @@ namespace CosmicShore.Core
 
         protected virtual GameObject SetupDestruction(Domains domain, string attackerPlayerName, bool devastate = false)
         {
+            var destructionScale = transform.localScale;
+
+            if (scaleAnimator)
+            {
+                scaleAnimator.IsScaling = false;      
+                scaleAnimator.enabled = false;       
+            }
+
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
-            // Ensure volume is up to date before destruction
-            prismProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
+            prismProperties.volume = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
             destroyed = true;
             devastated = devastate;
 
-            // Stats tracking
             _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,
@@ -235,11 +242,11 @@ namespace CosmicShore.Core
                 AttackerName = attackerPlayerName,
             });
 
-            // Cell control management
-            if (CellControlManager.Instance != null)
+            if (CellControlManager.Instance)
                 CellControlManager.Instance.RemoveBlock(domain, prismProperties);
 
-            return null; // Will be set by specific destruction method
+            _lastDestructionScale = destructionScale;
+            return null;
         }
 
         // Explosion Methods
@@ -253,7 +260,7 @@ namespace CosmicShore.Core
                 ownDomain = Domain,
                 SpawnPosition = transform.position,
                 Rotation = transform.rotation,
-                Scale = transform.localScale,
+                Scale = _lastDestructionScale,
                 Velocity = impactVector / prismProperties.volume,
                 PrismType = PrismType.Explosion
             });
@@ -271,7 +278,7 @@ namespace CosmicShore.Core
                 ownDomain = Domain,
                 SpawnPosition = transform.position,
                 Rotation = transform.rotation,
-                Scale = transform.lossyScale,
+                Scale = _lastDestructionScale,
                 TargetTransform = targetTransform,
                 Volume = prismProperties.volume,
                 PrismType = PrismType.Implosion

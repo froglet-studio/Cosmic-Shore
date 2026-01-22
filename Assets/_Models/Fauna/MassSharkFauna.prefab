@@ -761,7 +761,6 @@ MonoBehaviour:
   healthBlocksForMaturity: 1
   minHealthBlocks: 0
   shieldPeriod: 0
-  defaultHealthPrismTargetScale: {x: 2, y: 8, z: 2}
   domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
@@ -2399,6 +2398,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2498,6 +2502,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2597,6 +2606,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2701,6 +2715,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2805,6 +2824,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2904,6 +2928,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3174,6 +3203,11 @@ PrefabInstance:
       propertyPath: TrailBlockProperties.trailBlock
       value: 
       objectReference: {fileID: 130098072086415127}
+    - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3290,6 +3324,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3389,6 +3428,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3488,6 +3532,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
+        type: 3}
+      propertyPath: usePrefabScaleAsDefaultTarget
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
