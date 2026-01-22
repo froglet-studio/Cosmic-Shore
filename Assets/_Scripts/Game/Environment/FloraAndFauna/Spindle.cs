@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore
@@ -21,14 +22,26 @@ namespace CosmicShore
         Material temporaryMaterial;
         Coroutine condenseCoroutine;
 
+        bool deregistered;
         bool dying = false;
-        
+
         [SerializeField] bool permanentWither = true;
         bool isPermanentlyWithered = false;
 
+        void CleanupDeadRefs()
+        {
+            healthBlocks.RemoveWhere(h => !h);
+            spindles.RemoveWhere(s => !s);
+        }
+
         void OnEnable()
         {
+            // pooled spindles must be allowed to deregister again later
+            if (!isPermanentlyWithered)
+                deregistered = false;
+
             if (!isPermanentlyWithered) return;
+
             if (RenderedObject) RenderedObject.enabled = false;
             StopAllCoroutines();
         }
@@ -62,12 +75,15 @@ namespace CosmicShore
         public void AddHealthBlock(HealthPrism healthPrism)
         {
             if (isPermanentlyWithered) return;
+            if (!healthPrism) return;
+
             healthBlocks.Add(healthPrism);
             healthPrism.LifeForm = LifeForm;
         }
 
         public void RemoveHealthBlock(HealthPrism healthPrism)
         {
+            if (!healthPrism) return;
             healthBlocks.Remove(healthPrism);
             CheckForLife();
         }
@@ -75,31 +91,35 @@ namespace CosmicShore
         public void AddSpindle(Spindle spindle)
         {
             if (isPermanentlyWithered) return;
+            if (!spindle) return;
+
             spindles.Add(spindle);
             spindle.parentSpindle = this;
         }
 
         public void RemoveSpindle(Spindle spindle)
         {
+            if (!spindle) return;
             spindles.Remove(spindle);
-            CheckForLife(); 
+            CheckForLife();
         }
 
         public void CheckForLife()
         {
             if (dying || isPermanentlyWithered) return;
 
-            if (healthBlocks.Count < 1 && spindles.Count < 1)
-            {
-                dying = true;
-                if (permanentWither) isPermanentlyWithered = true;
-                EvaporateSpindle();
-            }
+            CleanupDeadRefs();
+
+            if (healthBlocks.Count > 0 || spindles.Count > 0) return;
+
+            dying = true;
+            if (permanentWither) isPermanentlyWithered = true;
+            EvaporateSpindle();
         }
 
-        public void EvaporateSpindle()
+        private void EvaporateSpindle()
         {
-            if (gameObject != null && gameObject.activeInHierarchy)
+            if (gameObject && gameObject.activeInHierarchy)
                 StartCoroutine(EvaporateCoroutine());
         }
 
@@ -134,7 +154,7 @@ namespace CosmicShore
             {
                 yield return null;
 
-                if (temporaryMaterial == null) yield break;
+                if (!temporaryMaterial) yield break;
 
                 temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
@@ -147,7 +167,6 @@ namespace CosmicShore
 
             if (retainSpindle)
             {
-                // kept for pooling, but will never condense again due to isPermanentlyWithered
                 gameObject.SetActive(false);
             }
             else
@@ -158,7 +177,7 @@ namespace CosmicShore
 
         IEnumerator CondenseCoroutine()
         {
-            if (isPermanentlyWithered) yield break; 
+            if (isPermanentlyWithered) yield break;
 
             UseTemporaryMaterial();
 
@@ -174,6 +193,21 @@ namespace CosmicShore
 
             temporaryMaterial.SetFloat("_DeathAnimation", 0);
             RestoreOriginalMaterial();
+        }
+
+        public void ForceWither()
+        {
+            if (dying || isPermanentlyWithered) return;
+
+            dying = true;
+            if (permanentWither) isPermanentlyWithered = true;
+
+            foreach (var child in spindles.ToArray())
+            {
+                if (child) child.ForceWither();
+            }
+
+            EvaporateSpindle();
         }
 
         void DisableSpindle()
@@ -195,8 +229,32 @@ namespace CosmicShore
             }
         }
 
+        void OnDisable()
+        {
+            if (deregistered) return;
+
+            // only deregister if we are truly gone (dying/perma-wither) or being unloaded
+            if (!dying && !isPermanentlyWithered && gameObject.scene.isLoaded) return;
+
+            deregistered = true;
+
+            if (parentSpindle)
+            {
+                parentSpindle.RemoveSpindle(this);
+                parentSpindle.CheckForLife(); // IMPORTANT
+            }
+
+            if (LifeForm)
+            {
+                LifeForm.RemoveSpindle(this);
+                LifeForm.CheckIfDead();
+            }
+        }
+
         void OnDestroy()
         {
+            if (deregistered) return;
+            deregistered = true;
             DisableSpindle();
         }
     }

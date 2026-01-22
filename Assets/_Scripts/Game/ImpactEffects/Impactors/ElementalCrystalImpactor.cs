@@ -7,6 +7,11 @@ namespace CosmicShore.Game
     {
         SkimmerCrystalEffectSO[] elementalCrystalShipEffects;
 
+        [Header("Space Collect: move-to-vessel")] [SerializeField]
+        float moveToVesselDuration = 3f;
+
+        [SerializeField] bool easeMoveToVessel = true;
+
         bool isImpacting;
 
         protected override void AcceptImpactee(IImpactor impactee)
@@ -20,9 +25,6 @@ namespace CosmicShore.Game
             isImpacting = true;
             WaitForImpact().Forget();
 
-            // if (!TryCollect(skimmerImpactor))
-            //     return;
-
             if (DoesEffectExist(elementalCrystalShipEffects))
             {
                 var data = CrystalImpactData.FromCrystal(Crystal);
@@ -33,45 +35,59 @@ namespace CosmicShore.Game
             HandleCrystalVisualAndLifetime(skimmerImpactor);
         }
 
-        bool TryCollect(SkimmerImpactor skimmerImpactor)
-        {
-            var shipStatus = skimmerImpactor.Skimmer.VesselStatus;
-            return Crystal.CanBeCollected(shipStatus.Domain);
-        }
-
         void HandleCrystalVisualAndLifetime(SkimmerImpactor skimmerImpactor)
         {
-            var shipStatus = skimmerImpactor.Skimmer.VesselStatus;
-            var element = Crystal.crystalProperties.Element;
+            MoveToVesselThenPlaySpaceCollect(skimmerImpactor).Forget();
+        }
 
+        async UniTaskVoid MoveToVesselThenPlaySpaceCollect(SkimmerImpactor skimmerImpactor)
+        {
+            var vesselStatusTransform = skimmerImpactor.Skimmer.VesselStatus.VesselTransformer.transform;
+            var col = Crystal.GetComponent<SphereCollider>();
+            if (col) col.enabled = false;
+
+            float dur = Mathf.Max(0.0001f, moveToVesselDuration);
+            Vector3 startPos = Crystal.transform.position;
+            Quaternion startRot = Crystal.transform.rotation;
+
+            Vector3 targetPos = vesselStatusTransform.position;
+            Quaternion targetRot = vesselStatusTransform.rotation;
+
+            float t = 0f;
+            while (t < 1f && Crystal != null)
+            {
+                t += Time.deltaTime / dur;
+                float u = Mathf.Clamp01(t);
+
+                if (easeMoveToVessel)
+                    u = u * u * (3f - 2f * u); // smoothstep
+
+                Crystal.transform.SetPositionAndRotation(
+                    Vector3.LerpUnclamped(startPos, targetPos, u),
+                    Quaternion.SlerpUnclamped(startRot, targetRot, u));
+
+                await UniTask.Yield(PlayerLoopTiming.Update);
+            }
+
+            // Snap (just in case)
+            if (Crystal)
+                Crystal.transform.SetPositionAndRotation(targetPos, targetRot);
+
+            // Now play the collect animation
             PlaySpaceCollectAndDestroy().Forget();
-
-            // Crystal.Explode(new Crystal.ExplodeParams
-            // {
-            //     Course = shipStatus.Course,
-            //     Speed = shipStatus.Speed,
-            //     PlayerName = shipStatus.PlayerName
-            // });
-            //Crystal.gameObject.SetActive(false);
         }
 
         async UniTaskVoid PlaySpaceCollectAndDestroy()
         {
-            var col = Crystal.GetComponent<SphereCollider>();
-            if (col) col.enabled = false;
-
             float delay = 0.6f;
 
-            var models = Crystal.CrystalModels;
-            if (models != null)
+            var crystalModels = Crystal.CrystalModels;
+            if (crystalModels != null)
             {
-                for (int i = 0; i < models.Count; i++)
+                foreach (var crystalModelData in crystalModels)
                 {
-                    var md = models[i];
-                    if (md.model == null) continue;
-                    if (md.spaceCrystalAnimator == null) continue;
-                    md.spaceCrystalAnimator.PlayCollect();
-                    delay = Mathf.Max(delay, md.spaceCrystalAnimator.TotalCollectTime);
+                    crystalModelData.spaceCrystalAnimator.PlayCollect();
+                    delay = Mathf.Max(delay, crystalModelData.spaceCrystalAnimator.TotalCollectTime);
                 }
             }
         }

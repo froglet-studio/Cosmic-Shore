@@ -1126,7 +1126,7 @@ MonoBehaviour:
   boostMultiplier: 4
   _name: Sparrow
   vesselType: 11
-  _nearFieldSkimmer: {fileID: 0}
+  _nearFieldSkimmer: {fileID: 6062314127581257774}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 6015654187000967467}
 --- !u!114 &782227326690287682
@@ -1506,8 +1506,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 30, y: 30, z: 30}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 60, y: 60, z: 60}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 5558533727464959561}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
