@@ -20,8 +20,10 @@ namespace CosmicShore.Game
 
         [Header("Runtime Data")]
         [SerializeField] CellDataSO cellData;
-        [FormerlySerializedAs("miniGameData")]
         [SerializeField] GameDataSO gameData;
+        
+        [SerializeField]
+        float nucleusScaleMultiplier = 1f;
 
         [Header("Random Mode Profile")]
         [SerializeField] CellRandomSpawnProfileSO randomSpawnProfile;
@@ -124,7 +126,10 @@ namespace CosmicShore.Game
                 membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
 
             if (cellType.NucleusPrefab != null)
-                Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
+            {
+                var nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
+                nucleus.transform.localScale *= nucleusScaleMultiplier;
+            }
         }
 
         void ResetVolumes()
