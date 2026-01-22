@@ -52,6 +52,7 @@ namespace CosmicShore.Core
 
         public Action<Prism> OnReturnToPool;
         private bool _initialized;
+        private Vector3 _lastDestructionScale = Vector3.one;
         
         public Domains Domain
         {
@@ -74,7 +75,6 @@ namespace CosmicShore.Core
         private PrismStateManager stateManager;
         private MeshRenderer meshRenderer;
         private BoxCollider blockCollider;
-
         // Public accessors for backward compatibility
         public Vector3 TargetScale
         {
@@ -190,9 +190,9 @@ namespace CosmicShore.Core
                 CellControlManager.Instance.AddBlock(Domain, prismProperties);
 
                 Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
-                System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
+                Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
                 {
-                    if (t != Domain && targetCell != null)
+                    if (t != Domain && targetCell)
                         targetCell.countGrids[t].AddBlock(this);
                 });
             }
@@ -219,16 +219,22 @@ namespace CosmicShore.Core
 
         protected virtual GameObject SetupDestruction(Domains domain, string attackerPlayerName, bool devastate = false)
         {
+            var destructionScale = transform.localScale;
+
+            if (scaleAnimator)
+            {
+                scaleAnimator.IsScaling = false;      
+                scaleAnimator.enabled = false;       
+            }
+
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
-            // Ensure volume is up to date before destruction
-            prismProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
+            prismProperties.volume = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
             destroyed = true;
             devastated = devastate;
 
-            // Stats tracking
             _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,
@@ -236,11 +242,11 @@ namespace CosmicShore.Core
                 AttackerName = attackerPlayerName,
             });
 
-            // Cell control management
-            if (CellControlManager.Instance != null)
+            if (CellControlManager.Instance)
                 CellControlManager.Instance.RemoveBlock(domain, prismProperties);
 
-            return null; // Will be set by specific destruction method
+            _lastDestructionScale = destructionScale;
+            return null;
         }
 
         // Explosion Methods
@@ -254,7 +260,7 @@ namespace CosmicShore.Core
                 ownDomain = Domain,
                 SpawnPosition = transform.position,
                 Rotation = transform.rotation,
-                Scale = transform.localScale,
+                Scale = _lastDestructionScale,
                 Velocity = impactVector / prismProperties.volume,
                 PrismType = PrismType.Explosion
             });
@@ -272,7 +278,7 @@ namespace CosmicShore.Core
                 ownDomain = Domain,
                 SpawnPosition = transform.position,
                 Rotation = transform.rotation,
-                Scale = transform.lossyScale,
+                Scale = _lastDestructionScale,
                 TargetTransform = targetTransform,
                 Volume = prismProperties.volume,
                 PrismType = PrismType.Implosion

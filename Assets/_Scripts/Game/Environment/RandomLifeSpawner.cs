@@ -31,7 +31,7 @@ namespace CosmicShore.Game
                 }
             }
 
-            if (cellType.SupportedFauna != null && cellType.SupportedFauna.Count > 0)
+            if (cellType.SupportedFauna is { Count: > 0 })
             {
                 for (int i = 0; i < profile.FaunaTypeCount; i++)
                 {
@@ -56,11 +56,15 @@ namespace CosmicShore.Game
 
         IEnumerator SpawnFloraLoop(Cell host, FloraConfiguration floraConfiguration, CellRandomSpawnProfileSO profile, GameDataSO gameData)
         {
+            var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
+            Domains? excluded = profile.FloraExcludeLocalDomain ? local : (Domains?)null;
+
             // initial batch
-            for (int i = 0; i < floraConfiguration.initialSpawnCount - 1; i++)
+            int initialCount = Mathf.Max(0, floraConfiguration.initialSpawnCount);
+            for (int i = 0; i < initialCount; i++)
             {
                 var newFlora = Object.Instantiate(floraConfiguration.Flora, host.transform.position, Quaternion.identity);
-                newFlora.domain = profile.SpawnJade ? (Domains)Random.Range(1, 5) : (Domains)Random.Range(2, 5);
+                newFlora.domain = PickRandomDomain(excluded);
                 newFlora.Initialize(host);
             }
 
@@ -71,7 +75,7 @@ namespace CosmicShore.Game
                 if (controllingVolume < profile.FloraSpawnVolumeCeiling)
                 {
                     var newFlora = Object.Instantiate(floraConfiguration.Flora, host.transform.position, Quaternion.identity);
-                    newFlora.domain = profile.SpawnJade ? (Domains)Random.Range(1, 5) : (Domains)Random.Range(2, 5);
+                    newFlora.domain = PickRandomDomain(excluded);
                     newFlora.Initialize(host);
                 }
 
@@ -85,6 +89,9 @@ namespace CosmicShore.Game
 
         IEnumerator SpawnPopulationLoop(Cell host, Population population, CellRandomSpawnProfileSO profile, CellDataSO cellData, GameDataSO gameData)
         {
+            var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
+            Domains? excluded = profile.FaunaExcludeLocalDomain ? local : (Domains?)null;
+
             yield return new WaitForSeconds(profile.InitialFaunaSpawnWaitTime);
 
             while (true)
@@ -94,8 +101,9 @@ namespace CosmicShore.Game
                 if (controllingVolume > profile.FaunaSpawnVolumeThreshold)
                 {
                     var newPopulation = Object.Instantiate(population, host.transform.position, Quaternion.identity);
-                    newPopulation.domain = host.GetHostileDomainToLocalLegacy();
+                    newPopulation.domain = PickRandomDomain(excluded);
                     newPopulation.Goal = cellData.CrystalTransform.position;
+
                     yield return new WaitForSeconds(profile.BaseFaunaSpawnTime);
                 }
                 else
@@ -103,6 +111,29 @@ namespace CosmicShore.Game
                     yield return new WaitForSeconds(2f);
                 }
             }
+        }
+
+        // ------------------------------------------------------------
+        // Domain selection without flags/masks:
+        // Pick uniformly from Jade/Ruby/Gold/Blue, optionally excluding one.
+        // ------------------------------------------------------------
+        static Domains PickRandomDomain(Domains? excluded)
+        {
+            var candidates = new List<Domains>(4)
+            {
+                Domains.Jade,
+                Domains.Ruby,
+                Domains.Gold,
+                Domains.Blue
+            };
+
+            if (excluded.HasValue)
+                candidates.Remove(excluded.Value);
+
+            if (candidates.Count == 0)
+                return Domains.Jade;
+
+            return candidates[Random.Range(0, candidates.Count)];
         }
 
         static T PickWeighted<T>(IReadOnlyList<T> items, System.Func<T, float> weightSelector)

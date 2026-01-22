@@ -15,11 +15,12 @@ namespace CosmicShore.Core
 
         [Header("Defaults")]
         [SerializeField] private bool usePrefabScaleAsDefaultTarget;
-
+        [SerializeField] private Vector3 authoredTargetScale;
         public Vector3 MinScale => minScale;
         public Vector3 MaxScale { get => maxScale; set => maxScale = value; }
 
         public Vector3 TargetScale { get; private set; }
+        public Vector3 AuthoredTargetScale => authoredTargetScale;
         public float GrowthRate { get; set; } = 0.01f;
 
         private Prism prism;
@@ -34,7 +35,7 @@ namespace CosmicShore.Core
             get => isScaling;
             set
             {
-                if (isScaling == value) return;
+                if (isScaling.Equals(value)) return;
                 isScaling = value;
 
                 if (isScaling) PrismScaleManager.Instance?.OnBlockStartScaling(this);
@@ -54,51 +55,41 @@ namespace CosmicShore.Core
                 return;
             }
 
-            prefabAuthoredScale = transform.localScale;
+            if (authoredTargetScale.Equals(Vector3.zero))
+                authoredTargetScale = transform.localScale;
 
-            if (usePrefabScaleAsDefaultTarget && TargetScale == Vector3.zero)
-            {
-                SetTargetScale(prefabAuthoredScale);
-            }
+            if (TargetScale == Vector3.zero)
+                SetTargetScale(authoredTargetScale);
 
             transform.localScale = Vector3.zero;
         }
 
         public void Initialize()
         {
-            if (!isRegistered) TryRegisterWithManager();
-        }
-
-        private void TryRegisterWithManager()
-        {
-            if (PrismScaleManager.Instance && !isRegistered)
-            {
-                PrismScaleManager.Instance.RegisterAnimator(this);
-                isRegistered = true;
-            }
+            if (isRegistered) return;
+            if (!PrismScaleManager.Instance) return;
+            PrismScaleManager.Instance.RegisterAnimator(this);
+            isRegistered = true;
         }
 
         private void OnDisable()
         {
-            if (PrismScaleManager.Instance != null && isRegistered)
-            {
-                PrismScaleManager.Instance.UnregisterAnimator(this);
-                isRegistered = false;
-            }
+            if (PrismScaleManager.Instance == null || !isRegistered) return;
+            PrismScaleManager.Instance.UnregisterAnimator(this);
+            isRegistered = false;
         }
-
-        public void BeginGrowthAnimation()
+        
+        public void BeginGrowthAnimation(bool resetToZero = false)
         {
             if (!enabled) return;
             if (IsScaling) return;
-            
-            if (TargetScale == Vector3.zero)
-            {
-                var fallback = prefabAuthoredScale != Vector3.zero ? prefabAuthoredScale : Vector3.one;
-                SetTargetScale(fallback);
-            }
 
-            transform.localScale = Vector3.zero;
+            if (TargetScale == Vector3.zero)
+                TargetScale = transform.localScale;
+
+            if (resetToZero)
+                transform.localScale = Vector3.zero;
+
             IsScaling = true;
         }
 
@@ -116,6 +107,7 @@ namespace CosmicShore.Core
         public void Grow(float amount = 1)
         {
             if (!enabled || !prism) return;
+
             var growthVector = amount * prism.GrowthVector;
             SetTargetScale(TargetScale + growthVector);
             BeginGrowthAnimation();
@@ -137,7 +129,7 @@ namespace CosmicShore.Core
                 OwnName = prism.PlayerName,
             });
 
-            if (prism == null) return;
+            if (!prism) return;
 
             if (CheckIfIsLargest())
             {
@@ -159,7 +151,7 @@ namespace CosmicShore.Core
 
         private float UpdateVolume()
         {
-            if (!enabled || prism == null || prism.prismProperties == null)
+            if (!enabled || !prism || prism.prismProperties == null)
             {
                 Debug.LogError($"Required components are null on {gameObject.name}");
                 return 0f;

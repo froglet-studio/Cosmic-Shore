@@ -9,11 +9,14 @@ namespace CosmicShore.Game
     {
         [Header("Flora")]
         [Min(0)] public int FloraTypeCount = 2;
-        public bool SpawnJade = true;
+        [Tooltip("If ON, spawned flora will never use the local player's domain.")]
+        public bool FloraExcludeLocalDomain = false;
         [Min(0f)] public float FloraSpawnVolumeCeiling = 12000f;
 
         [Header("Fauna")]
         [Min(0)] public int FaunaTypeCount = 2;
+        [Tooltip("If ON, spawned fauna populations will never use the local player's domain.")]
+        public bool FaunaExcludeLocalDomain = true;
         [Min(0f)] public float InitialFaunaSpawnWaitTime = 10f;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
         [Min(0f)] public float BaseFaunaSpawnTime = 60f;

@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Game;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -34,7 +36,10 @@ namespace CosmicShore
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
         [SerializeField] float plantRadius = 75f;
+        [SerializeField] float noLeafFailsafeSeconds = 8f;
+        [SerializeField] bool guaranteeInitialLeaf = true;
 
+        Coroutine noLeafFailsafeRoutine;
         struct Branch
         {
             public GameObject gameObject;
@@ -46,18 +51,59 @@ namespace CosmicShore
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell);
+
             if (isCrystaltropic)
-            {
-                goal = cellData.CrystalTransform.position; // cell.GetCrystal().transform.position;
-            }
-            //activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
-            SeedBranches(); // add more truncks
-            SafeLookRotation.TrySet(transform, cellData.CrystalTransform.position, transform); // cell.GetCrystal().transform.position
+                goal = cellData.CrystalTransform.position;
+
+            SeedBranches();
+            SafeLookRotation.TrySet(transform, cellData.CrystalTransform.position, transform);
+
+            if (guaranteeInitialLeaf)
+                SpawnOneLeafOnAnyTrunk();
+
+            if (noLeafFailsafeRoutine != null) StopCoroutine(noLeafFailsafeRoutine);
+            noLeafFailsafeRoutine = StartCoroutine(KillIfStillNoLeaves(noLeafFailsafeSeconds));
+        }
+        
+        void SpawnOneLeafOnAnyTrunk()
+        {
+            if (activeBranches.Count == 0) return;
+
+            // pick any trunk
+            var trunk = activeBranches.First();
+
+            var go = Instantiate(
+                healthPrism,
+                trunk.gameObject.transform.position + (branchingScaleFactor * trunk.gameObject.transform.forward),
+                trunk.gameObject.transform.rotation,
+                trunk.gameObject.transform
+            ).gameObject;
+
+            var hp = go.GetComponent<HealthPrism>();
+            if (!hp) return;
+
+            hp.LifeForm = this;
+            hp.ChangeTeam(domain);
+
+            AddHealthBlock(hp);
+            hp.Initialize("flora");
         }
 
+        IEnumerator KillIfStillNoLeaves(float seconds)
+        {
+            if (seconds <= 0f) yield break;
+
+            yield return new WaitForSeconds(seconds);
+            if (!this) yield break;
+
+            var leaves = GetComponentsInChildren<HealthPrism>(true);
+            if (leaves != null && leaves.Length != 0) yield break;
+            Debug.LogWarning($"{name}: BranchingFlora had no HealthPrisms after {seconds}s. Auto-dying.");
+            Die();
+        }
         void SeedBranches()
         {
-            for (int i = 0; i < Random.Range(minTrunks, maxTrunks); i++)
+            for (int i = 0; i < Random.Range(minTrunks, maxTrunks + 1); i++)
             {
                 Branch branch = new Branch();
                 branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
