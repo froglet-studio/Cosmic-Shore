@@ -19,6 +19,7 @@ Material:
   - IS_TEXCOORD_MOVE
   - IS_TEXTURE_ANIMATE
   - IS_TEXTURE_ANIMATE_ADVANCED
+  - IS_USE_SECOND_COLOR
   m_InvalidKeywords:
   - IS_UNITY_PARTICLE_INSTANCING_ENABLED
   m_LightmapFlags: 4
@@ -118,7 +119,7 @@ Material:
     - _MaskCutOut: 1
     - _MaskFade: 1
     - _MaskOffsetFactor: 5
-    - _MaxIndex: 3
+    - _MaxIndex: 7
     - _Metallic: 0
     - _MixedMove: 0
     - _Mode: 0
@@ -134,8 +135,8 @@ Material:
     - _RimLight: 0
     - _RimScale: 1
     - _RimStrength: 1
-    - _RotateAngle: 0
-    - _SecondColor: 0
+    - _RotateAngle: -0.77
+    - _SecondColor: 1
     - _SmoothnessTextureChannel: 0
     - _SoftParticle: 1
     - _SpecularHighlights: 1
@@ -148,8 +149,8 @@ Material:
     - _TexcoordMoveUsingCustom: 0
     - _TextureAnimate: 1
     - _TextureAnimateAdvanced: 1
-    - _TextureAnimateSpeed: 5
-    - _TextureAnimateStyle: 2
+    - _TextureAnimateSpeed: 0.001
+    - _TextureAnimateStyle: 0.61
     - _TextureBlend: 0
     - _TextureNoise: 0
     - _UVSec: 0
@@ -157,16 +158,16 @@ Material:
     - _VertexAnimation: 0
     - _ZTest2: 2
     - _ZWrite: 0
-    - _xTexcoordMove: 0
+    - _xTexcoordMove: -0.05
     - _xTexcoordMoveLimit: 0
-    - _yTexcoordMove: -1
+    - _yTexcoordMove: -0.02
     - _yTexcoordMoveLimit: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _NoiseValue: {r: 0.2, g: 0.4, b: 0.2, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}
-    - _TintColor: {r: 0.03137255, g: 0, b: 0.2509804, a: 1}
-    - _TintColor2: {r: 1.6173602, g: 0.5001705, b: 0, a: 1}
+    - _TintColor: {r: 0.01174794, g: 0.02474188, b: 0.03773582, a: 1}
+    - _TintColor2: {r: 0, g: 0.019444177, b: 1.2379295, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

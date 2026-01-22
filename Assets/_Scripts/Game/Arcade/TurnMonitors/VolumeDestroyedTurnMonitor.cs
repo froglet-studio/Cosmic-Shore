@@ -15,7 +15,7 @@ namespace CosmicShore.Game.Arcade
             // TODO - Check if any volume was destroyed -> from miniGameData ,
             // but not sure how much of volume need to be destroyed.
 
-            if (!gameData.TryGetActivePlayerStats(out IPlayer _, out IRoundStats roundStats))
+            if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out IRoundStats roundStats))
                 return false;
 
             return roundStats.TotalVolumeDestroyed > 0;

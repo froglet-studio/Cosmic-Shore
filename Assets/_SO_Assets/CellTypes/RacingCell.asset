@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cc8b399787ff60c42815dba688c93f17, type: 3}
-  m_Name: Wildlife1Cell
+  m_Name: RacingCell
   m_EditorClassIdentifier: 
-  CellName: Branching
-  Description: lots of branches
+  CellName: Brain
+  Description: Feels like flying in a brain
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
-  MembranePrefab: {fileID: 4706187880104436496, guid: 14ec7ac4b3edad84fbda809cbd91f3a5,
+  MembranePrefab: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
     type: 3}
   NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
     type: 3}
@@ -25,20 +25,22 @@ MonoBehaviour:
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SupportedFlora:
-  - Flora: {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7, type: 3}
+  - Flora: {fileID: 8186157953239024492, guid: 98e540e086dd56a4e8f214a4fe73767e, type: 3}
     SpawnProbability: 1
-    initialSpawnCount: 2
-    OverrideDefaultPlantPeriod: 1
-    NewPlantPeriod: 99999
+    initialSpawnCount: 0
+    OverrideDefaultPlantPeriod: 0
+    NewPlantPeriod: 0
+  - Flora: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
+    SpawnProbability: 0.1
+    initialSpawnCount: 0
+    OverrideDefaultPlantPeriod: 0
+    NewPlantPeriod: 0
+  - Flora: {fileID: 8186157953239024492, guid: 64c1c3612f071b946a3f70e8a65496db, type: 3}
+    SpawnProbability: 0.1
+    initialSpawnCount: 0
+    OverrideDefaultPlantPeriod: 0
+    NewPlantPeriod: 0
   SupportedFauna:
   - Population: {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b,
       type: 3}
-    InitialFloraSpawnCount: 1
     SpawnProbability: 1
-  IntensityLifeFormConfiguration:
-    FloraInitialDelaySeconds: 0
-    FaunaInitialDelaySeconds: 5
-    FloraSpawnIntervalSeconds: 2
-    FaunaSpawnIntervalSeconds: 4
-    FloraExcludeLocalDomain: 1
-    FaunaExcludeLocalDomain: 1

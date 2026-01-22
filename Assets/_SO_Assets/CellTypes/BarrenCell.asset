@@ -16,7 +16,7 @@ MonoBehaviour:
   Description: Feels like flying in a brain
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
-  MembranePrefab: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
+  MembranePrefab: {fileID: 4706187880104436496, guid: 14ec7ac4b3edad84fbda809cbd91f3a5,
     type: 3}
   NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
     type: 3}

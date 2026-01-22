@@ -343,7 +343,7 @@ namespace CosmicShore.Soap
         public List<IRoundStats> GetSortedListInDecendingOrderBasedOnVolumeRemaining() =>
             RoundStatsList.OrderByDescending(r => r.VolumeRemaining).ToList();
 
-        public bool TryGetActivePlayerStats(out IPlayer player, out IRoundStats roundStats)
+        public bool TryGetLocalPlayerStats(out IPlayer player, out IRoundStats roundStats)
         {
             player = LocalPlayer;
             roundStats = player != null ? FindByName(player.Name) : null;
@@ -383,7 +383,7 @@ namespace CosmicShore.Soap
                 return false;
             }
 
-            if (!TryGetActivePlayerStats(out IPlayer _, out roundStats))
+            if (!TryGetLocalPlayerStats(out IPlayer _, out roundStats))
             {
                 Debug.LogError("No round stats of active player found!");
                 return false;   
