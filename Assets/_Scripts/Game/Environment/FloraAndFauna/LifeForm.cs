@@ -1,8 +1,8 @@
 using System;
-using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Soap;
 using Obvious.Soap;
@@ -16,32 +16,34 @@ namespace CosmicShore
     {
         [SerializeField]
         protected CellDataSO cellData;
-        
-        [FormerlySerializedAs("healthBlock")] [SerializeField] protected HealthPrism healthPrism;
+
+        [FormerlySerializedAs("healthBlock")]
+        [SerializeField] protected HealthPrism healthPrism;
+
         [SerializeField] protected Spindle spindle;
+
         [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
-        [Header("Health Prism Scaling")]
-        [SerializeField] Vector3 defaultHealthPrismTargetScale = new Vector3(4f, 4f, 1f);
-        
-        [FormerlySerializedAs("Team")] public Domains domain;
+
+        [FormerlySerializedAs("Team")]
+        public Domains domain;
+
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
         protected Crystal crystal;
         protected Cell cell;
+
         bool mature = false;
         bool dying = false;
+
         HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
-        
-        [SerializeField]
-        ScriptableEventInt onLifeFormCreated;
-        
-        [SerializeField]
-        ScriptableEventInt onLifeFormDestroyed;
+
+        [SerializeField] ScriptableEventInt onLifeFormCreated;
+        [SerializeField] ScriptableEventInt onLifeFormDestroyed;
+
         [SerializeField] private bool autoInitialize = true;
         private bool initialized;
-        protected virtual Vector3 GetHealthPrismTargetScale() => defaultHealthPrismTargetScale;
-        
+
         protected virtual void Start()
         {
             if (!autoInitialize || initialized) return;
@@ -58,15 +60,22 @@ namespace CosmicShore
             if (initialized) return;
             initialized = true;
 
-            if (shieldPeriod > 0) StartCoroutine(ShieldRegen());
+            if (shieldPeriod > 0)
+                StartCoroutine(ShieldRegen());
+
             crystal = GetComponentInChildren<Crystal>();
             this.cell = cell;
 
-            BindEmbeddedParts();  
+            BindEmbeddedParts();
 
             onLifeFormCreated?.Raise(cell.ID);
         }
 
+        /// <summary>
+        /// Binds any Spindles / HealthPrisms already present in the prefab hierarchy.
+        /// IMPORTANT: We do NOT override HealthPrism.TargetScale here.
+        /// TargetScale should be authored on the prefab HealthPrism itself (or overridden by Flora).
+        /// </summary>
         private void BindEmbeddedParts()
         {
             var embeddedSpindles = GetComponentsInChildren<Spindle>(true);
@@ -79,14 +88,14 @@ namespace CosmicShore
             var embeddedHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
             foreach (var hp in embeddedHealthPrisms)
             {
-                if (!hp) continue; 
+                if (!hp) continue;
+
                 hp.LifeForm = this;
                 hp.ChangeTeam(domain);
-                hp.TargetScale = GetHealthPrismTargetScale();
                 hp.Initialize("fauna");
             }
         }
-        
+
         public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
             if (!healthPrism) return;
@@ -95,16 +104,24 @@ namespace CosmicShore
 
             healthPrism.ChangeTeam(domain);
             healthPrism.LifeForm = this;
-            healthPrism.TargetScale = GetHealthPrismTargetScale();
-
             healthPrism.ownerID = $"{this} + {healthPrism} + {healthBlocks.Count}";
             CheckIfMature();
         }
-
+        
         public void AddSpindle(Spindle spindle)
         {
+            if (!spindle) return;
+
             spindles.Add(spindle);
             spindle.LifeForm = this;
+
+            //spindle.OnWitherStarted += HandleSpindleWitherStarted;
+        }
+        
+        private void HandleSpindleWitherStarted(Spindle spindle)
+        {
+            // Whimper / change behavior / retreat / enraged / etc.
+            //  route this through ScriptableEvents too.
         }
 
         public Spindle AddSpindle()
@@ -116,11 +133,13 @@ namespace CosmicShore
 
         public virtual void RemoveSpindle(Spindle spindle)
         {
+            if (!spindle) return;
             spindles.Remove(spindle);
         }
 
         public virtual void RemoveHealthBlock(HealthPrism healthPrism)
-        { 
+        {
+            if (!healthPrism) return;
             healthBlocks.Remove(healthPrism);
             CheckIfDead();
         }
@@ -134,7 +153,7 @@ namespace CosmicShore
             }
         }
 
-        void  CheckIfMature()
+        void CheckIfMature()
         {
             if (healthBlocks.Count >= healthBlocksForMaturity)
                 mature = true;
@@ -142,31 +161,29 @@ namespace CosmicShore
 
         protected virtual void Die()
         {
-            crystal.ActivateCrystal();
+            if (crystal) crystal.ActivateCrystal();
+
             foreach (HealthPrism healthBlock in healthBlocks.ToArray())
             {
                 Debug.LogWarning("Post death health block created!. Should not happen!");
                 healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
             }
+
             StopAllCoroutines();
             StartCoroutine(DieCoroutine());
-            // StatsManager.Instance.LifeformDestroyed(cell.ID);
-            onLifeFormDestroyed.Raise(cell.ID);
+
+            onLifeFormDestroyed?.Raise(cell.ID);
         }
 
         private IEnumerator DieCoroutine()
         {
             while (spindles.Count > 0)
-            {
                 yield return null;
-            }
+
             Destroy(gameObject);
         }
 
-        public GameObject GetGameObject()
-        {
-            return gameObject;
-        }
+        public GameObject GetGameObject() => gameObject;
 
         public void SetTeam(Domains domain)
         {
@@ -175,26 +192,22 @@ namespace CosmicShore
             // propagate to any already-existing health prisms (prefab embedded or spawned)
             var allHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
             foreach (var hp in allHealthPrisms)
-                hp.ChangeTeam(domain);
+                if (hp) hp.ChangeTeam(domain);
         }
-
 
         IEnumerator ShieldRegen()
         {
             while (shieldPeriod > 0)
             {
-                // Create a snapshot of the current health blocks
                 List<HealthPrism> currentBlocks = new List<HealthPrism>(healthBlocks);
 
                 if (currentBlocks.Count > 0)
                 {
                     foreach (HealthPrism healthBlock in currentBlocks)
                     {
-                        // Check if the block still exists in the main list
                         if (healthBlocks.Contains(healthBlock))
-                        {
                             healthBlock.ActivateShield();
-                        }
+
                         yield return new WaitForSeconds(shieldPeriod);
                     }
                 }

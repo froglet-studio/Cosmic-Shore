@@ -51,7 +51,8 @@ namespace CosmicShore.Core
         internal PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
 
         public Action<Prism> OnReturnToPool;
-
+        private bool _initialized;
+        
         public Domains Domain
         {
             get => teamManager?.Domain ?? Domains.Unassigned;
@@ -124,14 +125,20 @@ namespace CosmicShore.Core
 
         public virtual void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
+            if (_initialized) return;
+            _initialized = true;
             PlayerName = playerName;
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
-            scaleAnimator.Initialize();
-            StartCoroutine(CreateBlockCoroutine());
+            var authoredTargetScale = scaleAnimator ? scaleAnimator.TargetScale : transform.localScale;
+            if (authoredTargetScale == Vector3.zero)
+                authoredTargetScale = transform.localScale;
 
-            // Apply initial states if needed
+            scaleAnimator.Initialize();
+            scaleAnimator.SetTargetScale(authoredTargetScale);
+            StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
+
             if (prismProperties.IsShielded) ActivateShield();
             if (prismProperties.IsDangerous) MakeDangerous();
         }
@@ -155,39 +162,33 @@ namespace CosmicShore.Core
             prismProperties.TimeCreated = Time.time;
             gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
 
-            // Initialize volume immediately to prevent zero-volume explosions
-            prismProperties.volume = 1f; // Set a default non-zero volume
+            prismProperties.volume = 1f;
         }
 
-        private IEnumerator CreateBlockCoroutine()
+        private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
         {
             yield return new WaitForSeconds(waitTime);
+
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
-            // Set initial target scale before beginning growth animation
             if (scaleAnimator.TargetScale == Vector3.zero)
-            {
-                scaleAnimator.SetTargetScale(Vector3.one);
-            }
+                scaleAnimator.SetTargetScale(authoredTargetScale);
 
-            // Update volume before growth animation starts
             prismProperties.volume = scaleAnimator.GetCurrentVolume();
 
             scaleAnimator.BeginGrowthAnimation();
-            
+
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,
                 Volume = prismProperties.volume,
             });
 
-            // TODO - Use Event Channel
             if (CellControlManager.Instance)
             {
                 CellControlManager.Instance.AddBlock(Domain, prismProperties);
 
-                // Setup team node tracking after block is fully initialized
                 Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
                 System.Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
                 {

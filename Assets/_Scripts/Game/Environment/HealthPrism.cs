@@ -15,7 +15,6 @@ namespace CosmicShore
         public override void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
             base.Initialize(playerName);
-        
             if (LifeForm)
                 LifeForm.AddHealthBlock(this);
 
@@ -43,6 +42,19 @@ namespace CosmicShore
             if (spindle) spindle.RemoveHealthBlock(this);
 
             base.Explode(impactVector, domain, playerName, devastate);
+
+            if (LifeForm)
+                LifeForm.RemoveHealthBlock(this);
+
+            if (spindle) spindle.CheckForLife();
+        }
+        
+        protected override void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
+        {
+            spindle ??= transform.parent.GetComponent<Spindle>();
+            if (spindle) spindle.RemoveHealthBlock(this);
+
+            base.Implode(targetTransform, domain, playerName, devastate);
 
             if (LifeForm)
                 LifeForm.RemoveHealthBlock(this);
