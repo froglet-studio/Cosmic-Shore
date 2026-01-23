@@ -24,22 +24,12 @@ namespace CosmicShore.Game.Arcade
         }
 
         protected virtual void UpdateTimerUI() =>
-            UpdateTimerUI_2(GetTimeToDisplay());
+            InvokeUpdateTurnMonitorDisplay(GetTimeToDisplay());
 
-        protected void UpdateTimerUI_2(string message) =>
+        protected void InvokeUpdateTurnMonitorDisplay(string message) =>
             onUpdateTurnMonitorDisplay?.Raise(message);
         
         protected string GetTimeToDisplay() => 
             ((int)duration - (int)elapsedTime).ToString();
-        
-        #if UNITY_EDITOR
-        
-        [ContextMenu("Reset Timer")]
-        void ResetTimer() => elapsedTime = 0;
-        
-        [ContextMenu("End Timer")]
-        void EndTimer() => elapsedTime = duration;
-        
-        #endif
     }
 }

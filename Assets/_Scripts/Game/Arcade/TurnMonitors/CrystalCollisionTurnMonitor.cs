@@ -22,8 +22,17 @@ namespace CosmicShore.Game.Arcade
 
         protected override void RestrictedUpdate()
         {
-            string message = (CrystalCollisions - roundStats.OmniCrystalsCollected).ToString();
-            onUpdateTurnMonitorDisplay.Raise(message);
+            base.RestrictedUpdate();
+            UpdateCrystalsRemainingUI();
         }
+
+        protected virtual void UpdateCrystalsRemainingUI() =>
+            InvokeUpdateTurnMonitorDisplay(GetRemainingCrystalsCountToCollect());
+        
+        protected void InvokeUpdateTurnMonitorDisplay(string message) =>
+            onUpdateTurnMonitorDisplay?.Raise(message);
+        
+        protected string GetRemainingCrystalsCountToCollect() =>
+            (CrystalCollisions - roundStats.OmniCrystalsCollected).ToString();
     }
 }

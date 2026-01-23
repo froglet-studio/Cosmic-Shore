@@ -34,5 +34,6 @@ public enum GameModes
     MultiplayerCellularDuel = 29,
     Multiplayer2v2CoOpVsAI = 30,
     HexRace = 31,
-    MultiplayerWildlifeBlitzGame = 32
+    MultiplayerWildlifeBlitzGame = 32,
+    MultiplayerHexRaceGame = 33,
 }
