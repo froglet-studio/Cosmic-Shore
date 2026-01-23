@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade
                 maze.Seed = new System.Random().Next();
                 maze.origin = Random.insideUnitSphere * 400;
                 maze.RotationAmount = Random.Range(0, 360);
-                maze.IntensityLevel = IntensityLevel;
+                //maze.IntensityLevel = IntensityLevel;
             }
         }
     }

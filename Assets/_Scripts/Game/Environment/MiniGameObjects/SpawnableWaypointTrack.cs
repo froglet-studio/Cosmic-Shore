@@ -1,12 +1,13 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class SpawnableWaypointTrack : SpawnableAbstractBase
 {
     [Header("Waypoints")]
-    [Tooltip("List of positions defining the track path. The track will close from the last point back to the first.")]
-    [SerializeField] List<Vector3> waypoints = new List<Vector3>();
+    [Tooltip("List of position sets for each intensity level. The track will close from the last point back to the first.")]
+    [SerializeField] List<CrystalPositionSet> waypoints;
 
     [Header("Block Settings")]
     [SerializeField] Prism prism;
@@ -27,13 +28,22 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
     [Header("Track Domain")]
     [SerializeField] Domains trackDomain = Domains.Gold;
 
+    [Header("Editor Preview")]
+    [Tooltip("Which intensity level to preview in the editor")]
+    [SerializeField] int previewIntensityLevel = 0;
+
     static int TracksSpawned = 0;
 
     public override GameObject Spawn()
     {
-        if (waypoints == null || waypoints.Count < 2)
+        return Spawn(intensityLevel: 1);
+    }
+
+    public override GameObject Spawn(int intensityLevel)
+    {
+        if (!IsValidIntensityLevel(intensityLevel))
         {
-            Debug.LogError("[WaypointTrack] Need at least 2 waypoints to create a track.");
+            Debug.LogError($"[WaypointTrack] Need at least 2 waypoints for intensity level {intensityLevel}.");
             return new GameObject("EmptyTrack");
         }
 
@@ -43,16 +53,13 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
         var trail = new Trail();
         int totalBlocks = 0;
 
-        // Spawn blocks for each segment, including the closing segment
-        int segmentCount = waypoints.Count; // Includes wrap-around segment
+        var positions = waypoints[intensityLevel - 1].positions;
+        int segmentCount = positions.Count;
 
         for (int segment = 0; segment < segmentCount; segment++)
         {
-            Vector3 startPos = waypoints[segment];
-            Vector3 endPos = waypoints[(segment + 1) % waypoints.Count]; // Wrap to first for last segment
-
-            // Get the position after endPos for smooth orientation at segment boundaries
-            Vector3 nextPos = waypoints[(segment + 2) % waypoints.Count];
+            Vector3 startPos = positions[segment];
+            Vector3 endPos = positions[(segment + 1) % positions.Count];
 
             for (int i = 0; i < blocksPerSegment; i++)
             {
@@ -63,12 +70,10 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
                 Vector3 lookTarget;
                 if (i < blocksPerSegment - 1)
                 {
-                    // Look at next block in same segment
                     lookTarget = Vector3.Lerp(startPos, endPos, (float)(i + 1) / blocksPerSegment);
                 }
                 else
                 {
-                    // At end of segment, look toward start of next segment
                     lookTarget = endPos;
                 }
 
@@ -88,70 +93,54 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
 
         trails.Add(trail);
 
-        Debug.Log($"[WaypointTrack] Generated track with {waypoints.Count} waypoints, " +
-                  $"{totalBlocks} total blocks, approximate length: {EstimateTrackLength():F0} units");
+        Debug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
+           $"{totalBlocks} total blocks, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
 
         return container;
     }
 
     /// <summary>
-    /// Estimate total track length by summing segment distances
+    /// Estimate total track length by summing segment distances (expects 1-based intensity: 1-4)
     /// </summary>
-    private float EstimateTrackLength()
+    private float EstimateTrackLength(int intensityLevel)
     {
+        if (!IsValidIntensityLevel(intensityLevel)) return 0f;
+
+        var positions = waypoints[intensityLevel - 1].positions;
         float length = 0f;
-        for (int i = 0; i < waypoints.Count; i++)
+
+        for (int i = 0; i < positions.Count; i++)
         {
-            int next = (i + 1) % waypoints.Count;
-            length += Vector3.Distance(waypoints[i], waypoints[next]);
+            int next = (i + 1) % positions.Count;
+            length += Vector3.Distance(positions[i], positions[next]);
         }
         return length;
-    }
-
-    /// <summary>
-    /// Add a waypoint to the track
-    /// </summary>
-    public void AddWaypoint(Vector3 position)
-    {
-        waypoints.Add(position);
-    }
-
-    /// <summary>
-    /// Set all waypoints at once
-    /// </summary>
-    public void SetWaypoints(List<Vector3> newWaypoints)
-    {
-        waypoints = new List<Vector3>(newWaypoints);
-    }
-
-    /// <summary>
-    /// Get the current waypoints
-    /// </summary>
-    public List<Vector3> GetWaypoints()
-    {
-        return new List<Vector3>(waypoints);
     }
 
     /// <summary>
     /// Get interpolated positions along the entire track
     /// </summary>
     /// <param name="positionCount">Total number of positions to return</param>
-    public Vector3[] GetInterpolatedPositions(int positionCount)
+    /// <param name="intensityLevel">Which intensity level track to use</param>
+    public Vector3[] GetInterpolatedPositions(int positionCount, int intensityLevel)
     {
-        if (waypoints.Count < 2) return new Vector3[0];
+        if (!IsValidIntensityLevel(intensityLevel)) return new Vector3[0];
+
+        var waypointPositions = waypoints[intensityLevel - 1].positions;
+        if (waypointPositions.Count < 2) return new Vector3[0];
 
         Vector3[] positions = new Vector3[positionCount];
-        float totalLength = EstimateTrackLength();
+        float totalLength = EstimateTrackLength(intensityLevel);
 
         // Calculate segment lengths and cumulative distances
-        float[] segmentLengths = new float[waypoints.Count];
-        float[] cumulativeDistances = new float[waypoints.Count + 1];
+        float[] segmentLengths = new float[waypointPositions.Count];
+        float[] cumulativeDistances = new float[waypointPositions.Count + 1];
         cumulativeDistances[0] = 0f;
 
-        for (int i = 0; i < waypoints.Count; i++)
+        for (int i = 0; i < waypointPositions.Count; i++)
         {
-            int next = (i + 1) % waypoints.Count;
-            segmentLengths[i] = Vector3.Distance(waypoints[i], waypoints[next]);
+            int next = (i + 1) % waypointPositions.Count;
+            segmentLengths[i] = Vector3.Distance(waypointPositions[i], waypointPositions[next]);
             cumulativeDistances[i + 1] = cumulativeDistances[i] + segmentLengths[i];
         }
 
@@ -161,7 +150,7 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
 
             // Find which segment this distance falls into
             int segment = 0;
-            for (int s = 0; s < waypoints.Count; s++)
+            for (int s = 0; s < waypointPositions.Count; s++)
             {
                 if (targetDistance >= cumulativeDistances[s] && targetDistance < cumulativeDistances[s + 1])
                 {
@@ -172,8 +161,8 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
 
             // Interpolate within segment
             float segmentProgress = (targetDistance - cumulativeDistances[segment]) / segmentLengths[segment];
-            int nextWaypoint = (segment + 1) % waypoints.Count;
-            positions[i] = Vector3.Lerp(waypoints[segment], waypoints[nextWaypoint], segmentProgress);
+            int nextWaypoint = (segment + 1) % waypointPositions.Count;
+            positions[i] = Vector3.Lerp(waypointPositions[segment], waypointPositions[nextWaypoint], segmentProgress);
         }
 
         return positions;
@@ -182,9 +171,9 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
     /// <summary>
     /// Find the closest point on track to a given position
     /// </summary>
-    public Vector3 GetClosestPointOnTrack(Vector3 position, out float trackProgress)
+    public Vector3 GetClosestPointOnTrack(Vector3 position, out float trackProgress, int intensityLevel)
     {
-        var interpolated = GetInterpolatedPositions(200);
+        var interpolated = GetInterpolatedPositions(200, intensityLevel);
 
         float minDist = float.MaxValue;
         int closestIndex = 0;
@@ -204,42 +193,75 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
     }
 
     /// <summary>
-    /// Get track length in units
+    /// Check if an intensity level is valid
     /// </summary>
-    public float GetTrackLength() => EstimateTrackLength();
+    private bool IsValidIntensityLevel(int intensityLevel)
+    {
+        int index = intensityLevel - 1;
+        return waypoints != null &&
+               index >= 0 &&
+               index < waypoints.Count &&
+               waypoints[index].positions != null &&
+               waypoints[index].positions.Count >= 2;
+    }
 
 #if UNITY_EDITOR
-    // Draw the track path in the editor for easy visualization
+    private static readonly Color[] IntensityColors =
+    {
+        Color.green,
+        Color.yellow,
+        new Color(1f, 0.5f, 0f), // Orange
+        Color.red
+    };
+
     private void OnDrawGizmos()
     {
-        if (waypoints == null || waypoints.Count < 2) return;
+        if (!IsValidIntensityLevel(previewIntensityLevel)) return;
 
-        Gizmos.color = Color.yellow;
+        var positions = waypoints[previewIntensityLevel].positions;
+        Gizmos.color = IntensityColors[previewIntensityLevel % IntensityColors.Length];
 
-        for (int i = 0; i < waypoints.Count; i++)
+        for (int i = 0; i < positions.Count; i++)
         {
-            int next = (i + 1) % waypoints.Count;
-            Gizmos.DrawLine(waypoints[i], waypoints[next]);
-            Gizmos.DrawWireSphere(waypoints[i], 5f);
+            int next = (i + 1) % positions.Count;
+            Gizmos.DrawLine(positions[i], positions[next]);
+            Gizmos.DrawWireSphere(positions[i], 5f);
         }
 
         // Highlight first waypoint
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(waypoints[0], 8f);
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(positions[0], 8f);
     }
 
     private void OnDrawGizmosSelected()
     {
-        if (waypoints == null || waypoints.Count < 2) return;
+        if (!IsValidIntensityLevel(previewIntensityLevel)) return;
 
         // Draw interpolated path when selected
         Gizmos.color = new Color(0f, 1f, 1f, 0.5f);
-        var positions = GetInterpolatedPositions(100);
+        var positions = GetInterpolatedPositions(100, previewIntensityLevel);
 
         for (int i = 0; i < positions.Length; i++)
         {
             int next = (i + 1) % positions.Length;
             Gizmos.DrawLine(positions[i], positions[next]);
+        }
+
+        // Draw all intensity levels faintly for comparison
+        for (int level = 0; level < waypoints.Count; level++)
+        {
+            if (level == previewIntensityLevel || !IsValidIntensityLevel(level)) continue;
+
+            var levelPositions = waypoints[level].positions;
+            Color faintColor = IntensityColors[level % IntensityColors.Length];
+            faintColor.a = 0.25f;
+            Gizmos.color = faintColor;
+
+            for (int i = 0; i < levelPositions.Count; i++)
+            {
+                int next = (i + 1) % levelPositions.Count;
+                Gizmos.DrawLine(levelPositions[i], levelPositions[next]);
+            }
         }
     }
 #endif

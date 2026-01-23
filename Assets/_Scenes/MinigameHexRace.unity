@@ -448,7 +448,7 @@ MonoBehaviour:
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
-  IntensityLevel: 1
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   InitializeOnStart: 0
   NumberOfSegments: 1
   mazeData: []
@@ -523,22 +523,65 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   domain: 3
   waypoints:
-  - {x: 700, y: 0, z: 0}
-  - {x: 500, y: 0, z: 500}
-  - {x: 0, y: 0, z: 700}
-  - {x: -500, y: 0, z: 500}
-  - {x: -700, y: 0, z: 0}
-  - {x: -500, y: 0, z: -500}
-  - {x: 0, y: 0, z: -700}
-  - {x: 500, y: 0, z: -500}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 500, y: 0, z: 500}
+    - {x: 0, y: 0, z: 700}
+    - {x: -500, y: 0, z: 500}
+    - {x: -700, y: 0, z: 0}
+    - {x: -500, y: 0, z: -500}
+    - {x: 0, y: 0, z: -700}
+    - {x: 500, y: 0, z: -500}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 445, y: 324, z: -433}
+    - {x: 198, y: 610, z: -280}
+    - {x: -198, y: 610, z: 280}
+    - {x: -445, y: 324, z: 433}
+    - {x: -700, y: 0, z: 0}
+    - {x: -445, y: -324, z: -433}
+    - {x: -198, y: -610, z: -280}
+    - {x: 198, y: -610, z: 280}
+    - {x: 445, y: -324, z: 433}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 431, y: 249, z: -492}
+    - {x: 249, y: 431, z: -492}
+    - {x: 0, y: 700, z: 0}
+    - {x: -249, y: 431, z: 492}
+    - {x: -431, y: 249, z: 492}
+    - {x: -700, y: 0, z: 0}
+    - {x: -431, y: -249, z: -492}
+    - {x: -249, y: -431, z: -492}
+    - {x: 0, y: -700, z: 0}
+    - {x: 249, y: -431, z: 492}
+    - {x: 431, y: -249, z: 492}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 402, y: 179, z: -545}
+    - {x: 171, y: 190, z: -652}
+    - {x: 165, y: 508, z: -452}
+    - {x: -71, y: 675, z: 173}
+    - {x: -178, y: 308, z: 603}
+    - {x: -235, y: 171, z: 637}
+    - {x: -605, y: 129, z: 329}
+    - {x: -605, y: -129, z: -329}
+    - {x: -235, y: -171, z: -637}
+    - {x: -178, y: -308, z: -603}
+    - {x: -71, y: -675, z: -173}
+    - {x: 165, y: -508, z: 452}
+    - {x: 171, y: -190, z: 652}
+    - {x: 402, y: -179, z: 545}
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   scale: {x: 5, y: 1, z: 5}
   blocksPerSegment: 50
   markWaypoints: 1
   waypointScaleMultiplier: 2
-  waypointPrism: {fileID: 0}
+  waypointPrism: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
+    type: 3}
   waypointDomain: 1
   trackDomain: 4
+  previewIntensityLevel: 0
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -614,7 +657,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 30
+  CrystalCollisions: 35
   hostileCollection: 0
 --- !u!114 &1078953711
 MonoBehaviour:
@@ -715,15 +758,56 @@ MonoBehaviour:
     type: 3}
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  crystalPositions:
-  - {x: 700, y: 0, z: 0}
-  - {x: 500, y: 0, z: 500}
-  - {x: 0, y: 0, z: 700}
-  - {x: -500, y: 0, z: 500}
-  - {x: -700, y: 0, z: 0}
-  - {x: -500, y: 0, z: -500}
-  - {x: 0, y: 0, z: -700}
-  - {x: 500, y: 0, z: -500}
+  listOfCrystalPositions:
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 500, y: 0, z: 500}
+    - {x: 0, y: 0, z: 700}
+    - {x: -500, y: 0, z: 500}
+    - {x: -700, y: 0, z: 0}
+    - {x: -500, y: 0, z: -500}
+    - {x: 0, y: 0, z: -700}
+    - {x: 500, y: 0, z: -500}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 445, y: 324, z: -433}
+    - {x: 198, y: 610, z: -280}
+    - {x: -198, y: 610, z: 280}
+    - {x: -445, y: 324, z: 433}
+    - {x: -700, y: 0, z: 0}
+    - {x: -445, y: -324, z: -433}
+    - {x: -198, y: -610, z: -280}
+    - {x: 198, y: -610, z: 280}
+    - {x: 445, y: -324, z: 433}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 431, y: 249, z: -492}
+    - {x: 249, y: 431, z: -492}
+    - {x: 0, y: 700, z: 0}
+    - {x: -249, y: 431, z: 492}
+    - {x: -431, y: 249, z: 492}
+    - {x: -700, y: 0, z: 0}
+    - {x: -431, y: -249, z: -492}
+    - {x: -249, y: -431, z: -492}
+    - {x: 0, y: -700, z: 0}
+    - {x: 249, y: -431, z: 492}
+    - {x: 431, y: -249, z: 492}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 402, y: 179, z: -545}
+    - {x: 171, y: 190, z: -652}
+    - {x: 165, y: 508, z: -452}
+    - {x: -71, y: 675, z: 173}
+    - {x: -178, y: 308, z: 603}
+    - {x: -235, y: 171, z: 637}
+    - {x: -605, y: 129, z: 329}
+    - {x: -605, y: -129, z: -329}
+    - {x: -235, y: -171, z: -637}
+    - {x: -178, y: -308, z: -603}
+    - {x: -71, y: -675, z: -173}
+    - {x: 165, y: -508, z: 452}
+    - {x: 171, y: -190, z: 652}
+    - {x: 402, y: -179, z: 545}
 --- !u!114 &1078953716
 MonoBehaviour:
   m_ObjectHideFlags: 0
