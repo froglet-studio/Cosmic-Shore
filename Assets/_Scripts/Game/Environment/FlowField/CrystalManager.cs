@@ -24,7 +24,10 @@ namespace CosmicShore.Game
         protected Crystal crystalPrefab;
         [SerializeField] bool scaleCrystalPositionWithIntensity;
         [SerializeField] IntVariable intensityLevelData;
-        
+
+        [SerializeField] List<Vector3> crystalPositions;
+        int crystalPositionIndex = 0;
+
         int _itemsAdded;
         
         Vector3 lastSpawnPos;
@@ -75,17 +78,26 @@ namespace CosmicShore.Game
             cellData.OnCrystalSpawned.Raise();
         }
 
-        protected Vector3 CalculateSpawnPos() => 
-            scaleCrystalPositionWithIntensity ? cellData.CellTransform.position * intensityLevelData : Vector3.forward * 30; // 30 unit forward if none
+        protected Vector3 CalculateSpawnPos()
+        {
+            var pos = crystalPositions.Count > 0 ? crystalPositions[crystalPositionIndex] + Random.onUnitSphere * 35 : Vector3.forward * 30;
+            crystalPositionIndex++;
+            return pos;
+            //return scaleCrystalPositionWithIntensity ? cellData.CellTransform.position * intensityLevelData : Vector3.forward * 30; // 30 unit forward if none
+        }
+
+
 
         protected Vector3 CalculateNewSpawnPos()
         {
             Vector3 spawnPos;
             do
             {
-                spawnPos = Random.insideUnitSphere * cellData.CrystalRadius + cellData.CellTransform.position;
+                spawnPos = crystalPositions.Count > 0 ? crystalPositions[crystalPositionIndex] + Random.onUnitSphere*35: Random.insideUnitSphere * cellData.CrystalRadius + cellData.CellTransform.position;
             } while (Vector3.SqrMagnitude(lastSpawnPos - spawnPos) <= MIN_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS);
-            
+
+            crystalPositionIndex = crystalPositions.Count > 0 ? (crystalPositionIndex + 1) % crystalPositions.Count : 0;
+
             lastSpawnPos = spawnPos;
             return spawnPos;
         }

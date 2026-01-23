@@ -20,6 +20,7 @@ namespace CosmicShore.Models.Enums
         HoneycombGrid = 15,
         HilbertCurveLSystem = 16,
         SavedMaze = 17,
-        HexRing = 18
+        HexRing = 18,
+        AtOriginNoRotation = 19,
     }
 }

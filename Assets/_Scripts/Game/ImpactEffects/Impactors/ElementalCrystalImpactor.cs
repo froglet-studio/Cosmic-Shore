@@ -5,7 +5,12 @@ namespace CosmicShore.Game
 {
     public class ElementalCrystalImpactor : CrystalImpactor
     {
-        VesselCrystalEffectSO[] elementalCrystalShipEffects;
+        SkimmerCrystalEffectSO[] elementalCrystalShipEffects;
+
+        [Header("Space Collect: move-to-vessel")] [SerializeField]
+        float moveToVesselDuration = 3f;
+
+        [SerializeField] bool easeMoveToVessel = true;
 
         bool isImpacting;
 
@@ -14,67 +19,75 @@ namespace CosmicShore.Game
             if (isImpacting) return;
             if (Crystal.IsExploding) return;
 
-            if (impactee is not VesselImpactor shipImpactee)
+            if (impactee is not SkimmerImpactor skimmerImpactor)
                 return;
 
             isImpacting = true;
             WaitForImpact().Forget();
 
-            if (!TryCollect(shipImpactee))
-                return;
-
             if (DoesEffectExist(elementalCrystalShipEffects))
             {
                 var data = CrystalImpactData.FromCrystal(Crystal);
                 foreach (var effect in elementalCrystalShipEffects)
-                    effect.Execute(shipImpactee, data);
+                    effect.Execute(skimmerImpactor, this);
             }
 
-            HandleCrystalVisualAndLifetime(shipImpactee);
+            HandleCrystalVisualAndLifetime(skimmerImpactor);
         }
 
-        bool TryCollect(VesselImpactor vesselImpactee)
+        void HandleCrystalVisualAndLifetime(SkimmerImpactor skimmerImpactor)
         {
-            var shipStatus = vesselImpactee.Vessel.VesselStatus;
-            return Crystal.CanBeCollected(shipStatus.Domain);
+            MoveToVesselThenPlaySpaceCollect(skimmerImpactor).Forget();
         }
 
-        void HandleCrystalVisualAndLifetime(VesselImpactor shipImpactee)
+        async UniTaskVoid MoveToVesselThenPlaySpaceCollect(SkimmerImpactor skimmerImpactor)
         {
-            var shipStatus = shipImpactee.Vessel.VesselStatus;
-            var element = Crystal.crystalProperties.Element;
+            var vesselStatusTransform = skimmerImpactor.Skimmer.VesselStatus.VesselTransformer.transform;
+            var col = Crystal.GetComponent<SphereCollider>();
+            if (col) col.enabled = false;
 
-            if (element == Element.Space)
+            float dur = Mathf.Max(0.0001f, moveToVesselDuration);
+            Vector3 startPos = Crystal.transform.position;
+            Quaternion startRot = Crystal.transform.rotation;
+
+            Vector3 targetPos = vesselStatusTransform.position;
+            Quaternion targetRot = vesselStatusTransform.rotation;
+
+            float t = 0f;
+            while (t < 1f && Crystal != null)
             {
-                PlaySpaceCollectAndDestroy().Forget();
+                t += Time.deltaTime / dur;
+                float u = Mathf.Clamp01(t);
+
+                if (easeMoveToVessel)
+                    u = u * u * (3f - 2f * u); // smoothstep
+
+                Crystal.transform.SetPositionAndRotation(
+                    Vector3.LerpUnclamped(startPos, targetPos, u),
+                    Quaternion.SlerpUnclamped(startRot, targetRot, u));
+
+                await UniTask.Yield(PlayerLoopTiming.Update);
             }
-            
-            Crystal.Explode(new Crystal.ExplodeParams {
-                Course = shipStatus.Course,
-                Speed = shipStatus.Speed,
-                PlayerName = shipStatus.PlayerName
-            });
-            Crystal.gameObject.SetActive(false);
+
+            // Snap (just in case)
+            if (Crystal)
+                Crystal.transform.SetPositionAndRotation(targetPos, targetRot);
+
+            // Now play the collect animation
+            PlaySpaceCollectAndDestroy().Forget();
         }
 
         async UniTaskVoid PlaySpaceCollectAndDestroy()
         {
-            var col = Crystal.GetComponent<SphereCollider>();
-            if (col) col.enabled = false;
-
             float delay = 0.6f;
 
-            var models = Crystal.CrystalModels;
-            if (models != null)
+            var crystalModels = Crystal.CrystalModels;
+            if (crystalModels != null)
             {
-                for (int i = 0; i < models.Count; i++)
+                foreach (var crystalModelData in crystalModels)
                 {
-                    var md = models[i];
-                    if (md.model != null && md.spaceCrystalAnimator != null)
-                    {
-                        md.spaceCrystalAnimator.PlayCollect();
-                        delay = Mathf.Max(delay, md.spaceCrystalAnimator.TotalCollectTime);
-                    }
+                    crystalModelData.spaceCrystalAnimator.PlayCollect();
+                    delay = Mathf.Max(delay, crystalModelData.spaceCrystalAnimator.TotalCollectTime);
                 }
             }
         }

@@ -135,22 +135,41 @@ namespace CosmicShore
         {
             if (!spindle) return;
             spindles.Remove(spindle);
+            CleanupDeadRefs();
+            CheckIfDead();
         }
 
         public virtual void RemoveHealthBlock(HealthPrism healthPrism)
         {
             if (!healthPrism) return;
             healthBlocks.Remove(healthPrism);
+            CleanupDeadRefs();
             CheckIfDead();
+        }
+        
+        
+        void CleanupDeadRefs()
+        {
+            spindles.RemoveWhere(s => !s);
+            healthBlocks.RemoveWhere(h => !h);
         }
 
         public void CheckIfDead()
         {
-            if (!dying && (spindles.Count == 0 || (mature && healthBlocks.Count <= minHealthBlocks)))
+            if (dying) return;
+
+            CleanupDeadRefs();
+
+            if(healthBlocks.Count <= minHealthBlocks)
             {
                 dying = true;
                 Die();
+                return;
             }
+
+            if (spindles.Count != 0) return;
+            dying = true;
+            Die();
         }
 
         void CheckIfMature()
@@ -163,10 +182,16 @@ namespace CosmicShore
         {
             if (crystal) crystal.ActivateCrystal();
 
-            foreach (HealthPrism healthBlock in healthBlocks.ToArray())
+            foreach (var healthBlock in healthBlocks.ToArray())
             {
-                Debug.LogWarning("Post death health block created!. Should not happen!");
+                if (!healthBlock) continue;
                 healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
+            }
+            
+            var allSpindles = GetComponentsInChildren<Spindle>(true);
+            foreach (var sp in allSpindles)
+            {
+                if (sp) sp.ForceWither();
             }
 
             StopAllCoroutines();
@@ -177,12 +202,17 @@ namespace CosmicShore
 
         private IEnumerator DieCoroutine()
         {
-            while (spindles.Count > 0)
+            while (true)
+            {
+                CleanupDeadRefs();
+                if (spindles.Count == 0) break;
                 yield return null;
+            }
 
             Destroy(gameObject);
         }
 
+        
         public GameObject GetGameObject() => gameObject;
 
         public void SetTeam(Domains domain)

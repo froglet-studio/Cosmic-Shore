@@ -74,7 +74,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
             // Calculate angle for this block - start at 0 so first point is at shared point
             float angle = (float)block / blocksPerRing * Mathf.PI * 2;
 
-            if (Mathf.Cos(angle) > .95) continue;
+            if (Mathf.Cos(angle) > .8) continue;
 
             // Calculate position on the ring using parametric equation of a circle
             Vector3 position = ringCenter +

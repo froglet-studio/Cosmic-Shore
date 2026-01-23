@@ -437,14 +437,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnableSegments:
-  - {fileID: 857195441}
-  positioningScheme: 9
+  - {fileID: 857195442}
+  positioningScheme: 19
   spawnSegmentWeights:
   - 1
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
-  Radius: 60
+  Radius: 1
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
@@ -486,9 +486,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 857195440}
-  - component: {fileID: 857195441}
+  - component: {fileID: 857195442}
   m_Layer: 0
-  m_Name: SpawnableHelix
+  m_Name: SpawnableTrack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -509,7 +509,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 781179372}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &857195441
+--- !u!114 &857195442
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -518,30 +518,27 @@ MonoBehaviour:
   m_GameObject: {fileID: 857195439}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdda02efb8af013498de46a34a87f391, type: 3}
+  m_Script: {fileID: 11500000, guid: 528998d6a59dd7c4b9b1f0290145ef51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
+  waypoints:
+  - {x: 700, y: 0, z: 0}
+  - {x: 500, y: 0, z: 500}
+  - {x: 0, y: 0, z: 700}
+  - {x: -500, y: 0, z: 500}
+  - {x: -700, y: 0, z: 0}
+  - {x: -500, y: 0, z: -500}
+  - {x: 0, y: 0, z: -700}
+  - {x: 500, y: 0, z: -500}
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   scale: {x: 5, y: 1, z: 5}
-  targetLapTime: 45
-  expectedShipSpeed: 150
-  blockCount: 600
-  trackWidth: 500
-  trackDepth: 300
-  maxElevation: 80
-  complexity: 0.5
-  includeCorkscrew: 1
-  includeBanking: 1
-  featureCount: 6
-  checkpointCount: 8
-  checkpointPrism: {fileID: 4563009547826722997, guid: ed6f72639ff50df48a391f3a7b926042,
-    type: 3}
-  checkpointScaleMultiplier: 2
-  startFinishDomain: 2
-  checkpointDomain: 4
-  seed: -1
-  actualSeed: 0
+  blocksPerSegment: 50
+  markWaypoints: 1
+  waypointScaleMultiplier: 2
+  waypointPrism: {fileID: 0}
+  waypointDomain: 1
+  trackDomain: 4
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -617,7 +614,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 2
+  CrystalCollisions: 30
   hostileCollection: 0
 --- !u!114 &1078953711
 MonoBehaviour:
@@ -665,7 +662,7 @@ MonoBehaviour:
     type: 2}
   segmentSpawner: {fileID: 781179373}
   baseNumberOfSegments: 1
-  baseStraightLineLength: 30
+  baseStraightLineLength: 1
   resetEnvironmentOnEachTurn: 0
   scaleNumberOfSegmentsWithIntensity: 0
   scaleLengthWithIntensity: 0
@@ -714,10 +711,19 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
-  crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
+  crystalPrefab: {fileID: 6588436222817790495, guid: 7b63787db55ba714287db76b70d1582e,
     type: 3}
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  crystalPositions:
+  - {x: 700, y: 0, z: 0}
+  - {x: 500, y: 0, z: 500}
+  - {x: 0, y: 0, z: 700}
+  - {x: -500, y: 0, z: 500}
+  - {x: -700, y: 0, z: 0}
+  - {x: -500, y: 0, z: -500}
+  - {x: 0, y: 0, z: -700}
+  - {x: 500, y: 0, z: -500}
 --- !u!114 &1078953716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -995,8 +1001,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1192541910}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 970}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 700, y: 0, z: -200}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1297,7 +1303,7 @@ PrefabInstance:
         type: 3}
       propertyPath: randomSpawnProfile
       value: 
-      objectReference: {fileID: 11400000, guid: 4abc50b8711720a41a64db5db3604ee1,
+      objectReference: {fileID: 11400000, guid: 5d05ceb9b047c3b499be3bbd45c036f6,
         type: 2}
     - target: {fileID: 7701641087306297103, guid: d262ca9df284a7940985455518ad5442,
         type: 3}

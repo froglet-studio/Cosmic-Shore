@@ -782,6 +782,7 @@ Transform:
   m_Children:
   - {fileID: 3746115337141382781}
   - {fileID: 5287589052048229561}
+  - {fileID: 6623105112975977940}
   m_Father: {fileID: 4853044355858455827}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6489972463739614253
@@ -1125,7 +1126,7 @@ MonoBehaviour:
   boostMultiplier: 4
   _name: Sparrow
   vesselType: 11
-  _nearFieldSkimmer: {fileID: 0}
+  _nearFieldSkimmer: {fileID: 6062314127581257774}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 6015654187000967467}
 --- !u!114 &782227326690287682
@@ -1141,6 +1142,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   toggleManualThrottle: 0
+  decayBoost: 0
+  MaxBoostMultiplier: 5
+  BoostDecayRate: 0.1
+  DriftDamping: 0
+  boostChanged: {fileID: 0}
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
@@ -1468,6 +1474,158 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6952962334184495837}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &9037110089281834139
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6623105112975977940}
+  - component: {fileID: 3139085341864673387}
+  - component: {fileID: 4748415935477490887}
+  - component: {fileID: 6062314127581257769}
+  - component: {fileID: 6062314127581257774}
+  - component: {fileID: 1074530091616622690}
+  - component: {fileID: 1188267807368292821}
+  m_Layer: 7
+  m_Name: DummySkimmer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6623105112975977940
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9037110089281834139}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 60, y: 60, z: 60}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 5558533727464959561}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &3139085341864673387
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9037110089281834139}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!135 &4748415935477490887
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9037110089281834139}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!54 &6062314127581257769
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9037110089281834139}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.08
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &6062314127581257774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9037110089281834139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  onSkimmerShipImpact: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
+    type: 2}
+  vaccumAmount: 80
+  vacuumCrystal: 1
+  affectSelf: 0
+  visible: 0
+  Scale:
+    Enabled: 1
+    Value: 20
+    Min: 20
+    Max: 40
+    element: 3
+  nudgeShardPoolManager: {fileID: 0}
+  markerDistance: 70
+  AOEPrefab: {fileID: 0}
+  AOEPeriod: 0
+  lineMaterial: {fileID: 0}
+--- !u!114 &1074530091616622690
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9037110089281834139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1731f6481c2493aa107099246bb1af8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skimmerImpactorDataContainer: {fileID: 11400000, guid: d40f04f9802277f498d8d89958622788,
+    type: 2}
+  skimmer: {fileID: 6062314127581257774}
+  CombinedWeight: 0
+  SqrSweetSpot: 0
+--- !u!114 &1188267807368292821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9037110089281834139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 1074530091616622690}
 --- !u!1 &9050015968446005013
 GameObject:
   m_ObjectHideFlags: 0

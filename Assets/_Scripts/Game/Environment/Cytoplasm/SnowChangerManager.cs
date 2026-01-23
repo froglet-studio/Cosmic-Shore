@@ -23,7 +23,7 @@ namespace CosmicShore.Game
             cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawned;
             
             var snowChanger = Instantiate(cellData.CellType.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
-            snowChanger.SetOrigin(cellData.CrystalTransform.position);
+            snowChanger.SetOrigin(cellData.CellTransform.position);
             snowChanger.Initialize();
         }
     }
