@@ -10,6 +10,12 @@ using Random = UnityEngine.Random;
 
 namespace CosmicShore.Game
 {
+    [System.Serializable]
+    public class CrystalPositionSet
+    {
+        public List<Vector3> positions;
+    }
+
     public abstract class CrystalManager : NetworkBehaviour
     {
         const int MIN_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS = 100;
@@ -25,7 +31,10 @@ namespace CosmicShore.Game
         [SerializeField] bool scaleCrystalPositionWithIntensity;
         [SerializeField] IntVariable intensityLevelData;
 
-        [SerializeField] List<Vector3> crystalPositions;
+        [SerializeField] List<CrystalPositionSet> listOfCrystalPositions;
+        List<Vector3> crystalPositions => listOfCrystalPositions.Count > 0
+            ? listOfCrystalPositions[intensityLevelData.Value - 1].positions
+            : new List<Vector3>();
         int crystalPositionIndex = 0;
 
         int _itemsAdded;

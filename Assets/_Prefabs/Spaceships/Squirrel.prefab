@@ -2650,7 +2650,7 @@ PrefabInstance:
         type: 3}
       propertyPath: nudgeShardPoolManager
       value: 
-      objectReference: {fileID: 1907784425893164354}
+      objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: NotifyNearbyBlockCount
