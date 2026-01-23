@@ -1218,7 +1218,7 @@ MonoBehaviour:
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
-  IntensityLevel: 1
+  intensityLevelData: {fileID: 0}
   InitializeOnStart: 0
   NumberOfSegments: 1
   mazeData: []
@@ -1367,7 +1367,7 @@ PrefabInstance:
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -1452,7 +1452,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 966370460}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
   m_Name: 
@@ -1909,6 +1909,7 @@ MonoBehaviour:
     type: 3}
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  listOfCrystalPositions: []
 --- !u!1 &1262478158
 GameObject:
   m_ObjectHideFlags: 0
