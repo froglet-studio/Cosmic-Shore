@@ -77,12 +77,7 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         private void AddTimeScore(float dt)
         {
-            for (int i = 0; i < GameData.RoundStatsList.Count; i++)
-            {
-                var playerScore = GameData.RoundStatsList[i];
-                playerScore.Score += dt * scoreMultiplier;
-                GameData.RoundStatsList[i] = playerScore;
-            }
+            GameData.LocalRoundStats.Score += dt * scoreMultiplier;
         }
     }
 }
