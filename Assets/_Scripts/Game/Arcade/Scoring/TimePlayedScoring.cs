@@ -20,16 +20,11 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         public override void Subscribe()
         {
-            GameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-            GameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
+            OnTurnStarted();
         }
 
         public override void Unsubscribe()
         {
-            GameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
-            GameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
-
-            // Important: stop loop if still running
             OnTurnEnded();
         }
 
