@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68b3e74284f14e32a6e21b5fb8c3e8ad, type: 3}
   m_Name: SquirrelSkimmerImpactorDataContainer
   m_EditorClassIdentifier: 
-  vesselSkimmerEffectsSO: []
+  vesselSkimmerEffectsSO:
+  - {fileID: 11400000, guid: c2570a8d81db3ab4eb0ba30f184e081f, type: 2}
   skimmerPrismEffectsSO:
   - {fileID: 11400000, guid: 952d25b70531ba94fbb4f1a74c64797a, type: 2}
   - {fileID: 11400000, guid: 211cf3f57a286e7499d5cf6237c3768d, type: 2}
