@@ -49,7 +49,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ExplosionDuration: 2
   ExplosionDelay: 0.01
-  renderer: {fileID: 4493526936049736346}
+  meshRenderer: {fileID: 4493526936049736346}
   blockScale: {x: 42, y: 42, z: 42}
   shielded: 0
   _prismSpawnEvent: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
