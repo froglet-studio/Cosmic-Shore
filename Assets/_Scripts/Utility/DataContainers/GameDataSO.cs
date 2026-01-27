@@ -30,13 +30,17 @@ namespace CosmicShore.Soap
         public event Action OnClientReady;
         public ScriptableEventNoParam OnMiniGameTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
+        // DTFC
         public ScriptableEventNoParam OnMiniGameRoundEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
         
         public ScriptableEventNoParam OnResetForReplay;
 
-        
+        [Header("UI Flow")]
+        public ScriptableEventNoParam OnShowGameEndScreen;
+
+        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         // Local player config / state
         public VesselClassTypeVariable selectedVesselClass;
         public IntVariable VesselClassSelectedIndex;

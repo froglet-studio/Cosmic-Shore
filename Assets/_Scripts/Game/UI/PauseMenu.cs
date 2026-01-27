@@ -1,9 +1,11 @@
 using CosmicShore.App.Systems;
+using CosmicShore.App.UI.Modals;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Displays and controls toggles and buttons on the Pause Menu Panel
@@ -23,8 +25,10 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField]
         GameDataSO gameData;
         
+        [FormerlySerializedAs("canvasGroup")]
+        [SerializeField] GameObject pauseMenuPanel;
         [SerializeField]
-        CanvasGroup canvasGroup;
+        ModalWindowManager settingsModalWindowManager;
 
         GameSetting gameSetting;
 
@@ -33,7 +37,7 @@ namespace CosmicShore.App.UI.Screens
         /// </summary>
         bool wasLocalPlayerInputPausedBefore;
 
-        void Awake() => Hide();
+        //void Awake() => Hide();
         
         // Start is called before the first frame update
         void Start() => gameSetting = GameSetting.Instance;
@@ -91,16 +95,14 @@ namespace CosmicShore.App.UI.Screens
 
         public void Show()
         {
-            canvasGroup.alpha = 1;
-            canvasGroup.blocksRaycasts = true;
-            canvasGroup.interactable = true;
+            pauseMenuPanel.gameObject.SetActive(true);
+            settingsModalWindowManager.ModalWindowIn();
         }
 
         public void Hide()
         {
-            canvasGroup.alpha = 0;
-            canvasGroup.blocksRaycasts = false;
-            canvasGroup.interactable = false;
+            settingsModalWindowManager.ModalWindowOut();
+            pauseMenuPanel.gameObject.SetActive(false);
         }
         
         async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)

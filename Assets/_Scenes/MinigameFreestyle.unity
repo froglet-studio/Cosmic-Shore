@@ -2847,7 +2847,7 @@ MonoBehaviour:
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
-  IntensityLevel: 1
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   InitializeOnStart: 0
   NumberOfSegments: 1
   mazeData: []
@@ -3201,6 +3201,7 @@ MonoBehaviour:
     type: 3}
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  listOfCrystalPositions: []
 --- !u!1 &1121920108
 GameObject:
   m_ObjectHideFlags: 0

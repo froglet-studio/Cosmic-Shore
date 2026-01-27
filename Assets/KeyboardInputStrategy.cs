@@ -209,6 +209,18 @@ namespace CosmicShore.Game.IO
             inputStatus.YSum = -Ease(rightStickCurrent.y + leftStickCurrent.y);
             inputStatus.XDiff = (rightStickCurrent.x - leftStickCurrent.x + 2) / 4;
             inputStatus.YDiff = Ease(rightStickCurrent.y - leftStickCurrent.y);
+            
+            // Apply inversions AFTER calculations
+            if (inputStatus.InvertYEnabled)
+            {
+                inputStatus.YSum *= -1f;   // Invert pitch
+                inputStatus.YDiff *= -1f;  // Invert roll
+            }
+            
+            if (inputStatus.InvertThrottleEnabled)
+            {
+                inputStatus.XDiff = 1f - inputStatus.XDiff;  // Invert throttle/speed
+            }
         }
 
         private void PerformSpeedAndDirectionalEffects()

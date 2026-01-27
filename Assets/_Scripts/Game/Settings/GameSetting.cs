@@ -19,7 +19,7 @@ namespace CosmicShore.Core
         public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertYEnabledStatus;
 
         public delegate void OnChangeInvertThrottleEnabledStatusEvent(bool status);
-        public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertThrottleEnabledStatus;
+        public static event OnChangeInvertThrottleEnabledStatusEvent  OnChangeInvertThrottleEnabledStatus;
 
         public delegate void OnChangeJoystickVisualsStatusEvent(bool status);
         public static event OnChangeJoystickVisualsStatusEvent OnChangeJoystickVisualsStatus;
@@ -90,15 +90,15 @@ namespace CosmicShore.Core
 
             PlayerPrefs.Save();
 
-            musicEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.MusicEnabled.ToString()) == 1;
-            sfxEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.SFXEnabled.ToString()) == 1;
-            hapticsEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.HapticsEnabled.ToString()) == 1;
-            invertYEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.InvertYEnabled.ToString()) == 1;
-            invertThrottleEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.InvertThrottleEnabled.ToString()) == 1;
-            joystickVisualsEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.JoystickVisualsEnabled.ToString()) == 1;
-            musicLevel = PlayerPrefs.GetFloat(PlayerPrefKeys.MusicLevel.ToString());
-            sfxLevel = PlayerPrefs.GetFloat(PlayerPrefKeys.SFXLevel.ToString());
-            hapticsLevel = PlayerPrefs.GetFloat(PlayerPrefKeys.HapticsLevel.ToString());
+            musicEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.MusicEnabled)) == 1;
+            sfxEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.SFXEnabled)) == 1;
+            hapticsEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.HapticsEnabled)) == 1;
+            invertYEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.InvertYEnabled)) == 1;
+            invertThrottleEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.InvertThrottleEnabled)) == 1;
+            joystickVisualsEnabled = PlayerPrefs.GetInt(nameof(PlayerPrefKeys.JoystickVisualsEnabled)) == 1;
+            musicLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.MusicLevel));
+            sfxLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.SFXLevel));
+            hapticsLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.HapticsLevel));
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace CosmicShore.Core
         public void ChangeMusicEnabledSetting()
         {
             musicEnabled = !musicEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.MusicEnabled.ToString(), musicEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.MusicEnabled), musicEnabled ? 1 : 0);
             PlayerPrefs.Save();
 
 
@@ -120,7 +120,7 @@ namespace CosmicShore.Core
         public void ChangeSFXEnabledSetting()
         {
             sfxEnabled = !sfxEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.SFXEnabled.ToString(), sfxEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.SFXEnabled), sfxEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeSFXEnabledStatus?.Invoke(sfxEnabled);     
         }
@@ -131,7 +131,7 @@ namespace CosmicShore.Core
         public void ChangeHapticsEnabledSetting()
         {
             hapticsEnabled = !hapticsEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.HapticsEnabled.ToString(), hapticsEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.HapticsEnabled), hapticsEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeHapticsEnabledStatus?.Invoke(hapticsEnabled);      
         }
@@ -142,23 +142,25 @@ namespace CosmicShore.Core
         public void ChangeInvertYEnabledStatus()
         {
             invertYEnabled = !invertYEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.InvertYEnabled.ToString(), invertYEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.InvertYEnabled), invertYEnabled ? 1 : 0);
             PlayerPrefs.Save();
+            Debug.Log($"Event has been fired, Inverted Y. Status : {invertYEnabled}");
             OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);  // Event to toggle InputController isGryoEnabled
         }
         
         public void ChangeInvertThrottleEnabledStatus()
         {
             invertThrottleEnabled = !invertThrottleEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.InvertThrottleEnabled.ToString(), invertThrottleEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.InvertThrottleEnabled), invertThrottleEnabled ? 1 : 0);
             PlayerPrefs.Save();
+            Debug.Log($"Event has been fired, Inverted Throttle. Status : {invertYEnabled}");
             OnChangeInvertThrottleEnabledStatus?.Invoke(invertThrottleEnabled);
         }
 
         public void ChangeJoystickVisualsStatus()
         {
             joystickVisualsEnabled = !joystickVisualsEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.JoystickVisualsEnabled.ToString(), joystickVisualsEnabled ? 1 :0);
+            PlayerPrefs.SetInt(nameof(PlayerPrefKeys.JoystickVisualsEnabled), joystickVisualsEnabled ? 1 :0);
             PlayerPrefs.Save();
             OnChangeJoystickVisualsStatus?.Invoke(joystickVisualsEnabled);
         }
@@ -166,21 +168,21 @@ namespace CosmicShore.Core
         public void SetMusicLevel(float level)
         {
             musicLevel = level;
-            PlayerPrefs.SetFloat(PlayerPrefKeys.MusicLevel.ToString(), level);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.MusicLevel), level);
             PlayerPrefs.Save();
             OnChangeMusicLevel?.Invoke(musicLevel);
         }
         public void SetSFXLevel(float level)
         {
             sfxLevel = level;
-            PlayerPrefs.SetFloat(PlayerPrefKeys.SFXLevel.ToString(), level);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.SFXLevel), level);
             PlayerPrefs.Save();
             OnChangeSFXLevel?.Invoke(sfxLevel);
         }
         public void SetHapticsLevel(float level)
         {
             hapticsLevel = level;
-            PlayerPrefs.SetFloat(PlayerPrefKeys.HapticsLevel.ToString(), level);
+            PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.HapticsLevel), level);
             PlayerPrefs.Save();
             OnChangeHapticsLevel?.Invoke(hapticsLevel);
         }

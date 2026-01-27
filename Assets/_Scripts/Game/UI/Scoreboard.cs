@@ -1,102 +1,214 @@
+using System;
 using System.Collections.Generic;
+using System.Threading;
+using CosmicShore.Game.UI;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Soap;
+using DG.Tweening;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace CosmicShore.Game
 {
     public class Scoreboard : MonoBehaviour
     {
-        [FormerlySerializedAs("miniGameData")] [SerializeField]
-        protected GameDataSO gameData; 
-        
-        [SerializeField]
-        private ScriptableEventNoParam OnResetForReplay; 
-        
-        [SerializeField]
-        Transform gameOverPanel;
-        
-        [Header("Banner")] 
+        [FormerlySerializedAs("miniGameData")]
+        [SerializeField] protected GameDataSO gameData;
+
+        [SerializeField] private ScriptableEventNoParam OnResetForReplay;
+
+        [SerializeField] Transform gameOverPanel;
+        [SerializeField] private Transform endGameStatsPanel;
+        [SerializeField] RectTransform animatedRoot;
+
+        [Header("Banner")]
         [SerializeField] Image BannerImage;
-        
         [SerializeField] TMP_Text BannerText;
         [SerializeField] Color SinglePlayerBannerColor;
         [SerializeField] Color JadeTeamBannerColor;
         [SerializeField] Color RubyTeamBannerColor;
         [SerializeField] Color GoldTeamBannerColor;
 
-        [Header("Single Player")] 
-        [SerializeField]
-        Transform SingleplayerView;
-
+        [Header("Single Player")]
+        [SerializeField] Transform SingleplayerView;
         [SerializeField] TMP_Text SinglePlayerScoreTextField;
         [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
 
-        [Header("Multi Player")] [SerializeField]
-        Transform MultiplayerView;
-
+        [Header("Multi Player")]
+        [SerializeField] Transform MultiplayerView;
         [SerializeField] List<TMP_Text> PlayerNameTextFields;
         [SerializeField] List<TMP_Text> PlayerScoreTextFields;
 
-        // TODO - Use MiniGameDataVariable instead
-        // ScoreTracker scoreTracker;
+        [Header("End Screen Sequence")]
+        [SerializeField] TMP_Text bestScoreText;
+        [SerializeField] TMP_Text highScoreText;
+        [SerializeField] GameObject continueButton;
+        [Header("Slide Animation")]
+        [SerializeField] float startX = -1200f;
+        [SerializeField] float endX = 0f;
+        [SerializeField] float slideDuration = 0.6f;
+        [SerializeField] Ease slideEase = Ease.OutCubic;
         
+        CancellationTokenSource _cts;
+        bool _sequenceRunning;
 
         void Awake()
         {
-            // scoreTracker = FindAnyObjectByType<ScoreTracker>();
             ResetForReplay();
         }
 
-        private void OnEnable()
+        void OnEnable()
         {
-            gameData.OnWinnerCalculated += ShowSinglePlayerView;
-            OnResetForReplay.OnRaised += ResetForReplay;
+            EnsureCts();
+
+            if (gameData != null && gameData.OnShowGameEndScreen != null)
+                gameData.OnShowGameEndScreen.OnRaised += BeginEndScreenFlow;
+
+            if (OnResetForReplay != null)
+                OnResetForReplay.OnRaised += ResetForReplay;
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
-            gameData.OnWinnerCalculated -= ShowSinglePlayerView;
-            OnResetForReplay.OnRaised -= ResetForReplay;
+            if (gameData != null && gameData.OnShowGameEndScreen != null)
+                gameData.OnShowGameEndScreen.OnRaised -= BeginEndScreenFlow;
+
+            if (OnResetForReplay != null)
+                OnResetForReplay.OnRaised -= ResetForReplay;
+
+            CancelAndDisposeCts();
         }
 
-        private void ResetForReplay()
+        void EnsureCts()
         {
-            gameOverPanel.gameObject.SetActive(false);
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(false);
+            if (_cts != null) return;
+            _cts = new CancellationTokenSource();
+        }
+
+        void CancelAndDisposeCts()
+        {
+            if (_cts == null) return;
+            _cts.Cancel();
+            _cts.Dispose();
+            _cts = null;
+        }
+
+        void RestartCts()
+        {
+            CancelAndDisposeCts();
+            _cts = new CancellationTokenSource();
+        }
+
+        void BeginEndScreenFlow()
+        {
+            if (_sequenceRunning) return;
+            _sequenceRunning = true;
+
+            EnsureCts();
+            RunEndScreenSequenceAsync(_cts.Token).Forget();
+        }
+
+        async UniTaskVoid RunEndScreenSequenceAsync(CancellationToken ct)
+        {
+            try
+            {
+                endGameStatsPanel.gameObject.SetActive(true);
+                continueButton.SetActive(false);
+
+                animatedRoot.anchoredPosition =
+                    new Vector2(startX, animatedRoot.anchoredPosition.y);
+
+                await animatedRoot
+                    .DOAnchorPosX(endX, slideDuration)
+                    .SetEase(slideEase)
+                    .AsyncWaitForCompletion();
+
+                gameData.IsLocalDomainWinner(out DomainStats stats);
+                int score = Mathf.Max(0, (int)stats.Score);
+
+                await UniTask.WhenAll(
+                    PlayCasinoCounter(bestScoreText, score, 2f, ct),
+                    PlayCasinoCounter(highScoreText, score, 2f, ct)
+                );
+
+                continueButton.SetActive(true);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                _sequenceRunning = false;
+            }
         }
         
+        async UniTask PlayCasinoCounter(
+            TMP_Text text,
+            int target,
+            float duration,
+            CancellationToken ct)
+        {
+            float t = 0f;
+
+            while (t < duration)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                t += Time.deltaTime;
+                int display = Random.Range(0, target + 1);
+                text.text = display.ToString("000");
+
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+
+            text.text = target.ToString("000");
+        }
+
+
+        public void OnContinueButtonPressed()
+        {
+            endGameStatsPanel.gameObject.SetActive(false);
+            ShowSinglePlayerView();
+        }
+
+        void ResetForReplay()
+        {
+            _sequenceRunning = false;
+            RestartCts();
+            
+            if (gameOverPanel) gameOverPanel.gameObject.SetActive(false);
+            if (MultiplayerView) MultiplayerView.gameObject.SetActive(false);
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
+        }
+
         protected virtual void ShowSinglePlayerView()
         {
             bool won = gameData.IsLocalDomainWinner(out DomainStats localDomainStats);
-            // Setup Banner
+
             var bannerText = won ? "WON" : "DEFEAT";
-            BannerImage.color = SinglePlayerBannerColor;
-            BannerText.text = bannerText;
+            if (BannerImage) BannerImage.color = SinglePlayerBannerColor;
+            if (BannerText) BannerText.text = bannerText;
 
-            // Populate this run's Score
-            var playerScore = localDomainStats.Score; // Mathf.Max(roundStats.Score, 0);
-            SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
+            var playerScore = localDomainStats.Score;
+            if (SinglePlayerScoreTextField) SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
+            if (SinglePlayerHighscoreTextField) SinglePlayerHighscoreTextField.text = ((int)playerScore).ToString();
 
-            // TODO: pull actual high Score
-            // Populate high Score
-            SinglePlayerHighscoreTextField.text = ((int) playerScore).ToString();
-
-            // Show the jam
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(true);
-            gameOverPanel.gameObject.SetActive(true);
+            if (MultiplayerView) MultiplayerView.gameObject.SetActive(false);
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(true);
+            if (gameOverPanel) gameOverPanel.gameObject.SetActive(true);
         }
-        
+
         public void ShowMultiplayerView()
         {
-            // Set banner for winning player
-            // TODO - Take winner data from MiniGameDataSO
-            var winningTeam = Domains.Jade; // miniGameData.GetWinnerScoreData().Team;
+            var winningTeam = Domains.Jade;
 
             switch (winningTeam)
             {
@@ -112,58 +224,29 @@ namespace CosmicShore.Game
                     BannerImage.color = GoldTeamBannerColor;
                     BannerText.text = "GOLD VICTORY";
                     break;
-                case Domains.Blue:
-                case Domains.Unassigned:
-                case Domains.None:
                 default:
                     Debug.LogWarning($"{winningTeam} does not have assigned banner image color and banner text preset.");
                     break;
             }
 
-            // Populate scores
             var playerScores = gameData.RoundStatsList;
 
-            // Populate rows with player scores
-            for (var i=0; i<playerScores.Count; i++)
+            for (var i = 0; i < playerScores.Count; i++)
             {
                 var playerScore = playerScores[i];
                 PlayerNameTextFields[i].text = playerScore.Name;
-                PlayerScoreTextFields[i].text = ((int) playerScore.Score).ToString();
+                PlayerScoreTextFields[i].text = ((int)playerScore.Score).ToString();
             }
 
-            // Hide unused rows
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
                 PlayerNameTextFields[i].text = "";
                 PlayerScoreTextFields[i].text = "";
             }
 
-            // Show the jam
-            SingleplayerView.gameObject.SetActive(false);
-            MultiplayerView.gameObject.SetActive(true);
-            gameOverPanel.gameObject.SetActive(true);
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
+            if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
+            if (gameOverPanel) gameOverPanel.gameObject.SetActive(true);
         }
-        
-        /*public void ShowSinglePlayerView(bool defeat=false)
-        {
-            // Setup Banner
-            BannerImage.color = SinglePlayerBannerColor;
-            if (defeat)
-                BannerText.text = "DEFEAT";
-            else
-                BannerText.text = "RUN RESULTS";
-
-            // Populate this run's Score
-            var playerScore = Mathf.Max(miniGameData.RoundStatsList[0].Score, 0);
-            SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
-
-            // TODO: pull actual high Score
-            // Populate high Score
-            SinglePlayerHighscoreTextField.text = ((int) playerScore).ToString();
-
-            // Show the jam
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(true);
-        }*/
     }
 }

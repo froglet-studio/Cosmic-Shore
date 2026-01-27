@@ -35,7 +35,7 @@ namespace CosmicShore.Game.Arcade
 
         protected override void EndTurn()
         {
-            gameData.ResetPlayers();
+           // gameData.ResetPlayers();
             base.EndTurn();
         }
 

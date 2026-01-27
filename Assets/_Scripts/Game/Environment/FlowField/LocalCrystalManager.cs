@@ -7,13 +7,13 @@ namespace CosmicShore.Game
         private void OnEnable()
         {
             gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStarted;
-            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
+            //gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
         }
 
         private void OnDisable()
         {
             gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStarted;
-            gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
+            //gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
         }
 
         public override void RespawnCrystal() =>
