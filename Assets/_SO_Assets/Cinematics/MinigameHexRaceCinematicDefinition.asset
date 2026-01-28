@@ -20,30 +20,39 @@ MonoBehaviour:
     fadeLoserTrail: 1
   scoreRevealToastString: ALL CRYSTALS COLLECTED
   showVictoryToast: 1
+  toastSettings:
+    yOffset: 1
+    delay: 0.2
+    duration: 2.5
   setLocalVesselToAI: 1
   aiCinematicBehavior: 3
   cameraSetups:
   - cameraType: 0
-    duration: 1
+    duration: 0.1
     distance: 50
     heightOffset: 0
     rotationSpeed: 0
     zoomTargetDistance: 0
   - cameraType: 3
-    duration: 2
+    duration: 0.2
     distance: 100
     heightOffset: 20
     rotationSpeed: 30
     zoomTargetDistance: 20
   randomizeCameraSelection: 1
+  scoreRevealSettings:
+    startX: 1200
+    endX: 0
+    slideDuration: 0.6
+    slideEase: 9
+    casinoCounterDuration: 2
   cinematicTexts:
-  - displayText: BRILLIANT!
+  - scoreRevealDisplayText: Brilliant!
     scoreThreshold: 0
     selectionWeight: 0.665
-  - displayText: COSMIC!
+  - scoreRevealDisplayText: Brilliant!
     scoreThreshold: 0
     selectionWeight: 0.813
   delayBeforeEndScreen: 0.1
   cameraTransitionTime: 0.2
-  showMultipleVessels: 0
-  animateVesselPodium: 1
+  connectingPanelDuration: 1
