@@ -5,7 +5,6 @@ namespace CosmicShore.Game.Arcade
     /// <summary>
     /// Hex Race game mode.
     /// Features: Procedural track generation, intensity scaling, optional helix
-    /// Flow: Start → Race → End → Cinematics → Scoreboard → Replay
     /// </summary>
     public class SinglePlayerHexRaceController : SinglePlayerMiniGameControllerBase
     {
@@ -63,17 +62,12 @@ namespace CosmicShore.Game.Arcade
             base.OnCountdownTimerEnded();
         }
 
-        /// <summary>
-        /// This is called when "Play Again" is clicked.
-        /// Must clean up ALL procedural content before starting new game.
-        /// </summary>
         protected override void ResetEnvironmentForReplay()
         {
             _environmentInitialized = false;
             if (segmentSpawner)
             {
                 segmentSpawner.NukeTheTrails();
-                Debug.Log("[HexRace] Old track segments cleaned up");
             }
             
             base.ResetEnvironmentForReplay();
@@ -101,8 +95,6 @@ namespace CosmicShore.Game.Arcade
             var radius = Intensity / helixIntensityScaling;
             helix.firstOrderRadius = radius;
             helix.secondOrderRadius = radius;
-            
-            Debug.Log($"[HexRace] Helix radius set to: {radius}");
         }
     }
 }
