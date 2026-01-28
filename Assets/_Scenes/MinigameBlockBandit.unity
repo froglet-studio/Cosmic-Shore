@@ -728,18 +728,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 572506223}
   m_SourcePrefab: {fileID: 100100000, guid: 061f308768b5b564bbb0f130d1a8f02e, type: 3}
---- !u!114 &965106539 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 5497835173885651574}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc9985f1de22b3c4f963a6a97bf6fd05, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1020381234
 GameObject:
   m_ObjectHideFlags: 0
@@ -797,7 +785,7 @@ MonoBehaviour:
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
-  IntensityLevel: 1
+  intensityLevelData: {fileID: 0}
   InitializeOnStart: 1
   NumberOfSegments: 10
   mazeData: []
@@ -830,7 +818,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1078953705}
   - component: {fileID: 1078953711}
-  - component: {fileID: 1078953710}
   - component: {fileID: 1078953713}
   - component: {fileID: 1078953707}
   - component: {fileID: 1078953703}
@@ -896,38 +883,6 @@ MonoBehaviour:
   scoringConfigs:
   - Mode: 0
     Multiplier: 1
---- !u!114 &1078953710
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2caefb27e1b37a9419bcf832339b9f10, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameMode: 5
-  NumberOfRounds: 1
-  ScoreTracker: {fileID: 1078953707}
-  GameCanvas: {fileID: 965106539}
-  playerPrefab: {fileID: 2151207714166088056, guid: 8a9d12e43096881468feb22e39e9fbeb,
-    type: 3}
-  PlayerOrigin: {fileID: 1192541910}
-  EndOfTurnDelay: 0
-  EnableTrails: 0
-  defaultPlayerVesselType: 1
-  DefaultPlayerCaptain: {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08,
-    type: 2}
-  SegmentSpawner: {fileID: 1020381236}
-  numberOfSegments: 10
-  straightLineLength: 400
-  ResetTrails: 0
-  ScaleLengthWithIntensity: 1
-  ScaleNumberOfSegmentsWithIntensity: 1
-  helix: {fileID: 0}
-  helixIntensitycaling: 1.3
 --- !u!114 &1078953711
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -993,8 +948,9 @@ MonoBehaviour:
   scaleCrystalPositionWithIntensity: 1
   scaleLengthWithIntensity: 1
   scaleSegmentsWithIntensity: 1
-  helix: {fileID: 0}
+  helix: {fileID: 2091254371}
   helixIntensityScaling: 1.3
+  Seed: 0
 --- !u!114 &1078953714
 MonoBehaviour:
   m_ObjectHideFlags: 0
