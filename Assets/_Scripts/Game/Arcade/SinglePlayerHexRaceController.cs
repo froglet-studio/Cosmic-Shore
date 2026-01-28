@@ -3,18 +3,17 @@
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>
-    /// Hex Race
-    /// </summary>>
+    /// Hex Race game mode.
+    /// Features: Procedural track generation, intensity scaling, optional helix
+    /// Flow: Start → Race → End → Cinematics → Scoreboard → Replay
+    /// </summary>
     public class SinglePlayerHexRaceController : SinglePlayerMiniGameControllerBase
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
-
         [SerializeField, Min(1)] int baseNumberOfSegments = 10;
         [SerializeField, Min(1)] int baseStraightLineLength = 400;
-
         [SerializeField] bool resetEnvironmentOnEachTurn = true;
-
         [SerializeField] bool scaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] bool scaleLengthWithIntensity = true;
 
@@ -27,7 +26,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int seed = 0;
 
         bool _environmentInitialized;
-
+        
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         int NumberOfSegments =>
@@ -35,24 +34,18 @@ namespace CosmicShore.Game.Arcade
 
         int StraightLineLength =>
             scaleLengthWithIntensity ? baseStraightLineLength / Intensity : baseStraightLineLength;
-
+        
+        
         protected override void SetupNewTurn()
         {
             RaiseToggleReadyButtonEvent(true);
-
-            // Old behavior:
-            // - ResetTrails == true  -> InitializeTrails() each SetupTurn
-            // - ResetTrails == false -> InitializeTrails() once at Start
-            if (resetEnvironmentOnEachTurn)
-            {
-                ResetEnvironment();
-            }
-            else if (!_environmentInitialized)
+            
+            if (resetEnvironmentOnEachTurn || !_environmentInitialized)
             {
                 ResetEnvironment();
                 _environmentInitialized = true;
             }
-
+            
             base.SetupNewTurn();
         }
 
@@ -61,23 +54,39 @@ namespace CosmicShore.Game.Arcade
             segmentSpawner.Seed = (seed != 0)
                 ? seed
                 : Random.Range(int.MinValue, int.MaxValue);
-
+            
             ApplyHelixIntensity();
-
+            
             if (resetEnvironmentOnEachTurn)
                 ResetEnvironment();
 
             base.OnCountdownTimerEnded();
         }
 
+        /// <summary>
+        /// This is called when "Play Again" is clicked.
+        /// Must clean up ALL procedural content before starting new game.
+        /// </summary>
+        protected override void ResetEnvironmentForReplay()
+        {
+            _environmentInitialized = false;
+            if (segmentSpawner)
+            {
+                segmentSpawner.NukeTheTrails();
+                Debug.Log("[HexRace] Old track segments cleaned up");
+            }
+            
+            base.ResetEnvironmentForReplay();
+        }
+
         void ResetEnvironment()
         {
             if (!segmentSpawner)
             {
-                Debug.LogError($"{nameof(SinglePlayerSlipnStrideController)} missing {nameof(segmentSpawner)}.", this);
+                Debug.LogError($"Missing {nameof(segmentSpawner)} reference!", this);
                 return;
             }
-
+            
             segmentSpawner.NumberOfSegments = NumberOfSegments;
             segmentSpawner.StraightLineLength = StraightLineLength;
 
@@ -92,6 +101,8 @@ namespace CosmicShore.Game.Arcade
             var radius = Intensity / helixIntensityScaling;
             helix.firstOrderRadius = radius;
             helix.secondOrderRadius = radius;
+            
+            Debug.Log($"[HexRace] Helix radius set to: {radius}");
         }
     }
 }

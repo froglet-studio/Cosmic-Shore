@@ -6,117 +6,241 @@ using UnityEngine;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>
-    /// Common multiplayer controller base:
-    /// - Server-only hooks for NetworkSpawn/Despawn
-    /// - Subscribes/Unsubscribes to miniGameData.OnMiniGameTurnEnd
-    /// - Delayed Initialize() pattern
-    /// - Small helpers for common actions
+    /// Base controller for multiplayer game modes.
+    /// Handles network synchronization, session management, and client-server communication.
     /// </summary>
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
-        [SerializeField]
-        protected MultiplayerSetup multiplayerSetup;
+        [Header("Multiplayer")]
+        [SerializeField] protected MultiplayerSetup multiplayerSetup;
         
-        /// <summary>
-        /// Delay (ms) before Initialize() is called after NetworkSpawn (server only).
-        /// </summary>
-        int initDelayMs => 1000;
+        protected virtual int InitDelayMs => 1000;
         
         public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
+            
             if (IsServer)
             {
-                gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
+                gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
                 gameData.OnSessionStarted += SubscribeToSessionEvents;
             }
-            
+
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
-            
-            InitializeAfterDelay().Forget();
+
+            if (IsServer)
+                InitializeAfterDelay().Forget();
         }
 
         public override void OnNetworkDespawn()
         {
             if (IsServer)
             {
-                gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
-                gameData.OnSessionStarted -= SubscribeToSessionEvents;    
+                gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
+                gameData.OnSessionStarted -= SubscribeToSessionEvents;
             }
-
             
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
+            
+            UnsubscribeFromSessionEvents();
+            
+            base.OnNetworkDespawn();
         }
-
+        
         void SubscribeToSessionEvents()
         {
+            if (gameData.ActiveSession == null)
+                return;
+                
             gameData.ActiveSession.Deleted += UnsubscribeFromSessionEvents;
             gameData.ActiveSession.PlayerLeaving += OnPlayerLeavingFromSession;
         }
 
         void UnsubscribeFromSessionEvents()
         {
+            if (gameData.ActiveSession == null)
+                return;
+                
             gameData.ActiveSession.Deleted -= UnsubscribeFromSessionEvents;
             gameData.ActiveSession.PlayerLeaving -= OnPlayerLeavingFromSession;
         }
 
-        void OnPlayerLeavingFromSession(string clientId) {}
+        /// <summary>
+        /// Called when a player leaves the session.
+        /// Override to handle player disconnection logic.
+        /// </summary>
+        protected virtual void OnPlayerLeavingFromSession(string clientId) 
+        {
+            // Base implementation does nothing
+            // Subclasses can override to handle disconnection
+        }
 
         /// <summary>
-        /// Runs Initialize() after a small, unscaled delay (server only).
+        /// Runs Initialize() after a small delay (server only).
+        /// The delay ensures network setup is complete before starting game flow.
         /// </summary>
         async UniTaskVoid InitializeAfterDelay()
         {
             try
             {
-                await UniTask.Delay(initDelayMs, DelayType.UnscaledDeltaTime);
+                await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                
+                if (!IsServer)
+                    return;
+                    
                 gameData.InitializeGame();
                 SetupNewRound();
             }
             catch (OperationCanceledException)
             {
-                // ignore
+                // Task was cancelled, ignore
             }
         }
-
-        protected override void EndTurn()
+        
+        protected override void OnCountdownTimerEnded()
         {
-            EndTurn_ClientRpc();
-            base.EndTurn();
-        }
-
-        [ClientRpc]
-        void EndTurn_ClientRpc()
-        {
-            // Server already invoked this on TurnMonitorController
             if (!IsServer)
-                gameData.InvokeGameTurnConditionsMet();
-            
-            gameData.ResetPlayers();
+                return;
+                
+            // Server activates players and starts turn
+            OnCountdownTimerEnded_ClientRpc();
         }
-
-        protected override void EndRound()
+        
+        [ClientRpc]
+        void OnCountdownTimerEnded_ClientRpc()
+        {
+            gameData.SetPlayersActive();
+            
+            if (IsServer)
+                gameData.StartTurn();
+        }
+        
+        /// <summary>
+        /// Handles turn end event from server.
+        /// This is called by the event subscription, not by override.
+        /// </summary>
+        void HandleTurnEnd()
         {
             if (!IsServer)
                 return;
 
-            EndRound_ClientRpc();
+            SyncTurnEnd_ClientRpc();
+            ExecuteServerTurnEnd();
+        }
+        
+        [ClientRpc]
+        void SyncTurnEnd_ClientRpc()
+        {
+            if (!IsServer)
+                gameData.InvokeGameTurnConditionsMet();
+
+            if (ShouldResetPlayersOnTurnEnd)
+                gameData.ResetPlayers();
+
+            OnTurnEndedCustom();
+        }
+        
+        /// <summary>
+        /// Server executes turn end logic which may trigger round end or game end.
+        /// This bridges to the base class's protected EndTurn method.
+        /// </summary>
+        void ExecuteServerTurnEnd()
+        {
+            gameData.TurnsTakenThisRound++;
+
+            if (gameData.TurnsTakenThisRound >= numberOfTurnsPerRound)
+                ExecuteServerRoundEnd();
+            else 
+                SetupNewTurn();
         }
 
-        [ClientRpc]
-        void EndRound_ClientRpc()
+        /// <summary>
+        /// Server executes round end logic which may trigger game end.
+        /// </summary>
+        void ExecuteServerRoundEnd()
         {
+            if (!IsServer)
+                return;
+            
+            // Notify all clients
+            SyncRoundEnd_ClientRpc();
             gameData.RoundsPlayed++;
             gameData.InvokeMiniGameRoundEnd();
+            
+            OnRoundEndedCustom();
+            
+            if (HasEndGame && gameData.RoundsPlayed >= numberOfRounds)
+                ExecuteServerGameEnd();
+            else
+                SetupNewRound();
+        }
 
-            if (IsServer)
-                base.EndRound();
+        [ClientRpc]
+        void SyncRoundEnd_ClientRpc()
+        {
+            if (IsServer) return;
+            gameData.RoundsPlayed++;
+            gameData.InvokeMiniGameRoundEnd();
+            OnRoundEndedCustom();
         }
         
-        protected override void EndGame() =>
-            EndGame_ClientRpc();
+        /// <summary>
+        /// Server triggers game end sequence.
+        /// </summary>
+        void ExecuteServerGameEnd()
+        {
+            if (!IsServer)
+                return;
+                
+            SyncGameEnd_ClientRpc();
+        }
         
         [ClientRpc]
-        void EndGame_ClientRpc() =>
+        void SyncGameEnd_ClientRpc()
+        {
+            if (!ShowEndGameSequence) return;
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.InvokeWinnerCalculated();
+
             gameData.InvokeMiniGameEnd();
+        }
+
+        protected override void SetupNewTurn()
+        {
+            base.SetupNewTurn();
+            
+            if (IsServer)
+                ShowReadyButton_ClientRpc();
+        }
+        
+        protected override void SetupNewRound()
+        {
+            base.SetupNewRound();
+            
+            if (IsServer)
+                ShowReadyButton_ClientRpc();
+        }
+        
+        [ClientRpc]
+        void ShowReadyButton_ClientRpc()
+        {
+            RaiseToggleReadyButtonEvent(true);
+        }
+
+        protected override void OnResetForReplay()
+        {
+            if (!IsServer)
+                return;
+            OnResetForReplayCustom();
+            SetupNewRound();
+        }
+        
+        /// <summary>
+        /// Hook for game-specific replay logic in multiplayer.
+        /// Called on server only before restarting game.
+        /// </summary>
+        protected virtual void OnResetForReplayCustom()
+        {
+        }
     }
 }
