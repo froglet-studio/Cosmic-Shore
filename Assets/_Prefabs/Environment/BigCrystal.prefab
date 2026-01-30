@@ -213,7 +213,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 6588436222817790495}
+  omniCrystalShipEffects: []
   OnCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c, type: 2}
+  onlyAllowOwnDomainImpactor: 1
 --- !u!114 &3935840462684288695
 MonoBehaviour:
   m_ObjectHideFlags: 0

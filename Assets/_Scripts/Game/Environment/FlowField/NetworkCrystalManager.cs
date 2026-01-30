@@ -1,66 +1,108 @@
-using CosmicShore.Utility.ClassExtensions;
-using Cysharp.Threading.Tasks;
+using System;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace CosmicShore.Game
 {
     public class NetworkCrystalManager : CrystalManager
     {
-        NetworkVariable<Vector3> n_SpawnPos = new(
-            writePerm: NetworkVariableWritePermission.Server, 
-            readPerm: NetworkVariableReadPermission.Everyone
-        );
-        
+        private NetworkList<Vector3> n_Positions;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            n_Positions = new NetworkList<Vector3>();
+        }
+
         public override void OnNetworkSpawn()
         {
-            gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             
-            if (IsServer)
-                n_SpawnPos.Value = CalculateSpawnPos();
+            // Ensure list length == count
+            int count = Mathf.Max(1, gameData.SelectedPlayerCount.Value);
+            while (n_Positions.Count < count)
+                n_Positions.Add(Vector3.zero);
             
-            n_SpawnPos.OnValueChanged += OnSpawnPosChanged;
+            n_Positions.OnListChanged += OnPositionsChanged;
         }
 
         public override void OnNetworkDespawn()
         {
-            gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStarted;
-            n_SpawnPos.OnValueChanged -= OnSpawnPosChanged;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            if (n_Positions != null)
+                n_Positions.OnListChanged -= OnPositionsChanged;
         }
 
-        public override void RespawnCrystal() =>
-            RespawnCrystal_ServerRpc();
+        // ---------------- Turn Start ----------------
+        void OnTurnStarted()
+        {
+            if (!IsServer) return;
+            
+            // IMPORTANT:
+            // Use the SAME spawn anchor logic as singleplayer (respawn logic) for initial spawns too.
+            for (int idx = 0; idx < n_Positions.Count; idx++)
+            {
+                Vector3 spawnPos = GetSpawnPointBasedOnCurrentAnchor();
+                n_Positions[idx] = spawnPos; // <-- anchor-based (singleplayer)
+            }
+        }
 
-        public override void ExplodeCrystal(Crystal.ExplodeParams explodeParams) =>
-            ExplodeCrystal_ServerRpc(NetworkExplodeParams.FromExplodeParams(explodeParams));
+        // ---------------- Replication ----------------
+        void OnPositionsChanged(NetworkListEvent<Vector3> e)
+        {
+            int id = e.Index + 1;
+            Vector3 pos = n_Positions[e.Index];
+            
+            if (!cellData.TryGetCrystalById(id, out _))
+                Spawn(id, pos);
+            else
+                UpdateCrystalPos(id, pos);
+        }
+
+        // ---------------- Public API ----------------
+        public override void RespawnCrystal(int crystalId) => RespawnCrystal_ServerRpc(crystalId);
 
         [ServerRpc(RequireOwnership = false)]
-        void ExplodeCrystal_ServerRpc(NetworkExplodeParams explodeParams)
+        void RespawnCrystal_ServerRpc(int crystalId)
         {
-            ExplodeCrystal_ClientRpc(explodeParams);
+            int idx = crystalId - 1;
+            if (idx < 0 || idx >= n_Positions.Count) return;
+
+            n_Positions[idx] = CalculateNewSpawnPos(crystalId); // <-- anchor-based
+        }
+
+        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams) =>
+            ExplodeCrystal_ServerRpc(crystalId, NetworkExplodeParams.FromExplodeParams(explodeParams));
+
+        [ServerRpc(RequireOwnership = false)]
+        void ExplodeCrystal_ServerRpc(int crystalId, NetworkExplodeParams explodeParams)
+        {
+            ExplodeCrystal_ClientRpc(crystalId, explodeParams);
         }
 
         [ClientRpc]
-        void ExplodeCrystal_ClientRpc(NetworkExplodeParams explodeParams) =>
-            cellData.Crystal.Explode(explodeParams.ToExplodeParams());
-
-        [ServerRpc(RequireOwnership = false)]
-        void RespawnCrystal_ServerRpc() =>
-            n_SpawnPos.Value = CalculateNewSpawnPos();
-
-        void MiniGameTurnStarted()
+        void ExplodeCrystal_ClientRpc(int crystalId, NetworkExplodeParams explodeParams)
         {
-            if (!cellData.Crystal)
-                Spawn(n_SpawnPos.Value);
+            if (cellData.TryGetCrystalById(crystalId, out var crystal))
+                crystal.Explode(explodeParams.ToExplodeParams());
         }
 
-        void OnSpawnPosChanged(Vector3 previousValue, Vector3 newValue)
+        private void OnDrawGizmosSelected()
         {
-            UpdateCrystalPos(newValue);
+            if (n_Positions == null)
+                return;
+            
+            Gizmos.color = Color.yellow;
+            
+            foreach (var pos in n_Positions)
+            {
+                Gizmos.DrawWireSphere(pos, 5f);    
+            }
         }
     }
-    
+
     public struct NetworkExplodeParams : INetworkSerializable
     {
         Vector3 Course;
@@ -81,25 +123,10 @@ namespace CosmicShore.Game
             PlayerName = playerName;
         }
 
-        // ✅ Helper: convert from regular ExplodeParams
-        public static NetworkExplodeParams FromExplodeParams(Crystal.ExplodeParams e)
-        {
-            return new NetworkExplodeParams(
-                e.Course,
-                e.Speed,
-                e.PlayerName
-            );
-        }
+        public static NetworkExplodeParams FromExplodeParams(Crystal.ExplodeParams e) =>
+            new NetworkExplodeParams(e.Course, e.Speed, e.PlayerName);
 
-        // ✅ Optional reverse helper
-        public Crystal.ExplodeParams ToExplodeParams()
-        {
-            return new Crystal.ExplodeParams
-            {
-                Course = Course,
-                Speed = Speed,
-                PlayerName = PlayerName
-            };
-        }
+        public Crystal.ExplodeParams ToExplodeParams() =>
+            new Crystal.ExplodeParams { Course = Course, Speed = Speed, PlayerName = PlayerName };
     }
 }

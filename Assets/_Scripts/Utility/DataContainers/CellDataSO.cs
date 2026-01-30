@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using Obvious.Soap;
@@ -20,11 +21,24 @@ namespace CosmicShore.Soap
         public Cell Cell;
         public Transform CellTransform => Cell.transform;
 
-        public List<CellItem> CellItems;
-        public Crystal Crystal;
-        public Transform CrystalTransform => Crystal.transform;
-        public float CrystalRadius => Crystal.SphereRadius;
+        public List<CellItem> CellItems = new();
+        public List<Crystal> Crystals = new();
+        public Transform CrystalTransform => Crystals[0].transform;
+        public float CrystalRadius => Crystals[0].SphereRadius;
 
+        public bool TryGetCrystalById(int crystalId, out Crystal crystal)
+        {
+            crystal = null;
+            
+            foreach (var c in Crystals.Where(c => c.Id == crystalId))
+            {
+                crystal = c;
+                return true;
+            }
+
+            return false;
+        }
+        
         public void EnsureCellStats(int cellId)
         {
             if (CellStatsList == null)
@@ -44,8 +58,8 @@ namespace CosmicShore.Soap
         {
             CellType = null;
             Cell = null;
-            if (CellItems != null) CellItems.Clear();
-            Crystal = null;
+            CellItems.Clear();
+            Crystals.Clear();
         }
     }
 }

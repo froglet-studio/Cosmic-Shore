@@ -39,7 +39,7 @@ namespace CosmicShore.Game
         [SerializeField] bool allowRespawnOnImpact;
 
         [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [SerializeField] protected ThemeManagerDataContainerSO _themeManagerData;
 
         #endregion
         
@@ -66,7 +66,7 @@ namespace CosmicShore.Game
         }
 
         public void NotifyManagerToExplodeCrystal(ExplodeParams explodeParams) =>
-            crystalManager.ExplodeCrystal(explodeParams);
+            crystalManager.ExplodeCrystal(Id, explodeParams);
         
         public void Respawn()
         {
@@ -76,7 +76,7 @@ namespace CosmicShore.Game
                 return;
             }
 
-            crystalManager.RespawnCrystal();
+            crystalManager.RespawnCrystal(Id);
         }
 
         public void DestroyCrystal()
@@ -145,11 +145,12 @@ namespace CosmicShore.Game
             {
                 var model = modelData.model;
 
-                tempMaterial = new Material(modelData.explodingMaterial);
                 var spentCrystal = Instantiate(SpentCrystalPrefab);
                 spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
-                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
                 spentCrystal.transform.localScale = transform.lossyScale;
+                
+                tempMaterial = new Material(modelData.explodingMaterial);
+                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
 
                 if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
                 {
@@ -186,6 +187,15 @@ namespace CosmicShore.Game
             }
         }
 
+        public void ChangeDomain(Domains newDomain)
+        {
+            ownDomain = newDomain;
+            foreach (var modelData in crystalModels)
+            {
+                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(ownDomain), 1));
+            }
+        }
+
         public void Steal(Domains domain, float duration)
         {
             ownDomain = domain;
@@ -206,7 +216,7 @@ namespace CosmicShore.Game
             }
         }
 
-        IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
+        protected IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
         {
             Renderer renderer = model.GetComponent<Renderer>();
             Material tempMaterial = new Material(renderer.material);
@@ -245,4 +255,3 @@ namespace CosmicShore.Game
         }
     }
 }
-

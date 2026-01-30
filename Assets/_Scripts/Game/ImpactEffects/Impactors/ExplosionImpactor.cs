@@ -15,7 +15,8 @@ namespace CosmicShore.Game
         [SerializeField] bool shielding;
 
         AOEExplosion explosion;
-        
+
+        public override Domains OwnDomain => explosion.Domain;
 
         void Awake()
         {
