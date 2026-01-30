@@ -19,14 +19,19 @@ namespace CosmicShore.Game
         public override void OnNetworkSpawn()
         {
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-            
-            // Ensure list length == count
-            int count = Mathf.Max(1, gameData.SelectedPlayerCount.Value);
-            while (n_Positions.Count < count)
-                n_Positions.Add(Vector3.zero);
-            
+
+            if (IsServer)
+            {
+                int count = Mathf.Max(1, gameData.SelectedPlayerCount.Value);
+                while (n_Positions.Count < count)
+                    n_Positions.Add(Vector3.zero);
+                while (n_Positions.Count > count)
+                    n_Positions.RemoveAt(n_Positions.Count - 1);
+            }
+
             n_Positions.OnListChanged += OnPositionsChanged;
         }
+
 
         public override void OnNetworkDespawn()
         {
@@ -39,27 +44,45 @@ namespace CosmicShore.Game
         void OnTurnStarted()
         {
             if (!IsServer) return;
-            
-            // IMPORTANT:
-            // Use the SAME spawn anchor logic as singleplayer (respawn logic) for initial spawns too.
+
             for (int idx = 0; idx < n_Positions.Count; idx++)
-            {
-                Vector3 spawnPos = GetSpawnPointBasedOnCurrentAnchor();
-                n_Positions[idx] = spawnPos; // <-- anchor-based (singleplayer)
-            }
+                n_Positions[idx] = GetSpawnPointBasedOnCurrentAnchor();
+            
+            AdvanceSpawnAnchorIndex();
         }
 
         // ---------------- Replication ----------------
         void OnPositionsChanged(NetworkListEvent<Vector3> e)
         {
-            int id = e.Index + 1;
-            Vector3 pos = n_Positions[e.Index];
-            
-            if (!cellData.TryGetCrystalById(id, out _))
-                Spawn(id, pos);
+            // Only react to add/insert/value updates
+            if (e.Type != NetworkListEvent<Vector3>.EventType.Add &&
+                e.Type != NetworkListEvent<Vector3>.EventType.Insert &&
+                e.Type != NetworkListEvent<Vector3>.EventType.Value)
+                return;
+
+            int idx = e.Index;
+            if (idx < 0 || idx >= n_Positions.Count)
+                return;
+
+            int crystalId = idx + 1;
+
+            // Prefer e.Value when available; fallback to list read
+            Vector3 pos = (e.Type == NetworkListEvent<Vector3>.EventType.Value ||
+                           e.Type == NetworkListEvent<Vector3>.EventType.Add ||
+                           e.Type == NetworkListEvent<Vector3>.EventType.Insert)
+                ? e.Value
+                : n_Positions[idx];
+
+            // If you use Vector3.zero as placeholder, don't spawn/move yet
+            if (pos == Vector3.zero)
+                return;
+
+            if (!cellData.TryGetCrystalById(crystalId, out _))
+                Spawn(crystalId, pos);
             else
-                UpdateCrystalPos(id, pos);
+                UpdateCrystalPos(crystalId, pos);
         }
+
 
         // ---------------- Public API ----------------
         public override void RespawnCrystal(int crystalId) => RespawnCrystal_ServerRpc(crystalId);

@@ -36,6 +36,7 @@ namespace CosmicShore.Game
 
         int _itemsAdded;
         int crystalPositionIndex;
+        private int crystalsSpawnedInCurrentIndex;
 
         protected virtual void Awake()
         {
@@ -102,9 +103,7 @@ namespace CosmicShore.Game
             for (int id = 1; id <= count; id++)
             {
                 if (!cellData.TryGetCrystalById(id, out _))
-                {
                     Spawn(id, GetSpawnPointBasedOnCurrentAnchor());
-                }
             }
 
             // Advance index ONCE after finishing the batch.
@@ -129,12 +128,14 @@ namespace CosmicShore.Game
             {
                 if (positions != null && positions.Length > 0)
                 {
-                    crystalPositionIndex %= positions.Length;
-
                     spawnPos = GetSpawnPointAroundAnchor(positions[crystalPositionIndex]);
+                    crystalsSpawnedInCurrentIndex++;
 
-                    // For respawns, it’s OK to advance (keeps distribution moving)
-                    crystalPositionIndex = (crystalPositionIndex + 1) % positions.Length;
+                    if (crystalsSpawnedInCurrentIndex >= cellData.Crystals.Count)
+                    {
+                        crystalPositionIndex = (crystalPositionIndex + 1) % positions.Length;
+                        crystalsSpawnedInCurrentIndex = 0;
+                    }
                 }
                 else
                 {
@@ -187,11 +188,30 @@ namespace CosmicShore.Game
             positions = set.positions.ToArray();
             return true;
         }
+        
+        protected Vector3 GetSpawnPointBasedOnCurrentAnchor()
+        {
+            Vector3 anchor = GetCurrentSpawnAnchor();
+            Vector3 spawnPos = GetSpawnPointAroundAnchor(anchor);
+            return spawnPos;
+        }
 
+        protected void AdvanceSpawnAnchorIndex()
+        {
+            if (!TryGetCrystalPositionListByIntensity(out Vector3[] positions))
+                return;
+
+            if (positions != null && positions.Length > 0)
+                crystalPositionIndex = (crystalPositionIndex + 1) % positions.Length;
+        }
+        
+        Vector3 GetSpawnPointAroundAnchor(Vector3 anchor) =>
+            anchor + Random.onUnitSphere * 35f;
+        
         // --------------------------------------------------------------------
         // ✅ Anchor helpers for batch spawning
         // --------------------------------------------------------------------
-        protected Vector3 GetCurrentSpawnAnchor()
+        Vector3 GetCurrentSpawnAnchor()
         {
             if (!TryGetCrystalPositionListByIntensity(out Vector3[] positions))
                 return Vector3.forward * 30f;
@@ -204,24 +224,5 @@ namespace CosmicShore.Game
 
             return Vector3.forward * 30f;
         }
-
-        protected void AdvanceSpawnAnchorIndex()
-        {
-            if (!TryGetCrystalPositionListByIntensity(out Vector3[] positions))
-                return;
-
-            if (positions != null && positions.Length > 0)
-                crystalPositionIndex = (crystalPositionIndex + 1) % positions.Length;
-        }
-        
-        protected Vector3 GetSpawnPointBasedOnCurrentAnchor()
-        {
-            Vector3 anchor = GetCurrentSpawnAnchor();
-            Vector3 spawnPos = GetSpawnPointAroundAnchor(anchor);
-            return spawnPos;
-        }
-        
-        protected Vector3 GetSpawnPointAroundAnchor(Vector3 anchor) =>
-        anchor + Random.onUnitSphere * 35f;
     }
 }

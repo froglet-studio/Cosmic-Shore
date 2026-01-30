@@ -4,21 +4,13 @@ namespace CosmicShore.Game.Arcade
 {
     public class CrystalCollisionTurnMonitor : TurnMonitor
     {
-        [SerializeField] int CrystalCollisions;
+        [SerializeField] protected int CrystalCollisions;
         [SerializeField] bool hostileCollection;
 
-        IRoundStats roundStats;
-        
-        public override void StartMonitor()
-        {
-            if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out roundStats))
-                Debug.LogError("No round stats found for local player");
-            
-            base.StartMonitor();
-        }
+        IRoundStats ownStats;
         
         public override bool CheckForEndOfTurn() =>
-            roundStats.OmniCrystalsCollected >= CrystalCollisions;
+            ownStats.CrystalsCollected >= CrystalCollisions;
 
         protected override void RestrictedUpdate()
         {
@@ -31,8 +23,19 @@ namespace CosmicShore.Game.Arcade
         
         protected void InvokeUpdateTurnMonitorDisplay(string message) =>
             onUpdateTurnMonitorDisplay?.Raise(message);
-        
-        protected string GetRemainingCrystalsCountToCollect() =>
-            (CrystalCollisions - roundStats.OmniCrystalsCollected).ToString();
+
+        protected string GetRemainingCrystalsCountToCollect()
+        {
+            if (ownStats == null)
+            {
+                if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats))
+                {
+                    Debug.LogError("No round stats found for local player");
+                    return string.Empty;
+                }
+            }
+            
+            return (CrystalCollisions - ownStats.CrystalsCollected).ToString();
+        }
     }
 }
