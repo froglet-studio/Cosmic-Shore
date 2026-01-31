@@ -15,35 +15,59 @@ namespace CosmicShore.Game
         public List<Vector3> positions;
     }
 
+    /// <summary>
+    /// Base crystal manager:
+    /// - Handles spawn + respawn logic for multiple crystals.
+    /// - Provides anchor-based spawn positions (pre-authored anchor lists).
+    /// - Batch spawn uses ONE anchor per batch, so all crystals in the batch cluster together.
+    /// - Respawn uses per-crystal "next anchor" progression, so each crystal moves along anchors independently.
+    /// </summary>
     public abstract class CrystalManager : NetworkBehaviour
     {
-        // This is a squared distance threshold because we compare SqrMagnitude.
-        // If you want 100 units minimum distance, set this to 100f * 100f.
-        const float MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS = 25;
+        // IMPORTANT:
+        // We compare Vector3.SqrMagnitude(...) <= MIN_SQR_DISTANCE.
+        // So this constant is "distance squared".
+        // If you want minimum distance of 25 units, set this to 25f * 25f = 625.
+        private const float MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS = 25f;
 
+        [Header("Dependencies")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] protected CellDataSO cellData;
 
+        [Header("Crystal Prefab")]
         [SerializeField] protected Crystal crystalPrefab;
 
-        [SerializeField] bool scaleCrystalPositionWithIntensity;
-        [SerializeField] IntVariable intensityLevelData;
+        [Header("Anchor Positions (By Intensity)")]
+        [SerializeField] private bool scaleCrystalPositionWithIntensity;
+        [SerializeField] private IntVariable intensityLevelData;
+        [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
-        [SerializeField] List<CrystalPositionSet> listOfCrystalPositions;
+        // ---------------- Runtime State ----------------
 
-        // Runtime state
-        readonly Dictionary<int, Vector3> lastSpawnPosById = new();
+        // Tracks the last spawn position per crystal id (used to keep respawns away from their last position).
+        private readonly Dictionary<int, Vector3> lastSpawnPosById = new();
 
-        int _itemsAdded;
-        int crystalPositionIndex;
-        private int crystalsSpawnedInCurrentIndex;
+        // Tracks the last anchor index used per crystal id.
+        // Respawn will increment this to use the NEXT anchor index.
+        private readonly Dictionary<int, int> lastAnchorIndexByCrystalId = new();
+
+        // Used ONLY for batch spawns (one anchor per batch).
+        // Respawn does NOT use this global index (it uses per-crystal anchor index).
+        private int batchAnchorIndex;
+
+        // Used for stable initialization IDs for CellItems
+        private int itemsAdded;
 
         protected virtual void Awake()
         {
+            // Ensure runtime lists exist
             cellData.CellItems = new List<CellItem>();
-            if (cellData.Crystals == null)
-                cellData.Crystals = new List<Crystal>();
+            cellData.Crystals ??= new List<Crystal>();
         }
+
+        // ------------------------------------------------------------
+        // CellItem management (unchanged conceptually)
+        // ------------------------------------------------------------
 
         public bool TryRemoveItem(CellItem item)
         {
@@ -55,6 +79,10 @@ namespace CosmicShore.Game
             return true;
         }
 
+        /// <summary>
+        /// Initialize a CellItem with a stable ID.
+        /// If forcedId is provided, use it; otherwise auto-increment.
+        /// </summary>
         protected bool TryInitializeAndAdd(CellItem item, int forcedId = 0)
         {
             if (item.Id != 0)
@@ -63,15 +91,24 @@ namespace CosmicShore.Game
                 return false;
             }
 
-            int id = forcedId != 0 ? forcedId : (++_itemsAdded);
-            _itemsAdded = Mathf.Max(_itemsAdded, id);
+            int id = forcedId != 0 ? forcedId : (++itemsAdded);
+            itemsAdded = Mathf.Max(itemsAdded, id);
 
             item.Initialize(id);
+
             cellData.CellItems.Add(item);
             cellData.OnCellItemsUpdated.Raise();
             return true;
         }
 
+        // ------------------------------------------------------------
+        // Spawn / Respawn core
+        // ------------------------------------------------------------
+
+        /// <summary>
+        /// Spawn a crystal with a stable crystalId at spawnPos.
+        /// If it already exists, returns existing.
+        /// </summary>
         protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos)
         {
             if (cellData.TryGetCrystalById(crystalId, out Crystal existing))
@@ -86,72 +123,105 @@ namespace CosmicShore.Game
             var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
             crystal.InjectDependencies(this);
 
+            // Keep a list of crystals in the cell data (you already changed this).
             cellData.Crystals.Add(crystal);
+
+            // Ensure ID matches across all peers (important for multiplayer).
             TryInitializeAndAdd(crystal, crystalId);
+
+            // Cache last spawn info
             lastSpawnPosById[crystalId] = spawnPos;
+
+            // We also store which anchor index this spawn belongs to (optional, but helpful).
+            // For initial spawn we can say the crystal spawned on the current batch anchor index.
+            lastAnchorIndexByCrystalId[crystalId] = batchAnchorIndex;
 
             cellData.OnCrystalSpawned.Raise();
             return crystal;
         }
 
-        // --------------------------------------------------------------------
-        // ✅ Batch spawn using SAME anchor index for the whole batch
-        // --------------------------------------------------------------------
+        /// <summary>
+        /// Spawn all missing crystals from 1..SelectedPlayerCount.
+        /// IMPORTANT:
+        /// - Uses the SAME anchor for the whole batch.
+        /// - Advances the batch anchor ONCE after completing the batch.
+        /// </summary>
         protected void SpawnBatchIfMissing()
         {
             int count = Mathf.Max(1, gameData.SelectedPlayerCount.Value);
+
+            // 1) Choose ONE anchor for the whole batch
+            Vector3 batchAnchor = GetAnchorForBatchIndex(batchAnchorIndex);
+
+            // 2) Spawn each missing crystal around that same anchor
             for (int id = 1; id <= count; id++)
             {
                 if (!cellData.TryGetCrystalById(id, out _))
-                    Spawn(id, GetSpawnPointBasedOnCurrentAnchor());
+                {
+                    Vector3 spawnPos = GetSpawnPointAroundAnchor(batchAnchor);
+                    Spawn(id, spawnPos);
+
+                    // Remember last anchor index used for this crystal
+                    lastAnchorIndexByCrystalId[id] = batchAnchorIndex;
+                }
             }
 
-            // Advance index ONCE after finishing the batch.
-            AdvanceSpawnAnchorIndex();
+            // 3) Advance ONCE after the batch
+            batchAnchorIndex = GetNextAnchorIndex(batchAnchorIndex);
         }
 
-        // --------------------------------------------------------------------
-        // Respawn for a specific crystalId (keeps it away from its last spawn)
-        // --------------------------------------------------------------------
+        /// <summary>
+        /// Calculate the new spawn position for a specific crystalId:
+        /// - Reads the last anchor index used by that crystal.
+        /// - Moves to NEXT anchor index.
+        /// - Randomizes around that anchor.
+        /// - Enforces minimum distance from that crystal's last spawn position.
+        /// </summary>
         protected Vector3 CalculateNewSpawnPos(int crystalId)
         {
-            if (!TryGetCrystalPositionListByIntensity(out Vector3[] positions))
-                return Random.insideUnitSphere * cellData.CrystalRadius + cellData.CellTransform.position;
-
-            Vector3 last = lastSpawnPosById.TryGetValue(crystalId, out var l) ? l : Vector3.positiveInfinity;
-            Vector3 spawnPos;
-
-            int safety = 0;
-            const int MAX_TRIES = 50;
-
-            do
+            // If no anchor list exists, fallback to random in sphere.
+            if (!TryGetCrystalPositionListByIntensity(out Vector3[] anchors) || anchors == null || anchors.Length == 0)
             {
-                if (positions != null && positions.Length > 0)
-                {
-                    spawnPos = GetSpawnPointAroundAnchor(positions[crystalPositionIndex]);
-                    crystalsSpawnedInCurrentIndex++;
+                Vector3 fallback = Random.insideUnitSphere * cellData.CrystalRadius + cellData.CellTransform.position;
+                lastSpawnPosById[crystalId] = fallback;
+                return fallback;
+            }
 
-                    if (crystalsSpawnedInCurrentIndex >= cellData.Crystals.Count)
-                    {
-                        crystalPositionIndex = (crystalPositionIndex + 1) % positions.Length;
-                        crystalsSpawnedInCurrentIndex = 0;
-                    }
-                }
-                else
-                {
-                    spawnPos = Random.insideUnitSphere * cellData.CrystalRadius + cellData.CellTransform.position;
-                }
+            // Last position this crystal spawned at (for distance check)
+            Vector3 last = lastSpawnPosById.TryGetValue(crystalId, out var lastPos)
+                ? lastPos
+                : Vector3.positiveInfinity;
 
-                safety++;
-                if (safety >= MAX_TRIES)
+            // Get last anchor index used by this crystal (default 0)
+            int lastAnchorIndex = lastAnchorIndexByCrystalId.TryGetValue(crystalId, out var idx) ? idx : 0;
+
+            // Always move to NEXT anchor
+            int nextAnchorIndex = (lastAnchorIndex + 1) % anchors.Length;
+            Vector3 anchor = anchors[nextAnchorIndex];
+
+            // Try multiple random points around the same anchor
+            const int MAX_TRIES = 50;
+            Vector3 spawnPos = anchor;
+
+            for (int t = 0; t < MAX_TRIES; t++)
+            {
+                spawnPos = GetSpawnPointAroundAnchor(anchor);
+
+                // Accept if sufficiently far from last spawn
+                if (Vector3.SqrMagnitude(last - spawnPos) > MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS)
                     break;
+            }
 
-            } while (Vector3.SqrMagnitude(last - spawnPos) <= MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS);
-
+            // Store new "lasts"
             lastSpawnPosById[crystalId] = spawnPos;
+            lastAnchorIndexByCrystalId[crystalId] = nextAnchorIndex;
+
             return spawnPos;
         }
 
+        /// <summary>
+        /// Update an existing crystal's position locally.
+        /// </summary>
         protected void UpdateCrystalPos(int crystalId, Vector3 newPos)
         {
             if (!cellData.TryGetCrystalById(crystalId, out var crystal))
@@ -163,13 +233,14 @@ namespace CosmicShore.Game
             cellData.OnCellItemsUpdated.Raise();
         }
 
-        public abstract void RespawnCrystal(int crystalId);
-        public abstract void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams);
+        // ------------------------------------------------------------
+        // Anchor helpers
+        // ------------------------------------------------------------
 
-        // --------------------------------------------------------------------
-        // ✅ Positions list getter (fixed)
-        // --------------------------------------------------------------------
-        bool TryGetCrystalPositionListByIntensity(out Vector3[] positions)
+        /// <summary>
+        /// Return the anchor list for current intensity.
+        /// </summary>
+        protected bool TryGetCrystalPositionListByIntensity(out Vector3[] positions)
         {
             positions = null;
 
@@ -182,47 +253,51 @@ namespace CosmicShore.Game
             if (set == null || set.positions == null || set.positions.Count == 0)
             {
                 positions = Array.Empty<Vector3>();
-                return true; // we DID resolve the list; it's just empty
+                return true;
             }
 
             positions = set.positions.ToArray();
             return true;
         }
-        
-        protected Vector3 GetSpawnPointBasedOnCurrentAnchor()
-        {
-            Vector3 anchor = GetCurrentSpawnAnchor();
-            Vector3 spawnPos = GetSpawnPointAroundAnchor(anchor);
-            return spawnPos;
-        }
 
-        protected void AdvanceSpawnAnchorIndex()
+        /// <summary>
+        /// Get anchor for a batch anchor index.
+        /// Falls back to forward if no anchors exist.
+        /// </summary>
+        private Vector3 GetAnchorForBatchIndex(int index)
         {
-            if (!TryGetCrystalPositionListByIntensity(out Vector3[] positions))
-                return;
-
-            if (positions != null && positions.Length > 0)
-                crystalPositionIndex = (crystalPositionIndex + 1) % positions.Length;
-        }
-        
-        Vector3 GetSpawnPointAroundAnchor(Vector3 anchor) =>
-            anchor + Random.onUnitSphere * 35f;
-        
-        // --------------------------------------------------------------------
-        // ✅ Anchor helpers for batch spawning
-        // --------------------------------------------------------------------
-        Vector3 GetCurrentSpawnAnchor()
-        {
-            if (!TryGetCrystalPositionListByIntensity(out Vector3[] positions))
+            if (!TryGetCrystalPositionListByIntensity(out Vector3[] anchors) || anchors == null || anchors.Length == 0)
                 return Vector3.forward * 30f;
 
-            if (positions != null && positions.Length > 0)
-            {
-                crystalPositionIndex %= positions.Length;
-                return positions[crystalPositionIndex];
-            }
-
-            return Vector3.forward * 30f;
+            int safeIndex = ((index % anchors.Length) + anchors.Length) % anchors.Length;
+            return anchors[safeIndex];
         }
+
+        /// <summary>
+        /// Advance to next anchor index (wrap).
+        /// </summary>
+        private int GetNextAnchorIndex(int index)
+        {
+            if (!TryGetCrystalPositionListByIntensity(out Vector3[] anchors) || anchors == null || anchors.Length == 0)
+                return index;
+
+            return (index + 1) % anchors.Length;
+        }
+
+        /// <summary>
+        /// Given an anchor point, return a randomized spawn point around it.
+        /// </summary>
+        protected Vector3 GetSpawnPointAroundAnchor(Vector3 anchor)
+        {
+            // If you ever want different radius, expose this as a serialized field.
+            return anchor + Random.onUnitSphere * 35f;
+        }
+
+        // ------------------------------------------------------------
+        // Abstract API used by gameplay code
+        // ------------------------------------------------------------
+
+        public abstract void RespawnCrystal(int crystalId);
+        public abstract void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams);
     }
 }

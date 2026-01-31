@@ -16,8 +16,11 @@ namespace CosmicShore.Game
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
         }
 
-        public override void RespawnCrystal(int crystalId) =>
-            UpdateCrystalPos(crystalId, CalculateNewSpawnPos(crystalId));
+        public override void RespawnCrystal(int crystalId)
+        {
+            var newPos = CalculateNewSpawnPos(crystalId);
+            UpdateCrystalPos(crystalId, newPos);
+        }
 
         public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
         {
