@@ -1,0 +1,91 @@
+using CosmicShore.Core;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace CosmicShore.Game.Projectiles
+{
+    public class SpawnableRings : SpawnableAbstractBase
+    {
+        [Header("Ring Configuration")]
+        [SerializeField] Prism prism;
+        [SerializeField] int ringCount = 3;
+        [SerializeField] int prismsPerRing = 8;
+        [SerializeField] float ringRadius = 20f;
+        [SerializeField] float ringSpacing = 15f;
+        [SerializeField] float initialOffset = 50;
+
+        [Header("Prism Configuration")]
+        [SerializeField] Vector3 prismScale = new Vector3(4, 4, 9);
+        [SerializeField] float prismAngle = 0f; // Angle offset in degrees, displaces look target in z
+
+        [Header("Prism Properties")]
+        [SerializeField] bool isDangerous = false;
+        [SerializeField] bool isShielded = false;
+
+
+        static int ObjectsSpawned = 0;
+
+        public override GameObject Spawn()
+        {
+            GameObject container = new GameObject();
+            container.name = "Rings" + ObjectsSpawned++;
+
+            for (int ringIndex = 0; ringIndex < ringCount; ringIndex++)
+            {
+                Vector3 ringCenter = transform.position + transform.forward * (ringIndex * ringSpacing) + initialOffset * transform.forward;
+                CreateRing(container, ringIndex, ringCenter);
+            }
+
+            return container;
+        }
+
+        void CreateRing(GameObject container, int ringIndex, Vector3 ringCenter)
+        {
+            Trail trail = new Trail();
+            trails.Add(trail);
+
+            // Calculate look target offset based on prism angle
+            float lookOffsetZ = Mathf.Tan(prismAngle * Mathf.Deg2Rad) * ringRadius;
+            Vector3 lookTarget = ringCenter + transform.forward * lookOffsetZ;
+
+            for (int i = 0; i < prismsPerRing; i++)
+            {
+                float angle = (float)i / prismsPerRing * Mathf.PI * 2;
+
+                Vector3 position = ringCenter
+                    + transform.right * Mathf.Cos(angle) * ringRadius
+                    + transform.up * Mathf.Sin(angle) * ringRadius;
+
+                Vector3 lookDirection = (lookTarget - position).normalized;
+
+                string ownerId = $"{container.name}::R{ringIndex}::P{i}";
+                CreateBlock(position, lookDirection, ownerId, trail, prismScale, prism, container);
+            }
+        }
+
+        protected void CreateBlock(Vector3 position, Vector3 lookDirection, string ownerId, Trail trail, Vector3 scale, Prism prefab, GameObject container)
+        {
+            var block = Instantiate(prefab, container.transform, false);
+            block.ChangeTeam(domain);
+            block.ownerID = ownerId;
+
+            Quaternion rotation = Quaternion.LookRotation(lookDirection, transform.up);
+            block.transform.SetPositionAndRotation(position, rotation);
+
+            block.TargetScale = scale;
+            block.Trail = trail;
+
+            if (isDangerous) block.MakeDangerous();
+            if (isShielded) block.ActivateShield();
+
+            block.Initialize();
+            trail.Add(block);
+        }
+
+        public override GameObject Spawn(int intensityLevel)
+        {
+            prismAngle = intensityLevel*3;
+            return Spawn();
+        }
+    }
+}

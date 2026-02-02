@@ -10,11 +10,11 @@ GameObject:
   m_Component:
   - component: {fileID: 6454128237993233764}
   - component: {fileID: 8507666106090082286}
-  - component: {fileID: 1144906062442093120}
+  - component: {fileID: 5482807108880319490}
   - component: {fileID: 2957460689854987115}
   - component: {fileID: 4493526936049736346}
   m_Layer: 10
-  m_Name: AOEFiveRingSpawner
+  m_Name: AOEShieldedRingSpawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -56,8 +56,8 @@ MonoBehaviour:
   blockCount: 42
   ringCount: 42
   radius: 42
-  spawnable: {fileID: 1144906062442093120}
---- !u!114 &1144906062442093120
+  spawnable: {fileID: 5482807108880319490}
+--- !u!114 &5482807108880319490
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -66,14 +66,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 2728798890556433942}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 577c811df0bdfcb499d94aa3f1c7c8bb, type: 3}
+  m_Script: {fileID: 11500000, guid: 414fcf206e4583345b215f396a39445f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
   prism: {fileID: 4563009547826722997, guid: 7b267f607ed6bde46908cd599dd95472, type: 3}
-  blocksPerRing: 80
-  ringRadius: 600
-  scale: {x: 3, y: 0.2, z: 35}
+  ringCount: 3
+  prismsPerRing: 8
+  ringRadius: 10
+  ringSpacing: 15
+  initialOffset: 150
+  prismScale: {x: 4, y: 4, z: 9}
+  prismAngle: 20
+  isDangerous: 0
+  isShielded: 1
 --- !u!114 &2957460689854987115
 MonoBehaviour:
   m_ObjectHideFlags: 0

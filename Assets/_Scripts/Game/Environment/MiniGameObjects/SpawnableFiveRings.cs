@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 
 public class SpawnableFiveRings : SpawnableAbstractBase
 {
-    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+    [FormerlySerializedAs("trailBlock")][SerializeField] Prism prism;
     [SerializeField] int blocksPerRing = 12;
     [SerializeField] float ringRadius = 10f;
     [SerializeField] Vector3 scale = new Vector3(4, 4, 9);
@@ -35,7 +35,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
             float rotationAngle = ringIndex * angleStep;
 
             // Create a base vector in XZ plane
-            Vector3 baseVector = Mathf.Cos(Mathf.Deg2Rad * rotationAngle)*transform.right + Mathf.Sin(Mathf.Deg2Rad * rotationAngle) * transform.up;
+            Vector3 baseVector = Mathf.Cos(Mathf.Deg2Rad * rotationAngle) * transform.right + Mathf.Sin(Mathf.Deg2Rad * rotationAngle) * transform.up;
 
             // Create rotation axis perpendicular to baseVector and centralAxis
             Vector3 planeNormal = Vector3.Cross(baseVector, centralAxis).normalized;
@@ -61,24 +61,24 @@ public class SpawnableFiveRings : SpawnableAbstractBase
         trails.Add(trail);
 
         // Vector from ring center to shared point (this is in the ring's plane)
-        Vector3 NormalizedSharedPointToRingCenter = (ringCenter - sharedPoint).normalized;
+        Vector3 toSharedPoint = (sharedPoint - ringCenter).normalized;
 
         // Vector perpendicular to both the normal and the toSharedPoint vector
         // This gives us the second basis vector in the ring's plane
-        Vector3 perpVector = Vector3.Cross(planeNormal, NormalizedSharedPointToRingCenter).normalized;
+        Vector3 perpVector = Vector3.Cross(planeNormal, toSharedPoint).normalized;
 
         // Create blocks around the ring
         for (int block = 0; block < blocksPerRing; block++)
         {
-            
+
             // Calculate angle for this block - start at 0 so first point is at shared point
-            float angle = (float)block / blocksPerRing * Mathf.PI / 2;
+            float angle = (float)block / blocksPerRing * Mathf.PI * 2;
 
             if (Mathf.Cos(angle) > .8) continue;
 
             // Calculate position on the ring using parametric equation of a circle
             Vector3 position = ringCenter +
-                            ringRadius * Mathf.Cos(angle) * NormalizedSharedPointToRingCenter +
+                            ringRadius * Mathf.Cos(angle) * toSharedPoint +
                             ringRadius * Mathf.Sin(angle) * perpVector;
 
             // For the look direction, use the next point
@@ -86,7 +86,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
             float nextAngle = (float)nextBlock / blocksPerRing * Mathf.PI * 2;
 
             Vector3 nextPosition = ringCenter +
-                                  ringRadius * Mathf.Cos(nextAngle) * NormalizedSharedPointToRingCenter +
+                                  ringRadius * Mathf.Cos(nextAngle) * toSharedPoint +
                                   ringRadius * Mathf.Sin(nextAngle) * perpVector;
 
             // Create the block
@@ -100,7 +100,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
     {
         // Modify properties based on intensity level
         ringRadius = 150 + intensityLevel * 5;
-        blocksPerRing = 25 + intensityLevel * 7;
+        blocksPerRing = 20 + intensityLevel * 5;
         return Spawn();
     }
 }
