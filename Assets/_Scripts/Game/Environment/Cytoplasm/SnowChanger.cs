@@ -29,12 +29,12 @@ namespace CosmicShore.Game
 
         void OnEnable()
         {
-            cellData.OnCellItemsUpdated.OnRaised += ChangeSnowSize;
+            cellData.OnCellItemsUpdated.OnRaised += ChangeSnowOrientation;
         }
 
         void OnDisable()
         {
-            cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowSize;
+            cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowOrientation;
         }
 
         public void Initialize()
@@ -68,10 +68,16 @@ namespace CosmicShore.Game
                 }
             }
 
-            ChangeSnowSize();
+            ChangeSnowOrientation();
         }
 
-        void ChangeSnowSize()
+        public void ChangeSnowOrientation(Vector3 o)
+        {
+            origin = o;
+            ChangeSnowOrientation();
+        }
+        
+        void ChangeSnowOrientation()
         {
             float nodeScalerOverThree = nodeScaler / 3;
             for (int x = 0; x < shardsX * 2 + 1; x++)
