@@ -23,7 +23,7 @@ namespace CosmicShore.Game.Projectiles
                 var team = Vessel.VesselStatus.Domain;
 
                 spawnable.Spawn(position, rotation, team,
-                    (int)(Vessel.VesselStatus.ResourceSystem.Resources[0].CurrentAmount * 10));
+                    (int)(Vessel.VesselStatus.Speed / 10));
 
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate , ct);
             }

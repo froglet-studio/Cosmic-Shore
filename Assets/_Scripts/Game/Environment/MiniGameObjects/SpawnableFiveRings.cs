@@ -99,8 +99,8 @@ public class SpawnableFiveRings : SpawnableAbstractBase
     public override GameObject Spawn(int intensityLevel)
     {
         // Modify properties based on intensity level
-        ringRadius = 50 + intensityLevel * 15;
-        blocksPerRing = 20 + intensityLevel * 6;
+        ringRadius = 150 + intensityLevel * 5;
+        blocksPerRing = 20 + intensityLevel * 5;
         return Spawn();
     }
 }
