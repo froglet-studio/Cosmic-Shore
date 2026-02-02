@@ -61,11 +61,11 @@ public class SpawnableFiveRings : SpawnableAbstractBase
         trails.Add(trail);
 
         // Vector from ring center to shared point (this is in the ring's plane)
-        Vector3 toSharedPoint = (sharedPoint - ringCenter).normalized;
+        Vector3 NormalizedSharedPointToRingCenter = (ringCenter - sharedPoint).normalized;
 
         // Vector perpendicular to both the normal and the toSharedPoint vector
         // This gives us the second basis vector in the ring's plane
-        Vector3 perpVector = Vector3.Cross(planeNormal, toSharedPoint).normalized;
+        Vector3 perpVector = Vector3.Cross(planeNormal, NormalizedSharedPointToRingCenter).normalized;
 
         // Create blocks around the ring
         for (int block = 0; block < blocksPerRing; block++)
@@ -78,7 +78,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
 
             // Calculate position on the ring using parametric equation of a circle
             Vector3 position = ringCenter +
-                            ringRadius * Mathf.Cos(angle) * toSharedPoint +
+                            ringRadius * Mathf.Cos(angle) * NormalizedSharedPointToRingCenter +
                             ringRadius * Mathf.Sin(angle) * perpVector;
 
             // For the look direction, use the next point
@@ -86,7 +86,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
             float nextAngle = (float)nextBlock / blocksPerRing * Mathf.PI * 2;
 
             Vector3 nextPosition = ringCenter +
-                                  ringRadius * Mathf.Cos(nextAngle) * toSharedPoint +
+                                  ringRadius * Mathf.Cos(nextAngle) * NormalizedSharedPointToRingCenter +
                                   ringRadius * Mathf.Sin(nextAngle) * perpVector;
 
             // Create the block
