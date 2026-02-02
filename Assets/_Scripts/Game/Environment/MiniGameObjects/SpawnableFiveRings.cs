@@ -72,7 +72,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
         {
             
             // Calculate angle for this block - start at 0 so first point is at shared point
-            float angle = (float)block / blocksPerRing * Mathf.PI * 2;
+            float angle = (float)block / blocksPerRing * Mathf.PI / 2;
 
             if (Mathf.Cos(angle) > .8) continue;
 
@@ -100,7 +100,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
     {
         // Modify properties based on intensity level
         ringRadius = 150 + intensityLevel * 5;
-        blocksPerRing = 20 + intensityLevel * 5;
+        blocksPerRing = 25 + intensityLevel * 7;
         return Spawn();
     }
 }
