@@ -22,10 +22,12 @@ namespace CosmicShore.Game
         
         bool IsDomainMatching(Domains domain) => 
             Crystal.ownDomain == domain || Crystal.ownDomain == Domains.None;
+
+        bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
         
         protected override void AcceptImpactee(IImpactor impactee)
         {
-            if (!Crystal.CrystalManager.IsServer)
+            if (IsNetworkClient())
                 return;
             
             if (IsImpacting)
