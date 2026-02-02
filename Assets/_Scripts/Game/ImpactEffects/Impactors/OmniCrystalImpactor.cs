@@ -25,6 +25,9 @@ namespace CosmicShore.Game
         
         protected override void AcceptImpactee(IImpactor impactee)
         {
+            if (!Crystal.CrystalManager.IsServer)
+                return;
+            
             if (IsImpacting)
                 return;
             

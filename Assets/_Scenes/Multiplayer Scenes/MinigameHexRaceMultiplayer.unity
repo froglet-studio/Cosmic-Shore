@@ -939,12 +939,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
-      propertyPath: cellData
-      value: 
-      objectReference: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0,
-        type: 2}
-    - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
       propertyPath: _netcodeHooks
       value: 
       objectReference: {fileID: 1078953723}

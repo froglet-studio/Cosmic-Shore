@@ -46,7 +46,7 @@ namespace CosmicShore.Game
         public List<CrystalModelData> CrystalModels => crystalModels;
         
         Material tempMaterial;
-        CrystalManager crystalManager;
+        public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
         protected virtual void Start()
@@ -54,7 +54,7 @@ namespace CosmicShore.Game
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
         }
 
-        public void InjectDependencies(CrystalManager cm) => crystalManager = cm;
+        public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
         
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
@@ -66,7 +66,7 @@ namespace CosmicShore.Game
         }
 
         public void NotifyManagerToExplodeCrystal(ExplodeParams explodeParams) =>
-            crystalManager.ExplodeCrystal(Id, explodeParams);
+            CrystalManager.ExplodeCrystal(Id, explodeParams);
         
         public void Respawn()
         {
@@ -76,12 +76,12 @@ namespace CosmicShore.Game
                 return;
             }
 
-            crystalManager.RespawnCrystal(Id);
+            CrystalManager.RespawnCrystal(Id);
         }
 
         public void DestroyCrystal()
         {
-            crystalManager.TryRemoveItem(this);
+            CrystalManager.TryRemoveItem(this);
             Destroy(gameObject);
         }
         

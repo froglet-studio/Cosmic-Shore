@@ -8,34 +8,44 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] bool hostileCollection;
 
         IRoundStats ownStats;
+
+        public override void StartMonitor()
+        {
+            InitializeOwnStats();
+            ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
+            UpdateCrystals(ownStats);
+            base.StartMonitor();
+        }
+
+        public override void StopMonitor()
+        {
+            base.StopMonitor();
+            ownStats.OnCrystalsCollectedChanged -= UpdateCrystals;
+        }
         
         public override bool CheckForEndOfTurn() =>
             ownStats.CrystalsCollected >= CrystalCollisions;
-
-        protected override void RestrictedUpdate()
-        {
-            base.RestrictedUpdate();
+        
+        protected void UpdateCrystals(IRoundStats stats) =>
             UpdateCrystalsRemainingUI();
+
+        protected void UpdateCrystalsRemainingUI()
+        {
+            string message = GetRemainingCrystalsCountToCollect();
+            onUpdateTurnMonitorDisplay?.Raise(message);
+        }
+        
+        string GetRemainingCrystalsCountToCollect()
+        {
+            InitializeOwnStats();
+            return (CrystalCollisions - ownStats.CrystalsCollected).ToString();
         }
 
-        protected virtual void UpdateCrystalsRemainingUI() =>
-            InvokeUpdateTurnMonitorDisplay(GetRemainingCrystalsCountToCollect());
-        
-        protected void InvokeUpdateTurnMonitorDisplay(string message) =>
-            onUpdateTurnMonitorDisplay?.Raise(message);
-
-        protected string GetRemainingCrystalsCountToCollect()
+        void InitializeOwnStats()
         {
-            if (ownStats == null)
-            {
-                if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats))
-                {
-                    Debug.LogError("No round stats found for local player");
-                    return string.Empty;
-                }
-            }
-            
-            return (CrystalCollisions - ownStats.CrystalsCollected).ToString();
+            if (ownStats != null) return;
+            if (gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats)) return;
+            Debug.LogError("No round stats found for local player");
         }
     }
 }
