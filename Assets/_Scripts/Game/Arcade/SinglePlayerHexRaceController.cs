@@ -62,8 +62,6 @@ namespace CosmicShore.Game.Arcade
                 ? seed
                 : Random.Range(int.MinValue, int.MaxValue);
 
-            ApplyHelixIntensity();
-
             if (resetEnvironmentOnEachTurn)
                 ResetEnvironment();
 
