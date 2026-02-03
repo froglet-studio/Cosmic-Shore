@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameMultiplayerJoust
+  m_EditorClassIdentifier: 
+  Mode: 34
+  IsMultiplayer: 1
+  DisplayName: Joust
+  Description: Joust joust joust
+  IconActive: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
+  IconInactive: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
+  CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
+  PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
+    type: 3}
+  GolfScoring: 0
+  SceneName: MinigameJoust_Gameplay
+  Captains:
+  - {fileID: 11400000, guid: f2d76569deb637b4e90869cb5a908a6b, type: 2}
+  MinPlayers: 2
+  MaxPlayers: 3
+  MinIntensity: 1
+  MaxIntensity: 2
+  CallToActionTargetType: 429
+  ViewUserAction: 0
+  PlayUserAction: 0

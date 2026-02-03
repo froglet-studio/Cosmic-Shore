@@ -1244,7 +1244,7 @@ MonoBehaviour:
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}
-  boostMaxMultiplier: {fileID: 0}
+  boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0
