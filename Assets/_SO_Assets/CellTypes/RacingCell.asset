@@ -20,7 +20,7 @@ MonoBehaviour:
     type: 3}
   NucleusPrefab: {fileID: 7555898194514117247, guid: 60fae71524663e34b8bc5c51df00fec1,
     type: 3}
-  CytoplasmPrefab: {fileID: 639495419069806261, guid: e46bb81d153963040a406f62eb8abb46,
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 41222ebb42ad82c4ca52a729935c79d3,
     type: 3}
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}

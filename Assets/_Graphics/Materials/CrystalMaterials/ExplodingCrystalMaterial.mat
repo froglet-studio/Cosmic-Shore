@@ -20,8 +20,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: CrystalMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: 11986b08af564954bb111977a5cf4dac,
+  m_Name: ExplodingCrystalMaterial
+  m_Shader: {fileID: -6465566751694194690, guid: db447cf278b8bb043bd4b09492073b93,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

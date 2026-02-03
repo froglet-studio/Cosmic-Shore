@@ -63,6 +63,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4979528709965112733, guid: a24802e9215607a449c4e2591893b55c,
+        type: 3}
+      propertyPath: explosionImpactorDataContainer
+      value: 
+      objectReference: {fileID: 11400000, guid: 2ac3ab88ee3d77a45845d83a9b185baa,
+        type: 2}
     - target: {fileID: 5318592878747859168, guid: a24802e9215607a449c4e2591893b55c,
         type: 3}
       propertyPath: m_Name

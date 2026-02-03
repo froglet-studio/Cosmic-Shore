@@ -72,7 +72,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
-  prism: {fileID: 4563009547826722997, guid: 7b267f607ed6bde46908cd599dd95472, type: 3}
+  prism: {fileID: 4563009547826722997, guid: 5e0149b915fc095448e82496cd02dde8, type: 3}
   ringCount: 1
   prismsPerRing: 8
   ringRadius: 8.2
