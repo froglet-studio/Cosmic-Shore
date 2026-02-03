@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Models.Enums;
 using Obvious.Soap;
-using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using UnityEngine.Serialization;
 using IPlayer = CosmicShore.Game.IPlayer;
 
 namespace CosmicShore.Soap
