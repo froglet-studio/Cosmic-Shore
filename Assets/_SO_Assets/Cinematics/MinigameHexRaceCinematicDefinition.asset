@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enableVictoryLap: 1
   victoryLapSettings:
-    duration: 2.5
+    duration: 3.55
     speedMultiplier: 3
     enhanceTrail: 1
     fadeLoserTrail: 1
@@ -25,7 +25,7 @@ MonoBehaviour:
     delay: 0.2
     duration: 2.5
   setLocalVesselToAI: 1
-  aiCinematicBehavior: 3
+  aiCinematicBehavior: 6
   cameraSetups:
   - cameraType: 0
     duration: 0.1

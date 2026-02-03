@@ -8,7 +8,7 @@ namespace CosmicShore.Game.Arcade
     {
         protected override void SetupNewTurn()
         {
-            RaiseToggleReadyButtonEvent(true);
+            //RaiseToggleReadyButtonEvent(true);
             base.SetupNewTurn();
         }
     }

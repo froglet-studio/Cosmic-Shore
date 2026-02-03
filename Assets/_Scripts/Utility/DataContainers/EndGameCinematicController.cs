@@ -1,41 +1,37 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Game.Cinematics
 {
-    /// <summary>
-    /// Controller responsible for orchestrating the end-game cinematic sequence.
-    /// Handles flow control and coordinates between different systems.
-    /// UI presentation is delegated to EndGameCinematicView.
-    /// </summary>
     public class EndGameCinematicController : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] GameDataSO gameData;
-        [SerializeField] SceneCinematicLibrarySO sceneCinematicLibrary;
-        [SerializeField] CinematicCameraController cinematicCameraController;
+        [SerializeField] protected GameDataSO gameData;
+        [SerializeField] protected SceneCinematicLibrarySO sceneCinematicLibrary;
+        [SerializeField] protected CinematicCameraController cinematicCameraController;
         
         [Header("View")]
-        [SerializeField] EndGameCinematicView view;
+        [SerializeField] protected EndGameCinematicView view;
 
-        private bool _isRunning;
-        private Coroutine _runningRoutine;
-
-        void OnEnable()
+        protected bool isRunning;
+        protected Coroutine runningRoutine;
+        protected float cachedBoostMultiplier;
+        
+        protected virtual void OnEnable()
         {
             if (!gameData) return;
             gameData.OnWinnerCalculated += OnWinnerCalculated;
-            
-            if (view)
-            {
-                view.Initialize();
-                view.OnContinuePressed += HandleContinuePressed;
-            }
+
+            if (!view) return;
+            view.Initialize();
+            view.OnContinuePressed += HandleContinuePressed;
         }
 
-        void OnDisable()
+        protected virtual void OnDisable()
         {
             if (!gameData) return;
             gameData.OnWinnerCalculated -= OnWinnerCalculated;
@@ -43,63 +39,55 @@ namespace CosmicShore.Game.Cinematics
             if (view)
                 view.OnContinuePressed -= HandleContinuePressed;
 
-            if (_runningRoutine != null)
+            if (runningRoutine != null)
             {
-                StopCoroutine(_runningRoutine);
-                _runningRoutine = null;
+                StopCoroutine(runningRoutine);
+                runningRoutine = null;
             }
 
             if (view)
                 view.Cleanup();
 
-            _isRunning = false;
+            isRunning = false;
         }
 
-        void OnWinnerCalculated()
+        protected virtual void OnWinnerCalculated()
         {
-            if (_isRunning) return;
-            _isRunning = true;
+            if (isRunning) return;
+            isRunning = true;
+
+            var localPlayer = gameData.LocalPlayer;
+            if (localPlayer?.Vessel?.VesselStatus != null)
+            {
+                cachedBoostMultiplier = localPlayer.Vessel.VesselStatus.BoostMultiplier;
+            }
 
             var cinematic = ResolveCinematicForThisScene();
-            _runningRoutine = StartCoroutine(RunCompleteEndGameSequence(cinematic));
+            runningRoutine = StartCoroutine(RunCompleteEndGameSequence(cinematic));
         }
 
-        IEnumerator RunCompleteEndGameSequence(CinematicDefinitionSO cinematic)
+        protected virtual IEnumerator RunCompleteEndGameSequence(CinematicDefinitionSO cinematic)
         {
-            // Phase 1: Victory Lap
             if (cinematic && cinematic.enableVictoryLap)
-            {
                 yield return StartCoroutine(RunVictoryLap(cinematic));
-            }
-            
-            // Phase 2: AI Control
+
             if (cinematic && cinematic.setLocalVesselToAI)
-            {
                 SetLocalVesselAI(true, cinematic.aiCinematicBehavior);
-            }
-            
-            // Phase 3: Camera Sequence
+
             if (cinematic && cinematic.cameraSetups is { Count: > 0 })
-            {
                 yield return StartCoroutine(RunCameraSequence(cinematic));
-            }
             else
             {
                 var delay = cinematic ? cinematic.delayBeforeEndScreen : 0.1f;
                 yield return new WaitForSeconds(delay);
             }
-            
-            // Phase 4: Score Reveal
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
-            
-            // Phase 5: Wait for Continue Button
             if (view)
             {
                 view.ShowContinueButton();
                 yield return new WaitUntil(() => !view.IsContinueButtonActive());
             }
             
-            // Phase 6: Transition Out
             if (view && cinematic)
             {
                 view.ShowConnectingPanel();
@@ -112,12 +100,62 @@ namespace CosmicShore.Game.Cinematics
 
             gameData.InvokeShowGameEndScreen();
 
-            _runningRoutine = null;
-            _isRunning = false;
+            runningRoutine = null;
+            isRunning = false;
         }
 
+        #region Reset & Transition
+        
+        /// <summary>
+        /// Virtual method - can be overridden by game-specific controllers
+        /// </summary>
+        protected virtual void ResetGameForNewRound()
+        {
+            Debug.Log("[EndGameCinematic] Resetting Game State...");
+
+            var localPlayer = gameData.LocalPlayer;
+            if (localPlayer == null && gameData.Players.Count > 0)
+                localPlayer = gameData.Players[0];
+
+            if (localPlayer != null)
+            {
+                // Restore cached boost
+                if (localPlayer.Vessel?.VesselStatus != null)
+                    localPlayer.Vessel.VesselStatus.BoostMultiplier = cachedBoostMultiplier;
+
+                // if (localPlayer.Vessel != null)
+                // {
+                //     var trailRenderer = localPlayer.Vessel.Transform.GetComponentInChildren<TrailRenderer>();
+                //     if (trailRenderer)
+                //         trailRenderer.Clear();
+                // }
+
+                if (localPlayer.Vessel != null)
+                {
+                    localPlayer.Vessel.ToggleAIPilot(false);
+                    if (localPlayer.Vessel.VesselStatus?.AICinematicBehavior)
+                        localPlayer.Vessel.VesselStatus.AICinematicBehavior.StopCinematicBehavior();
+                }
+
+                if (localPlayer.InputController)
+                    localPlayer.InputController.enabled = true;
+            }
+
+            gameData.ResetPlayers();
+            
+            if (cinematicCameraController)
+                cinematicCameraController.StopCameraSetup();
+        }
+        
+        protected virtual void HandleContinuePressed()
+        {
+        }
+        
+        #endregion
+
         #region Victory Lap
-        IEnumerator RunVictoryLap(CinematicDefinitionSO cinematic)
+        
+        protected virtual IEnumerator RunVictoryLap(CinematicDefinitionSO cinematic)
         {
             var settings = cinematic.victoryLapSettings;
             var localPlayer = gameData.LocalPlayer;
@@ -151,20 +189,19 @@ namespace CosmicShore.Game.Cinematics
             }
         }
 
-        void EnhanceTrailRenderer(IVessel vessel)
+        protected virtual void EnhanceTrailRenderer(IVessel vessel)
         {
-            // TODO: Implement trail enhancement
-            Debug.Log("Trail enhancement - To be implemented");
         }
 
-        void FadeLoserTrails()
+        protected virtual void FadeLoserTrails()
         {
-            Debug.Log("Loser trail fading - To be implemented");
         }
+        
         #endregion
 
         #region Camera Sequence
-        IEnumerator RunCameraSequence(CinematicDefinitionSO cinematic)
+        
+        protected virtual IEnumerator RunCameraSequence(CinematicDefinitionSO cinematic)
         {
             var localPlayer = gameData.LocalPlayer;
             var mainCamera = Camera.main;
@@ -181,13 +218,16 @@ namespace CosmicShore.Game.Cinematics
                 if (i >= cinematic.cameraSetups.Count - 1) continue;
                 yield return new WaitForSeconds(cinematic.cameraTransitionTime);
             }
-            
-            Debug.Log("Camera sequence complete");
         }
+        
         #endregion
 
         #region Score Reveal
-        IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
+        
+        /// <summary>
+        /// VIRTUAL - Override in game-specific controllers for custom score display
+        /// </summary>
+        protected virtual IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
             if (!view || !cinematic) yield break;
 
@@ -195,7 +235,7 @@ namespace CosmicShore.Game.Cinematics
             view.HideContinueButton();
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
-            int score = Mathf.Max(0, (int)stats.Score);
+            int score = Mathf.Max(0, (int)stats.Score); 
             
             string displayText = cinematic.GetCinematicTextForScore(score);
             
@@ -205,18 +245,26 @@ namespace CosmicShore.Game.Cinematics
                 cinematic.scoreRevealSettings
             );
         }
+        
         #endregion
 
         #region AI Control
-        void SetLocalVesselAI(bool isAI, AICinematicBehaviorType behaviorName = AICinematicBehaviorType.MoveForward)
+        
+        protected virtual void SetLocalVesselAI(bool isAI, AICinematicBehaviorType behaviorName = AICinematicBehaviorType.MoveForward)
         {
             var player = gameData.LocalPlayer;
+            if (player == null) return;
+
             if (player.InputController)
             {
-                player.InputController.enabled = false;
+                player.InputController.enabled = !isAI;
             }
 
             player.Vessel.ToggleAIPilot(isAI);
+            
+            // Stop prism spawning for Sparrow when AI takes over
+            if (player.Vessel.VesselStatus.VesselType == VesselClassType.Sparrow)
+                player.Vessel.VesselStatus.VesselPrismController.StopSpawn();
 
             if (!isAI) return;
             
@@ -226,31 +274,12 @@ namespace CosmicShore.Game.Cinematics
             cinematicBehavior.Initialize(player.Vessel.VesselStatus, aiPilot);
             cinematicBehavior.StartCinematicBehavior(behaviorName);
         }
-        #endregion
-
-        #region Reset & Transition
-        void ResetGameForNewRound()
-        {
-            var localPlayer = gameData.LocalPlayer;
-            localPlayer.Vessel.VesselStatus.BoostMultiplier = 0f;
-            
-            if (localPlayer.InputController)
-            {
-                localPlayer.InputController.enabled = true;
-            }
-
-            localPlayer.Vessel?.ToggleAIPilot(false);
-            gameData.ResetPlayers();
-        }
-
-        void HandleContinuePressed()
-        {
-            // Controller is notified but View handles the UI state
-        }
+        
         #endregion
 
         #region Helpers
-        CinematicDefinitionSO ResolveCinematicForThisScene()
+        
+        protected virtual CinematicDefinitionSO ResolveCinematicForThisScene()
         {
             var sceneName = SceneManager.GetActiveScene().name;
 
@@ -263,6 +292,7 @@ namespace CosmicShore.Game.Cinematics
             Debug.LogWarning($"No cinematic definition found for scene: {sceneName}");
             return null;
         }
+        
         #endregion
     }
 }

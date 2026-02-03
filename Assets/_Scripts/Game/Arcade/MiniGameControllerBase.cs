@@ -136,17 +136,10 @@ namespace CosmicShore.Game.Arcade
         
         /// <summary>
         /// Called when user clicks "Play Again" from scoreboard.
-        /// CRITICAL: This is where full game reset happens for replay.
         /// Subclasses should override ResetEnvironmentForReplay() to clean up their environment.
         /// </summary>
         protected virtual void OnResetForReplay()
         {
-            Debug.Log("[MiniGameControllerBase] OnResetForReplay called");
-            
-            // Give subclasses a chance to reset their environment
-            ResetEnvironmentForReplay();
-            
-            // Start a fresh round
             SetupNewRound();
         }
         
