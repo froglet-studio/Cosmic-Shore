@@ -12,11 +12,11 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] int prismsPerRing = 8;
         [SerializeField] float ringRadius = 20f;
         [SerializeField] float ringSpacing = 15f;
-        [SerializeField] float initialOffset = 50;
+        float initialOffset = 50;
 
         [Header("Prism Configuration")]
         [SerializeField] Vector3 prismScale = new Vector3(4, 4, 9);
-        [SerializeField] float prismAngle = 0f; // Angle offset in degrees, displaces look target in z
+        float prismAngle = 0f; // Angle offset in degrees, displaces look target in z
 
         [Header("Prism Properties")]
         [SerializeField] bool isDangerous = false;
@@ -50,7 +50,7 @@ namespace CosmicShore.Game.Projectiles
 
             for (int i = 0; i < prismsPerRing; i++)
             {
-                float angle = (float)i / prismsPerRing * Mathf.PI * 2;
+                float angle = (float)i / prismsPerRing * Mathf.PI * 2 + Mathf.PI * .5f;
 
                 Vector3 position = ringCenter
                     + transform.right * Mathf.Cos(angle) * ringRadius
@@ -84,7 +84,9 @@ namespace CosmicShore.Game.Projectiles
 
         public override GameObject Spawn(int intensityLevel)
         {
-            prismAngle = intensityLevel*3;
+            prismAngle = intensityLevel*.3f;
+            initialOffset = intensityLevel*.2f;
+
             return Spawn();
         }
     }
