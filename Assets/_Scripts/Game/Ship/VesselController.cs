@@ -204,8 +204,13 @@ namespace CosmicShore.Game
             VesselStatus.ResetForPlay();
         }
 
-        public void SetPose(Pose pose) => 
-            VesselStatus.VesselTransformer.SetPose(pose);
+        public void SetPose(Pose pose)
+        {
+            if (IsSpawned)
+                SetPose_ClientRpc(pose);
+            else
+                SetPose_Local(pose);
+        }
 
         public void ChangePlayer(IPlayer player)
         {
@@ -288,6 +293,11 @@ namespace CosmicShore.Game
         void AddSlowedShipTransformToGameData_Local() =>
             gameData?.SlowedShipTransforms.Add(transform);
 
+        [ClientRpc]
+        void SetPose_ClientRpc(Pose pose) => SetPose_Local(pose);
+        
+        void SetPose_Local(Pose pose) => VesselStatus.VesselTransformer.SetPose(pose);
+        
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;

@@ -4,6 +4,7 @@ using System.Linq;
 using CosmicShore.Game;
 using CosmicShore.Models.Enums;
 using Obvious.Soap;
+using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using IPlayer = CosmicShore.Game.IPlayer;
@@ -190,7 +191,7 @@ namespace CosmicShore.Soap
             
             p.ResetForPlay();
             
-            if (!p.IsNetworkClient)
+            if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
         }
         
@@ -283,10 +284,8 @@ namespace CosmicShore.Soap
             {
                 player.ResetForPlay();
                 
-                if (player.IsNetworkClient)
-                    continue;
-                
-                player.SetPoseOfVessel(GetRandomSpawnPose());
+                if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
+                    player.SetPoseOfVessel(GetRandomSpawnPose());
             }
         }
         
