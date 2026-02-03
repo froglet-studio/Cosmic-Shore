@@ -20,7 +20,7 @@ namespace CosmicShore.Game
         
         bool IsImpacting;
         
-        bool IsDomainMatching(Domains domain) => 
+        protected virtual bool IsDomainMatching(Domains domain) => 
             Crystal.ownDomain == domain || Crystal.ownDomain == Domains.None;
 
         bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
