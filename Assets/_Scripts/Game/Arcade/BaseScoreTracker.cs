@@ -1,23 +1,24 @@
 using System;
+using System.Linq;
 using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Arcade
 {
     public abstract class BaseScoreTracker : NetworkBehaviour, IScoreTracker
     {
-        [SerializeField] protected ScriptableEventNoParam OnClickToMainMenu; 
+        [SerializeField] protected ScriptableEventNoParam OnClickToMainMenu;
         [SerializeField] protected GameDataSO gameData;
-        [SerializeField] protected bool golfRules; // For primary scoring mode
+        [SerializeField] protected bool golfRules;
         [SerializeField] protected ScoringConfig[] scoringConfigs;
 
         protected BaseScoring[] scoringArray;
 
         #region Event Subscriptions
+
         protected void SubscribeEvents()
         {
             if (gameData == null) return;
@@ -39,9 +40,11 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameEnd -= CalculateWinnerAndInvokeEvent;
             OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
+
         #endregion
 
         #region Core Logic
+
         protected void OnTurnStarted()
         {
             if (scoringArray == null) return;
@@ -70,6 +73,8 @@ namespace CosmicShore.Game.Arcade
 
         protected void InitializeScoringMode()
         {
+            ForceUnsubscribeAll();
+
             if (scoringConfigs == null || scoringConfigs.Length == 0)
             {
                 Debug.LogError("No Scoring Configs were provided.");
@@ -82,6 +87,17 @@ namespace CosmicShore.Game.Arcade
             for (int i = 0; i < arrayLength; i++)
             {
                 scoringArray[i] = CreateScoring(scoringConfigs[i].Mode, scoringConfigs[i].Multiplier);
+                if(gameData.IsTurnRunning) 
+                    scoringArray[i].Subscribe();
+            }
+        }
+        
+        void ForceUnsubscribeAll()
+        {
+            if (scoringArray == null) return;
+            foreach (var scoring in scoringArray)
+            {
+                scoring?.Unsubscribe();
             }
         }
 
@@ -90,10 +106,8 @@ namespace CosmicShore.Game.Arcade
             if (!gameData.TryGetRoundStats(playerName, out var roundStats))
                 return;
 
-            float totalScore = 0;
-            foreach (var scoring in scoringArray)
-                totalScore += scoring.Score;
-            
+            float totalScore = scoringArray.Sum(scoring => scoring.Score);
+
             roundStats.Score = totalScore;
         }
 
@@ -105,7 +119,7 @@ namespace CosmicShore.Game.Arcade
                 ScoringModes.HostilePrismsDestroyed => new HostilePrismsDestroyedScoring(this, gameData, multiplier),
                 ScoringModes.FriendlyPrismsDestroyed => new FriendlyPrismsDestroyedScoring(this, gameData, multiplier),
                 ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(this, gameData, multiplier),
-                ScoringModes.FriendlyVolumeDestroyed => new FriendlyVolumeDestroyedScoring(this, gameData, multiplier), 
+                ScoringModes.FriendlyVolumeDestroyed => new FriendlyVolumeDestroyedScoring(this, gameData, multiplier),
                 ScoringModes.VolumeCreated => new VolumeCreatedScoring(this, gameData, multiplier),
                 ScoringModes.TimePlayed => new TimePlayedScoring(gameData, multiplier),
                 ScoringModes.TurnsPlayed => new TurnsPlayedScoring(gameData, multiplier),
@@ -113,12 +127,35 @@ namespace CosmicShore.Game.Arcade
                 ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(gameData, multiplier, true),
                 ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(gameData, multiplier),
                 ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier),
-                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier, CrystalsCollectedScoring.CrystalType.Omni),
-                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental),
-                ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(gameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental, true),
+                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier,
+                    CrystalsCollectedScoring.CrystalType.Omni),
+                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier,
+                    CrystalsCollectedScoring.CrystalType.Elemental),
+                ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(gameData, multiplier,
+                    CrystalsCollectedScoring.CrystalType.Elemental, true),
+                ScoringModes.LifeFormsKilled => new LifeFormsKilledScoring(gameData, multiplier),
+                ScoringModes.ElementalCrystalsCollectedBlitz => new ElementalCrystalsCollectedBlitzScoring(gameData,
+                    multiplier),
                 _ => throw new ArgumentException($"Unknown scoring mode: {mode}")
             };
         }
+
+        /// <summary>
+        /// Get a specific scoring instance by type (useful for getting stats)
+        /// </summary>
+        public T GetScoring<T>() where T : BaseScoring
+        {
+            if (scoringArray == null) return null;
+
+            foreach (var scoring in scoringArray)
+            {
+                if (scoring is T typedScoring)
+                    return typedScoring;
+            }
+
+            return null;
+        }
+
         #endregion
     }
 
@@ -126,6 +163,6 @@ namespace CosmicShore.Game.Arcade
     public struct ScoringConfig
     {
         public ScoringModes Mode;
-        public float Multiplier; //0.00686f for volume
+        public float Multiplier;
     }
 }

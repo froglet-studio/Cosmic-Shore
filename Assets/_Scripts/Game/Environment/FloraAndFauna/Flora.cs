@@ -29,7 +29,7 @@ public abstract class Flora : LifeForm
         StartCoroutine(GrowCoroutine());
     }
 
-    public override void RemoveHealthBlock(HealthPrism healthPrism)
+    public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")
     {
         base.RemoveHealthBlock(healthPrism);
         isGrowing = false;

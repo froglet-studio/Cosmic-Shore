@@ -17,7 +17,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] protected GameDataSO gameData;
         
         [Header("View")]
-        [SerializeField] private MiniGameHUDView view;
+        [SerializeField] protected MiniGameHUDView view;
 
         [Header("Related UI Components")]
         [SerializeField] private Scoreboard scoreboard;
@@ -29,7 +29,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
         
-        private IRoundStats localRoundStats;
+        protected IRoundStats localRoundStats;
         
         private void OnValidate()
         {
@@ -50,7 +50,7 @@ namespace CosmicShore.Game.UI
 
         #region Event Subscription
 
-        private void SubscribeToEvents()
+        protected virtual void SubscribeToEvents()
         {
             // Game lifecycle events
             gameData.OnClientReady += OnClientReady;
@@ -67,7 +67,7 @@ namespace CosmicShore.Game.UI
             onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
         }
 
-        private void UnsubscribeFromEvents()
+        protected virtual void UnsubscribeFromEvents()
         {
             // Game lifecycle events
             gameData.OnClientReady -= OnClientReady;
@@ -88,13 +88,17 @@ namespace CosmicShore.Game.UI
 
         #region Game Lifecycle Event Handlers
 
-        private void OnMiniGameTurnStarted()
+        protected virtual void OnMiniGameTurnStarted()
         {
             localRoundStats = gameData.LocalRoundStats;
             localRoundStats.OnScoreChanged += UpdateScoreUI;
         }
 
-        private void OnMiniGameTurnEnd()
+        /// <summary>
+        /// MADE VIRTUAL: So subclasses like WildlifeBlitzHUD can override
+        /// to add custom turn end behavior (e.g., clearing displays)
+        /// </summary>
+        protected virtual void OnMiniGameTurnEnd()
         {
             if (localRoundStats != null)
             {
@@ -109,9 +113,16 @@ namespace CosmicShore.Game.UI
         
         private void ResetForReplay()
         {
+            Debug.Log("<color=cyan>[MiniGameHUD] Resetting for replay</color>");
+            
             ToggleReadyButton(true);
             view.ToggleConnectingPanel(false);
             CleanupUI();
+    
+            // Explicitly reset all displays
+            UpdateTurnMonitorDisplay(string.Empty);
+            UpdateLifeformCounterDisplay("0");
+            view.UpdateScoreUI("0");
         }
 
         #endregion
@@ -173,7 +184,7 @@ namespace CosmicShore.Game.UI
 
         #region UI Update Methods
 
-        private void UpdateScoreUI()
+        protected virtual void UpdateScoreUI()
         {
             if (localRoundStats == null) return;
             

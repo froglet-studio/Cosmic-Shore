@@ -1,3 +1,4 @@
+using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -7,22 +8,32 @@ namespace CosmicShore.Game
     {
         SkimmerCrystalEffectSO[] elementalCrystalShipEffects;
 
-        [Header("Space Collect: move-to-vessel")] [SerializeField]
-        float moveToVesselDuration = 3f;
-
+        [Header("Space Collect: move-to-vessel")] 
+        [SerializeField] float moveToVesselDuration = 3f;
         [SerializeField] bool easeMoveToVessel = true;
 
         bool isImpacting;
-
+        private bool _hasBeenCollected;
+        public static event Action<string> OnCrystalCollected;
+        
+        void OnEnable() 
+        {
+            _hasBeenCollected = false;
+        }
+        
         protected override void AcceptImpactee(IImpactor impactee)
         {
+            if (_hasBeenCollected) return;
             if (isImpacting) return;
             if (Crystal.IsExploding) return;
-
-            if (impactee is not SkimmerImpactor skimmerImpactor)
-                return;
+            if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
             isImpacting = true;
+            _hasBeenCollected = true;
+            
+            var col = Crystal.GetComponent<Collider>();
+            if (col) col.enabled = false;
+
             WaitForImpact().Forget();
 
             if (DoesEffectExist(elementalCrystalShipEffects))
@@ -42,54 +53,60 @@ namespace CosmicShore.Game
 
         async UniTaskVoid MoveToVesselThenPlaySpaceCollect(SkimmerImpactor skimmerImpactor)
         {
-            var vesselStatusTransform = skimmerImpactor.Skimmer.VesselStatus.VesselTransformer.transform;
-            var col = Crystal.GetComponent<SphereCollider>();
-            if (col) col.enabled = false;
+            if (Crystal == null || skimmerImpactor?.Skimmer?.VesselStatus == null) return;
 
+            var vesselStatus = skimmerImpactor.Skimmer.VesselStatus;
+            var vesselTransform = vesselStatus.VesselTransformer.transform;
+            OnCrystalCollected?.Invoke(vesselStatus.PlayerName);
             float dur = Mathf.Max(0.0001f, moveToVesselDuration);
             Vector3 startPos = Crystal.transform.position;
             Quaternion startRot = Crystal.transform.rotation;
 
-            Vector3 targetPos = vesselStatusTransform.position;
-            Quaternion targetRot = vesselStatusTransform.rotation;
-
             float t = 0f;
-            while (t < 1f && Crystal != null)
+            while (t < 1f)
             {
+                if (Crystal == null || vesselTransform == null) break;
+
                 t += Time.deltaTime / dur;
                 float u = Mathf.Clamp01(t);
 
                 if (easeMoveToVessel)
                     u = u * u * (3f - 2f * u); // smoothstep
 
+                // Lerp towards the moving vessel
                 Crystal.transform.SetPositionAndRotation(
-                    Vector3.LerpUnclamped(startPos, targetPos, u),
-                    Quaternion.SlerpUnclamped(startRot, targetRot, u));
+                    Vector3.LerpUnclamped(startPos, vesselTransform.position, u),
+                    Quaternion.SlerpUnclamped(startRot, vesselTransform.rotation, u));
 
                 await UniTask.Yield(PlayerLoopTiming.Update);
             }
 
-            // Snap (just in case)
-            if (Crystal)
-                Crystal.transform.SetPositionAndRotation(targetPos, targetRot);
-
-            // Now play the collect animation
-            PlaySpaceCollectAndDestroy().Forget();
+            // Play animation logic
+            await PlaySpaceCollectAndDestroy();
         }
 
-        async UniTaskVoid PlaySpaceCollectAndDestroy()
+        async UniTask PlaySpaceCollectAndDestroy()
         {
-            float delay = 0.6f;
+            if (Crystal == null) return;
 
+            float delay = 0.6f;
             var crystalModels = Crystal.CrystalModels;
+            
             if (crystalModels != null)
             {
                 foreach (var crystalModelData in crystalModels)
                 {
-                    crystalModelData.spaceCrystalAnimator.PlayCollect();
-                    delay = Mathf.Max(delay, crystalModelData.spaceCrystalAnimator.TotalCollectTime);
+                    if (crystalModelData?.spaceCrystalAnimator != null)
+                    {
+                        crystalModelData.spaceCrystalAnimator.PlayCollect();
+                        delay = Mathf.Max(delay, crystalModelData.spaceCrystalAnimator.TotalCollectTime);
+                    }
                 }
             }
+
+            // Wait for animation then destroy
+            await UniTask.WaitForSeconds(delay);
+            //if (Crystal) Crystal.DestroyCrystal();
         }
 
         async UniTask WaitForImpact()
