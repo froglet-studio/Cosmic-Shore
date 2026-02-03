@@ -189,7 +189,10 @@ namespace CosmicShore.Game
                 return;
 
             if (!cellData.TryGetCrystalById(crystalId, out _))
-                Spawn(crystalId, pos);
+            {
+                var crystal = Spawn(crystalId, pos);
+                cellData.AddCrystalToList(crystal);
+            }
             else
                 UpdateCrystalPos(crystalId, pos);
         }

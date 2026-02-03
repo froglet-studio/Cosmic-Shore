@@ -5,7 +5,7 @@ namespace CosmicShore.Game
 {
     public class NetworkDomainCrystalManager : NetworkCrystalManager
     {
-        protected override Crystal Spawn(int crystalId, Vector3 spawnPos)
+        protected override Crystal Spawn(int crystalId, Vector3 spawnPos, Domains domain = Domains.None)
         {
             Domains domainToSet = Domains.None;
             var player = gameData.Players[crystalId - 1];
@@ -18,8 +18,7 @@ namespace CosmicShore.Game
                 domainToSet = player.Domain;
             }
 
-            var crystal = base.Spawn(crystalId, spawnPos);
-            crystal.ChangeDomain(domainToSet);
+            var crystal = base.Spawn(crystalId, spawnPos, domainToSet);
             return crystal;
         }
     }

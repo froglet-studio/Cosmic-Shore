@@ -79,28 +79,6 @@ namespace CosmicShore.Game
             return true;
         }
 
-        /// <summary>
-        /// Initialize a CellItem with a stable ID.
-        /// If forcedId is provided, use it; otherwise auto-increment.
-        /// </summary>
-        protected bool TryInitializeAndAdd(CellItem item, int forcedId = 0)
-        {
-            if (item.Id != 0)
-            {
-                Debug.LogError("To initialize a cell item, its default Id must be 0");
-                return false;
-            }
-
-            int id = forcedId != 0 ? forcedId : (++itemsAdded);
-            itemsAdded = Mathf.Max(itemsAdded, id);
-
-            item.Initialize(id);
-
-            cellData.CellItems.Add(item);
-            cellData.OnCellItemsUpdated.Raise();
-            return true;
-        }
-
         // ------------------------------------------------------------
         // Spawn / Respawn core
         // ------------------------------------------------------------
@@ -109,7 +87,7 @@ namespace CosmicShore.Game
         /// Spawn a crystal with a stable crystalId at spawnPos.
         /// If it already exists, returns existing.
         /// </summary>
-        protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos)
+        protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos, Domains domain = Domains.None)
         {
             if (cellData.TryGetCrystalById(crystalId, out Crystal existing))
             {
@@ -124,10 +102,18 @@ namespace CosmicShore.Game
             crystal.InjectDependencies(this);
 
             // Keep a list of crystals in the cell data (you already changed this).
-            cellData.Crystals.Add(crystal);
+            crystal.ChangeDomain(domain);
+            
+            if (crystal.Id != 0)
+            {
+                Debug.LogError("To initialize a cell item, its default Id must be 0");
+                return crystal;
+            }
 
-            // Ensure ID matches across all peers (important for multiplayer).
-            TryInitializeAndAdd(crystal, crystalId);
+            int id = crystalId != 0 ? crystalId : (++itemsAdded);
+            itemsAdded = Mathf.Max(itemsAdded, id);
+
+            crystal.Initialize(id);
 
             // Cache last spawn info
             lastSpawnPosById[crystalId] = spawnPos;
@@ -135,7 +121,6 @@ namespace CosmicShore.Game
             // We also store which anchor index this spawn belongs to (optional, but helpful).
             // For initial spawn we can say the crystal spawned on the current batch anchor index.
             lastAnchorIndexByCrystalId[crystalId] = batchAnchorIndex;
-
             cellData.OnCrystalSpawned.Raise();
             return crystal;
         }
@@ -159,7 +144,8 @@ namespace CosmicShore.Game
                 if (!cellData.TryGetCrystalById(id, out _))
                 {
                     Vector3 spawnPos = GetSpawnPointAroundAnchor(batchAnchor);
-                    Spawn(id, spawnPos);
+                    var crystal = Spawn(id, spawnPos);
+                    cellData.AddCrystalToList(crystal);
 
                     // Remember last anchor index used for this crystal
                     lastAnchorIndexByCrystalId[id] = batchAnchorIndex;
@@ -182,7 +168,8 @@ namespace CosmicShore.Game
             // If no anchor list exists, fallback to random in sphere.
             if (!TryGetCrystalPositionListByIntensity(out Vector3[] anchors) || anchors == null || anchors.Length == 0)
             {
-                Vector3 fallback = Random.insideUnitSphere * cellData.CrystalRadius + cellData.CellTransform.position;
+                var crystalRadius = cellData.TryGetLocalCrystal(out Crystal crystal) ? crystal.SphereRadius : 10f;
+                Vector3 fallback = Random.insideUnitSphere * crystalRadius + cellData.CellTransform.position;
                 lastSpawnPosById[crystalId] = fallback;
                 return fallback;
             }

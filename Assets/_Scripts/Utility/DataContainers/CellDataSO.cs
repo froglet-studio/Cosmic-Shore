@@ -12,6 +12,9 @@ namespace CosmicShore.Soap
         menuName = "ScriptableObjects/DataContainers/" + nameof(CellDataSO))]
     public class CellDataSO : ScriptableObject
     {
+        [SerializeField]
+        GameDataSO gameData;
+        
         [SerializeField] public ScriptableEventNoParam OnCrystalSpawned;
         [SerializeField] public ScriptableEventNoParam OnCellItemsUpdated;
 
@@ -23,9 +26,37 @@ namespace CosmicShore.Soap
 
         public List<CellItem> CellItems = new();
         public List<Crystal> Crystals = new();
-        public Transform CrystalTransform => Crystals[0].transform;
-        public float CrystalRadius => Crystals[0].SphereRadius;
+        
+        public void AddCrystalToList(Crystal crystal)
+        {
+            CellItems.Add(crystal);
+            Crystals.Add(crystal);
+            OnCellItemsUpdated.Raise();
+        }
 
+        public Transform CrystalTransform => 
+            !TryGetLocalCrystal(out Crystal crystal) ? null : crystal.transform;
+
+        public bool TryGetLocalCrystal(out Crystal crystal)
+        {
+            crystal = null;
+            var ownDomain = gameData.LocalPlayer?.Domain ?? Domains.None;
+            return TryGetCrystalByDomain(ownDomain, out crystal) ||
+                   (TryGetCrystalByDomain(Domains.None, out crystal));
+        }
+        
+        bool TryGetCrystalByDomain(Domains domain, out Crystal crystal)
+        {
+            crystal = null;
+            foreach (var c in Crystals.Where(crystal => crystal.ownDomain == domain))
+            {
+                crystal = c;
+                return true;
+            }
+            
+            return false;
+        }
+        
         public bool TryGetCrystalById(int crystalId, out Crystal crystal)
         {
             crystal = null;

@@ -39,15 +39,10 @@ namespace CosmicShore.Game
 
         public void Initialize()
         {
-            // crystalTransform = CrystalManager.Instance.GetCrystalTransform();
-            // origin = newOrigin;
-            /*var crystalSize = cellData.CrystalRadius;
-
-            shardsX = (int)(crystalSize.x / shardDistance);
-            shardsY = (int)(crystalSize.y / shardDistance);
-            shardsZ = (int)(crystalSize.z / shardDistance);*/
+            if (!cellData.TryGetLocalCrystal(out Crystal crystal))
+                return;
             
-            sphereDiameter = sphereScaler * cellData.CrystalRadius; // this.crystalTransform.GetComponent<Crystal>().SphereRadius;
+            sphereDiameter = sphereScaler * crystal.SphereRadius;
             shardsX = shardsY = shardsZ = (int)(sphereDiameter / shardDistance);
             
             crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1];
@@ -70,15 +65,12 @@ namespace CosmicShore.Game
 
             ChangeSnowOrientation();
         }
-
-        public void ChangeSnowOrientation(Vector3 o)
-        {
-            origin = o;
-            ChangeSnowOrientation();
-        }
         
-        void ChangeSnowOrientation()
+        public void ChangeSnowOrientation()
         {
+            if (!cellData.TryGetLocalCrystal(out Crystal crystal))
+                return;
+            
             float nodeScalerOverThree = nodeScaler / 3;
             for (int x = 0; x < shardsX * 2 + 1; x++)
             {
@@ -88,13 +80,13 @@ namespace CosmicShore.Game
                     {
                         var shard = crystalLattice[x, y, z];
                         float normalizedDistance;
-                        if (cellData.CrystalTransform)
+                        if (crystal)
                         {
                             float clampedDistance =
-                                Mathf.Clamp((shard.transform.position - cellData.CrystalTransform.position).magnitude, 0,
+                                Mathf.Clamp((shard.transform.position - crystal.transform.position).magnitude, 0,
                                     sphereDiameter);
                             normalizedDistance = clampedDistance / sphereDiameter;
-                            shard.transform.LookAt(cellData.CrystalTransform);
+                            shard.transform.LookAt(crystal.transform);
                         }
                         else
                         {

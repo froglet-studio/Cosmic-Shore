@@ -163,8 +163,9 @@ namespace CosmicShore.Game
             activeSpawner?.Stop(this);
             activeSpawner = null;
         }
-        
-        internal Transform GetCrystalTransform() => cellData.CrystalTransform;
+
+        internal Transform GetCrystalTransform() => 
+            !cellData.TryGetLocalCrystal(out Crystal crystal) ? null : crystal.transform;
 
         public void AddBlock(Prism block)
         {

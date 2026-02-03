@@ -190,6 +190,10 @@ namespace CosmicShore.Game
         public void ChangeDomain(Domains newDomain)
         {
             ownDomain = newDomain;
+
+            if (newDomain == Domains.None)
+                return;
+            
             foreach (var modelData in crystalModels)
             {
                 StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(ownDomain), 1));

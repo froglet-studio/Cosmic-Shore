@@ -433,6 +433,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f7a7af0f6bd4545ba6e0f5f622342c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
 --- !u!114 &1078953718
 MonoBehaviour:
