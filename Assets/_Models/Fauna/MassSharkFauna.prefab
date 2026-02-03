@@ -754,6 +754,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9117ee7c8d6921843b1da29d1d1a8d33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
   healthPrism: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
     type: 3}
@@ -3032,6 +3033,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790495, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
+      propertyPath: gameData
+      value: 
+      objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
+        type: 2}
+    - target: {fileID: 6588436222817790495, guid: cccc6ba7985893f43841fccfbb53dc71,
+        type: 3}
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
@@ -3141,6 +3148,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 1196320470979252114}
+  moveToVesselDuration: 1
+  easeMoveToVessel: 1
 --- !u!4 &1196320470979252112 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,

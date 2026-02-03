@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b38987ca9e2974083abe50717ed186, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
   healthPrism: {fileID: 5961168600923722988}
   spindle: {fileID: 2552934351062831229}
@@ -253,6 +254,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 7913613256098181642}
+  moveToVesselDuration: 3
+  easeMoveToVessel: 1
 --- !u!114 &569293887402804142
 MonoBehaviour:
   m_ObjectHideFlags: 0

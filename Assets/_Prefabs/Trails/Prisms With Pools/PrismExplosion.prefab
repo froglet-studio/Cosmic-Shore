@@ -101,7 +101,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   minSpeed: 30
-  maxSpeed: 250
+  maxSpeed: 100
   _renderer: {fileID: 7076137217386601628}
 --- !u!114 &2634603227010755458
 MonoBehaviour:
