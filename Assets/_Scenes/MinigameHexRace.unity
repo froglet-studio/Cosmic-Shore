@@ -774,6 +774,7 @@ MonoBehaviour:
     - {x: 165, y: -508, z: 452}
     - {x: 171, y: -190, z: 652}
     - {x: 402, y: -179, z: 545}
+  spawnCrystalWithPlayerDomain: 1
 --- !u!114 &1078953716
 MonoBehaviour:
   m_ObjectHideFlags: 0

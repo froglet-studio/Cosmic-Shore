@@ -42,6 +42,8 @@ namespace CosmicShore.Game
         [SerializeField] private IntVariable intensityLevelData;
         [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
+        [SerializeField] private bool spawnCrystalWithPlayerDomain;
+        
         // ---------------- Runtime State ----------------
 
         // Tracks the last spawn position per crystal id (used to keep respawns away from their last position).
@@ -87,7 +89,7 @@ namespace CosmicShore.Game
         /// Spawn a crystal with a stable crystalId at spawnPos.
         /// If it already exists, returns existing.
         /// </summary>
-        protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos, Domains domain = Domains.None)
+        protected virtual Crystal Spawn(int crystalId, Vector3 spawnPos)
         {
             if (cellData.TryGetCrystalById(crystalId, out Crystal existing))
             {
@@ -101,6 +103,10 @@ namespace CosmicShore.Game
             var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
             crystal.InjectDependencies(this);
 
+            var domain = Domains.None;
+            if (spawnCrystalWithPlayerDomain)
+                domain = gameData.Players[crystalId - 1].Domain; 
+                
             // Keep a list of crystals in the cell data (you already changed this).
             crystal.ChangeDomain(domain);
             
