@@ -39,14 +39,14 @@ namespace CosmicShore.Game
         [SerializeField] bool allowRespawnOnImpact;
 
         [Header("Data Containers")]
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [SerializeField] protected ThemeManagerDataContainerSO _themeManagerData;
 
         #endregion
         
         public List<CrystalModelData> CrystalModels => crystalModels;
         
         Material tempMaterial;
-        CrystalManager crystalManager;
+        public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
         protected virtual void Start()
@@ -54,7 +54,7 @@ namespace CosmicShore.Game
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
         }
 
-        public void InjectDependencies(CrystalManager cm) => crystalManager = cm;
+        public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
         
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.None || ownDomain == shipDomain;
 
@@ -66,7 +66,7 @@ namespace CosmicShore.Game
         }
 
         public void NotifyManagerToExplodeCrystal(ExplodeParams explodeParams) =>
-            crystalManager.ExplodeCrystal(explodeParams);
+            CrystalManager.ExplodeCrystal(Id, explodeParams);
         
         public void Respawn()
         {
@@ -76,12 +76,12 @@ namespace CosmicShore.Game
                 return;
             }
 
-            crystalManager.RespawnCrystal();
+            CrystalManager.RespawnCrystal(Id);
         }
 
         public void DestroyCrystal()
         {
-            crystalManager.TryRemoveItem(this);
+            CrystalManager.TryRemoveItem(this);
             Destroy(gameObject);
         }
         
@@ -145,11 +145,12 @@ namespace CosmicShore.Game
             {
                 var model = modelData.model;
 
-                tempMaterial = new Material(modelData.explodingMaterial);
                 var spentCrystal = Instantiate(SpentCrystalPrefab);
                 spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
-                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
                 spentCrystal.transform.localScale = transform.lossyScale;
+                
+                tempMaterial = new Material(modelData.explodingMaterial);
+                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
 
                 if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
                 {
@@ -186,6 +187,19 @@ namespace CosmicShore.Game
             }
         }
 
+        public void ChangeDomain(Domains newDomain)
+        {
+            ownDomain = newDomain;
+
+            if (newDomain == Domains.None)
+                return;
+            
+            foreach (var modelData in crystalModels)
+            {
+                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(ownDomain), 1));
+            }
+        }
+
         public void Steal(Domains domain, float duration)
         {
             ownDomain = domain;
@@ -206,7 +220,7 @@ namespace CosmicShore.Game
             }
         }
 
-        IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
+        protected IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
         {
             Renderer renderer = model.GetComponent<Renderer>();
             Material tempMaterial = new Material(renderer.material);
@@ -245,4 +259,3 @@ namespace CosmicShore.Game
         }
     }
 }
-

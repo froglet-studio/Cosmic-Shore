@@ -236,8 +236,9 @@ namespace CosmicShore.Game
             activeSpawner = null;
             Debug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
         }
-        
-        internal Transform GetCrystalTransform() => cellData.CrystalTransform;
+
+        internal Transform GetCrystalTransform() => 
+            !cellData.TryGetLocalCrystal(out Crystal crystal) ? null : crystal.transform;
 
         public void AddBlock(Prism block)
         {

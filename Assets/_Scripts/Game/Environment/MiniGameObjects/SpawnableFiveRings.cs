@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 
 public class SpawnableFiveRings : SpawnableAbstractBase
 {
-    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+    [FormerlySerializedAs("trailBlock")][SerializeField] Prism prism;
     [SerializeField] int blocksPerRing = 12;
     [SerializeField] float ringRadius = 10f;
     [SerializeField] Vector3 scale = new Vector3(4, 4, 9);
@@ -35,7 +35,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
             float rotationAngle = ringIndex * angleStep;
 
             // Create a base vector in XZ plane
-            Vector3 baseVector = Mathf.Cos(Mathf.Deg2Rad * rotationAngle)*transform.right + Mathf.Sin(Mathf.Deg2Rad * rotationAngle) * transform.up;
+            Vector3 baseVector = Mathf.Cos(Mathf.Deg2Rad * rotationAngle) * transform.right + Mathf.Sin(Mathf.Deg2Rad * rotationAngle) * transform.up;
 
             // Create rotation axis perpendicular to baseVector and centralAxis
             Vector3 planeNormal = Vector3.Cross(baseVector, centralAxis).normalized;
@@ -70,7 +70,7 @@ public class SpawnableFiveRings : SpawnableAbstractBase
         // Create blocks around the ring
         for (int block = 0; block < blocksPerRing; block++)
         {
-            
+
             // Calculate angle for this block - start at 0 so first point is at shared point
             float angle = (float)block / blocksPerRing * Mathf.PI * 2;
 
@@ -99,8 +99,8 @@ public class SpawnableFiveRings : SpawnableAbstractBase
     public override GameObject Spawn(int intensityLevel)
     {
         // Modify properties based on intensity level
-        ringRadius = 50 + intensityLevel * 15;
-        blocksPerRing = 20 + intensityLevel * 6;
+        ringRadius = 150 + intensityLevel * 5;
+        blocksPerRing = 20 + intensityLevel * 5;
         return Spawn();
     }
 }

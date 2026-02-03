@@ -16,17 +16,29 @@ namespace CosmicShore.Game
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
         }
 
-        public override void RespawnCrystal() =>
-            UpdateCrystalPos(CalculateNewSpawnPos());
+        public override void RespawnCrystal(int crystalId)
+        {
+            var newPos = CalculateNewSpawnPos(crystalId);
+            UpdateCrystalPos(crystalId, newPos);
+        }
 
-        public override void ExplodeCrystal(Crystal.ExplodeParams explodeParams) =>
-            cellData.Crystal.Explode(explodeParams);
-        
-        void MiniGameTurnStarted() => Spawn(CalculateSpawnPos());
+        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
+        {
+            if (cellData.TryGetCrystalById(crystalId, out var crystal))
+                crystal.Explode(explodeParams);
+        }
+
+        void MiniGameTurnStarted()
+        {
+            // Spawn N crystals (id = 1..batchCount), each gets a position from CalculateSpawnPos()
+            SpawnBatchIfMissing();
+        }
         
         void OnTurnEnded()
         {
-            cellData.Crystal.DestroyCrystal();
+            var crystals = cellData.Crystals;
+            foreach (var crystal in crystals)
+                crystal.DestroyCrystal();
         }
     }
 }

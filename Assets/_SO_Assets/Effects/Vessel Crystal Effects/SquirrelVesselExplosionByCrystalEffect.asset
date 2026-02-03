@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rhinoCrystalExplosionEvent: {fileID: 0}
   _aoePrefabs:
-  - {fileID: 8507666106090082286, guid: b189bdcdd34040c4e9631f49d995b800, type: 3}
+  - {fileID: 8507666106090082286, guid: 2999677bfbbd8a243a81c399c03235a6, type: 3}
   _minExplosionScale: 400
   _maxExplosionScale: 400
   _resourceIndex: 0
   _aoeExplosionMaterial: {fileID: 0}
-  _spawnOffset: {x: 0, y: 0, z: -5}
+  _spawnOffset: {x: 0, y: 0, z: 0}
   _explosionCooldown: 0.15

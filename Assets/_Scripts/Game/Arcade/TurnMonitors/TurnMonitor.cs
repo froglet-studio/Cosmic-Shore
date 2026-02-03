@@ -54,7 +54,7 @@ namespace CosmicShore.Game.Arcade
         }
 
         /// <summary>Stops the monitor loop (safe to call multiple times).</summary>
-        public void StopMonitor()
+        public virtual void StopMonitor()
         {
             if (!isRunning) return;
 

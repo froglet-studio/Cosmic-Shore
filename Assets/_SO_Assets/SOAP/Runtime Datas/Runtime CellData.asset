@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 951007c8ff7c416db4dd943ff4c87124, type: 3}
   m_Name: Runtime CellData
   m_EditorClassIdentifier: 
-  CellType: {fileID: 11400000, guid: 5ce96f4772e6a7941ab472e13d16a96f, type: 2}
-  Cell: {fileID: 0}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnCrystalSpawned: {fileID: 11400000, guid: 0f33b889f8371184789d1453649aabf2, type: 2}
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
+  CellType: {fileID: 0}
+  Cell: {fileID: 0}
   CellItems: []
-  Crystal: {fileID: 0}
+  Crystals: []

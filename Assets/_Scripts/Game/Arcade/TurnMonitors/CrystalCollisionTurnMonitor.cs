@@ -4,35 +4,48 @@ namespace CosmicShore.Game.Arcade
 {
     public class CrystalCollisionTurnMonitor : TurnMonitor
     {
-        [SerializeField] int CrystalCollisions;
+        [SerializeField] protected int CrystalCollisions;
         [SerializeField] bool hostileCollection;
 
-        IRoundStats roundStats;
-        
+        IRoundStats ownStats;
+
         public override void StartMonitor()
         {
-            if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out roundStats))
-                Debug.LogError("No round stats found for local player");
-            
+            InitializeOwnStats();
+            ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
+            UpdateCrystals(ownStats);
             base.StartMonitor();
+        }
+
+        public override void StopMonitor()
+        {
+            base.StopMonitor();
+            ownStats.OnCrystalsCollectedChanged -= UpdateCrystals;
         }
         
         public override bool CheckForEndOfTurn() =>
-            roundStats.OmniCrystalsCollected >= CrystalCollisions;
-
-        protected override void RestrictedUpdate()
-        {
-            base.RestrictedUpdate();
+            ownStats.CrystalsCollected >= CrystalCollisions;
+        
+        protected void UpdateCrystals(IRoundStats stats) =>
             UpdateCrystalsRemainingUI();
+
+        protected void UpdateCrystalsRemainingUI()
+        {
+            string message = GetRemainingCrystalsCountToCollect();
+            onUpdateTurnMonitorDisplay?.Raise(message);
+        }
+        
+        string GetRemainingCrystalsCountToCollect()
+        {
+            InitializeOwnStats();
+            return (CrystalCollisions - ownStats.CrystalsCollected).ToString();
         }
 
-        protected virtual void UpdateCrystalsRemainingUI() =>
-            InvokeUpdateTurnMonitorDisplay(GetRemainingCrystalsCountToCollect());
-        
-        protected void InvokeUpdateTurnMonitorDisplay(string message) =>
-            onUpdateTurnMonitorDisplay?.Raise(message);
-        
-        protected string GetRemainingCrystalsCountToCollect() =>
-            (CrystalCollisions - roundStats.OmniCrystalsCollected).ToString();
+        void InitializeOwnStats()
+        {
+            if (ownStats != null) return;
+            if (gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats)) return;
+            Debug.LogError("No round stats found for local player");
+        }
     }
 }

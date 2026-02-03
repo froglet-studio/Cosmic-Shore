@@ -1,3 +1,4 @@
+using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 
@@ -5,14 +6,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
-        protected override void UpdateCrystalsRemainingUI()
-        {
-            FixedString32Bytes message = GetRemainingCrystalsCountToCollect();
-            UpdateCrystalsRemainingUI_ClientRpc(message);
-        }
-        
-        [ClientRpc]
-        private void UpdateCrystalsRemainingUI_ClientRpc(FixedString32Bytes message) =>
-            InvokeUpdateTurnMonitorDisplay(message.ToString());
+        public override bool CheckForEndOfTurn() =>
+            gameData.RoundStatsList.Any(stats => stats.OmniCrystalsCollected >= CrystalCollisions);
     }
 }

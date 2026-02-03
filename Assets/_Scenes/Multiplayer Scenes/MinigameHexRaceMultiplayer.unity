@@ -350,7 +350,7 @@ GameObject:
   - component: {fileID: 1078953723}
   - component: {fileID: 1078953729}
   - component: {fileID: 1078953713}
-  - component: {fileID: 1078953717}
+  - component: {fileID: 1078953730}
   - component: {fileID: 1078953715}
   - component: {fileID: 1078953721}
   - component: {fileID: 1078953720}
@@ -434,75 +434,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
---- !u!114 &1078953717
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 90215a90a50249e8a32f1bd48fb31fb1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
-  crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
-    type: 3}
-  scaleCrystalPositionWithIntensity: 0
-  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  listOfCrystalPositions:
-  - positions:
-    - {x: 700, y: 0, z: 0}
-    - {x: 500, y: 0, z: 500}
-    - {x: 0, y: 0, z: 700}
-    - {x: -500, y: 0, z: 500}
-    - {x: -700, y: 0, z: 0}
-    - {x: -500, y: 0, z: -500}
-    - {x: 0, y: 0, z: -700}
-    - {x: 500, y: 0, z: -500}
-  - positions:
-    - {x: 700, y: 0, z: 0}
-    - {x: 445, y: 324, z: -433}
-    - {x: 198, y: 610, z: -280}
-    - {x: -198, y: 610, z: 280}
-    - {x: -445, y: 324, z: 433}
-    - {x: -700, y: 0, z: 0}
-    - {x: -445, y: -324, z: -433}
-    - {x: -198, y: -610, z: -280}
-    - {x: 198, y: -610, z: 280}
-    - {x: 445, y: -324, z: 433}
-  - positions:
-    - {x: 700, y: 0, z: 0}
-    - {x: 431, y: 249, z: -492}
-    - {x: 249, y: 431, z: -492}
-    - {x: 0, y: 700, z: 0}
-    - {x: -249, y: 431, z: 492}
-    - {x: -431, y: 249, z: 492}
-    - {x: -700, y: 0, z: 0}
-    - {x: -431, y: -249, z: -492}
-    - {x: -249, y: -431, z: -492}
-    - {x: 0, y: -700, z: 0}
-    - {x: 249, y: -431, z: 492}
-    - {x: 431, y: -249, z: 492}
-  - positions:
-    - {x: 700, y: 0, z: 0}
-    - {x: 402, y: 179, z: -545}
-    - {x: 171, y: 190, z: -652}
-    - {x: 165, y: 508, z: -452}
-    - {x: -71, y: 675, z: 173}
-    - {x: -178, y: 308, z: 603}
-    - {x: -235, y: 171, z: 637}
-    - {x: -605, y: 129, z: 329}
-    - {x: -605, y: -129, z: -329}
-    - {x: -235, y: -171, z: -637}
-    - {x: -178, y: -308, z: -603}
-    - {x: -71, y: -675, z: -173}
-    - {x: 165, y: -508, z: 452}
-    - {x: 171, y: -190, z: 652}
-    - {x: 402, y: -179, z: 545}
 --- !u!114 &1078953718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -696,7 +627,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _updateInterval: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: df0e1862f7f460b459c52515c53ceb4f,
+  onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   CrystalCollisions: 40
   hostileCollection: 0
@@ -729,6 +660,75 @@ MonoBehaviour:
   helix: {fileID: 0}
   helixIntensityScaling: 4
   seed: 0
+--- !u!114 &1078953730
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 098f4c4b565549cd8812aa62c72ff8ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
+    type: 3}
+  scaleCrystalPositionWithIntensity: 0
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  listOfCrystalPositions:
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 500, y: 0, z: 500}
+    - {x: 0, y: 0, z: 700}
+    - {x: -500, y: 0, z: 500}
+    - {x: -700, y: 0, z: 0}
+    - {x: -500, y: 0, z: -500}
+    - {x: 0, y: 0, z: -700}
+    - {x: 500, y: 0, z: -500}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 445, y: 324, z: -433}
+    - {x: 198, y: 610, z: -280}
+    - {x: -198, y: 610, z: 280}
+    - {x: -445, y: 324, z: 433}
+    - {x: -700, y: 0, z: 0}
+    - {x: -445, y: -324, z: -433}
+    - {x: -198, y: -610, z: -280}
+    - {x: 198, y: -610, z: 280}
+    - {x: 445, y: -324, z: 433}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 431, y: 249, z: -492}
+    - {x: 249, y: 431, z: -492}
+    - {x: 0, y: 700, z: 0}
+    - {x: -249, y: 431, z: 492}
+    - {x: -431, y: 249, z: 492}
+    - {x: -700, y: 0, z: 0}
+    - {x: -431, y: -249, z: -492}
+    - {x: -249, y: -431, z: -492}
+    - {x: 0, y: -700, z: 0}
+    - {x: 249, y: -431, z: 492}
+    - {x: 431, y: -249, z: 492}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 402, y: 179, z: -545}
+    - {x: 171, y: 190, z: -652}
+    - {x: 165, y: 508, z: -452}
+    - {x: -71, y: 675, z: 173}
+    - {x: -178, y: 308, z: 603}
+    - {x: -235, y: 171, z: 637}
+    - {x: -605, y: 129, z: 329}
+    - {x: -605, y: -129, z: -329}
+    - {x: -235, y: -171, z: -637}
+    - {x: -178, y: -308, z: -603}
+    - {x: -71, y: -675, z: -173}
+    - {x: 165, y: -508, z: 452}
+    - {x: 171, y: -190, z: 652}
+    - {x: 402, y: -179, z: 545}
 --- !u!1 &1194123992
 GameObject:
   m_ObjectHideFlags: 0
@@ -937,12 +937,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: NetworkStatsManager
       objectReference: {fileID: 0}
-    - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
-        type: 3}
-      propertyPath: cellData
-      value: 
-      objectReference: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0,
-        type: 2}
     - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
       propertyPath: _netcodeHooks
