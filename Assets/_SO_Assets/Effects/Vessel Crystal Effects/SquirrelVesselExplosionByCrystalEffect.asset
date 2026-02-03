@@ -19,5 +19,5 @@ MonoBehaviour:
   _maxExplosionScale: 400
   _resourceIndex: 0
   _aoeExplosionMaterial: {fileID: 0}
-  _spawnOffset: {x: 0, y: 0, z: -5}
+  _spawnOffset: {x: 0, y: 0, z: 0}
   _explosionCooldown: 0.15

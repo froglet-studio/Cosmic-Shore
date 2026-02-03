@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rhinoSkimmerExplosionEvent: {fileID: 0}
   _aoePrefabs:
-  - {fileID: 8507666106090082286, guid: 3c8e97271e857de4b83376b85486f887, type: 3}
+  - {fileID: 8507666106090082286, guid: bbda730344001904996085ef50bdbfde, type: 3}
   _minExplosionScale: 400
   _maxExplosionScale: 400
   _resourceIndex: 0
