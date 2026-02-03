@@ -14,6 +14,8 @@ namespace CosmicShore.Soap
         [SerializeField] public ScriptableEventNoParam OnCrystalSpawned;
         [SerializeField] public ScriptableEventNoParam OnCellItemsUpdated;
 
+        [SerializeField] public ScriptableEventNoParam OnResetForReplay;
+        
         public Dictionary<int, CellStats> CellStatsList = new();
 
         public SO_CellType CellType;
@@ -44,8 +46,9 @@ namespace CosmicShore.Soap
         {
             CellType = null;
             Cell = null;
-            if (CellItems != null) CellItems.Clear();
+            CellItems?.Clear();
             Crystal = null;
         }
+        
     }
 }
