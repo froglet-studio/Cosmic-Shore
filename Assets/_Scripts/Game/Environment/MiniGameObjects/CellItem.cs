@@ -19,11 +19,10 @@ namespace CosmicShore.Game
 
         // protected Cell cell;
         
-        public void Initialize(int newId, Domains domain = Domains.None) // , Cell cell)
+        public void Initialize(int newId) // , Cell cell)
         {
             // this.cell = cell;
             Id = newId;
-            ownDomain = domain;
         }
     }
 }

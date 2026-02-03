@@ -8,31 +8,28 @@ namespace CosmicShore.Game
         [SerializeField]
         CellDataSO cellData;
         
-        SnowChanger snowChanger;
-        
         private void OnEnable()
         {
-            cellData.OnCrystalSpawned.OnRaised += OnCrystalSpawned;
-            
+            cellData.OnCellItemsUpdated.OnRaised += OnCellItemsUpdated;
         }
 
         private void OnDisable()
         {
-            cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawned;
+            cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
         }
 
-        private void OnCrystalSpawned()
+        void OnCellItemsUpdated()
         {
-            SpawnSnows();
-            snowChanger.ChangeSnowOrientation(cellData.CellTransform.position);
-        }
-
-        private void SpawnSnows()
-        {
-            if (snowChanger)
+            if (!cellData.TryGetLocalCrystal(out _))
                 return;
             
-            snowChanger = Instantiate(cellData.CellType.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
+            cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
+            SpawnSnows();
+        }
+        
+        private void SpawnSnows()
+        {
+            var snowChanger = Instantiate(cellData.CellType.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
             snowChanger.Initialize();
         }
     }
