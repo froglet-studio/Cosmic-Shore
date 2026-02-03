@@ -15,3 +15,5 @@ MonoBehaviour:
   entries:
   - sceneName: MinigameHexRace
     cinematic: {fileID: 11400000, guid: 1e29436b57bf93d40a242c33145a2311, type: 2}
+  - sceneName: MinigameWildlifeBlitz
+    cinematic: {fileID: 11400000, guid: 124fb602b5370854b9aecc71400e11e9, type: 2}
