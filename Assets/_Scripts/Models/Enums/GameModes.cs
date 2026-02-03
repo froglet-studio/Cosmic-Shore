@@ -36,4 +36,5 @@ public enum GameModes
     HexRace = 31,
     MultiplayerWildlifeBlitzGame = 32,
     MultiplayerHexRaceGame = 33,
+    MultiplayerJoust = 34,
 }

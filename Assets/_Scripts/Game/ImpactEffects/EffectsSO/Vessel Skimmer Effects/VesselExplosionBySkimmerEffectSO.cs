@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Game.Projectiles;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -10,10 +11,9 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselExplosionBySkimmerEffectSO")]
     public class VesselExplosionBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
-        [Header("Events")]
-        [SerializeField] private ScriptableEventVesselImpactor rhinoSkimmerExplosionEvent;
-        public static event Action<VesselImpactor> OnMantaSkimmerExplosion;
-
+        [SerializeField]
+        ScriptableEventString OnJoustCollision;
+        
         [Header("Explosion Settings")]
         [SerializeField] private AOEExplosion[] _aoePrefabs;
         [SerializeField] private float _minExplosionScale;
@@ -65,6 +65,8 @@ namespace CosmicShore.Game
                 _aoeExplosionMaterial,
                 _resourceIndex,
                 _spawnOffset);
+            
+            OnJoustCollision.Raise(impacteeVessel.VesselStatus.PlayerName);
         }
     }
 }

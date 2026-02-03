@@ -41,6 +41,7 @@ namespace CosmicShore.Game
         public event Action<IRoundStats> OnTimeCrystalValueChanged;
 
         public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
+        public event Action<IRoundStats> OnJoustCollisionChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -66,7 +67,7 @@ namespace CosmicShore.Game
 
         int _crystalsCollectedLocal, _omniCrystalsCollectedLocal, _elementalCrystalsCollectedLocal;
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
-        int _skimmerShipCollisionsLocal;
+        int _skimmerShipCollisionsLocal, _joustCollisionsLocal;
         float _fullSpeedStraightAbilityActiveTimeLocal, _rightStickAbilityActiveTimeLocal, _leftStickAbilityActiveTimeLocal;
         float _flipAbilityActiveTimeLocal, _button1AbilityActiveTimeLocal, _button2AbilityActiveTimeLocal, _button3AbilityActiveTimeLocal;
 
@@ -140,10 +141,10 @@ namespace CosmicShore.Game
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
         readonly NetworkVariable<float> n_TimeCrystalValue =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
-
         readonly NetworkVariable<int> n_SkimmerShipCollisions =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
-
+        readonly NetworkVariable<int> n_JoustCollisions =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
         readonly NetworkVariable<float> n_RightStickAbilityActiveTime =
@@ -488,6 +489,19 @@ namespace CosmicShore.Game
 
                 if (!IsSpawned)
                 RaiseSpecific(OnSkimmerShipCollisionsChanged);
+            }
+        }
+        
+        public int JoustCollisions
+        {
+            get => IsSpawned ? n_JoustCollisions.Value : _joustCollisionsLocal;
+            set
+            {
+                if (IsSpawned && IsServer) n_JoustCollisions.Value = value;
+                else _joustCollisionsLocal = value;
+
+                if (!IsSpawned)
+                    RaiseSpecific(OnJoustCollisionChanged);
             }
         }
 
