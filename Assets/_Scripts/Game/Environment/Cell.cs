@@ -47,9 +47,10 @@ namespace CosmicShore.Game
                 gameData.OnInitializeGame += Initialize;
 
             if (cellData == null) return;
+            
             if (cellData.OnCrystalSpawned != null)
                 cellData.OnCrystalSpawned.OnRaised += OnCrystalSpawnedInCell;
-
+            
             if (cellData.OnResetForReplay != null)
                 cellData.OnResetForReplay.OnRaised += ResetCell;
         }
@@ -63,39 +64,27 @@ namespace CosmicShore.Game
             {
                 if (cellData.OnCrystalSpawned != null)
                     cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawnedInCell;
-
+                
                 if (cellData.OnResetForReplay != null)
                     cellData.OnResetForReplay.OnRaised -= ResetCell;
             }
+            
             StopSpawner();
             cellData?.ResetRuntimeData();
         }
 
         void ResetCell()
         {
-            Debug.Log($"<color=yellow>[Cell {ID}] ═══ RESET FOR REPLAY ═══</color>");
-            
-            // Clean up lifeforms
             for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
             {
                 if (spawnedLifeForms[i]) Destroy(spawnedLifeForms[i]);
             }
             spawnedLifeForms.Clear();
-            
-            // Stop spawner
             StopSpawner();
-            
-            // CRITICAL FIX: Reassign CellType (Initialize() won't run again on replay)
             AssignCellType();
-            
-            // Reset volumes
             ResetVolumes();
-            
-            // Update stats
             cellData.EnsureCellStats(ID);
             UpdateCellStats();
-            
-            Debug.Log($"<color=green>[Cell {ID}] Reset complete - CellType: {cellType?.name} - Ready for new crystal spawn</color>");
         }
 
         void UpdateCellStats()
@@ -145,20 +134,10 @@ namespace CosmicShore.Game
             ResetVolumes();
             
             UpdateCellStats();
-            
-            Debug.Log($"<color=cyan>[Cell {ID}] Initialized with CellType: {cellType?.name}</color>");
         }
 
         void OnCrystalSpawnedInCell()
         {
-            if (!cellType) 
-            {
-                Debug.LogError($"[Cell {ID}] No CellType assigned!");
-                return;
-            }
-
-            Debug.Log($"<color=green>[Cell {ID}] ═══ CRYSTAL SPAWNED - Starting LifeForm Spawner ═══</color>");
-            
             ApplyModifiers();
             StartSpawnerForMode();
         }
@@ -237,8 +216,12 @@ namespace CosmicShore.Game
             Debug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
         }
 
-        internal Transform GetCrystalTransform() => 
-            !cellData.TryGetLocalCrystal(out Crystal crystal) ? null : crystal.transform;
+        internal Transform GetCrystalTransform()
+        {
+            if (cellData.TryGetLocalCrystal(out var crystal)) return crystal.transform;
+            Debug.LogWarning($"[Cell {ID}] No crystal found!");
+            return null;
+        }
 
         public void AddBlock(Prism block)
         {

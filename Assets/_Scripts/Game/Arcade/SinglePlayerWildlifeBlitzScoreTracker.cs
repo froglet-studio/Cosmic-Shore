@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class WildlifeBlitzScoreTracker : BaseScoreTracker
+    public class SinglePlayerWildlifeBlitzScoreTracker : BaseScoreTracker
     {
         [Header("Blitz Settings")]
         [SerializeField] SingleplayerWildlifeBlitzTurnMonitor turnMonitor;
@@ -13,43 +13,51 @@ namespace CosmicShore.Game.Arcade
         [Header("Events")]
         [SerializeField] ScriptableEventNoParam eventOnScoreChanged;
 
+        private bool isTracking = false;
+
         void OnEnable()
         {
+            // Only subscribe to generic Game Events (like Pause), NOT scoring yet
             SubscribeEvents();
-            SubscribeToScoringEvents();
         }
 
         void OnDisable()
         {
             UnsubscribeEvents();
-            UnsubscribeFromScoringEvents();
+            StopTracking(); // Safety catch
         }
 
-        void SubscribeToScoringEvents()
+        public void StartTracking()
         {
-            LifeForm.OnLifeFormDeath -= OnScoringEvent;
-            LifeForm.OnLifeFormDeath += OnScoringEvent;
+            if (isTracking) return; // Prevent double subscription
             
-            ElementalCrystalImpactor.OnCrystalCollected -= OnCrystalScoringEvent;
+            LifeForm.OnLifeFormDeath += OnScoringEvent;
             ElementalCrystalImpactor.OnCrystalCollected += OnCrystalScoringEvent;
+            isTracking = true;
+            Debug.Log("[ScoreTracker] Started Tracking");
         }
 
-        void UnsubscribeFromScoringEvents()
+        public void StopTracking()
         {
+            if (!isTracking) return;
+
             LifeForm.OnLifeFormDeath -= OnScoringEvent;
             ElementalCrystalImpactor.OnCrystalCollected -= OnCrystalScoringEvent;
+            isTracking = false;
+            Debug.Log("[ScoreTracker] Stopped Tracking");
         }
         
+        // Event Handlers
         void OnScoringEvent(string playerName, int cellId)
         {
             var lifeFormScoring = GetScoring<LifeFormsKilledScoring>();
-            AddScore(lifeFormScoring.ScorePerKill);
+            if (lifeFormScoring != null) AddScore(lifeFormScoring.ScorePerKill);
         }
 
         void OnCrystalScoringEvent(string playerName) 
         {
             var crystalsCollectedScoring = GetScoring<ElementalCrystalsCollectedBlitzScoring>();
-             AddScore(crystalsCollectedScoring.Score);
+            if (crystalsCollectedScoring != null) AddScore(crystalsCollectedScoring.GetScoreMultiplier());
         }
 
         void AddScore(float amount)
@@ -66,15 +74,13 @@ namespace CosmicShore.Game.Arcade
             
             if (eventOnScoreChanged) 
                 eventOnScoreChanged.Raise();
-            SubscribeToScoringEvents();
         }
-
         protected override void CalculateWinnerAndInvokeEvent()
         {
-             if (!turnMonitor || !timeMonitor || gameData.LocalRoundStats == null) return;
+             if (!turnMonitor || gameData.LocalRoundStats == null) return;
              
              bool didWin = turnMonitor.DidPlayerWin; 
-             float winTime = timeMonitor.ElapsedTime;
+             float winTime = timeMonitor ? timeMonitor.ElapsedTime : 0f;
              gameData.LocalRoundStats.Score = didWin ? winTime : 999f;
              
              SortAndInvokeResults();

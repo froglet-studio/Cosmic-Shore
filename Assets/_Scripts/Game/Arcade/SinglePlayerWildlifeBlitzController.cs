@@ -32,7 +32,7 @@ namespace CosmicShore.Game.Arcade
             
             blitzTurnMonitor?.StartMonitor();
             //timeTurnMonitor?.StartMonitor();
-            
+            if (scoreTracker) scoreTracker.StartTracking();
             base.SetupNewTurn();
         }
 
@@ -44,18 +44,16 @@ namespace CosmicShore.Game.Arcade
 
         protected override void ResetEnvironmentForReplay()
         {
+            if (scoreTracker) scoreTracker.StopTracking();
             blitzTurnMonitor?.StopMonitor();
             timeTurnMonitor?.StopMonitor();
-
+            
             if (gameData.LocalRoundStats != null) 
                 gameData.LocalRoundStats.Score = 0;
     
             if (scoreTracker) 
                 scoreTracker.ResetScores();
-
-            if (cellData?.OnResetForReplay)
-                cellData.OnResetForReplay.Raise();
-    
+            
             base.ResetEnvironmentForReplay();
         }
 

@@ -10,7 +10,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] GameDataSO gameData;
         [SerializeField] SingleplayerWildlifeBlitzTurnMonitor blitzMonitor;
         [SerializeField] TimeBasedTurnMonitor timeMonitor;
-        [SerializeField] WildlifeBlitzScoreTracker scoreTracker;
+        [SerializeField] SinglePlayerWildlifeBlitzScoreTracker scoreTracker;
         
         void OnEnable()
         {

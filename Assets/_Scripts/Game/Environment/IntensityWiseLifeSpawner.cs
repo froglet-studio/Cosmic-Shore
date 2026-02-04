@@ -34,6 +34,16 @@ namespace CosmicShore.Game
             if (cfg.FloraInitialDelaySeconds > 0f)
                 yield return new WaitForSeconds(cfg.FloraInitialDelaySeconds);
 
+            // CRITICAL FIX: Wait one frame for crystal to finish initializing
+            yield return null;
+            
+            // Verify crystal exists
+            if (!cellData.TryGetLocalCrystal(out Crystal crystal) || !crystal || !crystal.transform)
+            {
+                Debug.LogError("[IntensityWiseSpawner] No crystal found after waiting, cannot spawn flora!");
+                yield break;
+            }
+
             if (cellType.SupportedFlora == null || cellType.SupportedFlora.Count == 0)
                 yield break;
 
@@ -45,13 +55,14 @@ namespace CosmicShore.Game
             var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
             Domains? excluded = cfg.FloraExcludeLocalDomain ? local : (Domains?)null;
 
+            Debug.Log($"<color=green>[IntensityWiseSpawner] Spawning {count} flora, crystal ready at {crystal.transform.position}</color>");
+
             for (int i = 0; i < count; i++)
             {
                 var newFlora = Object.Instantiate(floraConfig.Flora, host.transform.position, Quaternion.identity);
                 newFlora.domain = PickRandomDomain(excluded);
                 newFlora.Initialize(host);
                 
-                // [Visual Note] Register for cleanup
                 host.RegisterSpawnedObject(newFlora.gameObject); 
 
                 if (cfg.FloraSpawnIntervalSeconds > 0f && i < count - 1)
@@ -64,11 +75,23 @@ namespace CosmicShore.Game
             if (cfg.FaunaInitialDelaySeconds > 0f)
                 yield return new WaitForSeconds(cfg.FaunaInitialDelaySeconds);
 
+            // CRITICAL FIX: Wait one frame for crystal to finish initializing
+            yield return null;
+            
+            // Verify crystal exists
+            if (!cellData.TryGetLocalCrystal(out Crystal crystal) || !crystal || !crystal.transform)
+            {
+                Debug.LogError("[IntensityWiseSpawner] No crystal found after waiting, cannot spawn fauna!");
+                yield break;
+            }
+
             if (cellType.SupportedFauna == null || cellType.SupportedFauna.Count == 0)
                 yield break;
 
             var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
             Domains? excluded = cfg.FaunaExcludeLocalDomain ? local : (Domains?)null;
+
+            Debug.Log($"<color=green>[IntensityWiseSpawner] Spawning fauna, crystal ready at {crystal.transform.position}</color>");
 
             foreach (var populationConfiguration in cellType.SupportedFauna)
             {
@@ -80,9 +103,8 @@ namespace CosmicShore.Game
                 {
                     var pop = Object.Instantiate(populationConfiguration.Population, host.transform.position, Quaternion.identity);
                     pop.domain = PickRandomDomain(excluded);
-                    pop.Goal = cellData.CrystalTransform.position;
+                    pop.Goal = crystal.transform.position;
                     
-                    // [Visual Note] Register for cleanup
                     host.RegisterSpawnedObject(pop.gameObject);
 
                     if (cfg.FaunaSpawnIntervalSeconds > 0f && i < populationCount - 1)

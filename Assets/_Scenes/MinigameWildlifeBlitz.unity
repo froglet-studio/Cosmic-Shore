@@ -907,7 +907,8 @@ MonoBehaviour:
     Multiplier: 20
   turnMonitor: {fileID: 1078953717}
   timeMonitor: {fileID: 1078953721}
-  eventOnScoreChanged: {fileID: 0}
+  eventOnScoreChanged: {fileID: 11400000, guid: 5dffc57600d375147a28ac22bfb8c1f9,
+    type: 2}
 --- !u!114 &1078953721
 MonoBehaviour:
   m_ObjectHideFlags: 0

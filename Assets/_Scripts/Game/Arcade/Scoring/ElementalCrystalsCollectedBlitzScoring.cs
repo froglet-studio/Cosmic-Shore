@@ -35,6 +35,7 @@ namespace CosmicShore.Game.Arcade.Scoring
             Score += scoreMultiplier;
         }
 
+        public float GetScoreMultiplier() => scoreMultiplier;
         public int GetTotalCrystalsCollected() => totalCrystalsCollected;
     }
 }
