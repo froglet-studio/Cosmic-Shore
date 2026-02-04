@@ -6,7 +6,7 @@ namespace CosmicShore.Game.Arcade
     public class SinglePlayerWildlifeBlitzController : SinglePlayerMiniGameControllerBase
     {
         [Header("Blitz Config")]
-        [SerializeField] WildlifeBlitzScoreTracker scoreTracker;
+        [SerializeField] SinglePlayerWildlifeBlitzScoreTracker scoreTracker;
         [SerializeField] SingleplayerWildlifeBlitzTurnMonitor blitzTurnMonitor;
         [SerializeField] TimeBasedTurnMonitor timeTurnMonitor;
         [SerializeField] CellDataSO cellData;

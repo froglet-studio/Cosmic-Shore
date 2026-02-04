@@ -8,7 +8,7 @@ namespace CosmicShore.Game.Cinematics
     public class WildlifeBlitzEndGameCinematicController : EndGameCinematicController
     {
         [Header("Wildlife Blitz Specific")]
-        [SerializeField] private WildlifeBlitzScoreTracker wildlifeBlitzScoreTracker;
+        [SerializeField] private SinglePlayerWildlifeBlitzScoreTracker singlePlayerWildlifeBlitzScoreTracker;
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
@@ -68,8 +68,8 @@ namespace CosmicShore.Game.Cinematics
                     localPlayer.InputController.enabled = true;
             }
 
-            if (wildlifeBlitzScoreTracker)
-                wildlifeBlitzScoreTracker.ResetScores();
+            if (singlePlayerWildlifeBlitzScoreTracker)
+                singlePlayerWildlifeBlitzScoreTracker.ResetScores();
 
             gameData.ResetPlayers();
             cinematicCameraController?.StopCameraSetup();
@@ -77,14 +77,14 @@ namespace CosmicShore.Game.Cinematics
         
         WildlifeBlitzStats GetWildlifeBlitzStats()
         {
-            if (!wildlifeBlitzScoreTracker)
+            if (!singlePlayerWildlifeBlitzScoreTracker)
             {
                 Debug.LogWarning("[WildlifeBlitzEndGame] Score tracker not assigned!");
                 return new WildlifeBlitzStats();
             }
             
-            var lifeFormScoring = wildlifeBlitzScoreTracker.GetScoring<LifeFormsKilledScoring>();
-            var crystalScoring = wildlifeBlitzScoreTracker.GetScoring<ElementalCrystalsCollectedBlitzScoring>();
+            var lifeFormScoring = singlePlayerWildlifeBlitzScoreTracker.GetScoring<LifeFormsKilledScoring>();
+            var crystalScoring = singlePlayerWildlifeBlitzScoreTracker.GetScoring<ElementalCrystalsCollectedBlitzScoring>();
             
             gameData.IsLocalDomainWinner(out DomainStats domainStats);
             
