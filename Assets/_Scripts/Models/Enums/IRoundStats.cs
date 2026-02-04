@@ -41,6 +41,7 @@ namespace CosmicShore.Game
 
         // Misc events
         event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
+        event Action<IRoundStats> OnJoustCollisionChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -90,6 +91,7 @@ namespace CosmicShore.Game
 
         // Other stats
         int SkimmerShipCollisions { get; set; }
+        int JoustCollisions { get; set; }
 
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
@@ -134,6 +136,7 @@ namespace CosmicShore.Game
             TimeCrystalValue = 0f;
 
             SkimmerShipCollisions = 0;
+            JoustCollisions = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

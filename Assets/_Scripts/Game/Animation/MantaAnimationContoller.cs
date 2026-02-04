@@ -23,8 +23,8 @@ namespace CosmicShore.Game.Animation
             currentRoll = Mathf.Lerp(currentRoll, roll, animationSpeed * Time.deltaTime);
             currentThrottle = Mathf.Lerp(currentThrottle, throttle, animationSpeed * Time.deltaTime);
 
-            animator.SetFloat("Pitch", -currentPitch*2);
-            animator.SetFloat("Yaw", currentYaw*2);
+            animator.SetFloat("Pitch", -currentPitch * 2);
+            animator.SetFloat("Yaw", currentYaw * 2);
             animator.SetFloat("Roll", currentRoll * 2);
             animator.SetFloat("Throttle", currentThrottle * 2);
         }
@@ -32,7 +32,7 @@ namespace CosmicShore.Game.Animation
         protected override void Idle()
         {
             if (VesselStatus.IsBoosting) animator.SetBool("Boost", true);
-            else animator.SetBool("Boost", false);
+            else if (hasBoost) animator.SetBool("Boost", false);
 
             currentPitch = Mathf.Lerp(currentPitch, 0, animationSpeed * Time.deltaTime);
             currentYaw = Mathf.Lerp(currentYaw, 0, animationSpeed * Time.deltaTime);

@@ -140,6 +140,15 @@ namespace CosmicShore.Core
                 return;
             roundStats.SkimmerShipCollisions++;
         }
+        
+        public void ExecuteJoustCollision(string joustPlayerName)
+        {
+            if (!allowRecord) return;
+            
+            if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats))
+                return;
+            roundStats.JoustCollisions++;
+        }
 
         public void PrismCreated(PrismStats prismStats)
         {

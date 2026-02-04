@@ -10,9 +10,12 @@ namespace CosmicShore.Game.Arcade
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
+
         [SerializeField, Min(1)] int baseNumberOfSegments = 10;
         [SerializeField, Min(1)] int baseStraightLineLength = 400;
+
         [SerializeField] bool resetEnvironmentOnEachTurn = true;
+
         [SerializeField] bool scaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] bool scaleLengthWithIntensity = true;
 
@@ -25,7 +28,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int seed = 0;
 
         bool _environmentInitialized;
-        
+
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         int NumberOfSegments =>
@@ -33,8 +36,7 @@ namespace CosmicShore.Game.Arcade
 
         int StraightLineLength =>
             scaleLengthWithIntensity ? baseStraightLineLength / Intensity : baseStraightLineLength;
-        
-        
+
         protected override void SetupNewTurn()
         {
             RaiseToggleReadyButtonEvent(true);
