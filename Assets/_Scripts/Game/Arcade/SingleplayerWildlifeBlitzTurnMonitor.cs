@@ -6,8 +6,8 @@ namespace CosmicShore.Game.Arcade
 {
     public class SingleplayerWildlifeBlitzTurnMonitor : TurnMonitor
     {
-        [Header("Win Conditions")]
-        [SerializeField] int targetScoreToWin = 500;
+        // Internal tracking variable, not serialized
+        private int currentTargetScore;
         
         [Header("References")]
         [SerializeField] CellDataSO cellData;
@@ -24,15 +24,24 @@ namespace CosmicShore.Game.Arcade
             _didPlayerWin = false;
             base.StartMonitor();
   
+            // [Visual Note] Fetch Dynamic Score from the active Cell Type
+            SetTargetScoreFromCellType();
+
             if (onSetScoreTargetEvent)
-                onSetScoreTargetEvent.Raise(targetScoreToWin);
+                onSetScoreTargetEvent.Raise(currentTargetScore);
+        }
+
+        void SetTargetScoreFromCellType()
+        {
+            if (!cellData || !cellData.CellType) return;
+            currentTargetScore = cellData.CellType.CellEndGameScore;
         }
 
         public override bool CheckForEndOfTurn()
         {
             if (!gameData || gameData.LocalRoundStats == null) return false;
-
-            if (!(gameData.LocalRoundStats.Score >= targetScoreToWin)) return false;
+            if (!(gameData.LocalRoundStats.Score >= currentTargetScore)) return false;
+            
             _didPlayerWin = true;
             return true;
         }
@@ -44,6 +53,7 @@ namespace CosmicShore.Game.Arcade
         
         void UpdateUI()
         {
+            if (!onLifeFormCounterUpdatedEvent) return;
             string message = GetLifeFormsSafe().ToString();
             onLifeFormCounterUpdatedEvent.Raise(message);
         }

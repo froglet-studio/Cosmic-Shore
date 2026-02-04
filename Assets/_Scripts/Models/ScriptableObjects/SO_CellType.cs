@@ -14,6 +14,7 @@ namespace CosmicShore.Game
 
         [Header("Cell Properties")]
         public float Difficulty;
+        public int CellEndGameScore;
 
         [Header("Visual Properties")]
         public GameObject MembranePrefab;
