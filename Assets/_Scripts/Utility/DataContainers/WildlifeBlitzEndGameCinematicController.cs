@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using CosmicShore.Game.Analytics; // [Visual Note] For StatsManager
 using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Arcade.Scoring;
 using UnityEngine;
@@ -18,16 +19,28 @@ namespace CosmicShore.Game.Cinematics
             view.HideContinueButton();
 
             var stats = GetWildlifeBlitzStats();
+            int currentScore = Mathf.Max(0, (int)stats.elapsedTime);
 
-            int displayScore = Mathf.Max(0, (int)stats.elapsedTime);
+            // [Visual Note] 3. Fetch High Score for Animation
+            int highScore = currentScore;
+            if (UGSStatsManager.Instance != null)
+            {
+                int cachedBest = UGSStatsManager.Instance.GetHighScoreForCurrentMode();
+                highScore = Mathf.Max(currentScore, cachedBest);
+                
+                if (currentScore >= highScore && cachedBest > 0)
+                {
+                    Debug.Log($"<color=cyan>[Cinematic] New High Score Triggered! Old: {cachedBest} New: {currentScore}</color>");
+                }
+            }
 
             string displayText = stats.didWin 
-                ? cinematic.GetCinematicTextForScore(displayScore) 
+                ? cinematic.GetCinematicTextForScore(currentScore) 
                 : "DEFEAT";
 
             yield return view.PlayScoreRevealAnimation(
                 displayText,
-                displayScore,
+                currentScore,
                 cinematic.scoreRevealSettings,
                 formatAsTime: true 
             );
@@ -36,13 +49,10 @@ namespace CosmicShore.Game.Cinematics
         protected override IEnumerator RunCompleteEndGameSequence(CinematicDefinitionSO cinematic)
         {
             var localPlayer = gameData.LocalPlayer;
-            
-            // [Visual Note] Stop Sparrow Prism Spawning immediately on sequence start
             if (localPlayer is { Vessel: { VesselStatus: { VesselType: VesselClassType.Sparrow } } })
             {
                 localPlayer.Vessel.VesselStatus.VesselPrismController.StopSpawn();
             }
-
             yield return base.RunCompleteEndGameSequence(cinematic);
         }
         
@@ -79,13 +89,11 @@ namespace CosmicShore.Game.Cinematics
         {
             if (!singlePlayerWildlifeBlitzScoreTracker)
             {
-                Debug.LogWarning("[WildlifeBlitzEndGame] Score tracker not assigned!");
                 return new WildlifeBlitzStats();
             }
             
             var lifeFormScoring = singlePlayerWildlifeBlitzScoreTracker.GetScoring<LifeFormsKilledScoring>();
             var crystalScoring = singlePlayerWildlifeBlitzScoreTracker.GetScoring<ElementalCrystalsCollectedBlitzScoring>();
-            
             gameData.IsLocalDomainWinner(out DomainStats domainStats);
             
             return new WildlifeBlitzStats

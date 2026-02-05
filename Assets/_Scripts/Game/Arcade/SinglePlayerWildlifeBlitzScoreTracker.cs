@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.Arcade.Scoring;
+﻿using CosmicShore.Game.Analytics;
+using CosmicShore.Game.Arcade.Scoring;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -17,19 +18,18 @@ namespace CosmicShore.Game.Arcade
 
         void OnEnable()
         {
-            // Only subscribe to generic Game Events (like Pause), NOT scoring yet
             SubscribeEvents();
         }
 
         void OnDisable()
         {
             UnsubscribeEvents();
-            StopTracking(); // Safety catch
+            StopTracking(); 
         }
 
         public void StartTracking()
         {
-            if (isTracking) return; // Prevent double subscription
+            if (isTracking) return; 
             
             LifeForm.OnLifeFormDeath += OnScoringEvent;
             ElementalCrystalImpactor.OnCrystalCollected += OnCrystalScoringEvent;
@@ -47,7 +47,6 @@ namespace CosmicShore.Game.Arcade
             Debug.Log("[ScoreTracker] Stopped Tracking");
         }
         
-        // Event Handlers
         void OnScoringEvent(string playerName, int cellId)
         {
             var lifeFormScoring = GetScoring<LifeFormsKilledScoring>();
@@ -75,6 +74,7 @@ namespace CosmicShore.Game.Arcade
             if (eventOnScoreChanged) 
                 eventOnScoreChanged.Raise();
         }
+
         protected override void CalculateWinnerAndInvokeEvent()
         {
              if (!turnMonitor || gameData.LocalRoundStats == null) return;
@@ -82,6 +82,18 @@ namespace CosmicShore.Game.Arcade
              bool didWin = turnMonitor.DidPlayerWin; 
              float winTime = timeMonitor ? timeMonitor.ElapsedTime : 0f;
              gameData.LocalRoundStats.Score = didWin ? winTime : 999f;
+
+             if (UGSStatsManager.Instance)
+             {
+                 var lifeScoring = GetScoring<LifeFormsKilledScoring>();
+                 var crystalScoring = GetScoring<ElementalCrystalsCollectedBlitzScoring>();
+
+                 int kills = lifeScoring?.GetTotalLifeFormsKilled() ?? 0;
+                 int crystals = crystalScoring?.GetTotalCrystalsCollected() ?? 0;
+                 int finalScore = (int)gameData.LocalRoundStats.Score;
+
+                 UGSStatsManager.Instance.ReportMatchStats(crystals, kills, finalScore);
+             }
              
              SortAndInvokeResults();
         }

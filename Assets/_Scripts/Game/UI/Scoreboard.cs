@@ -1,24 +1,26 @@
 using System.Collections.Generic;
+using CosmicShore.Game.UI; 
 using CosmicShore.Soap;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
+// [Visual Note] Add Namespace for StatsManager
+using CosmicShore.Game.Analytics; 
 
 namespace CosmicShore.Game
 {
-    /// <summary>
-    /// Simplified Scoreboard - ONLY displays final scores, NO animations.
-    /// </summary>
     public class Scoreboard : MonoBehaviour
     {
-        [FormerlySerializedAs("miniGameData")]
+        // ... [Keep Headers and Variables exactly as you had them] ...
+        [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
-
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
+        [Header("UI Containers")]
         [SerializeField] Transform scoreboardPanel;
+        [SerializeField] Transform statsContainer; 
+        [SerializeField] StatRowUI statRowPrefab;   
 
         [Header("Banner")]
         [SerializeField] Image BannerImage;
@@ -39,8 +41,11 @@ namespace CosmicShore.Game
         [SerializeField] List<TMP_Text> PlayerNameTextFields;
         [SerializeField] List<TMP_Text> PlayerScoreTextFields;
 
+        private ScoreboardStatsProvider statsProvider;
+
         void Awake()
         {
+            statsProvider = GetComponent<ScoreboardStatsProvider>();
             HideScoreboard();
         }
 
@@ -62,10 +67,6 @@ namespace CosmicShore.Game
                 OnResetForReplay.OnRaised -= HideScoreboard;
         }
 
-        /// <summary>
-        /// Called by OnShowGameEndScreen event after cinematics are complete.
-        /// Simply displays the scoreboard with no animations.
-        /// </summary>
         void ShowScoreboard()
         {
             if (gameData.IsMultiplayerMode)
@@ -73,93 +74,99 @@ namespace CosmicShore.Game
             else
                 ShowSinglePlayerView();
 
+            PopulateDynamicStats();
+
             if (scoreboardPanel)
                 scoreboardPanel.gameObject.SetActive(true);
         }
 
-        /// <summary>
-        /// Hides all scoreboard UI elements.
-        /// Called when resetting for replay.
-        /// </summary>
-        void HideScoreboard()
+        void PopulateDynamicStats()
         {
-            if (scoreboardPanel) 
-                scoreboardPanel.gameObject.SetActive(false);
-            if (MultiplayerView) 
-                MultiplayerView.gameObject.SetActive(false);
-            if (SingleplayerView) 
-                SingleplayerView.gameObject.SetActive(false);
+            if (statsContainer)
+            {
+                foreach (Transform child in statsContainer)
+                    Destroy(child.gameObject);
+            }
+
+            if (!statsProvider || !statsContainer || !statRowPrefab) return;
+
+            var stats = statsProvider.GetStats();
+            foreach (var stat in stats)
+            {
+                var row = Instantiate(statRowPrefab, statsContainer);
+                row.Initialize(stat.Label, stat.Value, stat.Icon);
+            }
         }
 
+        void HideScoreboard()
+        {
+            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
+        }
+        
         protected virtual void ShowSinglePlayerView()
         {
-            // Determine if local player won
             bool won = gameData.IsLocalDomainWinner(out DomainStats localDomainStats);
-
-            // Set banner
             var bannerText = won ? "VICTORY" : "DEFEAT";
-            if (BannerImage) 
-                BannerImage.color = SinglePlayerBannerColor;
-            if (BannerText) 
-                BannerText.text = bannerText;
+            
+            if (BannerImage) BannerImage.color = SinglePlayerBannerColor;
+            if (BannerText) BannerText.text = bannerText;
 
-            // Display score
             var playerScore = (int)localDomainStats.Score;
+            
+            // [Visual Note] Update the Static Text Fields
             if (SinglePlayerScoreTextField) 
                 SinglePlayerScoreTextField.text = playerScore.ToString();
-            if (SinglePlayerHighscoreTextField) 
-                SinglePlayerHighscoreTextField.text = playerScore.ToString();
+            
+            // Fetch High Score from StatsManager for static display
+            if (SinglePlayerHighscoreTextField)
+            {
+                int highScore = playerScore; // Default to current if manager missing
+                if (UGSStatsManager.Instance != null)
+                {
+                    // If current score is higher than cached high score, we display current
+                    int cachedHigh = UGSStatsManager.Instance.GetHighScoreForCurrentMode();
+                    highScore = Mathf.Max(playerScore, cachedHigh);
+                }
+                SinglePlayerHighscoreTextField.text = highScore.ToString();
+            }
 
-            // Show single player view, hide multiplayer
-            if (MultiplayerView) 
-                MultiplayerView.gameObject.SetActive(false);
-            if (SingleplayerView) 
-                SingleplayerView.gameObject.SetActive(true);
+            if (MultiplayerView) MultiplayerView.gameObject.SetActive(false);
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(true);
         }
 
         protected virtual void ShowMultiplayerView()
         {
-            // Get winning domain
             bool isLocalWinner = gameData.IsLocalDomainWinner(out DomainStats winnerStats);
-            var winningDomain = winnerStats.Domain;
-
-            // Set banner based on winning team
-            SetBannerForDomain(winningDomain);
-
-            // Display all player scores (sorted by winner first)
+            SetBannerForDomain(winnerStats.Domain);
             DisplayPlayerScores();
 
-            // Show multiplayer view, hide single player
-            if (SingleplayerView) 
-                SingleplayerView.gameObject.SetActive(false);
-            if (MultiplayerView) 
-                MultiplayerView.gameObject.SetActive(true);
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
+            if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
         }
 
         void SetBannerForDomain(Domains domain)
         {
-            switch (domain)
+            // ... [Keep switch case exactly as provided] ...
+             switch (domain)
             {
                 case Domains.Jade:
                     if (BannerImage) BannerImage.color = JadeTeamBannerColor;
                     if (BannerText) BannerText.text = "JADE VICTORY";
                     break;
-                    
                 case Domains.Ruby:
                     if (BannerImage) BannerImage.color = RubyTeamBannerColor;
                     if (BannerText) BannerText.text = "RUBY VICTORY";
                     break;
-                    
                 case Domains.Gold:
                     if (BannerImage) BannerImage.color = GoldTeamBannerColor;
                     if (BannerText) BannerText.text = "GOLD VICTORY";
                     break;
-                    
                 case Domains.Blue:
                     if (BannerImage) BannerImage.color = BlueTeamBannerColor;
                     if (BannerText) BannerText.text = "BLUE VICTORY";
                     break;
-                    
+                case Domains.None:
+                case Domains.Unassigned:
                 default:
                     Debug.LogWarning($"Domain {domain} does not have banner configuration.");
                     break;
@@ -168,32 +175,30 @@ namespace CosmicShore.Game
 
         void DisplayPlayerScores()
         {
+            // ... [Keep display logic exactly as provided] ...
             var playerScores = gameData.RoundStatsList;
-
-            // Fill in player scores
             for (var i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
             {
                 var playerScore = playerScores[i];
-                
-                if (PlayerNameTextFields[i])
-                    PlayerNameTextFields[i].text = playerScore.Name;
-                    
+                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = playerScore.Name;
                 if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
                     PlayerScoreTextFields[i].text = ((int)playerScore.Score).ToString();
             }
-
-            // Clear remaining slots if there are more UI elements than players
+            
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
-                if (PlayerNameTextFields[i]) 
-                    PlayerNameTextFields[i].text = "";
-                    
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i]) 
-                    PlayerScoreTextFields[i].text = "";
+                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
+                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i]) PlayerScoreTextFields[i].text = "";
             }
         }
+        
         public void OnPlayAgainButtonPressed()
         {
+            if (UGSStatsManager.Instance != null)
+            {
+                UGSStatsManager.Instance.TrackPlayAgain();
+            }
+
             gameData.ResetForReplay();
         }
     }
