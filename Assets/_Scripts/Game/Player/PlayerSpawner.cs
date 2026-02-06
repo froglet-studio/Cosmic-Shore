@@ -8,7 +8,7 @@ namespace CosmicShore.Game
 {
     public class PlayerSpawner : MonoBehaviour
     {
-        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        
 
         [SerializeField, RequireInterface((typeof(IPlayer)))]
         Object _playerPrefab;
@@ -25,7 +25,6 @@ namespace CosmicShore.Game
             vesselSpawner.SpawnShip(data.vesselClass, out IVessel ship);
             player.InitializeForSinglePlayerMode(data, ship);
             ship.Initialize(player);
-            ShipHelper.SetShipProperties(_themeManagerData, ship);
 
             return player;
         }
