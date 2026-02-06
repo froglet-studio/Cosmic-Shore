@@ -516,6 +516,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
+  intenstyLevel: 1
   waypoints:
   - positions:
     - {x: 700, y: 0, z: 0}
@@ -653,6 +654,8 @@ MonoBehaviour:
     type: 2}
   CrystalCollisions: 3
   hostileCollection: 0
+  optionalEnvironment: {fileID: 857195442}
+  optionalLaps: 4
 --- !u!114 &1078953711
 MonoBehaviour:
   m_ObjectHideFlags: 0
