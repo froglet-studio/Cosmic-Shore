@@ -1,5 +1,7 @@
+using System; // Required for Action
 using UnityEngine;
 using Obvious.Soap;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game
 {
@@ -7,17 +9,29 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselResetBoostPrismEffectSO")]
     public class VesselResetBoostPrismEffectSO : VesselPrismEffectSO
     {
-        [Header("Shared Config (single source of truth)")]
+        [Header("Shared Config")]
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier;
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventBoostChanged boostChanged;
 
+        // [Visual Note] 1. New Event for the Tracker to listen to
+        public static event Action OnPrismCollision;
+
         public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
         {
-            var status = impactor.Vessel.VesselStatus;
+            if (!impactor) return;
 
+            // [Visual Note] 2. Fire the Streak Reset Event
+            OnPrismCollision?.Invoke();
+
+            // 3. Stats Logging (Optional, kept for backend data)
+            if (StatsManager.Instance)
+                StatsManager.Instance.ExecuteSkimmerShipCollision(impactor.Vessel.VesselStatus.PlayerName);
+
+            // 4. Reset Boost Logic
+            var status = impactor.Vessel.VesselStatus;
             var baseMult = boostBaseMultiplier != null ? boostBaseMultiplier.Value : 1f;
             float maxMult  = boostMaxMultiplier  != null ? boostMaxMultiplier.Value  : 5f;
 

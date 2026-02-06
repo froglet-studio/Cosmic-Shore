@@ -55,14 +55,36 @@ namespace CosmicShore.Game
                 _resourceIndex,
                 _spawnOffset);
 
-            if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Rhino)
+            switch (vesselImpactor.Vessel.VesselStatus.VesselType)
             {
-                rhinoCrystalExplosionEvent?.Raise(vesselImpactor);
-            }
-            
-            if (vesselImpactor.Vessel.VesselStatus.VesselType == VesselClassType.Manta)
-            {
-                OnMantaFlowerExplosion?.Invoke(vesselImpactor);
+                case VesselClassType.Rhino:
+                    rhinoCrystalExplosionEvent?.Raise(vesselImpactor);
+                    break;
+                case VesselClassType.Manta:
+                    OnMantaFlowerExplosion?.Invoke(vesselImpactor);
+                    break;
+                case VesselClassType.Any:
+                    break;
+                case VesselClassType.Random:
+                    break;
+                case VesselClassType.Dolphin:
+                    break;
+                case VesselClassType.Urchin:
+                    break;
+                case VesselClassType.Grizzly:
+                    break;
+                case VesselClassType.Squirrel:
+                    break;
+                case VesselClassType.Serpent:
+                    break;
+                case VesselClassType.Termite:
+                    break;
+                case VesselClassType.Falcon:
+                    break;
+                case VesselClassType.Shrike:
+                    break;
+                case VesselClassType.Sparrow:
+                    break;
             }
         }
     }

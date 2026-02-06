@@ -1,50 +1,45 @@
-using System.Collections.Generic;
-using System.Linq;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
-        private List<IRoundStats> _subscribedStats = new List<IRoundStats>();
+        private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(value: 0);
 
-        public override bool CheckForEndOfTurn() =>
-            gameData.RoundStatsList.Any(stats => stats.OmniCrystalsCollected >= CrystalCollisions);
-
-        protected override void InitializeStatsListener()
+        public override void OnNetworkSpawn()
         {
-            _subscribedStats.Clear();
-
-            foreach (var stats in gameData.RoundStatsList)
+            base.OnNetworkSpawn();
+            if (IsServer)
             {
-                stats.OnOmniCrystalsCollectedChanged += OnAnyPlayerOmniCrystalsChanged;
-                _subscribedStats.Add(stats);
+                // Server sets the authoritative value from the Inspector
+                _netCrystalCollisions.Value = CrystalCollisions;
             }
         }
 
-        public override void StopMonitor()
+        public override void StartMonitor()
         {
-            foreach (var stats in _subscribedStats.Where(stats => stats != null))
+            if (IsSpawned)
             {
-                stats.OnOmniCrystalsCollectedChanged -= OnAnyPlayerOmniCrystalsChanged;
+                base.StartMonitor();
             }
+        }
 
-            _subscribedStats.Clear();
+        public override bool CheckForEndOfTurn()
+        {
+            if (ownStats == null) return false;
+            return ownStats.CrystalsCollected >= _netCrystalCollisions.Value;
         }
         
-        private void OnAnyPlayerOmniCrystalsChanged(IRoundStats stats)
+        protected override void UpdateCrystalsRemainingUI()
         {
-            UpdateCrystalsRemainingUI();
-        }
-        
-        protected override string GetRemainingCrystalsCountToCollect()
-        {
-            if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0)
-                return "-";
+            int target = _netCrystalCollisions.Value > 0 ? _netCrystalCollisions.Value : CrystalCollisions;
             
-            int maxCollected = gameData.RoundStatsList.Max(s => s.OmniCrystalsCollected);
-            int remaining = Mathf.Max(0, CrystalCollisions - maxCollected);
-            return remaining.ToString();
+            int current = ownStats?.CrystalsCollected ?? 0;
+            int remaining = Mathf.Max(0, target - current);
+            
+            if (onUpdateTurnMonitorDisplay) 
+                onUpdateTurnMonitorDisplay.Raise(remaining.ToString());
         }
     }
 }
