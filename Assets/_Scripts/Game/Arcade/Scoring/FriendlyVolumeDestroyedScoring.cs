@@ -4,15 +4,10 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class FriendlyVolumeDestroyedScoring : BaseScoring
     {
-        protected IScoreTracker ScoreTracker;
-
         public FriendlyVolumeDestroyedScoring(
             IScoreTracker tracker,
             GameDataSO data,
-            float scoreMultiplier) : base(data, scoreMultiplier)
-        {
-            ScoreTracker = tracker;
-        }
+            float scoreMultiplier) : base(tracker, data, scoreMultiplier) { }
 
         public override void Subscribe()
         {

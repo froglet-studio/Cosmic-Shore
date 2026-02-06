@@ -12,9 +12,11 @@ namespace CosmicShore.Game.Arcade.Scoring
         protected float scoreMultiplier;
 
         protected GameDataSO GameData;
+        protected IScoreTracker ScoreTracker;
         
-        protected BaseScoring(GameDataSO data, float scoreMultiplier = 145.65f)
+        protected BaseScoring(IScoreTracker tracker, GameDataSO data, float scoreMultiplier = 145.65f)
         {
+            ScoreTracker = tracker;
             GameData = data;
             this.scoreMultiplier = scoreMultiplier;
         }

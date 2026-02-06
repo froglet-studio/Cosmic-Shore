@@ -12,8 +12,8 @@ namespace CosmicShore.Game.Arcade.Scoring
         private CancellationTokenSource _cts;
         private float _lastUpdateTime;
 
-        public TimePlayedScoring(GameDataSO data, float scoreMultiplier, float intervalSeconds = 0.25f)
-            : base(data, scoreMultiplier)
+        public TimePlayedScoring(IScoreTracker tracker, GameDataSO data, float scoreMultiplier, float intervalSeconds = 0.25f)
+            : base(tracker, data, scoreMultiplier)
         {
             _intervalSeconds = Mathf.Max(0.01f, intervalSeconds);
         }
