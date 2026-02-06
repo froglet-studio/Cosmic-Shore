@@ -7,7 +7,7 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
 {
     [Header("Waypoints")]
     [Tooltip("List of position sets for each intensity level. The track will close from the last point back to the first.")]
-    [SerializeField] List<CrystalPositionSet> waypoints;
+    [SerializeField] public List<CrystalPositionSet> waypoints;
 
     [Header("Block Settings")]
     [SerializeField] Prism prism;
@@ -41,6 +41,7 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
 
     public override GameObject Spawn(int intensityLevel)
     {
+        this.intenstyLevel = intensityLevel;
         if (!IsValidIntensityLevel(intensityLevel))
         {
             Debug.LogError($"[WaypointTrack] Need at least 2 waypoints for intensity level {intensityLevel}.");
