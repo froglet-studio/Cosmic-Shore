@@ -1,3 +1,5 @@
+using CosmicShore.Game.IO;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -11,79 +13,57 @@ namespace CosmicShore.Game.Arcade
         [SerializeField, Min(1)] int baseStraightLineLength = 400;
 
         [SerializeField] bool resetEnvironmentOnEachTurn = true;
-
         [SerializeField] bool scaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] bool scaleLengthWithIntensity = true;
 
-        [Header("Helix (Optional)")]
+        [Header("Helix")]
         [SerializeField] SpawnableHelix helix;
         [SerializeField, Min(0.01f)] float helixIntensityScaling = 1.3f;
 
         [Header("Seed")]
-        [Tooltip("If 0, a random seed is used each turn. If non-zero, this fixed seed is used.")]
         [SerializeField] int seed = 0;
 
         bool _environmentInitialized;
         
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
-        int NumberOfSegments =>
-            scaleNumberOfSegmentsWithIntensity ? baseNumberOfSegments * Intensity : baseNumberOfSegments;
-
-        int StraightLineLength =>
-            scaleLengthWithIntensity ? baseStraightLineLength / Intensity : baseStraightLineLength;
-
-        protected override void SetupNewTurn()
-        {
-            RaiseToggleReadyButtonEvent(true);
-
-            // Old behavior:
-            // - ResetTrails == true  -> InitializeTrails() each SetupTurn
-            // - ResetTrails == false -> InitializeTrails() once at Start
-            if (resetEnvironmentOnEachTurn)
-            {
-                ResetEnvironment();
-            }
-            else if (!_environmentInitialized)
-            {
-                ResetEnvironment();
-                _environmentInitialized = true;
-            }
-
-            base.SetupNewTurn();
-        }
-
+        // Override the base ClientRpc to ensure we don't start the turn before the environment exists
         protected override void OnCountdownTimerEnded()
         {
-            segmentSpawner.Seed = (seed != 0)
-                ? seed
-                : Random.Range(int.MinValue, int.MaxValue);
+            if (!IsServer) return;
 
-            if (resetEnvironmentOnEachTurn)
-                ResetEnvironment();
-
-            base.OnCountdownTimerEnded();
+            // 1. Generate Seed on Server
+            int currentSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+            // 2. Send Seed to ALL clients (including Host) to generate the world
+            InitializeEnvironment_ClientRpc(currentSeed);
         }
 
-        void ResetEnvironment()
+        [ClientRpc]
+        void InitializeEnvironment_ClientRpc(int syncedSeed)
         {
-            if (!segmentSpawner)
+            int numberOfSegments = scaleNumberOfSegmentsWithIntensity ? baseNumberOfSegments * Intensity : baseNumberOfSegments;
+            int straightLineLength = scaleLengthWithIntensity ? baseStraightLineLength / Intensity : baseStraightLineLength;
+
+            if (segmentSpawner)
             {
-                Debug.LogError($"{nameof(MultiplayerHexRaceController)} missing {nameof(segmentSpawner)}.", this);
-                return;
+                segmentSpawner.Seed = syncedSeed;
+                segmentSpawner.NumberOfSegments = numberOfSegments;
+                segmentSpawner.StraightLineLength = straightLineLength;
+                
+                ApplyHelixIntensity();
+                segmentSpawner.Initialize();
             }
-
-            segmentSpawner.NumberOfSegments = NumberOfSegments;
-            segmentSpawner.StraightLineLength = StraightLineLength;
-
-            ApplyHelixIntensity();
-            segmentSpawner.Initialize();
+            else
+            {
+                Debug.LogError("SegmentSpawner reference missing on HexRaceController!");
+            }
+            gameData.SetPlayersActive();
+            gameData.StartTurn();
         }
 
         void ApplyHelixIntensity()
         {
             if (!helix) return;
-
             var radius = Intensity / helixIntensityScaling;
             helix.firstOrderRadius = radius;
             helix.secondOrderRadius = radius;

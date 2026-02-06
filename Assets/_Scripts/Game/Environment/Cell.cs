@@ -138,6 +138,13 @@ namespace CosmicShore.Game
 
         void OnCrystalSpawnedInCell()
         {
+            if (!cellType)
+            {
+                Debug.LogWarning($"[Cell {ID}] Crystal spawned before Cell Initialized. Attempting lazy init.");
+                Initialize(); 
+                if (!cellType) return; 
+            }
+
             ApplyModifiers();
             StartSpawnerForMode();
         }
