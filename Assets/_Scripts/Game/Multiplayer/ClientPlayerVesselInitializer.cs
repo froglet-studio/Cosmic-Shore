@@ -86,7 +86,8 @@ namespace CosmicShore.Game
             // Reuse your existing initialization logic (recommended)
             networkPlayer.InitializeForMultiplayerMode(networkShip);
             networkShip.Initialize(networkPlayer);
-            VesselInitializeHelper.SetShipProperties(themeManagerData, networkShip);
+            ShipHelper
+                .SetShipProperties(themeManagerData, networkShip);
             gameData.AddPlayer(networkPlayer);
         }
         

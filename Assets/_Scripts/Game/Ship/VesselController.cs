@@ -80,7 +80,6 @@ namespace CosmicShore.Game
             VesselStatus.Player = player;
             VesselStatus.VesselAnimation.Initialize(VesselStatus);
             VesselStatus.VesselPrismController.Initialize(VesselStatus);
-            VesselStatus.Customization.Initialize(VesselStatus);
             
             if (!VesselStatus.CameraFollowTarget) 
                 VesselStatus.CameraFollowTarget = transform;
@@ -108,6 +107,7 @@ namespace CosmicShore.Game
                 VesselStatus.VesselHUDController.ShowHUD();
             }
             
+            VesselStatus.Customization.Initialize(VesselStatus);
             VesselStatus.ResetForPlay();
             OnInitialized?.Invoke();
         }

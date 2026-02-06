@@ -25,7 +25,7 @@ namespace CosmicShore.Game
             vesselSpawner.SpawnShip(data.vesselClass, out IVessel ship);
             player.InitializeForSinglePlayerMode(data, ship);
             ship.Initialize(player);
-            VesselInitializeHelper.SetShipProperties(_themeManagerData, ship);
+            ShipHelper.SetShipProperties(_themeManagerData, ship);
 
             return player;
         }

@@ -113,7 +113,7 @@ namespace CosmicShore.App.UI.Controllers
         {
             Player.ChangeVessel(newVessel);
             newVessel.Initialize(Player);
-            VesselInitializeHelper.SetShipProperties(themeManagerData, newVessel);
+            ShipHelper.SetShipProperties(themeManagerData, newVessel);
         }
         
         private void TransferSnapshotStateToNewVessel(IVessel newVessel)
