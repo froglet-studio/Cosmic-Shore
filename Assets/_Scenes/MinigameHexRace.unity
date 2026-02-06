@@ -381,7 +381,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 527365864}
-  _initializeDatas: []
+  _initializeDatas:
+  - vesselClass: 6
+    domain: 4
+    PlayerName: Hostile1
+    IsAI: 1
+    AllowSpawning: 1
   _spawnTransforms:
   - {fileID: 1192541911}
   _spawnAIAtStart: 0
