@@ -25,11 +25,6 @@ namespace CosmicShore.Game
         public override void OnNetworkSpawn()
         {
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-
-            // IMPORTANT: Only the server should resize the list.
-            if (IsServer)
-                EnsureListSizedToSelectedPlayerCount();
-
             n_Positions.OnListChanged += OnPositionsChanged;
         }
 
@@ -45,7 +40,7 @@ namespace CosmicShore.Game
 
         private void EnsureListSizedToSelectedPlayerCount()
         {
-            int count = Mathf.Max(1, gameData.SelectedPlayerCount.Value);
+            int count = Mathf.Max(1, gameData.Players.Count);
 
             // Grow
             while (n_Positions.Count < count)
