@@ -719,7 +719,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 2
+  CrystalCollisions: 40
 --- !u!114 &1078953729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -838,7 +838,6 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
-  highBoostThreshold: 0.95
   penaltyScoreBase: 10000
   showDebugLogs: 1
   OnJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,

@@ -11,8 +11,8 @@ namespace CosmicShore.Game.Arcade.Scoring
         private int totalLifeFormsKilled;
         public float ScorePerKill => scoreMultiplier;
 
-        public LifeFormsKilledScoring(GameDataSO gameData, float multiplier) 
-            : base(gameData, multiplier)
+        public LifeFormsKilledScoring(IScoreTracker tracker,GameDataSO gameData, float multiplier) 
+            : base(tracker,gameData, multiplier)
         {
         }
 

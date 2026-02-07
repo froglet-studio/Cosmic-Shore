@@ -11,8 +11,8 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         private int totalCrystalsCollected;
 
-        public ElementalCrystalsCollectedBlitzScoring(GameDataSO gameData, float multiplier) 
-            : base(gameData, multiplier)
+        public ElementalCrystalsCollectedBlitzScoring(IScoreTracker tracker, GameDataSO gameData, float multiplier) 
+            : base(tracker, gameData, multiplier)
         {
         }
 
