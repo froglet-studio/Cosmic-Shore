@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Models.Enums;
 using Obvious.Soap;
@@ -46,6 +47,7 @@ namespace CosmicShore.Soap
         public IntVariable SelectedIntensity;
         public SO_Captain PlayerCaptain;
         public ResourceCollection ResourceCollection;
+        public ThemeManagerDataContainerSO ThemeManagerData;
         
         
         // Game Config / State

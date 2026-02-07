@@ -139,7 +139,7 @@ namespace CosmicShore.Game
         /// </summary>
         protected void SpawnBatchIfMissing()
         {
-            int count = Mathf.Max(1, gameData.SelectedPlayerCount.Value);
+            int count = Mathf.Max(1, gameData.Players.Count);
 
             // 1) Choose ONE anchor for the whole batch
             Vector3 batchAnchor = GetAnchorForBatchIndex(batchAnchorIndex);

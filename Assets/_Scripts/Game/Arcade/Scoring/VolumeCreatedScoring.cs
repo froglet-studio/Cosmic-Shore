@@ -4,15 +4,10 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class VolumeCreatedScoring : BaseScoring
     {
-        protected IScoreTracker ScoreTracker;
-
         public VolumeCreatedScoring(
             IScoreTracker tracker,
             GameDataSO data,
-            float scoreMultiplier) : base(data, scoreMultiplier)
-        {
-            ScoreTracker = tracker;
-        }
+            float scoreMultiplier) : base(tracker, data, scoreMultiplier) { }
 
         public override void Subscribe()
         {

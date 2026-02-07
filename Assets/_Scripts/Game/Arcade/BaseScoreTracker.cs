@@ -1,10 +1,10 @@
 using System;
-using System.Linq;
 using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -40,11 +40,9 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameEnd -= CalculateWinnerAndInvokeEvent;
             OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
-
         #endregion
 
         #region Core Logic
-
         protected void OnTurnStarted()
         {
             if (scoringArray == null) return;
@@ -121,21 +119,15 @@ namespace CosmicShore.Game.Arcade
                 ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(this, gameData, multiplier),
                 ScoringModes.FriendlyVolumeDestroyed => new FriendlyVolumeDestroyedScoring(this, gameData, multiplier),
                 ScoringModes.VolumeCreated => new VolumeCreatedScoring(this, gameData, multiplier),
-                ScoringModes.TimePlayed => new TimePlayedScoring(gameData, multiplier),
-                ScoringModes.TurnsPlayed => new TurnsPlayedScoring(gameData, multiplier),
-                ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(gameData, multiplier),
-                ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(gameData, multiplier, true),
-                ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(gameData, multiplier),
-                ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier),
-                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier,
-                    CrystalsCollectedScoring.CrystalType.Omni),
-                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(gameData, multiplier,
-                    CrystalsCollectedScoring.CrystalType.Elemental),
-                ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(gameData, multiplier,
-                    CrystalsCollectedScoring.CrystalType.Elemental, true),
-                ScoringModes.LifeFormsKilled => new LifeFormsKilledScoring(gameData, multiplier),
-                ScoringModes.ElementalCrystalsCollectedBlitz => new ElementalCrystalsCollectedBlitzScoring(gameData,
-                    multiplier),
+                ScoringModes.TimePlayed => new TimePlayedScoring(this, gameData, multiplier),
+                ScoringModes.TurnsPlayed => new TurnsPlayedScoring(this, gameData, multiplier),
+                ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(this, gameData, multiplier),
+                ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(this, gameData, multiplier, true),
+                ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(this, gameData, multiplier),
+                ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(this, gameData, multiplier),
+                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(this, gameData, multiplier, CrystalsCollectedScoring.CrystalType.Omni),
+                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(this, gameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental),
+                ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(this, gameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental, true),
                 _ => throw new ArgumentException($"Unknown scoring mode: {mode}")
             };
         }

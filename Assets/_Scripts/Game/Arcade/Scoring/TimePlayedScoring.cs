@@ -11,19 +11,26 @@ namespace CosmicShore.Game.Arcade.Scoring
         private readonly float _intervalSeconds;
         private CancellationTokenSource _cts;
         private float _lastUpdateTime;
-        
-        public TimePlayedScoring(GameDataSO data, float scoreMultiplier, float intervalSeconds = 0.25f)
-            : base(data, scoreMultiplier)
+
+        public TimePlayedScoring(IScoreTracker tracker, GameDataSO data, float scoreMultiplier, float intervalSeconds = 0.25f)
+            : base(tracker, data, scoreMultiplier)
         {
             _intervalSeconds = Mathf.Max(0.01f, intervalSeconds);
         }
 
-        public override void Subscribe() => OnTurnStarted();
-        public override void Unsubscribe() => OnTurnEnded();
+        public override void Subscribe()
+        {
+            OnTurnStarted();
+        }
+
+        public override void Unsubscribe()
+        {
+            OnTurnEnded();
+        }
 
         private void OnTurnStarted()
         {
-            if (_cts != null) return;
+            if (_cts != null) return; // prevent double-start
 
             _cts = new CancellationTokenSource();
             _lastUpdateTime = Mathf.Max(GameData.TurnStartTime, Time.time);
@@ -34,6 +41,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         private void OnTurnEnded()
         {
             if (_cts == null) return;
+
             _cts.Cancel();
             _cts.Dispose();
             _cts = null;
@@ -43,32 +51,35 @@ namespace CosmicShore.Game.Arcade.Scoring
         {
             try
             {
-                while (!token.IsCancellationRequested)
+                while (true)
                 {
+                    token.ThrowIfCancellationRequested();
+
+                    if (GameData.TurnStartTime > _lastUpdateTime)
+                        _lastUpdateTime = GameData.TurnStartTime;
+
                     float now = Time.time;
                     float dt = Mathf.Max(0f, now - _lastUpdateTime);
+                    _lastUpdateTime = now;
 
                     if (dt > 0f)
-                    {
-                        _lastUpdateTime = now;
                         AddTimeScore(dt);
-                    }
 
-                    await UniTask.Delay(TimeSpan.FromSeconds(_intervalSeconds), 
+                    await UniTask.Delay(TimeSpan.FromSeconds(_intervalSeconds),
                         DelayType.DeltaTime, PlayerLoopTiming.Update, token);
                 }
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                // expected
+            }
         }
 
         private void AddTimeScore(float dt)
         {
-            float amountToAdd = dt * scoreMultiplier; 
-
+            var score = dt * scoreMultiplier;
             foreach (var stats in GameData.RoundStatsList)
-            {
-                stats.Score += amountToAdd;
-            }
+                stats.Score += dt * score;
         }
     }
 }
