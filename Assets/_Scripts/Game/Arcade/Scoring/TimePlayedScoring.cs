@@ -11,8 +11,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         private readonly float _intervalSeconds;
         private CancellationTokenSource _cts;
         private float _lastUpdateTime;
-
-        // [Visual Note] Multiplier should usually be 1.0f for "Seconds"
+        
         public TimePlayedScoring(GameDataSO data, float scoreMultiplier, float intervalSeconds = 0.25f)
             : base(data, scoreMultiplier)
         {
@@ -27,7 +26,6 @@ namespace CosmicShore.Game.Arcade.Scoring
             if (_cts != null) return;
 
             _cts = new CancellationTokenSource();
-            // [Visual Note] Ensure we sync with GameData's concept of start time
             _lastUpdateTime = Mathf.Max(GameData.TurnStartTime, Time.time);
 
             UpdateScoreLoop(_cts.Token).Forget();
@@ -52,11 +50,10 @@ namespace CosmicShore.Game.Arcade.Scoring
 
                     if (dt > 0f)
                     {
-                        _lastUpdateTime = now; // [Visual Note] Advance the tracker
+                        _lastUpdateTime = now;
                         AddTimeScore(dt);
                     }
 
-                    // [Visual Note] Wait for interval
                     await UniTask.Delay(TimeSpan.FromSeconds(_intervalSeconds), 
                         DelayType.DeltaTime, PlayerLoopTiming.Update, token);
                 }

@@ -179,6 +179,35 @@ namespace CosmicShore.Game.Analytics
         }
 
         #endregion
+        
+        public void ReportMultiplayerHexStats(int clean, float drift, float boost, int jousts, float score)
+        {
+            if (!_isReady) return;
+
+            _cachedProfile.MultiHexStats.TotalCleanCrystalsCollected += clean;
+            _cachedProfile.MultiHexStats.TotalDriftTime += drift;
+            _cachedProfile.MultiHexStats.TotalJoustsWon += jousts;
+            _cachedProfile.TotalGamesPlayed++;
+
+            // Best Records
+            if (drift > _cachedProfile.MultiHexStats.TotalDriftTime) 
+                _cachedProfile.MultiHexStats.TotalDriftTime = drift;
+
+            // Leaderboard (Separate from SP)
+            if (score < 10000f) // Only valid times
+            {
+                string key = GetCurrentModeKey(); 
+                bool isNewRecord = _cachedProfile.MultiHexStats.TryUpdateBestTime(key, score);
+                _cachedProfile.MultiHexStats.TotalWins++;
+
+                if (isNewRecord)
+                {
+                    // [Visual Note] Ensure ID "hex_race_multiplayer" exists in Dashboard (Ascending)
+                    SubmitScoreToLeaderboard("hex_race_multiplayer", score);
+                }
+            }
+            SaveProfile();
+        }
 
         #region Helpers
 
@@ -235,7 +264,7 @@ namespace CosmicShore.Game.Analytics
                 await CloudSaveService.Instance.Data.Player.SaveAsync(data);
                 Debug.Log("[StatsManager] Profile Saved to Cloud.");
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Debug.LogError($"[StatsManager] Save Failed: {e.Message}");
             }

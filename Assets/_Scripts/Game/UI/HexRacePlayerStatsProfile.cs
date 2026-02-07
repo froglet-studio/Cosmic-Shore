@@ -6,11 +6,9 @@ namespace CosmicShore.Game.Analytics
     [Serializable]
     public class HexRacePlayerStatsProfile
     {
-        // [Visual Note] Global Accumulators
         public int TotalCleanCrystalsCollected;
         public float TotalDriftTime;
-        
-        // [Visual Note] Records (Higher is Better)
+
         public float LongestSingleDrift;
         public float MaxTimeAtHighBoost;
 

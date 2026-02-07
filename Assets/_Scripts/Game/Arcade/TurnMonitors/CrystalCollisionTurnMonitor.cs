@@ -28,11 +28,7 @@ namespace CosmicShore.Game.Arcade
         public override bool CheckForEndOfTurn()
         {
             if (ownStats == null) return false;
-            
-            // [Visual Note] 2. Check Logic
             bool isFinished = ownStats.CrystalsCollected >= CrystalCollisions;
-            
-            // [Visual Note] 3. Trigger Event immediately when condition is met
             if (isFinished)
             {
                 OnTurnFinished?.Invoke();

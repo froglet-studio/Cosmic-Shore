@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
-using CosmicShore.Game.Arcade.Scoring;
+using CosmicShore.Game.UI;
+using Cysharp.Threading.Tasks; 
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -14,153 +15,185 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float penaltyScoreBase = 10000f;
         [SerializeField] bool showDebugLogs = true;
 
-        // [Visual Note] Streak Stats
-        public int MaxCleanStreak { get; private set; }
-        private int _currentCleanStreak;
-
-        // Other Stats
         public float MaxDriftTimeRecord { get; private set; }
         public float MaxHighBoostTimeRecord { get; private set; }
+        public int MaxCleanStreak { get; private set; }
 
         private float _currentDriftTime;
         private float _currentBoostTime;
+        private int _currentCleanStreak;
+        private float _elapsedRaceTime;
+        
         private IVesselStatus _observedVessel;
         private bool _isTracking;
-        private TimePlayedScoring _timeScoring;
+        private bool _hasFinished; // NEW: Track if we've already finished
 
         protected virtual void Start()
         {
-            _timeScoring = new TimePlayedScoring(gameData, 1.0f);
-
-            // Turn Monitor Event
-            if (turnMonitor) turnMonitor.OnTurnFinished += HandleTurnFinished;
-
-            // [Visual Note] SUBSCRIBE TO STREAK EVENTS
-            // 1. Gain: When a crystal is collected
-            ElementalCrystalImpactor.OnCrystalCollected += HandleCrystalCollected;
+            // Subscribe to BaseScoreTracker events so TimePlayedScoring works!
+            SubscribeEvents();
             
-            // 2. Reset: When we hit a prism
+            // Events
+            if (turnMonitor) turnMonitor.OnTurnFinished += HandleTurnFinished;
+            ElementalCrystalImpactor.OnCrystalCollected += HandleCrystalCollected;
             VesselResetBoostPrismEffectSO.OnPrismCollision += HandlePrismCollision;
 
-            if (gameData.LocalPlayer?.Vessel != null)
-                StartTracking(gameData.LocalPlayer.Vessel.VesselStatus);
+            gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised += HandleGlobalTurnEnd;
         }
 
         protected virtual void OnDestroy()
         {
-            if (turnMonitor) turnMonitor.OnTurnFinished -= HandleTurnFinished;
+            // Unsubscribe from BaseScoreTracker events
+            UnsubscribeEvents();
             
-            // Unsubscribe to prevent memory leaks
+            if (turnMonitor) turnMonitor.OnTurnFinished -= HandleTurnFinished;
             ElementalCrystalImpactor.OnCrystalCollected -= HandleCrystalCollected;
             VesselResetBoostPrismEffectSO.OnPrismCollision -= HandlePrismCollision;
+
+            if (gameData == null) return;
+            gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
+            if (gameData.OnMiniGameTurnEnd != null)
+                gameData.OnMiniGameTurnEnd.OnRaised -= HandleGlobalTurnEnd;
         }
 
-        #region Streak Logic (The Fix)
-
-        void HandleCrystalCollected(string playerName)
+        // Triggered by Controller after Countdown
+        void HandleTurnStarted()
         {
-            if (!_isTracking) return;
-            // Verify it is THIS player (important for split screen/multiplayer)
-            if (_observedVessel != null && _observedVessel.PlayerName != playerName) return;
-
-            _currentCleanStreak++;
-
-            if (_currentCleanStreak > MaxCleanStreak)
+            _hasFinished = false; // Reset finish flag
+            if (gameData.LocalPlayer?.Vessel != null)
             {
-                MaxCleanStreak = _currentCleanStreak;
+                StartTracking(gameData.LocalPlayer.Vessel.VesselStatus);
             }
-
-            if (showDebugLogs) Debug.Log($"[HexRaceTracker] Streak: {_currentCleanStreak} (Best: {MaxCleanStreak})");
         }
-
-        void HandlePrismCollision()
-        {
-            if (!_isTracking) return;
-
-            if (showDebugLogs) Debug.Log($"<color=red>[HexRaceTracker] Prism Hit! Streak Reset (Was: {_currentCleanStreak})</color>");
-            _currentCleanStreak = 0;
-        }
-
-        #endregion
-
-        // ... [Rest of the Standard Tracking Code] ...
-        
-        void HandleTurnFinished() => CalculateWinnerAndInvokeEvent();
 
         public void StartTracking(IVesselStatus vessel)
         {
             if (_isTracking) return;
             _observedVessel = vessel;
             _isTracking = true;
-            if (_timeScoring != null) _timeScoring.Subscribe();
+            _elapsedRaceTime = 0f;
+            if (showDebugLogs) Debug.Log($"<color=green>[HexRaceTracker] GO! Timer Started.</color>");
         }
 
-        public void StopTracking()
-        {
-            _isTracking = false;
-            if (_timeScoring != null) _timeScoring.Unsubscribe();
-        }
+        public void StopTracking() => _isTracking = false;
+        void OnDisable() => StopTracking();
 
         void Update()
         {
             if (!_isTracking || _observedVessel == null) return;
+
+            // Local Timer runs only when tracking
+            _elapsedRaceTime += Time.deltaTime;
+            
+            // Sync to local display immediately
+            if (gameData.LocalRoundStats != null)
+                gameData.LocalRoundStats.Score = _elapsedRaceTime;
+
             TrackDrift();
             TrackBoost();
         }
 
         void TrackDrift()
         {
-            if (_observedVessel.IsDrifting)
-                _currentDriftTime += Time.deltaTime;
-            else
-            {
-                if (_currentDriftTime > MaxDriftTimeRecord) MaxDriftTimeRecord = _currentDriftTime;
-                _currentDriftTime = 0;
-            }
+            if (_observedVessel.IsDrifting) _currentDriftTime += Time.deltaTime;
+            else { if (_currentDriftTime > 0 && _currentDriftTime > MaxDriftTimeRecord) MaxDriftTimeRecord = _currentDriftTime; _currentDriftTime = 0; }
         }
-
+        
         void TrackBoost()
         {
-            if (_observedVessel.IsBoosting && _observedVessel.BoostMultiplier >= 4.0f)
-                _currentBoostTime += Time.deltaTime;
-            else
+            if (_observedVessel.IsBoosting && _observedVessel.BoostMultiplier >= 4.0f) _currentBoostTime += Time.deltaTime;
+            else { if (_currentBoostTime > 0 && _currentBoostTime > MaxHighBoostTimeRecord) MaxHighBoostTimeRecord = _currentBoostTime; _currentBoostTime = 0; }
+        }
+        
+        void HandleCrystalCollected(string p) 
+        { 
+            if (_isTracking && _observedVessel.PlayerName == p) 
+            { 
+                _currentCleanStreak++; 
+                if(_currentCleanStreak > MaxCleanStreak) MaxCleanStreak = _currentCleanStreak; 
+            } 
+        }
+        
+        void HandlePrismCollision() 
+        { 
+            if (_isTracking) _currentCleanStreak = 0; 
+        }
+
+        void HandleGlobalTurnEnd()
+        {
+            // This fires when the race ends (first player finished)
+            // If we already finished and reported, do nothing
+            if (_hasFinished)
             {
-                if (_currentBoostTime > MaxHighBoostTimeRecord) MaxHighBoostTimeRecord = _currentBoostTime;
-                _currentBoostTime = 0;
+                if (showDebugLogs) Debug.Log($"<color=cyan>[HexRaceTracker] HandleGlobalTurnEnd - Already finished, ignoring</color>");
+                return;
+            }
+
+            // If we're still tracking, we didn't finish - force loss and report current score
+            if (_isTracking) 
+            {
+                if (showDebugLogs) Debug.Log($"<color=red>[HexRaceTracker] HandleGlobalTurnEnd - Race ended, didn't finish. Reporting loss.</color>");
+                CalculateWinnerAndInvokeEvent(forcedLoss: true);
             }
         }
 
-        protected override void CalculateWinnerAndInvokeEvent()
+        void HandleTurnFinished()
+        {
+            // We finished naturally by collecting all crystals
+            if (_hasFinished) return; // Prevent double finish
+            
+            if (showDebugLogs) Debug.Log($"<color=green>[HexRaceTracker] HandleTurnFinished - Natural finish</color>");
+            CalculateWinnerAndInvokeEvent(forcedLoss: false);
+        }
+
+        protected override void CalculateWinnerAndInvokeEvent() => CalculateWinnerAndInvokeEvent(false);
+
+        protected virtual void CalculateWinnerAndInvokeEvent(bool forcedLoss)
         {
             if (!turnMonitor || gameData.LocalRoundStats == null) return;
-            StopTracking();
+            if (_hasFinished) return; // Prevent double finish
+            
+            _hasFinished = true; // Mark as finished
+            StopTracking(); // Stop the timer immediately
+            
+            // CRITICAL: Stop all scoring systems (especially TimePlayedScoring!)
+            OnTurnEnded(); // This calls Unsubscribe on all scoring systems
 
-            // Finalize time stats
+            // Stats Finalization
             if (_currentDriftTime > MaxDriftTimeRecord) MaxDriftTimeRecord = _currentDriftTime;
             if (_currentBoostTime > MaxHighBoostTimeRecord) MaxHighBoostTimeRecord = _currentBoostTime;
 
-            // Win/Loss Calculation
             int remaining = 0;
-            int.TryParse(turnMonitor.GetRemainingCrystalsCountToCollect(), out remaining);
-            bool isRaceFinished = remaining <= 0;
+            if (int.TryParse(turnMonitor.GetRemainingCrystalsCountToCollect(), out int parsed)) remaining = parsed;
+
+            // Win Logic
+            bool isWin = (remaining <= 0) && !forcedLoss;
+            float finalScore = isWin ? _elapsedRaceTime : (penaltyScoreBase + remaining);
             
-            float elapsedTime = gameData.LocalRoundStats.Score; 
-            float finalScore = isRaceFinished ? elapsedTime : (penaltyScoreBase + remaining);
+            // Set Local Score and FREEZE it
             gameData.LocalRoundStats.Score = finalScore;
 
-            if (showDebugLogs) Debug.Log($"<color=yellow>[HexRaceTracker] FINAL -> Time: {elapsedTime} | Best Streak: {MaxCleanStreak}</color>");
+            if (showDebugLogs) Debug.Log($"<color=yellow>[HexRaceTracker] FINISH. Score: {finalScore} (Win: {isWin}, Forced Loss: {forcedLoss})</color>");
 
             if (UGSStatsManager.Instance)
             {
-                UGSStatsManager.Instance.ReportHexRaceStats(
-                    MaxCleanStreak, // [Visual Note] Passing the STREAK here
-                    MaxDriftTimeRecord, 
-                    MaxHighBoostTimeRecord, 
-                    finalScore
-                );
+                UGSStatsManager.Instance.ReportHexRaceStats(MaxCleanStreak, MaxDriftTimeRecord, MaxHighBoostTimeRecord, finalScore);
             }
             
-            SortAndInvokeResults();
+            // Report to multiplayer controller (will wait for other players)
+            ReportToMultiplayerController(finalScore);
+
+            // DON'T call SortAndInvokeResults in multiplayer - let controller handle after sync
+            if (!gameData.IsMultiplayerMode)
+            {
+                SortAndInvokeResults();
+            }
+        }
+
+        protected virtual void ReportToMultiplayerController(float finalScore)
+        {
+            // Base implementation does nothing (singleplayer)
         }
     }
 }

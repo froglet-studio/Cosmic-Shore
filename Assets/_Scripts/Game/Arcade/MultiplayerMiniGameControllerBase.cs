@@ -110,9 +110,7 @@ namespace CosmicShore.Game.Arcade
         void OnCountdownTimerEnded_ClientRpc()
         {
             gameData.SetPlayersActive();
-            
-            if (IsServer)
-                gameData.StartTurn();
+            gameData.StartTurn();
         }
         
         /// <summary>

@@ -12,5 +12,6 @@ namespace CosmicShore.Game.Analytics
 
         public WildlifeBlitzPlayerStatsProfile BlitzStats = new();
         public HexRacePlayerStatsProfile HexRaceStats = new();
+        public MultiplayerHexRacePlayerStatsProfile MultiHexStats = new();
     }
 }

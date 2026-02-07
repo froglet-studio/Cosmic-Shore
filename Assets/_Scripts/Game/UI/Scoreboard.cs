@@ -12,7 +12,6 @@ namespace CosmicShore.Game
 {
     public class Scoreboard : MonoBehaviour
     {
-        // ... [Keep Headers and Variables exactly as you had them] ...
         [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
@@ -37,9 +36,9 @@ namespace CosmicShore.Game
         [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
 
         [Header("Multiplayer View")]
-        [SerializeField] Transform MultiplayerView;
-        [SerializeField] List<TMP_Text> PlayerNameTextFields;
-        [SerializeField] List<TMP_Text> PlayerScoreTextFields;
+        [SerializeField] protected Transform MultiplayerView;
+        [SerializeField] protected List<TMP_Text> PlayerNameTextFields;
+        [SerializeField] protected List<TMP_Text> PlayerScoreTextFields;
 
         private ScoreboardStatsProvider statsProvider;
 
@@ -112,18 +111,15 @@ namespace CosmicShore.Game
             if (BannerText) BannerText.text = bannerText;
 
             var playerScore = (int)localDomainStats.Score;
-            
-            // [Visual Note] Update the Static Text Fields
+
             if (SinglePlayerScoreTextField) 
                 SinglePlayerScoreTextField.text = playerScore.ToString();
-            
-            // Fetch High Score from StatsManager for static display
+
             if (SinglePlayerHighscoreTextField)
             {
-                int highScore = playerScore; // Default to current if manager missing
-                if (UGSStatsManager.Instance != null)
+                int highScore = playerScore;
+                if (UGSStatsManager.Instance)
                 {
-                    // If current score is higher than cached high score, we display current
                     int cachedHigh = UGSStatsManager.Instance.GetHighScoreForCurrentMode();
                     highScore = Mathf.Max(playerScore, cachedHigh);
                 }
@@ -146,7 +142,6 @@ namespace CosmicShore.Game
 
         void SetBannerForDomain(Domains domain)
         {
-            // ... [Keep switch case exactly as provided] ...
              switch (domain)
             {
                 case Domains.Jade:
@@ -175,7 +170,6 @@ namespace CosmicShore.Game
 
         void DisplayPlayerScores()
         {
-            // ... [Keep display logic exactly as provided] ...
             var playerScores = gameData.RoundStatsList;
             for (var i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
             {
