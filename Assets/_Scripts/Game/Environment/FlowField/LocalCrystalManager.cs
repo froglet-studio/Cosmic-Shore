@@ -24,21 +24,28 @@ namespace CosmicShore.Game
 
         public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
         {
-            if (cellData.TryGetCrystalById(crystalId, out var crystal))
+            if (!cellData.TryGetCrystalById(crystalId, out var crystal)) return;
+            // [Visual Note] Safety check to prevent exploding dead objects
+            if (crystal != null) 
                 crystal.Explode(explodeParams);
         }
 
         void MiniGameTurnStarted()
         {
-            // Spawn N crystals (id = 1..batchCount), each gets a position from CalculateSpawnPos()
             SpawnBatchIfMissing();
         }
         
         void OnTurnEnded()
         {
             var crystals = cellData.Crystals;
-            foreach (var crystal in crystals)
-                crystal.DestroyCrystal();
+            for (int i = crystals.Count - 1; i >= 0; i--)
+            {
+                var crystal = crystals[i];
+                if (crystal)
+                {
+                    crystal.DestroyCrystal();
+                }
+            }
         }
     }
 }

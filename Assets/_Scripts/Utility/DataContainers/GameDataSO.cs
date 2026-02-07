@@ -122,6 +122,8 @@ namespace CosmicShore.Soap
 
         public void ResetForReplay()
         {
+            ResetStatsDataForReplay();
+            ResetPlayers();
             ResetRuntimeDataForReplay();
             OnResetForReplay?.Raise();
         }

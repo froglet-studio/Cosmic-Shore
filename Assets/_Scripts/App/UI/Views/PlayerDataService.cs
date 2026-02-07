@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CosmicShore.Services.Auth;
 using TMPro;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using UnityEngine;
-using YourGame.Services.Auth;   
 using UnityEngine.UI;
 
 namespace CosmicShore.App.Profile
@@ -14,7 +14,7 @@ namespace CosmicShore.App.Profile
     public class PlayerDataService : MonoBehaviour
     {
         [Header("Cloud Save")]
-        [SerializeField] private string           cloudSaveProfileKey = "player_profile";
+        [SerializeField] private string cloudSaveProfileKey = "player_profile";
         [SerializeField] private SO_ProfileIconList profileIcons;
         
         [Header("UI")]

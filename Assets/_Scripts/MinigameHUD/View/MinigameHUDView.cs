@@ -1,8 +1,5 @@
-using CosmicShore.Game.Arcade;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.Game.UI

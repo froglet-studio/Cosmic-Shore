@@ -14,18 +14,14 @@ namespace CosmicShore
 {
     public abstract class LifeForm : MonoBehaviour, ITeamAssignable
     {
-        [SerializeField]
-        protected CellDataSO cellData;
-
+        [SerializeField] protected GameDataSO gameData;
+        [SerializeField] protected CellDataSO cellData;
         [FormerlySerializedAs("healthBlock")]
         [SerializeField] protected HealthPrism healthPrism;
-
         [SerializeField] protected Spindle spindle;
-
         [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
-
         [FormerlySerializedAs("Team")]
         public Domains domain;
 
@@ -35,23 +31,33 @@ namespace CosmicShore
 
         bool mature = false;
         bool dying = false;
-
+        bool isCleaningUp = false;
+        
         HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
 
         [SerializeField] ScriptableEventInt onLifeFormCreated;
         [SerializeField] ScriptableEventInt onLifeFormDestroyed;
-
+        public static event Action<string, int> OnLifeFormDeath;
         [SerializeField] private bool autoInitialize = true;
         private bool initialized;
 
+        protected virtual void OnEnable()
+        {
+            if (gameData != null)
+                gameData.OnShowGameEndScreen.OnRaised += HandleTurnEnded;
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (gameData != null)
+                gameData.OnShowGameEndScreen.OnRaised -= HandleTurnEnded;
+        }
+        
         protected virtual void Start()
         {
             if (!autoInitialize || initialized) return;
-
-            // if something else already initialized us, this.cell will be set
             if (cell == null)
                 cell = CellControlManager.Instance.GetNearestCell(transform.position);
-
             Initialize(cell);
         }
 
@@ -68,14 +74,10 @@ namespace CosmicShore
 
             BindEmbeddedParts();
 
-            onLifeFormCreated?.Raise(cell.ID);
+            if (cell != null)
+                onLifeFormCreated?.Raise(cell.ID);
         }
 
-        /// <summary>
-        /// Binds any Spindles / HealthPrisms already present in the prefab hierarchy.
-        /// IMPORTANT: We do NOT override HealthPrism.TargetScale here.
-        /// TargetScale should be authored on the prefab HealthPrism itself (or overridden by Flora).
-        /// </summary>
         private void BindEmbeddedParts()
         {
             var embeddedSpindles = GetComponentsInChildren<Spindle>(true);
@@ -89,19 +91,17 @@ namespace CosmicShore
             foreach (var hp in embeddedHealthPrisms)
             {
                 if (!hp) continue;
-
                 hp.LifeForm = this;
                 hp.ChangeTeam(domain);
                 hp.Initialize("fauna");
+                AddHealthBlock(hp); // [Visual Note] Ensure we explicitly add it to tracking
             }
         }
 
         public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
             if (!healthPrism) return;
-
             healthBlocks.Add(healthPrism);
-
             healthPrism.ChangeTeam(domain);
             healthPrism.LifeForm = this;
             healthPrism.ownerID = $"{this} + {healthPrism} + {healthBlocks.Count}";
@@ -111,17 +111,8 @@ namespace CosmicShore
         public void AddSpindle(Spindle spindle)
         {
             if (!spindle) return;
-
             spindles.Add(spindle);
             spindle.LifeForm = this;
-
-            //spindle.OnWitherStarted += HandleSpindleWitherStarted;
-        }
-        
-        private void HandleSpindleWitherStarted(Spindle spindle)
-        {
-            // Whimper / change behavior / retreat / enraged / etc.
-            //  route this through ScriptableEvents too.
         }
 
         public Spindle AddSpindle()
@@ -139,14 +130,14 @@ namespace CosmicShore
             CheckIfDead();
         }
 
-        public virtual void RemoveHealthBlock(HealthPrism healthPrism)
+        public virtual void RemoveHealthBlock(HealthPrism healthPrism, string killerName = "")
         {
             if (!healthPrism) return;
+    
             healthBlocks.Remove(healthPrism);
             CleanupDeadRefs();
-            CheckIfDead();
+            CheckIfDead(killerName);
         }
-        
         
         void CleanupDeadRefs()
         {
@@ -154,8 +145,9 @@ namespace CosmicShore
             healthBlocks.RemoveWhere(h => !h);
         }
 
-        public void CheckIfDead()
+        public void CheckIfDead(string killerName = "")
         {
+            // [Visual Note] Safety: If we are already destroyed/cleaning up, don't run logic
             if (dying) return;
 
             CleanupDeadRefs();
@@ -163,7 +155,7 @@ namespace CosmicShore
             if(healthBlocks.Count <= minHealthBlocks)
             {
                 dying = true;
-                Die();
+                Die(killerName);
                 return;
             }
 
@@ -178,29 +170,41 @@ namespace CosmicShore
                 mature = true;
         }
 
-        protected virtual void Die()
+        protected virtual void Die(string killerName = "")
         {
-            if (crystal) crystal.ActivateCrystal();
+            if (isCleaningUp) return;
+            
+            if (crystal && crystal.gameObject.activeInHierarchy && !isCleaningUp) 
+                crystal.ActivateCrystal();
+
+            int cellId = cell ? cell.ID : -1;
+
+            if (!string.IsNullOrEmpty(killerName))
+                OnLifeFormDeath?.Invoke(killerName, cellId);
 
             foreach (var healthBlock in healthBlocks.ToArray())
             {
                 if (!healthBlock) continue;
                 healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
             }
-            
+
             var allSpindles = GetComponentsInChildren<Spindle>(true);
             foreach (var sp in allSpindles)
             {
                 if (sp) sp.ForceWither();
             }
-
+            if (cell)
+            {
+                cell.UnregisterSpawnedObject(gameObject);
+            }
             StopAllCoroutines();
-            StartCoroutine(DieCoroutine());
-
-            onLifeFormDestroyed?.Raise(cell.ID);
+            if (gameObject.activeInHierarchy)
+                StartCoroutine(DieCoroutine(cellId));
+            else if (!isCleaningUp)
+                Destroy(gameObject); // Instant destroy if inactive
         }
 
-        private IEnumerator DieCoroutine()
+        private IEnumerator DieCoroutine(int cellId)
         {
             while (true)
             {
@@ -208,18 +212,20 @@ namespace CosmicShore
                 if (spindles.Count == 0) break;
                 yield return null;
             }
-
-            Destroy(gameObject);
+            
+            if(!isCleaningUp)
+            {
+                // [Visual Note] Use the cached ID, don't access cell.ID here as cell might be dead by now
+                onLifeFormDestroyed?.Raise(cellId);
+                Destroy(gameObject);
+            }
         }
-
         
         public GameObject GetGameObject() => gameObject;
 
         public void SetTeam(Domains domain)
         {
             this.domain = domain;
-
-            // propagate to any already-existing health prisms (prefab embedded or spawned)
             var allHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
             foreach (var hp in allHealthPrisms)
                 if (hp) hp.ChangeTeam(domain);
@@ -230,14 +236,12 @@ namespace CosmicShore
             while (shieldPeriod > 0)
             {
                 List<HealthPrism> currentBlocks = new List<HealthPrism>(healthBlocks);
-
                 if (currentBlocks.Count > 0)
                 {
                     foreach (HealthPrism healthBlock in currentBlocks)
                     {
-                        if (healthBlocks.Contains(healthBlock))
+                        if (healthBlocks.Contains(healthBlock) && healthBlock)
                             healthBlock.ActivateShield();
-
                         yield return new WaitForSeconds(shieldPeriod);
                     }
                 }
@@ -246,6 +250,14 @@ namespace CosmicShore
                     yield return new WaitForSeconds(shieldPeriod);
                 }
             }
+        }
+        
+        protected virtual void HandleTurnEnded()
+        {
+            isCleaningUp = true;
+            StopAllCoroutines();
+            // [Visual Note] Don't trigger death logic, just vanish
+            if(gameObject) Destroy(gameObject);
         }
     }
 }

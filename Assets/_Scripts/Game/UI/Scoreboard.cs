@@ -1,29 +1,25 @@
-using System;
 using System.Collections.Generic;
-using System.Threading;
-using CosmicShore.Game.UI;
-using Cysharp.Threading.Tasks;
+using CosmicShore.Game.UI; 
 using CosmicShore.Soap;
-using DG.Tweening;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
-using Random = UnityEngine.Random;
+// [Visual Note] Add Namespace for StatsManager
+using CosmicShore.Game.Analytics; 
 
 namespace CosmicShore.Game
 {
     public class Scoreboard : MonoBehaviour
     {
-        [FormerlySerializedAs("miniGameData")]
+        [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
-
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
-        [SerializeField] Transform gameOverPanel;
-        [SerializeField] private Transform endGameStatsPanel;
-        [SerializeField] RectTransform animatedRoot;
+        [Header("UI Containers")]
+        [SerializeField] Transform scoreboardPanel;
+        [SerializeField] Transform statsContainer; 
+        [SerializeField] StatRowUI statRowPrefab;   
 
         [Header("Banner")]
         [SerializeField] Image BannerImage;
@@ -32,221 +28,172 @@ namespace CosmicShore.Game
         [SerializeField] Color JadeTeamBannerColor;
         [SerializeField] Color RubyTeamBannerColor;
         [SerializeField] Color GoldTeamBannerColor;
+        [SerializeField] Color BlueTeamBannerColor;
 
-        [Header("Single Player")]
+        [Header("Single Player View")]
         [SerializeField] Transform SingleplayerView;
         [SerializeField] TMP_Text SinglePlayerScoreTextField;
         [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
 
-        [Header("Multi Player")]
-        [SerializeField] Transform MultiplayerView;
-        [SerializeField] List<TMP_Text> PlayerNameTextFields;
-        [SerializeField] List<TMP_Text> PlayerScoreTextFields;
+        [Header("Multiplayer View")]
+        [SerializeField] protected Transform MultiplayerView;
+        [SerializeField] protected List<TMP_Text> PlayerNameTextFields;
+        [SerializeField] protected List<TMP_Text> PlayerScoreTextFields;
 
-        [Header("End Screen Sequence")]
-        [SerializeField] TMP_Text bestScoreText;
-        [SerializeField] TMP_Text highScoreText;
-        [SerializeField] GameObject continueButton;
-        [Header("Slide Animation")]
-        [SerializeField] float startX = -1200f;
-        [SerializeField] float endX = 0f;
-        [SerializeField] float slideDuration = 0.6f;
-        [SerializeField] Ease slideEase = Ease.OutCubic;
-        
-        CancellationTokenSource _cts;
-        bool _sequenceRunning;
+        private ScoreboardStatsProvider statsProvider;
 
         void Awake()
         {
-            ResetForReplay();
+            statsProvider = GetComponent<ScoreboardStatsProvider>();
+            HideScoreboard();
         }
 
         void OnEnable()
         {
-            EnsureCts();
-
             if (gameData != null && gameData.OnShowGameEndScreen != null)
-                gameData.OnShowGameEndScreen.OnRaised += BeginEndScreenFlow;
+                gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
 
             if (OnResetForReplay != null)
-                OnResetForReplay.OnRaised += ResetForReplay;
+                OnResetForReplay.OnRaised += HideScoreboard;
         }
 
         void OnDisable()
         {
             if (gameData != null && gameData.OnShowGameEndScreen != null)
-                gameData.OnShowGameEndScreen.OnRaised -= BeginEndScreenFlow;
+                gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
 
             if (OnResetForReplay != null)
-                OnResetForReplay.OnRaised -= ResetForReplay;
-
-            CancelAndDisposeCts();
+                OnResetForReplay.OnRaised -= HideScoreboard;
         }
 
-        void EnsureCts()
+        void ShowScoreboard()
         {
-            if (_cts != null) return;
-            _cts = new CancellationTokenSource();
+            if (gameData.IsMultiplayerMode)
+                ShowMultiplayerView();
+            else
+                ShowSinglePlayerView();
+
+            PopulateDynamicStats();
+
+            if (scoreboardPanel)
+                scoreboardPanel.gameObject.SetActive(true);
         }
 
-        void CancelAndDisposeCts()
+        void PopulateDynamicStats()
         {
-            if (_cts == null) return;
-            _cts.Cancel();
-            _cts.Dispose();
-            _cts = null;
-        }
-
-        void RestartCts()
-        {
-            CancelAndDisposeCts();
-            _cts = new CancellationTokenSource();
-        }
-
-        void BeginEndScreenFlow()
-        {
-            if (_sequenceRunning) return;
-            _sequenceRunning = true;
-
-            EnsureCts();
-            RunEndScreenSequenceAsync(_cts.Token).Forget();
-        }
-
-        async UniTaskVoid RunEndScreenSequenceAsync(CancellationToken ct)
-        {
-            try
+            if (statsContainer)
             {
-                endGameStatsPanel.gameObject.SetActive(true);
-                continueButton.SetActive(false);
-
-                animatedRoot.anchoredPosition =
-                    new Vector2(startX, animatedRoot.anchoredPosition.y);
-
-                await animatedRoot
-                    .DOAnchorPosX(endX, slideDuration)
-                    .SetEase(slideEase)
-                    .AsyncWaitForCompletion();
-
-                gameData.IsLocalDomainWinner(out DomainStats stats);
-                int score = Mathf.Max(0, (int)stats.Score);
-
-                await UniTask.WhenAll(
-                    PlayCasinoCounter(bestScoreText, score, 2f, ct),
-                    PlayCasinoCounter(highScoreText, score, 2f, ct)
-                );
-
-                continueButton.SetActive(true);
+                foreach (Transform child in statsContainer)
+                    Destroy(child.gameObject);
             }
-            catch (OperationCanceledException)
+
+            if (!statsProvider || !statsContainer || !statRowPrefab) return;
+
+            var stats = statsProvider.GetStats();
+            foreach (var stat in stats)
             {
+                var row = Instantiate(statRowPrefab, statsContainer);
+                row.Initialize(stat.Label, stat.Value, stat.Icon);
             }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-            finally
-            {
-                _sequenceRunning = false;
-            }
+        }
+
+        void HideScoreboard()
+        {
+            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
         }
         
-        async UniTask PlayCasinoCounter(
-            TMP_Text text,
-            int target,
-            float duration,
-            CancellationToken ct)
-        {
-            float t = 0f;
-
-            while (t < duration)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                t += Time.deltaTime;
-                int display = Random.Range(0, target + 1);
-                text.text = display.ToString("000");
-
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-            }
-
-            text.text = target.ToString("000");
-        }
-
-
-        public void OnContinueButtonPressed()
-        {
-            endGameStatsPanel.gameObject.SetActive(false);
-            ShowSinglePlayerView();
-        }
-
-        void ResetForReplay()
-        {
-            _sequenceRunning = false;
-            RestartCts();
-            
-            if (gameOverPanel) gameOverPanel.gameObject.SetActive(false);
-            if (MultiplayerView) MultiplayerView.gameObject.SetActive(false);
-            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
-        }
-
         protected virtual void ShowSinglePlayerView()
         {
             bool won = gameData.IsLocalDomainWinner(out DomainStats localDomainStats);
-
-            var bannerText = won ? "WON" : "DEFEAT";
+            var bannerText = won ? "VICTORY" : "DEFEAT";
+            
             if (BannerImage) BannerImage.color = SinglePlayerBannerColor;
             if (BannerText) BannerText.text = bannerText;
 
-            var playerScore = localDomainStats.Score;
-            if (SinglePlayerScoreTextField) SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
-            if (SinglePlayerHighscoreTextField) SinglePlayerHighscoreTextField.text = ((int)playerScore).ToString();
+            var playerScore = (int)localDomainStats.Score;
+
+            if (SinglePlayerScoreTextField) 
+                SinglePlayerScoreTextField.text = playerScore.ToString();
+
+            if (SinglePlayerHighscoreTextField)
+            {
+                int highScore = playerScore;
+                if (UGSStatsManager.Instance)
+                {
+                    int cachedHigh = UGSStatsManager.Instance.GetHighScoreForCurrentMode();
+                    highScore = Mathf.Max(playerScore, cachedHigh);
+                }
+                SinglePlayerHighscoreTextField.text = highScore.ToString();
+            }
 
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(false);
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(true);
-            if (gameOverPanel) gameOverPanel.gameObject.SetActive(true);
         }
 
-        public void ShowMultiplayerView()
+        protected virtual void ShowMultiplayerView()
         {
-            var winningTeam = Domains.Jade;
-
-            switch (winningTeam)
-            {
-                case Domains.Jade:
-                    BannerImage.color = JadeTeamBannerColor;
-                    BannerText.text = "JADE VICTORY";
-                    break;
-                case Domains.Ruby:
-                    BannerImage.color = RubyTeamBannerColor;
-                    BannerText.text = "RUBY VICTORY";
-                    break;
-                case Domains.Gold:
-                    BannerImage.color = GoldTeamBannerColor;
-                    BannerText.text = "GOLD VICTORY";
-                    break;
-                default:
-                    Debug.LogWarning($"{winningTeam} does not have assigned banner image color and banner text preset.");
-                    break;
-            }
-
-            var playerScores = gameData.RoundStatsList;
-
-            for (var i = 0; i < playerScores.Count; i++)
-            {
-                var playerScore = playerScores[i];
-                PlayerNameTextFields[i].text = playerScore.Name;
-                PlayerScoreTextFields[i].text = ((int)playerScore.Score).ToString();
-            }
-
-            for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
-            {
-                PlayerNameTextFields[i].text = "";
-                PlayerScoreTextFields[i].text = "";
-            }
+            bool isLocalWinner = gameData.IsLocalDomainWinner(out DomainStats winnerStats);
+            SetBannerForDomain(winnerStats.Domain);
+            DisplayPlayerScores();
 
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
-            if (gameOverPanel) gameOverPanel.gameObject.SetActive(true);
+        }
+
+        void SetBannerForDomain(Domains domain)
+        {
+             switch (domain)
+            {
+                case Domains.Jade:
+                    if (BannerImage) BannerImage.color = JadeTeamBannerColor;
+                    if (BannerText) BannerText.text = "JADE VICTORY";
+                    break;
+                case Domains.Ruby:
+                    if (BannerImage) BannerImage.color = RubyTeamBannerColor;
+                    if (BannerText) BannerText.text = "RUBY VICTORY";
+                    break;
+                case Domains.Gold:
+                    if (BannerImage) BannerImage.color = GoldTeamBannerColor;
+                    if (BannerText) BannerText.text = "GOLD VICTORY";
+                    break;
+                case Domains.Blue:
+                    if (BannerImage) BannerImage.color = BlueTeamBannerColor;
+                    if (BannerText) BannerText.text = "BLUE VICTORY";
+                    break;
+                case Domains.None:
+                case Domains.Unassigned:
+                default:
+                    Debug.LogWarning($"Domain {domain} does not have banner configuration.");
+                    break;
+            }
+        }
+
+        void DisplayPlayerScores()
+        {
+            var playerScores = gameData.RoundStatsList;
+            for (var i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
+            {
+                var playerScore = playerScores[i];
+                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = playerScore.Name;
+                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
+                    PlayerScoreTextFields[i].text = ((int)playerScore.Score).ToString();
+            }
+            
+            for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
+            {
+                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
+                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i]) PlayerScoreTextFields[i].text = "";
+            }
+        }
+        
+        public void OnPlayAgainButtonPressed()
+        {
+            if (UGSStatsManager.Instance != null)
+            {
+                UGSStatsManager.Instance.TrackPlayAgain();
+            }
+
+            gameData.ResetForReplay();
         }
     }
 }

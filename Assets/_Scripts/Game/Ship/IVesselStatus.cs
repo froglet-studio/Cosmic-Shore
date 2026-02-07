@@ -3,6 +3,7 @@ using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
+using CosmicShore.Game.Cinematics;
 using CosmicShore.Utilities;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace CosmicShore.Game
         Transform Transform => Vessel.Transform;
 
         AIPilot AIPilot { get; }
+        AICinematicBehavior AICinematicBehavior { get; }
         bool IsInitializedAsAI => Player.IsInitializedAsAI;
         bool AutoPilotEnabled => AIPilot.AutoPilotEnabled;
 

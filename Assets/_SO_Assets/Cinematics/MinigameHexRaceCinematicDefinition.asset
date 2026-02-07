@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd3c786784a14c95bd538619018c6189, type: 3}
+  m_Name: MinigameHexRaceCinematicDefinition
+  m_EditorClassIdentifier: 
+  enableVictoryLap: 1
+  victoryLapSettings:
+    duration: 3.55
+    speedMultiplier: 3
+    enhanceTrail: 1
+    fadeLoserTrail: 1
+  scoreRevealToastString: ALL CRYSTALS COLLECTED
+  showVictoryToast: 1
+  toastSettings:
+    yOffset: 1
+    delay: 0.2
+    duration: 2.5
+  setLocalVesselToAI: 1
+  aiCinematicBehavior: 6
+  cameraSetups:
+  - cameraType: 0
+    duration: 0.1
+    distance: 50
+    heightOffset: 0
+    rotationSpeed: 0
+    zoomTargetDistance: 0
+  - cameraType: 3
+    duration: 0.2
+    distance: 100
+    heightOffset: 20
+    rotationSpeed: 30
+    zoomTargetDistance: 20
+  randomizeCameraSelection: 1
+  scoreRevealSettings:
+    startX: 1200
+    endX: 0
+    slideDuration: 0.6
+    slideEase: 9
+    casinoCounterDuration: 2
+  cinematicTexts:
+  - scoreRevealDisplayText: Brilliant!
+    scoreThreshold: 0
+    selectionWeight: 0.665
+  - scoreRevealDisplayText: Brilliant!
+    scoreThreshold: 0
+    selectionWeight: 0.813
+  delayBeforeEndScreen: 0.1
+  cameraTransitionTime: 0.2
+  connectingPanelDuration: 1

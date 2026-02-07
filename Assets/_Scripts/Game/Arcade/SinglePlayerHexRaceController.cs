@@ -3,8 +3,9 @@
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>
-    /// Hex Race
-    /// </summary>>
+    /// Hex Race game mode.
+    /// Features: Procedural track generation, intensity scaling, optional helix
+    /// </summary>
     public class SinglePlayerHexRaceController : SinglePlayerMiniGameControllerBase
     {
         [Header("Course")]
@@ -39,20 +40,13 @@ namespace CosmicShore.Game.Arcade
         protected override void SetupNewTurn()
         {
             RaiseToggleReadyButtonEvent(true);
-
-            // Old behavior:
-            // - ResetTrails == true  -> InitializeTrails() each SetupTurn
-            // - ResetTrails == false -> InitializeTrails() once at Start
-            if (resetEnvironmentOnEachTurn)
-            {
-                ResetEnvironment();
-            }
-            else if (!_environmentInitialized)
+            
+            if (resetEnvironmentOnEachTurn || !_environmentInitialized)
             {
                 ResetEnvironment();
                 _environmentInitialized = true;
             }
-
+            
             base.SetupNewTurn();
         }
 
@@ -61,21 +55,34 @@ namespace CosmicShore.Game.Arcade
             segmentSpawner.Seed = (seed != 0)
                 ? seed
                 : Random.Range(int.MinValue, int.MaxValue);
-
+            
+            ApplyHelixIntensity();
+            
             if (resetEnvironmentOnEachTurn)
                 ResetEnvironment();
 
             base.OnCountdownTimerEnded();
         }
 
+        protected override void ResetEnvironmentForReplay()
+        {
+            _environmentInitialized = false;
+            if (segmentSpawner)
+            {
+                segmentSpawner.NukeTheTrails();
+            }
+            
+            base.ResetEnvironmentForReplay();
+        }
+
         void ResetEnvironment()
         {
             if (!segmentSpawner)
             {
-                Debug.LogError($"{nameof(SinglePlayerSlipnStrideController)} missing {nameof(segmentSpawner)}.", this);
+                Debug.LogError($"Missing {nameof(segmentSpawner)} reference!", this);
                 return;
             }
-
+            
             segmentSpawner.NumberOfSegments = NumberOfSegments;
             segmentSpawner.StraightLineLength = StraightLineLength;
 

@@ -22,8 +22,7 @@ namespace CosmicShore.Game
         [SerializeField] CellDataSO cellData;
         [SerializeField] GameDataSO gameData;
         
-        [SerializeField]
-        float nucleusScaleMultiplier = 1f;
+        [SerializeField] float nucleusScaleMultiplier = 1f;
 
         [Header("Random Mode Profile")]
         [SerializeField] CellRandomSpawnProfileSO randomSpawnProfile;
@@ -32,14 +31,12 @@ namespace CosmicShore.Game
         SO_CellType cellType => cellData.CellType;
         GameObject membrane;
 
-        // Density/volume tracking
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
         readonly Dictionary<Domains, float> teamVolumes = new();
+        
+        private List<GameObject> spawnedLifeForms = new List<GameObject>();
 
-        bool hasHandledCrystalSpawn;
-
-        // Strategies
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
         ICellLifeSpawner activeSpawner;
@@ -49,8 +46,13 @@ namespace CosmicShore.Game
             if (gameData != null)
                 gameData.OnInitializeGame += Initialize;
 
-            if (cellData != null && cellData.OnCrystalSpawned != null)
+            if (cellData == null) return;
+            
+            if (cellData.OnCrystalSpawned != null)
                 cellData.OnCrystalSpawned.OnRaised += OnCrystalSpawnedInCell;
+            
+            if (cellData.OnResetForReplay != null)
+                cellData.OnResetForReplay.OnRaised += ResetCell;
         }
 
         void OnDisable()
@@ -58,16 +60,70 @@ namespace CosmicShore.Game
             if (gameData != null)
                 gameData.OnInitializeGame -= Initialize;
 
-            if (cellData != null && cellData.OnCrystalSpawned != null)
-                cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawnedInCell;
-
+            if (cellData != null)
+            {
+                if (cellData.OnCrystalSpawned != null)
+                    cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawnedInCell;
+                
+                if (cellData.OnResetForReplay != null)
+                    cellData.OnResetForReplay.OnRaised -= ResetCell;
+            }
+            
             StopSpawner();
             cellData?.ResetRuntimeData();
         }
 
+        void ResetCell()
+        {
+            for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
+            {
+                if (spawnedLifeForms[i]) Destroy(spawnedLifeForms[i]);
+            }
+            spawnedLifeForms.Clear();
+            StopSpawner();
+            AssignCellType();
+            ResetVolumes();
+            cellData.EnsureCellStats(ID);
+            UpdateCellStats();
+        }
+
+        void UpdateCellStats()
+        {
+            if (!cellData) return;
+
+            cellData.EnsureCellStats(ID);
+            var cs = cellData.CellStatsList[ID];
+            cs.LifeFormsInCell = spawnedLifeForms.Count;
+
+            UpdateLifeFormCountUI();
+        }
+
+        void UpdateLifeFormCountUI()
+        {
+            if (cellData?.OnCellItemsUpdated)
+            {
+                cellData.OnCellItemsUpdated.Raise();
+            }
+        }
+
+        public void RegisterSpawnedObject(GameObject obj)
+        {
+            if (!obj) return;
+            spawnedLifeForms.Add(obj);
+            UpdateCellStats();
+        }
+
+        public void UnregisterSpawnedObject(GameObject obj)
+        {
+            if (spawnedLifeForms.Remove(obj))
+            {
+                UpdateCellStats();
+            }
+        }
+
         void Initialize()
         {
-            hasHandledCrystalSpawn = false;
+            spawnedLifeForms.Clear();
 
             cellData.Cell = this;
             cellData.EnsureCellStats(ID);
@@ -76,19 +132,23 @@ namespace CosmicShore.Game
             SetupDensityGrids();
             SpawnVisuals();
             ResetVolumes();
+            
+            UpdateCellStats();
         }
 
         void OnCrystalSpawnedInCell()
         {
-            if (hasHandledCrystalSpawn) return;
-            hasHandledCrystalSpawn = true;
-
-            if (!cellType) return;
+            if (!cellType)
+            {
+                Debug.LogWarning($"[Cell {ID}] Crystal spawned before Cell Initialized. Attempting lazy init.");
+                Initialize(); 
+                if (!cellType) return; 
+            }
 
             ApplyModifiers();
             StartSpawnerForMode();
         }
-
+        
         void AssignCellType()
         {
             if (CellTypes == null || CellTypes.Count == 0)
@@ -105,9 +165,6 @@ namespace CosmicShore.Game
             };
 
             cellData.CellType = CellTypes[index];
-
-            if (!cellData.CellType)
-                Debug.LogError($"{nameof(Cell)}: Cell type not assigned (null).");
         }
 
         void SetupDensityGrids()
@@ -125,11 +182,9 @@ namespace CosmicShore.Game
             if (cellType.MembranePrefab != null)
                 membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
 
-            if (cellType.NucleusPrefab != null)
-            {
-                var nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
-                nucleus.transform.localScale *= nucleusScaleMultiplier;
-            }
+            if (cellType.NucleusPrefab == null) return;
+            var nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
+            nucleus.transform.localScale *= nucleusScaleMultiplier;
         }
 
         void ResetVolumes()
@@ -156,16 +211,24 @@ namespace CosmicShore.Game
                 : randomSpawner;
 
             activeSpawner.Start(this, cellType, cellData, gameData);
+            
+            Debug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
         }
 
         void StopSpawner()
         {
-            activeSpawner?.Stop(this);
+            if (activeSpawner == null) return;
+            activeSpawner.Stop(this);
             activeSpawner = null;
+            Debug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
         }
 
-        internal Transform GetCrystalTransform() => 
-            !cellData.TryGetLocalCrystal(out Crystal crystal) ? null : crystal.transform;
+        internal Transform GetCrystalTransform()
+        {
+            if (cellData.TryGetLocalCrystal(out var crystal)) return crystal.transform;
+            Debug.LogWarning($"[Cell {ID}] No crystal found!");
+            return null;
+        }
 
         public void AddBlock(Prism block)
         {
@@ -191,9 +254,7 @@ namespace CosmicShore.Game
 
         public void ChangeVolume(Domains domain, float volume)
         {
-            if (!teamVolumes.ContainsKey(domain))
-                teamVolumes.Add(domain, 0);
-
+            teamVolumes.TryAdd(domain, 0);
             teamVolumes[domain] += volume;
         }
 

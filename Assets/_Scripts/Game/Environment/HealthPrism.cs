@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
@@ -44,7 +45,7 @@ namespace CosmicShore
             base.Explode(impactVector, domain, playerName, devastate);
 
             if (LifeForm)
-                LifeForm.RemoveHealthBlock(this);
+                LifeForm.RemoveHealthBlock(this, playerName);
 
             if (spindle) spindle.CheckForLife();
         }

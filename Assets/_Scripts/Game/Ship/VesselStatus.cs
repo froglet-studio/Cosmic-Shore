@@ -5,6 +5,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Game.Cinematics;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -159,6 +160,16 @@ namespace CosmicShore.Game
             {
                 aiPilot = aiPilot != null ? aiPilot : gameObject.gameObject.GetOrAdd<AIPilot>();
                 return aiPilot;
+            }
+        }
+
+        AICinematicBehavior aiCinematicBehavior;
+        public AICinematicBehavior AICinematicBehavior
+        {
+            get
+            {
+                aiCinematicBehavior = aiCinematicBehavior != null ? aiCinematicBehavior : gameObject.gameObject.GetOrAdd<AICinematicBehavior>();
+                return aiCinematicBehavior;
             }
         }
 

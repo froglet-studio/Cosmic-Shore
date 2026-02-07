@@ -1,3 +1,4 @@
+using System; // Required for Action
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -5,22 +6,15 @@ namespace CosmicShore.Game.Arcade
     public class CrystalCollisionTurnMonitor : TurnMonitor
     {
         [SerializeField] protected int CrystalCollisions;
-        [SerializeField] bool hostileCollection;
+        protected IRoundStats ownStats;
 
-        [Header("Optional Configuration")]
-        [SerializeField] SpawnableWaypointTrack optionalEnvironment;
-        [SerializeField] int optionalLaps = 4;
-
-        IRoundStats ownStats;
+        // [Visual Note] 1. New Event: "Hey, we are done!"
+        public event Action OnTurnFinished; 
 
         public override void StartMonitor()
         {
-            if (optionalEnvironment)
-            {
-                CrystalCollisions = optionalEnvironment.waypoints[optionalEnvironment.intenstyLevel-1].positions.Count * optionalLaps;
-            }
             InitializeOwnStats();
-            ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
+            if (ownStats != null) ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
             UpdateCrystals(ownStats);
             base.StartMonitor();
         }
@@ -28,32 +22,41 @@ namespace CosmicShore.Game.Arcade
         public override void StopMonitor()
         {
             base.StopMonitor();
-            ownStats.OnCrystalsCollectedChanged -= UpdateCrystals;
+            if (ownStats != null) ownStats.OnCrystalsCollectedChanged -= UpdateCrystals;
         }
         
-        public override bool CheckForEndOfTurn() =>
-            ownStats.CrystalsCollected >= CrystalCollisions;
+        public override bool CheckForEndOfTurn()
+        {
+            if (ownStats == null) return false;
+            bool isFinished = ownStats.CrystalsCollected >= CrystalCollisions;
+            if (isFinished)
+            {
+                OnTurnFinished?.Invoke();
+            }
+            
+            return isFinished;
+        }
         
-        protected void UpdateCrystals(IRoundStats stats) =>
-            UpdateCrystalsRemainingUI();
+        protected virtual void UpdateCrystals(IRoundStats stats) => UpdateCrystalsRemainingUI();
 
-        protected void UpdateCrystalsRemainingUI()
+        protected virtual void UpdateCrystalsRemainingUI()
         {
             string message = GetRemainingCrystalsCountToCollect();
-            onUpdateTurnMonitorDisplay?.Raise(message);
+            if (onUpdateTurnMonitorDisplay) onUpdateTurnMonitorDisplay.Raise(message);
         }
         
-        string GetRemainingCrystalsCountToCollect()
+        public string GetRemainingCrystalsCountToCollect()
         {
             InitializeOwnStats();
-            return (CrystalCollisions - ownStats.CrystalsCollected).ToString();
+            if (ownStats == null) return CrystalCollisions.ToString();
+            int remaining = CrystalCollisions - ownStats.CrystalsCollected;
+            return Mathf.Max(0, remaining).ToString();
         }
 
-        void InitializeOwnStats()
+        protected virtual void InitializeOwnStats()
         {
             if (ownStats != null) return;
             if (gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats)) return;
-            Debug.LogError("No round stats found for local player");
         }
     }
 }

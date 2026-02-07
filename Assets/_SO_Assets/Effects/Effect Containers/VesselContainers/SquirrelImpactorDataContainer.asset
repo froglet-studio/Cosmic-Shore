@@ -19,4 +19,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6c233c580949b13419f068454c74a110, type: 2}
   vesselCrystalEffects:
   - {fileID: 11400000, guid: 384844202f49d274185594aa5a884572, type: 2}
+  - {fileID: 11400000, guid: f569352afa6f9c24bab70eb8bc79d3ed, type: 2}
+  vesselMassCrystalEffects: []
+  vesselChargeCrystalEffects: []
+  vesselSpaceCrystalEffects: []
+  vesselTimeCrystalEffects: []
   vesselSkimmerEffects: []
