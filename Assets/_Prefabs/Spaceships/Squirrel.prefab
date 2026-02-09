@@ -745,7 +745,6 @@ GameObject:
   - component: {fileID: 2800655758706162833}
   - component: {fileID: 2643412773408452782}
   - component: {fileID: 7965853245772039612}
-  - component: {fileID: 5739728611067676261}
   - component: {fileID: 5649393235309590662}
   m_Layer: 0
   m_Name: Squirrel
@@ -984,18 +983,18 @@ MonoBehaviour:
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
   skimmer: {fileID: 708149374973573223}
-  BaseScale: {x: 20, y: 0.5, z: 5}
+  BaseScale: {x: 20, y: 0.75, z: 5.5}
   prismType: 4
-  initialWavelength: 8
-  minWavelength: 8
+  initialWavelength: 7
+  minWavelength: 5
   defaultWaitTime: 0.5
-  minBlockScale: 0.5
+  minBlockScale: 1
   maxBlockScale: 5
   waitTillOutsideSkimmer: 0
   shielded: 0
   offset: 0
-  Gap: 19
-  MinimumGap: 19
+  Gap: 18.5
+  MinimumGap: 18.5
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
   startDelay: 2
@@ -1144,12 +1143,15 @@ MonoBehaviour:
   - InputEvent: 11
     ShipActions:
     - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
+    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
   - InputEvent: 12
     ShipActions:
     - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
+    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
   - InputEvent: 13
     ShipActions:
     - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
+    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
@@ -1224,19 +1226,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactor: {fileID: 2643412773408452782}
---- !u!114 &5739728611067676261
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 093fa5de82088a84b879778ba806efb6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 7e5e80951b3751d40acc423783b32f31, type: 2}
 --- !u!114 &5649393235309590662
 MonoBehaviour:
   m_ObjectHideFlags: 0
