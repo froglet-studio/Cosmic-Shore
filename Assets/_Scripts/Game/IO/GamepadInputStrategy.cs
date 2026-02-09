@@ -32,7 +32,10 @@ namespace CosmicShore.Game.IO
 
         private void ProcessStickInput()
         {
+            // Read throttle (this is just the boost button - don't invert it)
             inputStatus.Throttle = Gamepad.current.rightShoulder.ReadValue();
+            
+            // Read raw stick values without any inversion yet
             leftStickRaw = Gamepad.current.leftStick.ReadValue();
             rightStickRaw = Gamepad.current.rightStick.ReadValue();
         }
@@ -162,6 +165,36 @@ namespace CosmicShore.Game.IO
             inputStatus.YSum = -Ease(rightStickRaw.y + leftStickRaw.y);
             inputStatus.XDiff = (rightStickRaw.x - leftStickRaw.x + 2) / 4;
             inputStatus.YDiff = Ease(rightStickRaw.y - leftStickRaw.y);
+            
+            // Store values before inversion for debugging
+            float ySumBefore = inputStatus.YSum;
+            float yDiffBefore = inputStatus.YDiff;
+            float xDiffBefore = inputStatus.XDiff;
+            
+            // Apply inversions AFTER calculations
+            if (inputStatus.InvertYEnabled)
+            {
+                inputStatus.YSum *= -1f;   // Invert pitch
+                inputStatus.YDiff *= -1f;  // Invert roll
+            }
+            
+            if (inputStatus.InvertThrottleEnabled)
+            {
+                inputStatus.XDiff = 1f - inputStatus.XDiff;  // Invert throttle/speed
+            }
+            
+            // DEBUG: Uncomment to see inversion working (press Tab key to log)
+            #if UNITY_EDITOR
+            if (UnityEngine.InputSystem.Keyboard.current != null && 
+                UnityEngine.InputSystem.Keyboard.current.tabKey.wasPressedThisFrame)
+            {
+                Debug.Log($"[GamepadInput] Reparameterize Debug:\n" +
+                          $"  Raw Sticks - L: {leftStickRaw}, R: {rightStickRaw}\n" +
+                          $"  YSum: {ySumBefore:F2} → {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  YDiff: {yDiffBefore:F2} → {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  XDiff: {xDiffBefore:F2} → {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
+            }
+            #endif
         }
 
         private void PerformSpeedAndDirectionalEffects()

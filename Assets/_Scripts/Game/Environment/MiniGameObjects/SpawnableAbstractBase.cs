@@ -11,9 +11,11 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
     protected List<Trail> trails = new List<Trail>();
     [FormerlySerializedAs("Team"), FormerlySerializedAs("team")] public Domains domain = Domains.Blue;
     public abstract GameObject Spawn();
+    public int intenstyLevel = 1;
 
     public virtual GameObject Spawn(int intensityLevel = 1)
     {
+        this.intenstyLevel = intensityLevel;
         return Spawn();
     }
 

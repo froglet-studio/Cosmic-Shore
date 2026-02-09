@@ -10,20 +10,26 @@ namespace CosmicShore.Game
         
         private void OnEnable()
         {
-            cellData.OnCrystalSpawned.OnRaised += OnCrystalSpawned;
+            cellData.OnCellItemsUpdated.OnRaised += OnCellItemsUpdated;
         }
 
         private void OnDisable()
         {
-            cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawned;
+            cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
         }
 
-        private void OnCrystalSpawned()
+        void OnCellItemsUpdated()
         {
-            cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawned;
+            if (!cellData.TryGetLocalCrystal(out _))
+                return;
             
+            cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
+            SpawnSnows();
+        }
+        
+        private void SpawnSnows()
+        {
             var snowChanger = Instantiate(cellData.CellType.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
-            snowChanger.SetOrigin(cellData.CrystalTransform.position);
             snowChanger.Initialize();
         }
     }

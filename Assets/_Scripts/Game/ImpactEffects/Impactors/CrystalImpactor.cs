@@ -7,6 +7,7 @@ namespace CosmicShore.Game
     public abstract class CrystalImpactor : ImpactorBase
     {
         public Crystal Crystal;
+        public override Domains OwnDomain => Crystal.ownDomain;
 
         protected virtual void Awake()
         {

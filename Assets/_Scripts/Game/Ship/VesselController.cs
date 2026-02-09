@@ -80,7 +80,6 @@ namespace CosmicShore.Game
             VesselStatus.Player = player;
             VesselStatus.VesselAnimation.Initialize(VesselStatus);
             VesselStatus.VesselPrismController.Initialize(VesselStatus);
-            VesselStatus.Customization.Initialize(VesselStatus);
             
             if (!VesselStatus.CameraFollowTarget) 
                 VesselStatus.CameraFollowTarget = transform;
@@ -108,6 +107,8 @@ namespace CosmicShore.Game
                 VesselStatus.VesselHUDController.ShowHUD();
             }
             
+            ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
+            VesselStatus.Customization.Initialize(VesselStatus);
             VesselStatus.ResetForPlay();
             OnInitialized?.Invoke();
         }
@@ -204,8 +205,13 @@ namespace CosmicShore.Game
             VesselStatus.ResetForPlay();
         }
 
-        public void SetPose(Pose pose) => 
-            VesselStatus.VesselTransformer.SetPose(pose);
+        public void SetPose(Pose pose)
+        {
+            if (IsSpawned)
+                SetPose_ClientRpc(pose);
+            else
+                SetPose_Local(pose);
+        }
 
         public void ChangePlayer(IPlayer player)
         {
@@ -288,6 +294,11 @@ namespace CosmicShore.Game
         void AddSlowedShipTransformToGameData_Local() =>
             gameData?.SlowedShipTransforms.Add(transform);
 
+        [ClientRpc]
+        void SetPose_ClientRpc(Pose pose) => SetPose_Local(pose);
+        
+        void SetPose_Local(Pose pose) => VesselStatus.VesselTransformer.SetPose(pose);
+        
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;

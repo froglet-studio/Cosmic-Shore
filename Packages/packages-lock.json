@@ -400,7 +400,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.services.analytics": {
-      "version": "6.1.0",
+      "version": "6.2.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -433,8 +433,8 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.services.core": {
-      "version": "1.14.0",
-      "depth": 1,
+      "version": "1.16.0",
+      "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.modules.androidjni": "1.0.0",
@@ -458,6 +458,16 @@
       "depth": 2,
       "source": "registry",
       "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.services.leaderboards": {
+      "version": "2.3.3",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.services.core": "1.15.1",
+        "com.unity.services.authentication": "3.3.3"
+      },
       "url": "https://packages.unity.com"
     },
     "com.unity.services.multiplayer": {

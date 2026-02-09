@@ -1,3 +1,4 @@
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -6,6 +7,10 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] float duration;
         float elapsedTime;
+
+        public float ElapsedTime => elapsedTime;
+        public float Duration => duration;
+        public float TimeRemaining => Mathf.Max(0, duration - elapsedTime);
 
         public override bool CheckForEndOfTurn() => elapsedTime >= duration;
 
@@ -18,28 +23,17 @@ namespace CosmicShore.Game.Arcade
         
         protected override void RestrictedUpdate()
         {
-            base.RestrictedUpdate();
             elapsedTime += _updateInterval;
             UpdateTimerUI();
         }
 
         protected virtual void UpdateTimerUI() =>
-            UpdateTimerUI_2(GetTimeToDisplay());
+            InvokeUpdateTurnMonitorDisplay(GetTimeToDisplay());
 
-        protected void UpdateTimerUI_2(string message) =>
+        protected void InvokeUpdateTurnMonitorDisplay(string message) =>
             onUpdateTurnMonitorDisplay?.Raise(message);
-        
+
         protected string GetTimeToDisplay() => 
             ((int)duration - (int)elapsedTime).ToString();
-        
-        #if UNITY_EDITOR
-        
-        [ContextMenu("Reset Timer")]
-        void ResetTimer() => elapsedTime = 0;
-        
-        [ContextMenu("End Timer")]
-        void EndTimer() => elapsedTime = duration;
-        
-        #endif
     }
 }

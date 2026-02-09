@@ -3,6 +3,7 @@ using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
+using Obvious.Soap;
 
 public class SegmentSpawner : MonoBehaviour
 {
@@ -21,7 +22,7 @@ public class SegmentSpawner : MonoBehaviour
     public float StraightLineLength = 400f;
     public float RotationAmount = 10f;
     [HideInInspector] public int DifficultyAngle = 90;
-    [HideInInspector] public int IntensityLevel = 1;
+    [SerializeField] IntVariable intensityLevelData;
 
     [SerializeField] bool InitializeOnStart;
     [SerializeField] public int NumberOfSegments = 1;
@@ -229,16 +230,16 @@ public class SegmentSpawner : MonoBehaviour
                 {
                     hilbertPositioner = gameObject.AddComponent<HilbertCurveLSystemPositioning>();
                 }
-                hilbertPositioner.segmentLength = 60 - (IntensityLevel * 10);
+                hilbertPositioner.segmentLength = 60 - (intensityLevelData.Value * 10);
                 hilbertPositioner.GenerateHilbertCurve();
                 var positions = hilbertPositioner.GetPositions();
                 var rotations = hilbertPositioner.GetRotations();
 
-                mazeData[IntensityLevel - 1].walls.Clear();
+                mazeData[intensityLevelData.Value - 1].walls.Clear();
 
                 for (int i = 0; i < positions.Count; i++)
                 {
-                    mazeData[IntensityLevel - 1].walls.Add(new MazeData.WallData
+                    mazeData[intensityLevelData.Value - 1].walls.Add(new MazeData.WallData
                     {
                         position = positions[i],
                         rotation = rotations[i]
@@ -246,7 +247,7 @@ public class SegmentSpawner : MonoBehaviour
                 }
 
 #if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(mazeData[IntensityLevel-1]);
+                UnityEditor.EditorUtility.SetDirty(mazeData[intensityLevelData.Value - 1]);
                 UnityEditor.AssetDatabase.SaveAssets();
              #endif
 
@@ -260,13 +261,16 @@ public class SegmentSpawner : MonoBehaviour
                 return;
             case PositioningScheme.SavedMaze:
 
-                if (spawnedItemCount < mazeData[IntensityLevel - 1].walls.Count)
+                if (spawnedItemCount < mazeData[intensityLevelData.Value - 1].walls.Count)
                 {
                     spawned.transform.SetPositionAndRotation(
-                        Quaternion.Euler(0, 0, RotationAmount) * (mazeData[IntensityLevel - 1].walls[spawnedItemCount].position + origin + transform.position),
-                        Quaternion.Euler(0, 0, RotationAmount) * mazeData[IntensityLevel - 1].walls[spawnedItemCount].rotation);
+                        Quaternion.Euler(0, 0, RotationAmount) * (mazeData[intensityLevelData.Value - 1].walls[spawnedItemCount].position + origin + transform.position),
+                        Quaternion.Euler(0, 0, RotationAmount) * mazeData[intensityLevelData.Value - 1].walls[spawnedItemCount].rotation);
                 }
-                return;    
+                return;
+            case PositioningScheme.AtOriginNoRotation:
+                spawned.transform.SetPositionAndRotation(origin + transform.position, Quaternion.identity);
+                return;
         }
     }
 
@@ -281,7 +285,7 @@ public class SegmentSpawner : MonoBehaviour
             totalWeight += spawnSegmentWeights[i];
         }
 
-        return spawnableSegments[spawnIndex].Spawn(IntensityLevel);
+        return spawnableSegments[spawnIndex].Spawn(intensityLevelData.Value);
     }
 
     void normalizeWeights()

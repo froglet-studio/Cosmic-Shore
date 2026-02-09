@@ -11,13 +11,15 @@ namespace CosmicShore.App.UI.Modals
 
         [SerializeField] public ModalWindows ModalType;
 
-        Animator windowAnimator;
+        [SerializeField] Animator windowAnimator;
         bool isOn;
 
         protected virtual void Start()
         {
-            windowAnimator = GetComponent<Animator>();
-            gameObject.SetActive(false);
+            if(windowAnimator == null)
+                windowAnimator = GetComponent<Animator>();
+                
+            //gameObject.SetActive(false);
         }
 
         public void ModalWindowIn()
@@ -44,7 +46,7 @@ namespace CosmicShore.App.UI.Modals
             if (isOn)
             {
                 var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
-                if (screenSwitcher != null)
+                if (screenSwitcher)
                     screenSwitcher.PopModal();
 
                 if (sharpAnimations == false)
@@ -54,7 +56,7 @@ namespace CosmicShore.App.UI.Modals
 
                 isOn = false;
             }
-
+            if(ModalType == ModalWindows.SETTINGS) return;
             StartCoroutine(DisableWindow());
         }
 

@@ -41,18 +41,20 @@ namespace CosmicShore.Game.Arcade
         {
             if (!isRunning) 
                 return;
-            
-            // End-of-turn check
-            if (!CheckForEndOfTurn()) 
-                return;
-            
-            RestrictedUpdate();
+            if (!CheckForEndOfTurn()) return; // <-- REMOVE the 'return' on the next line
             OnTurnEnded();
+            StopMonitor(); // Stop the async loop
+            // // End-of-turn check
+            // if (CheckForEndOfTurn())  // <-- REMOVE the 'return' on the next line
+            // {
+            //     OnTurnEnded();
+            //     StopMonitor(); // Stop the async loop
+            // }
             // Pause(); // exits loop on next iteration
         }
 
         /// <summary>Stops the monitor loop (safe to call multiple times).</summary>
-        public void StopMonitor()
+        public virtual void StopMonitor()
         {
             if (!isRunning) return;
 

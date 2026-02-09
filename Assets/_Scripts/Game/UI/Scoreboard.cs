@@ -1,169 +1,199 @@
 using System.Collections.Generic;
+using CosmicShore.Game.UI; 
 using CosmicShore.Soap;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
+// [Visual Note] Add Namespace for StatsManager
+using CosmicShore.Game.Analytics; 
 
 namespace CosmicShore.Game
 {
     public class Scoreboard : MonoBehaviour
     {
-        [FormerlySerializedAs("miniGameData")] [SerializeField]
-        protected GameDataSO gameData; 
-        
-        [SerializeField]
-        private ScriptableEventNoParam OnResetForReplay; 
-        
-        [SerializeField]
-        Transform gameOverPanel;
-        
-        [Header("Banner")] 
+        [Header("Data")]
+        [SerializeField] protected GameDataSO gameData;
+        [SerializeField] private ScriptableEventNoParam OnResetForReplay;
+
+        [Header("UI Containers")]
+        [SerializeField] Transform scoreboardPanel;
+        [SerializeField] Transform statsContainer; 
+        [SerializeField] StatRowUI statRowPrefab;   
+
+        [Header("Banner")]
         [SerializeField] Image BannerImage;
-        
         [SerializeField] TMP_Text BannerText;
         [SerializeField] Color SinglePlayerBannerColor;
         [SerializeField] Color JadeTeamBannerColor;
         [SerializeField] Color RubyTeamBannerColor;
         [SerializeField] Color GoldTeamBannerColor;
+        [SerializeField] Color BlueTeamBannerColor;
 
-        [Header("Single Player")] 
-        [SerializeField]
-        Transform SingleplayerView;
-
+        [Header("Single Player View")]
+        [SerializeField] Transform SingleplayerView;
         [SerializeField] TMP_Text SinglePlayerScoreTextField;
         [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
 
-        [Header("Multi Player")] [SerializeField]
-        Transform MultiplayerView;
+        [Header("Multiplayer View")]
+        [SerializeField] protected Transform MultiplayerView;
+        [SerializeField] protected List<TMP_Text> PlayerNameTextFields;
+        [SerializeField] protected List<TMP_Text> PlayerScoreTextFields;
 
-        [SerializeField] List<TMP_Text> PlayerNameTextFields;
-        [SerializeField] List<TMP_Text> PlayerScoreTextFields;
-
-        // TODO - Use MiniGameDataVariable instead
-        // ScoreTracker scoreTracker;
-        
+        private ScoreboardStatsProvider statsProvider;
 
         void Awake()
         {
-            // scoreTracker = FindAnyObjectByType<ScoreTracker>();
-            ResetForReplay();
+            statsProvider = GetComponent<ScoreboardStatsProvider>();
+            HideScoreboard();
         }
 
-        private void OnEnable()
+        void OnEnable()
         {
-            gameData.OnWinnerCalculated += ShowSinglePlayerView;
-            OnResetForReplay.OnRaised += ResetForReplay;
+            if (gameData != null && gameData.OnShowGameEndScreen != null)
+                gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
+
+            if (OnResetForReplay != null)
+                OnResetForReplay.OnRaised += HideScoreboard;
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
-            gameData.OnWinnerCalculated -= ShowSinglePlayerView;
-            OnResetForReplay.OnRaised -= ResetForReplay;
+            if (gameData != null && gameData.OnShowGameEndScreen != null)
+                gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
+
+            if (OnResetForReplay != null)
+                OnResetForReplay.OnRaised -= HideScoreboard;
         }
 
-        private void ResetForReplay()
+        void ShowScoreboard()
         {
-            gameOverPanel.gameObject.SetActive(false);
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(false);
+            if (gameData.IsMultiplayerMode)
+                ShowMultiplayerView();
+            else
+                ShowSinglePlayerView();
+
+            PopulateDynamicStats();
+
+            if (scoreboardPanel)
+                scoreboardPanel.gameObject.SetActive(true);
+        }
+
+        void PopulateDynamicStats()
+        {
+            if (statsContainer)
+            {
+                foreach (Transform child in statsContainer)
+                    Destroy(child.gameObject);
+            }
+
+            if (!statsProvider || !statsContainer || !statRowPrefab) return;
+
+            var stats = statsProvider.GetStats();
+            foreach (var stat in stats)
+            {
+                var row = Instantiate(statRowPrefab, statsContainer);
+                row.Initialize(stat.Label, stat.Value, stat.Icon);
+            }
+        }
+
+        void HideScoreboard()
+        {
+            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
         }
         
         protected virtual void ShowSinglePlayerView()
         {
             bool won = gameData.IsLocalDomainWinner(out DomainStats localDomainStats);
-            // Setup Banner
-            var bannerText = won ? "WON" : "DEFEAT";
-            BannerImage.color = SinglePlayerBannerColor;
-            BannerText.text = bannerText;
+            var bannerText = won ? "VICTORY" : "DEFEAT";
+            
+            if (BannerImage) BannerImage.color = SinglePlayerBannerColor;
+            if (BannerText) BannerText.text = bannerText;
 
-            // Populate this run's Score
-            var playerScore = localDomainStats.Score; // Mathf.Max(roundStats.Score, 0);
-            SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
+            var playerScore = (int)localDomainStats.Score;
 
-            // TODO: pull actual high Score
-            // Populate high Score
-            SinglePlayerHighscoreTextField.text = ((int) playerScore).ToString();
+            if (SinglePlayerScoreTextField) 
+                SinglePlayerScoreTextField.text = playerScore.ToString();
 
-            // Show the jam
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(true);
-            gameOverPanel.gameObject.SetActive(true);
+            if (SinglePlayerHighscoreTextField)
+            {
+                int highScore = playerScore;
+                if (UGSStatsManager.Instance)
+                {
+                    int cachedHigh = UGSStatsManager.Instance.GetHighScoreForCurrentMode();
+                    highScore = Mathf.Max(playerScore, cachedHigh);
+                }
+                SinglePlayerHighscoreTextField.text = highScore.ToString();
+            }
+
+            if (MultiplayerView) MultiplayerView.gameObject.SetActive(false);
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(true);
         }
-        
-        public void ShowMultiplayerView()
-        {
-            // Set banner for winning player
-            // TODO - Take winner data from MiniGameDataSO
-            var winningTeam = Domains.Jade; // miniGameData.GetWinnerScoreData().Team;
 
-            switch (winningTeam)
+        protected virtual void ShowMultiplayerView()
+        {
+            bool isLocalWinner = gameData.IsLocalDomainWinner(out DomainStats winnerStats);
+            SetBannerForDomain(winnerStats.Domain);
+            DisplayPlayerScores();
+
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
+            if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
+        }
+
+        void SetBannerForDomain(Domains domain)
+        {
+             switch (domain)
             {
                 case Domains.Jade:
-                    BannerImage.color = JadeTeamBannerColor;
-                    BannerText.text = "JADE VICTORY";
+                    if (BannerImage) BannerImage.color = JadeTeamBannerColor;
+                    if (BannerText) BannerText.text = "JADE VICTORY";
                     break;
                 case Domains.Ruby:
-                    BannerImage.color = RubyTeamBannerColor;
-                    BannerText.text = "RUBY VICTORY";
+                    if (BannerImage) BannerImage.color = RubyTeamBannerColor;
+                    if (BannerText) BannerText.text = "RUBY VICTORY";
                     break;
                 case Domains.Gold:
-                    BannerImage.color = GoldTeamBannerColor;
-                    BannerText.text = "GOLD VICTORY";
+                    if (BannerImage) BannerImage.color = GoldTeamBannerColor;
+                    if (BannerText) BannerText.text = "GOLD VICTORY";
                     break;
                 case Domains.Blue:
-                case Domains.Unassigned:
+                    if (BannerImage) BannerImage.color = BlueTeamBannerColor;
+                    if (BannerText) BannerText.text = "BLUE VICTORY";
+                    break;
                 case Domains.None:
+                case Domains.Unassigned:
                 default:
-                    Debug.LogWarning($"{winningTeam} does not have assigned banner image color and banner text preset.");
+                    Debug.LogWarning($"Domain {domain} does not have banner configuration.");
                     break;
             }
+        }
 
-            // Populate scores
+        void DisplayPlayerScores()
+        {
             var playerScores = gameData.RoundStatsList;
-
-            // Populate rows with player scores
-            for (var i=0; i<playerScores.Count; i++)
+            for (var i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
             {
                 var playerScore = playerScores[i];
-                PlayerNameTextFields[i].text = playerScore.Name;
-                PlayerScoreTextFields[i].text = ((int) playerScore.Score).ToString();
+                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = playerScore.Name;
+                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
+                    PlayerScoreTextFields[i].text = ((int)playerScore.Score).ToString();
             }
-
-            // Hide unused rows
+            
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
-                PlayerNameTextFields[i].text = "";
-                PlayerScoreTextFields[i].text = "";
+                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
+                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i]) PlayerScoreTextFields[i].text = "";
             }
-
-            // Show the jam
-            SingleplayerView.gameObject.SetActive(false);
-            MultiplayerView.gameObject.SetActive(true);
-            gameOverPanel.gameObject.SetActive(true);
         }
         
-        /*public void ShowSinglePlayerView(bool defeat=false)
+        public void OnPlayAgainButtonPressed()
         {
-            // Setup Banner
-            BannerImage.color = SinglePlayerBannerColor;
-            if (defeat)
-                BannerText.text = "DEFEAT";
-            else
-                BannerText.text = "RUN RESULTS";
+            if (UGSStatsManager.Instance != null)
+            {
+                UGSStatsManager.Instance.TrackPlayAgain();
+            }
 
-            // Populate this run's Score
-            var playerScore = Mathf.Max(miniGameData.RoundStatsList[0].Score, 0);
-            SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
-
-            // TODO: pull actual high Score
-            // Populate high Score
-            SinglePlayerHighscoreTextField.text = ((int) playerScore).ToString();
-
-            // Show the jam
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(true);
-        }*/
+            gameData.ResetForReplay();
+        }
     }
 }

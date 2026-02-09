@@ -12,6 +12,7 @@ namespace CosmicShore.Game
         [SerializeField] NetworkVesselImpactor networkVesselImpactor;
 
         public IVessel Vessel { get; private set; }
+        public override Domains OwnDomain => Vessel.VesselStatus.Domain;
 
         private void Awake()
         {

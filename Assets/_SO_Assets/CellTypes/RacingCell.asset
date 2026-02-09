@@ -12,35 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc8b399787ff60c42815dba688c93f17, type: 3}
   m_Name: RacingCell
   m_EditorClassIdentifier: 
-  CellName: Brain
-  Description: Feels like flying in a brain
+  CellName: RacingCell
+  Description: Its ready for racing
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   MembranePrefab: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
     type: 3}
-  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
+  NucleusPrefab: {fileID: 7555898194514117247, guid: 60fae71524663e34b8bc5c51df00fec1,
     type: 3}
-  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20,
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 41222ebb42ad82c4ca52a729935c79d3,
     type: 3}
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
-  SupportedFlora:
-  - Flora: {fileID: 8186157953239024492, guid: 98e540e086dd56a4e8f214a4fe73767e, type: 3}
-    SpawnProbability: 1
-    initialSpawnCount: 0
-    OverrideDefaultPlantPeriod: 0
-    NewPlantPeriod: 0
-  - Flora: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
-    SpawnProbability: 0.1
-    initialSpawnCount: 0
-    OverrideDefaultPlantPeriod: 0
-    NewPlantPeriod: 0
-  - Flora: {fileID: 8186157953239024492, guid: 64c1c3612f071b946a3f70e8a65496db, type: 3}
-    SpawnProbability: 0.1
-    initialSpawnCount: 0
-    OverrideDefaultPlantPeriod: 0
-    NewPlantPeriod: 0
-  SupportedFauna:
-  - Population: {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b,
-      type: 3}
-    SpawnProbability: 1
+  SupportedFlora: []
+  SupportedFauna: []
+  IntensityLifeFormConfiguration:
+    FloraInitialDelaySeconds: 0
+    FaunaInitialDelaySeconds: 0
+    FloraSpawnIntervalSeconds: 0
+    FaunaSpawnIntervalSeconds: 0
+    FloraExcludeLocalDomain: 0
+    FaunaExcludeLocalDomain: 0

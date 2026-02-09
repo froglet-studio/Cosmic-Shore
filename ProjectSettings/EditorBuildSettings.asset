@@ -107,6 +107,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
     guid: a596bbcaeca9b07498a4875cacea431c
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHexRaceMultiplayer.unity
+    guid: 4793d5ff09048ed409980d836ad4f2a2
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity
+    guid: 0bac4466932e424478d8d413a6096e06
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity
+    guid: afd466f7acf11f448a75b084e3045691
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}

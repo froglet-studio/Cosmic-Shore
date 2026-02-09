@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7088f346a06242adb06f023ab7410c2f, type: 3}
+  m_Name: LeaderboardConfig
+  m_EditorClassIdentifier: 
+  leaderboardEntries:
+  - EntryName: Multiplayer Hex Race Intensity 1
+    GameMode: 33
+    IsMultiplayer: 1
+    Intensity: 1
+    LeaderboardId: multiplayer_hex_race_intensity_1
+  - EntryName: Multiplayer Hex Race Intensity 2
+    GameMode: 33
+    IsMultiplayer: 1
+    Intensity: 2
+    LeaderboardId: multiplayer_hex_race_intensity_2
+  - EntryName: Multiplayer Hex Race Intensity 3
+    GameMode: 33
+    IsMultiplayer: 1
+    Intensity: 3
+    LeaderboardId: multiplayer_hex_race_intensity_3
+  - EntryName: Multiplayer Hex Race Intensity 4
+    GameMode: 33
+    IsMultiplayer: 1
+    Intensity: 4
+    LeaderboardId: multiplayer_hex_race_intensity_4
+  - EntryName: SinglePlayerHexRaceIntensity1
+    GameMode: 31
+    IsMultiplayer: 0
+    Intensity: 1
+    LeaderboardId: singleplayer_hex_race_intensity_1

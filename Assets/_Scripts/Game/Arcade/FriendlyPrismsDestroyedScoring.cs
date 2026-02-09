@@ -5,16 +5,11 @@ namespace CosmicShore.Game.Arcade
 {
     internal class FriendlyPrismsDestroyedScoring : BaseScoring
     {
-        protected IScoreTracker ScoreTracker;
-
         public FriendlyPrismsDestroyedScoring(
             IScoreTracker tracker,
             GameDataSO gameData,
             float multiplier)
-            : base(gameData, multiplier)
-        {
-            ScoreTracker = tracker;
-        }
+            : base(tracker, gameData, multiplier) { }
 
         public override void Subscribe()
         {

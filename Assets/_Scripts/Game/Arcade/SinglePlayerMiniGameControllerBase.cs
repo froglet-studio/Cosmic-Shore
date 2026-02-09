@@ -1,30 +1,40 @@
+using UnityEngine;
+
 namespace CosmicShore.Game.Arcade
 {
+    /// <summary>
+    /// Base controller for single-player game modes.
+    /// Handles event subscriptions and initial setup.
+    /// </summary>
     public abstract class SinglePlayerMiniGameControllerBase : MiniGameControllerBase
     {
-        void OnEnable()
+        protected virtual void OnEnable()
         {
+            if (gameData == null) return;
+            
             gameData.OnMiniGameTurnEnd.OnRaised += EndTurn;
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
         }
         
         protected virtual void Start()
         {
+            if (gameData == null)
+            {
+                Debug.LogError("GameDataSO is not assigned!", this);
+                return;
+            }
+            
             gameData.InitializeGame();
             gameData.InvokeClientReady();
             SetupNewRound();
         }
         
-        void OnDisable() 
+        protected virtual void OnDisable() 
         {
+            if (gameData == null) return;
+            
             gameData.OnMiniGameTurnEnd.OnRaised -= EndTurn;
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
-        }
-        
-        protected override void SetupNewRound()
-        {
-            gameData.InvokeMiniGameRoundStarted();
-            base.SetupNewRound();
         }
         
         protected override void OnCountdownTimerEnded()
@@ -32,21 +42,5 @@ namespace CosmicShore.Game.Arcade
             gameData.SetPlayersActive();
             gameData.StartTurn();
         }
-
-        protected override void EndTurn()
-        {
-            gameData.ResetPlayers();
-            base.EndTurn();
-        }
-
-        protected override void EndRound()
-        {
-            gameData.RoundsPlayed++;
-            gameData.InvokeMiniGameRoundEnd();
-            base.EndRound();
-        }
-        
-        protected override void EndGame() =>
-            gameData.InvokeMiniGameEnd();
     }
 }

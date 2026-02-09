@@ -8,7 +8,6 @@ using Obvious.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using UnityEngine.Serialization;
 using IPlayer = CosmicShore.Game.IPlayer;
 
 namespace CosmicShore.Soap
@@ -30,13 +29,17 @@ namespace CosmicShore.Soap
         public event Action OnClientReady;
         public ScriptableEventNoParam OnMiniGameTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
+        // DTFC
         public ScriptableEventNoParam OnMiniGameRoundEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
         
         public ScriptableEventNoParam OnResetForReplay;
 
-        
+        [Header("UI Flow")]
+        public ScriptableEventNoParam OnShowGameEndScreen;
+
+        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         // Local player config / state
         public VesselClassTypeVariable selectedVesselClass;
         public IntVariable VesselClassSelectedIndex;
@@ -44,6 +47,7 @@ namespace CosmicShore.Soap
         public IntVariable SelectedIntensity;
         public SO_Captain PlayerCaptain;
         public ResourceCollection ResourceCollection;
+        public ThemeManagerDataContainerSO ThemeManagerData;
         
         
         // Game Config / State
@@ -118,6 +122,8 @@ namespace CosmicShore.Soap
 
         public void ResetForReplay()
         {
+            ResetStatsDataForReplay();
+            ResetPlayers();
             ResetRuntimeDataForReplay();
             OnResetForReplay?.Raise();
         }
@@ -189,7 +195,7 @@ namespace CosmicShore.Soap
             
             p.ResetForPlay();
             
-            if (!p.IsNetworkClient)
+            if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
         }
         
@@ -282,10 +288,8 @@ namespace CosmicShore.Soap
             {
                 player.ResetForPlay();
                 
-                if (player.IsNetworkClient)
-                    continue;
-                
-                player.SetPoseOfVessel(GetRandomSpawnPose());
+                if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
+                    player.SetPoseOfVessel(GetRandomSpawnPose());
             }
         }
         

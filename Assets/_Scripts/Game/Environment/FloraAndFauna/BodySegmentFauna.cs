@@ -8,7 +8,7 @@ public class BodySegmentFauna : Fauna
     public bool IsHead;
     public bool IsTail;
 
-    protected override void Die()
+    protected override void Die(string killername = "")
     {
         if (!IsHead && !IsTail)
         {

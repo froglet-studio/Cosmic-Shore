@@ -12,24 +12,19 @@ namespace CosmicShore.Game.Arcade.Scoring
         private CancellationTokenSource _cts;
         private float _lastUpdateTime;
 
-        public TimePlayedScoring(GameDataSO data, float scoreMultiplier, float intervalSeconds = 0.25f)
-            : base(data, scoreMultiplier)
+        public TimePlayedScoring(IScoreTracker tracker, GameDataSO data, float scoreMultiplier, float intervalSeconds = 0.25f)
+            : base(tracker, data, scoreMultiplier)
         {
             _intervalSeconds = Mathf.Max(0.01f, intervalSeconds);
         }
 
         public override void Subscribe()
         {
-            GameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-            GameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
+            OnTurnStarted();
         }
 
         public override void Unsubscribe()
         {
-            GameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
-            GameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
-
-            // Important: stop loop if still running
             OnTurnEnded();
         }
 
@@ -82,12 +77,9 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         private void AddTimeScore(float dt)
         {
-            for (int i = 0; i < GameData.RoundStatsList.Count; i++)
-            {
-                var playerScore = GameData.RoundStatsList[i];
-                playerScore.Score += dt * scoreMultiplier;
-                GameData.RoundStatsList[i] = playerScore;
-            }
+            var score = dt * scoreMultiplier;
+            foreach (var stats in GameData.RoundStatsList)
+                stats.Score += dt * score;
         }
     }
 }

@@ -8,8 +8,8 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         private readonly bool trackBlocks;
 
-        public VolumeAndBlocksStolenScoring(GameDataSO data, float scoreNormalizationQuotient, bool trackBlocks = false) 
-            : base(data, scoreNormalizationQuotient)
+        public VolumeAndBlocksStolenScoring(IScoreTracker tracker, GameDataSO data, float scoreNormalizationQuotient, bool trackBlocks = false) 
+            : base(tracker, data, scoreNormalizationQuotient)
         {
             this.trackBlocks = trackBlocks;
         }

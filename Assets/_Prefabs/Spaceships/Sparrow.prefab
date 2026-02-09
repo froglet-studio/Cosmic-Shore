@@ -927,6 +927,7 @@ GameObject:
   - component: {fileID: 3026918495431464708}
   - component: {fileID: 223934081028988333}
   - component: {fileID: 2035987173373189047}
+  - component: {fileID: 2097479682748055481}
   m_Layer: 0
   m_Name: Sparrow
   m_TagString: Player_Ship
@@ -1443,6 +1444,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactor: {fileID: 3026918495431464708}
+--- !u!114 &2097479682748055481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36cc5225081c42ec8c55831fb35fa7cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  forwardSpeed: 20
+  loopRadius: 15
+  loopSpeed: 2
 --- !u!1 &8788541063350086745
 GameObject:
   m_ObjectHideFlags: 0

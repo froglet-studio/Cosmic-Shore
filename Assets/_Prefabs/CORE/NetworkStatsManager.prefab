@@ -282,6 +282,23 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+  - Delay: 0
+    _scriptableEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90, type: 2}
+    _response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 8036904541987693016}
+          m_TargetAssemblyTypeName: CosmicShore.Game.NetworkStatsManager, Assembly-CSharp
+          m_MethodName: ExecuteJoustCollision
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!114 &8036904541987693016
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -294,6 +311,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: acfe33e52a1d81c41abb4173af0785d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  EndOfRoundStatContainers: []
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
   _netcodeHooks: {fileID: 0}

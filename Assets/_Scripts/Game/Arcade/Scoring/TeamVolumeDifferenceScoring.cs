@@ -9,7 +9,7 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class TeamVolumeDifferenceScoring : BaseScoring
     {
-        public TeamVolumeDifferenceScoring(GameDataSO scoreData, float scoreMultiplier) : base(scoreData, scoreMultiplier) { }
+        public TeamVolumeDifferenceScoring(IScoreTracker tracker, GameDataSO scoreData, float scoreMultiplier) : base(tracker, scoreData, scoreMultiplier) { }
 
         /*public override void CalculateScore()
         {

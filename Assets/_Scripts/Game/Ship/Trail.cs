@@ -18,6 +18,11 @@ namespace CosmicShore.Core
 
         public void Add(Prism block)
         {
+            if (trailBlockIndices.ContainsKey(block))
+            {
+                Debug.LogWarning($"[Trail] Attempted to add duplicate block {block.name}. Ignoring.");
+                return;
+            }
             trailBlockIndices.Add(block, (ushort)TrailList.Count);
             TrailList.Add(block);
             block.prismProperties.Index = (ushort) trailBlockIndices.Count;
@@ -31,7 +36,8 @@ namespace CosmicShore.Core
 
         public int GetBlockIndex(Prism block)
         {
-            return trailBlockIndices[block];
+            if (!block || !trailBlockIndices.TryGetValue(block, out var index)) return -1;
+            return index;
         }
 
         /// <summary>
