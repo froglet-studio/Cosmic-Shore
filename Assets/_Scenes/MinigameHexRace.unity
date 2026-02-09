@@ -765,6 +765,8 @@ MonoBehaviour:
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   CrystalCollisions: 40
+  optionalEnvironment: {fileID: 857195442}
+  optionalLaps: 4
 --- !u!114 &1078953711
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -961,6 +963,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 139546854713825682, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 51.30005
+      objectReference: {fileID: 0}
     - target: {fileID: 4080277108912208582, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: statRowPrefab

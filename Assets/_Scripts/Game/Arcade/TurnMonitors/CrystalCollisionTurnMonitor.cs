@@ -8,11 +8,19 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] protected int CrystalCollisions;
         protected IRoundStats ownStats;
 
+        [Header("Optional Configuration")]
+        [SerializeField] SpawnableWaypointTrack optionalEnvironment;
+        [SerializeField] int optionalLaps = 4;
+
         // [Visual Note] 1. New Event: "Hey, we are done!"
         public event Action OnTurnFinished; 
 
         public override void StartMonitor()
         {
+            if (optionalEnvironment)
+            {
+                CrystalCollisions = optionalEnvironment.waypoints[optionalEnvironment.intenstyLevel - 1].positions.Count * optionalLaps;
+            }
             InitializeOwnStats();
             if (ownStats != null) ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
             UpdateCrystals(ownStats);
