@@ -15,12 +15,9 @@ namespace CosmicShore.Game.Analytics
     {
         public static UGSStatsManager Instance { get; private set; }
 
-        [Header("Config")] [SerializeField] GameDataSO gameData;
-
-        [Header("Leaderboards")] [SerializeField]
-        string blitzLeaderboardId = "wildlife_blitz_highscore";
-
-        [SerializeField] string hexRaceLeaderboardId = "hex_race_time_trial";
+        [Header("Dependencies")] 
+        [SerializeField] GameDataSO gameData;
+        [SerializeField] LeaderboardConfigSO leaderboardConfig; 
 
         private PlayerStatsProfile _cachedProfile = new PlayerStatsProfile();
         private const string CLOUD_KEY = "PLAYER_STATS_PROFILE";
@@ -28,19 +25,13 @@ namespace CosmicShore.Game.Analytics
 
         void Awake()
         {
-            if (Instance != null)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
+            if (Instance != null) { Destroy(gameObject); return; }
             Instance = this;
             DontDestroyOnLoad(gameObject);
         }
 
         async void Start()
         {
-            // [Visual Note] Simple retry logic for auth
             try
             {
                 while (AuthenticationController.Instance == null || !AuthenticationController.Instance.IsSignedIn)
@@ -52,9 +43,9 @@ namespace CosmicShore.Game.Analytics
                 Debug.Log($"<color=green>[StatsManager] Auth Detected! Loading Profile...</color>");
                 LoadProfile();
             }
-            catch (Exception)
-            {
-                // Silent fail or retry later
+            catch (Exception) 
+            { 
+                //TODO
             }
         }
 
@@ -63,32 +54,28 @@ namespace CosmicShore.Game.Analytics
         public int GetHighScoreForCurrentMode()
         {
             if (!_isReady) return 0;
-            string key = GetCurrentModeKey();
-            // [Visual Note] Accessing sub-profile BlitzStats
-            return _cachedProfile.BlitzStats.HighScores.TryGetValue(key, out int score) ? score : 0;
+            string key = GetCurrentModeAndIntensityKey();
+            return _cachedProfile.BlitzStats.HighScores.GetValueOrDefault(key, 0);
         }
 
         public void ReportMatchStats(int crystals, int lifeForms, int score)
         {
             if (!_isReady) return;
 
-            // 1. Update Accumulative (Blitz specific)
             _cachedProfile.BlitzStats.LifetimeCrystalsCollected += crystals;
             _cachedProfile.BlitzStats.LifetimeLifeFormsKilled += lifeForms;
-
-            // Global stats
             _cachedProfile.TotalGamesPlayed++;
 
-            // 2. High Score Logic
-            string key = GetCurrentModeKey();
+            string key = GetCurrentModeAndIntensityKey();
             bool isNewRecord = _cachedProfile.BlitzStats.TryUpdateHighScore(key, score);
 
-            Debug.Log($"[StatsManager] Blitz Stats. New Record: {isNewRecord} | Score: {score}");
+            Debug.Log($"[StatsManager] Blitz Stats. Key: {key} | New Record: {isNewRecord} | Score: {score}");
 
-            // 3. Leaderboard & Save
             if (isNewRecord)
             {
-                SubmitScoreToLeaderboard(blitzLeaderboardId, score);
+                // [Visual Note] Lookup ID from SO
+                string id = leaderboardConfig.GetLeaderboardId(gameData.GameMode, gameData.IsMultiplayerMode, gameData.SelectedIntensity.Value);
+                if(!string.IsNullOrEmpty(id)) SubmitScoreToLeaderboard(id, score);
             }
 
             SaveProfile();
@@ -96,89 +83,55 @@ namespace CosmicShore.Game.Analytics
 
         #endregion
 
-        #region Public API - Hex Race
+        #region Public API - Hex Race (Single Player)
 
         public float GetBestRaceTime()
         {
             if (!_isReady) return 0f;
-            string key = GetCurrentModeKey();
+            string key = GetCurrentModeAndIntensityKey();
 
-            // Return stored best time, or 0 if none exists
             if (_cachedProfile.HexRaceStats.BestRaceTimes.TryGetValue(key, out float time))
             {
                 return time;
             }
-
             return 0f;
         }
 
-        // [Visual Note] 2. Updated Report Logic
         public void ReportHexRaceStats(int cleanCrystals, float maxDrift, float maxBoost, float raceTime)
         {
-            if (!_isReady)
-            {
-                Debug.LogWarning("[StatsManager] Not ready yet. Stats dropped.");
-                return;
-            }
+            if (!_isReady) return;
 
-            // 1. Update Accumulators
             _cachedProfile.HexRaceStats.TotalCleanCrystalsCollected += cleanCrystals;
             _cachedProfile.HexRaceStats.TotalDriftTime += maxDrift;
             _cachedProfile.TotalGamesPlayed++;
 
-            // 2. Update Skill Records
             if (maxDrift > _cachedProfile.HexRaceStats.LongestSingleDrift)
                 _cachedProfile.HexRaceStats.LongestSingleDrift = maxDrift;
-
             if (maxBoost > _cachedProfile.HexRaceStats.MaxTimeAtHighBoost)
                 _cachedProfile.HexRaceStats.MaxTimeAtHighBoost = maxBoost;
 
-            // 3. Race Time Logic (Lower is better)
-            string key = GetCurrentModeKey();
+            string key = GetCurrentModeAndIntensityKey();
 
-            // [Visual Note] Only update local record if raw score is < 10000 (meaning it was a valid run)
             bool isNewRecord = false;
             if (raceTime < 10000f)
             {
                 isNewRecord = _cachedProfile.HexRaceStats.TryUpdateBestTime(key, raceTime);
             }
 
-            Debug.Log($"[StatsManager] Hex Race Stats. New Best Time: {isNewRecord} | Time: {raceTime}");
+            Debug.Log($"[StatsManager] Hex Race Stats. Key: {key} | New Best: {isNewRecord} | Time: {raceTime}");
 
-            // 4. Leaderboard Submission
-            // ONLY submit if it was a valid run (Time < 10000)
-            if (raceTime < 10000f)
+            if (isNewRecord && raceTime < 10000f)
             {
-                // [Visual Note] We submit the raw seconds. 
-                // IMPORTANT: Dashboard Leaderboard must be configured as ASCENDING.
-                SubmitScoreToLeaderboard(hexRaceLeaderboardId, raceTime);
+                string id = leaderboardConfig.GetLeaderboardId(gameData.GameMode, false, gameData.SelectedIntensity.Value);
+                if(!string.IsNullOrEmpty(id)) SubmitScoreToLeaderboard(id, raceTime);
             }
 
-            // 5. Force Cloud Save
             SaveProfile();
         }
 
         #endregion
 
-        #region Public API - General
-
-        public void TrackPlayAgain()
-        {
-            if (!_isReady) return;
-
-            _cachedProfile.TotalPlayAgainPressed++;
-
-            var replayEvent = new CustomEvent("replayButtonClicked")
-            {
-                { "screen_source", "end_game_scoreboard" },
-                { "total_replays_session", _cachedProfile.TotalPlayAgainPressed }
-            };
-
-            AnalyticsService.Instance.RecordEvent(replayEvent);
-            SaveProfile();
-        }
-
-        #endregion
+        #region Public API - Hex Race (Multiplayer)
         
         public void ReportMultiplayerHexStats(int clean, float drift, float boost, int jousts, float score)
         {
@@ -189,36 +142,42 @@ namespace CosmicShore.Game.Analytics
             _cachedProfile.MultiHexStats.TotalJoustsWon += jousts;
             _cachedProfile.TotalGamesPlayed++;
 
-            // Best Records
             if (drift > _cachedProfile.MultiHexStats.TotalDriftTime) 
                 _cachedProfile.MultiHexStats.TotalDriftTime = drift;
 
-            // Leaderboard (Separate from SP)
-            if (score < 10000f) // Only valid times
+            if (score < 10000f)
             {
-                string key = GetCurrentModeKey(); 
+                string key = GetCurrentModeAndIntensityKey(); 
+                
                 bool isNewRecord = _cachedProfile.MultiHexStats.TryUpdateBestTime(key, score);
                 _cachedProfile.MultiHexStats.TotalWins++;
 
                 if (isNewRecord)
                 {
-                    // [Visual Note] Ensure ID "hex_race_multiplayer" exists in Dashboard (Ascending)
-                    SubmitScoreToLeaderboard("hex_race_multiplayer", score);
+                    string id = leaderboardConfig.GetLeaderboardId(gameData.GameMode, true, gameData.SelectedIntensity.Value);
+                    if(!string.IsNullOrEmpty(id)) SubmitScoreToLeaderboard(id, score);
                 }
             }
             SaveProfile();
         }
 
-        #region Helpers
+        #endregion
 
-        string GetCurrentModeKey()
+        #region General & Helpers
+
+        public void TrackPlayAgain()
+        {
+            if (!_isReady) return;
+            _cachedProfile.TotalPlayAgainPressed++;
+            SaveProfile();
+        }
+        
+        string GetCurrentModeAndIntensityKey()
         {
             string typeSuffix = gameData.IsMultiplayerMode ? "MP" : "SP";
-            // Ensure GameMode string is valid (e.g. "WildlifeBlitz", "HexRace")
-            return $"{gameData.GameMode}_{gameData.SelectedIntensity.Value}_{typeSuffix}";
+            return $"{gameData.GameMode}_{typeSuffix}_{gameData.SelectedIntensity.Value}";
         }
 
-        // [Visual Note] Made generic to accept ID
         async void SubmitScoreToLeaderboard(string leaderboardId, double score)
         {
             try
@@ -237,18 +196,14 @@ namespace CosmicShore.Game.Analytics
             try
             {
                 var data = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { CLOUD_KEY });
-                if (data.TryGetValue(CLOUD_KEY, out var item))
-                {
-                    _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
+                if (!data.TryGetValue(CLOUD_KEY, out var item)) return;
+                _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
+    
+                _cachedProfile.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
+                _cachedProfile.HexRaceStats ??= new HexRacePlayerStatsProfile();
+                _cachedProfile.MultiHexStats ??= new MultiplayerHexRacePlayerStatsProfile();
 
-                    // [Visual Note] Ensure sub-objects exist if loading old data
-                    if (_cachedProfile.BlitzStats == null)
-                        _cachedProfile.BlitzStats = new WildlifeBlitzPlayerStatsProfile();
-                    if (_cachedProfile.HexRaceStats == null)
-                        _cachedProfile.HexRaceStats = new HexRacePlayerStatsProfile();
-
-                    Debug.Log($"[StatsManager] Profile Loaded. Games Played: {_cachedProfile.TotalGamesPlayed}");
-                }
+                Debug.Log($"[StatsManager] Profile Loaded.");
             }
             catch
             {
@@ -262,7 +217,6 @@ namespace CosmicShore.Game.Analytics
             {
                 var data = new Dictionary<string, object> { { CLOUD_KEY, _cachedProfile } };
                 await CloudSaveService.Instance.Data.Player.SaveAsync(data);
-                Debug.Log("[StatsManager] Profile Saved to Cloud.");
             }
             catch (Exception e)
             {

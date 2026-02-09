@@ -81269,7 +81269,7 @@ GameObject:
   - component: {fileID: 2008405516}
   - component: {fileID: 2008405515}
   m_Layer: 0
-  m_Name: StatsManager
+  m_Name: UGSStatsManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -81288,7 +81288,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  blitzLeaderboardId: wildlife_blitz_highscore
+  leaderboardConfig: {fileID: 11400000, guid: e04a023aee5d41345a2d6026306bb0ef, type: 2}
 --- !u!4 &2008405516
 Transform:
   m_ObjectHideFlags: 0
