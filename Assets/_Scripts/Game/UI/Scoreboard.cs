@@ -1,14 +1,14 @@
+using System;
 using System.Collections.Generic;
-using CosmicShore.Game.UI; 
+using CosmicShore.Core;
+using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-// [Visual Note] Add Namespace for StatsManager
-using CosmicShore.Game.Analytics; 
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.UI
 {
     public class Scoreboard : MonoBehaviour
     {
@@ -31,7 +31,7 @@ namespace CosmicShore.Game
         [SerializeField] Color BlueTeamBannerColor;
 
         [Header("Single Player View")]
-        [SerializeField] Transform SingleplayerView;
+        [SerializeField] protected Transform SingleplayerView;
         [SerializeField] TMP_Text SinglePlayerScoreTextField;
         [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
 
@@ -52,7 +52,6 @@ namespace CosmicShore.Game
         {
             if (gameData != null && gameData.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
-
             if (OnResetForReplay != null)
                 OnResetForReplay.OnRaised += HideScoreboard;
         }
@@ -61,32 +60,22 @@ namespace CosmicShore.Game
         {
             if (gameData != null && gameData.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
-
             if (OnResetForReplay != null)
                 OnResetForReplay.OnRaised -= HideScoreboard;
         }
 
         void ShowScoreboard()
         {
-            if (gameData.IsMultiplayerMode)
-                ShowMultiplayerView();
-            else
-                ShowSinglePlayerView();
+            if (gameData.IsMultiplayerMode) ShowMultiplayerView();
+            else ShowSinglePlayerView();
 
             PopulateDynamicStats();
-
-            if (scoreboardPanel)
-                scoreboardPanel.gameObject.SetActive(true);
+            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(true);
         }
 
         void PopulateDynamicStats()
         {
-            if (statsContainer)
-            {
-                foreach (Transform child in statsContainer)
-                    Destroy(child.gameObject);
-            }
-
+            if (statsContainer) foreach (Transform child in statsContainer) Destroy(child.gameObject);
             if (!statsProvider || !statsContainer || !statRowPrefab) return;
 
             var stats = statsProvider.GetStats();
@@ -117,13 +106,18 @@ namespace CosmicShore.Game
 
             if (SinglePlayerHighscoreTextField)
             {
-                int highScore = playerScore;
-                if (UGSStatsManager.Instance)
+                float finalHighScore = playerScore;
+                
+                if (UGSStatsManager.Instance && Enum.TryParse(gameData.GameMode.ToString(), out GameModes modeEnum))
                 {
-                    int cachedHigh = UGSStatsManager.Instance.GetHighScoreForCurrentMode();
-                    highScore = Mathf.Max(playerScore, cachedHigh);
+                    finalHighScore = UGSStatsManager.Instance.GetEvaluatedHighScore(
+                        modeEnum, 
+                        gameData.SelectedIntensity.Value, 
+                        playerScore
+                    );
                 }
-                SinglePlayerHighscoreTextField.text = highScore.ToString();
+                
+                SinglePlayerHighscoreTextField.text = ((int)finalHighScore).ToString();
             }
 
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(false);
@@ -140,7 +134,7 @@ namespace CosmicShore.Game
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
         }
 
-        void SetBannerForDomain(Domains domain)
+        protected virtual void SetBannerForDomain(Domains domain)
         {
              switch (domain)
             {
@@ -160,15 +154,13 @@ namespace CosmicShore.Game
                     if (BannerImage) BannerImage.color = BlueTeamBannerColor;
                     if (BannerText) BannerText.text = "BLUE VICTORY";
                     break;
-                case Domains.None:
-                case Domains.Unassigned:
                 default:
-                    Debug.LogWarning($"Domain {domain} does not have banner configuration.");
+                    if (BannerText) BannerText.text = "GAME OVER";
                     break;
             }
         }
 
-        void DisplayPlayerScores()
+        protected virtual void DisplayPlayerScores()
         {
             var playerScores = gameData.RoundStatsList;
             for (var i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
@@ -188,11 +180,7 @@ namespace CosmicShore.Game
         
         public void OnPlayAgainButtonPressed()
         {
-            if (UGSStatsManager.Instance != null)
-            {
-                UGSStatsManager.Instance.TrackPlayAgain();
-            }
-
+            if (UGSStatsManager.Instance != null) UGSStatsManager.Instance.TrackPlayAgain();
             gameData.ResetForReplay();
         }
     }
