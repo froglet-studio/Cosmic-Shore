@@ -4,7 +4,6 @@ using System.Collections.Generic;
 [Serializable]
 public class MultiplayerHexRacePlayerStatsProfile
 {
-    // Cumulative (Lifetime)
     public int TotalCleanCrystalsCollected;
     public float TotalDriftTime; 
     public int TotalJoustsWon;
