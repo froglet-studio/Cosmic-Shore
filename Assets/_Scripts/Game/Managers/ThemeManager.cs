@@ -34,6 +34,9 @@ namespace CosmicShore.Core
             materialSet.BlockMaterial = new Material(_dataContainer.BaseMaterialSet.BlockMaterial);
             materialSet.TransparentBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentBlockMaterial);
             materialSet.CrystalMaterial = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial);
+            materialSet.CrystalMaterial1 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial1);
+            materialSet.CrystalMaterial2 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial2);
+            materialSet.CrystalMaterial3 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial3);
             materialSet.ExplodingBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ExplodingBlockMaterial);
             materialSet.ShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ShieldedBlockMaterial);
             materialSet.TransparentShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentShieldedBlockMaterial);
@@ -58,6 +61,12 @@ namespace CosmicShore.Core
 
             materialSet.CrystalMaterial.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
             materialSet.CrystalMaterial.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
+            materialSet.CrystalMaterial1.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
+            materialSet.CrystalMaterial1.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
+            materialSet.CrystalMaterial2.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
+            materialSet.CrystalMaterial2.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
+            materialSet.CrystalMaterial3.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
+            materialSet.CrystalMaterial3.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
             
             materialSet.ExplodingBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
             materialSet.ExplodingBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);

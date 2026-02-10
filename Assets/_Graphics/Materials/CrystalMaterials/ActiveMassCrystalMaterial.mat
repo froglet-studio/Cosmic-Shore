@@ -139,6 +139,7 @@ Material:
     - _GlossyReflections: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
+    - _Opacity: 1
     - _Parallax: 0.005
     - _Peak_Scalar: 0.84
     - _Period: 3
@@ -164,11 +165,11 @@ Material:
     - _power: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightCrystalColor: {r: 0.12317855, g: 0.5943396, b: 0.014951893, a: 1}
+    - _BrightCrystalColor: {r: 0.048311464, g: 0.26481843, b: 0, a: 1}
     - _Color: {r: 0.10383288, g: 0.22282857, b: 0.6603774, a: 1}
     - _Color1: {r: 0.032521613, g: 0.764151, b: 0, a: 1}
     - _Color2: {r: 0, g: 0, b: 0, a: 1}
-    - _DullCrystalColor: {r: 0.021153718, g: 0.05660379, b: 0.017443933, a: 1}
+    - _DullCrystalColor: {r: 0.18334086, g: 0.42745098, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _velocity: {r: 0, g: 0, b: 0, a: 0}

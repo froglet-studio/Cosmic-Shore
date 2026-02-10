@@ -2578,14 +2578,14 @@ MonoBehaviour:
     - {x: 171, y: 190, z: -652}
     - {x: 402, y: 179, z: -545}
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  scale: {x: 5, y: 1, z: 5}
+  scale: {x: 10, y: 1, z: 5}
   blocksPerSegment: 50
   markWaypoints: 1
   waypointScaleMultiplier: 2
   waypointPrism: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
     type: 3}
-  waypointDomain: 1
-  trackDomain: 4
+  waypointDomain: 3
+  trackDomain: 3
   previewIntensityLevel: 0
 --- !u!224 &2010118409 stripped
 RectTransform:

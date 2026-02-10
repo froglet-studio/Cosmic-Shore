@@ -8,6 +8,9 @@ public class SO_MaterialSet : ScriptableObject
     [SerializeField] public Material BlockMaterial;
     [SerializeField] public Material TransparentBlockMaterial;
     [SerializeField] public Material CrystalMaterial;
+    [SerializeField] public Material CrystalMaterial1;
+    [SerializeField] public Material CrystalMaterial2;
+    [SerializeField] public Material CrystalMaterial3;
     [SerializeField] public Material ExplodingBlockMaterial;
     [SerializeField] public Material ShieldedBlockMaterial;
     [SerializeField] public Material TransparentShieldedBlockMaterial;
