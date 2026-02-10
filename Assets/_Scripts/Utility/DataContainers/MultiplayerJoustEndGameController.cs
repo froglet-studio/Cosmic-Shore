@@ -7,49 +7,48 @@ namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerJoustEndGameController : EndGameCinematicController
     {
+        [Header("References")]
+        [SerializeField] private MultiplayerJoustController joustController;
+
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
             if (!view || !cinematic) yield break;
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
-            
+    
             var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localPlayerName);
 
-            if (localStats == null)
-            {
-                Debug.LogError("No local stats found!");
-                yield break;
-            }
+            if (localStats == null) yield break;
 
-            float localScore = localStats.Score;
-            bool didLocalPlayerWin = localScore < 10000f;
-
-            var headerText = didLocalPlayerWin ? "VICTORY" : "DEFEAT";
+            // --- THE LOGIC ---
+            int needed = joustController.joustTurnMonitor.CollisionsNeeded;
+            int current = localStats.JoustCollisions;
             
+            bool didWin = current >= needed;
+
+            string headerText = didWin ? "VICTORY" : "DEFEAT";
             string label;
-            int value;
+            int displayValue;
             bool formatAsTime;
 
-            if (didLocalPlayerWin)
+            if (didWin)
             {
-                // Winner: Show their time
                 label = "RACE TIME";
-                value = (int)localScore; 
+                displayValue = (int)localStats.Score; // Score is Time
                 formatAsTime = true;
             }
             else
             {
-                // Loser: Show jousts remaining
                 label = "JOUSTS LEFT";
-                value = (int)(localScore - 10000f);
+                displayValue = Mathf.Max(0, needed - current); // Calc Jousts Left
                 formatAsTime = false;
             }
 
             yield return view.PlayScoreRevealAnimation(
                 headerText + $"\n<size=60%>{label}</size>",
-                value,
+                displayValue,
                 cinematic.scoreRevealSettings,
                 formatAsTime
             );
@@ -57,34 +56,9 @@ namespace CosmicShore.Game.Arcade
         
         protected override void ResetGameForNewRound()
         {
-            var localPlayer = gameData.LocalPlayer;
-            if (localPlayer == null && gameData.Players.Count > 0)
-                localPlayer = gameData.Players[0];
-
-            if (localPlayer != null)
-            {
-                if (localPlayer.Vessel?.VesselStatus != null)
-                    localPlayer.Vessel.VesselStatus.BoostMultiplier = cachedBoostMultiplier;
-                
-                if (localPlayer.Vessel != null)
-                {
-                    localPlayer.Vessel.ToggleAIPilot(false);
-                    if (localPlayer.Vessel.VesselStatus?.AICinematicBehavior)
-                        localPlayer.Vessel.VesselStatus.AICinematicBehavior.StopCinematicBehavior();
-                }
-                
-                if (localPlayer.InputController)
-                    localPlayer.InputController.enabled = true;
-            }
-
-            // Reset joust collision counts
+            base.ResetGameForNewRound();
             foreach (var stats in gameData.RoundStatsList)
-            {
                 stats.JoustCollisions = 0;
-            }
-
-            gameData.ResetPlayers();
-            cinematicCameraController?.StopCameraSetup();
         }
     }
 }

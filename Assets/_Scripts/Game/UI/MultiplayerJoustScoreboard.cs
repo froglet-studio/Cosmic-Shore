@@ -1,43 +1,35 @@
 ﻿using System;
 using System.Linq;
+using CosmicShore.Game.Arcade;
+using UnityEngine;
 
 namespace CosmicShore.Game.UI
 {
-    /// <summary>
-    /// Scoreboard for multiplayer joust mode.
-    /// Winner shows race time, losers show jousts remaining.
-    /// </summary>
     public class MultiplayerJoustScoreboard : Scoreboard
     {
+        [Header("References")]
+        [SerializeField] private MultiplayerJoustController joustController;
+
         protected override void ShowMultiplayerView()
         {
-            DetermineWinnerAndSetBanner();
+            // Standard Sort: Lowest Score (Time) is Top. Losers (99999) are Bottom.
+            gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
+            
+            var winner = gameData.RoundStatsList[0];
+            SetBannerForDomain(winner.Domain);
+            
             FormatMultiplayerJoustScores();
             
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
         }
 
-        void DetermineWinnerAndSetBanner()
-        {
-            var playerScores = gameData.RoundStatsList;
-            if (playerScores == null || playerScores.Count == 0) return;
-
-            // Winner has the lowest score (race time)
-            var sortedPlayers = playerScores.OrderBy(p => p.Score).ToList();
-            var winner = sortedPlayers[0];
-
-            SetBannerForDomain(winner.Domain);
-        }
-        
         protected override void DisplayPlayerScores() { }
 
         void FormatMultiplayerJoustScores()
         {
             var playerScores = gameData.RoundStatsList;
-
-            // Sort by score (lowest = winner with time, highest = most jousts left)
-            playerScores.Sort((a, b) => a.Score.CompareTo(b.Score));
+            int needed = joustController.joustTurnMonitor.CollisionsNeeded;
 
             for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
             {
@@ -45,26 +37,30 @@ namespace CosmicShore.Game.UI
                     PlayerNameTextFields[i].text = playerScores[i].Name;
 
                 if (!PlayerScoreTextFields[i]) continue;
+        
+                var stats = playerScores[i];
+        
+                // Calculate jousts left
+                int current = stats.JoustCollisions;
+                int joustsLeft = Mathf.Max(0, needed - current);
                 
-                float score = playerScores[i].Score;
-
-                if (score < 10000f)
+                // If no jousts left, player won - show time
+                // If jousts left > 0, player lost - show jousts left
+                if (joustsLeft == 0)
                 {
-                    // Winner: Display race time
-                    TimeSpan t = TimeSpan.FromSeconds(score);
+                    // Winner: Show Time
+                    TimeSpan t = TimeSpan.FromSeconds(stats.Score);
                     PlayerScoreTextFields[i].text = $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
                 }
                 else
                 {
-                    // Loser: Display jousts remaining
-                    int joustsLeft = (int)(score - 10000f);
-                    PlayerScoreTextFields[i].text = joustsLeft == 1 
-                        ? "1 Joust Left" 
-                        : $"{joustsLeft} Jousts Left";
+                    // Loser: Show Jousts Left
+                    string s = joustsLeft == 1 ? "" : "s";
+                    PlayerScoreTextFields[i].text = $"{joustsLeft} Joust{s} Left";
                 }
             }
-            
-            // Clear unused slots
+    
+            // Cleanup
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
                 if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
