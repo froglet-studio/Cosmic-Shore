@@ -44,7 +44,7 @@ MonoBehaviour:
   SupportedFauna:
   - Population: {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b,
       type: 3}
-    InitialFloraSpawnCount: 0
+    InitialFloraSpawnCount: 10
     SpawnProbability: 1
   IntensityLifeFormConfiguration:
     FloraInitialDelaySeconds: 0
