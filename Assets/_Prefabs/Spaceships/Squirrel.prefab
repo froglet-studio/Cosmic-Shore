@@ -746,6 +746,7 @@ GameObject:
   - component: {fileID: 2643412773408452782}
   - component: {fileID: 7965853245772039612}
   - component: {fileID: 5649393235309590662}
+  - component: {fileID: 8755860699239805343}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -1245,6 +1246,21 @@ MonoBehaviour:
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}
   boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}
+--- !u!114 &8755860699239805343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36cc5225081c42ec8c55831fb35fa7cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  forwardSpeed: 20
+  loopRadius: 15
+  loopSpeed: 2
 --- !u!1 &7850473780452578400
 GameObject:
   m_ObjectHideFlags: 0
