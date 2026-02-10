@@ -133,9 +133,11 @@ namespace CosmicShore.Soap
             IsTurnRunning = false;
             Players.Clear();
             RoundStatsList.Clear();
+            DomainStatsList.Clear();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
+            _playerSpawnPoseList.Clear();
         }
 
         void ResetRuntimeDataForReplay()
@@ -143,6 +145,7 @@ namespace CosmicShore.Soap
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
+            _playerSpawnPoseList.Clear();
         }
 
         public void ResetStatsDataForReplay()
