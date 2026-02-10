@@ -43,7 +43,7 @@ namespace CosmicShore.Game.Analytics
 
         /// <summary>
         /// Returns the "Best" score between the Cloud Cache and the Current Session Score.
-        /// Automatically handles logic for Modes where "Lower is Better" (Hex) vs "Higher is Better" (Blitz).
+        /// Automatically handles logic for Modes where "Lower is Better" (Hex/Joust) vs "Higher is Better" (Blitz).
         /// </summary>
         public float GetEvaluatedHighScore(GameModes mode, int intensity, float currentSessionScore)
         {
@@ -51,12 +51,22 @@ namespace CosmicShore.Game.Analytics
 
             string key = $"{mode}_{intensity}";
 
-            if (mode is GameModes.HexRace or GameModes.MultiplayerHexRaceGame)
+            // Lower is better modes (racing/time-based)
+            if (mode is GameModes.HexRace or GameModes.MultiplayerHexRaceGame or GameModes.MultiplayerJoust)
             {
-                float cloudBest = _cachedProfile.HexRaceStats.BestRaceTimes.GetValueOrDefault(key, 0f);
+                float cloudBest = 0f;
+                
+                if (mode == GameModes.HexRace)
+                    cloudBest = _cachedProfile.HexRaceStats.BestRaceTimes.GetValueOrDefault(key, 0f);
+                else if (mode == GameModes.MultiplayerHexRaceGame)
+                    cloudBest = _cachedProfile.MultiHexStats.BestMultiplayerRaceTimes.GetValueOrDefault(key, 0f);
+                else if (mode == GameModes.MultiplayerJoust)
+                    cloudBest = _cachedProfile.JoustStats.BestRaceTimes.GetValueOrDefault(key, 0f);
+                
                 if (cloudBest <= 0.001f) return currentSessionScore;
                 return currentSessionScore >= 10000f ? cloudBest : Mathf.Min(cloudBest, currentSessionScore);
             }
+            // Higher is better modes (score-based)
             else 
             {
                 int cloudBest = _cachedProfile.BlitzStats.HighScores.GetValueOrDefault(key, 0);
@@ -91,8 +101,10 @@ namespace CosmicShore.Game.Analytics
             _cachedProfile.HexRaceStats.TotalDriftTime += maxDrift;
             _cachedProfile.TotalGamesPlayed++;
 
-            if (maxDrift > _cachedProfile.HexRaceStats.LongestSingleDrift) _cachedProfile.HexRaceStats.LongestSingleDrift = maxDrift;
-            if (maxBoost > _cachedProfile.HexRaceStats.MaxTimeAtHighBoost) _cachedProfile.HexRaceStats.MaxTimeAtHighBoost = maxBoost;
+            if (maxDrift > _cachedProfile.HexRaceStats.LongestSingleDrift) 
+                _cachedProfile.HexRaceStats.LongestSingleDrift = maxDrift;
+            if (maxBoost > _cachedProfile.HexRaceStats.MaxTimeAtHighBoost) 
+                _cachedProfile.HexRaceStats.MaxTimeAtHighBoost = maxBoost;
 
             if (raceTime < 10000f)
             {
@@ -122,6 +134,26 @@ namespace CosmicShore.Game.Analytics
                 _cachedProfile.MultiHexStats.TotalWins++;
 
                 SubmitScoreInternal(mode, intensity, score);
+            }
+    
+            SaveProfile();
+        }
+
+        public void ReportJoustStats(GameModes mode, int intensity, int joustsWon, float raceTime)
+        {
+            if (!_isReady) return;
+
+            _cachedProfile.JoustStats.TotalJoustsWon += joustsWon;
+            _cachedProfile.TotalGamesPlayed++;
+
+            string key = $"{mode}_{intensity}";
+            
+            // Only update best time and submit to leaderboard if player won (valid race time)
+            if (raceTime < 10000f)
+            {
+                _cachedProfile.JoustStats.TryUpdateBestTime(key, raceTime);
+                _cachedProfile.JoustStats.TotalWins++;
+                SubmitScoreInternal(mode, intensity, raceTime);
             }
     
             SaveProfile();
@@ -159,11 +191,14 @@ namespace CosmicShore.Game.Analytics
             try
             {
                 var data = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { CLOUD_KEY });
-                if (data.TryGetValue(CLOUD_KEY, out var item)) _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
+                if (data.TryGetValue(CLOUD_KEY, out var item)) 
+                    _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
                 
+                // Ensure all profile sections exist
                 _cachedProfile.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
                 _cachedProfile.HexRaceStats ??= new HexRacePlayerStatsProfile();
                 _cachedProfile.MultiHexStats ??= new MultiplayerHexRacePlayerStatsProfile();
+                _cachedProfile.JoustStats ??= new JoustPlayerStatsProfile();
             }
             catch { /* New Profile */ }
         }
