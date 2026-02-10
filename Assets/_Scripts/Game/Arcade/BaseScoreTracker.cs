@@ -121,6 +121,8 @@ namespace CosmicShore.Game.Arcade
                 ScoringModes.FriendlyVolumeDestroyed => new FriendlyVolumeDestroyedScoring(this, gameData, multiplier),
                 ScoringModes.VolumeCreated => new VolumeCreatedScoring(this, gameData, multiplier),
                 ScoringModes.TimePlayed => new TimePlayedScoring(this, gameData, multiplier),
+                ScoringModes.LifeFormsKilled => new LifeFormsKilledScoring(this, gameData, multiplier),
+                ScoringModes.ElementalCrystalsCollectedBlitz => new ElementalCrystalsCollectedBlitzScoring(this, gameData, multiplier),
                 ScoringModes.TurnsPlayed => new TurnsPlayedScoring(this, gameData, multiplier),
                 ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(this, gameData, multiplier),
                 ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(this, gameData, multiplier, true),
