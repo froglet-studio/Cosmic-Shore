@@ -49,3 +49,28 @@ MonoBehaviour:
   - GameMode: 26
     Intensity: 4
     LeaderboardId: sp_wildlifeblitz_intensity_4
+  - GameMode: 34
+    Intensity: 1
+    LeaderboardId: mp_joust_intensity_1
+  - GameMode: 34
+    Intensity: 2
+    LeaderboardId: mp_joust_intensity_2
+  - GameMode: 34
+    Intensity: 3
+    LeaderboardId: mp_joust_intensity_3
+  - GameMode: 34
+    Intensity: 4
+    LeaderboardId: mp_joust_intensity_4
+  - GameMode: 27
+    Intensity: 1
+    LeaderboardId: 
+  - GameMode: 27
+    Intensity: 2
+    LeaderboardId: ProtectMission_Intensity2
+  - GameMode: 27
+    Intensity: 3
+    LeaderboardId: ProtectMission_Intensity3
+  - GameMode: 27
+    Intensity: 4
+    LeaderboardId: ProtectMission_Intensity4
+  activeGameModes: 1e0000001f00000020000000210000002200000023000000
