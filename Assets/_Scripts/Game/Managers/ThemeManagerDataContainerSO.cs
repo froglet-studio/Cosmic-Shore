@@ -39,8 +39,18 @@ namespace CosmicShore.Core
             return TeamMaterialSets[domain].TransparentBlockMaterial;
         }
 
-        public Material GetTeamCrystalMaterial(Domains domain)
+        public Material GetTeamCrystalMaterial(Domains domain, int index)
         {
+            switch (index)
+            {
+                case 0: return TeamMaterialSets[domain].CrystalMaterial;
+                case 1: return TeamMaterialSets[domain].CrystalMaterial1;
+                case 2: return TeamMaterialSets[domain].CrystalMaterial2;
+                case 3: return TeamMaterialSets[domain].CrystalMaterial3;
+                default:
+                    Debug.LogWarning($"Invalid crystal material index {index} for domain {domain}. Returning default crystal material.");
+                    break;
+            }
             return TeamMaterialSets[domain].CrystalMaterial;
         }
 

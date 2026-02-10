@@ -187,66 +187,64 @@ namespace CosmicShore.Game
             }
         }
 
-        public void ChangeDomain(Domains newDomain)
+        public void ChangeDomain(Domains newDomain, float duration = -1)
         {
-            ownDomain = newDomain;
-
-            if (newDomain == Domains.None)
+            if (ownDomain == newDomain)
                 return;
-            
-            foreach (var modelData in crystalModels)
+            if (newDomain == Domains.None)
             {
-                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(ownDomain), 1));
+                for (int i = 0; i < crystalModels.Count; i++)
+                {
+                    StartCoroutine(LerpCrystalMaterialCoroutine(crystalModels[i].model, crystalModels[i].defaultMaterial, 1));
+                }
+                ownDomain = newDomain;
+                return;
             }
-        }
-
-        public void Steal(Domains domain, float duration)
-        {
-            ownDomain = domain;
-            foreach (var modelData in crystalModels)
+            ownDomain = newDomain;
+            for (int i = 0; i < crystalModels.Count; i++)
             {
-                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, _themeManagerData.GetTeamCrystalMaterial(domain), 1));
+                StartCoroutine(LerpCrystalMaterialCoroutine(crystalModels[i].model, _themeManagerData.GetTeamCrystalMaterial(ownDomain, i), 1));
             }
-            StartCoroutine(DecayingTheftCoroutine(duration));
+            if (duration != -1) StartCoroutine(DecayingTheftCoroutine(duration));
         }
 
         IEnumerator DecayingTheftCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            ownDomain = Domains.None;
-            foreach (var modelData in crystalModels)
-            {
-                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, modelData.defaultMaterial, 1));
-            }
+            ChangeDomain(Domains.None);
         }
 
         protected IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
         {
-            Renderer renderer = model.GetComponent<Renderer>();
-            Material tempMaterial = new Material(renderer.material);
-            renderer.material = tempMaterial;
-
-            Color startColor1 = tempMaterial.GetColor("_BrightCrystalColor");
-            Color startColor2 = tempMaterial.GetColor("_DullCrystalColor");
-
-            Color targetColor1 = targetMaterial.GetColor("_BrightCrystalColor");
-            Color targetColor2 = targetMaterial.GetColor("_DullCrystalColor");
-
-            float elapsedTime = 0.0f;
-
-            while (elapsedTime < lerpDuration)
+            for (int i = 0; i < crystalModels.Count; i++)
             {
-                elapsedTime += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsedTime / lerpDuration);
+                Renderer renderer = model.GetComponent<Renderer>();
+                Material tempMaterial = new Material(renderer.material);
+                renderer.material = tempMaterial;
 
-                tempMaterial.SetColor("_BrightCrystalColor", Color.Lerp(startColor1, targetColor1, t));
-                tempMaterial.SetColor("_DullCrystalColor", Color.Lerp(startColor2, targetColor2, t));
+                Color startColor1 = tempMaterial.GetColor("_BrightCrystalColor");
+                Color startColor2 = tempMaterial.GetColor("_DullCrystalColor");
 
-                yield return null;
+                Color targetColor1 = targetMaterial.GetColor("_BrightCrystalColor");
+                Color targetColor2 = targetMaterial.GetColor("_DullCrystalColor");
+
+                float elapsedTime = 0.0f;
+
+                while (elapsedTime < lerpDuration)
+                {
+                    elapsedTime += Time.deltaTime;
+                    float t = Mathf.Clamp01(elapsedTime / lerpDuration);
+
+                    tempMaterial.SetColor("_BrightCrystalColor", Color.Lerp(startColor1, targetColor1, t));
+                    tempMaterial.SetColor("_DullCrystalColor", Color.Lerp(startColor2, targetColor2, t));
+
+                    yield return null;
+                }
+
+                renderer.material = targetMaterial;
+                crystalModels[i].explodingMaterial = targetMaterial;
+                Destroy(tempMaterial);
             }
-
-            renderer.material = targetMaterial;
-            Destroy(tempMaterial);
         }
         
         /// <summary>
