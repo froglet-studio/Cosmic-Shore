@@ -5,36 +5,23 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Analytics
 {
-    [CreateAssetMenu(fileName = "LeaderboardConfig", menuName = "ScriptableObjects/Analytics/LeaderboardConfig")]
+    [CreateAssetMenu(fileName = "LeaderboardConfig", menuName = "CosmicShore/Analytics/LeaderboardConfig")]
     public class LeaderboardConfigSO : ScriptableObject
     {
         [Serializable]
-        public struct LeaderboardEntry
+        public struct LeaderboardMapping
         {
-            public string EntryName;
             public GameModes GameMode;
-            public bool IsMultiplayer;
             [Range(1, 4)] public int Intensity;
             public string LeaderboardId;
         }
 
-        [SerializeField] private List<LeaderboardEntry> leaderboardEntries = new();
+        [SerializeField] List<LeaderboardMapping> leaderboardMappings;
 
-        public string GetLeaderboardId(GameModes mode, bool isMultiplayer, int intensity)
+        public string GetLeaderboardId(GameModes mode, int intensity)
         {
-            var entry = leaderboardEntries.FirstOrDefault(x => 
-                x.GameMode == mode && 
-                x.IsMultiplayer == isMultiplayer && 
-                x.Intensity == intensity
-            );
-
-            if (!string.IsNullOrEmpty(entry.LeaderboardId))
-            {
-                return entry.LeaderboardId;
-            }
-
-            Debug.LogWarning($"[LeaderboardConfig] No ID found for Mode: {mode} | MP: {isMultiplayer} | Intensity: {intensity}");
-            return null;
+            var mapping = leaderboardMappings.FirstOrDefault(x => x.GameMode == mode && x.Intensity == intensity);
+            return mapping.LeaderboardId;
         }
     }
 }

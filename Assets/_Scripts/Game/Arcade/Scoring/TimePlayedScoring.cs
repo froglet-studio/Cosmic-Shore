@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Scoring
@@ -11,6 +12,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         private readonly float _intervalSeconds;
         private CancellationTokenSource _cts;
         private float _lastUpdateTime;
+        private double _networkStartTime;
 
         public TimePlayedScoring(IScoreTracker tracker, GameDataSO data, float scoreMultiplier, float intervalSeconds = 0.25f)
             : base(tracker, data, scoreMultiplier)
@@ -30,10 +32,20 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         private void OnTurnStarted()
         {
-            if (_cts != null) return; // prevent double-start
+            if (_cts != null) return;
 
             _cts = new CancellationTokenSource();
-            _lastUpdateTime = Mathf.Max(GameData.TurnStartTime, Time.time);
+            
+            if (NetworkManager.Singleton && NetworkManager.Singleton.IsListening)
+            {
+                _networkStartTime = NetworkManager.Singleton.ServerTime.Time;
+            }
+            else
+            {
+                _networkStartTime = Time.timeAsDouble;
+            }
+            
+            _lastUpdateTime = 0f;
 
             UpdateScoreLoop(_cts.Token).Forget();
         }
@@ -55,12 +67,9 @@ namespace CosmicShore.Game.Arcade.Scoring
                 {
                     token.ThrowIfCancellationRequested();
 
-                    if (GameData.TurnStartTime > _lastUpdateTime)
-                        _lastUpdateTime = GameData.TurnStartTime;
-
-                    float now = Time.time;
-                    float dt = Mathf.Max(0f, now - _lastUpdateTime);
-                    _lastUpdateTime = now;
+                    float currentElapsedTime = GetCurrentElapsedTime();
+                    float dt = Mathf.Max(0f, currentElapsedTime - _lastUpdateTime);
+                    _lastUpdateTime = currentElapsedTime;
 
                     if (dt > 0f)
                         AddTimeScore(dt);
@@ -75,11 +84,20 @@ namespace CosmicShore.Game.Arcade.Scoring
             }
         }
 
+        private float GetCurrentElapsedTime()
+        {
+            if (!NetworkManager.Singleton || !NetworkManager.Singleton.IsListening)
+                return (float)(Time.timeAsDouble - _networkStartTime);
+            var currentNetworkTime = NetworkManager.Singleton.ServerTime.Time;
+            return (float)(currentNetworkTime - _networkStartTime);
+
+        }
+
         private void AddTimeScore(float dt)
         {
             var score = dt * scoreMultiplier;
             foreach (var stats in GameData.RoundStatsList)
-                stats.Score += dt * score;
+                stats.Score += score;
         }
     }
 }

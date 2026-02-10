@@ -4,10 +4,13 @@ using System.Collections.Generic;
 [Serializable]
 public class MultiplayerHexRacePlayerStatsProfile
 {
+    // Cumulative (Lifetime)
     public int TotalCleanCrystalsCollected;
-    public float TotalDriftTime;
+    public float TotalDriftTime; 
     public int TotalJoustsWon;
     public int TotalWins;
+    
+    public float LongestSingleDrift;
 
     public Dictionary<string, float> BestMultiplayerRaceTimes = new();
 

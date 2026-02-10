@@ -1,13 +1,17 @@
-﻿using CosmicShore.Game.Analytics;
+﻿using CosmicShore.Core;
+using CosmicShore.Game.Analytics;
 using Obvious.Soap;
 using UnityEngine;
+using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerHexRaceScoreTracker : HexRaceScoreTracker
     {
         [Header("Multiplayer Specific")]
-        [SerializeField] ScriptableEventString OnJoustCollisionEvent; 
+        [SerializeField] ScriptableEventString OnJoustCollisionEvent;
+        [SerializeField] private MultiplayerHexRaceController controller;
+        
         private int _joustsWonSession;
         public int JoustsWonSession => _joustsWonSession;
 
@@ -28,21 +32,42 @@ namespace CosmicShore.Game.Arcade
             if (gameData.LocalPlayer?.Vessel.VesselStatus.PlayerName == winner) _joustsWonSession++;
         }
 
-        protected override void ReportToMultiplayerController(float finalScore)
+        protected override bool DetermineIfWinner(int localCrystalsRemaining)
         {
-            if (UGSStatsManager.Instance)
+            var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
+            var allPlayers = gameData.RoundStatsList;
+            
+            if (allPlayers == null || allPlayers.Count == 0)
+                return false;
+
+            var minCrystalsRemaining = allPlayers
+                .Select(p => p.Score >= 10000f ? (int)(p.Score - 10000f) : 0)
+                .Min();
+            
+            bool isWinner = localCrystalsRemaining == minCrystalsRemaining;
+            if (minCrystalsRemaining == 0)
             {
-                UGSStatsManager.Instance.ReportMultiplayerHexStats(
-                    MaxCleanStreak, MaxDriftTimeRecord, MaxHighBoostTimeRecord, 
-                    _joustsWonSession, finalScore
-                );
+                var finishedPlayers = allPlayers.Where(p => p.Score < 10000f).OrderBy(p => p.Score).ToList();
+                isWinner = finishedPlayers.Count > 0 && finishedPlayers[0].Name == localPlayerName;
             }
 
-            var controller = FindObjectOfType<MultiplayerHexRaceController>();
-            if (!controller) return;
+            return isWinner;
+        }
 
-            controller.ReportLocalPlayerFinished(finalScore);
-
+        protected override void ReportToMultiplayerController(float finalScore, bool isWinner)
+        {
+            if (UGSStatsManager.Instance && isWinner)
+            {
+                UGSStatsManager.Instance.ReportMultiplayerHexStats(
+                    GameModes.MultiplayerHexRaceGame, 
+                    gameData.SelectedIntensity.Value,
+                    MaxCleanStreak, 
+                    MaxDriftTimeRecord, 
+                    _joustsWonSession, 
+                    finalScore
+                );
+            }
+            if (controller) controller.ReportLocalPlayerFinished(finalScore);
         }
     }
 }

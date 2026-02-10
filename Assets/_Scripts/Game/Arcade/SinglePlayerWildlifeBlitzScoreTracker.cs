@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.Analytics;
+﻿using CosmicShore.Core;
+using CosmicShore.Game.Analytics;
 using CosmicShore.Game.Arcade.Scoring;
 using Obvious.Soap;
 using UnityEngine;
@@ -16,10 +17,7 @@ namespace CosmicShore.Game.Arcade
 
         private bool isTracking = false;
 
-        void OnEnable()
-        {
-            SubscribeEvents();
-        }
+        void OnEnable() { SubscribeEvents(); }
 
         void OnDisable()
         {
@@ -68,11 +66,8 @@ namespace CosmicShore.Game.Arcade
         
         public void ResetScores()
         {
-            if (gameData?.LocalRoundStats != null) 
-                gameData.LocalRoundStats.Score = 0;
-            
-            if (eventOnScoreChanged) 
-                eventOnScoreChanged.Raise();
+            if (gameData?.LocalRoundStats != null) gameData.LocalRoundStats.Score = 0;
+            if (eventOnScoreChanged) eventOnScoreChanged.Raise();
         }
 
         protected override void CalculateWinnerAndInvokeEvent()
@@ -92,7 +87,13 @@ namespace CosmicShore.Game.Arcade
                  int crystals = crystalScoring?.GetTotalCrystalsCollected() ?? 0;
                  int finalScore = (int)gameData.LocalRoundStats.Score;
 
-                 UGSStatsManager.Instance.ReportMatchStats(crystals, kills, finalScore);
+                 UGSStatsManager.Instance.ReportBlitzStats(
+                     GameModes.WildlifeBlitz, 
+                     gameData.SelectedIntensity.Value,
+                     crystals, 
+                     kills, 
+                     finalScore
+                 );
              }
              
              SortAndInvokeResults();

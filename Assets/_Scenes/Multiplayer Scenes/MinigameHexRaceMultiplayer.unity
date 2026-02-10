@@ -844,6 +844,7 @@ MonoBehaviour:
   showDebugLogs: 1
   OnJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
     type: 2}
+  controller: {fileID: 1078953729}
 --- !u!114 &1088836866 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5054612726745043333, guid: 65bf1ed35b752374ca46ae214710e41c,

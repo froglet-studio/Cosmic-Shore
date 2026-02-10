@@ -12,7 +12,6 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SpawnableWaypointTrack optionalEnvironment;
         [SerializeField] int optionalLaps = 4;
 
-        // [Visual Note] 1. New Event: "Hey, we are done!"
         public event Action OnTurnFinished; 
 
         public override void StartMonitor()

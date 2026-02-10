@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Linq;
 using CosmicShore.Game.Cinematics;
+using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -12,45 +13,34 @@ namespace CosmicShore.Game.Arcade
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
-
-            // Get LOCAL PLAYER'S score
             var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localPlayerName);
-            
+
             if (localStats == null)
             {
-                UnityEngine.Debug.LogError("[MP HexRace EndGame] Could not find local player stats!");
+                Debug.LogError("No local stats found!");
                 yield break;
             }
 
-            // Determine winner (lowest score)
-            var sortedStats = gameData.RoundStatsList.OrderBy(s => s.Score).ToList();
-            var winnerStats = sortedStats[0];
-            bool isLocalPlayerWinner = localStats.Name == winnerStats.Name;
+            float localScore = localStats.Score;
+            bool didLocalPlayerFinish = localScore < 10000f;
 
-            // Get LOCAL player's score
-            float rawScore = localStats.Score;
-            bool localPlayerFinished = rawScore < 10000f;
+            var headerText = didLocalPlayerFinish ? "VICTORY" : "DEFEAT";
             
-            var headerText = isLocalPlayerWinner ? "VICTORY" : "DEFEAT";
-
-            // FIX: Show time for anyone who finished, crystals left for those who didn't
             string label;
             int value;
             bool formatAsTime;
 
-            if (localPlayerFinished)
+            if (didLocalPlayerFinish)
             {
-                // Player finished - show their completion time
-                label = isLocalPlayerWinner ? "WINNER TIME" : "YOUR TIME";
-                value = (int)rawScore;
+                label = "RACE TIME";
+                value = (int)localScore; 
                 formatAsTime = true;
             }
             else
             {
-                // Player didn't finish - show crystals remaining
                 label = "CRYSTALS LEFT";
-                value = (int)(rawScore - 10000f);
+                value = (int)(localScore - 10000f);
                 formatAsTime = false;
             }
 

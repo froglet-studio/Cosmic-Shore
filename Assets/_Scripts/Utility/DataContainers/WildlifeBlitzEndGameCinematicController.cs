@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using CosmicShore.Core;
 using CosmicShore.Game.Analytics; // [Visual Note] For StatsManager
 using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Arcade.Scoring;
@@ -21,12 +22,16 @@ namespace CosmicShore.Game.Cinematics
             var stats = GetWildlifeBlitzStats();
             int currentScore = Mathf.Max(0, (int)stats.elapsedTime);
 
-            // [Visual Note] 3. Fetch High Score for Animation
-            int highScore = currentScore;
-            if (UGSStatsManager.Instance != null)
+            if (UGSStatsManager.Instance)
             {
-                int cachedBest = UGSStatsManager.Instance.GetHighScoreForCurrentMode();
-                highScore = Mathf.Max(currentScore, cachedBest);
+                float bestFloat = UGSStatsManager.Instance.GetEvaluatedHighScore(
+                    GameModes.WildlifeBlitz, 
+                    gameData.SelectedIntensity.Value, 
+                    currentScore
+                );
+                
+                int cachedBest = (int)bestFloat;
+                var highScore = Mathf.Max(currentScore, cachedBest);
                 
                 if (currentScore >= highScore && cachedBest > 0)
                 {
