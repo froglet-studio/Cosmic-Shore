@@ -12,7 +12,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] private ScriptableEventString onJoustCollision;
 
         [Header("Turn Monitor")]
-        [SerializeField] private JoustCollisionTurnMonitor joustTurnMonitor;
+        [SerializeField] public JoustCollisionTurnMonitor joustTurnMonitor;
 
         private bool _gameEnded;
         private float _gameStartTime;
@@ -27,7 +27,6 @@ namespace CosmicShore.Game.Arcade
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer) return;
-
             _gameStartTime = Time.time;
             InitializeJoustGame_ClientRpc();
         }
@@ -37,21 +36,26 @@ namespace CosmicShore.Game.Arcade
         {
             gameData.SetPlayersActive();
             gameData.StartTurn();
-
-            if (joustTurnMonitor)
-            {
-                joustTurnMonitor.StartMonitor();
-            }
+            if (joustTurnMonitor) joustTurnMonitor.StartMonitor();
         }
 
-        void OnDestroy()
+        // --- Live Sync: Critical for Client Victory Check ---
+        public void NotifyCollision(string playerName, int currentCollisions)
         {
+            if (!IsServer) return;
+            UpdateCollisionCount_ClientRpc(playerName, currentCollisions);
+        }
+
+        [ClientRpc]
+        void UpdateCollisionCount_ClientRpc(string playerName, int count)
+        {
+            var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
+            if (stat != null) stat.JoustCollisions = count;
         }
 
         public void OnTurnEndedByMonitor(string winnerName)
         {
             if (!IsServer) return;
-            
             HandlePlayerWon(winnerName);
         }
 
@@ -68,10 +72,11 @@ namespace CosmicShore.Game.Arcade
         {
             var statsList = gameData.RoundStatsList;
             int count = statsList.Count;
-
-            FixedString64Bytes[] nameArray  = new FixedString64Bytes[count];
-            float[]              scoreArray = new float[count];
-            int collisionsNeeded = joustTurnMonitor ? joustTurnMonitor.CollisionsNeeded : 0;
+            int needed = joustTurnMonitor.CollisionsNeeded;
+    
+            FixedString64Bytes[] nameArray = new FixedString64Bytes[count];
+            float[] scoreArray = new float[count];
+            int[] collisionArray = new int[count];
 
             for (int i = 0; i < count; i++)
             {
@@ -79,33 +84,39 @@ namespace CosmicShore.Game.Arcade
 
                 if (statsList[i].Name == winnerName)
                 {
+                    // Winner: Score is accurate Time, Collisions = needed (to guarantee didWin = true)
                     scoreArray[i] = winnerTime;
+                    collisionArray[i] = needed; // Force winner to show as winner
                 }
                 else
                 {
-                    int joustsAchieved = statsList[i].JoustCollisions;
-                    int joustsShortOfWinning = collisionsNeeded - joustsAchieved;
-            
-                    // Higher score = worse (more jousts short of winning)
-                    scoreArray[i] = 10000f + joustsShortOfWinning;
+                    // Loser: Score is high to force bottom sorting
+                    scoreArray[i] = 99999f;
+                    collisionArray[i] = statsList[i].JoustCollisions; // Actual collision count
                 }
             }
 
-            SyncFinalScores_ClientRpc(nameArray, scoreArray);
+            SyncFinalScores_ClientRpc(nameArray, scoreArray, collisionArray);
         }
 
         [ClientRpc]
-        void SyncFinalScores_ClientRpc(FixedString64Bytes[] names, float[] scores)
+        void SyncFinalScores_ClientRpc(FixedString64Bytes[] names, float[] scores, int[] collisions)
         {
             for (int i = 0; i < names.Length; i++)
             {
                 string sName = names[i].ToString();
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
                 if (stat != null)
+                {
                     stat.Score = scores[i];
+                    stat.JoustCollisions = collisions[i];
+                    Debug.Log($"[SyncFinalScores] {sName}: Score={scores[i]}, Collisions={collisions[i]}");
+                }
             }
 
-            gameData.SortRoundStats(UseGolfRules);
+            // Simple Sort: Lowest Score (Time) wins. Losers (99999) go to bottom.
+            gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
+
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
