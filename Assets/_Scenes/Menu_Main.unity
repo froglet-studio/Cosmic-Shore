@@ -8203,7 +8203,7 @@ PrefabInstance:
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: CellTypes.Array.size
-      value: 4
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -81287,7 +81287,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 375a556c2de743bb80c5d6560dae48d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   leaderboardConfig: {fileID: 11400000, guid: e04a023aee5d41345a2d6026306bb0ef, type: 2}
 --- !u!4 &2008405516
 Transform:
@@ -94779,6 +94778,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Alpha
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6288394163303831493, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 19
       objectReference: {fileID: 0}
     - target: {fileID: 7095712578544853338, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
