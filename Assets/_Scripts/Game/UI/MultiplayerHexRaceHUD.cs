@@ -1,75 +1,25 @@
-﻿using System.Collections.Generic;
-using CosmicShore.Soap;
-using UnityEngine;
-
-namespace CosmicShore.Game.UI
+﻿namespace CosmicShore.Game.UI
 {
-    public class MultiplayerHexRaceHUD : MiniGameHUD
+    public class MultiplayerHexRaceHUD : MultiplayerHUD
     {
-        [Header("Multiplayer View")]
-        [SerializeField] private MultiplayerHexRaceHUDView multiplayerView;
-
-        private Dictionary<string, PlayerScoreCard> _playerCards = new Dictionary<string, PlayerScoreCard>();
-
-        private void OnValidate()
+        protected override int GetInitialCardValue(IRoundStats stats)
         {
-            if (multiplayerView == null)
-                multiplayerView = GetComponent<MultiplayerHexRaceHUDView>();
-            
-            if (view == null)
-                view = multiplayerView;
+            return stats.OmniCrystalsCollected;
         }
 
-        protected override void OnMiniGameTurnStarted()
+        protected override void SubscribeToPlayerStats(IRoundStats stats)
         {
-            base.OnMiniGameTurnStarted();
-            InitializePlayerCards();
+            stats.OnOmniCrystalsCollectedChanged += HandleCrystalStatChanged;
         }
 
-        protected override void OnMiniGameTurnEnd()
+        protected override void UnsubscribeFromPlayerStats(IRoundStats stats)
         {
-            base.OnMiniGameTurnEnd();
-            UnsubscribeFromAllStats();
+            stats.OnOmniCrystalsCollectedChanged -= HandleCrystalStatChanged;
         }
 
-        private void InitializePlayerCards()
+        private void HandleCrystalStatChanged(IRoundStats updatedStats)
         {
-            multiplayerView.ClearPlayerList();
-            _playerCards.Clear();
-
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                CreateCardForPlayer(stats);
-            }
-        }
-
-        private void CreateCardForPlayer(IRoundStats stats)
-        {
-            var card = Instantiate(multiplayerView.PlayerScoreCardPrefab, multiplayerView.PlayerScoreContainer);
-            
-            var isLocal = gameData.LocalPlayer != null && stats.Name == gameData.LocalPlayer.Name;
-            var teamColor = multiplayerView.GetColorForDomain(stats.Domain);
-            card.Setup(stats.Name, stats.OmniCrystalsCollected, teamColor, isLocal);
-            _playerCards[stats.Name] = card;
-
-            stats.OnOmniCrystalsCollectedChanged += OnCrystalStatChanged;
-        }
-
-        private void OnCrystalStatChanged(IRoundStats updatedStats)
-        {
-            if (_playerCards.TryGetValue(updatedStats.Name, out var card))
-            {
-                card.UpdateScore(updatedStats.OmniCrystalsCollected);
-            }
-        }
-
-        private void UnsubscribeFromAllStats()
-        {
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                stats.OnOmniCrystalsCollectedChanged -= OnCrystalStatChanged;
-            }
-            _playerCards.Clear();
+            UpdatePlayerCard(updatedStats.Name, updatedStats.OmniCrystalsCollected);
         }
     }
 }
