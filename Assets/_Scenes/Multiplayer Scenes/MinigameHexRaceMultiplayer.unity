@@ -2069,7 +2069,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1556114779}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffe63a541b884dc6b3e76d44a83138d1, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d38e324226a48149a22fa95f9d10448, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   scoreDisplay: {fileID: 1556114771}
@@ -2465,7 +2465,6 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 1897523409}
   view: {fileID: 1897523410}
-  penaltyScoreBase: 10000
 --- !u!114 &1897523413
 MonoBehaviour:
   m_ObjectHideFlags: 0
