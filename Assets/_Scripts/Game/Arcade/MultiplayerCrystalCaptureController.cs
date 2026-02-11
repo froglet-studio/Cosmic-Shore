@@ -5,8 +5,8 @@
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            this.numberOfRounds = 1;
-            this.numberOfTurnsPerRound = 1;
+            numberOfRounds = 1;
+            numberOfTurnsPerRound = 1;
         }
 
         protected override bool UseGolfRules => false;
