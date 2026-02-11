@@ -229,16 +229,45 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsServer)
                 return;
+            
+            // Trigger environment reset on all clients
+            ResetForReplay_ClientRpc();
+        }
+        
+        /// <summary>
+        /// Server initiates replay reset and synchronizes to all clients.
+        /// This ensures all clients reset environment, stats, and UI properly.
+        /// </summary>
+        [ClientRpc]
+        void ResetForReplay_ClientRpc()
+        {
+            // Reset stats and players
+            gameData.ResetStatsDataForReplay();
+            gameData.ResetPlayers();
+            
+            // IMPORTANT: Trigger the OnResetForReplay event on ALL clients
+            // This ensures UI elements (like scoreboard) that subscribe to this event
+            // properly hide/reset on clients as well as server
+            if (gameData.OnResetForReplay != null)
+                gameData.OnResetForReplay.Raise();
+            
+            // Call game-specific replay reset
             OnResetForReplayCustom();
-            SetupNewRound();
+            
+            // Server will setup new round after this
+            if (IsServer)
+                SetupNewRound();
         }
         
         /// <summary>
         /// Hook for game-specific replay logic in multiplayer.
-        /// Called on server only before restarting game.
+        /// Called on ALL clients (including server) before restarting game.
+        /// Use this to reset environment-specific elements like obstacles, timers, UI, etc.
         /// </summary>
         protected virtual void OnResetForReplayCustom()
         {
+            // Override in subclass to reset game-specific elements
+            // Examples: reset obstacle positions, clear UI, reset timers, etc.
         }
     }
 }

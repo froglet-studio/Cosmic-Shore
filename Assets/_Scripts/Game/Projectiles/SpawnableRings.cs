@@ -1,6 +1,5 @@
 using CosmicShore.Core;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -16,23 +15,23 @@ namespace CosmicShore.Game.Projectiles
 
         [Header("Prism Configuration")]
         [SerializeField] Vector3 prismScale = new Vector3(4, 4, 9);
-        float prismAngle = 0f; // Angle offset in degrees, displaces look target in z
+        float prismAngle = 0f;
 
         [Header("Prism Properties")]
         [SerializeField] bool isDangerous = false;
         [SerializeField] bool isShielded = false;
 
-
         static int ObjectsSpawned = 0;
 
         public override GameObject Spawn()
         {
-            GameObject container = new GameObject();
-            container.name = "Rings" + ObjectsSpawned++;
+            GameObject container = new GameObject($"Rings_{ObjectsSpawned++}");
+            container.transform.SetParent(transform, false);
+            container.transform.SetPositionAndRotation(transform.position, transform.rotation);
 
             for (int ringIndex = 0; ringIndex < ringCount; ringIndex++)
             {
-                Vector3 ringCenter = transform.position + transform.forward * (ringIndex * ringSpacing) + initialOffset * transform.forward;
+                Vector3 ringCenter = transform.position + transform.forward * (ringIndex * ringSpacing + initialOffset);
                 CreateRing(container, ringIndex, ringCenter);
             }
 
@@ -44,28 +43,27 @@ namespace CosmicShore.Game.Projectiles
             Trail trail = new Trail();
             trails.Add(trail);
 
-            // Calculate look target offset based on prism angle
             float lookOffsetZ = Mathf.Tan(prismAngle * Mathf.Deg2Rad) * ringRadius;
             Vector3 lookTarget = ringCenter + transform.forward * lookOffsetZ;
 
             for (int i = 0; i < prismsPerRing; i++)
             {
-                float angle = (float)i / prismsPerRing * Mathf.PI * 2 + Mathf.PI * .5f;
+                float angle = (i / (float)prismsPerRing) * Mathf.PI * 2 + Mathf.PI * 0.5f;
 
                 Vector3 position = ringCenter
-                    + transform.right * Mathf.Cos(angle) * ringRadius
-                    + transform.up * Mathf.Sin(angle) * ringRadius;
+                    + transform.right * (Mathf.Cos(angle) * ringRadius)
+                    + transform.up * (Mathf.Sin(angle) * ringRadius);
 
                 Vector3 lookDirection = (lookTarget - position).normalized;
-
                 string ownerId = $"{container.name}::R{ringIndex}::P{i}";
+                
                 CreateBlock(position, lookDirection, ownerId, trail, prismScale, prism, container);
             }
         }
 
         protected void CreateBlock(Vector3 position, Vector3 lookDirection, string ownerId, Trail trail, Vector3 scale, Prism prefab, GameObject container)
         {
-            var block = Instantiate(prefab, container.transform, false);
+            var block = Instantiate(prefab, container.transform);
             block.ChangeTeam(domain);
             block.ownerID = ownerId;
 
@@ -84,8 +82,8 @@ namespace CosmicShore.Game.Projectiles
 
         public override GameObject Spawn(int intensityLevel)
         {
-            prismAngle = intensityLevel*.3f;
-            initialOffset = intensityLevel*.2f;
+            prismAngle = intensityLevel * 0.3f;
+            initialOffset = intensityLevel * 0.2f;
 
             return Spawn();
         }
