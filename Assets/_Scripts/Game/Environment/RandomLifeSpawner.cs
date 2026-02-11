@@ -56,7 +56,7 @@ namespace CosmicShore.Game
 
         IEnumerator SpawnFloraLoop(Cell host, FloraConfiguration floraConfiguration, CellRandomSpawnProfileSO profile, GameDataSO gameData)
         {
-            var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
+            var local = gameData.LocalRoundStats?.Domain ?? Domains.None;
             Domains? excluded = profile.FloraExcludeLocalDomain ? local : (Domains?)null;
 
             // initial batch

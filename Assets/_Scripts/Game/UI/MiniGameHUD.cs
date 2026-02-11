@@ -36,14 +36,14 @@ namespace CosmicShore.Game.UI
             view = GetComponent<MiniGameHUDView>();
         }
 
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             SubscribeToEvents();
             CleanupUI();
             ToggleReadyButton(false);
         }
 
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             UnsubscribeFromEvents();
         }

@@ -29,7 +29,7 @@ MonoBehaviour:
     SpikeLightColor: {r: 0.08627451, g: 0.69803923, b: 0.7254902, a: 0}
     SpikeDarkColor: {r: 0.24313726, g: 0.5019608, b: 0.78431374, a: 1}
     SkimmerColor: {r: 0.05490196, g: 0.7529412, b: 0.7137255, a: 1}
-    DullCrystalColor: {r: 0, g: 0.3764706, b: 0.5058824, a: 0.9411765}
+    DullCrystalColor: {r: 0, g: 0, b: 0, a: 0.9411765}
     BrightCrystalColor: {r: 0.05490196, g: 0.50980395, b: 0.7490196, a: 0.9411765}
   RubyColors:
     ShipColor1: {r: 0.03529412, g: 0, b: 0.09411765, a: 1}
@@ -48,7 +48,7 @@ MonoBehaviour:
     SpikeLightColor: {r: 0.78431374, g: 0, b: 0.7647059, a: 0}
     SpikeDarkColor: {r: 0.4117647, g: 0.050980393, b: 0.9529412, a: 1}
     SkimmerColor: {r: 0.21953903, g: 0, b: 0.5471698, a: 0}
-    DullCrystalColor: {r: 0.36862746, g: 0, b: 0.5058824, a: 0.9411765}
+    DullCrystalColor: {r: 0, g: 0, b: 0, a: 0.9411765}
     BrightCrystalColor: {r: 0.6392157, g: 0.05490196, b: 0.7490196, a: 0.9411765}
   GoldColors:
     ShipColor1: {r: 1.2203892, g: 0.6122575, b: 0.03070152, a: 1}
@@ -67,8 +67,8 @@ MonoBehaviour:
     SpikeLightColor: {r: 0.85882354, g: 0.6313726, b: 0, a: 0}
     SpikeDarkColor: {r: 0.4627451, g: 0.3529412, b: 0, a: 1}
     SkimmerColor: {r: 0.7490196, g: 0.42745098, b: 0.05490196, a: 0}
-    DullCrystalColor: {r: 0.5058824, g: 0.39607844, b: 0, a: 0.9411765}
-    BrightCrystalColor: {r: 0.7490196, g: 0.58431375, b: 0.05490196, a: 0.9411765}
+    DullCrystalColor: {r: 0, g: 0, b: 0, a: 0.9411765}
+    BrightCrystalColor: {r: 0.7490196, g: 0.5238843, b: 0.054901935, a: 0.9411765}
   BlueColors:
     ShipColor1: {r: 0, g: 0, b: 0.48235294, a: 1}
     ShipColor2: {r: 0, g: 0, b: 0.5019608, a: 1}
@@ -93,4 +93,4 @@ MonoBehaviour:
     DarkColor: {r: 0, g: 0, b: 0, a: 0}
     BrightCTA: {r: 0, g: 0, b: 0, a: 0}
     DarkCTA: {r: 0, g: 0, b: 0, a: 0}
-    Danger: {r: 0.89073944, g: 0.0569839, b: 0.025209457, a: 0}
+    Danger: {r: 0.72350526, g: 0.04628531, b: 0.020476442, a: 0}

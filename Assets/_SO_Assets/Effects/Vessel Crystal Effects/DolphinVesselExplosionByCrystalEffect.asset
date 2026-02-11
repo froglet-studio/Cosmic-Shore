@@ -12,9 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a148940713548a4b5905021dc45785b, type: 3}
   m_Name: DolphinVesselExplosionByCrystalEffect
   m_EditorClassIdentifier: 
+  rhinoCrystalExplosionEvent: {fileID: 11400000, guid: 1fbf77fcd936a8f4f840e07af36d8504,
+    type: 2}
   _aoePrefabs:
   - {fileID: 1775484485627665200, guid: 2ae56847c6f549948a71f41eaf59f749, type: 3}
   _minExplosionScale: 200
   _maxExplosionScale: 800
   _resourceIndex: 0
   _aoeExplosionMaterial: {fileID: 0}
+  _spawnOffset: {x: 0, y: 0, z: -5}
+  _explosionCooldown: 0.15

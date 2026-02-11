@@ -5,6 +5,7 @@ using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -178,10 +179,29 @@ namespace CosmicShore.Game.UI
             }
         }
         
+        /// <summary>
+        /// Called when Play Again button is pressed.
+        /// In multiplayer, only the server should trigger the reset to keep all clients in sync.
+        /// </summary>
         public void OnPlayAgainButtonPressed()
         {
-            if (UGSStatsManager.Instance != null) UGSStatsManager.Instance.TrackPlayAgain();
-            gameData.ResetForReplay();
+            if (UGSStatsManager.Instance != null) 
+                UGSStatsManager.Instance.TrackPlayAgain();
+            
+            // In multiplayer, only server initiates replay
+            if (gameData.IsMultiplayerMode)
+            {
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                {
+                    gameData.ResetForReplay();
+                }
+                // Clients do nothing - they'll receive the reset via ClientRpc
+            }
+            else
+            {
+                // Single player can reset directly
+                gameData.ResetForReplay();
+            }
         }
     }
 }

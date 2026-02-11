@@ -48,8 +48,8 @@ namespace CosmicShore.Game
 
             if (cellData == null) return;
             
-            if (cellData.OnCrystalSpawned != null)
-                cellData.OnCrystalSpawned.OnRaised += OnCrystalSpawnedInCell;
+            if (cellData.OnCellItemsUpdated != null)
+                cellData.OnCellItemsUpdated.OnRaised += OnCrystalSpawnedInCell;
             
             if (cellData.OnResetForReplay != null)
                 cellData.OnResetForReplay.OnRaised += ResetCell;
@@ -62,8 +62,8 @@ namespace CosmicShore.Game
 
             if (cellData != null)
             {
-                if (cellData.OnCrystalSpawned != null)
-                    cellData.OnCrystalSpawned.OnRaised -= OnCrystalSpawnedInCell;
+                if (cellData.OnCellItemsUpdated != null)
+                    cellData.OnCellItemsUpdated.OnRaised -= OnCrystalSpawnedInCell;
                 
                 if (cellData.OnResetForReplay != null)
                     cellData.OnResetForReplay.OnRaised -= ResetCell;

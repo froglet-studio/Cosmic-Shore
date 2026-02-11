@@ -38,8 +38,12 @@ namespace CosmicShore.Soap
 
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
+        public event Action<GameModes> OnGameModeTurnEnd;
+        public event Action<GameModes> OnGameModeRoundEnd;
+        public event Action<GameModes> OnGameModeEnd;
 
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
+        
         // Local player config / state
         public VesselClassTypeVariable selectedVesselClass;
         public IntVariable VesselClassSelectedIndex;
@@ -114,10 +118,28 @@ namespace CosmicShore.Soap
         public void InvokeGameTurnConditionsMet()
         {
             IsTurnRunning = false;
-            OnMiniGameTurnEnd?.Raise();   
+            OnMiniGameTurnEnd?.Raise();
+            
+            // Fire game mode-specific event
+            OnGameModeTurnEnd?.Invoke(GameMode);
         }
-        public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
-        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Invoke();
+        
+        public void InvokeMiniGameRoundEnd() 
+        {
+            OnMiniGameRoundEnd?.Raise();
+            
+            // Fire game mode-specific event
+            OnGameModeRoundEnd?.Invoke(GameMode);
+        }
+        
+        public void InvokeMiniGameEnd() 
+        {
+            OnMiniGameEnd?.Invoke();
+            
+            // Fire game mode-specific event
+            OnGameModeEnd?.Invoke(GameMode);
+        }
+        
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
 
         public void ResetForReplay()
@@ -133,16 +155,20 @@ namespace CosmicShore.Soap
             IsTurnRunning = false;
             Players.Clear();
             RoundStatsList.Clear();
+            DomainStatsList.Clear();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
+            _playerSpawnPoseList.Clear();
         }
 
         void ResetRuntimeDataForReplay()
         {
+            IsTurnRunning = false;
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
+            _playerSpawnPoseList.Clear();
         }
 
         public void ResetStatsDataForReplay()

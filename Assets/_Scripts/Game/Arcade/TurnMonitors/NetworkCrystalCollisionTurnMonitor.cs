@@ -13,7 +13,7 @@ namespace CosmicShore.Game.Arcade
             if (IsServer)
             {
                 // Server sets the authoritative value from the Inspector
-                _netCrystalCollisions.Value = CrystalCollisions;
+                _netCrystalCollisions.Value = GetCrystalCollisionCount();
             }
         }
 

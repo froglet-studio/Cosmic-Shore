@@ -132,7 +132,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 1
-    - _opacity: 1.0100001
+    - _opacity: 1
     - _player: 0
     - _red: 0
     - _spread: 0.005

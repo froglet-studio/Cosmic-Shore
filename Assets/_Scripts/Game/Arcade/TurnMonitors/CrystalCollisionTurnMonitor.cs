@@ -12,14 +12,10 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SpawnableWaypointTrack optionalEnvironment;
         [SerializeField] int optionalLaps = 4;
 
-        public event Action OnTurnFinished; 
-
         public override void StartMonitor()
         {
-            if (optionalEnvironment)
-            {
-                CrystalCollisions = optionalEnvironment.waypoints[optionalEnvironment.intenstyLevel - 1].positions.Count * optionalLaps;
-            }
+            CrystalCollisions = GetCrystalCollisionCount();
+            
             InitializeOwnStats();
             if (ownStats != null) ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
             UpdateCrystals(ownStats);
@@ -35,13 +31,7 @@ namespace CosmicShore.Game.Arcade
         public override bool CheckForEndOfTurn()
         {
             if (ownStats == null) return false;
-            bool isFinished = ownStats.CrystalsCollected >= CrystalCollisions;
-            if (isFinished)
-            {
-                OnTurnFinished?.Invoke();
-            }
-            
-            return isFinished;
+            return ownStats.CrystalsCollected >= CrystalCollisions;
         }
         
         protected virtual void UpdateCrystals(IRoundStats stats) => UpdateCrystalsRemainingUI();
@@ -64,6 +54,24 @@ namespace CosmicShore.Game.Arcade
         {
             if (ownStats != null) return;
             if (gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats)) return;
+        }
+
+        protected int GetCrystalCollisionCount()
+        {
+            if (optionalEnvironment)
+            {
+                return optionalEnvironment.waypoints[optionalEnvironment.intenstyLevel - 1].positions.Count * optionalLaps;
+            }
+            else if (CrystalCollisions == 0)
+            {
+                Debug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
+                return 39;
+            }
+            else
+            {
+                return CrystalCollisions;
+            }
+
         }
     }
 }

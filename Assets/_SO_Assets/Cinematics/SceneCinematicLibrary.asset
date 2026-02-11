@@ -19,3 +19,7 @@ MonoBehaviour:
     cinematic: {fileID: 11400000, guid: 124fb602b5370854b9aecc71400e11e9, type: 2}
   - sceneName: MinigameHexRaceMultiplayer
     cinematic: {fileID: 11400000, guid: b2367e638436b174db69c2f7a06f06f9, type: 2}
+  - sceneName: MinigameJoust_Gameplay
+    cinematic: {fileID: 11400000, guid: e64c16178285c594793e4e2fc140b0b9, type: 2}
+  - sceneName: MinigameCrystalCaptureMultiplayer_Gameplay
+    cinematic: {fileID: 11400000, guid: ef65347ab0f9f884bb5b09e4504bfd04, type: 2}

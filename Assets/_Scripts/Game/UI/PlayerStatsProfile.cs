@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace CosmicShore.Game.Analytics
 {
@@ -13,5 +12,7 @@ namespace CosmicShore.Game.Analytics
         public WildlifeBlitzPlayerStatsProfile BlitzStats = new();
         public HexRacePlayerStatsProfile HexRaceStats = new();
         public MultiplayerHexRacePlayerStatsProfile MultiHexStats = new();
+        public JoustPlayerStatsProfile JoustStats = new();
+        public CrystalCapturePlayerStatsProfile CrystalCaptureStats = new();
     }
 }
