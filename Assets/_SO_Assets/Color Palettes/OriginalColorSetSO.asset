@@ -93,4 +93,4 @@ MonoBehaviour:
     DarkColor: {r: 0, g: 0, b: 0, a: 0}
     BrightCTA: {r: 0, g: 0, b: 0, a: 0}
     DarkCTA: {r: 0, g: 0, b: 0, a: 0}
-    Danger: {r: 0.44536972, g: 0.02849195, b: 0.012604728, a: 0}
+    Danger: {r: 0.72350526, g: 0.04628531, b: 0.020476442, a: 0}
