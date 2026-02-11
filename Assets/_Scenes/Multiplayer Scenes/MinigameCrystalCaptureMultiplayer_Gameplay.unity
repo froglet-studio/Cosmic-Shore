@@ -1138,6 +1138,11 @@ PrefabInstance:
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
       objectReference: {fileID: 0}
+    - target: {fileID: 8540960622779608551, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: activationButton
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5529300081470695220, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
     - {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
@@ -2788,10 +2793,9 @@ MonoBehaviour:
     Response:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.MultipalyerMiniGameControllerBase,
-            Assembly-CSharp
-          m_MethodName: OnClickReturnToMainMenu
+        - m_Target: {fileID: 1628508339}
+          m_TargetAssemblyTypeName: CosmicShore.Core.NetworkGameManager, Assembly-CSharp
+          m_MethodName: ReturnToMainMenu
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
