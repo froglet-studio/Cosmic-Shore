@@ -12,7 +12,6 @@ namespace CosmicShore.Game.Arcade
     {
         [Header("Joust Specific")]
         [SerializeField] public JoustCollisionTurnMonitor joustTurnMonitor;
-        [SerializeField] private Transform obstaclesContainer; // Container for obstacles/environment
         
         private bool turnEndedByMonitor = false;
         
@@ -59,11 +58,9 @@ namespace CosmicShore.Game.Arcade
                 return;
 
             // Update the client's local round stats
-            if (gameData.TryGetRoundStats(playerName, out IRoundStats stats))
-            {
-                stats.JoustCollisions = collisionCount;
-                Debug.Log($"[Client] Updated {playerName} collision count to {collisionCount}");
-            }
+            if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
+            stats.JoustCollisions = collisionCount;
+            Debug.Log($"[Client] Updated {playerName} collision count to {collisionCount}");
         }
 
         /// <summary>
@@ -92,7 +89,7 @@ namespace CosmicShore.Game.Arcade
             Debug.Log($"[Client] Turn ended. Winner: {winnerName ?? "None"}");
         }
 
-        protected override bool UseGolfRules => true; // Lowest time wins in joust
+        protected override bool UseGolfRules => true;
 
         /// <summary>
         /// Called when turn ends - calculate final scores for joust.
@@ -115,7 +112,7 @@ namespace CosmicShore.Game.Arcade
         /// </summary>
         void CalculateJoustScores()
         {
-            if (joustTurnMonitor == null)
+            if (!joustTurnMonitor)
             {
                 Debug.LogError("[MultiplayerJoustController] JoustTurnMonitor is null!");
                 return;
@@ -131,12 +128,9 @@ namespace CosmicShore.Game.Arcade
 
                 if (collisionsLeft == 0)
                 {
-                    // Winner: Use their completion time as score
-                    if (stats.Score == 0f || stats.Score >= 99999f)
-                    {
-                        stats.Score = currentTime;
-                        Debug.Log($"[Joust] {stats.Name} WON with time: {stats.Score:F2}s");
-                    }
+                    if (stats.Score != 0f && !(stats.Score >= 99999f)) continue;
+                    stats.Score = currentTime;
+                    Debug.Log($"[Joust] {stats.Name} WON with time: {stats.Score:F2}s");
                 }
                 else
                 {
@@ -160,23 +154,14 @@ namespace CosmicShore.Game.Arcade
         protected override void OnResetForReplayCustom()
         {
             base.OnResetForReplayCustom();
-            
-            // Reset turn ended flag
+
             turnEndedByMonitor = false;
             
             // Reset joust-specific elements
-            if (joustTurnMonitor != null)
+            if (joustTurnMonitor)
             {
                 joustTurnMonitor.ResetMonitor();
             }
-            
-            // Reset obstacles if needed
-            ResetObstacles();
-            
-            // Reset any UI elements specific to joust
-            ResetJoustUI();
-            
-            // Refresh HUD to show reset collision counts
             RefreshHUD();
             
             Debug.Log("[MultiplayerJoustController] Environment reset for replay");
@@ -184,36 +169,7 @@ namespace CosmicShore.Game.Arcade
 
         void RefreshHUD()
         {
-            // Trigger HUD refresh by raising the turn started event
-            // This will cause the MultiplayerJoustHUD to update all player cards
             gameData.InvokeTurnStarted();
-        }
-
-        void ResetObstacles()
-        {
-            // Reset obstacle positions/states
-            if (obstaclesContainer != null)
-            {
-                foreach (Transform obstacle in obstaclesContainer)
-                {
-                    // Reset obstacle to initial state
-                    obstacle.gameObject.SetActive(true);
-                    
-                    // If obstacles have specific reset methods, call them here
-                    var obstacleComponent = obstacle.GetComponent<IResettable>();
-                    obstacleComponent?.Reset();
-                }
-            }
-        }
-
-        void ResetJoustUI()
-        {
-            // Reset any joust-specific UI elements
-            // The scoreboard will automatically hide via OnResetForReplay event
-            // Reset collision counters, timers, progress bars, etc. if you have them
-            
-            // Example: If you have a UI controller reference
-            // joustUIController?.ResetUI();
         }
 
         /// <summary>
@@ -229,13 +185,5 @@ namespace CosmicShore.Game.Arcade
             // Any joust-specific round end logic here
             Debug.Log("[MultiplayerJoustController] Round ended");
         }
-    }
-
-    /// <summary>
-    /// Optional interface for resettable objects like obstacles.
-    /// </summary>
-    public interface IResettable
-    {
-        void Reset();
     }
 }
