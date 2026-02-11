@@ -1836,6 +1836,11 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8540960622779608551, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: activationButton
+      value: 6
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
     - {fileID: 5497835174634480091, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
