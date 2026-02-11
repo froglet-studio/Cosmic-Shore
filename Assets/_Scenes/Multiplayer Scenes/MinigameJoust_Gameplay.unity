@@ -1481,7 +1481,7 @@ MonoBehaviour:
   RotationAmount: 10
   DifficultyAngle: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  InitializeOnStart: 0
+  InitializeOnStart: 1
   NumberOfSegments: 1
   mazeData: []
   branchProbability: 0.2
