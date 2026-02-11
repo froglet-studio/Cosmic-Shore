@@ -12,16 +12,32 @@ namespace CosmicShore.Game.UI
             if (gameData != null)
             {
                 gameData.OnMiniGameTurnStarted.OnRaised += RefreshAllPlayerCards;
+                gameData.OnResetForReplay.OnRaised += OnReplayReset;
             }
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
-            
+
             if (gameData != null)
             {
                 gameData.OnMiniGameTurnStarted.OnRaised -= RefreshAllPlayerCards;
+                gameData.OnResetForReplay.OnRaised -= OnReplayReset;
+            }
+        }
+
+        /// <summary>
+        /// Called when replay reset happens - reset all collision counts to 0
+        /// </summary>
+        void OnReplayReset()
+        {
+            if (gameData?.RoundStatsList == null) return;
+
+            // Reset all player cards to 0 collisions
+            foreach (var stats in gameData.RoundStatsList.Where(stats => stats != null))
+            {
+                UpdatePlayerCard(stats.Name, 0);
             }
         }
 
@@ -53,7 +69,7 @@ namespace CosmicShore.Game.UI
                 UpdatePlayerCard(updatedStats.Name, updatedStats.JoustCollisions);
             }
         }
-        
+
         /// <summary>
         /// Refresh all player cards - useful when game starts or resets
         /// </summary>

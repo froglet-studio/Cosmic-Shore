@@ -24,10 +24,19 @@ namespace CosmicShore.Game.UI
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
         }
 
-        protected override void DisplayPlayerScores() { }
+        protected override void DisplayPlayerScores() 
+        { 
+            // Not used - FormatMultiplayerJoustScores handles this
+        }
 
         void FormatMultiplayerJoustScores()
         {
+            if (joustController == null || joustController.joustTurnMonitor == null)
+            {
+                Debug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
+                return;
+            }
+
             var playerScores = gameData.RoundStatsList;
             int needed = joustController.joustTurnMonitor.CollisionsNeeded;
 
@@ -60,7 +69,7 @@ namespace CosmicShore.Game.UI
                 }
             }
     
-            // Cleanup
+            // Cleanup unused slots
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
                 if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
