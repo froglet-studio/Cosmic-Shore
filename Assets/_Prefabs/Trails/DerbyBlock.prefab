@@ -185,7 +185,7 @@ MonoBehaviour:
   onPrismVolumeModified: {fileID: 11400000, guid: a77d7a82675ef1149bece8a6096e2bdc,
     type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
-  maxScale: {x: 10, y: 10, z: 10}
+  maxScale: {x: 100, y: 100, z: 100}
   usePrefabScaleAsDefaultTarget: 0
   authoredTargetScale: {x: 0, y: 0, z: 0}
 --- !u!114 &3650897936652181197
