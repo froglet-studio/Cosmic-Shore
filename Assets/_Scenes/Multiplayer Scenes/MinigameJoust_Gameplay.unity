@@ -1468,6 +1468,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   spawnableSegments:
   - {fileID: 564685484}
   positioningScheme: 19
@@ -3004,7 +3005,6 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   multiplayerSetup: {fileID: 1429934008}
-  onJoustCollision: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90, type: 2}
   joustTurnMonitor: {fileID: 1628508345}
 --- !u!114 &1628508347
 MonoBehaviour:
