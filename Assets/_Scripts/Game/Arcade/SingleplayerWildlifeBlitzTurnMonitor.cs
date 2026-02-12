@@ -10,7 +10,7 @@ namespace CosmicShore.Game.Arcade
         private int currentTargetScore;
         
         [Header("References")]
-        [SerializeField] CellDataSO cellData;
+        [SerializeField] CellRuntimeDataSO cellData;
 
         [Header("Events")]
         [SerializeField] ScriptableEventInt onSetScoreTargetEvent;
@@ -33,8 +33,8 @@ namespace CosmicShore.Game.Arcade
 
         void SetTargetScoreFromCellType()
         {
-            if (!cellData || !cellData.CellType) return;
-            currentTargetScore = cellData.CellType.CellEndGameScore;
+            if (!cellData || !cellData.Config) return;
+            currentTargetScore = cellData.Config.CellEndGameScore;
         }
 
         public override bool CheckForEndOfTurn()

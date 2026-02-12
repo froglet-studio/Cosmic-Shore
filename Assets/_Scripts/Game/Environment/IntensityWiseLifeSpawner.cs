@@ -1,137 +1,125 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class IntensityWiseLifeSpawner : ICellLifeSpawner
+    public sealed class IntensityWiseLifeSpawner : CellLifeSpawnerBase
     {
-        Coroutine floraRoutine;
-        Coroutine faunaRoutine;
-
-        public void Start(Cell host, SO_CellType cellType, CellDataSO cellData, GameDataSO gameData)
+        protected override void OnStart(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
-            Stop(host);
-            if (!host || !cellType) return;
-
-            var cfg = cellType.IntensityLifeFormConfiguration;
-
-            floraRoutine = host.StartCoroutine(SpawnInitialFlora(host, cellType, cellData, gameData, cfg));
-            faunaRoutine = host.StartCoroutine(SpawnInitialPopulations(host, cellData, gameData, cellType, cfg));
+            Track(host, SpawnInitialFlora(host, config, runtime, gameData));
+            Track(host, SpawnInitialFauna(host, config, runtime, gameData));
         }
 
-        public void Stop(Cell host)
+        IEnumerator SpawnInitialFlora(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
-            if (!host) return;
-            if (floraRoutine != null) { host.StopCoroutine(floraRoutine); floraRoutine = null; }
-            if (faunaRoutine != null) { host.StopCoroutine(faunaRoutine); faunaRoutine = null; }
-        }
+            var spawnProfile = config.SpawnProfile;
+            if (!spawnProfile) yield break;
+            if (spawnProfile.SupportedFloras is not { Count: > 0 })
+                yield break;
 
-        IEnumerator SpawnInitialFlora(Cell host, SO_CellType cellType, CellDataSO cellData, GameDataSO gameData, SO_CellType.LifeFormConfiguration cfg)
-        {
-            if (cfg.FloraInitialDelaySeconds > 0f)
-                yield return new WaitForSeconds(cfg.FloraInitialDelaySeconds);
+            var excluded = GetExcludedDomain(spawnProfile.FloraExcludeLocalDomain, gameData, fallbackLocal: Domains.Jade);
 
-            // CRITICAL FIX: Wait one frame for crystal to finish initializing
-            yield return null;
-            
-            // Verify crystal exists
-            if (!cellData.TryGetLocalCrystal(out Crystal crystal) || !crystal || !crystal.transform)
+            // NEW: iterate every flora type, roll probability, start a per-type spawning coroutine
+            foreach (var floraCfg in spawnProfile.SupportedFloras)
             {
-                Debug.LogError("[IntensityWiseSpawner] No crystal found after waiting, cannot spawn flora!");
-                yield break;
-            }
+                if (!floraCfg || !floraCfg.FloraPrefab) continue;
 
-            if (cellType.SupportedFlora == null || cellType.SupportedFlora.Count == 0)
-                yield break;
+                if (!AllowSpawn(floraCfg.SpawnProbability))
+                    continue;
 
-            var floraConfig = PickWeighted(cellType.SupportedFlora, f => f.SpawnProbability);
-            if (floraConfig == null || !floraConfig.Flora)
-                yield break;
-
-            int count = Mathf.Max(0, floraConfig.initialSpawnCount);
-            var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
-            Domains? excluded = cfg.FloraExcludeLocalDomain ? local : (Domains?)null;
-
-            Debug.Log($"<color=green>[IntensityWiseSpawner] Spawning {count} flora, crystal ready at {crystal.transform.position}</color>");
-
-            for (int i = 0; i < count; i++)
-            {
-                var newFlora = Object.Instantiate(floraConfig.Flora, host.transform.position, Quaternion.identity);
-                newFlora.domain = PickRandomDomain(excluded);
-                newFlora.Initialize(host);
-                
-                host.RegisterSpawnedObject(newFlora.gameObject); 
-
-                if (cfg.FloraSpawnIntervalSeconds > 0f && i < count - 1)
-                    yield return new WaitForSeconds(cfg.FloraSpawnIntervalSeconds);
+                Track(host, SpawnFloraTypeLoop(host, spawnProfile, floraCfg, excluded));
             }
         }
 
-        IEnumerator SpawnInitialPopulations(Cell host, CellDataSO cellData, GameDataSO gameData, SO_CellType cellType, SO_CellType.LifeFormConfiguration cfg)
+        IEnumerator SpawnInitialFauna(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
-            if (cfg.FaunaInitialDelaySeconds > 0f)
-                yield return new WaitForSeconds(cfg.FaunaInitialDelaySeconds);
-
-            // CRITICAL FIX: Wait one frame for crystal to finish initializing
-            yield return null;
-            
-            // Verify crystal exists
-            if (!cellData.TryGetLocalCrystal(out Crystal crystal) || !crystal || !crystal.transform)
-            {
-                Debug.LogError("[IntensityWiseSpawner] No crystal found after waiting, cannot spawn fauna!");
-                yield break;
-            }
-
-            if (cellType.SupportedFauna == null || cellType.SupportedFauna.Count == 0)
+            var spawnProfile = config.SpawnProfile;
+            if (!spawnProfile) yield break;
+            if (spawnProfile.SupportedFaunas is not { Count: > 0 })
                 yield break;
 
-            var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
-            Domains? excluded = cfg.FaunaExcludeLocalDomain ? local : (Domains?)null;
+            var excluded = GetExcludedDomain(spawnProfile.FaunaExcludeLocalDomain, gameData, fallbackLocal: Domains.Jade);
 
-            Debug.Log($"<color=green>[IntensityWiseSpawner] Spawning fauna, crystal ready at {crystal.transform.position}</color>");
-
-            foreach (var populationConfiguration in cellType.SupportedFauna)
+            // NEW: iterate every fauna type, roll probability, start a per-type spawning coroutine
+            foreach (var faunaCfg in spawnProfile.SupportedFaunas)
             {
-                if (populationConfiguration == null || !populationConfiguration.Population) continue;
+                if (!faunaCfg || !faunaCfg.FaunaPrefab) continue;
 
-                int populationCount = Mathf.Max(0, populationConfiguration.InitialFloraSpawnCount);
+                if (!AllowSpawn(faunaCfg.SpawnProbability))
+                    continue;
 
-                for (int i = 0; i < populationCount; i++)
-                {
-                    var pop = Object.Instantiate(populationConfiguration.Population, host.transform.position, Quaternion.identity);
-                    pop.domain = PickRandomDomain(excluded);
-                    pop.Goal = crystal.transform.position;
-                    
-                    host.RegisterSpawnedObject(pop.gameObject);
-
-                    if (cfg.FaunaSpawnIntervalSeconds > 0f && i < populationCount - 1)
-                        yield return new WaitForSeconds(cfg.FaunaSpawnIntervalSeconds);
-                }
+                Track(host, SpawnFaunaTypeLoop(host, runtime, spawnProfile, faunaCfg, excluded));
             }
         }
-        
-        static Domains PickRandomDomain(Domains? excluded)
+
+        IEnumerator SpawnFloraTypeLoop(
+            Cell host,
+            SpawnProfileSO spawnProfile,
+            FloraConfigurationSO floraCfg,
+            Domains? excluded)
         {
-            var candidates = new List<Domains>(4) { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
-            if (excluded.HasValue) candidates.Remove(excluded.Value);
-            return candidates.Count == 0 ? Domains.Jade : candidates[Random.Range(0, candidates.Count)];
+            // Initial batch
+            int initialCount = Mathf.Max(0, floraCfg.InitialSpawnCount);
+            float initialInterval = Mathf.Max(0f, spawnProfile.FloraSpawnIntervalSeconds);
+
+            for (int i = 0; i < initialCount; i++)
+            {
+                SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+
+                if (initialInterval > 0f && i < initialCount - 1)
+                    yield return new WaitForSeconds(initialInterval);
+            }
+
+            // Continuous spawn for this flora type (uses its own period rule)
+            while (true)
+            {
+                // same behavior as your old random loop period logic
+                float waitPeriod = floraCfg.OverrideDefaultPlantPeriod
+                    ? Mathf.Max(0f, (float)floraCfg.NewPlantPeriod)
+                    : floraCfg.FloraPrefab.PlantPeriod;
+
+                if (waitPeriod > 0f)
+                    yield return new WaitForSeconds(waitPeriod);
+                else
+                    yield return null;
+
+                SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+            }
         }
 
-        static T PickWeighted<T>(IReadOnlyList<T> items, System.Func<T, float> weightSelector)
+        IEnumerator SpawnFaunaTypeLoop(
+            Cell host,
+            CellRuntimeDataSO runtime,
+            SpawnProfileSO spawnProfile,
+            FaunaConfigurationSO faunaCfg,
+            Domains? excluded)
         {
-            if (items == null || items.Count == 0) return default;
-            float total = items.Sum(t => Mathf.Max(0f, weightSelector(t)));
-            if (total <= 0f) return items[0];
-            float roll = Random.value * total;
-            float cumulative = 0f;
-            foreach (var t in items) {
-                cumulative += Mathf.Max(0f, weightSelector(t));
-                if (roll <= cumulative) return t;
+            // Initial batch
+            int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
+            float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
+
+            for (int i = 0; i < initialCount; i++)
+            {
+                if (TryGetCrystalGoal(runtime, out var goal))
+                    SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
+
+                if (initialInterval > 0f && i < initialCount - 1)
+                    yield return new WaitForSeconds(initialInterval);
             }
-            return items[^1];
+
+            // Continuous spawn for this fauna type
+            while (true)
+            {
+                // If you later add per-type period fields, change this to faunaCfg.SpawnPeriodSeconds etc.
+                float wait = Mathf.Max(0f, spawnProfile.BaseFaunaSpawnTime);
+                if (wait > 0f) yield return new WaitForSeconds(wait);
+                else yield return null;
+
+                if (TryGetCrystalGoal(runtime, out var goal))
+                    SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
+            }
         }
     }
 }

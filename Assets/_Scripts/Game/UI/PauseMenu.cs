@@ -56,13 +56,13 @@ namespace CosmicShore.App.UI.Screens
 
         public void OnClickMultiplayerResumeGameButton()
         {
-            TogglePlayerPauseWithDelay(false);
+            _ = TogglePlayerPauseWithDelay(false);
             Hide();
         }
 
         public void OnClickMultiplayerPauseButton()
         {
-            TogglePlayerPauseWithDelay(true);
+            _ = TogglePlayerPauseWithDelay(true);
             Show();
         }
         
@@ -75,7 +75,7 @@ namespace CosmicShore.App.UI.Screens
             Hide();
             
             if (!wasLocalPlayerInputPausedBefore)
-                TogglePlayerPauseWithDelay(false);
+                _ = TogglePlayerPauseWithDelay(false);
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace CosmicShore.App.UI.Screens
             
             wasLocalPlayerInputPausedBefore = gameData.LocalPlayer.InputStatus.Paused;
             if (!wasLocalPlayerInputPausedBefore)
-                TogglePlayerPauseWithDelay(true);
+                _ = TogglePlayerPauseWithDelay(true);
         }
 
         public void OnClickMainMenu() => _onClickToMainMenu.Raise();

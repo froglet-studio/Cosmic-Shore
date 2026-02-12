@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using Obvious.Soap;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -8,115 +7,128 @@ namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerJoustController : MultiplayerDomainGamesController
     {
-        [Header("Events")]
-        [SerializeField] private ScriptableEventString onJoustCollision;
-
-        [Header("Turn Monitor")]
+        [Header("Joust Specific")]
         [SerializeField] public JoustCollisionTurnMonitor joustTurnMonitor;
 
-        private bool _gameEnded;
-        private float _gameStartTime;
+        private bool _finalResultsSent;
+
+        protected override bool UseGolfRules => true;
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            this.numberOfRounds = 1;
-            this.numberOfTurnsPerRound = 1;
+            numberOfRounds = 1;
+            numberOfTurnsPerRound = 1;
+
+            _finalResultsSent = false;
         }
 
-        protected override void OnCountdownTimerEnded()
+        /// <summary>
+        /// Called by monitor when a collision occurs (server authoritative).
+        /// </summary>
+        public void NotifyCollision(string playerName, int collisionCount)
         {
             if (!IsServer) return;
-            _gameStartTime = Time.time;
-            InitializeJoustGame_ClientRpc();
+
+            // Update server truth immediately too (important!)
+            var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
+            if (stats != null) stats.JoustCollisions = collisionCount;
+
+            NotifyCollision_ClientRpc(playerName, collisionCount);
         }
 
         [ClientRpc]
-        void InitializeJoustGame_ClientRpc()
+        void NotifyCollision_ClientRpc(string playerName, int collisionCount)
         {
-            gameData.SetPlayersActive();
-            gameData.StartTurn();
-            if (joustTurnMonitor) joustTurnMonitor.StartMonitor();
+            // This runs on clients (and host client too, which is fine)
+            if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
+            stats.JoustCollisions = collisionCount;
         }
 
-        // --- Live Sync: Critical for Client Victory Check ---
-        public void NotifyCollision(string playerName, int currentCollisions)
+        protected override void OnTurnEndedCustom()
         {
+            base.OnTurnEndedCustom();
             if (!IsServer) return;
-            UpdateCollisionCount_ClientRpc(playerName, currentCollisions);
+
+            // Prevent double-send if something ends turn twice
+            if (_finalResultsSent) return;
+
+            CalculateJoustScores_Server();
+            SyncJoustResults_Authoritative();
+            _finalResultsSent = true;
         }
 
-        [ClientRpc]
-        void UpdateCollisionCount_ClientRpc(string playerName, int count)
+        void CalculateJoustScores_Server()
         {
-            var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (stat != null) stat.JoustCollisions = count;
-        }
-
-        public void OnTurnEndedByMonitor(string winnerName)
-        {
-            if (!IsServer) return;
-            HandlePlayerWon(winnerName);
-        }
-
-        void HandlePlayerWon(string winnerName)
-        {
-            if (_gameEnded) return;
-            _gameEnded = true;
-
-            float elapsedTime = Time.time - _gameStartTime;
-            CalculateFinalScores(winnerName, elapsedTime);
-        }
-
-        void CalculateFinalScores(string winnerName, float winnerTime)
-        {
-            var statsList = gameData.RoundStatsList;
-            int count = statsList.Count;
-            int needed = joustTurnMonitor.CollisionsNeeded;
-    
-            FixedString64Bytes[] nameArray = new FixedString64Bytes[count];
-            float[] scoreArray = new float[count];
-            int[] collisionArray = new int[count];
-
-            for (int i = 0; i < count; i++)
+            if (!joustTurnMonitor)
             {
-                nameArray[i] = new FixedString64Bytes(statsList[i].Name);
+                Debug.LogError("[MultiplayerJoustController] JoustTurnMonitor is null!");
+                return;
+            }
 
-                if (statsList[i].Name == winnerName)
+            int collisionsNeeded = joustTurnMonitor.CollisionsNeeded;
+            float currentTime = Time.time - gameData.TurnStartTime;
+
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                int current = stats.JoustCollisions;
+                int left = Mathf.Max(0, collisionsNeeded - current);
+
+                if (left == 0)
                 {
-                    // Winner: Score is accurate Time, Collisions = needed (to guarantee didWin = true)
-                    scoreArray[i] = winnerTime;
-                    collisionArray[i] = needed; // Force winner to show as winner
+                    // Winner time (only set once)
+                    if (stats.Score > 0f && stats.Score < 99999f) continue;
+                    stats.Score = currentTime;
                 }
                 else
                 {
-                    // Loser: Score is high to force bottom sorting
-                    scoreArray[i] = 99999f;
-                    collisionArray[i] = statsList[i].JoustCollisions; // Actual collision count
+                    stats.Score = 99999f;
                 }
             }
 
-            SyncFinalScores_ClientRpc(nameArray, scoreArray, collisionArray);
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+        }
+
+        void SyncJoustResults_Authoritative()
+        {
+            var list = gameData.RoundStatsList;
+            int count = list.Count;
+
+            FixedString64Bytes[] names = new FixedString64Bytes[count];
+            float[] scores = new float[count];
+            int[] collisions = new int[count];
+            int[] domains = new int[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                names[i] = new FixedString64Bytes(list[i].Name);
+                scores[i] = list[i].Score;
+                collisions[i] = list[i].JoustCollisions;
+                domains[i] = (int)list[i].Domain;
+            }
+
+            SyncJoustResults_ClientRpc(names, scores, collisions, domains);
         }
 
         [ClientRpc]
-        void SyncFinalScores_ClientRpc(FixedString64Bytes[] names, float[] scores, int[] collisions)
+        void SyncJoustResults_ClientRpc(FixedString64Bytes[] names, float[] scores, int[] collisions, int[] domains)
         {
             for (int i = 0; i < names.Length; i++)
             {
-                string sName = names[i].ToString();
-                var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
-                if (stat != null)
-                {
-                    stat.Score = scores[i];
-                    stat.JoustCollisions = collisions[i];
-                    Debug.Log($"[SyncFinalScores] {sName}: Score={scores[i]}, Collisions={collisions[i]}");
-                }
+                string n = names[i].ToString();
+                var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == n);
+                if (stat == null) continue;
+
+                stat.Score = scores[i];
+                stat.JoustCollisions = collisions[i];
+                stat.Domain = (Domains)domains[i];
             }
 
-            // Simple Sort: Lowest Score (Time) wins. Losers (99999) go to bottom.
-            gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
 
+            // Only now trigger endgame pipeline everywhere
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
@@ -124,10 +136,20 @@ namespace CosmicShore.Game.Arcade
         protected override void OnResetForReplayCustom()
         {
             base.OnResetForReplayCustom();
-            _gameEnded = false;
-            _gameStartTime = 0f;
-        }
 
-        protected override bool UseGolfRules => true;
+            _finalResultsSent = false;
+
+            if (joustTurnMonitor)
+                joustTurnMonitor.ResetMonitor();
+
+            foreach (var s in gameData.RoundStatsList)
+            {
+                s.JoustCollisions = 0;
+                s.Score = 0f;
+            }
+
+            // If you want HUD refresh:
+            gameData.InvokeTurnStarted();
+        }
     }
 }

@@ -12,8 +12,6 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SpawnableWaypointTrack optionalEnvironment;
         [SerializeField] int optionalLaps = 4;
 
-        public event Action OnTurnFinished; 
-
         public override void StartMonitor()
         {
             CrystalCollisions = GetCrystalCollisionCount();
@@ -33,13 +31,7 @@ namespace CosmicShore.Game.Arcade
         public override bool CheckForEndOfTurn()
         {
             if (ownStats == null) return false;
-            bool isFinished = ownStats.CrystalsCollected >= CrystalCollisions;
-            if (isFinished)
-            {
-                OnTurnFinished?.Invoke();
-            }
-            
-            return isFinished;
+            return ownStats.CrystalsCollected >= CrystalCollisions;
         }
         
         protected virtual void UpdateCrystals(IRoundStats stats) => UpdateCrystalsRemainingUI();
@@ -64,7 +56,7 @@ namespace CosmicShore.Game.Arcade
             if (gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats)) return;
         }
 
-        int GetCrystalCollisionCount()
+        protected int GetCrystalCollisionCount()
         {
             if (optionalEnvironment)
             {

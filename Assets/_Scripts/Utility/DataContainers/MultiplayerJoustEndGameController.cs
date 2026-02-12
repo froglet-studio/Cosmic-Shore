@@ -16,16 +16,14 @@ namespace CosmicShore.Game.Arcade
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
-    
+
             var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localPlayerName);
-
             if (localStats == null) yield break;
 
-            // --- THE LOGIC ---
             int needed = joustController.joustTurnMonitor.CollisionsNeeded;
             int current = localStats.JoustCollisions;
-            
+
             bool didWin = current >= needed;
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
@@ -36,13 +34,13 @@ namespace CosmicShore.Game.Arcade
             if (didWin)
             {
                 label = "RACE TIME";
-                displayValue = (int)localStats.Score; // Score is Time
+                displayValue = (int)localStats.Score; // Score is time
                 formatAsTime = true;
             }
             else
             {
                 label = "JOUSTS LEFT";
-                displayValue = Mathf.Max(0, needed - current); // Calc Jousts Left
+                displayValue = Mathf.Max(0, needed - current);
                 formatAsTime = false;
             }
 
@@ -52,13 +50,6 @@ namespace CosmicShore.Game.Arcade
                 cinematic.scoreRevealSettings,
                 formatAsTime
             );
-        }
-        
-        protected override void ResetGameForNewRound()
-        {
-            base.ResetGameForNewRound();
-            foreach (var stats in gameData.RoundStatsList)
-                stats.JoustCollisions = 0;
         }
     }
 }

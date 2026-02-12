@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Utilities;
 using CosmicShore.Utility;
@@ -19,34 +20,38 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] private PrismEventChannelWithReturnSO _prismSpawnEvent;
 
         [Header("Block Parameters")]
-        [SerializeField] protected float blockCount = 8f; // TODO: int
+        [SerializeField] protected float blockCount = 8f; 
         [SerializeField] protected int ringCount = 3;
         [SerializeField] protected float radius = 30f;
 
+        // [Visual Note] Trails list tracks all spawned objects so we can delete them on Reset
         protected readonly List<Trail> trails = new();
-        protected CancellationTokenSource _cts;
+        
+        protected string OwnerIdBase => Vessel?.VesselStatus?.Player?.PlayerUUID ?? "UnknownOwner";
 
-        protected string OwnerIdBase =>
-            Vessel?.VesselStatus?.Player?.PlayerUUID ?? "UnknownOwner";
-
-        private void OnDisable() => CancelExplosion();
-
-        /// <summary>Start the AoE block creation (UniTask-based, no coroutines).</summary>
-        public virtual void BeginExplosion()
+        /// <summary>
+        /// CLEANUP OVERRIDE: Called automatically by AOEExplosion when OnResetForReplay fires.
+        /// </summary>
+        protected override void PerformResetCleanup()
         {
+            // 1. Stop any active spawning tasks
             CancelExplosion();
-            _cts = new CancellationTokenSource();
-            ExplodeAsync(_cts.Token).Forget();
+
+            // 2. Destroy all the blocks we spawned
+            foreach (var block in from trail in trails where trail != null from block in trail.TrailList where block select block)
+            {
+                Destroy(block.gameObject);
+            }
+            trails.Clear();
+
+            // 3. Destroy this spawner object
+            Destroy(gameObject);
         }
 
-        public void CancelExplosion()
+        public virtual void BeginExplosion()
         {
-            if (_cts != null)
-            {
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = null;
-            }
+            // [Optimization] Use the base class Detonate to ensure tokens are managed centrally
+            Detonate();
         }
 
         protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
@@ -73,10 +78,11 @@ namespace CosmicShore.Game.Projectiles
 
                         CreateRingBlock(i, phase, scale, tilt, sweep, trails[ring]);
                     }
+                    // Spread creation over frames to avoid spikes
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
             }
-            catch (OperationCanceledException) { /* expected */ }
+            catch (OperationCanceledException) { /* expected on TurnEnd/Reset */ }
         }
 
         protected void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)
@@ -96,7 +102,6 @@ namespace CosmicShore.Game.Projectiles
             CreateBlock(pos, lookForward, up, $"::AOE::{Time.time}::{i}", trail);
         }
 
-        /// <summary>Requests an Interactive Prism from PrismFactory via event, then configures it.</summary>
         protected Prism CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerSuffix, Trail trail)
         {
             if (_prismSpawnEvent == null)
@@ -120,20 +125,11 @@ namespace CosmicShore.Game.Projectiles
             };
 
             var ret = _prismSpawnEvent.RaiseEvent(data);
-            if (!ret.SpawnedObject)
-            {
-                Debug.LogWarning("[AOEBlockCreation] PrismFactory returned null. Spawn aborted.");
-                return null;
-            }
+            if (!ret.SpawnedObject) return null;
 
             var block = ret.SpawnedObject.GetComponent<Prism>();
-            if (!block)
-            {
-                Debug.LogWarning("[AOEBlockCreation] Spawned object has no Prism component.");
-                return null;
-            }
+            if (!block) return null;
 
-            // Ownership & unique tagging
             block.ownerID = OwnerIdBase + ownerSuffix + position;
             block.TargetScale = blockScale;
 

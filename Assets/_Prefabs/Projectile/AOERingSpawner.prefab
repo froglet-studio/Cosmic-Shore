@@ -47,6 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68f57ba7e4f214f49b194da79a32585c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   ExplosionDuration: 2
   ExplosionDelay: 0.01
   meshRenderer: {fileID: 5930645708474172524}
@@ -72,6 +73,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
+  intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: 5e0149b915fc095448e82496cd02dde8, type: 3}
   ringCount: 1
   prismsPerRing: 8

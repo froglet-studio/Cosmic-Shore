@@ -38,6 +38,9 @@ public class Boid : Fauna
 
     [Header("Mound Settings")]
     public Transform Mound;
+    
+    [SerializeField]
+    Prism healthPrism;
 
     Vector3 currentVelocity;
     Vector3 desiredDirection;
@@ -53,11 +56,12 @@ public class Boid : Fauna
 
     List<Collider> separatedBoids = new List<Collider>();
     HealthPrism embeddedHealthPrism;
+    
+    public BoidManager BoidManager { get; set; }
+    public BoidController BoidController { get; set; }
 
     public override void Initialize(Cell cell)
     {
-        base.Initialize(cell);
-
         embeddedHealthPrism = GetComponentInChildren<HealthPrism>(true);
         if (!embeddedHealthPrism)
         {
@@ -85,7 +89,7 @@ public class Boid : Fauna
         {
             if (!isAttached)
             {
-                target = Population ? Population.Goal : target;
+                target = Goal;      // Check it later
             }
 
             CalculateBehavior();
@@ -205,6 +209,10 @@ public class Boid : Fauna
     }
 
     protected override void Spawn() { }
+    protected override void Die(string killername = "")
+    {
+        throw new System.NotImplementedException();
+    }
 
     IEnumerator AddToMoundCoroutine()
     {
@@ -252,7 +260,7 @@ public class Boid : Fauna
 
     private (Prism, GyroidAssembler) NewBlock()
     {
-        var newBlock = Instantiate(healthPrism, transform.position, transform.rotation, Population.transform);
+        var newBlock = Instantiate(healthPrism, transform.position, transform.rotation, transform);
         newBlock.ChangeTeam(domain);
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         newBlock.prismProperties = new() { prism = newBlock };

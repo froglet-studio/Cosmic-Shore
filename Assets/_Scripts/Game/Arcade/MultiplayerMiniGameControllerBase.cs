@@ -15,6 +15,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] protected MultiplayerSetup multiplayerSetup;
         
         protected virtual int InitDelayMs => 1000;
+        private bool _isResetting;
         
         public override void OnNetworkSpawn()
         {
@@ -26,7 +27,8 @@ namespace CosmicShore.Game.Arcade
                 gameData.OnSessionStarted += SubscribeToSessionEvents;
             }
 
-            gameData.OnResetForReplay.OnRaised += OnResetForReplay;
+            // [Visual Note] We intentionally do NOT subscribe to OnResetForReplay here.
+            // This controller triggers the event via RPC, it should not listen to it to avoid infinite loops.
 
             if (IsServer)
                 InitializeAfterDelay().Forget();
@@ -40,13 +42,13 @@ namespace CosmicShore.Game.Arcade
                 gameData.OnSessionStarted -= SubscribeToSessionEvents;
             }
             
-            gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
-            
             UnsubscribeFromSessionEvents();
             
             base.OnNetworkDespawn();
         }
-        
+
+        // ---------------- Session Management ----------------
+
         void SubscribeToSessionEvents()
         {
             if (gameData.ActiveSession == null)
@@ -72,12 +74,10 @@ namespace CosmicShore.Game.Arcade
         protected virtual void OnPlayerLeavingFromSession(string clientId) 
         {
             // Base implementation does nothing
-            // Subclasses can override to handle disconnection
         }
 
         /// <summary>
         /// Runs Initialize() after a small delay (server only).
-        /// The delay ensures network setup is complete before starting game flow.
         /// </summary>
         async UniTaskVoid InitializeAfterDelay()
         {
@@ -97,6 +97,8 @@ namespace CosmicShore.Game.Arcade
             }
         }
         
+        // ---------------- Turn & Round Flow ----------------
+
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer)
@@ -115,7 +117,6 @@ namespace CosmicShore.Game.Arcade
         
         /// <summary>
         /// Handles turn end event from server.
-        /// This is called by the event subscription, not by override.
         /// </summary>
         void HandleTurnEnd()
         {
@@ -138,10 +139,6 @@ namespace CosmicShore.Game.Arcade
             OnTurnEndedCustom();
         }
         
-        /// <summary>
-        /// Server executes turn end logic which may trigger round end or game end.
-        /// This bridges to the base class's protected EndTurn method.
-        /// </summary>
         void ExecuteServerTurnEnd()
         {
             gameData.TurnsTakenThisRound++;
@@ -152,9 +149,6 @@ namespace CosmicShore.Game.Arcade
                 SetupNewTurn();
         }
 
-        /// <summary>
-        /// Server executes round end logic which may trigger game end.
-        /// </summary>
         void ExecuteServerRoundEnd()
         {
             if (!IsServer)
@@ -182,9 +176,6 @@ namespace CosmicShore.Game.Arcade
             OnRoundEndedCustom();
         }
         
-        /// <summary>
-        /// Server triggers game end sequence.
-        /// </summary>
         void ExecuteServerGameEnd()
         {
             if (!IsServer)
@@ -197,9 +188,11 @@ namespace CosmicShore.Game.Arcade
         void SyncGameEnd_ClientRpc()
         {
             if (!ShowEndGameSequence) return;
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.InvokeWinnerCalculated();
 
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules); 
+            
+            gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
 
@@ -225,20 +218,73 @@ namespace CosmicShore.Game.Arcade
             RaiseToggleReadyButtonEvent(true);
         }
 
+        // ---------------- Reset / Replay Logic ----------------
+
         protected override void OnResetForReplay()
         {
-            if (!IsServer)
-                return;
+        }
+
+        /// <summary>
+        /// Public entry point for Scoreboard "Play Again" button.
+        /// Handles Client->Server permission request.
+        /// </summary>
+        public void RequestReplay()
+        {
+            if (IsServer)
+            {
+                ExecuteReplaySequence();
+            }
+            else
+            {
+                RequestReplay_ServerRpc();
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void RequestReplay_ServerRpc()
+        {
+            ExecuteReplaySequence();
+        }
+
+        void ExecuteReplaySequence()
+        {
+            if (_isResetting) return;
+            _isResetting = true;
+            
+            // Initiate reset on all machines
+            ResetForReplay_ClientRpc();
+        }
+        
+        [ClientRpc]
+        void ResetForReplay_ClientRpc()
+        {
+            Debug.Log("[MultiplayerController] Resetting Environment...");
+            _isResetting = false;
+
+            gameData.ResetStatsDataForReplay();
+            gameData.ResetPlayers();
+
+            if (gameData.OnResetForReplay != null)
+                gameData.OnResetForReplay.Raise();
+            else
+                Debug.LogError("[MultiplayerController] OnResetForReplay Event is missing on GameData!");
+            
             OnResetForReplayCustom();
+            RaiseToggleReadyButtonEvent(true);
+ 
+            if (IsServer)
+                ResetServerRoundAfterDelay().Forget();
+        }
+
+        async UniTaskVoid ResetServerRoundAfterDelay()
+        {
+            await UniTask.Delay(100); 
             SetupNewRound();
         }
         
-        /// <summary>
-        /// Hook for game-specific replay logic in multiplayer.
-        /// Called on server only before restarting game.
-        /// </summary>
         protected virtual void OnResetForReplayCustom()
         {
+            // Override in subclass to reset game-specific elements
         }
     }
 }

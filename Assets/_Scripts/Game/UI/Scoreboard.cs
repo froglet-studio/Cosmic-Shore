@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using CosmicShore.Core;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
 using Obvious.Soap;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 namespace CosmicShore.Game.UI
 {
@@ -16,6 +16,10 @@ namespace CosmicShore.Game.UI
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
+        // [Fix] SerializeField Reference (Assign in Inspector!)
+        [Header("References")]
+        [SerializeField] private MultiplayerMiniGameControllerBase multiplayerController;
+
         [Header("UI Containers")]
         [SerializeField] Transform scoreboardPanel;
         [SerializeField] Transform statsContainer; 
@@ -23,7 +27,7 @@ namespace CosmicShore.Game.UI
 
         [Header("Banner")]
         [SerializeField] Image BannerImage;
-        [SerializeField] TMP_Text BannerText;
+        [SerializeField] protected TMP_Text BannerText;
         [SerializeField] Color SinglePlayerBannerColor;
         [SerializeField] Color JadeTeamBannerColor;
         [SerializeField] Color RubyTeamBannerColor;
@@ -52,16 +56,19 @@ namespace CosmicShore.Game.UI
         {
             if (gameData != null && gameData.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
-            if (OnResetForReplay != null)
-                OnResetForReplay.OnRaised += HideScoreboard;
+            
+            // Robust event subscription
+            var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData?.OnResetForReplay;
+            if (resetEvent != null) resetEvent.OnRaised += HideScoreboard;
         }
 
         void OnDisable()
         {
             if (gameData != null && gameData.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
-            if (OnResetForReplay != null)
-                OnResetForReplay.OnRaised -= HideScoreboard;
+            
+            var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData?.OnResetForReplay;
+            if (resetEvent != null) resetEvent.OnRaised -= HideScoreboard;
         }
 
         void ShowScoreboard()
@@ -107,16 +114,11 @@ namespace CosmicShore.Game.UI
             if (SinglePlayerHighscoreTextField)
             {
                 float finalHighScore = playerScore;
-                
                 if (UGSStatsManager.Instance && Enum.TryParse(gameData.GameMode.ToString(), out GameModes modeEnum))
                 {
                     finalHighScore = UGSStatsManager.Instance.GetEvaluatedHighScore(
-                        modeEnum, 
-                        gameData.SelectedIntensity.Value, 
-                        playerScore
-                    );
+                        modeEnum, gameData.SelectedIntensity.Value, playerScore);
                 }
-                
                 SinglePlayerHighscoreTextField.text = ((int)finalHighScore).ToString();
             }
 
@@ -126,6 +128,7 @@ namespace CosmicShore.Game.UI
 
         protected virtual void ShowMultiplayerView()
         {
+            // Now that DomainStats are calculated in the Controller, this will return the correct Winner
             bool isLocalWinner = gameData.IsLocalDomainWinner(out DomainStats winnerStats);
             SetBannerForDomain(winnerStats.Domain);
             DisplayPlayerScores();
@@ -180,8 +183,24 @@ namespace CosmicShore.Game.UI
         
         public void OnPlayAgainButtonPressed()
         {
-            if (UGSStatsManager.Instance != null) UGSStatsManager.Instance.TrackPlayAgain();
-            gameData.ResetForReplay();
+            if (UGSStatsManager.Instance != null) 
+                UGSStatsManager.Instance.TrackPlayAgain();
+
+            if (gameData.IsMultiplayerMode)
+            {
+                if (multiplayerController != null) 
+                {
+                    multiplayerController.RequestReplay();
+                }
+                else
+                {
+                    Debug.LogError("[Scoreboard] Multiplayer Controller Reference Missing! Assign in Inspector.");
+                }
+            }
+            else
+            {
+                gameData.ResetForReplay();
+            }
         }
     }
 }

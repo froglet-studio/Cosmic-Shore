@@ -1,161 +1,135 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class RandomLifeSpawner : ICellLifeSpawner
+    public sealed class RandomLifeSpawner : CellLifeSpawnerBase
     {
-        readonly List<Coroutine> running = new();
-
-        public void Start(Cell host, SO_CellType cellType, CellDataSO cellData, GameDataSO gameData)
+        protected override void OnStart(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
-            Stop(host);
-            if (!host || !cellType) return;
+            Track(host, StartFloraLoops(host, config, runtime, gameData));
+            Track(host, StartFaunaLoops(host, config, runtime, gameData));
+        }
 
-            var profile = host.RandomSpawnProfile;
-            if (!profile)
-            {
-                Debug.LogWarning($"{nameof(Cell)} {host.name}: Random mode selected but no RandomSpawnProfile assigned.");
-                return;
-            }
+        IEnumerator StartFloraLoops(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
+        {
+            var spawnProfile = config.SpawnProfile;
+            if (!spawnProfile) yield break;
+            if (spawnProfile.SupportedFloras is not { Count: > 0 })
+                yield break;
 
-            if (cellType.SupportedFlora is { Count: > 0 })
-            {
-                for (int i = 0; i < profile.FloraTypeCount; i++)
-                {
-                    var floraConfig = PickWeighted(cellType.SupportedFlora, f => f.SpawnProbability);
-                    if (!floraConfig?.Flora) continue;
-                    running.Add(host.StartCoroutine(SpawnFloraLoop(host, floraConfig, profile, gameData)));
-                }
-            }
+            var excluded = GetExcludedDomain(spawnProfile.FloraExcludeLocalDomain, gameData, fallbackLocal: Domains.None);
 
-            if (cellType.SupportedFauna is { Count: > 0 })
+            foreach (var floraCfg in spawnProfile.SupportedFloras)
             {
-                for (int i = 0; i < profile.FaunaTypeCount; i++)
-                {
-                    var picked = PickWeighted(cellType.SupportedFauna, f => f.SpawnProbability);
-                    if (picked?.Population == null) continue;
-                    running.Add(host.StartCoroutine(SpawnPopulationLoop(host, picked.Population, profile, cellData, gameData)));
-                }
+                if (!floraCfg || !floraCfg.FloraPrefab) continue;
+
+                if (!AllowSpawn(floraCfg.SpawnProbability))
+                    continue;
+
+                Track(host, SpawnFloraTypeLoop_Random(host, gameData, spawnProfile, floraCfg, excluded));
             }
         }
 
-        public void Stop(Cell host)
+        IEnumerator StartFaunaLoops(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
-            if (!host) return;
+            var spawnProfile = config.SpawnProfile;
+            if (!spawnProfile) yield break;
+            if (spawnProfile.SupportedFaunas is not { Count: > 0 })
+                yield break;
 
-            foreach (var t in running)
+            var excluded = GetExcludedDomain(spawnProfile.FaunaExcludeLocalDomain, gameData, fallbackLocal: Domains.Jade);
+
+            foreach (var faunaCfg in spawnProfile.SupportedFaunas)
             {
-                if (t != null)
-                    host.StopCoroutine(t);
+                if (!faunaCfg || !faunaCfg.FaunaPrefab) continue;
+
+                if (!AllowSpawn(faunaCfg.SpawnProbability))
+                    continue;
+
+                Track(host, SpawnFaunaTypeLoop_Random(host, runtime, gameData, spawnProfile, faunaCfg, excluded));
             }
-            running.Clear();
         }
 
-        IEnumerator SpawnFloraLoop(Cell host, FloraConfiguration floraConfiguration, CellRandomSpawnProfileSO profile, GameDataSO gameData)
+        IEnumerator SpawnFloraTypeLoop_Random(
+            Cell host,
+            GameDataSO gameData,
+            SpawnProfileSO spawnProfile,
+            FloraConfigurationSO floraCfg,
+            Domains? excluded)
         {
-            var local = gameData.LocalRoundStats?.Domain ?? Domains.None;
-            Domains? excluded = profile.FloraExcludeLocalDomain ? local : (Domains?)null;
+            // Initial batch
+            int initialCount = Mathf.Max(0, floraCfg.InitialSpawnCount);
+            float initialInterval = Mathf.Max(0f, spawnProfile.FloraSpawnIntervalSeconds);
 
-            // initial batch
-            int initialCount = Mathf.Max(0, floraConfiguration.initialSpawnCount);
             for (int i = 0; i < initialCount; i++)
             {
-                var newFlora = Object.Instantiate(floraConfiguration.Flora, host.transform.position, Quaternion.identity);
-                newFlora.domain = PickRandomDomain(excluded);
-                newFlora.Initialize(host);
+                // Random mode volume gate
+                if (GetControllingVolume(gameData) < spawnProfile.FloraSpawnVolumeCeiling)
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+
+                if (initialInterval > 0f && i < initialCount - 1)
+                    yield return new WaitForSeconds(initialInterval);
             }
 
+            // Continuous
             while (true)
             {
-                var controllingVolume = gameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item2;
+                float waitPeriod = floraCfg.OverrideDefaultPlantPeriod
+                    ? Mathf.Max(0f, (float)floraCfg.NewPlantPeriod)
+                    : floraCfg.FloraPrefab.PlantPeriod;
 
-                if (controllingVolume < profile.FloraSpawnVolumeCeiling)
-                {
-                    var newFlora = Object.Instantiate(floraConfiguration.Flora, host.transform.position, Quaternion.identity);
-                    newFlora.domain = PickRandomDomain(excluded);
-                    newFlora.Initialize(host);
-                }
+                if (waitPeriod > 0f) yield return new WaitForSeconds(waitPeriod);
+                else yield return null;
 
-                float waitPeriod = floraConfiguration.OverrideDefaultPlantPeriod
-                    ? floraConfiguration.NewPlantPeriod
-                    : floraConfiguration.Flora.PlantPeriod;
-
-                yield return new WaitForSeconds(waitPeriod);
+                if (GetControllingVolume(gameData) < spawnProfile.FloraSpawnVolumeCeiling)
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
             }
         }
 
-        IEnumerator SpawnPopulationLoop(Cell host, Population population, CellRandomSpawnProfileSO profile, CellDataSO cellData, GameDataSO gameData)
+        IEnumerator SpawnFaunaTypeLoop_Random(
+            Cell host,
+            CellRuntimeDataSO runtime,
+            GameDataSO gameData,
+            SpawnProfileSO spawnProfile,
+            FaunaConfigurationSO faunaCfg,
+            Domains? excluded)
         {
-            var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
-            Domains? excluded = profile.FaunaExcludeLocalDomain ? local : (Domains?)null;
+            // Optional initial wait (old behavior used InitialFaunaSpawnWaitTime too)
+            if (spawnProfile.InitialFaunaSpawnWaitTime > 0f)
+                yield return new WaitForSeconds(spawnProfile.InitialFaunaSpawnWaitTime);
 
-            yield return new WaitForSeconds(profile.InitialFaunaSpawnWaitTime);
+            // Initial batch
+            int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
+            float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
 
-            while (true)
+            for (int i = 0; i < initialCount; i++)
             {
-                var controllingVolume = gameData.GetControllingTeamStatsBasedOnVolumeRemaining().Item2;
+                if (GetControllingVolume(gameData) > spawnProfile.FaunaSpawnVolumeThreshold && TryGetCrystalGoal(runtime, out var goal))
+                    SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
 
-                if (controllingVolume > profile.FaunaSpawnVolumeThreshold)
-                {
-                    var newPopulation = Object.Instantiate(population, host.transform.position, Quaternion.identity);
-                    newPopulation.domain = PickRandomDomain(excluded);
-                    newPopulation.Goal = cellData.CrystalTransform.position;
-
-                    yield return new WaitForSeconds(profile.BaseFaunaSpawnTime);
-                }
-                else
-                {
-                    yield return new WaitForSeconds(2f);
-                }
-            }
-        }
-
-        // ------------------------------------------------------------
-        // Domain selection without flags/masks:
-        // Pick uniformly from Jade/Ruby/Gold/Blue, optionally excluding one.
-        // ------------------------------------------------------------
-        static Domains PickRandomDomain(Domains? excluded)
-        {
-            var candidates = new List<Domains>(4)
-            {
-                Domains.Jade,
-                Domains.Ruby,
-                Domains.Gold,
-                Domains.Blue
-            };
-
-            if (excluded.HasValue)
-                candidates.Remove(excluded.Value);
-
-            if (candidates.Count == 0)
-                return Domains.Jade;
-
-            return candidates[Random.Range(0, candidates.Count)];
-        }
-
-        static T PickWeighted<T>(IReadOnlyList<T> items, System.Func<T, float> weightSelector)
-        {
-            if (items == null || items.Count == 0) return default;
-
-            float total = 0f;
-            for (int i = 0; i < items.Count; i++)
-                total += Mathf.Max(0f, weightSelector(items[i]));
-
-            if (total <= 0f) return items[0];
-
-            float roll = Random.value * total;
-            float cumulative = 0f;
-
-            foreach (var t in items)
-            {
-                cumulative += Mathf.Max(0f, weightSelector(t));
-                if (roll <= cumulative) return t;
+                if (initialInterval > 0f && i < initialCount - 1)
+                    yield return new WaitForSeconds(initialInterval);
             }
 
-            return items[^1];
+            // Continuous threshold loop (keeps your old random behaviour)
+            yield return RunThresholdLoop(
+                condition: () =>
+                {
+                    if (GetControllingVolume(gameData) <= spawnProfile.FaunaSpawnVolumeThreshold)
+                        return false;
+
+                    return runtime != null && runtime.CrystalTransform != null;
+                },
+                spawnOnce: () =>
+                {
+                    if (!TryGetCrystalGoal(runtime, out var goal)) return;
+                    SpawnFauna(host, faunaCfg.FaunaPrefab, goal, excluded);
+                },
+                trueWait: () => spawnProfile.BaseFaunaSpawnTime,
+                falseWait: () => 2f
+            );
         }
     }
 }

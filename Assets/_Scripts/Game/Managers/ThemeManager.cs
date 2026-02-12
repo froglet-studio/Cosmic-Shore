@@ -71,8 +71,10 @@ namespace CosmicShore.Core
             materialSet.ExplodingBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
             materialSet.ExplodingBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
 
+            materialSet.DangerousBlockMaterial.SetColor("_BrightColor", _dataContainer.ColorSet.EnvironmentColors.Danger);
             materialSet.DangerousBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
 
+            materialSet.TransparentDangerousBlockMaterial.SetColor("_BrightColor", _dataContainer.ColorSet.EnvironmentColors.Danger);
             materialSet.TransparentDangerousBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
 
             materialSet.ShieldedBlockMaterial.SetColor("_BrightColor", colorSet.ShieldedInsideBlockColor);

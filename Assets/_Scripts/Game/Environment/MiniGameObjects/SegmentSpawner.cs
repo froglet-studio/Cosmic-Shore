@@ -1,35 +1,34 @@
 using CosmicShore.Core;
 using CosmicShore.Models.Enums;
 using System.Collections.Generic;
+using CosmicShore.Soap;
 using CosmicShore.Utility;
 using UnityEngine;
 using Obvious.Soap;
 
 public class SegmentSpawner : MonoBehaviour
 {
+    [Header("Dependencies")]
+    [SerializeField] private GameDataSO gameData;
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
+    
+    [Header("Configuration")]
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
     [SerializeField] List<float> spawnSegmentWeights;
     [SerializeField] public int Seed;
     [SerializeField] Transform parent;
 
+    [Header("Positioning")]
     [SerializeField] public Vector3 origin = Vector3.zero;
-    GameObject SpawnedSegmentContainer;
-    List<Trail> trails = new();
-    System.Random random = new();
-    int spawnedItemCount;
-    public float Radius = 250f;
-    public float StraightLineLength = 400f;
-    public float RotationAmount = 10f;
+    [SerializeField] public float Radius = 250f;
+    [SerializeField] public float StraightLineLength = 400f;
+    [SerializeField] public float RotationAmount = 10f;
     [HideInInspector] public int DifficultyAngle = 90;
     [SerializeField] IntVariable intensityLevelData;
-
     [SerializeField] bool InitializeOnStart;
     [SerializeField] public int NumberOfSegments = 1;
 
-    Vector3 currentDisplacement;
-    Quaternion currentRotation;
-
+    [Header("Data")]
     public MazeData[] mazeData;
 
     [Header("Branching Settings")]
@@ -59,40 +58,80 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] public float TowerRadius = 20f;
     [SerializeField] public float RotationsPerUnit = 0.1f;
 
+    // Runtime state
+    private GameObject SpawnedSegmentContainer;
+    private List<Trail> trails = new();
+    private System.Random random = new();
+    private int spawnedItemCount;
+    private Vector3 currentDisplacement;
+    private Quaternion currentRotation;
+
     void Start()
     {
-        currentDisplacement = origin + transform.position;
-        currentRotation = Quaternion.identity;
-        SpawnedSegmentContainer = new GameObject();
-        SpawnedSegmentContainer.name = "SpawnedSegments";
+        if (SpawnedSegmentContainer == null) CreateContainer();
 
         if (InitializeOnStart)
             Initialize();
-        if (parent != null) SpawnedSegmentContainer.transform.parent = parent;
+    }
+    
+    private void OnEnable()
+    {
+        if (gameData != null) gameData.OnResetForReplay.OnRaised += ResetTrack;
     }
 
+    private void OnDisable()
+    {
+        if (gameData != null) gameData.OnResetForReplay.OnRaised -= ResetTrack;
+    }
+    
+    // [Optimization] Logic separated to handle Event response cleanly
+    private void ResetTrack()
+    {
+        NukeTheTrails();
+        Initialize();
+    }
+
+    private void CreateContainer()
+    {
+        SpawnedSegmentContainer = new GameObject("SpawnedSegments")
+        {
+            transform =
+            {
+                parent = parent ? parent : transform
+            }
+        };
+    }
+    
     public void Initialize()
     {
+        if (SpawnedSegmentContainer == null) CreateContainer();
+
         if (Seed != 0)
         {
             random = new System.Random(Seed);
             Random.InitState(Seed);
         }
+        
+        // [Optimization] Instead of destroying blocks individually (O(N)), NukeTheTrails destroys the parent container (O(1))
+        // This check ensures we don't duplicate objects if Initialize is called manually without a Reset
+        if (SpawnedSegmentContainer.transform.childCount > 0)
+            NukeTheTrails();
 
-        // Clear out last run
-        foreach (Trail trail in trails)
-            foreach (var block in trail.TrailList)
-                Destroy(block);
-
-        NukeTheTrails();
+        currentDisplacement = origin + transform.position;
+        currentRotation = Quaternion.identity;
 
         normalizeWeights();
 
-        for (int i=0; i < NumberOfSegments; i++)
+        // [Optimization] Cache intensity level once to avoid variable access overhead in the loop
+        int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
+
+        for (int i = 0; i < NumberOfSegments; i++)
         {
-            var spawned = SpawnRandom();
+            var spawned = SpawnRandom(currentIntensity);
+
+            if (!spawned) continue;
             PositionSpawnedObject(spawned, positioningScheme);
-            spawned.transform.parent = SpawnedSegmentContainer.transform;
+            spawned.transform.SetParent(SpawnedSegmentContainer.transform);
             spawnedItemCount++;
         }
     }
@@ -101,10 +140,49 @@ public class SegmentSpawner : MonoBehaviour
     {
         trails.Clear();
         spawnedItemCount = 0;
-        if (SpawnedSegmentContainer == null) return;
 
-        foreach (Transform child in SpawnedSegmentContainer.transform)
-            Destroy(child.gameObject);
+        // [Optimization] Major performance fix:
+        // Instead of iterating through hundreds of children and calling Destroy() on each,
+        // we destroy the container itself. This is much faster for the engine to handle.
+        if (SpawnedSegmentContainer)
+        {
+            Destroy(SpawnedSegmentContainer);
+        }
+        CreateContainer();
+    }
+
+    // [Optimization] Pass intensity as parameter to avoid repeated property access
+    GameObject SpawnRandom(int intensity)
+    {
+        if (spawnableSegments == null || spawnableSegments.Count == 0) return null;
+
+        var spawnWeight = Random.value;
+        var spawnIndex = 0;
+        var totalWeight = 0f;
+        
+        for (int i = 0; i < spawnSegmentWeights.Count; i++)
+        {
+            totalWeight += spawnSegmentWeights[i];
+            if (!(totalWeight >= spawnWeight)) continue;
+            spawnIndex = i;
+            break;
+        }
+
+        return spawnableSegments[spawnIndex].Spawn(intensity);
+    }
+
+    void normalizeWeights()
+    {
+        if (spawnSegmentWeights == null || spawnSegmentWeights.Count == 0) return;
+
+        float totalWeight = 0;
+        foreach (var weight in spawnSegmentWeights)
+            totalWeight += weight;
+        
+        if (totalWeight <= 0) return;
+
+        for (int i = 0; i < spawnSegmentWeights.Count; i++)
+            spawnSegmentWeights[i] = spawnSegmentWeights[i] * (1 / totalWeight);
     }
 
     void PositionSpawnedObject(GameObject spawned, PositioningScheme positioningScheme)
@@ -126,7 +204,6 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.rotation = currentRotation = rotation;
                 return;
             case PositioningScheme.ToroidSurface:
-                // TODO: this is not a torus, it's ripped from the sphere
                 int toroidDifficultyAngle = 90;
                 spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360 / NumberOfSegments), spawnedItemCount * (360 / NumberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(toroidDifficultyAngle - 20, 40), Mathf.Max(toroidDifficultyAngle - 20, 40)), 0) *
@@ -138,7 +215,6 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.Rotate(Vector3.forward, (float)Random.value * 180);
                 return;
             case PositioningScheme.Cubic:
-                // Volumetric Grid, looking at origin
                 var volumeSideLength = 100;
                 var voxelSideLength = 10;
                 var x = random.Next(0, volumeSideLength/voxelSideLength) * voxelSideLength;
@@ -169,43 +245,27 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.rotation = Quaternion.Euler(0,0, (float)Random.value * 360) * spawned.transform.rotation;
                 return;
             case PositioningScheme.KinkyLineBranching:
-
-                // Check if the maximum total spawned objects limit is reached
                 if (spawnedItemCount >= maxTotalSpawnedObjects)
                     return;
 
-                // Check if the current kink should branch
                 if (Random.value < branchProbability && maxDepth > 0)
                 {
-                    // Determine the number of branches for the current kink
                     int numBranches = random.Next(minBranches, maxBranches + 1);
-
-                    // Spawn branches
                     for (int i = 0; i < numBranches; i++)
                     {
-                        // Calculate the branch angle
                         float branchAngle = random.Next(minBranchAngle, maxBranchAngle);
                         float branchAngleRad = branchAngle * Mathf.Deg2Rad;
-
-                        // Calculate the direction vector for the branch
                         Vector3 branchDirection = Quaternion.Euler(0f, branchAngleRad * Mathf.Rad2Deg, 0f) * currentRotation * Vector3.forward;
-
-                        // Calculate the branch length
                         float branchLengthMultiplier = Random.Range(minBranchLengthMultiplier, maxBranchLengthMultiplier);
                         float branchLength = StraightLineLength * branchLengthMultiplier;
 
-                        // Spawn the branch object
                         GameObject branch = SpawnRandomBranch();
                         branch.transform.position = currentDisplacement + branchDirection * branchLength;
                         SafeLookRotation.TrySet(branch.transform, branchDirection, branch);
 
-                        // Recursively spawn branches for the current branch
                         SpawnBranches(branch, maxDepth - 1, branchDirection, branchLength);
                     }
                 }
-
-                // Update the main line
-                //Quaternion rotation;
                 spawned.transform.position = currentDisplacement += RandomVectorRotation(StraightLineLength * Vector3.forward, out rotation);
                 spawned.transform.rotation = currentRotation = rotation;
                 return;
@@ -226,76 +286,59 @@ public class SegmentSpawner : MonoBehaviour
                 return;
             case PositioningScheme.HilbertCurveLSystem:
                 var hilbertPositioner = GetComponent<HilbertCurveLSystemPositioning>();
-                if (hilbertPositioner == null)
+                if (!hilbertPositioner)
                 {
                     hilbertPositioner = gameObject.AddComponent<HilbertCurveLSystemPositioning>();
                 }
-                hilbertPositioner.segmentLength = 60 - (intensityLevelData.Value * 10);
+                
+                // [Optimization] Cache intensity usage
+                int hilbertIntensity = intensityLevelData ? intensityLevelData.Value : 1;
+                hilbertPositioner.segmentLength = 60 - (hilbertIntensity * 10);
                 hilbertPositioner.GenerateHilbertCurve();
                 var positions = hilbertPositioner.GetPositions();
                 var rotations = hilbertPositioner.GetRotations();
 
-                mazeData[intensityLevelData.Value - 1].walls.Clear();
-
-                for (int i = 0; i < positions.Count; i++)
+                // [Safety] Ensure array bounds
+                if (hilbertIntensity > 0 && hilbertIntensity <= mazeData.Length)
                 {
-                    mazeData[intensityLevelData.Value - 1].walls.Add(new MazeData.WallData
-                    {
-                        position = positions[i],
-                        rotation = rotations[i]
-                    });
-                }
-
+                     mazeData[hilbertIntensity - 1].walls.Clear();
+                     for (int i = 0; i < positions.Count; i++)
+                     {
+                         mazeData[hilbertIntensity - 1].walls.Add(new MazeData.WallData
+                         {
+                             position = positions[i],
+                             rotation = rotations[i]
+                         });
+                     }
 #if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(mazeData[intensityLevelData.Value - 1]);
-                UnityEditor.AssetDatabase.SaveAssets();
-             #endif
-
-                if (spawnedItemCount < positions.Count)
-                {
-                    spawned.transform.SetPositionAndRotation(
-                        Quaternion.Euler(0, 0, RotationAmount) * (positions[spawnedItemCount] + origin + transform.position),
-                        Quaternion.Euler(0, 0, RotationAmount) * rotations[spawnedItemCount] 
-                    );
+                     UnityEditor.EditorUtility.SetDirty(mazeData[hilbertIntensity - 1]);
+                     UnityEditor.AssetDatabase.SaveAssets();
+#endif
+                     if (spawnedItemCount < positions.Count)
+                     {
+                         spawned.transform.SetPositionAndRotation(
+                             Quaternion.Euler(0, 0, RotationAmount) * (positions[spawnedItemCount] + origin + transform.position),
+                             Quaternion.Euler(0, 0, RotationAmount) * rotations[spawnedItemCount] 
+                         );
+                     }
                 }
                 return;
             case PositioningScheme.SavedMaze:
-
-                if (spawnedItemCount < mazeData[intensityLevelData.Value - 1].walls.Count)
+                int mazeIntensity = intensityLevelData ? intensityLevelData.Value : 1;
+                if (mazeIntensity > 0 && mazeIntensity <= mazeData.Length)
                 {
-                    spawned.transform.SetPositionAndRotation(
-                        Quaternion.Euler(0, 0, RotationAmount) * (mazeData[intensityLevelData.Value - 1].walls[spawnedItemCount].position + origin + transform.position),
-                        Quaternion.Euler(0, 0, RotationAmount) * mazeData[intensityLevelData.Value - 1].walls[spawnedItemCount].rotation);
+                    if (spawnedItemCount < mazeData[mazeIntensity - 1].walls.Count)
+                    {
+                        spawned.transform.SetPositionAndRotation(
+                            Quaternion.Euler(0, 0, RotationAmount) * (mazeData[mazeIntensity - 1].walls[spawnedItemCount].position + origin + transform.position),
+                            Quaternion.Euler(0, 0, RotationAmount) * mazeData[mazeIntensity - 1].walls[spawnedItemCount].rotation);
+                    }
                 }
                 return;
             case PositioningScheme.AtOriginNoRotation:
                 spawned.transform.SetPositionAndRotation(origin + transform.position, Quaternion.identity);
                 return;
         }
-    }
-
-    GameObject SpawnRandom()
-    {
-        var spawnWeight = Random.value;
-        var spawnIndex = 0;
-        var totalWeight = 0f;
-        for (int i = 0; i < spawnSegmentWeights.Count && totalWeight < spawnWeight; i++)
-        {
-            spawnIndex = i;
-            totalWeight += spawnSegmentWeights[i];
-        }
-
-        return spawnableSegments[spawnIndex].Spawn(intensityLevelData.Value);
-    }
-
-    void normalizeWeights()
-    {
-        float totalWeight = 0;
-        foreach (var weight in spawnSegmentWeights)
-            totalWeight += weight;
-
-        for (int i = 0; i < spawnSegmentWeights.Count; i++)
-            spawnSegmentWeights[i] = spawnSegmentWeights[i] * (1 / totalWeight);
     }
 
     private Vector3 RandomVectorRotation(Vector3 vector, out Quaternion rotation)
@@ -313,32 +356,22 @@ public class SegmentSpawner : MonoBehaviour
         if (depth <= 0 || spawnedItemCount >= maxTotalSpawnedObjects)
             return;
 
-        // Check if the current branch should spawn more branches
         if (Random.value < branchProbability)
         {
-            // Determine the number of branches for the current branch
             int numBranches = random.Next(minBranches, maxBranches + 1);
 
-            // Spawn branches
             for (int i = 0; i < numBranches; i++)
             {
-                // Calculate the branch angle
                 float branchAngle = random.Next(minBranchAngle, maxBranchAngle);
                 float branchAngleRad = branchAngle * Mathf.Deg2Rad;
-
-                // Calculate the direction vector for the branch
                 Vector3 branchDirection = Quaternion.Euler(0f, branchAngleRad * Mathf.Rad2Deg, 0f) * direction;
-
-                // Calculate the branch length
                 float branchLengthMultiplier = Random.Range(minBranchLengthMultiplier, maxBranchLengthMultiplier);
                 float branchLength = length * branchLengthMultiplier;
 
-                // Spawn the branch object
                 GameObject branch = SpawnRandomBranch();
                 branch.transform.position = parent.transform.position + branchDirection * branchLength;
                 SafeLookRotation.TrySet(branch.transform, branchDirection, branch);
 
-                // Recursively spawn branches for the current branch
                 SpawnBranches(branch, depth - 1, branchDirection, branchLength);
             }
         }
@@ -346,17 +379,17 @@ public class SegmentSpawner : MonoBehaviour
 
     private GameObject SpawnRandomBranch()
     {
-        // Randomly select a branch prefab from the pool
+        if (branchPrefabs == null || branchPrefabs.Count == 0) return new GameObject("EmptyBranch");
+
         int randomIndex = random.Next(0, branchPrefabs.Count);
         GameObject branchPrefab = branchPrefabs[randomIndex];
 
-        // Spawn the branch object
-        GameObject branch = Instantiate(branchPrefab);
-        branch.transform.parent = SpawnedSegmentContainer.transform;
+        GameObject branch = Instantiate(branchPrefab, SpawnedSegmentContainer.transform, true);
         spawnedItemCount++;
 
         return branch;
     }
+
     void PositionInMazeGrid(GameObject spawned)
     {
         int x = random.Next(0, GridWidth);
@@ -379,7 +412,6 @@ public class SegmentSpawner : MonoBehaviour
 
         if (random.NextDouble() < BranchProbability)
         {
-            // Start a new branch
             currentDisplacement = spawned.transform.position;
             currentRotation = spawned.transform.rotation;
         }
@@ -389,7 +421,6 @@ public class SegmentSpawner : MonoBehaviour
     {
         if (spawnedItemCount % 5 == 0)
         {
-            // Make a sharp turn every 5 segments
             currentRotation *= Quaternion.Euler(
                 random.Next(-60, 61),
                 random.Next(-60, 61),

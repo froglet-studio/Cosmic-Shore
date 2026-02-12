@@ -36,22 +36,17 @@ namespace CosmicShore.Game.Analytics
                 _isReady = true;
                 LoadProfile();
             }
-            catch (Exception) { /* Fail silently */ }
+            catch (Exception) { }
         }
 
         #region Public API - Smart High Score Evaluation
 
-        /// <summary>
-        /// Returns the "Best" score between the Cloud Cache and the Current Session Score.
-        /// Automatically handles logic for Modes where "Lower is Better" (Hex/Joust) vs "Higher is Better" (Blitz).
-        /// </summary>
         public float GetEvaluatedHighScore(GameModes mode, int intensity, float currentSessionScore)
         {
             if (!_isReady) return currentSessionScore;
 
             string key = $"{mode}_{intensity}";
 
-            // Lower is better modes (racing/time-based)
             if (mode is GameModes.HexRace or GameModes.MultiplayerHexRaceGame or GameModes.MultiplayerJoust)
             {
                 float cloudBest = 0f;
@@ -66,12 +61,18 @@ namespace CosmicShore.Game.Analytics
                 if (cloudBest <= 0.001f) return currentSessionScore;
                 return currentSessionScore >= 10000f ? cloudBest : Mathf.Min(cloudBest, currentSessionScore);
             }
-            // Higher is better modes (score-based)
-            else 
+            else if (mode == GameModes.WildlifeBlitz)
             {
                 int cloudBest = _cachedProfile.BlitzStats.HighScores.GetValueOrDefault(key, 0);
                 return Mathf.Max(cloudBest, currentSessionScore);
             }
+            else if (mode == GameModes.MultiplayerCrystalCapture)
+            {
+                int cloudBest = _cachedProfile.CrystalCaptureStats.HighScores.GetValueOrDefault(key, 0);
+                return Mathf.Max(cloudBest, currentSessionScore);
+            }
+
+            return currentSessionScore;
         }
 
         #endregion
@@ -148,7 +149,6 @@ namespace CosmicShore.Game.Analytics
 
             string key = $"{mode}_{intensity}";
             
-            // Only update best time and submit to leaderboard if player won (valid race time)
             if (raceTime < 10000f)
             {
                 _cachedProfile.JoustStats.TryUpdateBestTime(key, raceTime);
@@ -156,6 +156,21 @@ namespace CosmicShore.Game.Analytics
                 SubmitScoreInternal(mode, intensity, raceTime);
             }
     
+            SaveProfile();
+        }
+
+        public void ReportCrystalCaptureStats(GameModes mode, int intensity, int crystals)
+        {
+            if (!_isReady) return;
+
+            _cachedProfile.CrystalCaptureStats.LifetimeCrystalsCollected += crystals;
+            _cachedProfile.CrystalCaptureStats.TotalWins++;
+            _cachedProfile.TotalGamesPlayed++;
+
+            string key = $"{mode}_{intensity}";
+            _cachedProfile.CrystalCaptureStats.TryUpdateHighScore(key, crystals);
+
+            SubmitScoreInternal(mode, intensity, crystals);
             SaveProfile();
         }
 
@@ -180,9 +195,8 @@ namespace CosmicShore.Game.Analytics
                 try { await LeaderboardsService.Instance.AddPlayerScoreAsync(id, score); }
                 catch (Exception e) { Debug.LogWarning($"[Stats] Upload Failed: {e.Message}"); }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                // TODO handle exception
             }
         }
 
@@ -194,13 +208,13 @@ namespace CosmicShore.Game.Analytics
                 if (data.TryGetValue(CLOUD_KEY, out var item)) 
                     _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
                 
-                // Ensure all profile sections exist
                 _cachedProfile.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
                 _cachedProfile.HexRaceStats ??= new HexRacePlayerStatsProfile();
                 _cachedProfile.MultiHexStats ??= new MultiplayerHexRacePlayerStatsProfile();
                 _cachedProfile.JoustStats ??= new JoustPlayerStatsProfile();
+                _cachedProfile.CrystalCaptureStats ??= new CrystalCapturePlayerStatsProfile();
             }
-            catch { /* New Profile */ }
+            catch { }
         }
 
         async void SaveProfile()

@@ -1463,8 +1463,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6cb1c48a5ae1fb94f99ab553260697b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  miniGameData: {fileID: 0}
-  Team: 0
+  gameData: {fileID: 0}
+  cellData: {fileID: 0}
+  domain: 0
   goalUpdateInterval: 5
   Goal: {x: 0, y: 0, z: 0}
   boidPrefab: {fileID: 5945480239701989318, guid: 7d86f1e90ac6e4a4e921e366eb115026,
@@ -1869,6 +1870,7 @@ GameObject:
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 1302784739002126863}
   - component: {fileID: 6793423672001803902}
+  - component: {fileID: -4856249725275936403}
   - component: {fileID: 9172589084772723142}
   - component: {fileID: 7779107667008759293}
   - component: {fileID: 4248184753307651523}
@@ -1912,12 +1914,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 0}
-  _shipHUDController: {fileID: 0}
-  _shipHUDView: {fileID: 0}
-  shipHUDContainer: {fileID: 0}
+  vesselHUDController: {fileID: 0}
   boostMultiplier: 4
   _name: 
-  _shipType: 0
+  vesselType: 0
   _nearFieldSkimmer: {fileID: 0}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 0}
@@ -1934,6 +1934,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   toggleManualThrottle: 0
+  decayBoost: 0
+  MaxBoostMultiplier: 5
+  BoostDecayRate: 0.1
+  DriftDamping: 0
+  boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
@@ -1961,6 +1966,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   toggleManualThrottle: 0
+  decayBoost: 0
+  MaxBoostMultiplier: 5
+  BoostDecayRate: 0.1
+  DriftDamping: 0
+  boostChanged: {fileID: 0}
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
@@ -1987,13 +1997,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailBlock: {fileID: 4563009547826722997, guid: 0a5b78684a1e89341a2483949089f33c,
-    type: 3}
+  _onPrismSpawnedEventChannel: {fileID: 0}
   skimmer: {fileID: 874579554510349383}
+  BaseScale: {x: 10, y: 5, z: 5}
+  prismType: 0
   initialWavelength: 2
   minWavelength: 2
   defaultWaitTime: 0.2
-  MaxNearbyBlockCount: 70
   minBlockScale: 1
   maxBlockScale: 4
   waitTillOutsideSkimmer: 0
@@ -2040,6 +2050,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   skillLevel: 1
   defaultThrottleHigh: 0.9
   defaultThrottleLow: 0.2
@@ -2057,6 +2068,7 @@ MonoBehaviour:
   drift: 0
   abilities: []
   OnCellItemsUpdated: {fileID: 0}
+  actionExecutorRegistry: {fileID: 0}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2132,19 +2144,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouetteParts:
-  - {fileID: 322268676704545573}
-  - {fileID: 8777980414596646480}
-  - {fileID: 4010301292554909138}
-  - {fileID: 4125835721608554647}
-  - {fileID: 5978549935140177486}
-  trailSpawner: {fileID: 874579555101021522}
+  vesselPrismController: {fileID: 0}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 1, y: 1, z: 1}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  JawResourceIndex: 0
-  swingBlocks: 0
+  config: {fileID: 0}
+  energyResourceIndex: 0
+  view: {fileID: 0}
 --- !u!114 &1302784739002126863
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2189,6 +2193,31 @@ MonoBehaviour:
   m_DefaultActionMap: 
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &-4856249725275936403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 504450242
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &9172589084772723142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2201,11 +2230,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3e795de1597af4f812bc7bbb73356d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  _executors: {fileID: 0}
   _inputEventShipActions: []
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 0}
   _onButtonReleased: {fileID: 0}
   onAbilityExecuted: {fileID: 0}
+  _onInputEventBlocked: {fileID: 0}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2950,6 +2982,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e5935865d9a4e84d8f3a975211d461c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cellData: {fileID: 0}
   dronePrefab: {fileID: 5119337659833296837, guid: 7d86f1e90ac6e4a4e921e366eb115026,
     type: 3}
   Drones: 5

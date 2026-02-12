@@ -1,8 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore;
+using CosmicShore.Game;
 
-public class WormManager : Population
+public class WormManager : Fauna
 {
     [SerializeField] Worm wormPrefab;
     [SerializeField] Worm emptyWormPrefab;
@@ -26,6 +27,21 @@ public class WormManager : Population
         tailSpacing = wormPrefab.initialSegments[wormPrefab.initialSegments.Count - 1].transform.position - wormPrefab.initialSegments[wormPrefab.initialSegments.Count - 2].transform.position;
         middleSpacing = wormPrefab.initialSegments[2].transform.position - wormPrefab.initialSegments[1].transform.position;
         SpawnInitialWorms();
+    }
+
+    public override void Initialize(Cell cell)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    protected override void Spawn()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    protected override void Die(string killername = "")
+    {
+        throw new System.NotImplementedException();
     }
 
     private void Update()

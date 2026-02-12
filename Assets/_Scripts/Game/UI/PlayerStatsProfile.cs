@@ -13,5 +13,6 @@ namespace CosmicShore.Game.Analytics
         public HexRacePlayerStatsProfile HexRaceStats = new();
         public MultiplayerHexRacePlayerStatsProfile MultiHexStats = new();
         public JoustPlayerStatsProfile JoustStats = new();
+        public CrystalCapturePlayerStatsProfile CrystalCaptureStats = new();
     }
 }

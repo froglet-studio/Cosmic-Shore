@@ -3,9 +3,10 @@ using System.Collections;
 using CosmicShore.Core;
 using System.Collections.Generic;
 using CosmicShore;
+using CosmicShore.Game;
 using CosmicShore.Utility;
 
-public class BoidManager : Population
+public class BoidManager : Fauna
 {
     [Header("Boid Settings")]
     public Boid boidPrefab;
@@ -29,7 +30,7 @@ public class BoidManager : Population
             SafeLookRotation.TryGet(Vector3.Cross(spawnPosition, Vector3.forward), out var initialRotation, boidPrefab);
 
             Boid newBoid = Instantiate(boidPrefab, spawnPosition, initialRotation, transform);
-            newBoid.Population = this;
+            newBoid.BoidManager = this;
             newBoid.domain = domain;
             newBoid.normalizedIndex = (float)i / numberOfBoids;
 
@@ -48,5 +49,20 @@ public class BoidManager : Population
             if (Mound)
                 newBoid.Mound = Mound;
         }
+    }
+
+    public override void Initialize(Cell cell)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    protected override void Spawn()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    protected override void Die(string killername = "")
+    {
+        throw new System.NotImplementedException();
     }
 }
