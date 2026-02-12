@@ -18,7 +18,7 @@ namespace CosmicShore.Game.AI
     public class AIPilot : MonoBehaviour
     {
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
         
         [SerializeField] float skillLevel = 1;
 

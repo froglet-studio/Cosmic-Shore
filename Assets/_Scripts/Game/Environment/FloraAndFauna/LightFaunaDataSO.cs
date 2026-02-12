@@ -4,7 +4,7 @@ namespace CosmicShore
 {
     [CreateAssetMenu(
         fileName = "LightFaunaDataSO",
-        menuName = "Cosmic Shore/LifeForms/Fauna/Light Fauna Data")]
+        menuName = "Cosmic Shore/LifeForms/FaunaPrefab/Light FaunaPrefab Data")]
     public class LightFaunaDataSO : ScriptableObject
     {
         [Header("Detection Settings")]

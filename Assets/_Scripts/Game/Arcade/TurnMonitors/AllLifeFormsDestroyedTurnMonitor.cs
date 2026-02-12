@@ -6,7 +6,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class AllLifeFormsDestroyedTurnMonitor : TurnMonitor
     {
-        [SerializeField] CellDataSO cellData;
+        [SerializeField] CellRuntimeDataSO cellData;
         [SerializeField] ScriptableEventString onLifeFormCounterUpdatedEvent;
 
         int CurrentCellIdOrMinusOne()

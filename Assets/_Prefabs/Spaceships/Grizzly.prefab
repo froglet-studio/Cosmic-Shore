@@ -778,7 +778,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   firePeriod: 0.2
   sideLength: 2
-  barrelLength: 2
   projectileFactory: {fileID: 0}
 --- !u!1 &4251409320503842611
 GameObject:
@@ -1193,9 +1192,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 0}
-  _shipHUDController: {fileID: 0}
-  _vesselHUDView: {fileID: 0}
-  shipHUDContainer: {fileID: 0}
+  vesselHUDController: {fileID: 0}
   boostMultiplier: 4
   _name: 
   vesselType: 0
@@ -1214,8 +1211,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 0}
   toggleManualThrottle: 0
+  decayBoost: 0
+  MaxBoostMultiplier: 5
+  BoostDecayRate: 0.1
+  DriftDamping: 0
+  boostChanged: {fileID: 0}
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 0
@@ -1249,7 +1250,6 @@ MonoBehaviour:
   initialWavelength: 13
   minWavelength: 11
   defaultWaitTime: 1
-  MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 1
   waitTillOutsideSkimmer: 1
@@ -1296,7 +1296,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 0}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   skillLevel: 1
   defaultThrottleHigh: 0.6
   defaultThrottleLow: 0.6
@@ -1381,14 +1381,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouetteParts: []
   vesselPrismController: {fileID: 0}
   driftTrailAction: {fileID: 0}
-  sihouetteScale: {x: 1, y: 1, z: 1}
-  topJaw: {fileID: 0}
-  bottomJaw: {fileID: 0}
-  JawResourceIndex: 0
-  swingBlocks: 0
+  config: {fileID: 0}
+  energyResourceIndex: 0
+  view: {fileID: 0}
 --- !u!114 &2100962781998101428
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1433,6 +1430,7 @@ MonoBehaviour:
   _onButtonPressed: {fileID: 0}
   _onButtonReleased: {fileID: 0}
   onAbilityExecuted: {fileID: 0}
+  _onInputEventBlocked: {fileID: 0}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
