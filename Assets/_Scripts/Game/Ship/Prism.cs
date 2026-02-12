@@ -14,12 +14,10 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(PrismStateManager))]
     public class Prism : MonoBehaviour
     {
-        protected const string DEFAULT_PLAYER_NAME = "DefaultPlayer"; // -> This should be removed later,
+        protected const string DEFAULT_PLAYER_NAME = "DefaultPlayer";
 
         [Header("Prism Properties")] 
-        
-        [SerializeField]
-        public PrismProperties prismProperties;
+        [SerializeField] public PrismProperties prismProperties;
         public GameObject ParticleEffect;
         public Trail Trail;
 
@@ -28,7 +26,8 @@ namespace CosmicShore.Core
         public float growthRate = 0.01f;
         public float waitTime = 0.6f;
 
-        [Header("Prism Status")] public bool destroyed;
+        [Header("Prism Status")] 
+        public bool destroyed;
         public bool devastated;
         public bool IsSmallest;
         public bool IsLargest;
@@ -37,18 +36,10 @@ namespace CosmicShore.Core
         public string ownerID;
 
         [Header("Event Channels")] 
-        
-        [SerializeField]
-        ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
-
-        [SerializeField] 
-        ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
-
-        [SerializeField] 
-        ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
-
-        [SerializeField]
-        internal PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
+        [SerializeField] ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
+        [SerializeField] ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
+        [SerializeField] ScriptableEventPrismStats _onTrailBlockRestoredEventChannel;
+        [SerializeField] internal PrismEventChannelWithReturnSO OnBlockImpactedEventChannel;
 
         public Action<Prism> OnReturnToPool;
         private bool _initialized;
@@ -59,12 +50,10 @@ namespace CosmicShore.Core
             get => teamManager?.Domain ?? Domains.Unassigned;
             set
             {
-                if (teamManager)
-                    teamManager.SetInitialTeam(value);
+                if (teamManager) teamManager.SetInitialTeam(value);
             }
         }
 
-        // public IPlayer Player;
         string _playerName;
         public string PlayerName { get; internal set; }
 
@@ -75,15 +64,14 @@ namespace CosmicShore.Core
         private PrismStateManager stateManager;
         private MeshRenderer meshRenderer;
         private BoxCollider blockCollider;
-        // Public accessors for backward compatibility
+
         public Vector3 TargetScale
         {
             get => scaleAnimator?.TargetScale ?? transform.localScale;
             set
             {
                 scaleAnimator?.SetTargetScale(value);
-                scaleAnimator
-                    ?.BeginGrowthAnimation(); // TODO ->, Make separate method for SetTargetScale, and Begin Growth.
+                scaleAnimator?.BeginGrowthAnimation();
             }
         }
 
@@ -92,7 +80,7 @@ namespace CosmicShore.Core
 
         public Vector3 MaxScale
         {
-            get => scaleAnimator?.MaxScale ?? Vector3.one * 10f; // Default max scale as fallback
+            get => scaleAnimator?.MaxScale ?? Vector3.one * 10f;
             set
             {
                 if (scaleAnimator is not null) scaleAnimator.MaxScale = value;
@@ -110,7 +98,6 @@ namespace CosmicShore.Core
 
         private void Awake()
         {
-            // Cache component references
             materialAnimator = GetComponent<MaterialPropertyAnimator>();
             scaleAnimator = GetComponent<PrismScaleAnimator>();
             teamManager = GetComponent<PrismTeamManager>();
@@ -119,13 +106,17 @@ namespace CosmicShore.Core
             blockCollider = GetComponent<BoxCollider>();
 
             scaleAnimator.GrowthRate = growthRate;
-
             InitializePrismProperties();
         }
 
+        /// <summary>
+        /// Called when spawning from pool. Resets state and starts growth.
+        /// </summary>
         public virtual void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
-            if (_initialized) return;
+            // [Fix] Always clean up previous state when coming from pool
+            ResetState();
+
             _initialized = true;
             PlayerName = playerName;
             blockCollider.enabled = false;
@@ -143,9 +134,28 @@ namespace CosmicShore.Core
             if (prismProperties.IsDangerous) MakeDangerous();
         }
 
+        private void ResetState()
+        {
+            destroyed = false;
+            devastated = false;
+            IsSmallest = false;
+            IsLargest = false;
+            
+            // Clear trail renderer to prevent visual artifacts across the map
+            if (Trail != null && Trail.TrailRenderer != null)
+            {
+                Trail.TrailRenderer.Clear();
+            }
+            
+            // Ensure physics/rendering are off until Coroutine enables them
+            if (blockCollider) blockCollider.enabled = false;
+            if (meshRenderer) meshRenderer.enabled = false;
+            
+            StopAllCoroutines();
+        }
+
         /// <summary>
         /// Public method to immediately return this instance to the pool.
-        /// Also reparents under the PoolManager's transform for hierarchy cleanliness.
         /// </summary>
         public void ReturnToPool()
         {
@@ -188,7 +198,6 @@ namespace CosmicShore.Core
             if (CellControlManager.Instance)
             {
                 CellControlManager.Instance.AddBlock(Domain, prismProperties);
-
                 Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
                 Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
                 {
@@ -254,7 +263,6 @@ namespace CosmicShore.Core
         {
             SetupDestruction(domain, playerName, devastate);
 
-            // Spawn explosion object
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
                 ownDomain = Domain,
@@ -267,12 +275,10 @@ namespace CosmicShore.Core
         }
 
         // Implosion Methods
-        protected virtual void Implode(Transform targetTransform, Domains domain, string playerName,
-            bool devastate = false)
+        protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
 
-            // Spawn implosion object
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
                 ownDomain = Domain,
@@ -288,25 +294,17 @@ namespace CosmicShore.Core
         public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
-            {
                 DeactivateShields();
-            }
             else
-            {
                 Explode(impactVector, domain, playerName, devastate);
-            }
         }
 
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false)
         {
             if ((prismProperties.IsShielded && !devastate) || prismProperties.IsSuperShielded)
-            {
                 DeactivateShields();
-            }
             else
-            {
                 Implode(target, domain, playerName, devastate);
-            }
         }
 
         // State Management Methods
@@ -320,8 +318,6 @@ namespace CosmicShore.Core
         // Team Management Methods
         public void Steal(string playerName, Domains domain, bool superSteal = false) =>
             teamManager.Steal(playerName, domain, superSteal);
-
-        // public void Steal(string playerName, Teams team) => Steal(playerName, team);
         public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
         
         public void RegisterProjectileCreated(string playerName)
@@ -336,9 +332,7 @@ namespace CosmicShore.Core
             prismProperties.prism    = this;
             prismProperties.Trail    = Trail;
             prismProperties.TimeCreated = Time.time;
-            prismProperties.volume   = Mathf.Max(
-                scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f,
-                1f);
+            prismProperties.volume   = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
             gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
@@ -347,7 +341,6 @@ namespace CosmicShore.Core
                 Volume     = prismProperties.volume,
             });
         }
-
 
         // Restoration
         public void Restore()
