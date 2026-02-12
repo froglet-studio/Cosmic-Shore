@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: SquirrelVesselExplosionByCrystalEffect
   m_EditorClassIdentifier: 
   rhinoCrystalExplosionEvent: {fileID: 0}
+  squirrelCrystalExplosionEvent: {fileID: 11400000, guid: e9da6bf37f53d1f4db0421348950f8ca,
+    type: 2}
   _aoePrefabs:
   - {fileID: 8507666106090082286, guid: 2999677bfbbd8a243a81c399c03235a6, type: 3}
   _minExplosionScale: 400
