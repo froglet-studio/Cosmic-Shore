@@ -12,8 +12,11 @@ namespace CosmicShore.Game
     {
         [Header("Events")]
         [SerializeField] private ScriptableEventVesselImpactor rhinoCrystalExplosionEvent;
+        [SerializeField] private ScriptableEventVesselImpactor squirrelCrystalExplosionEvent;
 
         public static event Action<VesselImpactor> OnMantaFlowerExplosion;
+        
+      
 
 
         [Header("Explosion Settings")]
@@ -74,6 +77,7 @@ namespace CosmicShore.Game
                 case VesselClassType.Grizzly:
                     break;
                 case VesselClassType.Squirrel:
+                    squirrelCrystalExplosionEvent?.Raise(vesselImpactor);
                     break;
                 case VesselClassType.Serpent:
                     break;

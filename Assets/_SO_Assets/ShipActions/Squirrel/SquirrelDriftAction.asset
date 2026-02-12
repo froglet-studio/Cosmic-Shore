@@ -14,3 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Mult: 1.4
   driftDamping: 0.5
+  isSharpDrifting: 0
+  isDrifting: {fileID: 11400000, guid: aadc0dd809ad8e446aa021ddff5a2213, type: 2}
+  isDoubleDrifting: {fileID: 11400000, guid: ef6330095f84f9b46a30db2e12842210, type: 2}
+  driftEnded: {fileID: 11400000, guid: 9869da66befaa04429e5b8c696d421f0, type: 2}
