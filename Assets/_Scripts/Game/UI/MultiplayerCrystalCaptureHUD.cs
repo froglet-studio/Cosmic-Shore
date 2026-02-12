@@ -46,11 +46,9 @@ namespace CosmicShore.Game.UI
 
         protected override void UnsubscribeFromPlayerStats(IRoundStats stats)
         {
-            if (stats != null && _scoreChangeHandlers.TryGetValue(stats, out var handler))
-            {
-                stats.OnScoreChanged -= handler;
-                _scoreChangeHandlers.Remove(stats);
-            }
+            if (stats == null || !_scoreChangeHandlers.TryGetValue(stats, out var handler)) return;
+            stats.OnScoreChanged -= handler;
+            _scoreChangeHandlers.Remove(stats);
         }
 
         void RefreshAllPlayerCards()

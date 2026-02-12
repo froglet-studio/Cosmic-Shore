@@ -100,7 +100,6 @@ namespace CosmicShore.Game.UI
             {
                 UnsubscribeFromPlayerStats(stats);
             }
-            _playerCards.Clear();
         }
 
         protected abstract int GetInitialCardValue(IRoundStats stats);

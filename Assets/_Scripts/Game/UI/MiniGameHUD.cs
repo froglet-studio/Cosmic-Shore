@@ -113,13 +113,11 @@ namespace CosmicShore.Game.UI
         
         private void ResetForReplay()
         {
-            Debug.Log("<color=cyan>[MiniGameHUD] Resetting for replay</color>");
-            
+            Show(); 
+
             ToggleReadyButton(true);
             view.ToggleConnectingPanel(false);
             CleanupUI();
-    
-            // Explicitly reset all displays
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay("0");
             view.UpdateScoreUI("0");
