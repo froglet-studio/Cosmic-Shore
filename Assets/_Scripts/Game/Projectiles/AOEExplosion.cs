@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using CosmicShore.Soap; // Required for GameDataSO
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -10,6 +11,9 @@ namespace CosmicShore.Game.Projectiles
     public class AOEExplosion : ElementalShipComponent
     {
         protected const float PI_OVER_TWO = Mathf.PI / 2;
+
+        [Header("Dependencies")]
+        [SerializeField] protected GameDataSO gameData;
 
         [Header("Explosion Settings")]
         [SerializeField] protected float ExplosionDuration = 2f;
@@ -28,15 +32,37 @@ namespace CosmicShore.Game.Projectiles
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
 
-        private void Awake()
+        protected virtual void Awake()
         { 
-            if (!meshRenderer)
-                meshRenderer = GetComponent<MeshRenderer>();
+            if (!meshRenderer) meshRenderer = GetComponent<MeshRenderer>();
         }
-        
-        private void OnDestroy()
+
+        protected virtual void OnEnable()
+        {
+            if (gameData != null)
+            {
+                // [Visual Note] Stop CPU heavy tasks immediately on turn end
+                gameData.OnMiniGameTurnEnd.OnRaised += CancelExplosion;
+                // [Visual Note] Destroy objects only when resetting
+                gameData.OnResetForReplay.OnRaised += PerformResetCleanup;
+            }
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (gameData != null)
+            {
+                gameData.OnMiniGameTurnEnd.OnRaised -= CancelExplosion;
+                gameData.OnResetForReplay.OnRaised -= PerformResetCleanup;
+            }
+            CancelExplosion();
+        }
+
+        // Virtual: Children can override if they need to destroy spawned sub-objects (like prisms)
+        protected virtual void PerformResetCleanup()
         {
             CancelExplosion();
+            Destroy(gameObject);
         }
 
         public virtual void Initialize(InitializeStruct initStruct)
@@ -64,29 +90,22 @@ namespace CosmicShore.Game.Projectiles
 
         public void CancelExplosionAndDestroy()
         {
-            CancelExplosion();
-            // Destroy handled by derived classes too
-            Destroy(gameObject);
+            PerformResetCleanup();
         }
 
-        void CancelExplosion()
+        public void CancelExplosion()
         {
-            if (explosionCts == null)
-                return;
-
-            if (!explosionCts.IsCancellationRequested)
-                explosionCts.Cancel();
-
+            if (explosionCts == null) return;
+            if (!explosionCts.IsCancellationRequested) explosionCts.Cancel();
             explosionCts.Dispose();
             explosionCts = null;
         }
 
+        // ... [CalculateImpactVector and ExplodeAsync remain unchanged] ...
+        
         public Vector3 CalculateImpactVector(Vector3 impacteePosition)
         {
-            // Direction from explosion to impactee
             Vector3 direction = (impacteePosition - transform.position).normalized;
-
-            // Scale by explosion speed and inertia
             return direction * speed * Inertia;
         }
         
@@ -96,23 +115,17 @@ namespace CosmicShore.Game.Projectiles
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
-                // Explosion might already be despawned; bail early if so
-                if (!this || ct.IsCancellationRequested)
-                    return;
+                if (!this || ct.IsCancellationRequested) return;
 
                 var cachedTransform = transform;
-                if (meshRenderer)
-                    meshRenderer.material = Material;
+                if (meshRenderer) meshRenderer.material = Material;
 
                 float time = 0f;
 
                 while (time < ExplosionDuration)
                 {
                     ct.ThrowIfCancellationRequested();
-
-                    // Seeing null pointers from destroyed objects here sometimes -- bail out if so
-                    if (!this || cachedTransform == null)
-                        return;
+                    if (!this || cachedTransform == null) return;
 
                     time += Time.deltaTime;
                     float t = time / ExplosionDuration;
@@ -120,25 +133,14 @@ namespace CosmicShore.Game.Projectiles
 
                     cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
 
-                    if (Material != null)
-                        Material.SetFloat("_Opacity", 1 - ease);
+                    if (Material != null) Material.SetFloat("_Opacity", 1 - ease);
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
-                if (this)
-                    Destroy(gameObject);
+                if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException) { }
-        }
-        
-        private void OnValidate()
-        {
-            meshRenderer = GetComponent<MeshRenderer>();
-            if (!meshRenderer)
-            {
-                Debug.LogError("No mesh renderer found!");
-            }
         }
 
         public struct InitializeStruct

@@ -20,10 +20,12 @@ namespace CosmicShore.Game.Projectiles
 
         public override void BeginExplosion()
         {
-            // Use the same CTS from base to keep a single cancel point
+            // [Optimization] Standardize token usage. Cancel old ones, create new one.
             CancelExplosion();
-            _cts = new CancellationTokenSource();
-            FlowerAsync(_cts.Token).Forget();
+            explosionCts = new CancellationTokenSource();
+            
+            // Start the flower pattern task
+            FlowerAsync(explosionCts.Token).Forget();
         }
 
         private async UniTaskVoid FlowerAsync(CancellationToken ct)
@@ -34,36 +36,42 @@ namespace CosmicShore.Game.Projectiles
                     await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
                 float count = 0f;
+                // [Safety] Ensure Vessel/PrismController exists before accessing
+                if (Vessel == null || Vessel.VesselStatus == null || Vessel.VesselStatus.VesselPrismController == null) 
+                    return;
+
                 int currentPosition = Vessel.VesselStatus.VesselPrismController.TrailLength - 1;
 
                 while (count < TunnelAmount)
                 {
+                    // [Performance] Checks token from AOEExplosion base. Throws immediately if TurnEnd happened.
                     ct.ThrowIfCancellationRequested();
+
+                    if (Vessel == null) return; // Safety check if vessel died mid-loop
 
                     if (currentPosition < Vessel.VesselStatus.VesselPrismController.TrailLength)
                     {
                         count++;
                         currentPosition++;
 
-                        // sync block dimensions with inner dimensions
                         SetBlockDimensions(Vessel.VesselStatus.VesselPrismController.TargetScale);
 
                         var lastTwoBlocks = Vessel.VesselStatus.VesselPrismController.GetLastTwoBlocks();
                         if (lastTwoBlocks != null)
                             SeedBlocks(lastTwoBlocks);
 
-                        // yield a frame to spread work
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                     }
                     else
                     {
-                        // nothing new yet; wait a frame
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                     }
                 }
             }
-            catch (OperationCanceledException) { /* expected on cancel/disable */ }
+            catch (OperationCanceledException) { /* Expected */ }
         }
+
+        // ... [Helper methods below use inherited logic and add to 'trails', so Cleanup works automatically] ...
 
         public void SetBlockDimensions(Vector3 innerDimensions)
         {
@@ -80,7 +88,6 @@ namespace CosmicShore.Game.Projectiles
             const int stepAngle = 30;
             for (int i = stepAngle; i < 180; i += stepAngle)
             {
-                // owner suffixes based on our OwnerIdBase (from AOEBlockCreation)
                 var block1 = CreateBlock(
                     lastTwoBlocks[0].transform.position,
                     lastTwoBlocks[0].transform.forward,
