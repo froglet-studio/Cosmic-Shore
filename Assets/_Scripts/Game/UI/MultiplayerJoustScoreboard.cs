@@ -12,12 +12,12 @@ namespace CosmicShore.Game.UI
 
         protected override void ShowMultiplayerView()
         {
-            // Standard Sort: Lowest Score (Time) is Top. Losers (99999) are Bottom.
-            gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
-            
-            var winner = gameData.RoundStatsList[0];
-            SetBannerForDomain(winner.Domain);
-            
+            // [Visual Note] Use DomainStats calculated in Controller to set the correct banner.
+            if (gameData.DomainStatsList != null && gameData.DomainStatsList.Count > 0)
+            {
+                SetBannerForDomain(gameData.DomainStatsList[0].Domain);
+            }
+
             FormatMultiplayerJoustScores();
             
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
@@ -26,17 +26,20 @@ namespace CosmicShore.Game.UI
 
         protected override void DisplayPlayerScores() 
         { 
-            // Not used - FormatMultiplayerJoustScores handles this
+            // Standard implementation handles naming and basic field population.
+            base.DisplayPlayerScores();
         }
 
         void FormatMultiplayerJoustScores()
         {
-            if (joustController == null || joustController.joustTurnMonitor == null)
+            if (!joustController || !joustController.joustTurnMonitor)
             {
                 Debug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
                 return;
             }
 
+            // [Visual Note] Controller handles sorting based on UseGolfRules. 
+            // Do NOT sort locally to avoid UI flipping.
             var playerScores = gameData.RoundStatsList;
             int needed = joustController.joustTurnMonitor.CollisionsNeeded;
 
@@ -48,28 +51,24 @@ namespace CosmicShore.Game.UI
                 if (!PlayerScoreTextFields[i]) continue;
         
                 var stats = playerScores[i];
-        
-                // Calculate jousts left
                 int current = stats.JoustCollisions;
                 int joustsLeft = Mathf.Max(0, needed - current);
-                
-                // If no jousts left, player won - show time
-                // If jousts left > 0, player lost - show jousts left
+
                 if (joustsLeft == 0)
                 {
-                    // Winner: Show Time
+                    // Winner finished the jousts: Show completion time
                     TimeSpan t = TimeSpan.FromSeconds(stats.Score);
                     PlayerScoreTextFields[i].text = $"{t.Minutes:D2}:{t.Seconds:D2}:{t.Milliseconds / 10:D2}";
                 }
                 else
                 {
-                    // Loser: Show Jousts Left
+                    // Loser has jousts remaining
                     string s = joustsLeft == 1 ? "" : "s";
                     PlayerScoreTextFields[i].text = $"{joustsLeft} Joust{s} Left";
                 }
             }
     
-            // Cleanup unused slots
+            // Cleanup unused slots in the UI
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
                 if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";

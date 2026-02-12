@@ -26,6 +26,8 @@ namespace CosmicShore.Game.Arcade
         private bool _raceEnded;
         private int _scoresReceived;
 
+        protected override bool UseGolfRules => true; // Lower time is better
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -38,6 +40,10 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer) return;
             int currentSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
             InitializeEnvironment_ClientRpc(currentSeed);
+            
+            // [Visual Note] Base method handles SetPlayersActive and StartTurn 
+            // after environment is prepped.
+            base.OnCountdownTimerEnded();
         }
 
         [ClientRpc]
@@ -51,9 +57,7 @@ namespace CosmicShore.Game.Arcade
                 ApplyHelixIntensity();
                 segmentSpawner.Initialize();
             }
-            
-            gameData.SetPlayersActive();
-            gameData.StartTurn();
+            // Logic removed here to prevent race conditions with the Ready Button.
         }
 
         void ApplyHelixIntensity()
@@ -63,8 +67,6 @@ namespace CosmicShore.Game.Arcade
             helix.firstOrderRadius = radius;
             helix.secondOrderRadius = radius;
         }
-
-        #region Score & End Game Logic
 
         public void ReportLocalPlayerFinished(float finalScore)
         {
@@ -76,10 +78,7 @@ namespace CosmicShore.Game.Arcade
         void ReportPlayerScore_ServerRpc(float score, string playerName)
         {
             var playerStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (playerStats != null)
-            {
-                playerStats.Score = score;
-            }
+            if (playerStats != null) playerStats.Score = score;
 
             if (!_raceEnded)
             {
@@ -95,16 +94,12 @@ namespace CosmicShore.Game.Arcade
         }
 
         [ClientRpc]
-        void NotifyRaceEnded_ClientRpc()
-        {
-            gameData.InvokeGameTurnConditionsMet();
-        }
+        void NotifyRaceEnded_ClientRpc() => gameData.InvokeGameTurnConditionsMet();
 
         void EndRaceAndSyncScores()
         {
             var statsList = gameData.RoundStatsList;
             int count = statsList.Count;
-                
             FixedString64Bytes[] nameArray = new FixedString64Bytes[count];
             float[] scoreArray = new float[count];
 
@@ -113,7 +108,6 @@ namespace CosmicShore.Game.Arcade
                 nameArray[i] = new FixedString64Bytes(statsList[i].Name);
                 scoreArray[i] = statsList[i].Score;
             }
-            
             SyncFinalScores_ClientRpc(nameArray, scoreArray);
         }
 
@@ -124,13 +118,13 @@ namespace CosmicShore.Game.Arcade
             {
                 string sName = names[i].ToString();
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
-                if (stat != null)
-                {
-                    stat.Score = scores[i];
-                }
+                if (stat != null) stat.Score = scores[i];
             }
 
+            // [Visual Note] Critical sequence for correct Victory/Defeat display
             gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules); 
+            
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
@@ -140,8 +134,7 @@ namespace CosmicShore.Game.Arcade
             base.OnResetForReplayCustom();
             _raceEnded = false;
             _scoresReceived = 0;
+            RaiseToggleReadyButtonEvent(true);
         }
-
-        #endregion
     }
 }

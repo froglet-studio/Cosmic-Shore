@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using UnityEngine;
 
 namespace CosmicShore.Game.UI
 {
@@ -8,6 +9,7 @@ namespace CosmicShore.Game.UI
         protected override void ShowMultiplayerView()
         {
             DetermineWinnerAndSetBanner();
+            DisplayPlayerScores(); // Use the standard player display
             FormatMultiplayerTimeScores();
             
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
@@ -16,30 +18,31 @@ namespace CosmicShore.Game.UI
 
         void DetermineWinnerAndSetBanner()
         {
-            var playerScores = gameData.RoundStatsList;
-            if (playerScores == null || playerScores.Count == 0) return;
+            // [Visual Note] Uses DomainStats calculated in the Controller sync
+            if (gameData.DomainStatsList == null || gameData.DomainStatsList.Count == 0)
+            {
+                if (BannerText) BannerText.text = "GAME OVER";
+                return;
+            }
 
-            var sortedPlayers = playerScores.OrderBy(p => p.Score).ToList();
-            var winner = sortedPlayers[0];
-
-            var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
-            SetBannerForDomain(winner.Domain);
+            var winnerDomain = gameData.DomainStatsList[0].Domain;
+            SetBannerForDomain(winnerDomain);
         }
         
-        protected override void DisplayPlayerScores() { }
+        protected override void DisplayPlayerScores() 
+        {
+            // Standard implementation handles naming and basic score field population
+            base.DisplayPlayerScores();
+        }
 
         void FormatMultiplayerTimeScores()
         {
             var playerScores = gameData.RoundStatsList;
 
-            playerScores.Sort((a, b) => a.Score.CompareTo(b.Score));
-
             for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
             {
-                if (PlayerNameTextFields[i])
-                    PlayerNameTextFields[i].text = playerScores[i].Name;
-
                 if (!PlayerScoreTextFields[i]) continue;
+                
                 float score = playerScores[i].Score;
 
                 if (score < 10000f)
@@ -50,14 +53,8 @@ namespace CosmicShore.Game.UI
                 else
                 {
                     int crystalsLeft = (int)(score - 10000f);
-                    PlayerScoreTextFields[i].text = $"{crystalsLeft} Left";
+                    PlayerScoreTextFields[i].text = $"{crystalsLeft} Crystals Left";
                 }
-            }
-            
-            for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
-            {
-                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i]) PlayerScoreTextFields[i].text = "";
             }
         }
     }

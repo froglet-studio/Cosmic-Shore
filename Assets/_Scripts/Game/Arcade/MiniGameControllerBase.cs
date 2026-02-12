@@ -48,21 +48,12 @@ namespace CosmicShore.Game.Arcade
             _onToggleReadyButton?.Raise(enable);
         }
         
-        /// <summary>Called when countdown reaches zero - starts the actual gameplay</summary>
         protected abstract void OnCountdownTimerEnded();
         
-        /// <summary>
-        /// Setup a new turn. Called before turn starts.
-        /// Override to add game-specific turn setup (environment reset, etc.)
-        /// </summary>
         protected virtual void SetupNewTurn()
         {
         }
 
-        /// <summary>
-        /// Called when turn ends. Handles progression to next turn or round end.
-        /// Final method - use OnTurnEndedCustom for game-specific logic.
-        /// </summary>
         protected void EndTurn()
         {
             OnTurnEndedCustom();
@@ -78,18 +69,10 @@ namespace CosmicShore.Game.Arcade
                 SetupNewTurn();
         }
         
-        /// <summary>
-        /// Hook for game-specific turn end logic.
-        /// Called BEFORE checking if round should end.
-        /// </summary>
         protected virtual void OnTurnEndedCustom()
         {
         }
         
-        /// <summary>
-        /// Setup a new round. Called at game start and between rounds.
-        /// Override to add game-specific round setup.
-        /// </summary>
         protected virtual void SetupNewRound()
         {
             gameData.TurnsTakenThisRound = 0;
@@ -97,10 +80,6 @@ namespace CosmicShore.Game.Arcade
             SetupNewTurn();
         }
         
-        /// <summary>
-        /// Called when round ends. Handles progression to next round or game end.
-        /// Final method - use OnRoundEndedCustom for game-specific logic.
-        /// </summary>
         protected void EndRound()
         {
             OnRoundEndedCustom();
@@ -114,18 +93,10 @@ namespace CosmicShore.Game.Arcade
                 SetupNewRound();
         }
         
-        /// <summary>
-        /// Hook for game-specific round end logic.
-        /// Called BEFORE checking if game should end.
-        /// </summary>
         protected virtual void OnRoundEndedCustom()
         {
         }
 
-        /// <summary>
-        /// Ends the game and triggers end game sequence.
-        /// Override to customize what happens when game ends.
-        /// </summary>
         protected virtual void EndGame()
         {
             if (!ShowEndGameSequence) return;
@@ -134,10 +105,6 @@ namespace CosmicShore.Game.Arcade
             gameData.InvokeMiniGameEnd();
         }
         
-        /// <summary>
-        /// Called when user clicks "Play Again" from scoreboard.
-        /// Subclasses should override ResetEnvironmentForReplay() to clean up their environment.
-        /// </summary>
         protected virtual void OnResetForReplay()
         {
             SetupNewRound();
