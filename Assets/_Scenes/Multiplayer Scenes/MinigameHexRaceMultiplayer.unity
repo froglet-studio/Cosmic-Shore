@@ -719,7 +719,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 40
+  CrystalCollisions: 2
   optionalEnvironment: {fileID: 1899528610}
   optionalLaps: 4
 --- !u!114 &1078953729
@@ -1689,7 +1689,7 @@ PrefabInstance:
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 6
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2441,6 +2441,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  multiplayerController: {fileID: 1078953729}
   scoreboardPanel: {fileID: 2010118409}
   statsContainer: {fileID: 401919849}
   statRowPrefab: {fileID: 2786973711039957352, guid: e261e06b3ac934846b48f7122bb7f961,
@@ -2481,6 +2482,7 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 1897523409}
   view: {fileID: 1897523410}
+  hexRaceController: {fileID: 1078953729}
 --- !u!114 &1897523413
 MonoBehaviour:
   m_ObjectHideFlags: 0
