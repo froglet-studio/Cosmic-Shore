@@ -1156,7 +1156,7 @@ PrefabInstance:
     - target: {fileID: 8540960622779608551, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: activationButton
-      value: 5
+      value: 6
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5529300081470695220, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
@@ -5605,6 +5605,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  multiplayerController: {fileID: 1628508345}
   scoreboardPanel: {fileID: 357028572}
   statsContainer: {fileID: 0}
   statRowPrefab: {fileID: 0}
