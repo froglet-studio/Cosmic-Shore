@@ -1,52 +1,38 @@
 ﻿using System.Linq;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    /// <summary>
-    /// Multiplayer Joust Controller with proper replay reset handling.
-    /// Manages joust-specific game logic including collision tracking and scoring.
-    /// </summary>
     public class MultiplayerJoustController : MultiplayerDomainGamesController
     {
         [Header("Joust Specific")]
         [SerializeField] public JoustCollisionTurnMonitor joustTurnMonitor;
-        
-        private bool turnEndedByMonitor = false;
-        
+
+        private bool _finalResultsSent;
+
+        protected override bool UseGolfRules => true;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
-            
-            // Subscribe to joust-specific events if needed
-            if (joustTurnMonitor != null && IsServer)
-            {
-                // Subscribe to collision events or other joust-specific events here
-            }
-        }
 
-        public override void OnNetworkDespawn()
-        {
-            // Unsubscribe from joust-specific events
-            if (joustTurnMonitor != null && IsServer)
-            {
-                // Unsubscribe here
-            }
-            
-            base.OnNetworkDespawn();
+            _finalResultsSent = false;
         }
 
         /// <summary>
-        /// Called by NetworkJoustCollisionTurnMonitor when a collision occurs.
-        /// Synchronizes collision count to all clients.
+        /// Called by monitor when a collision occurs (server authoritative).
         /// </summary>
         public void NotifyCollision(string playerName, int collisionCount)
         {
-            if (!IsServer)
-                return;
+            if (!IsServer) return;
+
+            // Update server truth immediately too (important!)
+            var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
+            if (stats != null) stats.JoustCollisions = collisionCount;
 
             NotifyCollision_ClientRpc(playerName, collisionCount);
         }
@@ -54,63 +40,25 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         void NotifyCollision_ClientRpc(string playerName, int collisionCount)
         {
-            if (IsServer)
-                return;
-
-            // Update the client's local round stats
+            // This runs on clients (and host client too, which is fine)
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
             stats.JoustCollisions = collisionCount;
-            Debug.Log($"[Client] Updated {playerName} collision count to {collisionCount}");
         }
 
-        /// <summary>
-        /// Called by NetworkJoustCollisionTurnMonitor when turn ends.
-        /// Records the winner name for scoring.
-        /// </summary>
-        public void OnTurnEndedByMonitor(string winnerName)
-        {
-            if (!IsServer)
-                return;
-
-            turnEndedByMonitor = true;
-            
-            Debug.Log($"[Joust] Turn ended by monitor. Winner: {winnerName ?? "None"}");
-            
-            // Sync to clients
-            OnTurnEndedByMonitor_ClientRpc(winnerName);
-        }
-
-        [ClientRpc]
-        void OnTurnEndedByMonitor_ClientRpc(string winnerName)
-        {
-            if (IsServer)
-                return;
-
-            Debug.Log($"[Client] Turn ended. Winner: {winnerName ?? "None"}");
-        }
-
-        protected override bool UseGolfRules => true;
-
-        /// <summary>
-        /// Called when turn ends - calculate final scores for joust.
-        /// Winners get their time, losers get a penalty score.
-        /// </summary>
         protected override void OnTurnEndedCustom()
         {
             base.OnTurnEndedCustom();
-            
-            if (!IsServer)
-                return;
-            
-            CalculateJoustScores();
+            if (!IsServer) return;
+
+            // Prevent double-send if something ends turn twice
+            if (_finalResultsSent) return;
+
+            CalculateJoustScores_Server();
+            SyncJoustResults_Authoritative();
+            _finalResultsSent = true;
         }
 
-        /// <summary>
-        /// Calculate final scores for all players.
-        /// Winners: Score = completion time
-        /// Losers: Score = 99999 (high penalty to sort them to bottom)
-        /// </summary>
-        void CalculateJoustScores()
+        void CalculateJoustScores_Server()
         {
             if (!joustTurnMonitor)
             {
@@ -123,67 +71,85 @@ namespace CosmicShore.Game.Arcade
 
             foreach (var stats in gameData.RoundStatsList)
             {
-                int currentCollisions = stats.JoustCollisions;
-                int collisionsLeft = Mathf.Max(0, collisionsNeeded - currentCollisions);
+                int current = stats.JoustCollisions;
+                int left = Mathf.Max(0, collisionsNeeded - current);
 
-                if (collisionsLeft == 0)
+                if (left == 0)
                 {
-                    if (stats.Score != 0f && !(stats.Score >= 99999f)) continue;
+                    // Winner time (only set once)
+                    if (stats.Score > 0f && stats.Score < 99999f) continue;
                     stats.Score = currentTime;
-                    Debug.Log($"[Joust] {stats.Name} WON with time: {stats.Score:F2}s");
                 }
                 else
                 {
-                    // Loser: Penalty score so they sort to bottom
                     stats.Score = 99999f;
-                    Debug.Log($"[Joust] {stats.Name} LOST with {collisionsLeft} jousts remaining");
                 }
             }
 
-            // Sort with golf rules (lowest score wins)
             gameData.SortRoundStats(UseGolfRules);
-            
-            // Calculate domain stats for team-based scoring if needed
             gameData.CalculateDomainStats(UseGolfRules);
         }
 
-        /// <summary>
-        /// Called on all clients when "Play Again" is pressed.
-        /// Reset all game-specific environment elements here.
-        /// </summary>
+        void SyncJoustResults_Authoritative()
+        {
+            var list = gameData.RoundStatsList;
+            int count = list.Count;
+
+            FixedString64Bytes[] names = new FixedString64Bytes[count];
+            float[] scores = new float[count];
+            int[] collisions = new int[count];
+            int[] domains = new int[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                names[i] = new FixedString64Bytes(list[i].Name);
+                scores[i] = list[i].Score;
+                collisions[i] = list[i].JoustCollisions;
+                domains[i] = (int)list[i].Domain;
+            }
+
+            SyncJoustResults_ClientRpc(names, scores, collisions, domains);
+        }
+
+        [ClientRpc]
+        void SyncJoustResults_ClientRpc(FixedString64Bytes[] names, float[] scores, int[] collisions, int[] domains)
+        {
+            for (int i = 0; i < names.Length; i++)
+            {
+                string n = names[i].ToString();
+                var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == n);
+                if (stat == null) continue;
+
+                stat.Score = scores[i];
+                stat.JoustCollisions = collisions[i];
+                stat.Domain = (Domains)domains[i];
+            }
+
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+
+            // Only now trigger endgame pipeline everywhere
+            gameData.InvokeWinnerCalculated();
+            gameData.InvokeMiniGameEnd();
+        }
+
         protected override void OnResetForReplayCustom()
         {
             base.OnResetForReplayCustom();
 
-            turnEndedByMonitor = false;
-            
-            // Reset joust-specific elements
+            _finalResultsSent = false;
+
             if (joustTurnMonitor)
-            {
                 joustTurnMonitor.ResetMonitor();
+
+            foreach (var s in gameData.RoundStatsList)
+            {
+                s.JoustCollisions = 0;
+                s.Score = 0f;
             }
-            RefreshHUD();
-            
-            Debug.Log("[MultiplayerJoustController] Environment reset for replay");
-        }
 
-        void RefreshHUD()
-        {
+            // If you want HUD refresh:
             gameData.InvokeTurnStarted();
-        }
-
-        /// <summary>
-        /// Override this if you need custom round end behavior for joust.
-        /// </summary>
-        protected override void OnRoundEndedCustom()
-        {
-            base.OnRoundEndedCustom();
-            
-            if (!IsServer)
-                return;
-            
-            // Any joust-specific round end logic here
-            Debug.Log("[MultiplayerJoustController] Round ended");
         }
     }
 }
