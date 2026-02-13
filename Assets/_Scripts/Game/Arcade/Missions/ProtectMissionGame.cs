@@ -32,7 +32,7 @@ namespace CosmicShore
         };
 
         [Range(1, 9)] public int CurrentDifficulty = 5;
-        [SerializeField] float faunaOnlyLimit = 1000; // If the team volume is above this limit, only fauna threats will spawn
+        [SerializeField] float faunaOnlyLimit = 1000; // If the team volume is above this limit, only FaunaPrefab threats will spawn
 
         public float IntensityThreshold = 1;  // How much variance is allowed from mission difficulty in a wave
         public float ThreatWaveMinimumPeriodInSeconds = 20;
@@ -54,7 +54,7 @@ namespace CosmicShore
             HostileAITwo.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];*/
 
-            faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
+            faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Fauna>(out _)).ToArray();
             node = CellControlManager.Instance.GetNearestCell(Vector3.zero);
         }
 

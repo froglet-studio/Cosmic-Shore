@@ -15,7 +15,7 @@ namespace CosmicShore
     public abstract class LifeForm : MonoBehaviour, ITeamAssignable
     {
         [SerializeField] protected GameDataSO gameData;
-        [SerializeField] protected CellDataSO cellData;
+        [SerializeField] protected CellRuntimeDataSO cellData;
         [FormerlySerializedAs("healthBlock")]
         [SerializeField] protected HealthPrism healthPrism;
         [SerializeField] protected Spindle spindle;
@@ -93,7 +93,7 @@ namespace CosmicShore
                 if (!hp) continue;
                 hp.LifeForm = this;
                 hp.ChangeTeam(domain);
-                hp.Initialize("fauna");
+                hp.Initialize("FaunaPrefab");
                 AddHealthBlock(hp); // [Visual Note] Ensure we explicitly add it to tracking
             }
         }

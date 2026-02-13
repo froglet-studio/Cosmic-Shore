@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+﻿// Cell.cs
+using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Soap;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace CosmicShore.Game
@@ -14,45 +14,44 @@ namespace CosmicShore.Game
 
         [SerializeField] public int ID;
 
-        [Header("Cell Type Selection")]
-        [SerializeField] List<SO_CellType> CellTypes;
+        [Header("Cell Config Selection")]
+        [SerializeField] List<CellConfigDataSO> CellConfigs;   // NEW (replaces CellTypes)
         [SerializeField] CellTypeChoiceOptions cellTypeChoiceOptions = CellTypeChoiceOptions.Random;
 
         [Header("Runtime Data")]
-        [SerializeField] CellDataSO cellData;
+        [SerializeField] CellRuntimeDataSO runtime;
         [SerializeField] GameDataSO gameData;
-        
+
         [SerializeField] float nucleusScaleMultiplier = 1f;
 
-        [Header("Random Mode Profile")]
-        [SerializeField] CellRandomSpawnProfileSO randomSpawnProfile;
-        public CellRandomSpawnProfileSO RandomSpawnProfile => randomSpawnProfile;
 
-        SO_CellType cellType => cellData.CellType;
+        CellConfigDataSO cellConfigData => runtime ? runtime.Config : null;
         GameObject membrane;
 
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
         readonly Dictionary<Domains, float> teamVolumes = new();
-        
-        private List<GameObject> spawnedLifeForms = new List<GameObject>();
+
+        readonly List<GameObject> spawnedLifeForms = new();
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
         ICellLifeSpawner activeSpawner;
+        bool postInitilized = false;
 
         void OnEnable()
         {
             if (gameData != null)
                 gameData.OnInitializeGame += Initialize;
 
-            if (cellData == null) return;
-            
-            if (cellData.OnCellItemsUpdated != null)
-                cellData.OnCellItemsUpdated.OnRaised += OnCrystalSpawnedInCell;
-            
-            if (cellData.OnResetForReplay != null)
-                cellData.OnResetForReplay.OnRaised += ResetCell;
+            if (!runtime) return;
+
+            // We keep events ONLY in runtime.
+            if (runtime.OnCellItemsUpdated != null)
+                runtime.OnCellItemsUpdated.OnRaised += OnCellItemUpdated;
+
+            if (runtime.OnResetForReplay != null)
+                runtime.OnResetForReplay.OnRaised += ResetCell;
         }
 
         void OnDisable()
@@ -60,50 +59,43 @@ namespace CosmicShore.Game
             if (gameData != null)
                 gameData.OnInitializeGame -= Initialize;
 
-            if (cellData != null)
+            if (runtime != null)
             {
-                if (cellData.OnCellItemsUpdated != null)
-                    cellData.OnCellItemsUpdated.OnRaised -= OnCrystalSpawnedInCell;
-                
-                if (cellData.OnResetForReplay != null)
-                    cellData.OnResetForReplay.OnRaised -= ResetCell;
+                if (runtime.OnCellItemsUpdated != null)
+                    runtime.OnCellItemsUpdated.OnRaised -= OnCellItemUpdated;
+
+                if (runtime.OnResetForReplay != null)
+                    runtime.OnResetForReplay.OnRaised -= ResetCell;
             }
-            
+
             StopSpawner();
-            cellData?.ResetRuntimeData();
+            runtime?.ResetRuntimeData();
         }
 
         void ResetCell()
         {
+            // Destroy all spawned lifeforms
             for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
             {
                 if (spawnedLifeForms[i]) Destroy(spawnedLifeForms[i]);
             }
             spawnedLifeForms.Clear();
+
             StopSpawner();
-            AssignCellType();
+            AssignConfig();
             ResetVolumes();
-            cellData.EnsureCellStats(ID);
+
+            runtime.EnsureCellStats(ID);
             UpdateCellStats();
         }
 
         void UpdateCellStats()
         {
-            if (!cellData) return;
+            if (!runtime) return;
 
-            cellData.EnsureCellStats(ID);
-            var cs = cellData.CellStatsList[ID];
+            runtime.EnsureCellStats(ID);
+            var cs = runtime.CellStatsList[ID];
             cs.LifeFormsInCell = spawnedLifeForms.Count;
-
-            UpdateLifeFormCountUI();
-        }
-
-        void UpdateLifeFormCountUI()
-        {
-            if (cellData?.OnCellItemsUpdated)
-            {
-                cellData.OnCellItemsUpdated.Raise();
-            }
         }
 
         public void RegisterSpawnedObject(GameObject obj)
@@ -116,55 +108,62 @@ namespace CosmicShore.Game
         public void UnregisterSpawnedObject(GameObject obj)
         {
             if (spawnedLifeForms.Remove(obj))
-            {
                 UpdateCellStats();
-            }
         }
 
         void Initialize()
         {
             spawnedLifeForms.Clear();
 
-            cellData.Cell = this;
-            cellData.EnsureCellStats(ID);
+            // Bind runtime -> this cell
+            runtime.Cell = this;
+            runtime.EnsureCellStats(ID);
 
-            AssignCellType();
+            AssignConfig();
             SetupDensityGrids();
             SpawnVisuals();
             ResetVolumes();
-            
+
             UpdateCellStats();
         }
-
-        void OnCrystalSpawnedInCell()
+        
+        void InitilizePostFirstCellItem()
         {
-            if (!cellType)
+            postInitilized = true;
+            if (!cellConfigData)
             {
                 Debug.LogWarning($"[Cell {ID}] Crystal spawned before Cell Initialized. Attempting lazy init.");
-                Initialize(); 
-                if (!cellType) return; 
+                Initialize();
+                if (!cellConfigData) return;
             }
 
             ApplyModifiers();
             StartSpawnerForMode();
         }
-        
-        void AssignCellType()
+
+        void OnCellItemUpdated()
         {
-            if (CellTypes == null || CellTypes.Count == 0)
+            if (postInitilized)
+                return;
+            InitilizePostFirstCellItem();
+        }
+
+        void AssignConfig()
+        {
+            if (CellConfigs == null || CellConfigs.Count == 0)
             {
-                Debug.LogError($"{nameof(Cell)}: No cell types found to assign.");
+                Debug.LogError($"{nameof(Cell)}: No CellConfigs found to assign.");
                 return;
             }
 
             var index = cellTypeChoiceOptions switch
             {
-                CellTypeChoiceOptions.Random => Random.Range(0, CellTypes.Count),
-                CellTypeChoiceOptions.IntensityWise => Mathf.Clamp(gameData.SelectedIntensity.Value - 1, 0, CellTypes.Count - 1),
+                CellTypeChoiceOptions.Random => Random.Range(0, CellConfigs.Count),
+                CellTypeChoiceOptions.IntensityWise => Mathf.Clamp(gameData.SelectedIntensity.Value - 1, 0, CellConfigs.Count - 1),
                 _ => 0
             };
 
-            cellData.CellType = CellTypes[index];
+            runtime.Config = CellConfigs[index];
         }
 
         void SetupDensityGrids()
@@ -177,13 +176,13 @@ namespace CosmicShore.Game
 
         void SpawnVisuals()
         {
-            if (!cellType) return;
+            if (!cellConfigData) return;
 
-            if (cellType.MembranePrefab != null)
-                membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
+            if (cellConfigData.MembranePrefab != null)
+                membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
 
-            if (cellType.NucleusPrefab == null) return;
-            var nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
+            if (cellConfigData.NucleusPrefab == null) return;
+            var nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
         }
 
@@ -197,8 +196,10 @@ namespace CosmicShore.Game
 
         void ApplyModifiers()
         {
-            if (cellType.CellModifiers == null) return;
-            foreach (var modifier in cellType.CellModifiers)
+            var cfg = cellConfigData;
+            if (!cfg || cfg.CellModifiers == null) return;
+
+            foreach (var modifier in cfg.CellModifiers)
                 modifier.Apply(this);
         }
 
@@ -210,8 +211,8 @@ namespace CosmicShore.Game
                 ? intensitySpawner
                 : randomSpawner;
 
-            activeSpawner.Start(this, cellType, cellData, gameData);
-            
+            activeSpawner.Start(this, cellConfigData, runtime, gameData);
+
             Debug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
         }
 
@@ -225,7 +226,9 @@ namespace CosmicShore.Game
 
         internal Transform GetCrystalTransform()
         {
-            if (cellData.TryGetLocalCrystal(out var crystal)) return crystal.transform;
+            if (runtime != null && runtime.TryGetLocalCrystal(out var crystal) && crystal)
+                return crystal.transform;
+
             Debug.LogWarning($"[Cell {ID}] No crystal found!");
             return null;
         }
@@ -262,6 +265,7 @@ namespace CosmicShore.Game
         {
             return teamVolumes.GetValueOrDefault(domain, 0);
         }
+
 
         internal Domains GetHostileDomainToLocalLegacy()
         {

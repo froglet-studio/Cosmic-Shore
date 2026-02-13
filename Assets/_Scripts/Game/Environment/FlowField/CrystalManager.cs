@@ -32,7 +32,7 @@ namespace CosmicShore.Game
 
         [Header("Dependencies")]
         [SerializeField] protected GameDataSO gameData;
-        [SerializeField] protected CellDataSO cellData;
+        [SerializeField] protected CellRuntimeDataSO cellData;
 
         [Header("Crystal Prefab")]
         [SerializeField] protected Crystal crystalPrefab;
@@ -59,7 +59,7 @@ namespace CosmicShore.Game
 
         // Used for stable initialization IDs for CellItems
         private int itemsAdded;
-
+        
         protected virtual void Awake()
         {
             // Ensure runtime lists exist
@@ -71,15 +71,7 @@ namespace CosmicShore.Game
         // CellItem management (unchanged conceptually)
         // ------------------------------------------------------------
 
-        public bool TryRemoveItem(CellItem item)
-        {
-            if (!cellData.CellItems.Contains(item))
-                return false;
-
-            cellData.CellItems.Remove(item);
-            cellData.OnCellItemsUpdated.Raise();
-            return true;
-        }
+        
 
         // ------------------------------------------------------------
         // Spawn / Respawn core
