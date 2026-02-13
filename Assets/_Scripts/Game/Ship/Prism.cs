@@ -194,8 +194,9 @@ namespace CosmicShore.Core
                 OwnName = PlayerName,
                 Volume = prismProperties.volume,
             });
-
-            if (CellControlManager.Instance)
+            
+            // CellControlManager is deprecated, transfer the logics below to somewhere else
+            /*if (CellControlManager.Instance)
             {
                 CellControlManager.Instance.AddBlock(Domain, prismProperties);
                 Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
@@ -204,7 +205,7 @@ namespace CosmicShore.Core
                     if (t != Domain && targetCell)
                         targetCell.countGrids[t].AddBlock(this);
                 });
-            }
+            }*/
         }
 
         // Growth Methods
@@ -251,8 +252,8 @@ namespace CosmicShore.Core
                 AttackerName = attackerPlayerName,
             });
 
-            if (CellControlManager.Instance)
-                CellControlManager.Instance.RemoveBlock(domain, prismProperties);
+            /*if (CellControlManager.Instance)
+                CellControlManager.Instance.RemoveBlock(domain, prismProperties);*/
 
             _lastDestructionScale = destructionScale;
             return null;
@@ -354,8 +355,8 @@ namespace CosmicShore.Core
                     AttackerName = prismProperties.prism.PlayerName,
                 });
 
-                if (CellControlManager.Instance != null)
-                    CellControlManager.Instance.RestoreBlock(Domain, prismProperties);
+                /*if (CellControlManager.Instance != null)
+                    CellControlManager.Instance.RestoreBlock(Domain, prismProperties);*/
 
                 blockCollider.enabled = true;
                 meshRenderer.enabled = true;

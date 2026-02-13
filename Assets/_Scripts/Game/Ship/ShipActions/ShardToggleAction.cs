@@ -1,3 +1,4 @@
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -21,12 +22,20 @@ namespace CosmicShore.Game
         [Tooltip("Max distance to search for a cell (used by CellControlManager on its side, if applicable).")]
         [SerializeField] private float searchRadiusHint = 0f; // optional / unused here, kept for future
 
+        [SerializeField] private CellRuntimeDataSO cellData;
+        
         // Runtime toggle state
         bool _redirectActive = false;
 
         public override void StartAction()
         {
-            if (shardFieldBus == null)
+            if (!cellData)
+            {
+                Debug.LogError("No cell data found!");
+                return;
+            }
+            
+            if (!shardFieldBus)
             {
                 Debug.LogWarning("[ShardToggleAction] No ShardFieldBus assigned!");
                 return;
@@ -34,19 +43,15 @@ namespace CosmicShore.Game
             
             if (!_redirectActive)
             {
-                var shipPos = Vessel != null ? Vessel.Transform.position : transform.position;
-                var cell = CellControlManager.Instance.GetNearestCell(shipPos);
-
+                var cell = cellData.Cell;
                 Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
-
-                Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
+                // Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
                 shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
-
                 _redirectActive = true;
             }
             else
             {
-                Debug.Log("[ShardToggleAction] Toggled OFF → restoring shards to crystal.");
+                // Debug.Log("[ShardToggleAction] Toggled OFF → restoring shards to crystal.");
                 shardFieldBus.BroadcastRestoreToCrystal();
                 _redirectActive = false;
             }

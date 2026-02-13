@@ -10,18 +10,16 @@ namespace CosmicShore
     {
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
-
+        
         [SerializeField] protected CellRuntimeDataSO cellData;
         [FormerlySerializedAs("Team")] public Domains domain;
         [SerializeField] float goalUpdateInterval = 5f;
         public Vector3 Goal;
         //public List<float> Weights;
-        protected Cell cell;
+        protected Cell cell => cellData.Cell;
         
         protected virtual void Start()
         {
-            cell = CellControlManager.Instance.GetNearestCell(transform.position);
-
             if (domain == Domains.Unassigned)
                 Debug.LogWarning($"{name}: Population domain is Unassigned. Assign it before spawning FaunaPrefab, or set it on the prefab.");
 

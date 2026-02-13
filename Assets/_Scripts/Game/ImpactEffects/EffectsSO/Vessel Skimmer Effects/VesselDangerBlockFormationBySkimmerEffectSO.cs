@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Core;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -11,9 +12,18 @@ namespace CosmicShore.Game
     {
         [Header("AOE Prefab")]
         [SerializeField] private GameObject dangerHemispherePrefab;
-
+        
+        [SerializeField]
+        CellRuntimeDataSO cellData;
+        
         public override void Execute(VesselImpactor vesselImpactor, SkimmerImpactor skimmerImpactee)
         {
+            if (!cellData)
+            {
+                Debug.LogError("No Cell data found!");
+                return;
+            }
+            
             var victimVessel  = vesselImpactor.Vessel;
             var attackerSkimmer = skimmerImpactee.Skimmer;
             if (attackerSkimmer == null || victimVessel == null)
@@ -35,10 +45,7 @@ namespace CosmicShore.Game
                 return;
 
             var victimPos   = victimTransform.position;
-            var cellManager = CellControlManager.Instance;
-            var cell = cellManager.GetNearestCell(victimPos);
-
-            var targetPos = cell.GetCrystalTransform().position;
+            var targetPos = cellData.Cell.GetCrystalTransform().position;
 
             var toTarget = targetPos - victimPos;
             if (toTarget.sqrMagnitude < 0.01f)

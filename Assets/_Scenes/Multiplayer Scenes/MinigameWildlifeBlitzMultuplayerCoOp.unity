@@ -369,18 +369,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 654325071}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &654325073 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-    type: 3}
-  m_PrefabInstance: {fileID: 654325071}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &696378174
 GameObject:
   m_ObjectHideFlags: 0
@@ -596,7 +584,6 @@ GameObject:
   - component: {fileID: 1078953712}
   - component: {fileID: 1078953723}
   - component: {fileID: 1078953710}
-  - component: {fileID: 1078953713}
   - component: {fileID: 1078953715}
   - component: {fileID: 1078953721}
   - component: {fileID: 1078953720}
@@ -675,20 +662,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &1078953713
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f330c08a1e7665643adcc232c0cffef9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cells:
-  - {fileID: 654325073}
 --- !u!114 &1078953715
 MonoBehaviour:
   m_ObjectHideFlags: 0

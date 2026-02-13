@@ -202,7 +202,7 @@ public class BoidSImulationController : MonoBehaviour
     private Prism FindBlockByPosition(Vector3 position)
     {
         // Get the node that contains the position
-        Cell containingNode = CellControlManager.Instance.GetCellByPosition(position);
+        Cell containingNode = cellData.Cell;
 
         // If there's no node that contains the position, return null
         if (containingNode == null)

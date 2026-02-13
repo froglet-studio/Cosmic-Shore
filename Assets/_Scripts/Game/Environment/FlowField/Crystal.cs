@@ -173,7 +173,7 @@ namespace CosmicShore.Game
 
         public void ActivateCrystal()
         {
-            transform.parent = CellControlManager.Instance.GetNearestCell(transform.position).transform;
+            transform.parent = cellData.Cell.transform;
             gameObject.GetComponent<SphereCollider>().enabled = true;
             enabled = true;
 

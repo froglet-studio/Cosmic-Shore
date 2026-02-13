@@ -56,8 +56,8 @@ namespace CosmicShore
         protected virtual void Start()
         {
             if (!autoInitialize || initialized) return;
-            if (cell == null)
-                cell = CellControlManager.Instance.GetNearestCell(transform.position);
+            if (!cell)
+                cell = cellData.Cell;
             Initialize(cell);
         }
 
