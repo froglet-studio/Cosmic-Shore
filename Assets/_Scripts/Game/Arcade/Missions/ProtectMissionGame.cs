@@ -7,6 +7,7 @@ using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System.Linq;
 using CosmicShore.Game;
+using CosmicShore.Soap;
 
 namespace CosmicShore
 {
@@ -34,6 +35,8 @@ namespace CosmicShore
         [Range(1, 9)] public int CurrentDifficulty = 5;
         [SerializeField] float faunaOnlyLimit = 1000; // If the team volume is above this limit, only FaunaPrefab threats will spawn
 
+        [SerializeField] private CellRuntimeDataSO cellData;
+        
         public float IntensityThreshold = 1;  // How much variance is allowed from mission difficulty in a wave
         public float ThreatWaveMinimumPeriodInSeconds = 20;
         int currentSpawnLocationIndex = 0;
@@ -55,7 +58,7 @@ namespace CosmicShore
             HostileAIThree.ShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];*/
 
             faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Fauna>(out _)).ToArray();
-            node = CellControlManager.Instance.GetNearestCell(Vector3.zero);
+            node = cellData.Cell; // CellControlManager.Instance.GetNearestCell(Vector3.zero);
         }
 
         protected override void StartNewGame()

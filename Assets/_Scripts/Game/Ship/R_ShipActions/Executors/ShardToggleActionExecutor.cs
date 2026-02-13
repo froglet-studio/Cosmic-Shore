@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Game;
+using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -6,6 +7,8 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
 {
     [Header("Bus (required)")]
     [SerializeField] private ShardFieldBus shardFieldBus;
+
+    [SerializeField] private CellRuntimeDataSO cellData;
 
     [Header("Events")]
     [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
@@ -28,11 +31,15 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
 
     public void Toggle(ShardToggleActionSO so,  IVesselStatus status)
     {
+        if (!cellData)
+        {
+            Debug.LogError("No Cell data found!");
+            return;
+        }
+        
         if (!_redirectActive)
         {
-            var shipPos = (status != null) ? status.Vessel.Transform.position : transform.position;
-            var cell = CellControlManager.Instance.GetNearestCell(shipPos);
-
+            var cell = cellData.Cell;
             Vector3 highDensityPosition = cell.GetExplosionTarget(so.Domain);
             shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
             _redirectActive = true;
