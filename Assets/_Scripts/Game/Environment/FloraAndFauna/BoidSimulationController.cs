@@ -30,7 +30,7 @@ public class BoidSImulationController : MonoBehaviour
     GameDataSO gameData;
     
     [SerializeField]
-    CellDataSO cellData;
+    CellRuntimeDataSO cellData;
     
     public ComputeShader boidSimulationShader;
     public Prism boidPrefab;
@@ -64,7 +64,7 @@ public class BoidSImulationController : MonoBehaviour
         Prism[] trailBlocks = FindObjectsByType<Prism>(FindObjectsSortMode.None);
         foreach (var block in trailBlocks)
         {
-            if (!block.CompareTag("Fauna")) // Assuming "Fauna" is the tag for boid trail blocks
+            if (!block.CompareTag("FaunaPrefab")) // Assuming "FaunaPrefab" is the tag for boid trail blocks
             {
                 Entity blockEntity = new Entity
                 {
@@ -217,7 +217,7 @@ public class BoidSImulationController : MonoBehaviour
 
         foreach (var item in cellItems)
         {
-            if (item.GetComponent<Prism>() && !item.CompareTag("Fauna"))
+            if (item.GetComponent<Prism>() && !item.CompareTag("FaunaPrefab"))
             {
                 float distance = Vector3.Distance(position, item.transform.position);
                 if (distance < closestDistance)

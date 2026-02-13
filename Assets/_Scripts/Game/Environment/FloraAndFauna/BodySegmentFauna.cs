@@ -1,4 +1,5 @@
 using CosmicShore;
+using CosmicShore.Game;
 
 public class BodySegmentFauna : Fauna
 {
@@ -23,7 +24,11 @@ public class BodySegmentFauna : Fauna
             ParentWorm.UpdateTailStatus(false);
         }
         ParentWorm.RemoveSegment(this);
-        base.Die();
+    }
+
+    public override void Initialize(Cell cell)
+    {
+        throw new System.NotImplementedException();
     }
 
     protected override void Spawn()

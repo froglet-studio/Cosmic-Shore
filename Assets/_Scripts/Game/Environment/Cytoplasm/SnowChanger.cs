@@ -7,7 +7,7 @@ namespace CosmicShore.Game
     public class SnowChanger : MonoBehaviour
     {
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
         
         [SerializeField] GameObject snow;
         [SerializeField] int shardDistance = 100;

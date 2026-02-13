@@ -6,7 +6,7 @@ namespace CosmicShore.Game
     public class SnowChangerManager : MonoBehaviour
     {
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
         
         private void OnEnable()
         {
@@ -29,7 +29,7 @@ namespace CosmicShore.Game
         
         private void SpawnSnows()
         {
-            var snowChanger = Instantiate(cellData.CellType.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
+            var snowChanger = Instantiate(cellData.Config.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
             snowChanger.Initialize();
         }
     }

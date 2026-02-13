@@ -9,7 +9,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SinglePlayerWildlifeBlitzScoreTracker scoreTracker;
         [SerializeField] SingleplayerWildlifeBlitzTurnMonitor blitzTurnMonitor;
         [SerializeField] TimeBasedTurnMonitor timeTurnMonitor;
-        [SerializeField] CellDataSO cellData;
+        [SerializeField] CellRuntimeDataSO cellData;
 
         protected override void Start()
         {
@@ -55,11 +55,6 @@ namespace CosmicShore.Game.Arcade
                 scoreTracker.ResetScores();
             
             base.ResetEnvironmentForReplay();
-        }
-
-        protected override void OnCountdownTimerEnded()
-        {
-            base.OnCountdownTimerEnded();
         }
     }
 }

@@ -1,9 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
+using CosmicShore.Game;
 
 namespace CosmicShore
 {
-    public class LightFaunaManager : Population
+    public class LightFaunaManager : Fauna
     {
         [Header("Prefab (keep here)")]
         [SerializeField] LightFauna lightFaunaPrefab;
@@ -17,6 +18,21 @@ namespace CosmicShore
         {
             base.Start();
             SpawnGroup();
+        }
+
+        public override void Initialize(Cell cell)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        protected override void Spawn()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        protected override void Die(string killername = "")
+        {
+            throw new System.NotImplementedException();
         }
 
         void SpawnGroup()
@@ -45,7 +61,7 @@ namespace CosmicShore
 
                 LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
                 fauna.domain = domain;
-                fauna.Population = this;
+                fauna.LightFaunaManager = this;
                 fauna.Phase = managerData.phaseIncrease * i;
                 fauna.Initialize(cell);
 

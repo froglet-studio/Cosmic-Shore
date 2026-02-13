@@ -7,7 +7,7 @@ using CosmicShore.Utility;
 
 public class LightFauna : Fauna
 {
-    const string PLAYER_NAME = "light fauna";
+    const string PLAYER_NAME = "light FaunaPrefab";
 
     [Header("Data")]
     [SerializeField] private LightFaunaDataSO data;
@@ -18,10 +18,10 @@ public class LightFauna : Fauna
 
     [HideInInspector] public float Phase;
 
+    public LightFaunaManager LightFaunaManager { get; set; }
+    
     public override void Initialize(Cell cell)
     {
-        base.Initialize(cell);
-
         if (!data)
         {
             Debug.LogError($"{nameof(LightFauna)} on {name} is missing {nameof(CosmicShore.LightFaunaDataSO)}.");
@@ -49,16 +49,17 @@ public class LightFauna : Fauna
 
     void UpdateBehavior()
     {
-        if (!data || Population == null)
+        if (!data)
             return;
 
         Vector3 separation = Vector3.zero;
-        Vector3 goal = Population.Goal;
 
-        if (!IsFinite(goal) || goal.sqrMagnitude < 0.001f)
-            goal = cellData && cellData.CrystalTransform ? cellData.CrystalTransform.position : cell.transform.position;
+        if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
+        {
+            Goal = cellData && cellData.CrystalTransform ? cellData.CrystalTransform.position : cell.transform.position;
+        }
 
-        Vector3 goalDirection = (goal - transform.position).normalized;
+        Vector3 goalDirection = (Goal - transform.position).normalized;
 
         int neighborCount = 0;
         float averageSpeed = 0f;
@@ -85,7 +86,7 @@ public class LightFauna : Fauna
                 continue;
             }
 
-            // Handle other fauna/health prisms
+            // Handle other FaunaPrefab/health prisms
             var otherHealthBlock = collider.GetComponent<HealthPrism>();
             if (otherHealthBlock)
             {
@@ -142,7 +143,12 @@ public class LightFauna : Fauna
     {
         // Implement spawn behavior if needed
     }
-    
+
+    protected override void Die(string killername = "")
+    {
+        throw new System.NotImplementedException();
+    }
+
     static bool IsFinite(Vector3 v) =>
         float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
 }

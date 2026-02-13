@@ -35,7 +35,7 @@ namespace CosmicShore
             var boid = drone.GetComponent<Boid>();
             boid.DefaultGoal = goal;
             boid.domain = vessel.VesselStatus.Domain;
-            boid.Population = this;
+            boid.BoidController = this;
             if (isQueenDrone)
             {
                 queenDrones.Add(drone);

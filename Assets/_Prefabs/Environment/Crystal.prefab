@@ -84,7 +84,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ownDomain: -1
   ItemType: 1
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   crystalProperties:
     crystal: {fileID: 5535990081244205891}
     fuelAmount: 0.5
