@@ -2207,6 +2207,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   toggleManualThrottle: 0
+  decayBoost: 0
+  MaxBoostMultiplier: 5
+  BoostDecayRate: 0.1
+  DriftDamping: 0
+  boostChanged: {fileID: 0}
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
@@ -2292,7 +2297,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   skillLevel: 1
   defaultThrottleHigh: 0.9
   defaultThrottleLow: 0.2
@@ -4672,9 +4677,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   skimmerImpactorDataContainer: {fileID: 11400000, guid: 911a107d002544e47bc70cef1714a1a6,
     type: 2}
-  skimmerPrismStayEffectsSO: []
   skimmer: {fileID: 874579554510349383}
   CombinedWeight: 0
+  SqrSweetSpot: 0
 --- !u!114 &2722643089655899311
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -18,7 +18,7 @@ namespace CosmicShore.Game.AI
     public class AIPilot : MonoBehaviour
     {
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
         
         [SerializeField] float skillLevel = 1;
 
@@ -122,13 +122,8 @@ namespace CosmicShore.Game.AI
 
         void UpdateCellContent()
         {
-            //Debug.Log($"NodeContentUpdated - transform.position: {transform.position}");
-            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
-
-            if (activeCell == null)
-                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
-
-            var cellItems = cellData.CellItems;  // activeCell.CellItems;
+            var activeCell = cellData.Cell;
+            var cellItems = cellData.CellItems;
             float MinDistance = Mathf.Infinity;
             CellItem closestItem = null;
 
@@ -146,7 +141,7 @@ namespace CosmicShore.Game.AI
                 }
             }
 
-            _targetPosition = closestItem == null ? activeCell.transform.position : closestItem.transform.position;
+            _targetPosition = !closestItem ? activeCell.transform.position : closestItem.transform.position;
         }
 
         public void Initialize(IVessel v)

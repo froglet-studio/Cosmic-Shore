@@ -24,7 +24,7 @@ namespace CosmicShore.Game
     {
         #region Inspector Fields
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
         
         [SerializeField] 
         public CrystalProperties crystalProperties;
@@ -81,7 +81,7 @@ namespace CosmicShore.Game
 
         public void DestroyCrystal()
         {
-            CrystalManager.TryRemoveItem(this);
+            cellData.TryRemoveItem(this);
             Destroy(gameObject);
         }
         
@@ -173,7 +173,7 @@ namespace CosmicShore.Game
 
         public void ActivateCrystal()
         {
-            transform.parent = CellControlManager.Instance.GetNearestCell(transform.position).transform;
+            transform.parent = cellData.Cell.transform;
             gameObject.GetComponent<SphereCollider>().enabled = true;
             enabled = true;
 

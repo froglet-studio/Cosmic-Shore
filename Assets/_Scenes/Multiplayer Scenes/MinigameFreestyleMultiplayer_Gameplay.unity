@@ -164,6 +164,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
+  intenstyLevel: 1
   flora: {fileID: 0}
 --- !u!1 &108862833
 GameObject:
@@ -432,6 +433,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
+  intenstyLevel: 1
   Crystal: {fileID: 0}
 --- !u!1001 &263098543
 PrefabInstance:
@@ -972,18 +974,6 @@ PrefabInstance:
       addedObject: {fileID: 1262478159}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
---- !u!114 &400393570 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4446903459644244966, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 400393569}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b60804daa69172f468c76a40afdaaa28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &400393571 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5497835173535035668, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -1002,30 +992,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 400393569}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &400393573 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1806468744, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 400393569}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &400393574 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1806468747, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 400393569}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
@@ -1200,6 +1166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 0}
   spawnableSegments:
   - {fileID: 1094460511}
   - {fileID: 231279179}
@@ -1366,6 +1333,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: runtime
+      value: 
+      objectReference: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
@@ -1374,6 +1347,17 @@ PrefabInstance:
       propertyPath: randomSpawnProfile
       value: 
       objectReference: {fileID: 11400000, guid: 4abc50b8711720a41a64db5db3604ee1,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: CellConfigs.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403,
         type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -1445,18 +1429,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cb702179ff5b42f41a3521ccd59e6934, type: 3}
---- !u!114 &966370461 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-    type: 3}
-  m_PrefabInstance: {fileID: 966370460}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &966370462 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
@@ -1539,6 +1511,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
+  intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: 2a19c011ad2d54641ad144fbe33d3586, type: 3}
   scale: {x: 1, y: 1, z: 5}
   firstOrderRadius: 1
@@ -1598,7 +1571,6 @@ GameObject:
   - component: {fileID: 1183886175}
   - component: {fileID: 1183886176}
   - component: {fileID: 1183886177}
-  - component: {fileID: 1183886179}
   - component: {fileID: 1183886181}
   - component: {fileID: 1183886180}
   m_Layer: 0
@@ -1863,20 +1835,6 @@ MonoBehaviour:
   scoringConfigs:
   - Mode: 1
     Multiplier: 1
---- !u!114 &1183886179
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1183886163}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f330c08a1e7665643adcc232c0cffef9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cells:
-  - {fileID: 966370461}
 --- !u!114 &1183886180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1889,7 +1847,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f7a7af0f6bd4545ba6e0f5f622342c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
 --- !u!114 &1183886181
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1904,12 +1862,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
     type: 3}
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
+  spawnCrystalWithPlayerDomain: 0
 --- !u!1 &1262478158
 GameObject:
   m_ObjectHideFlags: 0
@@ -1989,11 +1948,11 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 400393574}
+  m_TargetGraphic: {fileID: 0}
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 400393570}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: StarWriter.UI.PauseMenu, Assembly-CSharp
         m_MethodName: OnClickMainMenu
         m_Mode: 1
@@ -2005,7 +1964,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 400393573}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
         m_Mode: 1
@@ -2397,6 +2356,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
+  intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   maxlength: 100
   maxwidth: 100

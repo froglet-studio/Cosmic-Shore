@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 public class CameraManager : Singleton<CameraManager>
 {
     [SerializeField]
-    CellDataSO cellData;
+    CellRuntimeDataSO cellData;
     
     [SerializeField]
     SceneNameListSO _sceneNameList;

@@ -44,7 +44,7 @@ namespace CosmicShore.Core
         GameDataSO gameData;
         
         [SerializeField]
-        CellDataSO cellData;
+        CellRuntimeDataSO cellData;
 
         protected bool allowRecord = true;
         

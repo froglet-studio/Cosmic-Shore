@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dangerHemispherePrefab: {fileID: 2768328826796316037, guid: c3ab658461bdc764ea9f7da47252c0ba,
     type: 3}
-  massCentroidDomain: 1
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}

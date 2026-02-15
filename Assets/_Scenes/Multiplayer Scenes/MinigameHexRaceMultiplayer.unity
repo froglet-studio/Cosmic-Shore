@@ -219,6 +219,12 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
+      propertyPath: runtime
+      value: 
+      objectReference: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b,
+        type: 2}
+    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
+        type: 3}
       propertyPath: randomSpawnProfile
       value: 
       objectReference: {fileID: 11400000, guid: 5d05ceb9b047c3b499be3bbd45c036f6,
@@ -226,8 +232,19 @@ PrefabInstance:
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
       propertyPath: cellTypeChoiceOptions
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
+        type: 3}
+      propertyPath: CellConfigs.Array.size
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403,
+        type: 2}
     - target: {fileID: 7701641087306297103, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -294,18 +311,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 454211663}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &454211665 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
-    type: 3}
-  m_PrefabInstance: {fileID: 454211663}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &696378174
 GameObject:
   m_ObjectHideFlags: 0
@@ -487,7 +492,6 @@ GameObject:
   - component: {fileID: 1078953712}
   - component: {fileID: 1078953723}
   - component: {fileID: 1078953729}
-  - component: {fileID: 1078953713}
   - component: {fileID: 1078953731}
   - component: {fileID: 1078953715}
   - component: {fileID: 1078953720}
@@ -545,20 +549,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &1078953713
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f330c08a1e7665643adcc232c0cffef9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cells:
-  - {fileID: 454211665}
 --- !u!114 &1078953715
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -571,7 +561,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f7a7af0f6bd4545ba6e0f5f622342c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
 --- !u!114 &1078953718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -796,7 +786,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
     type: 3}
   scaleCrystalPositionWithIntensity: 0
@@ -1224,6 +1214,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: NetworkStatsManager
       objectReference: {fileID: 0}
+    - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
+        type: 3}
+      propertyPath: cellData
+      value: 
+      objectReference: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b,
+        type: 2}
     - target: {fileID: 8036904541987693016, guid: 8373d81418838f64c97155119a29e98c,
         type: 3}
       propertyPath: _netcodeHooks

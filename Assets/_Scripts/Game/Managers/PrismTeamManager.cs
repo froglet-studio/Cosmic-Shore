@@ -81,18 +81,13 @@ namespace CosmicShore.Core
                     Volume = prism.Volume,
                     AttackerName = prism.PlayerName
                 });
-            /*if (StatsManager.Instance != null)
-                {
-                    StatsManager.Instance.PrismStolen(newTeam, playerName, trailBlock.PrismProperties);
-                }*/
 
-            if (CellControlManager.Instance)
+            /*if (CellControlManager.Instance)
             {
                 CellControlManager.Instance.StealBlock(newDomain, prism.prismProperties);
-            }
+            }*/
 
             ChangeTeam(newDomain);
-            // trailBlock.Player = player;
         }
 
         private void HandleTeamChange(Domains oldDomain, Domains newDomain)

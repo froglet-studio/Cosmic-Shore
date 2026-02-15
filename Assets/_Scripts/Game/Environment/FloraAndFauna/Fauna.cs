@@ -1,22 +1,70 @@
+using System.Collections;
+using CosmicShore.Game;
+using CosmicShore.Soap;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
-    public abstract class Fauna : LifeForm
+    public abstract class Fauna : MonoBehaviour, ITeamAssignable
     {
-        public Population Population;
-        //
-        // [Header("Fauna Health Prism Size")]
-        // [SerializeField] Vector3 healthPrismTargetScale = new Vector3(4f, 4f, 1f);
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        GameDataSO gameData;
+        
+        [SerializeField] protected CellRuntimeDataSO cellData;
+        [FormerlySerializedAs("Team")] public Domains domain;
+        [SerializeField] float goalUpdateInterval = 5f;
+        public Vector3 Goal;
+        //public List<float> Weights;
+        protected Cell cell => cellData.Cell;
+        
+        protected virtual void Start()
+        {
+            if (domain == Domains.Unassigned)
+                Debug.LogWarning($"{name}: Population domain is Unassigned. Assign it before spawning FaunaPrefab, or set it on the prefab.");
 
-        // public override void AddHealthBlock(HealthPrism healthPrism)
-        // {
-        //     base.AddHealthBlock(healthPrism);
-        //
-        //     if (healthPrism)
-        //         healthPrism.TargetScale = healthPrismTargetScale;
-        // }
+            StartCoroutine(UpdateGoal());
+        }
 
+        public abstract void Initialize(Cell cell);
+        
         protected abstract void Spawn();
+
+        protected abstract void Die(string killername = "");
+
+        void CalculateTeamWeights()
+        {
+            Vector4 teamVolumes = gameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
+            float totalVolume = gameData.GetTotalVolume();
+
+            //Weights = new List<float>
+            //{
+            //totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero
+            //totalVolume / (teamVolumes.y + 1),
+            //totalVolume / (teamVolumes.z + 1),
+            //totalVolume / (teamVolumes.w + 1)
+            //};
+        }
+
+        IEnumerator UpdateGoal()
+        {
+            while (true)
+            {
+                yield return new WaitForSeconds(goalUpdateInterval);
+                Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
+                Goal = highDensityPosition;
+                //CalculateTeamWeights();
+            }
+        }
+
+        public GameObject GetGameObject()
+        {
+            return gameObject;
+        }
+
+        public void SetTeam(Domains domain)
+        {
+            this.domain = domain;
+        }
     }
 }

@@ -1487,15 +1487,32 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: runtime
+      value: 
+      objectReference: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: randomSpawnProfile
       value: 
       objectReference: {fileID: 11400000, guid: 4abc50b8711720a41a64db5db3604ee1,
         type: 2}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: CellConfigs.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: 'CellTypes.Array.data[0]'
       value: 
       objectReference: {fileID: 11400000, guid: 94ca015ece81b954ea5b6cf14a4cf3eb,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403,
         type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -1567,18 +1584,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cb702179ff5b42f41a3521ccd59e6934, type: 3}
---- !u!114 &966370461 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-    type: 3}
-  m_PrefabInstance: {fileID: 966370460}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &966370462 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
@@ -2413,7 +2418,6 @@ GameObject:
   - component: {fileID: 1628508338}
   - component: {fileID: 1628508339}
   - component: {fileID: 1628508340}
-  - component: {fileID: 1628508344}
   - component: {fileID: 1628508346}
   - component: {fileID: 1628508347}
   m_Layer: 0
@@ -2656,20 +2660,6 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   monitors:
   - {fileID: 1628508345}
---- !u!114 &1628508344
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628508325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f330c08a1e7665643adcc232c0cffef9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cells:
-  - {fileID: 966370461}
 --- !u!114 &1628508345
 MonoBehaviour:
   m_ObjectHideFlags: 0

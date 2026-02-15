@@ -9,95 +9,23 @@ EditorBuildSettings:
     path: Assets/_Scenes/Menu_Main.unity
     guid: 102d08d71236a7342a94518fff75949c
   - enabled: 0
-    path: Assets/_Scenes/TestScenes/Legacy/Game_TestNodeInterior.unity
-    guid: 920ffcc6282de7f4ba58fa8c03466701
-  - enabled: 0
     path: Assets/_Scenes/Tools/MattsRecording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37
-  - enabled: 0
-    path: Assets/_Scenes/MinigameCatNMouse.unity
-    guid: 7c96c2e0191410b4195d294d6205569c
   - enabled: 1
-    path: Assets/_Scenes/MinigameSlipNStride.unity
-    guid: 309d1ff4cb0ddbd499fa0eab2474c236
-  - enabled: 0
-    path: Assets/_Scenes/MinigamePumpNDump.unity
-    guid: 1b053c09e59743c46aa0fac15789efd2
-  - enabled: 0
-    path: Assets/_Scenes/MinigameMasterExploder.unity
-    guid: b2abfc44b4bae994fa8c45f9fe87fb28
-  - enabled: 0
-    path: Assets/_Scenes/MinigameSoar.unity
-    guid: dea31fb303aaf2a439c848e50489591d
-  - enabled: 0
-    path: Assets/_Scenes/MinigameObstacleCourse.unity
-    guid: fec6e27c87985bb4d8fb4252cf8b73a4
-  - enabled: 1
-    path: Assets/_Scenes/MinigameBlockBandit.unity
-    guid: ab6402f21daa97944b25e308c2a26008
-  - enabled: 1
-    path: Assets/_Scenes/MinigameWildlifeBlitz.unity
+    path: Assets/_Scenes/Singleplayer Scenes/MinigameWildlifeBlitz.unity
     guid: d5418cffe1da8b840bcc2e1a92a7b1db
-  - enabled: 0
-    path: Assets/_Scenes/MinigameDistraction.unity
-    guid: d822a183b11715640bf56103534dcb38
-  - enabled: 0
-    path: Assets/_Scenes/MinigameSidewinder.unity
-    guid: c5473cb1250864445b94b03c981e089f
-  - enabled: 0
-    path: Assets/_Scenes/MinigameRiskyDriftness.unity
-    guid: 12d8fa37d337f1e48a3b5f028a01cb87
-  - enabled: 0
-    path: Assets/_Scenes/MinigameDarts.unity
-    guid: 6197568b1ea35f94a812815c41df57e1
-  - enabled: 0
-    path: Assets/_Scenes/MinigameMazeRunner.unity
-    guid: a9cf5217e95de37449fe36346364e172
-  - enabled: 0
-    path: Assets/_Scenes/MinigameElimination.unity
-    guid: c7bc1993712d2734593d1d4e50b01dcb
-  - enabled: 0
-    path: Assets/_Scenes/MinigameKickinMass.unity
-    guid: 4d2173ffeeaea3647bbdcb6ec8bdffcd
-  - enabled: 0
-    path: Assets/_Scenes/MinigameRampage.unity
-    guid: edd6d49bdc48a024191b7be414b3a994
-  - enabled: 0
-    path: Assets/_Scenes/MinigameCurvatious.unity
-    guid: 5a5e110916ffb32448d1d9cc2fde5c4e
-  - enabled: 0
-    path: Assets/_Scenes/MinigameShootingGallery.unity
-    guid: 3c3b1e401c6162547b78d787ab28640c
   - enabled: 1
-    path: Assets/_Scenes/MinigameFreestyle.unity
+    path: Assets/_Scenes/Singleplayer Scenes/MinigameFreestyle.unity
     guid: 6f71535b00043c345b3216d994f22499
   - enabled: 1
-    path: Assets/_Scenes/MinigameCellularDuel.unity
+    path: Assets/_Scenes/Singleplayer Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11
   - enabled: 1
-    path: Assets/_Scenes/MinigameHexRace.unity
+    path: Assets/_Scenes/Singleplayer Scenes/MinigameHexRace.unity
     guid: be8d695fcae317d49bfa8106b819196a
-  - enabled: 0
-    path: Assets/_Scenes/MinigameDenial.unity
-    guid: 1fdeb06d41efdd846944913993ffc627
-  - enabled: 0
-    path: Assets/_Scenes/MinigameCellularBrawl2v2.unity
-    guid: 78219fe3cb3c96b44a9e146ced331089
-  - enabled: 0
-    path: Assets/_Scenes/MinigameDashAndGrab.unity
-    guid: 9b2bfb506e15d33478bb4f9f1593af50
-  - enabled: 0
-    path: Assets/_Scenes/TestScenes/Ig/IgSandbox.unity
-    guid: 940d2623f0ab4824abf2f934a3b49008
   - enabled: 0
     path: Assets/_Scenes/Tools/PhotoBooth.unity
     guid: 88bd9d59331396d44be56d5b782632ee
-  - enabled: 0
-    path: Assets/_Scenes/TestScenes/Ig/FreestyleSandbox.unity
-    guid: a6b7d688d28a4394e9c2b91066afe6c1
-  - enabled: 0
-    path: Assets/_Scenes/MissionProtect.unity
-    guid: e27e800962fc90d4485febc4dd78f72d
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameFreestyleMultiplayer_Gameplay.unity
     guid: c67622dbae06f9742936918633dc1f10

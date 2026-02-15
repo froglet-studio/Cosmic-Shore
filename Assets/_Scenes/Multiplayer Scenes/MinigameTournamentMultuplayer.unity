@@ -334,18 +334,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 654325071}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &654325073 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-    type: 3}
-  m_PrefabInstance: {fileID: 654325071}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &696378174
 GameObject:
   m_ObjectHideFlags: 0
@@ -561,7 +549,6 @@ GameObject:
   - component: {fileID: 1078953712}
   - component: {fileID: 1078953723}
   - component: {fileID: 1078953710}
-  - component: {fileID: 1078953713}
   - component: {fileID: 1078953715}
   - component: {fileID: 1078953721}
   - component: {fileID: 1078953720}
@@ -626,7 +613,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 825315618
+  GlobalObjectIdHash: 2709024482
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -639,20 +626,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &1078953713
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f330c08a1e7665643adcc232c0cffef9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cells:
-  - {fileID: 654325073}
 --- !u!114 &1078953715
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -680,11 +653,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   crystalPrefab: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
     type: 3}
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  listOfCrystalPositions: []
+  spawnCrystalWithPlayerDomain: 0
 --- !u!114 &1078953718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1556,6 +1531,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameData: {fileID: 0}
   spawnableSegments:
   - {fileID: 1733224692}
   - {fileID: 781954977}
@@ -1572,7 +1548,7 @@ MonoBehaviour:
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
-  IntensityLevel: 1
+  intensityLevelData: {fileID: 0}
   InitializeOnStart: 0
   NumberOfSegments: 0
   mazeData: []

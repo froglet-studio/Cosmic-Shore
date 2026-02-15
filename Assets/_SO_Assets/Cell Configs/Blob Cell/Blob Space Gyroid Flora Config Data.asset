@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Blob Space Gyroid Flora Config Data
+  m_EditorClassIdentifier: 
+  FloraPrefab: {fileID: 8186157953239024492, guid: 64c1c3612f071b946a3f70e8a65496db,
+    type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 1
+  OverrideDefaultPlantPeriod: 0
+  NewPlantPeriod: 9999999
