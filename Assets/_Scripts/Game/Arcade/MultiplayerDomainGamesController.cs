@@ -1,3 +1,4 @@
+using System.Collections;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
@@ -44,6 +45,10 @@ namespace CosmicShore.Game.Arcade
         void OnReadyClicked_ServerRpc()
         {
             readyClientCount++;
+            
+            // Debug log to help track this state if issues persist
+            Debug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}");
+
             if (!readyClientCount.Equals(gameData.SelectedPlayerCount))
                 return;
 
@@ -59,8 +64,37 @@ namespace CosmicShore.Game.Arcade
         
         protected override void SetupNewRound()
         {
+            if (IsServer) 
+            {
+                readyClientCount = 0;
+            }
+
             RaiseToggleReadyButtonEvent(true);
             base.SetupNewRound();
+        }
+
+        // Ensure players are physically reset (positions/state) when replaying
+        protected override void OnResetForReplay()
+        {
+            gameData.ResetPlayers();
+            base.OnResetForReplay();
+        }
+        
+        protected override void EndGame()
+        {
+            if (!ShowEndGameSequence) return;
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.InvokeWinnerCalculated();
+            if (IsServer)
+            {
+                StartCoroutine(EndGameSyncRoutine());
+            }
+        }
+
+        private IEnumerator EndGameSyncRoutine()
+        {
+            yield return new WaitForSeconds(0.25f);
+            gameData.InvokeMiniGameEnd();
         }
     }
 }

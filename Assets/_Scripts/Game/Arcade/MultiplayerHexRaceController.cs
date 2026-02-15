@@ -1,5 +1,13 @@
+// =======================================================
+// MultiplayerHexRaceController.cs  (FINAL / FIXED)
+// - Ends race on first finisher (does NOT wait for all players to report)
+// - Computes losers as "10000 + crystalsLeft"
+// - Syncs snapshot (scores + crystals + domains) to ALL clients
+// - Triggers WinnerCalculated + MiniGameEnd only after snapshot is applied
+// - Receives authoritative CrystalsCollected from the server-side monitor sync
+// =======================================================
+
 using System.Linq;
-using CosmicShore.Game.IO;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -22,42 +30,47 @@ namespace CosmicShore.Game.Arcade
         [Header("Seed")]
         [SerializeField] int seed = 0;
 
-        int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
-        private bool _raceEnded;
-        private int _scoresReceived;
+        [Header("Race Rules")]
+        [Tooltip("Optional override. If 0, uses networked target from monitor.")]
+        [SerializeField] int crystalsToFinishOverride = 0;
 
-        protected override bool UseGolfRules => true; // Lower time is better
+        int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
+
+        private bool _raceEnded;
+
+        // Networked so server+clients always agree on target.
+        private readonly NetworkVariable<int> _netCrystalsToFinish = new NetworkVariable<int>(0);
+
+        protected override bool UseGolfRules => true; // lower is better
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            this.numberOfRounds = 1;
-            this.numberOfTurnsPerRound = 1; 
+            numberOfRounds = 1;
+            numberOfTurnsPerRound = 1;
         }
 
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer) return;
+
             int currentSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
             InitializeEnvironment_ClientRpc(currentSeed);
-            
-            // [Visual Note] Base method handles SetPlayersActive and StartTurn 
-            // after environment is prepped.
+
             base.OnCountdownTimerEnded();
         }
 
         [ClientRpc]
         void InitializeEnvironment_ClientRpc(int syncedSeed)
         {
-            if (segmentSpawner)
-            {
-                segmentSpawner.Seed = syncedSeed;
-                segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity ? baseNumberOfSegments * Intensity : baseNumberOfSegments;
-                segmentSpawner.StraightLineLength = scaleLengthWithIntensity ? baseStraightLineLength / Intensity : baseStraightLineLength;
-                ApplyHelixIntensity();
-                segmentSpawner.Initialize();
-            }
-            // Logic removed here to prevent race conditions with the Ready Button.
+            if (!segmentSpawner) return;
+
+            segmentSpawner.Seed = syncedSeed;
+            segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity ? baseNumberOfSegments * Intensity : baseNumberOfSegments;
+            segmentSpawner.StraightLineLength = scaleLengthWithIntensity ? baseStraightLineLength / Intensity : baseStraightLineLength;
+
+            ApplyHelixIntensity();
+            segmentSpawner.Initialize();
         }
 
         void ApplyHelixIntensity()
@@ -68,63 +81,109 @@ namespace CosmicShore.Game.Arcade
             helix.secondOrderRadius = radius;
         }
 
-        public void ReportLocalPlayerFinished(float finalScore)
+        // Called by local finish logic when you "complete" the race
+        public void ReportLocalPlayerFinished(float finishTimeSeconds)
         {
             string myName = gameData.LocalPlayer.Vessel.VesselStatus.PlayerName;
-            ReportPlayerScore_ServerRpc(finalScore, myName);
+            ReportPlayerFinished_ServerRpc(finishTimeSeconds, myName);
         }
 
         [ServerRpc(RequireOwnership = false)]
-        void ReportPlayerScore_ServerRpc(float score, string playerName)
+        void ReportPlayerFinished_ServerRpc(float finishTimeSeconds, string playerName)
         {
-            var playerStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (playerStats != null) playerStats.Score = score;
+            if (_raceEnded) return;
+            _raceEnded = true;
 
-            if (!_raceEnded)
+            // 1) Winner time
+            var winnerStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
+            if (winnerStats != null)
+                winnerStats.Score = finishTimeSeconds;
+
+            // 2) Losers: 10000 + crystalsLeft
+            int crystalsToFinish = ResolveCrystalsToFinishTarget();
+
+            foreach (var stats in gameData.RoundStatsList)
             {
-                _raceEnded = true;
-                NotifyRaceEnded_ClientRpc();
+                if (stats.Name == playerName) continue;
+
+                int collected = stats.CrystalsCollected; // server must know this (monitor sync)
+                int crystalsLeft = Mathf.Max(0, crystalsToFinish - collected);
+
+                stats.Score = 10000f + crystalsLeft;
             }
 
-            _scoresReceived++;
-            if (_scoresReceived >= gameData.SelectedPlayerCount.Value)
-            {
-                EndRaceAndSyncScores();
-            }
+            // 3) Sort + domain stats
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+
+            // 4) Sync snapshot + trigger endgame
+            SyncFinalScoresSnapshot();
         }
 
-        [ClientRpc]
-        void NotifyRaceEnded_ClientRpc() => gameData.InvokeGameTurnConditionsMet();
+        int ResolveCrystalsToFinishTarget()
+        {
+            if (_netCrystalsToFinish.Value > 0) return _netCrystalsToFinish.Value;
+            if (crystalsToFinishOverride > 0) return crystalsToFinishOverride;
 
-        void EndRaceAndSyncScores()
+            // Last-resort fallback. Prefer using the monitor to set _netCrystalsToFinish.
+            return 39;
+        }
+
+        // Called by server-side monitor to set authoritative target
+        public void SetCrystalsToFinishServer(int value)
+        {
+            if (!IsServer) return;
+            _netCrystalsToFinish.Value = Mathf.Max(1, value);
+        }
+
+        // Called by server-side monitor on stat change (authoritative)
+        public void NotifyCrystalsCollected(string playerName, int crystalsCollected)
+        {
+            if (!IsServer) return;
+
+            var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
+            if (stat != null)
+                stat.CrystalsCollected = crystalsCollected;
+        }
+
+        void SyncFinalScoresSnapshot()
         {
             var statsList = gameData.RoundStatsList;
             int count = statsList.Count;
+
             FixedString64Bytes[] nameArray = new FixedString64Bytes[count];
             float[] scoreArray = new float[count];
+            int[] domainArray = new int[count];
+            int[] crystalsArray = new int[count];
 
             for (int i = 0; i < count; i++)
             {
                 nameArray[i] = new FixedString64Bytes(statsList[i].Name);
                 scoreArray[i] = statsList[i].Score;
+                domainArray[i] = (int)statsList[i].Domain;
+                crystalsArray[i] = statsList[i].CrystalsCollected;
             }
-            SyncFinalScores_ClientRpc(nameArray, scoreArray);
+
+            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, crystalsArray);
         }
 
         [ClientRpc]
-        void SyncFinalScores_ClientRpc(FixedString64Bytes[] names, float[] scores)
+        void SyncFinalScores_ClientRpc(FixedString64Bytes[] names, float[] scores, int[] domains, int[] crystalsCollected)
         {
             for (int i = 0; i < names.Length; i++)
             {
                 string sName = names[i].ToString();
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
-                if (stat != null) stat.Score = scores[i];
+                if (stat == null) continue;
+
+                stat.Score = scores[i];
+                stat.Domain = (Domains)domains[i];
+                stat.CrystalsCollected = crystalsCollected[i];
             }
 
-            // [Visual Note] Critical sequence for correct Victory/Defeat display
             gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules); 
-            
+            gameData.CalculateDomainStats(UseGolfRules);
+
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
@@ -132,8 +191,18 @@ namespace CosmicShore.Game.Arcade
         protected override void OnResetForReplayCustom()
         {
             base.OnResetForReplayCustom();
+
             _raceEnded = false;
-            _scoresReceived = 0;
+
+            foreach (var s in gameData.RoundStatsList)
+            {
+                s.Score = 0f;
+                s.CrystalsCollected = 0;
+            }
+
+            if (IsServer)
+                _netCrystalsToFinish.Value = 0;
+
             RaiseToggleReadyButtonEvent(true);
         }
     }
