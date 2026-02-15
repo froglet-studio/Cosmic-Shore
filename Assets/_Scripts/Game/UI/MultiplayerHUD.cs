@@ -107,6 +107,8 @@ namespace CosmicShore.Game.UI
         protected abstract void UnsubscribeFromPlayerStats(IRoundStats stats);
         protected virtual void SubscribeToGameSpecificEvents() { }
         protected virtual void UnsubscribeFromGameSpecificEvents() { }
+        protected override bool RequireClientReady => true;
+
 
         protected void UpdatePlayerCard(string playerName, int newValue)
         {

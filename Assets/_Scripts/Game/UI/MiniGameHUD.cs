@@ -1,6 +1,9 @@
+using System;
 using System.Globalization;
+using System.Threading;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
+using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -11,7 +14,7 @@ namespace CosmicShore.Game.UI
     {
         [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
-        
+
         [Header("View")]
         [SerializeField] protected MiniGameHUDView view;
 
@@ -24,9 +27,21 @@ namespace CosmicShore.Game.UI
         [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
-        
+
+        [Header("Intro / Connecting")]
+        [SerializeField] private float minConnectingSeconds = 5f;
+
         protected IRoundStats localRoundStats;
-        
+
+        private CancellationTokenSource _connectingCts;
+        private bool _clientReady;
+
+        /// <summary>
+        /// Base = offline/singleplayer: do NOT wait for client-ready (only wait the minimum time).
+        /// Multiplayer HUD overrides this to true.
+        /// </summary>
+        protected virtual bool RequireClientReady => false;
+
         private void OnValidate()
         {
             view = GetComponent<MiniGameHUDView>();
@@ -34,6 +49,12 @@ namespace CosmicShore.Game.UI
 
         protected virtual void OnEnable()
         {
+            _clientReady = false;
+
+            _connectingCts?.Cancel();
+            _connectingCts?.Dispose();
+            _connectingCts = new CancellationTokenSource();
+
             SubscribeToEvents();
             CleanupUI();
         }
@@ -41,68 +62,111 @@ namespace CosmicShore.Game.UI
         protected virtual void OnDisable()
         {
             UnsubscribeFromEvents();
+
+            _connectingCts?.Cancel();
+            _connectingCts?.Dispose();
+            _connectingCts = null;
         }
 
         protected virtual void SubscribeToEvents()
         {
-            gameData.OnClientReady += OnClientReady;
-            gameData.OnMiniGameTurnStarted.OnRaised += OnMiniGameTurnStarted;
-            gameData.OnMiniGameTurnEnd.OnRaised += OnMiniGameTurnEnd;
-            
-            var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData.OnResetForReplay;
-            if(resetEvent != null) resetEvent.OnRaised += ResetForReplay;
-            
-            onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
-            onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
-            onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
-            onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
+            if (gameData != null)
+            {
+                gameData.OnClientReady += OnClientReady;
+                gameData.OnMiniGameTurnStarted.OnRaised += OnMiniGameTurnStarted;
+                gameData.OnMiniGameTurnEnd.OnRaised += OnMiniGameTurnEnd;
+
+                var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData.OnResetForReplay;
+                if (resetEvent != null) resetEvent.OnRaised += ResetForReplay;
+            }
+
+            if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
+            if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
+            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
+            if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
         }
 
         protected virtual void UnsubscribeFromEvents()
         {
-            gameData.OnClientReady -= OnClientReady;
-            gameData.OnMiniGameTurnStarted.OnRaised -= OnMiniGameTurnStarted;
-            gameData.OnMiniGameTurnEnd.OnRaised -= OnMiniGameTurnEnd;
-            
-            var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData.OnResetForReplay;
-            if(resetEvent != null) resetEvent.OnRaised -= ResetForReplay;
-            
-            onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
-            onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
-            onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
-            onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
+            if (gameData != null)
+            {
+                gameData.OnClientReady -= OnClientReady;
+                gameData.OnMiniGameTurnStarted.OnRaised -= OnMiniGameTurnStarted;
+                gameData.OnMiniGameTurnEnd.OnRaised -= OnMiniGameTurnEnd;
+
+                var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData.OnResetForReplay;
+                if (resetEvent != null) resetEvent.OnRaised -= ResetForReplay;
+            }
+
+            if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
+            if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
+            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
+            if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
+        }
+
+        private void OnClientReady()
+        {
+            _clientReady = true;
+
+            // Keep your existing behavior: when ready arrives, reset UI flow.
+            ResetForReplay();
         }
 
         protected virtual void OnMiniGameTurnStarted()
         {
             localRoundStats = gameData.LocalRoundStats;
-            localRoundStats.OnScoreChanged += UpdateScoreUI;
+            if (localRoundStats != null)
+                localRoundStats.OnScoreChanged += UpdateScoreUI;
         }
 
         protected virtual void OnMiniGameTurnEnd()
         {
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged -= UpdateScoreUI;
-            
+
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay(string.Empty);
         }
 
-        private void OnClientReady() => ResetForReplay();
-        
         private void ResetForReplay()
         {
-            // [Fix] Ensure the View is visible (ShipHUD may have hidden it)
-            Show(); 
-            view.ToggleConnectingPanel(false); // Hide "Connecting..."
+            Show();
             CleanupUI();
-    
+
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay("0");
             view.UpdateScoreUI("0");
 
-            // [Fix] Turn ready button ON last, to override any cleanup disabling it
-            ToggleReadyButton(true);
+            // Always show connecting for minimum time (offline included)
+            view.ToggleConnectingPanel(true);
+            ToggleReadyButton(false);
+
+            RunConnectingMinimum().Forget();
+        }
+
+        private async UniTaskVoid RunConnectingMinimum()
+        {
+            var ct = _connectingCts?.Token ?? CancellationToken.None;
+
+            try
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(minConnectingSeconds),
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.PreUpdate,
+                    ct);
+
+                // Only multiplayer should additionally wait for OnClientReady
+                if (RequireClientReady)
+                {
+                    while (!_clientReady)
+                        await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
+                }
+
+                view.ToggleConnectingPanel(false);
+                ToggleReadyButton(true);
+            }
+            catch (OperationCanceledException) { }
         }
 
         private void OnMoundDroneSpawned(int count)
@@ -121,7 +185,7 @@ namespace CosmicShore.Game.UI
         {
             var sil = view.Silhouette;
             sil.SetActive(data.IsSilhouetteActive);
-            
+
             var trail = view.TrailDisplay;
             trail.SetActive(data.IsTrailDisplayActive);
 
@@ -135,13 +199,16 @@ namespace CosmicShore.Game.UI
         private void OnShipHUDInitialized(ShipHUDData data)
         {
             if (!data.ShipHUD) return;
+
             Hide();
+
             foreach (Transform child in data.ShipHUD.GetComponentsInChildren<Transform>(false))
             {
                 if (child == data.ShipHUD.transform) continue;
                 child.SetParent(transform.parent, false);
                 child.SetSiblingIndex(0);
             }
+
             data.ShipHUD.gameObject.SetActive(true);
         }
 
