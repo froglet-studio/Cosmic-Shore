@@ -1,6 +1,6 @@
 ﻿// =======================================================
-// MultiplayerHexRaceScoreboard.cs  (FIXED)
-// (This is the scoreboard that was flipping on clients)
+// MultiplayerHexRaceScoreboard.cs  (FINAL / OK)
+// No change needed: formats score as time (<10000) or crystals left (>=10000)
 // =======================================================
 
 using System;
@@ -12,7 +12,6 @@ namespace CosmicShore.Game.UI
     {
         protected override void ShowMultiplayerView()
         {
-            // Winning domain is derived from already-synced DomainStatsList (same for everyone)
             if (gameData.DomainStatsList != null && gameData.DomainStatsList.Count > 0)
                 SetBannerForDomain(gameData.DomainStatsList[0].Domain);
             else if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0)
