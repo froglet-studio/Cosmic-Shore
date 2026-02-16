@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd8642df8fb143fcbd1faefd22f67b9e, type: 3}
   m_Name: MaxDriftTimeRecord
   m_EditorClassIdentifier: 
-  Label: MaxDriftTime
+  Label: Max Drift
   Icon: {fileID: 21300000, guid: fc37470ec919f5e42b2fd79354e770e9, type: 3}
   FormatType: 3
   CustomFormat: 
