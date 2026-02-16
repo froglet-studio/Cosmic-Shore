@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using CosmicShore.Soap;
@@ -31,20 +32,21 @@ namespace CosmicShore.Game.UI
         [Header("Intro / Connecting")]
         [SerializeField] private float minConnectingSeconds = 5f;
 
+        [Header("AI Tracking")]
+        [SerializeField] protected bool isAIAvailable;
+
         protected IRoundStats localRoundStats;
+        protected Dictionary<string, PlayerScoreCard> _aiCards = new();
+        private Dictionary<IRoundStats, Action> _aiScoreHandlers = new();
 
         private CancellationTokenSource _connectingCts;
         private bool _clientReady;
 
-        /// <summary>
-        /// Base = offline/singleplayer: do NOT wait for client-ready (only wait the minimum time).
-        /// Multiplayer HUD overrides this to true.
-        /// </summary>
         protected virtual bool RequireClientReady => false;
 
         private void OnValidate()
         {
-            view = GetComponent<MiniGameHUDView>();
+            if (view == null) view = GetComponent<MiniGameHUDView>();
         }
 
         protected virtual void OnEnable()
@@ -107,8 +109,6 @@ namespace CosmicShore.Game.UI
         private void OnClientReady()
         {
             _clientReady = true;
-
-            // Keep your existing behavior: when ready arrives, reset UI flow.
             ResetForReplay();
         }
 
@@ -117,6 +117,8 @@ namespace CosmicShore.Game.UI
             localRoundStats = gameData.LocalRoundStats;
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
+
+            if (isAIAvailable) SetupAICards();
         }
 
         protected virtual void OnMiniGameTurnEnd()
@@ -124,8 +126,48 @@ namespace CosmicShore.Game.UI
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged -= UpdateScoreUI;
 
+            if (isAIAvailable) CleanupAICards();
+
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay(string.Empty);
+        }
+
+        private void SetupAICards()
+        {
+            view.ClearPlayerList();
+            _aiCards.Clear();
+            _aiScoreHandlers.Clear();
+
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == localRoundStats) continue;
+
+                var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
+                var teamColor = view.GetColorForDomain(stats.Domain);
+                card.Setup(stats.Name, (int)stats.Score, teamColor, false);
+                _aiCards[stats.Name] = card;
+
+                Action handler = () => UpdateAICard(stats);
+                _aiScoreHandlers[stats] = handler;
+                stats.OnScoreChanged += handler;
+            }
+        }
+
+        private void UpdateAICard(IRoundStats stats)
+        {
+            if (_aiCards.TryGetValue(stats.Name, out var card))
+                card.UpdateScore((int)stats.Score);
+        }
+
+        private void CleanupAICards()
+        {
+            foreach (var kvp in _aiScoreHandlers)
+            {
+                kvp.Key.OnScoreChanged -= kvp.Value;
+            }
+            _aiScoreHandlers.Clear();
+            _aiCards.Clear();
+            view.ClearPlayerList();
         }
 
         private void ResetForReplay()
@@ -137,7 +179,6 @@ namespace CosmicShore.Game.UI
             UpdateLifeformCounterDisplay("0");
             view.UpdateScoreUI("0");
 
-            // Always show connecting for minimum time (offline included)
             view.ToggleConnectingPanel(true);
             ToggleReadyButton(false);
 
@@ -156,7 +197,6 @@ namespace CosmicShore.Game.UI
                     PlayerLoopTiming.PreUpdate,
                     ct);
 
-                // Only multiplayer should additionally wait for OnClientReady
                 if (RequireClientReady)
                 {
                     while (!_clientReady)
@@ -230,6 +270,7 @@ namespace CosmicShore.Game.UI
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay(string.Empty);
             view.UpdateScoreUI("0");
+            if (isAIAvailable) view.ClearPlayerList();
         }
 
         public void Show() => view.ToggleView(true);
