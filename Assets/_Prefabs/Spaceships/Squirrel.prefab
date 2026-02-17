@@ -1613,10 +1613,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vesselPrismController: {fileID: 874579555101021522}
-  driftTrailAction: {fileID: 0}
-  config: {fileID: 0}
+  driftTrailAction: {fileID: 2317382454779808403}
+  config: {fileID: 11400000, guid: f7c718f7fdda9404aa17411e47f0a372, type: 2}
   energyResourceIndex: 0
-  view: {fileID: 0}
+  view: {fileID: 3398420945983132518}
 --- !u!114 &6989089190155014109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2095,7 +2095,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 209.35101, y: -159.6}
+  m_AnchoredPosition: {x: 119, y: -250}
   m_SizeDelta: {x: 392.951, y: 697.79}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &8667567892648365159
@@ -2122,7 +2122,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8667567892648365159}
   m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2131,7 +2131,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -710, y: 317}
+  m_AnchoredPosition: {x: -843, y: 244}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1001 &2530663728268144538
@@ -2778,6 +2778,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 3383634205702517725}
+    - targetCorrespondingSourceObject: {fileID: 2092273636776193303, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3398420945983132518}
   m_SourcePrefab: {fileID: 100100000, guid: c1572db06ad4244469ad3f25d86940b8, type: 3}
 --- !u!224 &3344272964263981488 stripped
 RectTransform:
@@ -2818,6 +2822,31 @@ MonoBehaviour:
   shieldIcon: {fileID: 5327051082964489230}
   shieldNormalColor: {r: 1, g: 1, b: 1, a: 1}
   shieldActiveColor: {r: 0, g: 1, b: 0, a: 1}
+--- !u!114 &3398420945983132518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6523581306461791677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47e75593b0dd60a4f8eeade919affa5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trailDisplayContainer: {fileID: 5403290303549652124}
+  blockPrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
+    type: 3}
+  silhouetteRoot: {fileID: 0}
+  jawTop: {fileID: 0}
+  jawBottom: {fileID: 0}
+  jawMaxOffset: 40
+  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
+  jawTintTargets: []
+  config: {fileID: 11400000, guid: f7c718f7fdda9404aa17411e47f0a372, type: 2}
+  overlayPrefab: {fileID: 0}
+  overlayDuration: 1
 --- !u!1001 &5313661885591395716
 PrefabInstance:
   m_ObjectHideFlags: 0
