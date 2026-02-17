@@ -16,7 +16,9 @@ namespace CosmicShore
         // Flow & Layout
         public FlowDirection flow = FlowDirection.VerticalTopDown;
         public float columnRotationOffsetDeg = 0f;
-        public int   minColumns = 10;
+        public int  minColumns = 10;
+        public int maxColumns;
+        public bool applyMaxColumnValues;
 
         // Smoothing
         public bool  smooth = true;
