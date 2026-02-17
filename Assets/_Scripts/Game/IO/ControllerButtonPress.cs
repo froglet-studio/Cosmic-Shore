@@ -44,6 +44,9 @@ namespace CosmicShore.Game.IO
             screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             button = GetComponent<Button>();
 
+            if (!activationButtonImage)
+                return;
+
             if (Gamepad.current is DualShockGamepad)
             {
                 switch(activationButton)
