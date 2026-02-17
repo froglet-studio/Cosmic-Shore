@@ -2412,13 +2412,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1897523407}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 550a9ab32d8a4619ba007f411170e2f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 20436afcb3f3470081840cc70fa3a9b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   scoreTracker: {fileID: 1078953732}
-  cleanStreakIcon: {fileID: 21300000, guid: a9a1957d25188d94f8ee2b7e8f8e5c3f, type: 3}
-  driftIcon: {fileID: 21300000, guid: 41c9f6e2ec44f0c458351500f1bfacdc, type: 3}
-  joustIcon: {fileID: 21300000, guid: b5cb59b1677a4a04cb61561d8df57825, type: 3}
+  statBindings:
+  - StatModule: {fileID: 11400000, guid: 7b5533777bcc1774ab03f64001432266, type: 2}
+    StatKey: Jousts Won
+  - StatModule: {fileID: 11400000, guid: 1682deace86b18b4db42a83f752572df, type: 2}
+    StatKey: Max Boost Time
+  - StatModule: {fileID: 11400000, guid: 51d0ae58d07dcb049970a2f4958ab4d8, type: 2}
+    StatKey: Longest Drift
 --- !u!1 &1899528608
 GameObject:
   m_ObjectHideFlags: 0

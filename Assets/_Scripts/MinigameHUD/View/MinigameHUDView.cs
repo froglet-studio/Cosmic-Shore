@@ -1,6 +1,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CosmicShore.Game.UI
 {
@@ -19,7 +22,15 @@ namespace CosmicShore.Game.UI
         [SerializeField] private CanvasGroup connectingPanelCanvasGroup; 
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
-        
+
+        [Header("Player/AI Score Cards")]
+        [SerializeField] private Transform playerScoreContainer;
+        [SerializeField] private PlayerScoreCard playerScoreCardPrefab;
+        [SerializeField] private List<DomainColorDef> domainColors;
+
+        public Transform PlayerScoreContainer => playerScoreContainer;
+        public PlayerScoreCard PlayerScoreCardPrefab => playerScoreCardPrefab;
+
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
         public void UpdateLifeFormCounter(string message) 
@@ -40,6 +51,27 @@ namespace CosmicShore.Game.UI
             connectingPanelCanvasGroup.alpha = active ? 1 : 0;
             connectingPanelCanvasGroup.interactable = active;
             connectingPanelCanvasGroup.blocksRaycasts = active;
+        }
+
+        public void ClearPlayerList()
+        {
+            foreach (Transform child in playerScoreContainer)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+
+        public Color GetColorForDomain(Domains domain)
+        {
+            var def = domainColors.FirstOrDefault(d => d.Domain == domain);
+            return def.Equals(default(DomainColorDef)) ? Color.white : def.Color;
+        }
+
+        [Serializable]
+        public struct DomainColorDef
+        {
+            public Domains Domain;
+            public Color Color;
         }
         
         public TMP_Text LeftNumberDisplay => leftNumberDisplay;

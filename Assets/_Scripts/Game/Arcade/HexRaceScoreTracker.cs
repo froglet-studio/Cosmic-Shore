@@ -1,4 +1,5 @@
-﻿using CosmicShore.Core;
+﻿using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Game.UI;
 using Cysharp.Threading.Tasks; 
@@ -6,7 +7,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class HexRaceScoreTracker : BaseScoreTracker
+    public class HexRaceScoreTracker : BaseScoreTracker, IStatExposable
     {
         [Header("Dependencies")]
         [SerializeField] CrystalCollisionTurnMonitor turnMonitor;
@@ -27,6 +28,7 @@ namespace CosmicShore.Game.Arcade
         private IVesselStatus _observedVessel;
         private bool _isTracking;
         private bool _hasReported;
+        private IStatExposable _statExposableImplementation;
 
         protected virtual void Start()
         {
@@ -172,6 +174,16 @@ namespace CosmicShore.Game.Arcade
         protected virtual void ReportToMultiplayerController(float finalScore, bool isWinner)
         {
             // Overridden in multiplayer
+        }
+
+        public Dictionary<string, object> GetExposedStats()
+        {
+            return new Dictionary<string, object>
+            {
+                { "Max Clean Streak", MaxCleanStreak },
+                { "Longest Drift", MaxDriftTimeRecord },
+                { "Max Boost Time", MaxHighBoostTimeRecord }
+            };
         }
     }
 }
