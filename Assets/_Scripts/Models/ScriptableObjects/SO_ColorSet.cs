@@ -24,7 +24,7 @@ public class SO_ColorSet : ScriptableObject
         if (colorSet != null) 
             return true;
         
-        Debug.LogWarning($"Unknown domain: {domain}, No color set found!");
+        Debug.LogError($"Unknown domain: {domain}, No color set found!");
         return false;
     }
 }
