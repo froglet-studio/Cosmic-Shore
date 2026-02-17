@@ -6,10 +6,10 @@ namespace CosmicShore
 {
     /// <summary>
     /// Spawns prisms along fibers of the Hopf fibration: S³ → S².
-    /// 
+    ///
     /// Each point on the 2-sphere has a corresponding great circle (fiber) on the 3-sphere.
     /// Points on the same latitude circle of S² produce fibers that form a torus in R³
-    /// after stereographic projection. The result is nested, interlocking tori — one of 
+    /// after stereographic projection. The result is nested, interlocking tori — one of
     /// the most beautiful structures in mathematics.
     ///
     /// The Hopf fibration is fundamental in gauge theory (it's the simplest nontrivial
@@ -18,6 +18,22 @@ namespace CosmicShore
     /// </summary>
     public class SpawnableHopfFibration : SpawnableAbstractBase
     {
+        [System.Serializable]
+        public struct HopfIntensityConfig
+        {
+            public int latitudeBands;
+            public int fibersPerBand;
+            public int blocksPerFiber;
+            public float projectionScale;
+            [Range(0.01f, 0.99f)]
+            public float projectionPole;
+            public Vector3 blockScale;
+            public bool includePolarFibers;
+            public bool includeVillarceauCircles;
+            public int villarceauFibers;
+            public int villarceauBlocks;
+        }
+
         [Header("Block Settings")]
         [SerializeField] Prism prism;
         [SerializeField] Vector3 blockScale = new Vector3(2f, 2f, 4f);
@@ -66,6 +82,73 @@ namespace CosmicShore
 
         [SerializeField] int villarceauFibers = 8;
         [SerializeField] int villarceauBlocks = 32;
+
+        [Header("Intensity Level Configurations")]
+        [Tooltip("One config per intensity level (1-4). Index 0 = intensity 1.")]
+        [SerializeField] HopfIntensityConfig[] intensityConfigs = new HopfIntensityConfig[]
+        {
+            // Level 1 — "Sparse Crown": just two tori, large blocks, wide projection.
+            // Open arena that's easy to read and navigate.
+            new()
+            {
+                latitudeBands = 2,
+                fibersPerBand = 6,
+                blocksPerFiber = 16,
+                projectionScale = 100f,
+                projectionPole = 0.5f,
+                blockScale = new Vector3(3f, 3f, 6f),
+                includePolarFibers = true,
+                includeVillarceauCircles = false,
+                villarceauFibers = 0,
+                villarceauBlocks = 0,
+            },
+            // Level 2 — "Villarceau Web": medium-density tori plus diagonal Villarceau
+            // circles that cut through at oblique angles, creating a web-like lattice.
+            new()
+            {
+                latitudeBands = 4,
+                fibersPerBand = 10,
+                blocksPerFiber = 20,
+                projectionScale = 90f,
+                projectionPole = 0.7f,
+                blockScale = new Vector3(2.5f, 2.5f, 5f),
+                includePolarFibers = true,
+                includeVillarceauCircles = true,
+                villarceauFibers = 6,
+                villarceauBlocks = 24,
+            },
+            // Level 3 — "Classic Fibration": the proven 6-band structure. Dense enough
+            // to be interesting, open enough to be fair.
+            new()
+            {
+                latitudeBands = 6,
+                fibersPerBand = 20,
+                blocksPerFiber = 28,
+                projectionScale = 80f,
+                projectionPole = 0.85f,
+                blockScale = new Vector3(2f, 2f, 4f),
+                includePolarFibers = true,
+                includeVillarceauCircles = false,
+                villarceauFibers = 0,
+                villarceauBlocks = 0,
+            },
+            // Level 4 — "Dense Singularity": 8 bands with a tight projection pole that
+            // packs inner tori into a dense core, plus Villarceau circles for extra chaos.
+            // Small blocks everywhere — claustrophobic and demanding.
+            new()
+            {
+                latitudeBands = 8,
+                fibersPerBand = 16,
+                blocksPerFiber = 32,
+                projectionScale = 60f,
+                projectionPole = 0.95f,
+                blockScale = new Vector3(1.5f, 1.5f, 3f),
+                includePolarFibers = true,
+                includeVillarceauCircles = true,
+                villarceauFibers = 12,
+                villarceauBlocks = 40,
+            },
+        };
 
         static int ObjectsSpawned = 0;
 
@@ -134,10 +217,20 @@ namespace CosmicShore
 
         public override GameObject Spawn(int intensityLevel)
         {
-            // Scale complexity with intensity
-            latitudeBands = 3 + intensityLevel;
-            fibersPerBand = 8 + intensityLevel * 4;
-            blocksPerFiber = 16 + intensityLevel * 4;
+            if (intensityConfigs != null && intensityConfigs.Length > 0)
+            {
+                var config = intensityConfigs[Mathf.Clamp(intensityLevel - 1, 0, intensityConfigs.Length - 1)];
+                latitudeBands = config.latitudeBands;
+                fibersPerBand = config.fibersPerBand;
+                blocksPerFiber = config.blocksPerFiber;
+                projectionScale = config.projectionScale;
+                projectionPole = config.projectionPole;
+                blockScale = config.blockScale;
+                includePolarFibers = config.includePolarFibers;
+                includeVillarceauCircles = config.includeVillarceauCircles;
+                villarceauFibers = config.villarceauFibers;
+                villarceauBlocks = config.villarceauBlocks;
+            }
             return Spawn();
         }
 
