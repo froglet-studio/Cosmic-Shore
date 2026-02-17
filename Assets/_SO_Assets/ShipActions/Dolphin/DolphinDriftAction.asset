@@ -12,3 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b2d3d503e424b0dbd9b0983f51e2b20, type: 3}
   m_Name: DolphinDriftAction
   m_EditorClassIdentifier: 
+  Mult: 1.5
+  driftDamping: 0
+  isSharpDrifting: 0
+  OnDriftingStarted: {fileID: 11400000, guid: aadc0dd809ad8e446aa021ddff5a2213, type: 2}
+  OnDoubleDriftingStarted: {fileID: 11400000, guid: 9869da66befaa04429e5b8c696d421f0,
+    type: 2}
+  OnDriftEnded: {fileID: 11400000, guid: 9869da66befaa04429e5b8c696d421f0, type: 2}
