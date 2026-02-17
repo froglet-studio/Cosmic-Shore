@@ -116,7 +116,7 @@ namespace CosmicShore.Core
         public float GetCurrentVolume()
         {
             if (!enabled) return 0f;
-            var v = transform.localScale;
+            var v = transform.lossyScale; // Use lossyScale to get the actual world scale, which accounts for parent scaling
             return v.x * v.y * v.z;
         }
 
