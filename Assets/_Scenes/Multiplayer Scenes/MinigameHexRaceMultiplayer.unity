@@ -742,7 +742,7 @@ MonoBehaviour:
   CrystalCollisions: 2
   optionalEnvironment: {fileID: 1899528610}
   optionalLaps: 4
-  controller: {fileID: 0}
+  controller: {fileID: 1078953729}
 --- !u!114 &1078953729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1995,6 +1995,7 @@ MonoBehaviour:
     type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   minConnectingSeconds: 5
+  isAIAvailable: 0
   multiplayerView: {fileID: 1556114781}
 --- !u!114 &1556114781
 MonoBehaviour:
