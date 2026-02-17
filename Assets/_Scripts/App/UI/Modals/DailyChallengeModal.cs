@@ -65,8 +65,8 @@ namespace CosmicShore.App.UI.Modals
 
         void AssignGameMode()
         {
-            GameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
-            GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(GameMode));
+            // GameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
+            // GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(GameMode));
         }
 
         public void Play()
