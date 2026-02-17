@@ -26,12 +26,8 @@ namespace CosmicShore.Game.Arcade
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
                 gameData.OnSessionStarted += SubscribeToSessionEvents;
             }
-
-            // [Visual Note] We intentionally do NOT subscribe to OnResetForReplay here.
-            // This controller triggers the event via RPC, it should not listen to it to avoid infinite loops.
-
-            if (IsServer)
-                InitializeAfterDelay().Forget();
+            
+            InitializeAfterDelay().Forget();
         }
 
         public override void OnNetworkDespawn()
@@ -85,10 +81,11 @@ namespace CosmicShore.Game.Arcade
             {
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
                 
+                gameData.InitializeGame();
+                
                 if (!IsServer)
                     return;
-                    
-                gameData.InitializeGame();
+                
                 SetupNewRound();
             }
             catch (OperationCanceledException)
