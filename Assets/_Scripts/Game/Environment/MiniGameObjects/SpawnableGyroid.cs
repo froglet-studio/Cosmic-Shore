@@ -6,6 +6,20 @@ namespace CosmicShore
 {
     public class SpawnableGyroid : SpawnableAbstractBase
     {
+        [System.Serializable]
+        public struct GyroidIntensityConfig
+        {
+            public GyroidBlockType seedBlockType;
+            public int maxDepth;
+            public float separationDistance;
+            public float overlapCellSize;
+            public bool expandTopLeft;
+            public bool expandTopRight;
+            public bool expandBottomLeft;
+            public bool expandBottomRight;
+            public Vector3 blockScale;
+        }
+
         [Header("Block Settings")]
         [SerializeField] Prism prism;
         [SerializeField] Vector3 blockScale = Vector3.one;
@@ -29,6 +43,67 @@ namespace CosmicShore
         [Tooltip("Use a different domain for 'dangerous' block types (DE, EG, GEs, EsD) to match gyroid flora visuals.")]
         [SerializeField] bool colorDangerousBlocks = true;
         [SerializeField] Domains dangerousDomain = Domains.Ruby;
+
+        [Header("Intensity Level Configurations")]
+        [Tooltip("One config per intensity level (1-4). Index 0 = intensity 1.")]
+        [SerializeField] GyroidIntensityConfig[] intensityConfigs = new GyroidIntensityConfig[]
+        {
+            // Level 1 — "Helix Spine": single expansion direction produces a snaking
+            // chain. Large blocks and wide gaps make it easy to read.
+            new()
+            {
+                seedBlockType = GyroidBlockType.AB,
+                maxDepth = 15,
+                separationDistance = 5f,
+                overlapCellSize = 2f,
+                expandTopLeft = false,
+                expandTopRight = true,
+                expandBottomLeft = false,
+                expandBottomRight = false,
+                blockScale = new Vector3(1.5f, 1.5f, 1.5f),
+            },
+            // Level 2 — "Branching Coral": CD seed grows differently from AB, and
+            // top-biased expansion creates an upward-reaching fan like coral branches.
+            new()
+            {
+                seedBlockType = GyroidBlockType.CD,
+                maxDepth = 25,
+                separationDistance = 3.5f,
+                overlapCellSize = 1.5f,
+                expandTopLeft = true,
+                expandTopRight = true,
+                expandBottomLeft = false,
+                expandBottomRight = false,
+                blockScale = new Vector3(1.2f, 1.2f, 1.2f),
+            },
+            // Level 3 — "Classic Gyroid": the proven diagonal-cross pattern.
+            new()
+            {
+                seedBlockType = GyroidBlockType.AB,
+                maxDepth = 35,
+                separationDistance = 3f,
+                overlapCellSize = 1.5f,
+                expandTopLeft = false,
+                expandTopRight = true,
+                expandBottomLeft = true,
+                expandBottomRight = false,
+                blockScale = Vector3.one,
+            },
+            // Level 4 — "Dense Thicket": EF seed with all four expansion directions
+            // and tight spacing fills space aggressively. Small blocks pack dense.
+            new()
+            {
+                seedBlockType = GyroidBlockType.EF,
+                maxDepth = 45,
+                separationDistance = 2f,
+                overlapCellSize = 1f,
+                expandTopLeft = true,
+                expandTopRight = true,
+                expandBottomLeft = true,
+                expandBottomRight = true,
+                blockScale = new Vector3(0.8f, 0.8f, 0.8f),
+            },
+        };
 
         static int ObjectsSpawned = 0;
 
@@ -73,8 +148,19 @@ namespace CosmicShore
 
         public override GameObject Spawn(int intensityLevel)
         {
-            // Scale depth with intensity for progressive difficulty
-            maxDepth = 20 + (5 * intensityLevel);
+            if (intensityConfigs != null && intensityConfigs.Length > 0)
+            {
+                var config = intensityConfigs[Mathf.Clamp(intensityLevel - 1, 0, intensityConfigs.Length - 1)];
+                seedBlockType = config.seedBlockType;
+                maxDepth = config.maxDepth;
+                separationDistance = config.separationDistance;
+                overlapCellSize = config.overlapCellSize;
+                expandTopLeft = config.expandTopLeft;
+                expandTopRight = config.expandTopRight;
+                expandBottomLeft = config.expandBottomLeft;
+                expandBottomRight = config.expandBottomRight;
+                blockScale = config.blockScale;
+            }
             return Spawn();
         }
 
