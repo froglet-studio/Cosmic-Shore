@@ -63,6 +63,7 @@ namespace CosmicShore.Soap
         public bool IsMission;
         public bool IsMultiplayerMode;
         public List<IPlayer> Players = new();
+        public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();
         public List<DomainStats> DomainStatsList = new();
         public HashSet<Transform> SlowedShipTransforms = new();
@@ -82,7 +83,6 @@ namespace CosmicShore.Soap
         
         public void InitializeGame()
         {
-            ResetRuntimeData();
             InvokeInitializeGame();
         }
 
@@ -204,15 +204,12 @@ namespace CosmicShore.Soap
                 return;
 
             // Avoid duplicates by Name
-            if (Players.Any(player => player.Name == p.Name)) 
-                return;
+            if (Players.All(player => player.Name != p.Name))
+                Players.Add(p);
             
-            if (RoundStatsList.Any(rs => rs.Name == p.Name)) 
-                return;
-
-            Players.Add(p);
+            if (RoundStatsList.All(rs => rs.Name != p.Name)) 
+                RoundStatsList.Add(p.RoundStats);
             
-            RoundStatsList.Add(p.RoundStats);
             if (p.IsLocalUser)
             {
                 LocalPlayer = p;
@@ -451,6 +448,45 @@ namespace CosmicShore.Soap
 
             _playerSpawnPoseList?.Clear();
             _playerSpawnPoseList = new List<Pose>(SpawnPoses.ToList());
+        }
+        
+        public bool TryGetPlayerByOwnerClientId(ulong clientId, out IPlayer player)
+        {
+            player = null;
+            foreach (var p in Players.Where(p => p.OwnerClientNetId == clientId))
+            {
+                player = p;
+                return true;
+            }
+            
+            Debug.LogError($"No player found {clientId}");
+            return false;
+        }
+        
+        public bool TryGetPlayerByNetworkObjectId(ulong playerId, out IPlayer player)
+        {
+            player = null;
+            foreach (var p in Players.Where(p => p.PlayerNetId == playerId))
+            {
+                player = p;
+                return true;
+            }
+            
+            Debug.LogError($"No player found {playerId}");
+            return false;
+        }
+        
+        public bool TryGetVesselByNetworkObjectId(ulong netVesselId, out IVessel vessel)
+        {
+            vessel = null;
+            foreach (var v in Vessels.Where(v => v.VesselNetId == netVesselId))
+            {
+                vessel = v;
+                return true;
+            }
+            
+            Debug.LogError($"No vessel found {netVesselId}");
+            return false;
         }
         
         Pose GetRandomSpawnPose()

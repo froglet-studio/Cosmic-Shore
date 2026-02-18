@@ -1,14 +1,9 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using CosmicShore.App.Systems;
+﻿using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.Soap;
-using CosmicShore.Utility.ClassExtensions;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 
 namespace CosmicShore.Game
@@ -29,10 +24,10 @@ namespace CosmicShore.Game
             ClientRpcParams clientRpcParams = default)
         {
             // NPP List will contain all the players and the AIs to be initialized in this new client
-            foreach (var networkPlayer in Player.NppList.Cast<Player>())
+            foreach (var networkPlayer in gameData.Players)
             {
                 ulong playerId = networkPlayer.PlayerNetId;
-                ulong vesselId = networkPlayer.NetVesselId.Value;
+                ulong vesselId = networkPlayer.VesselNetId;
                 
                 InitializePlayerAndVesselByNetIds(playerId, vesselId, this.GetCancellationTokenOnDestroy()).Forget();
             }
@@ -48,47 +43,41 @@ namespace CosmicShore.Game
             ulong newJoinedClientId,
             ClientRpcParams clientRpcParams = default)
         {
-            var sm = NetworkManager.Singleton.SpawnManager;
-            var playerNO = sm.GetPlayerNetworkObject(newJoinedClientId);
-            var ownerPlayerId = playerNO.NetworkObjectId;
-            if (!playerNO.TryGetComponent(out Player player))
+
+            if (!gameData.TryGetPlayerByOwnerClientId(newJoinedClientId, out var player))
             {
-                Debug.LogError("This should not happen!");
+                Debug.LogError($"No player found for client Id: {player.PlayerNetId}");
                 return;
             }
-            var ownerVesselId = player.NetVesselId.Value;
+                
+            var ownerPlayerId = player.PlayerNetId;
+            var ownerVesselId = player.VesselNetId;
             InitializePlayerAndVesselByNetIds(ownerPlayerId, ownerVesselId, this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        private async UniTaskVoid InitializePlayerAndVesselByNetIds(ulong playerId, ulong vesselId, System.Threading.CancellationToken token)
+        private async UniTaskVoid InitializePlayerAndVesselByNetIds(
+            ulong playerId,
+            ulong vesselId,
+            CancellationToken token)
         {
-            var sm = NetworkManager.Singleton.SpawnManager;
+            // Wait until BOTH are available (or cancel)
+            await UniTask.WaitUntil(() =>
+                    gameData.TryGetPlayerByNetworkObjectId(playerId, out _) &&
+                    gameData.TryGetVesselByNetworkObjectId(vesselId, out _),
+                cancellationToken: token);
 
-            await UniTask.WaitUntil(
-                () => sm.SpawnedObjects.ContainsKey(playerId) && sm.SpawnedObjects.ContainsKey(vesselId),
-                cancellationToken: token
-            );
-
-            if (token.IsCancellationRequested) return;
-
-            var playerNO = sm.SpawnedObjects[playerId];
-            var vesselNO = sm.SpawnedObjects[vesselId];
-
-            var networkPlayer = playerNO.GetComponent<Player>();
-            var networkShip = vesselNO.GetComponent<IVessel>();
-
-            if (!networkPlayer || networkShip == null)
-            {
-                Debug.LogError("[ClientPlayerVesselInitializer] AI Player/Vessel components missing.");
+            // Now fetch the actual refs (they should exist)
+            if (!gameData.TryGetPlayerByNetworkObjectId(playerId, out var player))
                 return;
-            }
+
+            if (!gameData.TryGetVesselByNetworkObjectId(vesselId, out var vessel))
+                return;
 
             // Reuse your existing initialization logic (recommended)
-            networkPlayer.InitializeForMultiplayerMode(networkShip);
-            networkShip.Initialize(networkPlayer);
-            ShipHelper
-                .SetShipProperties(themeManagerData, networkShip);
-            gameData.AddPlayer(networkPlayer);
+            player.InitializeForMultiplayerMode(vessel);
+            vessel.Initialize(player);
+            ShipHelper.SetShipProperties(themeManagerData, vessel);
+            gameData.AddPlayer(player);
         }
         
         async UniTaskVoid DelayInvokeClientReady(CancellationToken token)

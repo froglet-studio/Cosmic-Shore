@@ -31,8 +31,8 @@ namespace CosmicShore.Game.Arcade
 
         void ChangeOwnershipOfVessels()
         {
-            var player0 = Player.NppList[0];
-            var player1 = Player.NppList[1];
+            var player0 = gameData.Players[0];
+            var player1 = gameData.Players[1];
             
             // swap the vessel types from player.NetDefaultVesselType.Value
             if (!player0.Vessel.Transform.TryGetComponent(out NetworkObject no0))

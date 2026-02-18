@@ -12,11 +12,9 @@ using UnityEngine.Serialization;
 namespace CosmicShore.Game
 {
     public class Player : NetworkBehaviour, IPlayer
-    { 
+    {
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
-        
-        public static List<IPlayer> NppList { get; } = new();
         
         public NetworkVariable<VesselClassType> NetDefaultVesselType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Domains> NetDomain = new();
@@ -27,7 +25,14 @@ namespace CosmicShore.Game
         public Domains Domain { get; private set; }
         public string Name { get; private set; }
         public string PlayerUUID => Name;
-        public ulong PlayerNetId { get; private set; }
+        public ulong PlayerNetId => NetworkObjectId;
+        /// <summary>
+        /// Remarks, this VesselNetId will be set by server
+        /// through a network variable during initialization
+        /// of vessel and player.
+        /// </summary>
+        public ulong VesselNetId { get; private set; }
+        public ulong OwnerClientNetId => OwnerClientId;
         public IVessel Vessel { get; private set; }
         public bool IsActive { get; private set; }
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
@@ -99,27 +104,29 @@ namespace CosmicShore.Game
         
         public override void OnNetworkSpawn()
         {
-            NppList.Add(this);
+            // Cache it to game data early, so that later,
+            // ClientInitializer can find the player and vessels with their Ids
+            gameData.Players.Add(this);
+
+            VesselNetId = NetVesselId.Value;
             
             NetDomain.OnValueChanged += OnNetDomainChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
-
-            PlayerNetId = NetworkObjectId;
+            NetVesselId.OnValueChanged += OnNetVesselIdChanged;
 
             if (!IsLocalUser) 
                 return;
             
             NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
-            InputController.Initialize();
             NetName.Value = AuthenticationService.Instance.PlayerName;
+            InputController.Initialize();
         }
         
         public override void OnNetworkDespawn()
         {
-            NppList.Remove(this);
-            
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
+            NetVesselId.OnValueChanged += OnNetVesselIdChanged;
         }
 
 
@@ -188,6 +195,9 @@ namespace CosmicShore.Game
         
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>
             Name = newValue.ToString();
+        
+        void OnNetVesselIdChanged(ulong previousValue, ulong newValue) =>
+            VesselNetId = newValue;
         
         void SetGameObjectName()
         {
