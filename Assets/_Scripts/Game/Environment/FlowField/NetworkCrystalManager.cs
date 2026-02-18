@@ -40,7 +40,7 @@ namespace CosmicShore.Game
 
         private void EnsureListSizedToSelectedPlayerCount()
         {
-            int count = Mathf.Max(1, gameData.Players.Count);
+            int count = GetCrystalCountToSpawn();
 
             // Grow
             while (n_Positions.Count < count)

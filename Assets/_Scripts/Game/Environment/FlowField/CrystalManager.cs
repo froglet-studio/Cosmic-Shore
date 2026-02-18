@@ -43,6 +43,7 @@ namespace CosmicShore.Game
         [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
         [SerializeField] private bool spawnCrystalWithPlayerDomain;
+        [SerializeField] private int extraCrystalsToSpawnBeyondPlayerCount = 0;
         
         // ---------------- Runtime State ----------------
 
@@ -131,7 +132,7 @@ namespace CosmicShore.Game
         /// </summary>
         protected void SpawnBatchIfMissing()
         {
-            int count = Mathf.Max(1, gameData.Players.Count);
+            int count = GetCrystalCountToSpawn();
 
             // 1) Choose ONE anchor for the whole batch
             Vector3 batchAnchor = GetAnchorForBatchIndex(batchAnchorIndex);
@@ -243,6 +244,11 @@ namespace CosmicShore.Game
 
             positions = set.positions.ToArray();
             return true;
+        }
+
+        protected int GetCrystalCountToSpawn()
+        {
+            return Mathf.Max(1, gameData.Players.Count + extraCrystalsToSpawnBeyondPlayerCount);
         }
 
         /// <summary>
