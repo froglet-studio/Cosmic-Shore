@@ -15,6 +15,7 @@ MonoBehaviour:
   Mult: 1.8
   driftDamping: 0.25
   isSharpDrifting: 1
-  isDrifting: {fileID: 11400000, guid: aadc0dd809ad8e446aa021ddff5a2213, type: 2}
-  isDoubleDrifting: {fileID: 11400000, guid: ef6330095f84f9b46a30db2e12842210, type: 2}
-  driftEnded: {fileID: 11400000, guid: 9869da66befaa04429e5b8c696d421f0, type: 2}
+  OnDriftingStarted: {fileID: 11400000, guid: aadc0dd809ad8e446aa021ddff5a2213, type: 2}
+  OnDoubleDriftingStarted: {fileID: 11400000, guid: 876e2ba7dfbc2f248b1a997b904f2d97,
+    type: 2}
+  OnDriftEnded: {fileID: 11400000, guid: 9869da66befaa04429e5b8c696d421f0, type: 2}

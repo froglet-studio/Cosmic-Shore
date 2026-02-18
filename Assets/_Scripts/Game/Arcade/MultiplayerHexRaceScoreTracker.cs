@@ -1,4 +1,5 @@
-﻿using CosmicShore.Core;
+﻿using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
 using Obvious.Soap;
 using UnityEngine;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MultiplayerHexRaceScoreTracker : HexRaceScoreTracker
+    public class MultiplayerHexRaceScoreTracker : HexRaceScoreTracker, IStatExposable
     {
         [Header("Multiplayer Specific")]
         [SerializeField] ScriptableEventString OnJoustCollisionEvent;
@@ -68,6 +69,17 @@ namespace CosmicShore.Game.Arcade
                 );
             }
             if (controller) controller.ReportLocalPlayerFinished(finalScore);
+        }
+        
+        public Dictionary<string, object> GetExposedStats()
+        {
+            return new Dictionary<string, object>
+            {
+                { "Max Clean Streak", MaxCleanStreak },
+                { "Longest Drift", MaxDriftTimeRecord },
+                { "Max Boost Time", MaxHighBoostTimeRecord },
+                { "Jousts Won", JoustsWonSession }
+            };
         }
     }
 }

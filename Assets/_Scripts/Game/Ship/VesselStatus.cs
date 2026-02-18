@@ -64,6 +64,10 @@ namespace CosmicShore.Game
             set => boostMultiplier = value;
         }
 
+        [SerializeField] protected float inertia = 1f;
+        public float Inertia => inertia;
+
+
         [Header("Vessel Meta")]
         [SerializeField] protected string _name;
         public string Name => _name;

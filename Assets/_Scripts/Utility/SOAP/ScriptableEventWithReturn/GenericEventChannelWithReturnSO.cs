@@ -9,15 +9,7 @@ namespace CosmicShore.Utilities
 
         public Y RaiseEvent(T item)
         {
-            if (OnEventReturn != null)
-            {
-                return OnEventReturn.Invoke(item);
-            }
-            else
-            {
-                Debug.LogWarning($"No listeners for event {name} with item {item}");
-                return default(Y); // Return default value of Y if no listeners
-            }
+            return OnEventReturn != null ? OnEventReturn.Invoke(item) : default(Y); // Return default value of Y if no listeners
         }
     }
 }

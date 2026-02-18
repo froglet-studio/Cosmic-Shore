@@ -10,9 +10,9 @@ public class DriftActionSO : ShipActionSO
     [SerializeField] float driftDamping = 0f;
     [SerializeField] bool isSharpDrifting;
 
-    [SerializeField] ScriptableEventNoParam isDrifting;
-    [SerializeField] ScriptableEventNoParam isDoubleDrifting;
-    [SerializeField] ScriptableEventNoParam driftEnded;
+    [SerializeField] ScriptableEventNoParam OnDriftingStarted;
+    [SerializeField] ScriptableEventNoParam OnDoubleDriftingStarted;
+    [SerializeField] ScriptableEventNoParam OnDriftEnded;
 
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
@@ -26,11 +26,11 @@ public class DriftActionSO : ShipActionSO
 
         if (isSharpDrifting)
         {
-            isDoubleDrifting.Raise();
+            OnDoubleDriftingStarted.Raise();
         }
         else
         {
-            isDrifting.Raise();
+            OnDriftingStarted.Raise();
         }
     }
 
@@ -41,6 +41,6 @@ public class DriftActionSO : ShipActionSO
         t.YawScaler = savedRotations.y;
         t.RollScaler = savedRotations.z;
         vesselStatus.IsDrifting = false;
-        driftEnded.Raise();
+        OnDriftEnded.Raise();
     }
 }

@@ -32,6 +32,8 @@ namespace CosmicShore.Game
         bool IsBoosting { get; set; }
         float BoostMultiplier { get; set; }
 
+        float Inertia { get; }
+
         SO_Captain Captain { get; set; }
 
         float ChargedBoostCharge { get; set; }

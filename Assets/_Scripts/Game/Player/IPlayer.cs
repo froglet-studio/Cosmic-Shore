@@ -45,7 +45,20 @@ namespace CosmicShore.Game
         /// In Multiplayer, it is the Owner Client providing input.
         /// </summary>
         bool IsLocalUser { get; }
+        /// <summary>
+        /// In multiplayer session, this stores the network object id.
+        /// </summary>
+        ulong PlayerNetId { get; }
+        /// <summary>
+        /// In multiplayer session, this stores the vessel's network object id.
+        /// </summary>
+        ulong VesselNetId { get; }
+        /// <summary>
+        /// Id of the owner client of this player in multiplayer
+        /// </summary>
+        ulong OwnerClientNetId { get; }
         void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
+        void InitializeForMultiplayerMode(IVessel vessel);
         void ToggleGameObject(bool toggle);
         void DestroyPlayer();
         void StartPlayer();

@@ -105,7 +105,7 @@ namespace CosmicShore
                 ? Mathf.CeilToInt(rect.rect.width / (minWl * config.worldToUIScale * Mathf.Max(0.0001f, scaleY)))
                 : Mathf.CeilToInt(rect.rect.height / (minWl * config.worldToUIScale * Mathf.Max(0.0001f, scaleY)));
 
-            _cols = Mathf.Max(config.minColumns, needed);
+            _cols = Mathf.Max(config.minColumns, config.applyMaxColumnValues ? config.maxColumns: needed);
             _pool = new RectTransform[_cols, 2];
             _parents = new RectTransform[_cols];
 

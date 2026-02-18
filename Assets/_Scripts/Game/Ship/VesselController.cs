@@ -37,7 +37,11 @@ namespace CosmicShore.Game
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<bool> n_IsTranslationRestricted =
             new(writePerm: NetworkVariableWritePermission.Owner);
-
+        
+        public ulong PlayerNetId { get; private set; }
+        public ulong VesselNetId => NetworkObjectId;
+        public ulong OwnerClientNetId => OwnerClientId;
+        
         public override void OnDestroy()
         {
             OnBeforeDestroyed?.Invoke();
@@ -45,6 +49,10 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
+            // Cache it to game data early, so that later,
+            // ClientInitializer can find the player and vessels with their Ids
+            gameData.Vessels.Add(this);
+            
             if (IsOwner) 
                 return;
             

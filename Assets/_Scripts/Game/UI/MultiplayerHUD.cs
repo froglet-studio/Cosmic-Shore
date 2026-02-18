@@ -59,7 +59,13 @@ namespace CosmicShore.Game.UI
 
         protected override void OnMiniGameTurnStarted()
         {
-            base.OnMiniGameTurnStarted();
+            // Note: We do NOT call base.OnMiniGameTurnStarted() here if we want to 
+            // override the AI setup logic with full multiplayer card logic.
+            
+            localRoundStats = gameData.LocalRoundStats;
+            if (localRoundStats != null)
+                localRoundStats.OnScoreChanged += UpdateScoreUI;
+
             InitializePlayerCards();
             SubscribeToGameSpecificEvents();
         }
@@ -69,11 +75,12 @@ namespace CosmicShore.Game.UI
             base.OnMiniGameTurnEnd();
             UnsubscribeFromAllStats();
             UnsubscribeFromGameSpecificEvents();
+            _playerCards.Clear();
         }
 
         private void InitializePlayerCards()
         {
-            multiplayerView.ClearPlayerList();
+            view.ClearPlayerList();
             _playerCards.Clear();
 
             foreach (var stats in gameData.RoundStatsList)
@@ -84,9 +91,9 @@ namespace CosmicShore.Game.UI
 
         private void CreateCardForPlayer(IRoundStats stats)
         {
-            var card = Instantiate(multiplayerView.PlayerScoreCardPrefab, multiplayerView.PlayerScoreContainer);
+            var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var isLocal = gameData.LocalPlayer != null && stats.Name == gameData.LocalPlayer.Name;
-            var teamColor = multiplayerView.GetColorForDomain(stats.Domain);
+            var teamColor = view.GetColorForDomain(stats.Domain);
             
             card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal);
             _playerCards[stats.Name] = card;
@@ -107,6 +114,7 @@ namespace CosmicShore.Game.UI
         protected abstract void UnsubscribeFromPlayerStats(IRoundStats stats);
         protected virtual void SubscribeToGameSpecificEvents() { }
         protected virtual void UnsubscribeFromGameSpecificEvents() { }
+        protected override bool RequireClientReady => true;
 
         protected void UpdatePlayerCard(string playerName, int newValue)
         {

@@ -9,11 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a62fc47075d4f4aa59654ae3ddddc3d, type: 3}
-  m_Name: OnSkimmerDebuffAppliedEvent
+  m_Script: {fileID: 11500000, guid: a49b7e678b3ebb7418adb84806d24646, type: 3}
+  m_Name: EventOnDriftStarted
   m_EditorClassIdentifier: 
   CategoryIndex: 0
   Description: 
   _debugLogEnabled: 0
-  _debugValue:
-    Duration: 0

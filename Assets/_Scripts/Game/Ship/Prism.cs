@@ -229,7 +229,7 @@ namespace CosmicShore.Core
 
         protected virtual GameObject SetupDestruction(Domains domain, string attackerPlayerName, bool devastate = false)
         {
-            var destructionScale = transform.localScale;
+            var destructionScale = transform.lossyScale; // Use lossyScale to get the actual world scale, which accounts for parent scaling
 
             if (scaleAnimator)
             {

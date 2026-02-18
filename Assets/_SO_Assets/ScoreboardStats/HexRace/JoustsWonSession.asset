@@ -9,10 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ed2a53a13d3e4066b3ccfe94e017a207, type: 3}
-  m_Name: EventOnLifeformDestroyed
+  m_Script: {fileID: 11500000, guid: cd8642df8fb143fcbd1faefd22f67b9e, type: 3}
+  m_Name: JoustsWonSession
   m_EditorClassIdentifier: 
-  CategoryIndex: 0
-  Description: 
-  _debugLogEnabled: 0
-  _debugValue: 0
+  Label: Jousts Won
+  Icon: {fileID: 21300000, guid: fc37470ec919f5e42b2fd79354e770e9, type: 3}
+  FormatType: 0
+  CustomFormat: 
+  PropertyPath: 
+  TrackerTypeName: 

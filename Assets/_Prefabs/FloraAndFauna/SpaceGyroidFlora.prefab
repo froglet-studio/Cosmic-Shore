@@ -168,6 +168,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790495, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
+      propertyPath: cellData
+      value: 
+      objectReference: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b,
+        type: 2}
+    - target: {fileID: 6588436222817790495, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}

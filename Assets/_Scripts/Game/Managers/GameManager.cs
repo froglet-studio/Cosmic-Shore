@@ -38,10 +38,7 @@ namespace CosmicShore.Core
         
         public virtual void RestartGame()
         {
-            // LoadSceneAsync(SceneManager.GetActiveScene().name).Forget();
-            
             gameData.ResetStatsDataForReplay();
-            // VesselPrismController.ClearTrails();
             InvokeOnResetForReplay();
         }
 
