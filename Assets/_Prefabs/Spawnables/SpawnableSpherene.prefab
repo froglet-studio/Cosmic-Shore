@@ -49,7 +49,7 @@ MonoBehaviour:
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   blockScale: {x: 1, y: 2, z: 4}
   subdivisions: 3
-  radius: 200
-  blocksPerEdge: 8
+  radius: 150
+  blocksPerEdge: 4
   edgeDomain: 3
   vertexDomain: 4

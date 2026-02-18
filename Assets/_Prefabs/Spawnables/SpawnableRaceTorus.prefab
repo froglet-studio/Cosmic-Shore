@@ -48,9 +48,9 @@ MonoBehaviour:
   intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   blockScale: {x: 1, y: 2, z: 4}
-  uSamples: 36
-  vSamples: 36
+  uSamples: 360
+  vSamples: 360
   projectionScale: 800
-  projectionPole: 0.1
+  projectionPole: 0.01
   colorByV: 1
   vDomains: 03000000010000000400000002000000
