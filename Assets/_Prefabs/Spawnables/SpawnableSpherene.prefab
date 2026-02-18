@@ -44,12 +44,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18d851c853b6dd54f9e8f9944faae236, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  domain: 3
+  domain: 2
   intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  blockScale: {x: 2, y: 2, z: 4}
-  subdivisions: 2
-  radius: 70
+  blockScale: {x: 1, y: 2, z: 4}
+  subdivisions: 3
+  radius: 200
   blocksPerEdge: 8
   edgeDomain: 3
   vertexDomain: 4

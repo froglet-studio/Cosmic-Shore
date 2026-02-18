@@ -1325,9 +1325,9 @@ MonoBehaviour:
   - {fileID: 0}
   spawnableByIntensity:
   - {fileID: 6514606624884080306, guid: 46b326171d45253459e6b8f75d1cdb25, type: 3}
-  - {fileID: 8890675842724360944, guid: 7da9cc83d8206c8448394ddef88278b0, type: 3}
-  - {fileID: 938910552520234231, guid: 22d055e789298e64598f72534d73c9c2, type: 3}
   - {fileID: 1670082815129230080, guid: e8174c106727c824199fdd482cdf093d, type: 3}
+  - {fileID: 938910552520234231, guid: 22d055e789298e64598f72534d73c9c2, type: 3}
+  - {fileID: 4959367395204161429, guid: 7f105562de1ca3f41832337facd6e3d9, type: 3}
   positioningScheme: 19
   spawnSegmentWeights:
   - 1

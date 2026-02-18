@@ -47,13 +47,13 @@ MonoBehaviour:
   domain: 3
   intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  blockScale: {x: 2.5, y: 2.5, z: 2.5}
-  turns: 4
-  height: 200
-  innerRadius: 8
-  outerRadius: 55
+  blockScale: {x: 1, y: 2, z: 4}
+  turns: 6
+  height: 400
+  innerRadius: 20
+  outerRadius: 500
   samplesPerTurn: 40
   radialSamples: 8
-  sheets: 2
+  sheets: 3
   colorBySheet: 1
   sheetDomains: 030000000400000001000000
