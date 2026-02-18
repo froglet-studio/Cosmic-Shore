@@ -53,7 +53,7 @@ MonoBehaviour:
   innerRadius: 20
   outerRadius: 500
   samplesPerTurn: 40
-  radialSamples: 8
+  radialSamples: 80
   sheets: 3
   colorBySheet: 1
   sheetDomains: 030000000400000001000000
