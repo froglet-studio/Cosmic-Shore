@@ -11,6 +11,11 @@ public class SegmentSpawner : MonoBehaviour
     [Header("Dependencies")]
     [SerializeField] private GameDataSO gameData;
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
+
+    [Header("Intensity-Mapped Spawning")]
+    [Tooltip("Optional: map specific spawnables to intensity levels (index 0 = intensity 1). " +
+             "When set, overrides random selection for that intensity.")]
+    [SerializeField] SpawnableAbstractBase[] spawnableByIntensity;
     
     [Header("Configuration")]
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
@@ -154,12 +159,21 @@ public class SegmentSpawner : MonoBehaviour
     // [Optimization] Pass intensity as parameter to avoid repeated property access
     GameObject SpawnRandom(int intensity)
     {
+        // Check for intensity-specific spawnable first
+        if (spawnableByIntensity != null && spawnableByIntensity.Length > 0)
+        {
+            int index = Mathf.Clamp(intensity - 1, 0, spawnableByIntensity.Length - 1);
+            if (spawnableByIntensity[index] != null)
+                return spawnableByIntensity[index].Spawn(intensity);
+        }
+
+        // Fall back to weighted random selection
         if (spawnableSegments == null || spawnableSegments.Count == 0) return null;
 
         var spawnWeight = Random.value;
         var spawnIndex = 0;
         var totalWeight = 0f;
-        
+
         for (int i = 0; i < spawnSegmentWeights.Count; i++)
         {
             totalWeight += spawnSegmentWeights[i];

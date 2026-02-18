@@ -1,4 +1,4 @@
-﻿using CosmicShore.Core;
+using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,22 +18,6 @@ namespace CosmicShore
     /// </summary>
     public class SpawnableHopfFibration : SpawnableAbstractBase
     {
-        [System.Serializable]
-        public struct HopfIntensityConfig
-        {
-            public int latitudeBands;
-            public int fibersPerBand;
-            public int blocksPerFiber;
-            public float projectionScale;
-            [Range(0.01f, 0.99f)]
-            public float projectionPole;
-            public Vector3 blockScale;
-            public bool includePolarFibers;
-            public bool includeVillarceauCircles;
-            public int villarceauFibers;
-            public int villarceauBlocks;
-        }
-
         [Header("Block Settings")]
         [SerializeField] Prism prism;
         [SerializeField] Vector3 blockScale = new Vector3(2f, 2f, 4f);
@@ -43,10 +27,10 @@ namespace CosmicShore
         [SerializeField] int latitudeBands = 6;
 
         [Tooltip("Number of fibers per latitude band. More fibers = denser tori.")]
-        [SerializeField] int fibersPerBand = 12;
+        [SerializeField] int fibersPerBand = 20;
 
         [Tooltip("Number of prism blocks along each fiber circle.")]
-        [SerializeField] int blocksPerFiber = 24;
+        [SerializeField] int blocksPerFiber = 28;
 
         [Tooltip("Radius of the overall structure after stereographic projection.")]
         [SerializeField] float projectionScale = 80f;
@@ -77,78 +61,11 @@ namespace CosmicShore
         [SerializeField] bool includePolarFibers = true;
 
         [Tooltip("Add a Villarceau circle set — diagonal slices through the tori that reveal " +
-                 "additional linked circles at oblique angles. Very psychedelic.")]
-        [SerializeField] bool includeVillarceauCircles = false;
+                 "additional linked circles at oblique angles. Bridges between tori for connected paths.")]
+        [SerializeField] bool includeVillarceauCircles = true;
 
-        [SerializeField] int villarceauFibers = 8;
-        [SerializeField] int villarceauBlocks = 32;
-
-        [Header("Intensity Level Configurations")]
-        [Tooltip("One config per intensity level (1-4). Index 0 = intensity 1.")]
-        [SerializeField] HopfIntensityConfig[] intensityConfigs = new HopfIntensityConfig[]
-        {
-            // Level 1 — "Sparse Crown": just two tori, large blocks, wide projection.
-            // Open arena that's easy to read and navigate.
-            new()
-            {
-                latitudeBands = 2,
-                fibersPerBand = 6,
-                blocksPerFiber = 16,
-                projectionScale = 100f,
-                projectionPole = 0.5f,
-                blockScale = new Vector3(3f, 3f, 6f),
-                includePolarFibers = true,
-                includeVillarceauCircles = false,
-                villarceauFibers = 0,
-                villarceauBlocks = 0,
-            },
-            // Level 2 — "Villarceau Web": medium-density tori plus diagonal Villarceau
-            // circles that cut through at oblique angles, creating a web-like lattice.
-            new()
-            {
-                latitudeBands = 4,
-                fibersPerBand = 10,
-                blocksPerFiber = 20,
-                projectionScale = 90f,
-                projectionPole = 0.7f,
-                blockScale = new Vector3(2.5f, 2.5f, 5f),
-                includePolarFibers = true,
-                includeVillarceauCircles = true,
-                villarceauFibers = 6,
-                villarceauBlocks = 24,
-            },
-            // Level 3 — "Classic Fibration": the proven 6-band structure. Dense enough
-            // to be interesting, open enough to be fair.
-            new()
-            {
-                latitudeBands = 6,
-                fibersPerBand = 20,
-                blocksPerFiber = 28,
-                projectionScale = 80f,
-                projectionPole = 0.85f,
-                blockScale = new Vector3(2f, 2f, 4f),
-                includePolarFibers = true,
-                includeVillarceauCircles = false,
-                villarceauFibers = 0,
-                villarceauBlocks = 0,
-            },
-            // Level 4 — "Dense Singularity": 8 bands with a tight projection pole that
-            // packs inner tori into a dense core, plus Villarceau circles for extra chaos.
-            // Small blocks everywhere — claustrophobic and demanding.
-            new()
-            {
-                latitudeBands = 8,
-                fibersPerBand = 16,
-                blocksPerFiber = 32,
-                projectionScale = 60f,
-                projectionPole = 0.95f,
-                blockScale = new Vector3(1.5f, 1.5f, 3f),
-                includePolarFibers = true,
-                includeVillarceauCircles = true,
-                villarceauFibers = 12,
-                villarceauBlocks = 40,
-            },
-        };
+        [SerializeField] int villarceauFibers = 4;
+        [SerializeField] int villarceauBlocks = 28;
 
         static int ObjectsSpawned = 0;
 
@@ -217,31 +134,17 @@ namespace CosmicShore
 
         public override GameObject Spawn(int intensityLevel)
         {
-            if (intensityConfigs != null && intensityConfigs.Length > 0)
-            {
-                var config = intensityConfigs[Mathf.Clamp(intensityLevel - 1, 0, intensityConfigs.Length - 1)];
-                latitudeBands = config.latitudeBands;
-                fibersPerBand = config.fibersPerBand;
-                blocksPerFiber = config.blocksPerFiber;
-                projectionScale = config.projectionScale;
-                projectionPole = config.projectionPole;
-                blockScale = config.blockScale;
-                includePolarFibers = config.includePolarFibers;
-                includeVillarceauCircles = config.includeVillarceauCircles;
-                villarceauFibers = config.villarceauFibers;
-                villarceauBlocks = config.villarceauBlocks;
-            }
             return Spawn();
         }
 
         /// <summary>
         /// Spawn prisms along a single Hopf fiber corresponding to the point (theta, phi) on S².
-        /// 
+        ///
         /// The fiber parameterization:
         ///   z₁ = cos(θ/2) · e^{i(t + φ/2)}
         ///   z₂ = sin(θ/2) · e^{i(t - φ/2)}
         /// where t ∈ [0, 2π) traces the fiber circle on S³.
-        /// 
+        ///
         /// We then stereographically project (x₁,x₂,x₃,x₄) ∈ S³ → R³.
         /// </summary>
         void SpawnFiber(GameObject container, Trail trail, float theta, float phi,
@@ -299,7 +202,7 @@ namespace CosmicShore
         /// Polar fibers are special cases:
         /// - North pole (θ=0): z₁ = e^{it}, z₂ = 0 → a great circle in the (x₁,x₂) plane
         /// - South pole (θ=π): z₁ = 0, z₂ = e^{it} → a great circle in the (x₃,x₄) plane
-        /// After stereographic projection, one becomes a finite circle and the other 
+        /// After stereographic projection, one becomes a finite circle and the other
         /// passes through infinity (appears as a long line).
         /// </summary>
         void SpawnPolarFiber(GameObject container, Trail trail, bool isNorth, ref int blockIndex)
@@ -357,8 +260,8 @@ namespace CosmicShore
         }
 
         /// <summary>
-        /// Villarceau circles are diagonal cross-sections of a torus that produce 
-        /// perfect circles. They reveal hidden symmetry: each Villarceau circle is 
+        /// Villarceau circles are diagonal cross-sections of a torus that produce
+        /// perfect circles. They reveal hidden symmetry: each Villarceau circle is
         /// itself a Hopf fiber, but from a rotated fibration. The effect is additional
         /// linked circles cutting through the tori at oblique angles.
         /// </summary>
@@ -410,9 +313,9 @@ namespace CosmicShore
         /// <summary>
         /// Stereographic projection from S³ ⊂ R⁴ to R³.
         /// Projects from the pole (0,0,0,poleW) where poleW is set by projectionPole.
-        /// 
+        ///
         /// The formula: (x₁,x₂,x₃,x₄) → scale · (x₁, x₂, x₃) / (poleW - x₄)
-        /// 
+        ///
         /// This is conformal (angle-preserving) and maps circles on S³ to circles in R³,
         /// which is why the Hopf fibers remain perfect circles after projection.
         /// </summary>
