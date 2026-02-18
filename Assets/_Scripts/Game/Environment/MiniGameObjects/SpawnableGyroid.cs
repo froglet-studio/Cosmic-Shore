@@ -12,8 +12,8 @@ namespace CosmicShore
 
         [Header("Gyroid Structure")]
         [SerializeField] GyroidBlockType seedBlockType = GyroidBlockType.AB;
-        [SerializeField] int maxDepth = 5;
-        [SerializeField] float separationDistance = 3f;
+        [SerializeField] int maxDepth = 35;
+        [SerializeField] float separationDistance = 3.5f;
 
         [Tooltip("Spatial grid cell size for overlap detection. Blocks quantized to the same cell are considered overlapping.")]
         [SerializeField] float overlapCellSize = 1.5f;
@@ -73,8 +73,6 @@ namespace CosmicShore
 
         public override GameObject Spawn(int intensityLevel)
         {
-            // Scale depth with intensity for progressive difficulty
-            maxDepth = 20 + (5 * intensityLevel);
             return Spawn();
         }
 

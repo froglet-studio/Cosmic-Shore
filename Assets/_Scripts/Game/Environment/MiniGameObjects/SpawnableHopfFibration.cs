@@ -1,4 +1,4 @@
-﻿using CosmicShore.Core;
+using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,10 +6,10 @@ namespace CosmicShore
 {
     /// <summary>
     /// Spawns prisms along fibers of the Hopf fibration: S³ → S².
-    /// 
+    ///
     /// Each point on the 2-sphere has a corresponding great circle (fiber) on the 3-sphere.
     /// Points on the same latitude circle of S² produce fibers that form a torus in R³
-    /// after stereographic projection. The result is nested, interlocking tori — one of 
+    /// after stereographic projection. The result is nested, interlocking tori — one of
     /// the most beautiful structures in mathematics.
     ///
     /// The Hopf fibration is fundamental in gauge theory (it's the simplest nontrivial
@@ -27,10 +27,10 @@ namespace CosmicShore
         [SerializeField] int latitudeBands = 6;
 
         [Tooltip("Number of fibers per latitude band. More fibers = denser tori.")]
-        [SerializeField] int fibersPerBand = 12;
+        [SerializeField] int fibersPerBand = 20;
 
         [Tooltip("Number of prism blocks along each fiber circle.")]
-        [SerializeField] int blocksPerFiber = 24;
+        [SerializeField] int blocksPerFiber = 28;
 
         [Tooltip("Radius of the overall structure after stereographic projection.")]
         [SerializeField] float projectionScale = 80f;
@@ -61,11 +61,11 @@ namespace CosmicShore
         [SerializeField] bool includePolarFibers = true;
 
         [Tooltip("Add a Villarceau circle set — diagonal slices through the tori that reveal " +
-                 "additional linked circles at oblique angles. Very psychedelic.")]
-        [SerializeField] bool includeVillarceauCircles = false;
+                 "additional linked circles at oblique angles. Bridges between tori for connected paths.")]
+        [SerializeField] bool includeVillarceauCircles = true;
 
-        [SerializeField] int villarceauFibers = 8;
-        [SerializeField] int villarceauBlocks = 32;
+        [SerializeField] int villarceauFibers = 4;
+        [SerializeField] int villarceauBlocks = 28;
 
         static int ObjectsSpawned = 0;
 
@@ -134,21 +134,17 @@ namespace CosmicShore
 
         public override GameObject Spawn(int intensityLevel)
         {
-            // Scale complexity with intensity
-            latitudeBands = 3 + intensityLevel;
-            fibersPerBand = 8 + intensityLevel * 4;
-            blocksPerFiber = 16 + intensityLevel * 4;
             return Spawn();
         }
 
         /// <summary>
         /// Spawn prisms along a single Hopf fiber corresponding to the point (theta, phi) on S².
-        /// 
+        ///
         /// The fiber parameterization:
         ///   z₁ = cos(θ/2) · e^{i(t + φ/2)}
         ///   z₂ = sin(θ/2) · e^{i(t - φ/2)}
         /// where t ∈ [0, 2π) traces the fiber circle on S³.
-        /// 
+        ///
         /// We then stereographically project (x₁,x₂,x₃,x₄) ∈ S³ → R³.
         /// </summary>
         void SpawnFiber(GameObject container, Trail trail, float theta, float phi,
@@ -206,7 +202,7 @@ namespace CosmicShore
         /// Polar fibers are special cases:
         /// - North pole (θ=0): z₁ = e^{it}, z₂ = 0 → a great circle in the (x₁,x₂) plane
         /// - South pole (θ=π): z₁ = 0, z₂ = e^{it} → a great circle in the (x₃,x₄) plane
-        /// After stereographic projection, one becomes a finite circle and the other 
+        /// After stereographic projection, one becomes a finite circle and the other
         /// passes through infinity (appears as a long line).
         /// </summary>
         void SpawnPolarFiber(GameObject container, Trail trail, bool isNorth, ref int blockIndex)
@@ -264,8 +260,8 @@ namespace CosmicShore
         }
 
         /// <summary>
-        /// Villarceau circles are diagonal cross-sections of a torus that produce 
-        /// perfect circles. They reveal hidden symmetry: each Villarceau circle is 
+        /// Villarceau circles are diagonal cross-sections of a torus that produce
+        /// perfect circles. They reveal hidden symmetry: each Villarceau circle is
         /// itself a Hopf fiber, but from a rotated fibration. The effect is additional
         /// linked circles cutting through the tori at oblique angles.
         /// </summary>
@@ -317,9 +313,9 @@ namespace CosmicShore
         /// <summary>
         /// Stereographic projection from S³ ⊂ R⁴ to R³.
         /// Projects from the pole (0,0,0,poleW) where poleW is set by projectionPole.
-        /// 
+        ///
         /// The formula: (x₁,x₂,x₃,x₄) → scale · (x₁, x₂, x₃) / (poleW - x₄)
-        /// 
+        ///
         /// This is conformal (angle-preserving) and maps circles on S³ to circles in R³,
         /// which is why the Hopf fibers remain perfect circles after projection.
         /// </summary>
