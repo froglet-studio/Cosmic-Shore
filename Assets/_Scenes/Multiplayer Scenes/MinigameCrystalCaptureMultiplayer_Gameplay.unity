@@ -366,6 +366,11 @@ PrefabInstance:
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
       objectReference: {fileID: 0}
+    - target: {fileID: 139546854713825682, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 51.30005
+      objectReference: {fileID: 0}
     - target: {fileID: 268125253535976575, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -3570,6 +3575,7 @@ MonoBehaviour:
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
   spawnCrystalWithPlayerDomain: 0
+  extraCrystalsToSpawnBeyondPlayerCount: 5
 --- !u!114 &1628508345
 MonoBehaviour:
   m_ObjectHideFlags: 0
