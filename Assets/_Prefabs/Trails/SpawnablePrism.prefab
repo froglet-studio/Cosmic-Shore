@@ -20,7 +20,7 @@ GameObject:
   - component: {fileID: 6045429846360787462}
   - component: {fileID: 8239798809283917716}
   m_Layer: 0
-  m_Name: DerbyBlock
+  m_Name: SpawnablePrism
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -133,6 +133,8 @@ MonoBehaviour:
     speedDebuffAmount: 0
     prism: {fileID: 0}
     Index: 0
+    Trail:
+      TrailRenderer: {fileID: 0}
     IsShielded: 0
     IsSuperShielded: 0
     IsDangerous: 0
@@ -141,6 +143,8 @@ MonoBehaviour:
     DefaultLayerName: TrailBlocks
   ParticleEffect: {fileID: 3706253519474275301, guid: a8ae8dc22c65f554ea8bb6e1bf2458f1,
     type: 3}
+  Trail:
+    TrailRenderer: {fileID: 0}
   GrowthVector: {x: 0, y: 2, z: 0}
   growthRate: 0.5
   waitTime: 0.1
