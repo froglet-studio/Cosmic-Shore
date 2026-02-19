@@ -842,6 +842,7 @@ MonoBehaviour:
     - {x: 206, y: 188, z: -636}
     - {x: 447, y: 152, z: -463}
   spawnCrystalWithPlayerDomain: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 0
 --- !u!114 &1078953732
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2280,6 +2281,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   spawnableSegments:
   - {fileID: 1899528610}
+  spawnableByIntensity: []
   positioningScheme: 19
   spawnSegmentWeights:
   - 1
@@ -2366,7 +2368,7 @@ MonoBehaviour:
   multiplayerController: {fileID: 1078953729}
   scoreboardPanel: {fileID: 1556114763}
   statsContainer: {fileID: 708648002}
-  statRowPrefab: {fileID: 2786973711039957352, guid: e261e06b3ac934846b48f7122bb7f961,
+  statRowPrefab: {fileID: 7059799490313329322, guid: e5bce11a0462ceb468817b6050ccb94b,
     type: 3}
   BannerImage: {fileID: 708648004}
   BannerText: {fileID: 708648003}
@@ -2404,6 +2406,7 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 1897523409}
   view: {fileID: 1897523410}
+  hexRaceController: {fileID: 1078953729}
 --- !u!114 &1897523413
 MonoBehaviour:
   m_ObjectHideFlags: 0

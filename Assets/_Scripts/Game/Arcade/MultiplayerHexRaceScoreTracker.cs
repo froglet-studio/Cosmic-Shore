@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
-using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
 using Obvious.Soap;
 using UnityEngine;
-using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -30,45 +28,39 @@ namespace CosmicShore.Game.Arcade
 
         void HandleJoustEvent(string winner)
         {
-            if (gameData.LocalPlayer?.Vessel.VesselStatus.PlayerName == winner) _joustsWonSession++;
+            // Use IPlayer.Name consistently
+            if (gameData.LocalPlayer?.Name == winner) _joustsWonSession++;
         }
 
         protected override bool DetermineIfWinner(int localCrystalsRemaining)
         {
-            var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
-            var allPlayers = gameData.RoundStatsList;
-            
-            if (allPlayers == null || allPlayers.Count == 0)
-                return false;
-
-            var minCrystalsRemaining = allPlayers
-                .Select(p => p.Score >= 10000f ? (int)(p.Score - 10000f) : 0)
-                .Min();
-            
-            bool isWinner = localCrystalsRemaining == minCrystalsRemaining;
-            if (minCrystalsRemaining == 0)
-            {
-                var finishedPlayers = allPlayers.Where(p => p.Score < 10000f).OrderBy(p => p.Score).ToList();
-                isWinner = finishedPlayers.Count > 0 && finishedPlayers[0].Name == localPlayerName;
-            }
-
-            return isWinner;
+            // This is called the moment the local player collects their last crystal.
+            // If they have 0 remaining, they finished — they are the winner.
+            // The server will confirm and sync authoritatively, but locally this is correct.
+            return localCrystalsRemaining <= 0;
         }
 
         protected override void ReportToMultiplayerController(float finalScore, bool isWinner)
         {
-            if (UGSStatsManager.Instance && isWinner)
+            if (isWinner)
             {
-                UGSStatsManager.Instance.ReportMultiplayerHexStats(
-                    GameModes.MultiplayerHexRaceGame, 
-                    gameData.SelectedIntensity.Value,
-                    MaxCleanStreak, 
-                    MaxDriftTimeRecord, 
-                    _joustsWonSession, 
-                    finalScore
-                );
+                // Only the winner reports — server assigns loser scores internally in the ServerRpc
+                if (UGSStatsManager.Instance)
+                {
+                    UGSStatsManager.Instance.ReportMultiplayerHexStats(
+                        GameModes.MultiplayerHexRaceGame, 
+                        gameData.SelectedIntensity.Value,
+                        MaxCleanStreak, 
+                        MaxDriftTimeRecord, 
+                        _joustsWonSession, 
+                        finalScore
+                    );
+                }
+
+                if (controller) controller.ReportLocalPlayerFinished(finalScore);
             }
-            if (controller) controller.ReportLocalPlayerFinished(finalScore);
+            // Losers do NOT call ReportLocalPlayerFinished — the server handles their score
+            // assignment inside ReportPlayerFinished_ServerRpc when the winner reports.
         }
         
         public Dictionary<string, object> GetExposedStats()
