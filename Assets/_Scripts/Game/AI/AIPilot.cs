@@ -189,10 +189,13 @@ namespace CosmicShore.Game.AI
                 throttle = _activeGenome.throttleBase;
 
                 _fitnessTracker = GetComponent<PilotFitnessTracker>();
+                Debug.Log($"[AIPilot] Loaded genome at intensity {Intensity} (IntensityT={IntensityT:F2}). " +
+                    $"FitnessTracker found: {_fitnessTracker != null}");
             }
             else
             {
                 _activeGenome = null;
+                Debug.Log($"[AIPilot] No genome loaded. Intensity={Intensity}, evolution={(evolution != null ? "assigned" : "null")}");
             }
         }
 

@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace CosmicShore.Game.AI
 {
@@ -39,6 +42,7 @@ namespace CosmicShore.Game.AI
 
             generation = 0;
             evaluationIndex = 0;
+            MarkDirty();
         }
 
         /// <summary>
@@ -49,6 +53,7 @@ namespace CosmicShore.Game.AI
             if (population.Count == 0) InitializePopulation();
 
             var genome = population[evaluationIndex % population.Count];
+            Debug.Log($"[PilotEvolution] Serving genome {evaluationIndex % population.Count} of {population.Count} (gen {generation})");
             return genome;
         }
 
@@ -58,11 +63,13 @@ namespace CosmicShore.Game.AI
         public void AdvanceEvaluation()
         {
             evaluationIndex++;
+            Debug.Log($"[PilotEvolution] Advanced to eval index {evaluationIndex}/{population.Count}");
             if (evaluationIndex >= population.Count)
             {
                 Evolve();
                 evaluationIndex = 0;
             }
+            MarkDirty();
         }
 
         /// <summary>
@@ -76,6 +83,7 @@ namespace CosmicShore.Game.AI
             genome.evaluationCount++;
             // Running average
             genome.fitness += (fitness - genome.fitness) / genome.evaluationCount;
+            Debug.Log($"[PilotEvolution] Genome {evaluationIndex % population.Count} fitness={genome.fitness:F2} (eval #{genome.evaluationCount})");
         }
 
         /// <summary>
@@ -84,7 +92,7 @@ namespace CosmicShore.Game.AI
         [ContextMenu("Evolve")]
         public void Evolve()
         {
-            if (population.Count < 4) return;
+            if (population.Count < 2) return;
 
             generation++;
 
@@ -116,6 +124,7 @@ namespace CosmicShore.Game.AI
             population = nextGen;
 
             Debug.Log($"[PilotEvolution] Generation {generation} evolved. Best fitness from prev gen: {sorted[0].fitness:F2}");
+            MarkDirty();
         }
 
         PilotGenome TournamentSelect(List<PilotGenome> sorted, int tournamentSize = 3)
@@ -128,6 +137,13 @@ namespace CosmicShore.Game.AI
                     best = candidate;
             }
             return best;
+        }
+
+        void MarkDirty()
+        {
+#if UNITY_EDITOR
+            EditorUtility.SetDirty(this);
+#endif
         }
 
         [ContextMenu("Log Population")]
