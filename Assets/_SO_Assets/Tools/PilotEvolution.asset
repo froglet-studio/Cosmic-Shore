@@ -61,3 +61,17 @@ MonoBehaviour:
     throttleRampRate: 0.0053
     fitness: 0
     evaluationCount: 0
+  - prismDetectionRadius: 47
+    skimStandoffDistance: 8
+    minPrismScanDistance: 17.7
+    maxNudgeStrength: 0.054
+    dotCrystalThreshold: 0.404
+    dotForwardThreshold: 0.222
+    collisionAvoidanceDistance: 21.5
+    avoidanceWeight: 0.084
+    crystalFadeDistance: 24.8
+    boostFadeStrength: 0.264
+    throttleBase: 0.44
+    throttleRampRate: 0.00204
+    fitness: 0
+    evaluationCount: 0
