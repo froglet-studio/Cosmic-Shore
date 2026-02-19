@@ -3720,7 +3720,7 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   multiplayerSetup: {fileID: 1429934008}
-  localScoreboard: {fileID: 0}
+  localScoreboard: {fileID: 2095434562}
 --- !u!114 &1628508346
 MonoBehaviour:
   m_ObjectHideFlags: 0
