@@ -40,7 +40,7 @@ namespace CosmicShore.Game
 
         private void Subscribe()
         {
-            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser)
+            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsNetworkOwner)
                 return;
 
             if (boostChanged != null)
@@ -76,7 +76,8 @@ namespace CosmicShore.Game
 
         private void HandleBoostChanged(BoostChangedPayload payload)
         {
-            if (!view) return;
+            if (!view)
+                return;
 
             float baseMult = boostBaseMultiplier ? boostBaseMultiplier.Value : 1f;
             float maxMult = payload.MaxMultiplier;
