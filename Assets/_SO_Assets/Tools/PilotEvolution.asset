@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c9845d24fbdd7e49ad8ec17d2800858, type: 3}
+  m_Name: PilotEvolution
+  m_EditorClassIdentifier: 
+  populationSize: 20
+  eliteCount: 4
+  mutationRate: 0.3
+  mutationStrength: 0.2
+  generation: 0
+  evaluationIndex: 0
+  population:
+  - prismDetectionRadius: 35.7
+    skimStandoffDistance: 9.6
+    minPrismScanDistance: 26.8
+    maxNudgeStrength: 0.131
+    dotCrystalThreshold: 0.627
+    dotForwardThreshold: 0.481
+    collisionAvoidanceDistance: 52.2
+    avoidanceWeight: 0.266
+    crystalFadeDistance: 71.8
+    boostFadeStrength: 0.786
+    throttleBase: 0.875
+    throttleRampRate: 0.00905
+    fitness: 0
+    evaluationCount: 0
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 21.7
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.15
+    dotCrystalThreshold: 0.577
+    dotForwardThreshold: 0.343
+    collisionAvoidanceDistance: 31.1
+    avoidanceWeight: 0.119
+    crystalFadeDistance: 30.3
+    boostFadeStrength: 0.247
+    throttleBase: 0.414
+    throttleRampRate: 0.00097
+    fitness: 0
+    evaluationCount: 0
+  - prismDetectionRadius: 100
+    skimStandoffDistance: 16.4
+    minPrismScanDistance: 34.8
+    maxNudgeStrength: 0.152
+    dotCrystalThreshold: 0.62
+    dotForwardThreshold: 0.45
+    collisionAvoidanceDistance: 46.4
+    avoidanceWeight: 0.223
+    crystalFadeDistance: 59
+    boostFadeStrength: 0.593
+    throttleBase: 0.676
+    throttleRampRate: 0.0053
+    fitness: 0
+    evaluationCount: 0

@@ -1240,6 +1240,7 @@ GameObject:
   - component: {fileID: 7686683633640807837}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 1435252848482629424}
+  - component: {fileID: 1298426323052093102}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 5500781737155866732}
   - component: {fileID: 5086360743770514783}
@@ -1438,6 +1439,7 @@ MonoBehaviour:
   _shipInstance: {fileID: 3202054749536864766}
   vesselHUDController: {fileID: 5649393235309590662}
   boostMultiplier: 1
+  inertia: 1
   _name: Squirrel
   vesselType: 6
   _nearFieldSkimmer: {fileID: 708149374973573223}
@@ -1505,6 +1507,8 @@ MonoBehaviour:
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
   startDelay: 2
+  Trail:
+    TrailRenderer: {fileID: 0}
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -1534,6 +1538,23 @@ MonoBehaviour:
   <MassLevel>k__BackingField: 0
   <SpaceLevel>k__BackingField: 0
   <TimeLevel>k__BackingField: 0
+--- !u!114 &1298426323052093102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 635f75d248f4ed94aae050bfe7b61ad9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  evolution: {fileID: 11400000, guid: 89a663abc12cfc04b80f600102e88ab4, type: 2}
+  crystalWeight: 100
+  collisionPenalty: 30
+  boostTimeWeight: 5
+  timePenaltyWeight: 1
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1565,6 +1586,11 @@ MonoBehaviour:
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 9105512684531825410}
+  selectedIntensity: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  prismDetectionRadius: 120
+  skimStandoffDistance: 12
+  collisionAvoidanceDistance: 30
+  evolution: {fileID: 11400000, guid: 89a663abc12cfc04b80f600102e88ab4, type: 2}
 --- !u!114 &5500781737155866732
 MonoBehaviour:
   m_ObjectHideFlags: 0

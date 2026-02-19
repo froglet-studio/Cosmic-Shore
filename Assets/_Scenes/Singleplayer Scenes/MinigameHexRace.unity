@@ -438,6 +438,7 @@ MonoBehaviour:
   gameData: {fileID: 0}
   spawnableSegments:
   - {fileID: 857195442}
+  spawnableByIntensity: []
   positioningScheme: 19
   spawnSegmentWeights:
   - 1
@@ -875,6 +876,7 @@ MonoBehaviour:
     - {x: 171, y: 190, z: -652}
     - {x: 402, y: 179, z: -545}
   spawnCrystalWithPlayerDomain: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 0
 --- !u!114 &1078953716
 MonoBehaviour:
   m_ObjectHideFlags: 0
