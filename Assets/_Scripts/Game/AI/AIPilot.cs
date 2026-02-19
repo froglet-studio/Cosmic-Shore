@@ -64,8 +64,9 @@ namespace CosmicShore.Game.AI
         [Header("Intensity Scaling")]
         [SerializeField] IntVariable selectedIntensity;
 
-        [Header("Prism Seeking")]
+        [Header("Prism Skimming")]
         [SerializeField] float prismDetectionRadius = 120f;
+        [SerializeField] float skimStandoffDistance = 12f;
         [SerializeField] float collisionAvoidanceDistance = 30f;
 
         int Intensity => selectedIntensity != null ? Mathf.Clamp(selectedIntensity.Value, 1, 4) : 1;
@@ -279,7 +280,7 @@ namespace CosmicShore.Game.AI
             throttle += throttleIncrease * Time.deltaTime;
         }
 
-        #region Prism Skimming - Lateral Nudge (Intensity 2+)
+        #region Prism Skimming - Flyby Nudge (Intensity 2+)
 
         void ScanForPrisms()
         {
@@ -289,14 +290,16 @@ namespace CosmicShore.Game.AI
 
             float scanRadius = Mathf.Lerp(prismDetectionRadius * 0.4f, prismDetectionRadius, IntensityT);
             int trailBlockMask = 1 << _trailBlockLayer;
-            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, scanRadius, _prismScanResults, trailBlockMask);
+            int hitCount = Physics.OverlapSphereNonAlloc(
+                transform.position, scanRadius, _prismScanResults,
+                trailBlockMask, QueryTriggerInteraction.Collide);
 
             _hasPrismTarget = false;
             if (hitCount == 0) return;
 
-            // Find the best prism that is roughly along our route to the crystal.
-            // We want prisms that are ahead of us AND between us and the crystal,
-            // so that nudging toward them doesn't pull us off-course.
+            // Find the best prism that is along our route to the crystal.
+            // Only consider prisms that are well ahead (20+ units) so we plan
+            // a flyby path rather than yanking toward a nearby prism.
             Vector3 myPos = transform.position;
             Vector3 toCrystal = _crystalTargetPosition - myPos;
             float crystalDist = toCrystal.magnitude;
@@ -311,24 +314,22 @@ namespace CosmicShore.Game.AI
 
                 Vector3 toPrism = col.transform.position - myPos;
                 float dist = toPrism.magnitude;
-                if (dist < 3f || dist > crystalDist) continue; // Skip if too close or past the crystal
+
+                // Ignore prisms that are too close (can't adjust in time),
+                // behind us, or past the crystal
+                if (dist < 20f || dist > crystalDist) continue;
 
                 Vector3 dirToPrism = toPrism / dist;
 
-                // Must be in the forward hemisphere toward the crystal
+                // Must be ahead and roughly toward the crystal
                 float dotCrystal = Vector3.Dot(crystalDir, dirToPrism);
-                if (dotCrystal < 0.3f) continue; // Only prisms roughly toward the crystal
+                if (dotCrystal < 0.5f) continue;
 
-                // Must also be ahead of us
                 float dotForward = Vector3.Dot(transform.forward, dirToPrism);
-                if (dotForward < 0.2f) continue;
+                if (dotForward < 0.3f) continue;
 
-                // Score: prefer prisms that are close to the line between us and crystal
-                // and that are relatively close (so we can reach them without a big detour)
-                float lineProximity = dotCrystal; // Higher = more aligned with crystal direction
-                float closeness = 1f - Mathf.Clamp01(dist / scanRadius);
-
-                float score = lineProximity * 2f + closeness;
+                // Score: prisms closest to the line toward crystal score highest
+                float score = dotCrystal * 2f + (1f - dist / scanRadius);
 
                 if (score > bestScore)
                 {
@@ -339,37 +340,41 @@ namespace CosmicShore.Game.AI
             }
         }
 
-        // Returns a small perpendicular nudge vector to steer the ship's path
-        // slightly toward the best prism, without changing the overall heading toward the crystal.
+        // Computes a small perpendicular nudge so the ship's path passes within
+        // skim range of the best prism, rather than aiming AT the prism center.
+        // If already within skim range, returns zero - no correction needed.
         Vector3 ComputePrismNudge(Vector3 crystalDirection)
         {
             if (!_hasPrismTarget) return Vector3.zero;
 
             Vector3 toPrism = _bestPrismTarget - transform.position;
-            float prismDist = toPrism.magnitude;
-            if (prismDist < 1f) return Vector3.zero;
 
-            // Project prism direction onto the plane perpendicular to the crystal direction.
-            // This gives us the lateral offset - how much we need to steer sideways
-            // to pass near the prism without changing our forward progress toward the crystal.
-            Vector3 prismDir = toPrism / prismDist;
-            Vector3 lateralOffset = prismDir - Vector3.Dot(prismDir, crystalDirection) * crystalDirection;
+            // How far off-line is the prism from our crystal-bound path?
+            float alongPath = Vector3.Dot(toPrism, crystalDirection);
+            Vector3 perpVector = toPrism - alongPath * crystalDirection;
+            float perpDist = perpVector.magnitude;
 
-            // Scale the nudge:
-            // - Stronger at higher intensity (better racers seek prisms more deliberately)
-            // - Weaker when close to crystal (don't get distracted at the finish)
-            // - Weaker when boost is already high (diminishing returns)
-            float distToCrystal = Vector3.Distance(transform.position, _crystalTargetPosition);
-            float crystalProximityFade = Mathf.Clamp01(distToCrystal / 40f); // Fades out within 40 units of crystal
+            // If already within standoff range, the skimmer will graze it naturally - no nudge
+            if (perpDist < skimStandoffDistance) return Vector3.zero;
+
+            // Nudge direction: perpendicular toward the prism's side of our path
+            Vector3 nudgeDir = perpVector / perpDist;
+
+            // How much do we need to close? Only close to standoff range, not to center
+            float gapToClose = perpDist - skimStandoffDistance;
+            float gapNorm = Mathf.Clamp01(gapToClose / (prismDetectionRadius * 0.5f));
+
+            // Scale by intensity, crystal proximity, and boost
+            float distToCrystal = (_crystalTargetPosition - transform.position).magnitude;
+            float crystalFade = Mathf.Clamp01(distToCrystal / 50f);
             float boostNorm = Mathf.Clamp01((VesselStatus.BoostMultiplier - 1f) / 4f);
-            float boostFade = 1f - boostNorm * 0.7f; // Still nudge a bit even at high boost
+            float boostFade = 1f - boostNorm * 0.6f;
 
-            // Max nudge magnitude: small at intensity 2 (~0.08), moderate at intensity 4 (~0.25)
-            // This is added to a unit-length crystal direction, so 0.25 is roughly a 14 degree deviation
-            float maxNudge = Mathf.Lerp(0.08f, 0.25f, IntensityT);
-            float nudgeMagnitude = maxNudge * crystalProximityFade * boostFade;
+            // Max nudge: ~5 degrees at intensity 2, ~10 degrees at intensity 4
+            float maxNudge = Mathf.Lerp(0.05f, 0.15f, IntensityT);
+            float nudgeMag = maxNudge * gapNorm * crystalFade * boostFade;
 
-            return lateralOffset.normalized * nudgeMagnitude;
+            return nudgeDir * nudgeMag;
         }
 
         #endregion
@@ -386,14 +391,14 @@ namespace CosmicShore.Game.AI
             Vector3 origin = transform.position;
             Vector3 fwd = transform.forward;
 
-            // Cast a central ray forward to detect head-on collisions
-            if (Physics.Raycast(origin, fwd, out var hitCenter, checkDist, trailBlockMask))
+            // Central ray - detect head-on collisions
+            if (Physics.Raycast(origin, fwd, out var hitCenter, checkDist, trailBlockMask, QueryTriggerInteraction.Collide))
             {
                 float urgency = 1f - (hitCenter.distance / checkDist);
                 avoidance += hitCenter.normal * urgency;
             }
 
-            // At intensity 3+, add peripheral rays for better awareness
+            // At intensity 3+, peripheral rays for better awareness
             if (Intensity >= 3)
             {
                 float spreadAngle = 20f;
@@ -407,17 +412,18 @@ namespace CosmicShore.Game.AI
                     Quaternion.AngleAxis(-spreadAngle, right) * fwd,
                 };
 
+                float sideRange = checkDist * 0.7f;
                 foreach (var dir in offsets)
                 {
-                    if (Physics.Raycast(origin, dir, out var hitSide, checkDist * 0.7f, trailBlockMask))
+                    if (Physics.Raycast(origin, dir, out var hitSide, sideRange, trailBlockMask, QueryTriggerInteraction.Collide))
                     {
-                        float urgency = 1f - (hitSide.distance / (checkDist * 0.7f));
+                        float urgency = 1f - (hitSide.distance / sideRange);
                         avoidance += hitSide.normal * urgency * 0.5f;
                     }
                 }
             }
 
-            // At intensity 4, also check diagonals for tight spaces
+            // At intensity 4, diagonal rays for tight spaces
             if (Intensity >= 4)
             {
                 Vector3 right = transform.right;
@@ -431,11 +437,12 @@ namespace CosmicShore.Game.AI
                     Quaternion.AngleAxis(-diagAngle, up) * Quaternion.AngleAxis(-diagAngle, right) * fwd,
                 };
 
+                float diagRange = checkDist * 0.5f;
                 foreach (var dir in diags)
                 {
-                    if (Physics.Raycast(origin, dir, out var hitDiag, checkDist * 0.5f, trailBlockMask))
+                    if (Physics.Raycast(origin, dir, out var hitDiag, diagRange, trailBlockMask, QueryTriggerInteraction.Collide))
                     {
-                        float urgency = 1f - (hitDiag.distance / (checkDist * 0.5f));
+                        float urgency = 1f - (hitDiag.distance / diagRange);
                         avoidance += hitDiag.normal * urgency * 0.3f;
                     }
                 }
