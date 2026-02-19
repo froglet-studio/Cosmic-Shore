@@ -1,9 +1,4 @@
-﻿// =======================================================
-// MultiplayerHexRaceScoreboard.cs  (FINAL / OK)
-// No change needed: formats score as time (<10000) or crystals left (>=10000)
-// =======================================================
-
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace CosmicShore.Game.UI
@@ -12,9 +7,9 @@ namespace CosmicShore.Game.UI
     {
         protected override void ShowMultiplayerView()
         {
-            if (gameData.DomainStatsList != null && gameData.DomainStatsList.Count > 0)
+            if (gameData.DomainStatsList is { Count: > 0 })
                 SetBannerForDomain(gameData.DomainStatsList[0].Domain);
-            else if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0)
+            else if (gameData.RoundStatsList is { Count: > 0 })
                 SetBannerForDomain(gameData.RoundStatsList[0].Domain);
             else if (BannerText) BannerText.text = "GAME OVER";
 
