@@ -186,24 +186,36 @@ namespace CosmicShore.Game.AI
                 return;
 
             // At intensity 1, behave exactly as the original crystal-only AI.
-            // At higher intensities, blend prism-seeking and collision avoidance.
+            // At higher intensities, the crystal remains the primary target but
+            // the AI applies small lateral nudges to graze prisms along the way.
             if (Intensity <= 1)
             {
                 UpdateIntensity1();
                 return;
             }
 
-            ScanForPrisms();
-            _targetPosition = ComputeBlendedTarget();
-            Vector3 avoidanceSteer = ComputeCollisionAvoidance();
-
+            // Always head toward the crystal
+            _targetPosition = _crystalTargetPosition;
             _distance = _targetPosition - transform.position;
+
+            if (_distance.magnitude < float.Epsilon)
+                return;
+
             Vector3 desiredDirection = _distance.normalized;
 
-            // Blend in avoidance steering based on intensity
-            float avoidanceWeight = IntensityT * 0.6f;
+            // Apply a small lateral nudge to pass near prisms that are along our route
+            ScanForPrisms();
+            Vector3 prismNudge = ComputePrismNudge(desiredDirection);
+            if (prismNudge.sqrMagnitude > 0.001f)
+                desiredDirection = (desiredDirection + prismNudge).normalized;
+
+            // Subtle collision avoidance - small corrections, never overrides crystal heading
+            Vector3 avoidanceSteer = ComputeCollisionAvoidance();
             if (avoidanceSteer.sqrMagnitude > 0.001f)
-                desiredDirection = (desiredDirection * (1f - avoidanceWeight) + avoidanceSteer.normalized * avoidanceWeight).normalized;
+            {
+                float avoidanceWeight = Mathf.Lerp(0.05f, 0.15f, IntensityT);
+                desiredDirection = (desiredDirection + avoidanceSteer * avoidanceWeight).normalized;
+            }
 
             LookingAtCrystal = Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
             if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
@@ -214,10 +226,6 @@ namespace CosmicShore.Game.AI
             }
             else if (LookingAtCrystal && VesselStatus.IsDrifting) desiredDirection *= -1;
             else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
-
-
-            if (_distance.magnitude < float.Epsilon)
-                return;
 
             ApplySteering(desiredDirection, _distance.sqrMagnitude);
         }
@@ -271,33 +279,30 @@ namespace CosmicShore.Game.AI
             throttle += throttleIncrease * Time.deltaTime;
         }
 
-        #region Prism Seeking (Intensity 2+)
+        #region Prism Skimming - Lateral Nudge (Intensity 2+)
 
         void ScanForPrisms()
         {
             _prismScanTimer -= Time.deltaTime;
             if (_prismScanTimer > 0f) return;
-
-            // Scan more frequently at higher intensity
-            _prismScanTimer = Mathf.Lerp(_prismScanInterval * 2f, _prismScanInterval * 0.5f, IntensityT);
+            _prismScanTimer = _prismScanInterval;
 
             float scanRadius = Mathf.Lerp(prismDetectionRadius * 0.4f, prismDetectionRadius, IntensityT);
             int trailBlockMask = 1 << _trailBlockLayer;
             int hitCount = Physics.OverlapSphereNonAlloc(transform.position, scanRadius, _prismScanResults, trailBlockMask);
 
-            if (hitCount == 0)
-            {
-                _hasPrismTarget = false;
-                return;
-            }
+            _hasPrismTarget = false;
+            if (hitCount == 0) return;
 
-            // Find the best prism to skim: one that is roughly ahead of us and at a skimmable offset
-            // A good skim target is one we can fly alongside, not directly into.
-            Vector3 forward = transform.forward;
+            // Find the best prism that is roughly along our route to the crystal.
+            // We want prisms that are ahead of us AND between us and the crystal,
+            // so that nudging toward them doesn't pull us off-course.
             Vector3 myPos = transform.position;
+            Vector3 toCrystal = _crystalTargetPosition - myPos;
+            float crystalDist = toCrystal.magnitude;
+            Vector3 crystalDir = crystalDist > 0.01f ? toCrystal / crystalDist : transform.forward;
+
             float bestScore = float.NegativeInfinity;
-            Vector3 bestTarget = myPos;
-            bool foundTarget = false;
 
             for (int i = 0; i < hitCount; i++)
             {
@@ -306,86 +311,65 @@ namespace CosmicShore.Game.AI
 
                 Vector3 toPrism = col.transform.position - myPos;
                 float dist = toPrism.magnitude;
-                if (dist < 2f) continue; // Too close, skip
+                if (dist < 3f || dist > crystalDist) continue; // Skip if too close or past the crystal
 
                 Vector3 dirToPrism = toPrism / dist;
-                float dotForward = Vector3.Dot(forward, dirToPrism);
 
-                // Only consider prisms that are roughly ahead (within ~120 degree cone at intensity 2,
-                // within ~150 degree cone at intensity 4)
-                float minDot = Mathf.Lerp(-0.1f, -0.5f, IntensityT);
-                if (dotForward < minDot) continue;
+                // Must be in the forward hemisphere toward the crystal
+                float dotCrystal = Vector3.Dot(crystalDir, dirToPrism);
+                if (dotCrystal < 0.3f) continue; // Only prisms roughly toward the crystal
 
-                // Score: prefer prisms that are ahead and at moderate distance
-                // Being directly ahead is fine - the skimmer has a width, so flying near is enough
-                // Prefer closer prisms that are ahead
-                float forwardScore = dotForward * 2f;
-                float distScore = 1f - Mathf.Clamp01(dist / scanRadius);
+                // Must also be ahead of us
+                float dotForward = Vector3.Dot(transform.forward, dirToPrism);
+                if (dotForward < 0.2f) continue;
 
-                // At higher intensity, prefer prisms that form a line we can follow
-                // (i.e., prisms whose forward roughly aligns with ours - same trail direction)
-                float alignScore = 0f;
-                if (Intensity >= 3)
-                {
-                    float trailAlign = Mathf.Abs(Vector3.Dot(forward, col.transform.forward));
-                    alignScore = trailAlign * 0.5f;
-                }
+                // Score: prefer prisms that are close to the line between us and crystal
+                // and that are relatively close (so we can reach them without a big detour)
+                float lineProximity = dotCrystal; // Higher = more aligned with crystal direction
+                float closeness = 1f - Mathf.Clamp01(dist / scanRadius);
 
-                float score = forwardScore + distScore + alignScore;
+                float score = lineProximity * 2f + closeness;
 
                 if (score > bestScore)
                 {
                     bestScore = score;
-                    bestTarget = col.transform.position;
-                    foundTarget = true;
+                    _bestPrismTarget = col.transform.position;
+                    _hasPrismTarget = true;
                 }
             }
-
-            _hasPrismTarget = foundTarget;
-            _bestPrismTarget = bestTarget;
         }
 
-        Vector3 ComputeBlendedTarget()
+        // Returns a small perpendicular nudge vector to steer the ship's path
+        // slightly toward the best prism, without changing the overall heading toward the crystal.
+        Vector3 ComputePrismNudge(Vector3 crystalDirection)
         {
-            // Factors that increase crystal bias:
-            // 1. Distance to crystal is small (we're close, go grab it)
-            // 2. Boost is near max (we're already fast, don't need more prisms)
-            //
-            // Factors that increase prism bias:
-            // 1. Distance to crystal is large (long way to go, skim for speed)
-            // 2. Boost is low (need speed boost from prisms)
-            // 3. Higher intensity (smarter AI)
+            if (!_hasPrismTarget) return Vector3.zero;
 
-            if (!_hasPrismTarget)
-                return _crystalTargetPosition;
+            Vector3 toPrism = _bestPrismTarget - transform.position;
+            float prismDist = toPrism.magnitude;
+            if (prismDist < 1f) return Vector3.zero;
 
+            // Project prism direction onto the plane perpendicular to the crystal direction.
+            // This gives us the lateral offset - how much we need to steer sideways
+            // to pass near the prism without changing our forward progress toward the crystal.
+            Vector3 prismDir = toPrism / prismDist;
+            Vector3 lateralOffset = prismDir - Vector3.Dot(prismDir, crystalDirection) * crystalDirection;
+
+            // Scale the nudge:
+            // - Stronger at higher intensity (better racers seek prisms more deliberately)
+            // - Weaker when close to crystal (don't get distracted at the finish)
+            // - Weaker when boost is already high (diminishing returns)
             float distToCrystal = Vector3.Distance(transform.position, _crystalTargetPosition);
-
-            // Normalize boost: 0 = base, 1 = max (base=1, max=5 typically)
+            float crystalProximityFade = Mathf.Clamp01(distToCrystal / 40f); // Fades out within 40 units of crystal
             float boostNorm = Mathf.Clamp01((VesselStatus.BoostMultiplier - 1f) / 4f);
+            float boostFade = 1f - boostNorm * 0.7f; // Still nudge a bit even at high boost
 
-            // Crystal proximity bias: increases sharply when close to crystal
-            // At ~50 units, starts pulling toward crystal; at ~15 units, fully crystal-focused
-            float crystalCloseRange = Mathf.Lerp(30f, 15f, IntensityT);
-            float crystalFarRange = Mathf.Lerp(80f, 50f, IntensityT);
-            float crystalProximityBias = 1f - Mathf.Clamp01((distToCrystal - crystalCloseRange) / (crystalFarRange - crystalCloseRange));
+            // Max nudge magnitude: small at intensity 2 (~0.08), moderate at intensity 4 (~0.25)
+            // This is added to a unit-length crystal direction, so 0.25 is roughly a 14 degree deviation
+            float maxNudge = Mathf.Lerp(0.08f, 0.25f, IntensityT);
+            float nudgeMagnitude = maxNudge * crystalProximityFade * boostFade;
 
-            // Boost saturation bias: when boost is near max, prefer crystal
-            float boostBias = boostNorm * boostNorm; // Quadratic - ramps up fast near max
-
-            // Combined crystal weight
-            float crystalWeight = Mathf.Max(crystalProximityBias, boostBias);
-
-            // At higher intensity, lean more toward prisms when far from crystal and low on boost
-            float basePrismWeight = IntensityT * 0.9f;
-            float prismWeight = basePrismWeight * (1f - crystalWeight);
-
-            // Final blend
-            float totalWeight = crystalWeight + prismWeight;
-            if (totalWeight < 0.001f) return _crystalTargetPosition;
-
-            float crystalFraction = crystalWeight / totalWeight;
-            return Vector3.Lerp(_bestPrismTarget, _crystalTargetPosition, crystalFraction);
+            return lateralOffset.normalized * nudgeMagnitude;
         }
 
         #endregion
