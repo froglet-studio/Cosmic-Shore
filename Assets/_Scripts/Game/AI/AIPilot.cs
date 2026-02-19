@@ -183,10 +183,10 @@ namespace CosmicShore.Game.AI
 
         void LoadGenome()
         {
-            if (evolution != null && Intensity >= 2)
+            if (evolution != null)
             {
                 _activeGenome = evolution.GetNextGenome();
-                throttle = _activeGenome.throttleBase;
+                throttle = Mathf.Lerp(defaultThrottle, _activeGenome.throttleBase, IntensityT);
 
                 _fitnessTracker = GetComponent<PilotFitnessTracker>();
                 Debug.Log($"[AIPilot] Loaded genome at intensity {Intensity} (IntensityT={IntensityT:F2}). " +
@@ -195,7 +195,6 @@ namespace CosmicShore.Game.AI
             else
             {
                 _activeGenome = null;
-                Debug.Log($"[AIPilot] No genome loaded. Intensity={Intensity}, evolution={(evolution != null ? "assigned" : "null")}");
             }
         }
 
