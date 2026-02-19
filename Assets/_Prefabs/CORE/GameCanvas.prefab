@@ -1802,8 +1802,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 80, y: 0}
-  m_SizeDelta: {x: 200, y: 24}
+  m_AnchoredPosition: {x: 9.2461, y: 0}
+  m_SizeDelta: {x: 217.432, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &7608668879331077980
 CanvasRenderer:
@@ -1868,7 +1868,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -2261,7 +2261,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -200, y: 0}
-  m_SizeDelta: {x: 200, y: 24}
+  m_SizeDelta: {x: 141.5511, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &9083509277818231360
 CanvasRenderer:
@@ -2834,8 +2834,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 80, y: 0}
-  m_SizeDelta: {x: 200, y: 24}
+  m_AnchoredPosition: {x: 9.2461, y: 0}
+  m_SizeDelta: {x: 217.432, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &5657580898689394817
 CanvasRenderer:
@@ -2900,7 +2900,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -4236,7 +4236,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -200, y: 0}
-  m_SizeDelta: {x: 200, y: 24}
+  m_SizeDelta: {x: 141.5511, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &4903101630950112222
 CanvasRenderer:
@@ -6878,6 +6878,7 @@ MonoBehaviour:
     type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   minConnectingSeconds: 5
+  isAIAvailable: 0
 --- !u!114 &4439541433828613727
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6902,6 +6903,9 @@ MonoBehaviour:
   connectingPanelCanvasGroup: {fileID: 6286389942094070827}
   canvasGroup: {fileID: 5016443529595071928}
   lifeFormCounter: {fileID: 2487145378621376637}
+  playerScoreContainer: {fileID: 0}
+  playerScoreCardPrefab: {fileID: 0}
+  domainColors: []
 --- !u!114 &1567971284630841138
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7991,8 +7995,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 80, y: 0}
-  m_SizeDelta: {x: 200, y: 24}
+  m_AnchoredPosition: {x: 9.2461, y: 0}
+  m_SizeDelta: {x: 217.432, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &117745292936807902
 CanvasRenderer:
@@ -8057,7 +8061,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -8623,7 +8627,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -200, y: 0}
-  m_SizeDelta: {x: 200, y: 24}
+  m_SizeDelta: {x: 141.5511, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &2496616001840398593
 CanvasRenderer:
@@ -9035,7 +9039,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -200, y: 0}
-  m_SizeDelta: {x: 200, y: 24}
+  m_SizeDelta: {x: 141.5511, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &6465586476094389963
 CanvasRenderer:
@@ -9171,8 +9175,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 80, y: 0}
-  m_SizeDelta: {x: 200, y: 24}
+  m_AnchoredPosition: {x: 9.2461, y: 0}
+  m_SizeDelta: {x: 217.432, y: 24}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &5909479058960712587
 CanvasRenderer:
@@ -9237,7 +9241,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
