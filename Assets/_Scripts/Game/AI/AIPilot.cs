@@ -19,7 +19,7 @@ namespace CosmicShore.Game.AI
     {
         [SerializeField]
         CellRuntimeDataSO cellData;
-        
+
         [SerializeField] float skillLevel = 1;
 
         [SerializeField] float defaultThrottleHigh = .6f;
@@ -61,13 +61,18 @@ namespace CosmicShore.Game.AI
 
         [SerializeField] private ActionExecutorRegistry actionExecutorRegistry;
 
-        enum Corner 
-        {
-            TopRight,
-            BottomRight,
-            BottomLeft,
-            TopLeft,
-        };
+        [Header("Intensity Scaling")]
+        [SerializeField] IntVariable selectedIntensity;
+
+        [Header("Prism Skimming")]
+        [SerializeField] float prismDetectionRadius = 120f;
+        [SerializeField] float skimStandoffDistance = 12f;
+        [SerializeField] float collisionAvoidanceDistance = 30f;
+
+        int Intensity => selectedIntensity != null ? Mathf.Clamp(selectedIntensity.Value, 1, 4) : 1;
+
+        // Intensity-derived parameters (0 = no effect at intensity 1, 1 = full effect at intensity 4)
+        float IntensityT => (Intensity - 1) / 3f;
 
         IVessel vessel;
         IVesselStatus VesselStatus => vessel.VesselStatus;
@@ -81,31 +86,18 @@ namespace CosmicShore.Game.AI
         float _maxDistance = 50f;
         float _maxDistanceSquared;
 
+        Vector3 _crystalTargetPosition;
         Vector3 _targetPosition;
         Vector3 _distance;
         bool LookingAtCrystal;
 
-        Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
-
-        #region Avoidance Stuff
-        const float Clockwise = -1;
-        const float CounterClockwise = 1;
-        struct AvoidanceBehavior
-        {
-            public float width;
-            public float height;
-            public float spin;
-            public Vector3 direction;
-
-            public AvoidanceBehavior(float width, float height, float spin, Vector3 direction)
-            {
-                this.width = width;
-                this.height = height;
-                this.spin = spin;
-                this.direction = direction;
-            }
-        }
-        #endregion
+        // Prism seeking state
+        int _trailBlockLayer;
+        Vector3 _bestPrismTarget;
+        bool _hasPrismTarget;
+        float _prismScanTimer;
+        float _prismScanInterval = 0.25f;
+        static readonly Collider[] _prismScanResults = new Collider[64];
 
         public bool AutoPilotEnabled { get; private set; }
 
@@ -141,7 +133,7 @@ namespace CosmicShore.Game.AI
                 }
             }
 
-            _targetPosition = !closestItem ? activeCell.transform.position : closestItem.transform.position;
+            _crystalTargetPosition = !closestItem ? activeCell.transform.position : closestItem.transform.position;
         }
 
         public void Initialize(IVessel v)
@@ -155,26 +147,21 @@ namespace CosmicShore.Game.AI
 
                 var inst = Instantiate(asset);
                 inst.name = $"{asset.name} [AI:{vessel.VesselStatus.PlayerName}]";
-                inst.Initialize(VesselStatus);             
+                inst.Initialize(VesselStatus);
                 ability.Ability = inst;
             }
-            
+
             _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
 
-            CornerBehaviors = new Dictionary<Corner, AvoidanceBehavior>() {
-                { Corner.TopRight, new AvoidanceBehavior (raycastWidth, raycastHeight, Clockwise, Vector3.zero ) },
-                { Corner.BottomRight, new AvoidanceBehavior (raycastWidth, -raycastHeight, CounterClockwise, Vector3.zero ) },
-                { Corner.BottomLeft, new AvoidanceBehavior (-raycastWidth, -raycastHeight, Clockwise, Vector3.zero ) },
-                { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
-            };
+            _trailBlockLayer = LayerMask.NameToLayer("TrailBlocks");
         }
 
         public void StartAIPilot()
         {
             AutoPilotEnabled = true;
-            
+
             foreach (var ability in abilities)
             {
                 StartCoroutine(UseAbilityCoroutine(ability));
@@ -184,7 +171,7 @@ namespace CosmicShore.Game.AI
         public void StopAIPilot()
         {
             AutoPilotEnabled = false;
-            
+
             foreach (var ability in abilities)
             {
                 StopCoroutine(UseAbilityCoroutine(ability));
@@ -199,6 +186,55 @@ namespace CosmicShore.Game.AI
             if (VesselStatus.IsStationary)
                 return;
 
+            // At intensity 1, behave exactly as the original crystal-only AI.
+            // At higher intensities, the crystal remains the primary target but
+            // the AI applies small lateral nudges to graze prisms along the way.
+            if (Intensity <= 1)
+            {
+                UpdateIntensity1();
+                return;
+            }
+
+            // Always head toward the crystal
+            _targetPosition = _crystalTargetPosition;
+            _distance = _targetPosition - transform.position;
+
+            if (_distance.magnitude < float.Epsilon)
+                return;
+
+            Vector3 desiredDirection = _distance.normalized;
+
+            // Apply a small lateral nudge to pass near prisms that are along our route
+            ScanForPrisms();
+            Vector3 prismNudge = ComputePrismNudge(desiredDirection);
+            if (prismNudge.sqrMagnitude > 0.001f)
+                desiredDirection = (desiredDirection + prismNudge).normalized;
+
+            // Subtle collision avoidance - small corrections, never overrides crystal heading
+            Vector3 avoidanceSteer = ComputeCollisionAvoidance();
+            if (avoidanceSteer.sqrMagnitude > 0.001f)
+            {
+                float avoidanceWeight = Mathf.Lerp(0.05f, 0.15f, IntensityT);
+                desiredDirection = (desiredDirection + avoidanceSteer * avoidanceWeight).normalized;
+            }
+
+            LookingAtCrystal = Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
+            if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
+            {
+                VesselStatus.Course = desiredDirection;
+                vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
+                desiredDirection *= -1;
+            }
+            else if (LookingAtCrystal && VesselStatus.IsDrifting) desiredDirection *= -1;
+            else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
+
+            ApplySteering(desiredDirection, _distance.sqrMagnitude);
+        }
+
+        // Original intensity 1 behavior - unchanged from baseline
+        void UpdateIntensity1()
+        {
+            _targetPosition = _crystalTargetPosition;
             _distance = _targetPosition - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
@@ -213,37 +249,211 @@ namespace CosmicShore.Game.AI
             else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
-            if (_distance.magnitude < float.Epsilon) // Avoid division by zero
+            if (_distance.magnitude < float.Epsilon)
                 return;
 
-            Vector3 combinedLocalCrossProduct = Vector3.zero;
-            float sqrMagnitude = _distance.sqrMagnitude;
+            ApplySteering(desiredDirection, _distance.sqrMagnitude);
+        }
+
+        void ApplySteering(Vector3 desiredDirection, float sqrMagnitude)
+        {
             Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
             Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
-            combinedLocalCrossProduct += localCrossProduct;
 
-            aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
-            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
+            aggressiveness = 100f;
+            float angle = Mathf.Asin(Mathf.Clamp(localCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
             if (VesselStatus.IsSingleStickControls)
             {
-                float x = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                float y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                float x = Mathf.Clamp(angle * localCrossProduct.y, -1, 1);
+                float y = -Mathf.Clamp(angle * localCrossProduct.x, -1, 1);
                 _inputStatus.EasedLeftJoystickPosition = new Vector2(x, y);
             }
             else
             {
-                _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                _inputStatus.YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.XSum = Mathf.Clamp(angle * localCrossProduct.y, -1, 1);
+                _inputStatus.YSum = Mathf.Clamp(angle * localCrossProduct.x, -1, 1);
+                _inputStatus.YDiff = Mathf.Clamp(angle * localCrossProduct.y, -1, 1);
                 _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
             }
 
-            //aggressiveness += aggressivenessIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
         }
-        
-        IEnumerator UseAbilityCoroutine(AIAbility action) 
+
+        #region Prism Skimming - Flyby Nudge (Intensity 2+)
+
+        void ScanForPrisms()
+        {
+            _prismScanTimer -= Time.deltaTime;
+            if (_prismScanTimer > 0f) return;
+            _prismScanTimer = _prismScanInterval;
+
+            float scanRadius = Mathf.Lerp(prismDetectionRadius * 0.4f, prismDetectionRadius, IntensityT);
+            int trailBlockMask = 1 << _trailBlockLayer;
+            int hitCount = Physics.OverlapSphereNonAlloc(
+                transform.position, scanRadius, _prismScanResults,
+                trailBlockMask, QueryTriggerInteraction.Collide);
+
+            _hasPrismTarget = false;
+            if (hitCount == 0) return;
+
+            // Find the best prism that is along our route to the crystal.
+            // Only consider prisms that are well ahead (20+ units) so we plan
+            // a flyby path rather than yanking toward a nearby prism.
+            Vector3 myPos = transform.position;
+            Vector3 toCrystal = _crystalTargetPosition - myPos;
+            float crystalDist = toCrystal.magnitude;
+            Vector3 crystalDir = crystalDist > 0.01f ? toCrystal / crystalDist : transform.forward;
+
+            float bestScore = float.NegativeInfinity;
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                var col = _prismScanResults[i];
+                if (col == null) continue;
+
+                Vector3 toPrism = col.transform.position - myPos;
+                float dist = toPrism.magnitude;
+
+                // Ignore prisms that are too close (can't adjust in time),
+                // behind us, or past the crystal
+                if (dist < 20f || dist > crystalDist) continue;
+
+                Vector3 dirToPrism = toPrism / dist;
+
+                // Must be ahead and roughly toward the crystal
+                float dotCrystal = Vector3.Dot(crystalDir, dirToPrism);
+                if (dotCrystal < 0.5f) continue;
+
+                float dotForward = Vector3.Dot(transform.forward, dirToPrism);
+                if (dotForward < 0.3f) continue;
+
+                // Score: prisms closest to the line toward crystal score highest
+                float score = dotCrystal * 2f + (1f - dist / scanRadius);
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    _bestPrismTarget = col.transform.position;
+                    _hasPrismTarget = true;
+                }
+            }
+        }
+
+        // Computes a small perpendicular nudge so the ship's path passes within
+        // skim range of the best prism, rather than aiming AT the prism center.
+        // If already within skim range, returns zero - no correction needed.
+        Vector3 ComputePrismNudge(Vector3 crystalDirection)
+        {
+            if (!_hasPrismTarget) return Vector3.zero;
+
+            Vector3 toPrism = _bestPrismTarget - transform.position;
+
+            // How far off-line is the prism from our crystal-bound path?
+            float alongPath = Vector3.Dot(toPrism, crystalDirection);
+            Vector3 perpVector = toPrism - alongPath * crystalDirection;
+            float perpDist = perpVector.magnitude;
+
+            // If already within standoff range, the skimmer will graze it naturally - no nudge
+            if (perpDist < skimStandoffDistance) return Vector3.zero;
+
+            // Nudge direction: perpendicular toward the prism's side of our path
+            Vector3 nudgeDir = perpVector / perpDist;
+
+            // How much do we need to close? Only close to standoff range, not to center
+            float gapToClose = perpDist - skimStandoffDistance;
+            float gapNorm = Mathf.Clamp01(gapToClose / (prismDetectionRadius * 0.5f));
+
+            // Scale by intensity, crystal proximity, and boost
+            float distToCrystal = (_crystalTargetPosition - transform.position).magnitude;
+            float crystalFade = Mathf.Clamp01(distToCrystal / 50f);
+            float boostNorm = Mathf.Clamp01((VesselStatus.BoostMultiplier - 1f) / 4f);
+            float boostFade = 1f - boostNorm * 0.6f;
+
+            // Max nudge: ~5 degrees at intensity 2, ~10 degrees at intensity 4
+            float maxNudge = Mathf.Lerp(0.05f, 0.15f, IntensityT);
+            float nudgeMag = maxNudge * gapNorm * crystalFade * boostFade;
+
+            return nudgeDir * nudgeMag;
+        }
+
+        #endregion
+
+        #region Collision Avoidance (Intensity 2+)
+
+        Vector3 ComputeCollisionAvoidance()
+        {
+            if (Intensity < 2) return Vector3.zero;
+
+            float checkDist = Mathf.Lerp(collisionAvoidanceDistance * 0.5f, collisionAvoidanceDistance, IntensityT);
+            int trailBlockMask = 1 << _trailBlockLayer;
+            Vector3 avoidance = Vector3.zero;
+            Vector3 origin = transform.position;
+            Vector3 fwd = transform.forward;
+
+            // Central ray - detect head-on collisions
+            if (Physics.Raycast(origin, fwd, out var hitCenter, checkDist, trailBlockMask, QueryTriggerInteraction.Collide))
+            {
+                float urgency = 1f - (hitCenter.distance / checkDist);
+                avoidance += hitCenter.normal * urgency;
+            }
+
+            // At intensity 3+, peripheral rays for better awareness
+            if (Intensity >= 3)
+            {
+                float spreadAngle = 20f;
+                Vector3 right = transform.right;
+                Vector3 up = transform.up;
+
+                Vector3[] offsets = {
+                    Quaternion.AngleAxis(spreadAngle, up) * fwd,
+                    Quaternion.AngleAxis(-spreadAngle, up) * fwd,
+                    Quaternion.AngleAxis(spreadAngle, right) * fwd,
+                    Quaternion.AngleAxis(-spreadAngle, right) * fwd,
+                };
+
+                float sideRange = checkDist * 0.7f;
+                foreach (var dir in offsets)
+                {
+                    if (Physics.Raycast(origin, dir, out var hitSide, sideRange, trailBlockMask, QueryTriggerInteraction.Collide))
+                    {
+                        float urgency = 1f - (hitSide.distance / sideRange);
+                        avoidance += hitSide.normal * urgency * 0.5f;
+                    }
+                }
+            }
+
+            // At intensity 4, diagonal rays for tight spaces
+            if (Intensity >= 4)
+            {
+                Vector3 right = transform.right;
+                Vector3 up = transform.up;
+                float diagAngle = 35f;
+
+                Vector3[] diags = {
+                    Quaternion.AngleAxis(diagAngle, up) * Quaternion.AngleAxis(diagAngle, right) * fwd,
+                    Quaternion.AngleAxis(-diagAngle, up) * Quaternion.AngleAxis(diagAngle, right) * fwd,
+                    Quaternion.AngleAxis(diagAngle, up) * Quaternion.AngleAxis(-diagAngle, right) * fwd,
+                    Quaternion.AngleAxis(-diagAngle, up) * Quaternion.AngleAxis(-diagAngle, right) * fwd,
+                };
+
+                float diagRange = checkDist * 0.5f;
+                foreach (var dir in diags)
+                {
+                    if (Physics.Raycast(origin, dir, out var hitDiag, diagRange, trailBlockMask, QueryTriggerInteraction.Collide))
+                    {
+                        float urgency = 1f - (hitDiag.distance / diagRange);
+                        avoidance += hitDiag.normal * urgency * 0.3f;
+                    }
+                }
+            }
+
+            return avoidance;
+        }
+
+        #endregion
+
+        IEnumerator UseAbilityCoroutine(AIAbility action)
         {
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
@@ -254,87 +464,5 @@ namespace CosmicShore.Game.AI
                 yield return new WaitForSeconds(action.Cooldown);
             }
         }
-        
-        #region Unused Methods
-
-        Vector3 ShootLaser(Vector3 position)
-        {
-            if (Physics.Raycast(transform.position + position, transform.forward, out _hit, _maxDistance))
-            {
-                Debug.DrawLine(transform.position + position, _hit.point, Color.red);
-                return _hit.point - (transform.position + position);
-            }
-
-            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * _maxDistance, Color.green);
-            return transform.forward * _maxDistance - (transform.position + position);
-        }
-        
-        float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
-        {
-            float rollAdjustment = 0f;
-
-            // Example logic: If top right and bottom left corners detect obstacles, induce a roll.
-            if (obstacleDirections[Corner.TopRight].magnitude > 0 && obstacleDirections[Corner.BottomLeft].magnitude > 0)
-                rollAdjustment -= 1; // Roll left
-            if (obstacleDirections[Corner.TopLeft].magnitude > 0 && obstacleDirections[Corner.BottomRight].magnitude > 0)
-                rollAdjustment += 1; // Roll right
-
-            return rollAdjustment;
-        }
-
-        float SigmoidResponse(float input)
-        {
-            float output = 2 * (1 / (1 + Mathf.Exp(-0.1f * input)) - 0.5f);
-            return output;
-        }
-        
-        
-        /*
-         
-         // TODO - This method is moved inside AIPilot. Some logics and conditions might have
-         // been temporarily removed, but check this method, for adding those logics inside the
-         // new method of AIPilot
-         IEnumerator SetTargetCoroutine()
-        {
-            // TODO - these lists if needed, should be specified separate.
-            List<ShipClassType> aggressiveShips = new List<ShipClassType>
-            {
-                ShipClassType.Rhino,
-                ShipClassType.Sparrow,
-            };
-
-            var rand = new System.Random();
-
-            // Assume activeNode can't change.
-            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
-            if (activeCell == null)
-                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
-
-            while (true)
-            {
-                if (activeCell != null &&
-                    // TODO - Commented out as aggressive
-                    // aggressiveShips.Contains(vessel.VesselStatus.ShipType) &&
-                    activeCell.ControllingTeam != Teams.None)
-                {
-                    if ((VesselStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
-                    {
-                        _targetPosition = _crystalPosition;
-                    }
-                    else
-                    {
-                        _targetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
-                    }
-                }
-                else
-                {
-                    _targetPosition = _crystalPosition;
-                }
-                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
-            }
-        }*/
-
-
-        #endregion
     }
 }
