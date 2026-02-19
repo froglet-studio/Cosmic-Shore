@@ -64,15 +64,36 @@ namespace CosmicShore.Game.AI
         [Header("Intensity Scaling")]
         [SerializeField] IntVariable selectedIntensity;
 
-        [Header("Prism Skimming")]
+        [Header("Prism Skimming (defaults, overridden by genome at intensity 4)")]
         [SerializeField] float prismDetectionRadius = 120f;
         [SerializeField] float skimStandoffDistance = 12f;
         [SerializeField] float collisionAvoidanceDistance = 30f;
+
+        [Header("Evolution")]
+        [SerializeField] PilotEvolution evolution;
 
         int Intensity => selectedIntensity != null ? Mathf.Clamp(selectedIntensity.Value, 1, 4) : 1;
 
         // Intensity-derived parameters (0 = no effect at intensity 1, 1 = full effect at intensity 4)
         float IntensityT => (Intensity - 1) / 3f;
+
+        // Active genome parameters (loaded from evolution or defaults)
+        PilotGenome _activeGenome;
+        PilotFitnessTracker _fitnessTracker;
+
+        // Genome-aware accessors: lerp from inspector defaults toward genome values by IntensityT.
+        // At intensity 2 (IntensityT=0.33) mostly defaults; at intensity 4 (IntensityT=1) fully genome.
+        float G_PrismDetectionRadius => _activeGenome != null ? Mathf.Lerp(prismDetectionRadius, _activeGenome.prismDetectionRadius, IntensityT) : prismDetectionRadius;
+        float G_SkimStandoffDistance => _activeGenome != null ? Mathf.Lerp(skimStandoffDistance, _activeGenome.skimStandoffDistance, IntensityT) : skimStandoffDistance;
+        float G_MinPrismScanDistance => _activeGenome != null ? Mathf.Lerp(20f, _activeGenome.minPrismScanDistance, IntensityT) : 20f;
+        float G_MaxNudgeStrength => _activeGenome != null ? Mathf.Lerp(0.15f, _activeGenome.maxNudgeStrength, IntensityT) : Mathf.Lerp(0.05f, 0.15f, IntensityT);
+        float G_DotCrystalThreshold => _activeGenome != null ? Mathf.Lerp(0.5f, _activeGenome.dotCrystalThreshold, IntensityT) : 0.5f;
+        float G_DotForwardThreshold => _activeGenome != null ? Mathf.Lerp(0.3f, _activeGenome.dotForwardThreshold, IntensityT) : 0.3f;
+        float G_CollisionAvoidanceDistance => _activeGenome != null ? Mathf.Lerp(collisionAvoidanceDistance, _activeGenome.collisionAvoidanceDistance, IntensityT) : collisionAvoidanceDistance;
+        float G_AvoidanceWeight => _activeGenome != null ? Mathf.Lerp(0.15f, _activeGenome.avoidanceWeight, IntensityT) : Mathf.Lerp(0.05f, 0.15f, IntensityT);
+        float G_CrystalFadeDistance => _activeGenome != null ? Mathf.Lerp(50f, _activeGenome.crystalFadeDistance, IntensityT) : 50f;
+        float G_BoostFadeStrength => _activeGenome != null ? Mathf.Lerp(0.6f, _activeGenome.boostFadeStrength, IntensityT) : 0.6f;
+        float G_ThrottleRampRate => _activeGenome != null ? Mathf.Lerp(throttleIncrease, _activeGenome.throttleRampRate, IntensityT) : throttleIncrease;
 
         IVessel vessel;
         IVesselStatus VesselStatus => vessel.VesselStatus;
@@ -156,11 +177,31 @@ namespace CosmicShore.Game.AI
             throttle = defaultThrottle;
 
             _trailBlockLayer = LayerMask.NameToLayer("TrailBlocks");
+
+            LoadGenome();
+        }
+
+        void LoadGenome()
+        {
+            if (evolution != null && Intensity >= 2)
+            {
+                _activeGenome = evolution.GetNextGenome();
+                throttle = _activeGenome.throttleBase;
+
+                _fitnessTracker = GetComponent<PilotFitnessTracker>();
+            }
+            else
+            {
+                _activeGenome = null;
+            }
         }
 
         public void StartAIPilot()
         {
             AutoPilotEnabled = true;
+
+            if (_fitnessTracker != null)
+                _fitnessTracker.StartTracking(VesselStatus);
 
             foreach (var ability in abilities)
             {
@@ -171,6 +212,9 @@ namespace CosmicShore.Game.AI
         public void StopAIPilot()
         {
             AutoPilotEnabled = false;
+
+            if (_fitnessTracker != null)
+                _fitnessTracker.StopTracking();
 
             foreach (var ability in abilities)
             {
@@ -214,8 +258,7 @@ namespace CosmicShore.Game.AI
             Vector3 avoidanceSteer = ComputeCollisionAvoidance();
             if (avoidanceSteer.sqrMagnitude > 0.001f)
             {
-                float avoidanceWeight = Mathf.Lerp(0.05f, 0.15f, IntensityT);
-                desiredDirection = (desiredDirection + avoidanceSteer * avoidanceWeight).normalized;
+                desiredDirection = (desiredDirection + avoidanceSteer * G_AvoidanceWeight).normalized;
             }
 
             LookingAtCrystal = Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
@@ -277,7 +320,7 @@ namespace CosmicShore.Game.AI
                 _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
             }
 
-            throttle += throttleIncrease * Time.deltaTime;
+            throttle += G_ThrottleRampRate * Time.deltaTime;
         }
 
         #region Prism Skimming - Flyby Nudge (Intensity 2+)
@@ -288,7 +331,7 @@ namespace CosmicShore.Game.AI
             if (_prismScanTimer > 0f) return;
             _prismScanTimer = _prismScanInterval;
 
-            float scanRadius = Mathf.Lerp(prismDetectionRadius * 0.4f, prismDetectionRadius, IntensityT);
+            float scanRadius = G_PrismDetectionRadius;
             int trailBlockMask = 1 << _trailBlockLayer;
             int hitCount = Physics.OverlapSphereNonAlloc(
                 transform.position, scanRadius, _prismScanResults,
@@ -317,16 +360,16 @@ namespace CosmicShore.Game.AI
 
                 // Ignore prisms that are too close (can't adjust in time),
                 // behind us, or past the crystal
-                if (dist < 20f || dist > crystalDist) continue;
+                if (dist < G_MinPrismScanDistance || dist > crystalDist) continue;
 
                 Vector3 dirToPrism = toPrism / dist;
 
                 // Must be ahead and roughly toward the crystal
                 float dotCrystal = Vector3.Dot(crystalDir, dirToPrism);
-                if (dotCrystal < 0.5f) continue;
+                if (dotCrystal < G_DotCrystalThreshold) continue;
 
                 float dotForward = Vector3.Dot(transform.forward, dirToPrism);
-                if (dotForward < 0.3f) continue;
+                if (dotForward < G_DotForwardThreshold) continue;
 
                 // Score: prisms closest to the line toward crystal score highest
                 float score = dotCrystal * 2f + (1f - dist / scanRadius);
@@ -355,24 +398,23 @@ namespace CosmicShore.Game.AI
             float perpDist = perpVector.magnitude;
 
             // If already within standoff range, the skimmer will graze it naturally - no nudge
-            if (perpDist < skimStandoffDistance) return Vector3.zero;
+            float standoff = G_SkimStandoffDistance;
+            if (perpDist < standoff) return Vector3.zero;
 
             // Nudge direction: perpendicular toward the prism's side of our path
             Vector3 nudgeDir = perpVector / perpDist;
 
             // How much do we need to close? Only close to standoff range, not to center
-            float gapToClose = perpDist - skimStandoffDistance;
-            float gapNorm = Mathf.Clamp01(gapToClose / (prismDetectionRadius * 0.5f));
+            float gapToClose = perpDist - standoff;
+            float gapNorm = Mathf.Clamp01(gapToClose / (G_PrismDetectionRadius * 0.5f));
 
-            // Scale by intensity, crystal proximity, and boost
+            // Scale by crystal proximity and boost
             float distToCrystal = (_crystalTargetPosition - transform.position).magnitude;
-            float crystalFade = Mathf.Clamp01(distToCrystal / 50f);
+            float crystalFade = Mathf.Clamp01(distToCrystal / G_CrystalFadeDistance);
             float boostNorm = Mathf.Clamp01((VesselStatus.BoostMultiplier - 1f) / 4f);
-            float boostFade = 1f - boostNorm * 0.6f;
+            float boostFade = 1f - boostNorm * G_BoostFadeStrength;
 
-            // Max nudge: ~5 degrees at intensity 2, ~10 degrees at intensity 4
-            float maxNudge = Mathf.Lerp(0.05f, 0.15f, IntensityT);
-            float nudgeMag = maxNudge * gapNorm * crystalFade * boostFade;
+            float nudgeMag = G_MaxNudgeStrength * gapNorm * crystalFade * boostFade;
 
             return nudgeDir * nudgeMag;
         }
@@ -385,7 +427,7 @@ namespace CosmicShore.Game.AI
         {
             if (Intensity < 2) return Vector3.zero;
 
-            float checkDist = Mathf.Lerp(collisionAvoidanceDistance * 0.5f, collisionAvoidanceDistance, IntensityT);
+            float checkDist = G_CollisionAvoidanceDistance;
             int trailBlockMask = 1 << _trailBlockLayer;
             Vector3 avoidance = Vector3.zero;
             Vector3 origin = transform.position;
