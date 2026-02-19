@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿// MultiplayerJoustEndGameController.cs
+using System.Collections;
 using System.Linq;
 using CosmicShore.Game.Cinematics;
 using UnityEngine;
@@ -17,14 +18,17 @@ namespace CosmicShore.Game.Arcade
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
 
-            var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
-            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localPlayerName);
+            var localName = gameData.LocalPlayer?.Name;
+            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) yield break;
 
-            int needed = joustController.joustTurnMonitor.CollisionsNeeded;
-            int current = localStats.JoustCollisions;
+            if (!joustController || !joustController.joustTurnMonitor) yield break;
 
-            bool didWin = current >= needed;
+            int needed = joustController.joustTurnMonitor.CollisionsNeeded;
+
+            // Winner = index 0 after ascending sort (lowest score = fastest time wins)
+            bool didWin = gameData.RoundStatsList.Count > 0 &&
+                          gameData.RoundStatsList[0].Name == localName;
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
             string label;
@@ -33,16 +37,21 @@ namespace CosmicShore.Game.Arcade
 
             if (didWin)
             {
-                label = "RACE TIME";
-                displayValue = (int)localStats.Score; // Score is time
+                label = "FINISH TIME";
+                displayValue = (int)localStats.Score;
                 formatAsTime = true;
             }
             else
             {
-                label = "JOUSTS LEFT";
-                displayValue = Mathf.Max(0, needed - current);
+                int joustsLeft = Mathf.Max(0, needed - localStats.JoustCollisions);
+                label = $"JOUST{(joustsLeft != 1 ? "S" : "")} LEFT";
+                displayValue = joustsLeft;
                 formatAsTime = false;
             }
+
+            Debug.Log($"[JoustEndGame] Local='{localName}' Collisions={localStats.JoustCollisions} " +
+                      $"Needed={needed} didWin={didWin} Score={localStats.Score} " +
+                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 
             yield return view.PlayScoreRevealAnimation(
                 headerText + $"\n<size=60%>{label}</size>",

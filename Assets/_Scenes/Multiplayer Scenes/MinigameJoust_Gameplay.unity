@@ -2358,7 +2358,7 @@ MonoBehaviour:
   multiplayerController: {fileID: 1628508346}
   scoreboardPanel: {fileID: 1597585026}
   statsContainer: {fileID: 1597585027}
-  statRowPrefab: {fileID: 2786973711039957352, guid: e261e06b3ac934846b48f7122bb7f961,
+  statRowPrefab: {fileID: 7059799490313329322, guid: e5bce11a0462ceb468817b6050ccb94b,
     type: 3}
   BannerImage: {fileID: 1597585030}
   BannerText: {fileID: 1597585029}
