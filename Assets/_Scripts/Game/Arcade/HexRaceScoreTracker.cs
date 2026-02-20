@@ -2,11 +2,15 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Game.UI;
-using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
+    /// <summary>
+    /// Handles scoring logic for HexRace (single and multiplayer).
+    /// Vessel telemetry (drift, boost, streak, jousts) is owned by the vessel's
+    /// VesselTelemetry subclass — this tracker only reads final values for UGS reporting.
+    /// </summary>
     public class HexRaceScoreTracker : BaseScoreTracker, IStatExposable
     {
         [Header("Dependencies")]
@@ -17,133 +21,77 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float penaltyScoreBase = 10000f;
         [SerializeField] bool showDebugLogs = true;
 
-        [Header("Joust")]
-        [SerializeField] ScriptableEventString OnJoustCollisionEvent;
-
-        public float MaxDriftTimeRecord { get; private set; }
-        public float MaxHighBoostTimeRecord { get; private set; }
-        public int MaxCleanStreak { get; private set; }
-
-        private float _currentDriftTime;
-        private float _currentBoostTime;
-        private int _currentCleanStreak;
         private float _elapsedRaceTime;
-
         private IVesselStatus _observedVessel;
+        private VesselTelemetry _vesselTelemetry;
         private bool _isTracking;
         private bool _hasReported;
 
-        private int _joustsWonSession;
-        public int JoustsWonSession => _joustsWonSession;
+        // ── Lifecycle ──────────────────────────────────────────────────────────
 
         void Start()
         {
             SubscribeEvents();
-
-            gameData.OnMiniGameTurnEnd.OnRaised += HandleGameEnd;
-
-            ElementalCrystalImpactor.OnCrystalCollected += HandleCrystalCollected;
-            VesselResetBoostPrismEffectSO.OnPrismCollision += HandlePrismCollision;
+            gameData.OnMiniGameTurnEnd.OnRaised     += HandleGameEnd;
             gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
-
-            if (OnJoustCollisionEvent) OnJoustCollisionEvent.OnRaised += HandleJoustEvent;
         }
 
         void OnDestroy()
         {
             UnsubscribeEvents();
-
-            ElementalCrystalImpactor.OnCrystalCollected -= HandleCrystalCollected;
-            VesselResetBoostPrismEffectSO.OnPrismCollision -= HandlePrismCollision;
-
-            if (OnJoustCollisionEvent) OnJoustCollisionEvent.OnRaised -= HandleJoustEvent;
-
             if (gameData == null) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
             if (gameData.OnMiniGameTurnEnd != null)
                 gameData.OnMiniGameTurnEnd.OnRaised -= HandleGameEnd;
         }
 
+        void OnDisable() => _isTracking = false;
+
+        // ── Turn lifecycle ─────────────────────────────────────────────────────
+
         void HandleTurnStarted()
         {
-            _hasReported = false;
-            if (gameData.LocalPlayer?.Vessel != null)
-            {
-                StartTracking(gameData.LocalPlayer.Vessel.VesselStatus);
-            }
-        }
-
-        public void StartTracking(IVesselStatus vessel)
-        {
-            if (_isTracking) return;
-            _observedVessel = vessel;
-            _isTracking = true;
+            _hasReported     = false;
             _elapsedRaceTime = 0f;
-            if (showDebugLogs) Debug.Log($"<color=green>[HexRaceTracker] GO! Timer Started.</color>");
+
+            if (gameData.LocalPlayer?.Vessel == null) return;
+
+            _observedVessel = gameData.LocalPlayer.Vessel.VesselStatus;
+
+            if (gameData.LocalPlayer.Vessel is Component vesselComponent)
+                _vesselTelemetry = vesselComponent.GetComponent<VesselTelemetry>();
+
+            if (_vesselTelemetry == null)
+                Debug.LogWarning("[HexRaceScoreTracker] No VesselTelemetry found on local vessel.");
+
+            _isTracking = true;
         }
 
-        public void StopTracking() => _isTracking = false;
-        void OnDisable() => StopTracking();
+        // ── Update ─────────────────────────────────────────────────────────────
 
         void Update()
         {
             if (!_isTracking || _observedVessel == null) return;
-
             _elapsedRaceTime += Time.deltaTime;
-
             if (gameData.LocalRoundStats != null)
                 gameData.LocalRoundStats.Score = _elapsedRaceTime;
-
-            TrackDrift();
-            TrackBoost();
         }
 
-        void TrackDrift()
-        {
-            if (_observedVessel.IsDrifting) _currentDriftTime += Time.deltaTime;
-            else { if (_currentDriftTime > 0 && _currentDriftTime > MaxDriftTimeRecord) MaxDriftTimeRecord = _currentDriftTime; _currentDriftTime = 0; }
-        }
-
-        void TrackBoost()
-        {
-            if (_observedVessel.IsBoosting && _observedVessel.BoostMultiplier >= 4.0f) _currentBoostTime += Time.deltaTime;
-            else { if (_currentBoostTime > 0 && _currentBoostTime > MaxHighBoostTimeRecord) MaxHighBoostTimeRecord = _currentBoostTime; _currentBoostTime = 0; }
-        }
-
-        void HandleCrystalCollected(string p)
-        {
-            if (_isTracking && _observedVessel.PlayerName == p)
-            {
-                _currentCleanStreak++;
-                if(_currentCleanStreak > MaxCleanStreak) MaxCleanStreak = _currentCleanStreak;
-            }
-        }
-
-        void HandlePrismCollision()
-        {
-            if (_isTracking) _currentCleanStreak = 0;
-        }
-
-        void HandleJoustEvent(string winner)
-        {
-            if (gameData.LocalPlayer?.Name == winner) _joustsWonSession++;
-        }
+        // ── Game end ───────────────────────────────────────────────────────────
 
         void HandleGameEnd()
         {
             if (_hasReported) return;
             _hasReported = true;
-            StopTracking();
+            _isTracking  = false;
+
             OnTurnEnded();
-            if (_currentDriftTime > MaxDriftTimeRecord) MaxDriftTimeRecord = _currentDriftTime;
-            if (_currentBoostTime > MaxHighBoostTimeRecord) MaxHighBoostTimeRecord = _currentBoostTime;
 
             int crystalsRemaining = 0;
             if (turnMonitor && int.TryParse(turnMonitor.GetRemainingCrystalsCountToCollect(), out int parsed))
                 crystalsRemaining = parsed;
 
-            bool isWinner = crystalsRemaining <= 0;
-
+            bool  isWinner   = crystalsRemaining <= 0;
             float finalScore = isWinner ? _elapsedRaceTime : (penaltyScoreBase + crystalsRemaining);
 
             gameData.LocalRoundStats.Score = finalScore;
@@ -153,14 +101,18 @@ namespace CosmicShore.Game.Arcade
 
             if (isWinner)
             {
-                if (UGSStatsManager.Instance)
+                // Cast to SquirrelVesselTelemetry to access vessel-specific stats for UGS.
+                // If the vessel type doesn't have those stats, they'll just be 0.
+                var squirrelTelemetry = _vesselTelemetry as SquirrelVesselTelemetry;
+
+                if (UGSStatsManager.Instance && _vesselTelemetry != null)
                 {
                     UGSStatsManager.Instance.ReportHexRaceStats(
                         GameModes.HexRace,
                         gameData.SelectedIntensity.Value,
-                        MaxCleanStreak,
-                        MaxDriftTimeRecord,
-                        _joustsWonSession,
+                        squirrelTelemetry?.MaxCleanStreak ?? 0,
+                        _vesselTelemetry.MaxDriftTime,
+                        squirrelTelemetry?.JoustsWon ?? 0,
                         finalScore
                     );
                 }
@@ -177,15 +129,25 @@ namespace CosmicShore.Game.Arcade
             // Not used — HandleGameEnd drives the flow
         }
 
+        // Temporary — logs telemetry values for verification.
+        // Remove once EventDrivenStatsProvider is confirmed working.
         public Dictionary<string, object> GetExposedStats()
         {
-            return new Dictionary<string, object>
+            if (_vesselTelemetry == null) return new Dictionary<string, object>();
+
+            var squirrel = _vesselTelemetry as SquirrelVesselTelemetry;
+            var stats = new Dictionary<string, object>
             {
-                { "Max Clean Streak", MaxCleanStreak },
-                { "Longest Drift", MaxDriftTimeRecord },
-                { "Max Boost Time", MaxHighBoostTimeRecord },
-                { "Jousts Won", JoustsWonSession }
+                { "Longest Drift",    _vesselTelemetry.MaxDriftTime           },
+                { "Max Boost Time",   _vesselTelemetry.MaxBoostTime           },
+                { "Max Clean Streak", squirrel?.MaxCleanStreak ?? 0           },
+                { "Jousts Won",       squirrel?.JoustsWon      ?? 0           }
             };
+
+            foreach (var kvp in stats)
+                Debug.Log($"[HexRaceScoreTracker] {kvp.Key}: {kvp.Value}");
+
+            return stats;
         }
     }
 }
