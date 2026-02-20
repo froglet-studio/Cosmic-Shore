@@ -637,8 +637,7 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 1078953729}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController,
-            Assembly-CSharp
+          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController, Assembly-CSharp
           m_MethodName: OnClickReturnToMainMenu
           m_Mode: 1
           m_Arguments:
@@ -934,11 +933,11 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
+  controller: {fileID: 1078953729}
   penaltyScoreBase: 10000
   showDebugLogs: 1
   OnJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
     type: 2}
-  controller: {fileID: 1078953729}
 --- !u!1 &1194123992
 GameObject:
   m_ObjectHideFlags: 0
@@ -2565,17 +2564,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1897523407}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 20436afcb3f3470081840cc70fa3a9b3, type: 3}
+  m_Script: {fileID: 11500000, guid: 87e6ed750945438e9e08f918293fefd6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scoreTracker: {fileID: 1078953732}
-  statBindings:
-  - StatModule: {fileID: 11400000, guid: 7b5533777bcc1774ab03f64001432266, type: 2}
-    StatKey: Jousts Won
-  - StatModule: {fileID: 11400000, guid: 1682deace86b18b4db42a83f752572df, type: 2}
-    StatKey: Max Boost Time
-  - StatModule: {fileID: 11400000, guid: 51d0ae58d07dcb049970a2f4958ab4d8, type: 2}
-    StatKey: Longest Drift
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &1899528608
 GameObject:
   m_ObjectHideFlags: 0
