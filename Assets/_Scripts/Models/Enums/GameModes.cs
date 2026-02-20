@@ -38,4 +38,6 @@ public enum GameModes
     MultiplayerHexRaceGame = 33,
     MultiplayerJoust = 34,
     MultiplayerCrystalCapture = 35,
+    AcornHoard = 36,
+    MultiplayerAcornHoard = 37,
 }
