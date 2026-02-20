@@ -7,6 +7,9 @@ namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerHexRaceEndGameController : EndGameCinematicController
     {
+        [Header("Hex Race")]
+        [SerializeField] private MultiplayerHexRaceController hexRaceController;
+
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
             if (!view || !cinematic) yield break;
@@ -14,15 +17,27 @@ namespace CosmicShore.Game.Arcade
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
 
-            var localName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
-            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
-            if (localStats == null) yield break;
+            var localName = gameData.LocalPlayer?.Name;
+            if (string.IsNullOrEmpty(localName))
+            {
+                Debug.LogError("[HexRaceEndGame] LocalPlayer.Name is null or empty.");
+                yield break;
+            }
 
-            var winner = gameData.RoundStatsList.Count > 0 ? gameData.RoundStatsList[0] : null;
-            bool didWin = winner != null && winner.Name == localStats.Name;
+            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
+            if (localStats == null)
+            {
+                Debug.LogError($"[HexRaceEndGame] Could not find RoundStats for '{localName}'. " +
+                               $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
+                yield break;
+            }
+
+            // Single source of truth — the controller received this authoritatively from the server
+            bool didWin = hexRaceController != null
+                && hexRaceController.RaceResultsReady
+                && hexRaceController.WinnerName == localName;
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
-
             string label;
             int displayValue;
             bool formatAsTime;
@@ -36,11 +51,13 @@ namespace CosmicShore.Game.Arcade
             else
             {
                 label = "CRYSTALS LEFT";
-                // Encoding: 10000 + crystalsLeft
-                int crystalsLeft = Mathf.Max(0, (int)(localStats.Score - 10000f));
-                displayValue = crystalsLeft;
+                displayValue = Mathf.Max(0, (int)(localStats.Score - 10000f));
                 formatAsTime = false;
             }
+
+            Debug.Log($"[HexRaceEndGame] Local='{localName}' Score={localStats.Score} didWin={didWin} " +
+                      $"WinnerName='{hexRaceController?.WinnerName}' " +
+                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 
             yield return view.PlayScoreRevealAnimation(
                 headerText + $"\n<size=60%>{label}</size>",

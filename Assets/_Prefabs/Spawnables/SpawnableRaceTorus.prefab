@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &1446207172778866258
+--- !u!1 &550987867043282920
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6188657666012922906}
-  - component: {fileID: 2348215282272801469}
+  - component: {fileID: 7566299603488357389}
+  - component: {fileID: 7606682149800798904}
   m_Layer: 0
-  m_Name: SpawnableSpherene
+  m_Name: SpawnableRaceTorus
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &6188657666012922906
+--- !u!4 &7566299603488357389
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1446207172778866258}
+  m_GameObject: {fileID: 550987867043282920}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -32,24 +32,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2348215282272801469
+--- !u!114 &7606682149800798904
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1446207172778866258}
+  m_GameObject: {fileID: 550987867043282920}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 18d851c853b6dd54f9e8f9944faae236, type: 3}
+  m_Script: {fileID: 11500000, guid: 4c36877dfe54fc3499fd305a409f9a82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  domain: 2
+  domain: 3
   intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   blockScale: {x: 1, y: 2, z: 4}
-  subdivisions: 3
-  radius: 150
-  blocksPerEdge: 4
-  edgeDomain: 3
-  vertexDomain: 4
+  uSamples: 360
+  vSamples: 360
+  projectionScale: 800
+  projectionPole: 0.01
+  colorByV: 1
+  vDomains: 03000000010000000400000002000000

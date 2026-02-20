@@ -500,6 +500,41 @@ PrefabInstance:
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
       objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2095434562}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnDeclineRematch
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.Game.Arcade.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 915019752795160217, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -1556,6 +1591,41 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2095434562}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnAcceptRematch
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.Game.Arcade.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 7632375692065427312, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -2550,6 +2620,60 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
     type: 3}
   m_PrefabInstance: {fileID: 966370460}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &977523997 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1966683219612160927, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &977523998 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4417955567440517670, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &977523999 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6330513423026764784, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &977524000 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5280097156800733539, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &977524001 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8000010984139768975, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &977524002 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4433200535761759613, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &977524003 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2642576341138188555, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
   m_PrefabAsset: {fileID: 0}
 --- !u!114 &1013487527 stripped
 MonoBehaviour:
@@ -3596,6 +3720,7 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   multiplayerSetup: {fileID: 1429934008}
+  localScoreboard: {fileID: 2095434562}
 --- !u!114 &1628508346
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6389,6 +6514,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   multiplayerController: {fileID: 1628508345}
+  endGameObject: {fileID: 977524002}
   scoreboardPanel: {fileID: 2034974248}
   statsContainer: {fileID: 2034974259}
   statRowPrefab: {fileID: 7059799490313329322, guid: e5bce11a0462ceb468817b6050ccb94b,
@@ -6412,6 +6538,13 @@ MonoBehaviour:
   - {fileID: 2034974251}
   - {fileID: 2034974250}
   - {fileID: 2034974249}
+  rematchInvitedPanel: {fileID: 977523997}
+  rematchReceivedPanel: {fileID: 977524003}
+  rematchReceivedText: {fileID: 977524001}
+  rematchDeniedPanel: {fileID: 977523999}
+  rematchDeniedText: {fileID: 977523998}
+  playAgainButton: {fileID: 977524000}
+  rematchPanelAutoDismissSeconds: 2
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
