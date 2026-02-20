@@ -9,7 +9,6 @@ using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Systems
 {
-    [DefaultExecutionOrder(0)]
     public class SceneLoader : MonoBehaviour
     {
         [SerializeField] float waitBeforeLoading = 0.5f;
