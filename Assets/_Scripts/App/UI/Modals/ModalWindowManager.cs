@@ -1,4 +1,5 @@
 using System.Collections;
+using CosmicShore.App.Systems.Audio;
 using UnityEngine;
 using static CosmicShore.App.UI.ScreenSwitcher;
 
@@ -37,6 +38,7 @@ namespace CosmicShore.App.UI.Modals
                 else
                     windowAnimator.Play("Window In");
 
+                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
             }
         }
@@ -54,6 +56,7 @@ namespace CosmicShore.App.UI.Modals
                 else
                     windowAnimator.Play("Window Out");
 
+                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.CloseView);
                 isOn = false;
             }
             if(ModalType == ModalWindows.SETTINGS) return;

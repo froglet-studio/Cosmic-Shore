@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Soap;
 using UnityEngine;
@@ -55,6 +56,8 @@ namespace CosmicShore.Game.Cinematics
         {
             if (isRunning) return;
             isRunning = true;
+
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
 
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel?.VesselStatus != null)
@@ -233,6 +236,7 @@ namespace CosmicShore.Game.Cinematics
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 

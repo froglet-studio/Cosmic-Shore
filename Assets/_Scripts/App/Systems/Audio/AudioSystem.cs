@@ -28,6 +28,22 @@ namespace CosmicShore.App.Systems.Audio
         RedeemTicket = 12,
     }
 
+    [Serializable]
+    public enum GameplaySFXCategory
+    {
+        BlockDestroy = 1,
+        ShieldActivate = 2,
+        ShieldDeactivate = 3,
+        MineExplode = 4,
+        ProjectileLaunch = 5,
+        CrystalCollect = 6,
+        VesselImpact = 7,
+        GameEnd = 8,
+        ScoreReveal = 9,
+        PauseOpen = 10,
+        PauseClose = 11,
+    }
+
     [DefaultExecutionOrder(-1)]
     public class AudioSystem : SingletonPersistent<AudioSystem>
     {
@@ -53,6 +69,19 @@ namespace CosmicShore.App.Systems.Audio
         [SerializeField] AudioClip SwitchScreenAudioClip;
         [SerializeField] AudioClip RedeemTicketAudioClip;
 
+        [Header("Gameplay SFX")]
+        [SerializeField] AudioClip BlockDestroyAudioClip;
+        [SerializeField] AudioClip ShieldActivateAudioClip;
+        [SerializeField] AudioClip ShieldDeactivateAudioClip;
+        [SerializeField] AudioClip MineExplodeAudioClip;
+        [SerializeField] AudioClip ProjectileLaunchAudioClip;
+        [SerializeField] AudioClip CrystalCollectAudioClip;
+        [SerializeField] AudioClip VesselImpactAudioClip;
+        [SerializeField] AudioClip GameEndAudioClip;
+        [SerializeField] AudioClip ScoreRevealAudioClip;
+        [SerializeField] AudioClip PauseOpenAudioClip;
+        [SerializeField] AudioClip PauseCloseAudioClip;
+
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
@@ -64,6 +93,7 @@ namespace CosmicShore.App.Systems.Audio
         bool sfxEnabled = true;
 
         Dictionary<MenuAudioCategory, AudioClip> MenuAudioClips;
+        Dictionary<GameplaySFXCategory, AudioClip> GameplaySFXClips;
 
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
@@ -72,6 +102,7 @@ namespace CosmicShore.App.Systems.Audio
         void Start()
         {
             InitializeMenuAudioClips();
+            InitializeGameplaySFXClips();
 
             musicEnabled = GameSetting.Instance.MusicEnabled;
             sfxEnabled = GameSetting.Instance.SFXEnabled;
@@ -215,6 +246,12 @@ namespace CosmicShore.App.Systems.Audio
             PlaySFXClip(MenuAudioClips[category]);
         }
 
+        public void PlayGameplaySFX(GameplaySFXCategory category)
+        {
+            if (GameplaySFXClips.TryGetValue(category, out var clip) && clip != null)
+                PlaySFXClip(clip);
+        }
+
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
             sfxSource.volume = SFXVolume;
@@ -255,6 +292,24 @@ namespace CosmicShore.App.Systems.Audio
                 {MenuAudioCategory.LetsGo, LetsGoAudioClip},
                 {MenuAudioCategory.SwitchScreen, SwitchScreenAudioClip},
                 {MenuAudioCategory.RedeemTicket, RedeemTicketAudioClip},
+            };
+        }
+
+        void InitializeGameplaySFXClips()
+        {
+            GameplaySFXClips = new Dictionary<GameplaySFXCategory, AudioClip>()
+            {
+                {GameplaySFXCategory.BlockDestroy, BlockDestroyAudioClip},
+                {GameplaySFXCategory.ShieldActivate, ShieldActivateAudioClip},
+                {GameplaySFXCategory.ShieldDeactivate, ShieldDeactivateAudioClip},
+                {GameplaySFXCategory.MineExplode, MineExplodeAudioClip},
+                {GameplaySFXCategory.ProjectileLaunch, ProjectileLaunchAudioClip},
+                {GameplaySFXCategory.CrystalCollect, CrystalCollectAudioClip},
+                {GameplaySFXCategory.VesselImpact, VesselImpactAudioClip},
+                {GameplaySFXCategory.GameEnd, GameEndAudioClip},
+                {GameplaySFXCategory.ScoreReveal, ScoreRevealAudioClip},
+                {GameplaySFXCategory.PauseOpen, PauseOpenAudioClip},
+                {GameplaySFXCategory.PauseClose, PauseCloseAudioClip},
             };
         }
     }

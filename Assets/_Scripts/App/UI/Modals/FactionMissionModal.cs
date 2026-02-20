@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Squads;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
@@ -21,6 +22,7 @@ namespace CosmicShore.App.UI.Modals
 
         public void Play()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             Arcade.Instance.LaunchMission(Mission.Mode, SquadSystem.SquadLeader, Intensity);
         }
 

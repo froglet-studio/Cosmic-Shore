@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Views;
 using UnityEngine;
@@ -27,6 +28,7 @@ namespace CosmicShore.App.UI.Screens
             else
                 UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeExploreMenu);
 
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.SwitchView);
             LoadoutView.gameObject.SetActive(loadout);
             ExploreView.gameObject.SetActive(!loadout);
         }
