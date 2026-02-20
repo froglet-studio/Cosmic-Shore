@@ -460,6 +460,25 @@ MonoBehaviour:
     type: 3}
   RedeemTicketAudioClip: {fileID: 8300000, guid: 7e98ac29753d3394fb5cca39b8289e48,
     type: 3}
+  BlockDestroyAudioClip: {fileID: 0}
+  ShieldActivateAudioClip: {fileID: 0}
+  ShieldDeactivateAudioClip: {fileID: 0}
+  MineExplodeAudioClip: {fileID: 0}
+  ProjectileLaunchAudioClip: {fileID: 0}
+  CrystalCollectAudioClip: {fileID: 0}
+  VesselImpactAudioClip: {fileID: 0}
+  GameEndAudioClip: {fileID: 0}
+  ScoreRevealAudioClip: {fileID: 0}
+  PauseOpenAudioClip: {fileID: 0}
+  PauseCloseAudioClip: {fileID: 0}
+  GunFireAudioClip: {fileID: 0}
+  BoostActivateAudioClip: {fileID: 0}
+  ExplosionAudioClip: {fileID: 0}
+  CreatureDeathAudioClip: {fileID: 0}
+  DriftStartAudioClip: {fileID: 8300000, guid: 00ff73cc49b9488895880775625c55cf, type: 3}
+  DriftEndAudioClip: {fileID: 8300000, guid: 39ea8a8c7e534e83a76cd25ff8ceda7d, type: 3}
+  EnergyGainAudioClip: {fileID: 8300000, guid: 989a0e48e804482bbf3a677ada7d4ae8, type: 3}
+  SpeedBurstAudioClip: {fileID: 8300000, guid: 653de36067c848a78ac947c561ec5143, type: 3}
 --- !u!114 &1452114705
 MonoBehaviour:
   m_ObjectHideFlags: 0
