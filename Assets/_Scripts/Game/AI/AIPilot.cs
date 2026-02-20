@@ -152,6 +152,12 @@ namespace CosmicShore.Game.AI
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
                     (item.ItemType != ItemType.Debuff || item.ownDomain == VesselStatus.Domain)) continue;
+
+                // Skip buff items that belong to another player's domain (e.g. domain crystals in HexRace).
+                // Only target items with no domain or matching our own domain.
+                if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
+                    continue;
+
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (sqDistance < (MinDistance * MinDistance))
                 {
