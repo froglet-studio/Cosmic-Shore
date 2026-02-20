@@ -20,8 +20,12 @@ MonoBehaviour:
     fadeLoserTrail: 1
   victoryToastStrings:
   - TIME UP BUDDY!
+  - WHAT A WIN!
+  - WHOA! QUICK AS FLASH
   defeatToastStrings:
   - TIME UP BUDDY!
+  - L IS A L
+  - BETTER LUCK NEXT TIME
   showVictoryToast: 1
   toastSettings:
     yOffset: 1
