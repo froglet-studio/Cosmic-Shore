@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Events;
@@ -73,19 +74,15 @@ namespace CosmicShore.App.UI.Elements
         {
             Favorited = !Favorited;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
             FavoriteSystem.ToggleFavorite(gameMode);
             ExploreView.PopulateGameSelectionList();
         }
 
         public void OnCardClicked()
         {
-            // Add highlight boarder
-
-            // Set active and show details
-            //LoadoutView.ExpandLoadout(Index);
-
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
             Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
-
         }
     }
 }
