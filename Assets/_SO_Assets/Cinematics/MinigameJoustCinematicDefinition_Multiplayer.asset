@@ -20,8 +20,12 @@ MonoBehaviour:
     fadeLoserTrail: 1
   victoryToastStrings:
   - JOUSTED THE OPPONENT!
+  - YOU WERE FAST AF BOI
+  - THAT WAS...WOW!
   defeatToastStrings:
-  - JOUSTED THE OPPONENT!
+  - GOT JOUSTED
+  - GET BETTER
+  - ABSOLUTELY BOTTLED IT
   showVictoryToast: 1
   toastSettings:
     yOffset: 1
