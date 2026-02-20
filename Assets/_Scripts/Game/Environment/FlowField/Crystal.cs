@@ -222,11 +222,14 @@ namespace CosmicShore.Game
                 Material tempMaterial = new Material(renderer.material);
                 renderer.material = tempMaterial;
 
-                Color startColor1 = tempMaterial.GetColor("_BrightCrystalColor");
-                Color startColor2 = tempMaterial.GetColor("_DullCrystalColor");
+                bool hasBright = tempMaterial.HasProperty("_BrightCrystalColor");
+                bool hasDull = tempMaterial.HasProperty("_DullCrystalColor");
 
-                Color targetColor1 = targetMaterial.GetColor("_BrightCrystalColor");
-                Color targetColor2 = targetMaterial.GetColor("_DullCrystalColor");
+                Color startColor1 = hasBright ? tempMaterial.GetColor("_BrightCrystalColor") : Color.white;
+                Color startColor2 = hasDull ? tempMaterial.GetColor("_DullCrystalColor") : Color.white;
+
+                Color targetColor1 = hasBright ? targetMaterial.GetColor("_BrightCrystalColor") : Color.white;
+                Color targetColor2 = hasDull ? targetMaterial.GetColor("_DullCrystalColor") : Color.white;
 
                 float elapsedTime = 0.0f;
 
@@ -235,8 +238,8 @@ namespace CosmicShore.Game
                     elapsedTime += Time.deltaTime;
                     float t = Mathf.Clamp01(elapsedTime / lerpDuration);
 
-                    tempMaterial.SetColor("_BrightCrystalColor", Color.Lerp(startColor1, targetColor1, t));
-                    tempMaterial.SetColor("_DullCrystalColor", Color.Lerp(startColor2, targetColor2, t));
+                    if (hasBright) tempMaterial.SetColor("_BrightCrystalColor", Color.Lerp(startColor1, targetColor1, t));
+                    if (hasDull) tempMaterial.SetColor("_DullCrystalColor", Color.Lerp(startColor2, targetColor2, t));
 
                     yield return null;
                 }
