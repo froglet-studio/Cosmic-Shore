@@ -10,34 +10,38 @@ namespace CosmicShore.Game.UI
         [SerializeField] HexRaceScoreTracker scoreTracker;
 
         [Header("Icons")]
-        [SerializeField] Sprite cleanCrystalIcon;
+        [SerializeField] Sprite cleanStreakIcon;
         [SerializeField] Sprite driftIcon;
-        [SerializeField] Sprite boostIcon;
+        [SerializeField] Sprite joustIcon;
 
         public override List<StatData> GetStats()
         {
             var list = new List<StatData>();
-            if (!scoreTracker) return list;
 
+            if (!scoreTracker)
+            {
+                Debug.LogWarning("[MP Stats Provider] No ScoreTracker assigned!");
+                return list;
+            }
+            
             list.Add(new StatData
             {
-                Label = "Clean Crystals",
+                Label = "Best Streak",
                 Value = scoreTracker.MaxCleanStreak.ToString(),
-                Icon = cleanCrystalIcon
+                Icon = cleanStreakIcon
             });
-
             list.Add(new StatData
             {
                 Label = "Longest Drift",
                 Value = $"{scoreTracker.MaxDriftTimeRecord:F2}s",
                 Icon = driftIcon
             });
-
+            
             list.Add(new StatData
             {
-                Label = "Max Boost",
-                Value = $"{scoreTracker.MaxHighBoostTimeRecord:F2}s",
-                Icon = boostIcon
+                Label = "Jousts Won",
+                Value = scoreTracker.JoustsWonSession.ToString(),
+                Icon = joustIcon
             });
 
             return list;

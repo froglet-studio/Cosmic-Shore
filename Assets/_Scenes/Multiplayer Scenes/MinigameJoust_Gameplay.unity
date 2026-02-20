@@ -2570,6 +2570,7 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1628508333}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
+  gameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
   _playerOrigins:
   - {fileID: 1468661147}
   - {fileID: 1074736317}

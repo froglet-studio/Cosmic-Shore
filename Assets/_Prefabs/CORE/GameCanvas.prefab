@@ -7865,7 +7865,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.SinglePlayerHexRaceController,
+        m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController,
           Assembly-CSharp
         m_MethodName: OnReadyClicked
         m_Mode: 1

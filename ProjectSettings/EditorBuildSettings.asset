@@ -20,9 +20,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Singleplayer Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11
-  - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameHexRace.unity
-    guid: be8d695fcae317d49bfa8106b819196a
   - enabled: 0
     path: Assets/_Scenes/Tools/PhotoBooth.unity
     guid: 88bd9d59331396d44be56d5b782632ee
@@ -36,7 +33,7 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
     guid: a596bbcaeca9b07498a4875cacea431c
   - enabled: 1
-    path: Assets/_Scenes/Multiplayer Scenes/MinigameHexRaceMultiplayer.unity
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHexRace.unity
     guid: 4793d5ff09048ed409980d836ad4f2a2
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity

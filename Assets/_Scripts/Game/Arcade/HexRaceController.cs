@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MultiplayerHexRaceController : MultiplayerDomainGamesController
+    public class HexRaceController : MultiplayerDomainGamesController
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
