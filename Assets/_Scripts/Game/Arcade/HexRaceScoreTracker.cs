@@ -134,24 +134,28 @@ namespace CosmicShore.Game.Arcade
 
             gameData.LocalRoundStats.Score = finalScore;
 
-            if (showDebugLogs) 
+            if (showDebugLogs)
                 Debug.Log($"<color=yellow>[HexRaceTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
 
-            if (UGSStatsManager.Instance && !gameData.IsMultiplayerMode && isWinner)
-            {
-                UGSStatsManager.Instance.ReportHexRaceStats(
-                    gameData.GameMode, 
-                    gameData.SelectedIntensity.Value, 
-                    MaxCleanStreak, 
-                    MaxDriftTimeRecord, 
-                    MaxHighBoostTimeRecord, 
-                    finalScore
-                );
-            }
             bool handledByController = ReportToMultiplayerController(finalScore, isWinner);
 
-            if (!handledByController && !gameData.IsMultiplayerMode)
+            if (!handledByController)
             {
+                // Only report single-player stats when no multiplayer controller is
+                // handling the game end (avoids double-reporting in solo-with-AI mode
+                // where the multiplayer tracker reports its own stats).
+                if (UGSStatsManager.Instance && !gameData.IsMultiplayerMode && isWinner)
+                {
+                    UGSStatsManager.Instance.ReportHexRaceStats(
+                        gameData.GameMode,
+                        gameData.SelectedIntensity.Value,
+                        MaxCleanStreak,
+                        MaxDriftTimeRecord,
+                        MaxHighBoostTimeRecord,
+                        finalScore
+                    );
+                }
+
                 SortAndInvokeResults();
             }
         }

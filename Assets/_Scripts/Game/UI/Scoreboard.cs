@@ -115,7 +115,10 @@ namespace CosmicShore.Game.UI
 
             HideAllRematchPanels();
 
-            if (gameData.IsMultiplayerMode) ShowMultiplayerView();
+            // Show multiplayer view when playing against opponents (online or AI).
+            // The multiplayerController being present means this is a multiplayer scene
+            // running with opponents, even in solo-with-AI mode.
+            if (gameData.IsMultiplayerMode || multiplayerController != null) ShowMultiplayerView();
             else ShowSinglePlayerView();
 
             PopulateDynamicStats();
@@ -289,6 +292,13 @@ namespace CosmicShore.Game.UI
                 ));
 
                 multiplayerController.RequestRematch(gameData.LocalPlayer.Name);
+            }
+            else if (multiplayerController != null)
+            {
+                // Solo-with-AI: the game runs on the network stack, so go through the
+                // controller's replay flow to properly reset race state (_raceEnded, etc.)
+                // without showing the multiplayer rematch invitation UI.
+                multiplayerController.RequestReplay();
             }
             else
             {
