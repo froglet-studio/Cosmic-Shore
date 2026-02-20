@@ -107,7 +107,7 @@ namespace CosmicShore.Core
             int processed = 0;
             foreach (var item in itemsToRelease)
             {
-                if (item != null)
+                if (item)
                 {
                     // Direct release to pool (bypass _activeObjects check since we already cleared it)
                     item.transform.SetParent(transform);
@@ -151,9 +151,23 @@ namespace CosmicShore.Core
             return obj;
         }
 
-        protected virtual void OnGetFromPool(T obj) => obj.gameObject.SetActive(true);
-        protected virtual void OnReleaseToPool(T obj) => obj.gameObject.SetActive(false);
-        protected virtual void OnDestroyPoolObject(T obj) => Destroy(obj.gameObject);
+        protected virtual void OnGetFromPool(T obj)
+        {
+            if (!obj) return;
+            obj.gameObject.SetActive(true);
+        }
+
+        protected virtual void OnReleaseToPool(T obj)
+        {
+            if (!obj) return;
+            obj.gameObject.SetActive(false);
+        }
+
+        protected virtual void OnDestroyPoolObject(T obj)
+        {
+            if (!obj) return;
+            Destroy(obj.gameObject);
+        }
 
         // ---------------- Maintenance Loop ----------------
         

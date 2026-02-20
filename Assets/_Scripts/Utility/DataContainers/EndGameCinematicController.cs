@@ -142,9 +142,14 @@ namespace CosmicShore.Game.Cinematics
             }
 
             gameData.ResetPlayers();
-            
+
             if (cinematicCameraController)
                 cinematicCameraController.StopCameraSetup();
+
+            // Snap player camera back to follow target after cinematic
+            // moved it to a cinematic position.
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
         
         protected virtual void HandleContinuePressed()
