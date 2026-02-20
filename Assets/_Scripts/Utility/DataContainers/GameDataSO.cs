@@ -34,11 +34,11 @@ namespace CosmicShore.Soap
         public ScriptableEventNoParam OnMiniGameEnd;
         public ScriptableEventNoParam OnWinnerCalculated;
         public ScriptableEventNoParam OnResetForReplay;
+        public ScriptableEventNoParam OnSessionEnded;
 
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
 
-        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         
         // Local player config / state
         public VesselClassTypeVariable selectedVesselClass;
@@ -120,6 +120,8 @@ namespace CosmicShore.Soap
         public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
         public void InvokeMiniGameEnd() => OnMiniGameEnd?.Raise();
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
+        public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
+        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
 
         public void ResetForReplay()
         {

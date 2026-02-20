@@ -26,6 +26,7 @@ MonoBehaviour:
   OnMiniGameEnd: {fileID: 11400000, guid: 187b90044c9617f4b97f34a3a48f5d27, type: 2}
   OnWinnerCalculated: {fileID: 11400000, guid: 88fb54bd4ac38264780b4222478f83ad, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnSessionEnded: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}
   OnShowGameEndScreen: {fileID: 11400000, guid: 4c4df83a7f0a61f4aa7b643396bc9d45,
     type: 2}
   selectedVesselClass: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,

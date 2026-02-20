@@ -10,6 +10,7 @@ using Unity.Services.Multiplayer;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
@@ -19,11 +20,9 @@ namespace CosmicShore.Game
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
         const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
-
-        [FormerlySerializedAs("miniGameData")] 
-        [SerializeField] private GameDataSO gameData;
-
-        [SerializeField] private ScriptableEventNoParam OnActiveSessionEnd;
+        
+        
+        [Inject] private GameDataSO gameData;
 
         private bool _leaving;
 
@@ -219,7 +218,7 @@ namespace CosmicShore.Game
             if (clientId == networkManager.LocalClientId)
             {
                 Debug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
-                OnActiveSessionEnd?.Raise();
+                gameData.InvokeOnSessionEnded();
             }
         }
 
@@ -283,7 +282,7 @@ namespace CosmicShore.Game
                 if (networkManager != null)
                     networkManager.Shutdown();
 
-                OnActiveSessionEnd?.Raise();
+                gameData.InvokeOnSessionEnded();
                 _leaving = false;
             }
         }
@@ -310,7 +309,7 @@ namespace CosmicShore.Game
                     networkManager.Shutdown();
 
                 await UniTask.Delay(500);
-                OnActiveSessionEnd?.Raise();
+                gameData.InvokeOnSessionEnded();
             }
             catch (Exception e)
             {
