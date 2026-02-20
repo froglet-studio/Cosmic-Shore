@@ -5,7 +5,7 @@ using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 
-namespace CosmicShore.App.Services
+namespace CosmicShore.Services
 {
     public class AuthenticationServiceFacade
     {
