@@ -4,34 +4,33 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
-using Unity.Services.Core;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
-using Obvious.Soap;
 using Reflex.Attributes;
-using UnityEngine.Serialization;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Systems
 {
-    public class MultiplayerSetup : Singleton<MultiplayerSetup>
+    public class MultiplayerSetup : MonoBehaviour
     {
         const string PLAYER_NAME_PROPERTY_KEY = "playerName";
         const string GAME_MODE_PROPERTY_KEY   = "gameMode";
         const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
         
         
-        [Inject] private GameDataSO gameData;
+        [Inject] GameDataSO gameData;
+        [Inject] AuthenticationDataVariable authenticationDataVariable;
+        AuthenticationData authenticationData => authenticationDataVariable.Value;
 
         private bool _leaving;
 
         private NetworkManager networkManager;
 
-        public override void Awake()
+         void Awake()
         {
             networkManager = NetworkManager.Singleton; // or NetworkManager.Instance if you’ve wrapped it
-            if (networkManager == null)
+            if (!networkManager)
             {
                 Debug.LogError("[MultiplayerSetup] NetworkManager missing in scene!");
             }
@@ -39,38 +38,15 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            if (networkManager == null) return;
-
+            authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
             networkManager.ConnectionApprovalCallback += OnConnectionApprovalCallback;
             networkManager.OnClientDisconnectCallback += OnClientDisconnect;
             networkManager.OnTransportFailure         += OnTransportFailure;
         }
 
-        private async void Start()
-        {
-            try
-            {
-                await UnityServices.InitializeAsync();
-
-                if (!AuthenticationService.Instance.IsSignedIn)
-                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
-
-                if (gameData.IsMultiplayerMode)
-                {
-                    gameData.SetupForMultiplayer();
-                    ExecuteMultiplayerSetup().Forget();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[MultiplayerSetup] UGS init/sign-in failed: {ex}");
-            }
-        }
-
         private void OnDisable()
         {
-            if (networkManager == null) return;
-
+            authenticationData.OnSignedIn.OnRaised -= OnAuthenticationSignedIn;
             networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
             networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
             networkManager.OnTransportFailure         -= OnTransportFailure;
@@ -80,6 +56,19 @@ namespace CosmicShore.Game
         // Session Bootstrapping
         // --------------------------
 
+        void OnAuthenticationSignedIn()
+        {
+            try
+            {
+                gameData.DestroyPlayerAndVessel();
+                ExecuteMultiplayerSetup().Forget();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[MultiplayerSetup] UGS init/sign-in failed: {ex}");
+            }
+        }
+        
         private async UniTaskVoid ExecuteMultiplayerSetup()
         {
             // Query sessions for this game mode & player count
