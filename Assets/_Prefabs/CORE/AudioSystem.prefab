@@ -460,21 +460,27 @@ MonoBehaviour:
     type: 3}
   RedeemTicketAudioClip: {fileID: 8300000, guid: 7e98ac29753d3394fb5cca39b8289e48,
     type: 3}
-  BlockDestroyAudioClip: {fileID: 0}
-  ShieldActivateAudioClip: {fileID: 0}
-  ShieldDeactivateAudioClip: {fileID: 0}
-  MineExplodeAudioClip: {fileID: 0}
-  ProjectileLaunchAudioClip: {fileID: 0}
-  CrystalCollectAudioClip: {fileID: 0}
-  VesselImpactAudioClip: {fileID: 0}
-  GameEndAudioClip: {fileID: 0}
-  ScoreRevealAudioClip: {fileID: 0}
-  PauseOpenAudioClip: {fileID: 0}
-  PauseCloseAudioClip: {fileID: 0}
-  GunFireAudioClip: {fileID: 0}
-  BoostActivateAudioClip: {fileID: 0}
-  ExplosionAudioClip: {fileID: 0}
-  CreatureDeathAudioClip: {fileID: 0}
+  BlockDestroyAudioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
+  ShieldActivateAudioClip: {fileID: 8300000, guid: 0f1b51a3bb8fcf441a489114d4778a5b,
+    type: 3}
+  ShieldDeactivateAudioClip: {fileID: 8300000, guid: 0ed8ea2827db2c147958145687d78c28,
+    type: 3}
+  MineExplodeAudioClip: {fileID: 8300000, guid: 5130e0de4d7d94f47b1305b7194a2fc9, type: 3}
+  ProjectileLaunchAudioClip: {fileID: 8300000, guid: fa765e4ec173f0548a67dec9f46d8dc2,
+    type: 3}
+  CrystalCollectAudioClip: {fileID: 8300000, guid: 559d19c795760584493b585dcd5880b4,
+    type: 3}
+  VesselImpactAudioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
+  GameEndAudioClip: {fileID: 8300000, guid: ffa29bc36b571f641b4abc0f6bfb75f1, type: 3}
+  ScoreRevealAudioClip: {fileID: 8300000, guid: bd7b64db48580b94fbf2cfbab2b5516c, type: 3}
+  PauseOpenAudioClip: {fileID: 8300000, guid: 629a744a7657f384b9a9eb18eb4fe198, type: 3}
+  PauseCloseAudioClip: {fileID: 8300000, guid: 0ed8ea2827db2c147958145687d78c28, type: 3}
+  GunFireAudioClip: {fileID: 8300000, guid: 9239bdb2f342858488ce4bae07abfb3c, type: 3}
+  BoostActivateAudioClip: {fileID: 8300000, guid: 1d6b12c877a5a1c469edf3685692f949,
+    type: 3}
+  ExplosionAudioClip: {fileID: 8300000, guid: 5130e0de4d7d94f47b1305b7194a2fc9, type: 3}
+  CreatureDeathAudioClip: {fileID: 8300000, guid: fbbbb0bc233abea418b54eeb88794332,
+    type: 3}
   DriftStartAudioClip: {fileID: 8300000, guid: 00ff73cc49b9488895880775625c55cf, type: 3}
   DriftEndAudioClip: {fileID: 8300000, guid: 39ea8a8c7e534e83a76cd25ff8ceda7d, type: 3}
   EnergyGainAudioClip: {fileID: 8300000, guid: 989a0e48e804482bbf3a677ada7d4ae8, type: 3}

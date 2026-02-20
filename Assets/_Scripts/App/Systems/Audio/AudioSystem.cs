@@ -266,6 +266,8 @@ namespace CosmicShore.App.Systems.Audio
         {
             if (GameplaySFXClips.TryGetValue(category, out var clip) && clip != null)
                 PlaySFXClip(clip);
+            else
+                Debug.LogWarning($"AudioSystem.PlayGameplaySFX: No audio clip assigned for {category}");
         }
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
