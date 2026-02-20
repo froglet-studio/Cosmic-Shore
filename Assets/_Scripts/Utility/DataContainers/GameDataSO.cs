@@ -175,7 +175,7 @@ namespace CosmicShore.Soap
             SelectedIntensity.Value = 1;
             
             ResetRuntimeData();
-            
+            DestroyPlayerAndVessel();
             DomainAssigner.Initialize();
         }
 
