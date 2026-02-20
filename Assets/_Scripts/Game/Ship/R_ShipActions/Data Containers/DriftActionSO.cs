@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game;
+﻿using CosmicShore.App.Systems.Audio;
+using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -24,6 +25,8 @@ public class DriftActionSO : ShipActionSO
         t.DriftDamping = driftDamping;
         vesselStatus.IsDrifting = true;
 
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
+
         if (isSharpDrifting)
         {
             OnDoubleDriftingStarted.Raise();
@@ -41,6 +44,7 @@ public class DriftActionSO : ShipActionSO
         t.YawScaler = savedRotations.y;
         t.RollScaler = savedRotations.z;
         vesselStatus.IsDrifting = false;
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
         OnDriftEnded.Raise();
     }
 }

@@ -46,6 +46,10 @@ namespace CosmicShore.App.Systems.Audio
         BoostActivate = 13,
         Explosion = 14,
         CreatureDeath = 15,
+        DriftStart = 16,
+        DriftEnd = 17,
+        EnergyGain = 18,
+        SpeedBurst = 19,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -89,6 +93,10 @@ namespace CosmicShore.App.Systems.Audio
         [SerializeField] AudioClip BoostActivateAudioClip;
         [SerializeField] AudioClip ExplosionAudioClip;
         [SerializeField] AudioClip CreatureDeathAudioClip;
+        [SerializeField] AudioClip DriftStartAudioClip;
+        [SerializeField] AudioClip DriftEndAudioClip;
+        [SerializeField] AudioClip EnergyGainAudioClip;
+        [SerializeField] AudioClip SpeedBurstAudioClip;
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
@@ -322,6 +330,10 @@ namespace CosmicShore.App.Systems.Audio
                 {GameplaySFXCategory.BoostActivate, BoostActivateAudioClip},
                 {GameplaySFXCategory.Explosion, ExplosionAudioClip},
                 {GameplaySFXCategory.CreatureDeath, CreatureDeathAudioClip},
+                {GameplaySFXCategory.DriftStart, DriftStartAudioClip},
+                {GameplaySFXCategory.DriftEnd, DriftEndAudioClip},
+                {GameplaySFXCategory.EnergyGain, EnergyGainAudioClip},
+                {GameplaySFXCategory.SpeedBurst, SpeedBurstAudioClip},
             };
         }
     }

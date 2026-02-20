@@ -1,4 +1,5 @@
-﻿using CosmicShore.Core;
+﻿using CosmicShore.App.Systems.Audio;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
 
@@ -8,6 +9,7 @@ public class BoostActionSO : ShipActionSO
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
         if (vesselStatus == null) return;
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
         vesselStatus.IsBoosting = true;
         vesselStatus.IsStationary = false;
     }
