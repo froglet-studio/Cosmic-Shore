@@ -140,10 +140,17 @@ namespace CosmicShore.Game.AI
 
             foreach (var item in cellItems)
             {
-                // Debuffs are disguised as desireable to the other team
-                // So, if it's good, or if it's bad but made by another team, go for it
-                if (item.ItemType != ItemType.Buff &&
-                    (item.ItemType != ItemType.Debuff || item.ownDomain == VesselStatus.Domain)) continue;
+                // Buffs: only target crystals we can actually collect (domain must match or be None)
+                if (item.ItemType == ItemType.Buff)
+                {
+                    if (item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain) continue;
+                }
+                // Debuffs are disguised as desirable to the other team — go for enemy debuffs
+                else if (item.ItemType == ItemType.Debuff)
+                {
+                    if (item.ownDomain == VesselStatus.Domain) continue;
+                }
+                else continue;
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (sqDistance < (MinDistance * MinDistance))
                 {
