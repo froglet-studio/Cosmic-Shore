@@ -16,9 +16,45 @@ MonoBehaviour:
   eliteCount: 4
   mutationRate: 0.3
   mutationStrength: 0.2
-  generation: 0
-  evaluationIndex: 0
+  generation: 2
+  evaluationIndex: 15
   population:
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 21.7
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.15
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 31.1
+    avoidanceWeight: 0.18064263
+    steeringAggressiveness: 61.2
+    throttleBase: 0.3
+    throttleRampRate: 0.00097
+    fitness: 0
+    evaluationCount: 0
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 9.6
+    minPrismScanDistance: 26.8
+    maxNudgeStrength: 0.15
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 31.1
+    avoidanceWeight: 0.266
+    steeringAggressiveness: 114.12342
+    throttleBase: 0.79298997
+    throttleRampRate: 0.00097
+    fitness: 0
+    evaluationCount: 0
+  - prismDetectionRadius: 20
+    skimStandoffDistance: 9.6
+    minPrismScanDistance: 34.70291
+    maxNudgeStrength: 0.131
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 31.512094
+    avoidanceWeight: 0.266
+    steeringAggressiveness: 125.89551
+    throttleBase: 0.414
+    throttleRampRate: 0.00097
+    fitness: 0
+    evaluationCount: 0
   - prismDetectionRadius: 35.7
     skimStandoffDistance: 9.6
     minPrismScanDistance: 26.8
@@ -29,41 +65,197 @@ MonoBehaviour:
     steeringAggressiveness: 147.9
     throttleBase: 0.875
     throttleRampRate: 0.00905
-    fitness: 0
-    evaluationCount: 0
+    fitness: -1766.8021
+    evaluationCount: 1
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 16.4
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.14057319
+    dotCrystalThreshold: 0.67701113
+    collisionAvoidanceDistance: 46.4
+    avoidanceWeight: 0.119
+    steeringAggressiveness: 118.1
+    throttleBase: 0.676
+    throttleRampRate: 0.0053
+    fitness: -3324.4568
+    evaluationCount: 1
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 26.729189
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.15
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 32.14892
+    avoidanceWeight: 0.19621421
+    steeringAggressiveness: 114.12342
+    throttleBase: 0.79298997
+    throttleRampRate: 0.00097
+    fitness: -2663.4358
+    evaluationCount: 1
+  - prismDetectionRadius: 47.64965
+    skimStandoffDistance: 21.7
+    minPrismScanDistance: 26.8
+    maxNudgeStrength: 0.131
+    dotCrystalThreshold: 0.627
+    collisionAvoidanceDistance: 40.275356
+    avoidanceWeight: 0.266
+    steeringAggressiveness: 147.9
+    throttleBase: 0.875
+    throttleRampRate: 0.007448934
+    fitness: -1801.0773
+    evaluationCount: 1
+  - prismDetectionRadius: 35.7
+    skimStandoffDistance: 9.6
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.11587021
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 60.613976
+    avoidanceWeight: 0.266
+    steeringAggressiveness: 112.239975
+    throttleBase: 0.38385975
+    throttleRampRate: 0.00905
+    fitness: -2405.7021
+    evaluationCount: 1
+  - prismDetectionRadius: 100
+    skimStandoffDistance: 16.4
+    minPrismScanDistance: 17.7
+    maxNudgeStrength: 0.152
+    dotCrystalThreshold: 0.46395987
+    collisionAvoidanceDistance: 46.4
+    avoidanceWeight: 0.223
+    steeringAggressiveness: 130.37651
+    throttleBase: 0.4200082
+    throttleRampRate: 0.0038208638
+    fitness: -2927.9133
+    evaluationCount: 1
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 21.7
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.024016477
+    dotCrystalThreshold: 0.5262545
+    collisionAvoidanceDistance: 31.1
+    avoidanceWeight: 0.1724145
+    steeringAggressiveness: 51.5
+    throttleBase: 0.44
+    throttleRampRate: 0.00097
+    fitness: -779.94855
+    evaluationCount: 1
   - prismDetectionRadius: 162.9
     skimStandoffDistance: 21.7
     minPrismScanDistance: 37.4
     maxNudgeStrength: 0.15
-    dotCrystalThreshold: 0.577
+    dotCrystalThreshold: 0.51167583
     collisionAvoidanceDistance: 31.1
-    avoidanceWeight: 0.119
+    avoidanceWeight: 0.09023916
     steeringAggressiveness: 61.2
+    throttleBase: 0.3
+    throttleRampRate: 0.00097
+    fitness: -1155.6697
+    evaluationCount: 1
+  - prismDetectionRadius: 190.85838
+    skimStandoffDistance: 21.7
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.15
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 23.45735
+    avoidanceWeight: 0.18178906
+    steeringAggressiveness: 42.4691
     throttleBase: 0.414
+    throttleRampRate: 0.00097
+    fitness: -754.00885
+    evaluationCount: 1
+  - prismDetectionRadius: 35.7
+    skimStandoffDistance: 9.6
+    minPrismScanDistance: 26.8
+    maxNudgeStrength: 0.09600204
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 31.512094
+    avoidanceWeight: 0.3266072
+    steeringAggressiveness: 125.89551
+    throttleBase: 0.875
+    throttleRampRate: 0.00905
+    fitness: -1233.847
+    evaluationCount: 1
+  - prismDetectionRadius: 187.55737
+    skimStandoffDistance: 21.7
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.118612766
+    dotCrystalThreshold: 0.5262545
+    collisionAvoidanceDistance: 31.1
+    avoidanceWeight: 0.1724145
+    steeringAggressiveness: 57.819298
+    throttleBase: 0.414
+    throttleRampRate: 0.00097
+    fitness: -591.6828
+    evaluationCount: 1
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 8
+    minPrismScanDistance: 10.911497
+    maxNudgeStrength: 0.15
+    dotCrystalThreshold: 0.404
+    collisionAvoidanceDistance: 31.1
+    avoidanceWeight: 0.084
+    steeringAggressiveness: 20
+    throttleBase: 0.44
+    throttleRampRate: 0.00097
+    fitness: -1334.2042
+    evaluationCount: 1
+  - prismDetectionRadius: 20
+    skimStandoffDistance: 9.6
+    minPrismScanDistance: 34.8
+    maxNudgeStrength: 0.152
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 31.512094
+    avoidanceWeight: 0.266
+    steeringAggressiveness: 125.89551
+    throttleBase: 0.676
     throttleRampRate: 0.00097
     fitness: 0
     evaluationCount: 0
-  - prismDetectionRadius: 100
-    skimStandoffDistance: 16.4
-    minPrismScanDistance: 34.8
-    maxNudgeStrength: 0.152
-    dotCrystalThreshold: 0.62
-    collisionAvoidanceDistance: 46.4
-    avoidanceWeight: 0.223
-    steeringAggressiveness: 118.1
-    throttleBase: 0.676
-    throttleRampRate: 0.0053
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 21.7
+    minPrismScanDistance: 39.182587
+    maxNudgeStrength: 0.16004762
+    dotCrystalThreshold: 0.5133246
+    collisionAvoidanceDistance: 52.2
+    avoidanceWeight: 0.266
+    steeringAggressiveness: 56.04723
+    throttleBase: 0.40539685
+    throttleRampRate: 0.00097
     fitness: 0
     evaluationCount: 0
-  - prismDetectionRadius: 47
-    skimStandoffDistance: 8
-    minPrismScanDistance: 17.7
-    maxNudgeStrength: 0.054
-    dotCrystalThreshold: 0.404
-    collisionAvoidanceDistance: 21.5
-    avoidanceWeight: 0.084
-    steeringAggressiveness: 51.5
-    throttleBase: 0.44
-    throttleRampRate: 0.00204
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 20.24731
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.15
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 52.2
+    avoidanceWeight: 0.16074231
+    steeringAggressiveness: 61.2
+    throttleBase: 0.3622697
+    throttleRampRate: 0.00054060644
+    fitness: 0
+    evaluationCount: 0
+  - prismDetectionRadius: 187.55737
+    skimStandoffDistance: 21.7
+    minPrismScanDistance: 37.4
+    maxNudgeStrength: 0.118612766
+    dotCrystalThreshold: 0.577
+    collisionAvoidanceDistance: 52.2
+    avoidanceWeight: 0.31710416
+    steeringAggressiveness: 61.2
+    throttleBase: 0.5075815
+    throttleRampRate: 0.00059649267
+    fitness: 0
+    evaluationCount: 0
+  - prismDetectionRadius: 162.9
+    skimStandoffDistance: 16.4
+    minPrismScanDistance: 27.43693
+    maxNudgeStrength: 0.152
+    dotCrystalThreshold: 0.627
+    collisionAvoidanceDistance: 29.639145
+    avoidanceWeight: 0.24487045
+    steeringAggressiveness: 127.28871
+    throttleBase: 0.676
+    throttleRampRate: 0.0053
     fitness: 0
     evaluationCount: 0
