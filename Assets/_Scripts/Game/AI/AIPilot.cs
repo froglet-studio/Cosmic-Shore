@@ -88,11 +88,9 @@ namespace CosmicShore.Game.AI
         float G_MinPrismScanDistance => _activeGenome != null ? Mathf.Lerp(20f, _activeGenome.minPrismScanDistance, IntensityT) : 20f;
         float G_MaxNudgeStrength => _activeGenome != null ? Mathf.Lerp(0.15f, _activeGenome.maxNudgeStrength, IntensityT) : Mathf.Lerp(0.05f, 0.15f, IntensityT);
         float G_DotCrystalThreshold => _activeGenome != null ? Mathf.Lerp(0.5f, _activeGenome.dotCrystalThreshold, IntensityT) : 0.5f;
-        float G_DotForwardThreshold => _activeGenome != null ? Mathf.Lerp(0.3f, _activeGenome.dotForwardThreshold, IntensityT) : 0.3f;
         float G_CollisionAvoidanceDistance => _activeGenome != null ? Mathf.Lerp(collisionAvoidanceDistance, _activeGenome.collisionAvoidanceDistance, IntensityT) : collisionAvoidanceDistance;
         float G_AvoidanceWeight => _activeGenome != null ? Mathf.Lerp(0.15f, _activeGenome.avoidanceWeight, IntensityT) : Mathf.Lerp(0.05f, 0.15f, IntensityT);
-        float G_CrystalFadeDistance => _activeGenome != null ? Mathf.Lerp(50f, _activeGenome.crystalFadeDistance, IntensityT) : 50f;
-        float G_BoostFadeStrength => _activeGenome != null ? Mathf.Lerp(0.6f, _activeGenome.boostFadeStrength, IntensityT) : 0.6f;
+        float G_SteeringAggressiveness => _activeGenome != null ? Mathf.Lerp(100f, _activeGenome.steeringAggressiveness, IntensityT) : 100f;
         float G_ThrottleRampRate => _activeGenome != null ? Mathf.Lerp(throttleIncrease, _activeGenome.throttleRampRate, IntensityT) : throttleIncrease;
 
         IVessel vessel;
@@ -310,8 +308,8 @@ namespace CosmicShore.Game.AI
             Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
             Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
 
-            aggressiveness = 100f;
-            float angle = Mathf.Asin(Mathf.Clamp(localCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
+            float steering = G_SteeringAggressiveness;
+            float angle = Mathf.Asin(Mathf.Clamp(localCrossProduct.sqrMagnitude * steering / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
             if (VesselStatus.IsSingleStickControls)
             {
@@ -375,8 +373,9 @@ namespace CosmicShore.Game.AI
                 float dotCrystal = Vector3.Dot(crystalDir, dirToPrism);
                 if (dotCrystal < G_DotCrystalThreshold) continue;
 
+                // Must be in our forward arc (not behind us)
                 float dotForward = Vector3.Dot(transform.forward, dirToPrism);
-                if (dotForward < G_DotForwardThreshold) continue;
+                if (dotForward < 0.2f) continue;
 
                 // Score: prisms closest to the line toward crystal score highest
                 float score = dotCrystal * 2f + (1f - dist / scanRadius);
@@ -415,13 +414,7 @@ namespace CosmicShore.Game.AI
             float gapToClose = perpDist - standoff;
             float gapNorm = Mathf.Clamp01(gapToClose / (G_PrismDetectionRadius * 0.5f));
 
-            // Scale by crystal proximity and boost
-            float distToCrystal = (_crystalTargetPosition - transform.position).magnitude;
-            float crystalFade = Mathf.Clamp01(distToCrystal / G_CrystalFadeDistance);
-            float boostNorm = Mathf.Clamp01((VesselStatus.BoostMultiplier - 1f) / 4f);
-            float boostFade = 1f - boostNorm * G_BoostFadeStrength;
-
-            float nudgeMag = G_MaxNudgeStrength * gapNorm * crystalFade * boostFade;
+            float nudgeMag = G_MaxNudgeStrength * gapNorm;
 
             return nudgeDir * nudgeMag;
         }

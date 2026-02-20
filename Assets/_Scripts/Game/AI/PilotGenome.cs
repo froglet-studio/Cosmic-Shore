@@ -12,15 +12,13 @@ namespace CosmicShore.Game.AI
         [Range(10f, 60f)]   public float minPrismScanDistance = 20f;
         [Range(0.01f, 0.3f)] public float maxNudgeStrength = 0.15f;
         [Range(0.3f, 0.95f)] public float dotCrystalThreshold = 0.5f;
-        [Range(0.1f, 0.8f)]  public float dotForwardThreshold = 0.3f;
 
         // --- Collision avoidance ---
         [Range(10f, 80f)]   public float collisionAvoidanceDistance = 30f;
         [Range(0.02f, 0.4f)] public float avoidanceWeight = 0.15f;
 
-        // --- Target weighting ---
-        [Range(10f, 100f)]  public float crystalFadeDistance = 50f;
-        [Range(0.1f, 1f)]   public float boostFadeStrength = 0.6f;
+        // --- Steering ---
+        [Range(20f, 200f)]  public float steeringAggressiveness = 100f;
 
         // --- Throttle ---
         [Range(0.3f, 1f)]   public float throttleBase = 0.6f;
@@ -39,11 +37,9 @@ namespace CosmicShore.Game.AI
             minPrismScanDistance = other.minPrismScanDistance;
             maxNudgeStrength = other.maxNudgeStrength;
             dotCrystalThreshold = other.dotCrystalThreshold;
-            dotForwardThreshold = other.dotForwardThreshold;
             collisionAvoidanceDistance = other.collisionAvoidanceDistance;
             avoidanceWeight = other.avoidanceWeight;
-            crystalFadeDistance = other.crystalFadeDistance;
-            boostFadeStrength = other.boostFadeStrength;
+            steeringAggressiveness = other.steeringAggressiveness;
             throttleBase = other.throttleBase;
             throttleRampRate = other.throttleRampRate;
             fitness = 0f;
@@ -59,11 +55,9 @@ namespace CosmicShore.Game.AI
                 minPrismScanDistance = UnityEngine.Random.Range(10f, 60f),
                 maxNudgeStrength = UnityEngine.Random.Range(0.01f, 0.3f),
                 dotCrystalThreshold = UnityEngine.Random.Range(0.3f, 0.95f),
-                dotForwardThreshold = UnityEngine.Random.Range(0.1f, 0.8f),
                 collisionAvoidanceDistance = UnityEngine.Random.Range(10f, 80f),
                 avoidanceWeight = UnityEngine.Random.Range(0.02f, 0.4f),
-                crystalFadeDistance = UnityEngine.Random.Range(10f, 100f),
-                boostFadeStrength = UnityEngine.Random.Range(0.1f, 1f),
+                steeringAggressiveness = UnityEngine.Random.Range(20f, 200f),
                 throttleBase = UnityEngine.Random.Range(0.3f, 1f),
                 throttleRampRate = UnityEngine.Random.Range(0f, 0.01f),
                 fitness = 0f,
@@ -74,35 +68,31 @@ namespace CosmicShore.Game.AI
         public static PilotGenome Crossover(PilotGenome a, PilotGenome b)
         {
             var child = new PilotGenome();
-            child.prismDetectionRadius    = Pick(a.prismDetectionRadius, b.prismDetectionRadius);
-            child.skimStandoffDistance     = Pick(a.skimStandoffDistance, b.skimStandoffDistance);
-            child.minPrismScanDistance     = Pick(a.minPrismScanDistance, b.minPrismScanDistance);
-            child.maxNudgeStrength         = Pick(a.maxNudgeStrength, b.maxNudgeStrength);
-            child.dotCrystalThreshold      = Pick(a.dotCrystalThreshold, b.dotCrystalThreshold);
-            child.dotForwardThreshold      = Pick(a.dotForwardThreshold, b.dotForwardThreshold);
+            child.prismDetectionRadius      = Pick(a.prismDetectionRadius, b.prismDetectionRadius);
+            child.skimStandoffDistance       = Pick(a.skimStandoffDistance, b.skimStandoffDistance);
+            child.minPrismScanDistance       = Pick(a.minPrismScanDistance, b.minPrismScanDistance);
+            child.maxNudgeStrength           = Pick(a.maxNudgeStrength, b.maxNudgeStrength);
+            child.dotCrystalThreshold        = Pick(a.dotCrystalThreshold, b.dotCrystalThreshold);
             child.collisionAvoidanceDistance = Pick(a.collisionAvoidanceDistance, b.collisionAvoidanceDistance);
-            child.avoidanceWeight          = Pick(a.avoidanceWeight, b.avoidanceWeight);
-            child.crystalFadeDistance      = Pick(a.crystalFadeDistance, b.crystalFadeDistance);
-            child.boostFadeStrength        = Pick(a.boostFadeStrength, b.boostFadeStrength);
-            child.throttleBase             = Pick(a.throttleBase, b.throttleBase);
-            child.throttleRampRate         = Pick(a.throttleRampRate, b.throttleRampRate);
+            child.avoidanceWeight            = Pick(a.avoidanceWeight, b.avoidanceWeight);
+            child.steeringAggressiveness     = Pick(a.steeringAggressiveness, b.steeringAggressiveness);
+            child.throttleBase               = Pick(a.throttleBase, b.throttleBase);
+            child.throttleRampRate           = Pick(a.throttleRampRate, b.throttleRampRate);
             return child;
         }
 
         public void Mutate(float rate, float strength)
         {
-            prismDetectionRadius    = MutateGene(prismDetectionRadius, rate, strength, 20f, 200f);
-            skimStandoffDistance     = MutateGene(skimStandoffDistance, rate, strength, 4f, 30f);
-            minPrismScanDistance    = MutateGene(minPrismScanDistance, rate, strength, 10f, 60f);
-            maxNudgeStrength        = MutateGene(maxNudgeStrength, rate, strength, 0.01f, 0.3f);
-            dotCrystalThreshold     = MutateGene(dotCrystalThreshold, rate, strength, 0.3f, 0.95f);
-            dotForwardThreshold     = MutateGene(dotForwardThreshold, rate, strength, 0.1f, 0.8f);
-            collisionAvoidanceDistance = MutateGene(collisionAvoidanceDistance, rate, strength, 10f, 80f);
-            avoidanceWeight         = MutateGene(avoidanceWeight, rate, strength, 0.02f, 0.4f);
-            crystalFadeDistance     = MutateGene(crystalFadeDistance, rate, strength, 10f, 100f);
-            boostFadeStrength       = MutateGene(boostFadeStrength, rate, strength, 0.1f, 1f);
-            throttleBase            = MutateGene(throttleBase, rate, strength, 0.3f, 1f);
-            throttleRampRate        = MutateGene(throttleRampRate, rate, strength, 0f, 0.01f);
+            prismDetectionRadius       = MutateGene(prismDetectionRadius, rate, strength, 20f, 200f);
+            skimStandoffDistance        = MutateGene(skimStandoffDistance, rate, strength, 4f, 30f);
+            minPrismScanDistance        = MutateGene(minPrismScanDistance, rate, strength, 10f, 60f);
+            maxNudgeStrength            = MutateGene(maxNudgeStrength, rate, strength, 0.01f, 0.3f);
+            dotCrystalThreshold         = MutateGene(dotCrystalThreshold, rate, strength, 0.3f, 0.95f);
+            collisionAvoidanceDistance  = MutateGene(collisionAvoidanceDistance, rate, strength, 10f, 80f);
+            avoidanceWeight             = MutateGene(avoidanceWeight, rate, strength, 0.02f, 0.4f);
+            steeringAggressiveness      = MutateGene(steeringAggressiveness, rate, strength, 20f, 200f);
+            throttleBase                = MutateGene(throttleBase, rate, strength, 0.3f, 1f);
+            throttleRampRate            = MutateGene(throttleRampRate, rate, strength, 0f, 0.01f);
         }
 
         static float Pick(float a, float b) => UnityEngine.Random.value < 0.5f ? a : b;

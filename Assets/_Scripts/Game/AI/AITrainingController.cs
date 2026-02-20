@@ -1,6 +1,5 @@
 using System.Collections;
 using CosmicShore.Soap;
-using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game.AI
@@ -29,6 +28,7 @@ namespace CosmicShore.Game.AI
         [SerializeField] int maxRaces = 10000;
         [SerializeField] float delayBetweenRaces = 1f;
         [SerializeField] float raceTimeoutSeconds = 300f;
+        [SerializeField, Range(1, 4)] int trainingIntensity = 4;
 
         int _racesCompleted;
         float _raceStartTime;
@@ -36,6 +36,10 @@ namespace CosmicShore.Game.AI
 
         void OnEnable()
         {
+            // Set intensity so all genome-aware code paths are active
+            if (gameData.SelectedIntensity != null)
+                gameData.SelectedIntensity.Value = trainingIntensity;
+
             gameData.OnMiniGameEnd += OnRaceEnd;
             gameData.OnMiniGameRoundStarted.OnRaised += OnRoundStarted;
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
@@ -120,9 +124,10 @@ namespace CosmicShore.Game.AI
             if (best == null) return;
 
             Debug.Log($"[AITraining] Best genome: " +
-                $"throttle={best.throttleBase:F2} standoff={best.skimStandoffDistance:F1} " +
-                $"nudge={best.maxNudgeStrength:F3} avoid={best.avoidanceWeight:F3} " +
-                $"detection={best.prismDetectionRadius:F0} fitness={best.fitness:F1}");
+                $"throttle={best.throttleBase:F2} steering={best.steeringAggressiveness:F0} " +
+                $"standoff={best.skimStandoffDistance:F1} nudge={best.maxNudgeStrength:F3} " +
+                $"avoid={best.avoidanceWeight:F3} detection={best.prismDetectionRadius:F0} " +
+                $"fitness={best.fitness:F1}");
         }
     }
 }

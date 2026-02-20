@@ -168,8 +168,9 @@ namespace CosmicShore.Game.AI
             {
                 var g = population[i];
                 Debug.Log($"[{i}] fitness={g.fitness:F2} evals={g.evaluationCount} " +
+                    $"throttle={g.throttleBase:F2} steering={g.steeringAggressiveness:F0} " +
                     $"standoff={g.skimStandoffDistance:F1} nudge={g.maxNudgeStrength:F3} " +
-                    $"avoid={g.avoidanceWeight:F3} throttle={g.throttleBase:F2}");
+                    $"avoid={g.avoidanceWeight:F3} detect={g.prismDetectionRadius:F0}");
             }
         }
     }
