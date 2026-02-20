@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Game.UI;
-using Cysharp.Threading.Tasks; 
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -11,10 +11,14 @@ namespace CosmicShore.Game.Arcade
     {
         [Header("Dependencies")]
         [SerializeField] CrystalCollisionTurnMonitor turnMonitor;
+        [SerializeField] private HexRaceController controller;
 
         [Header("Settings")]
         [SerializeField] float penaltyScoreBase = 10000f;
         [SerializeField] bool showDebugLogs = true;
+
+        [Header("Joust")]
+        [SerializeField] ScriptableEventString OnJoustCollisionEvent;
 
         public float MaxDriftTimeRecord { get; private set; }
         public float MaxHighBoostTimeRecord { get; private set; }
@@ -24,30 +28,35 @@ namespace CosmicShore.Game.Arcade
         private float _currentBoostTime;
         private int _currentCleanStreak;
         private float _elapsedRaceTime;
-        
+
         private IVesselStatus _observedVessel;
         private bool _isTracking;
         private bool _hasReported;
-        private IStatExposable _statExposableImplementation;
 
-        protected virtual void Start()
+        private int _joustsWonSession;
+        public int JoustsWonSession => _joustsWonSession;
+
+        void Start()
         {
             SubscribeEvents();
-            
-            // ONLY ONE EVENT: OnMiniGameTurnEnd
+
             gameData.OnMiniGameTurnEnd.OnRaised += HandleGameEnd;
-            
+
             ElementalCrystalImpactor.OnCrystalCollected += HandleCrystalCollected;
             VesselResetBoostPrismEffectSO.OnPrismCollision += HandlePrismCollision;
             gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
+
+            if (OnJoustCollisionEvent) OnJoustCollisionEvent.OnRaised += HandleJoustEvent;
         }
 
-        protected virtual void OnDestroy()
+        void OnDestroy()
         {
             UnsubscribeEvents();
-            
+
             ElementalCrystalImpactor.OnCrystalCollected -= HandleCrystalCollected;
             VesselResetBoostPrismEffectSO.OnPrismCollision -= HandlePrismCollision;
+
+            if (OnJoustCollisionEvent) OnJoustCollisionEvent.OnRaised -= HandleJoustEvent;
 
             if (gameData == null) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
@@ -81,7 +90,7 @@ namespace CosmicShore.Game.Arcade
             if (!_isTracking || _observedVessel == null) return;
 
             _elapsedRaceTime += Time.deltaTime;
-            
+
             if (gameData.LocalRoundStats != null)
                 gameData.LocalRoundStats.Score = _elapsedRaceTime;
 
@@ -94,26 +103,32 @@ namespace CosmicShore.Game.Arcade
             if (_observedVessel.IsDrifting) _currentDriftTime += Time.deltaTime;
             else { if (_currentDriftTime > 0 && _currentDriftTime > MaxDriftTimeRecord) MaxDriftTimeRecord = _currentDriftTime; _currentDriftTime = 0; }
         }
-        
+
         void TrackBoost()
         {
             if (_observedVessel.IsBoosting && _observedVessel.BoostMultiplier >= 4.0f) _currentBoostTime += Time.deltaTime;
             else { if (_currentBoostTime > 0 && _currentBoostTime > MaxHighBoostTimeRecord) MaxHighBoostTimeRecord = _currentBoostTime; _currentBoostTime = 0; }
         }
-        
-        void HandleCrystalCollected(string p) 
-        { 
-            if (_isTracking && _observedVessel.PlayerName == p) 
-            { 
-                _currentCleanStreak++; 
-                if(_currentCleanStreak > MaxCleanStreak) MaxCleanStreak = _currentCleanStreak; 
-            } 
+
+        void HandleCrystalCollected(string p)
+        {
+            if (_isTracking && _observedVessel.PlayerName == p)
+            {
+                _currentCleanStreak++;
+                if(_currentCleanStreak > MaxCleanStreak) MaxCleanStreak = _currentCleanStreak;
+            }
         }
-        
-        void HandlePrismCollision() 
-        { 
-            if (_isTracking) _currentCleanStreak = 0; 
+
+        void HandlePrismCollision()
+        {
+            if (_isTracking) _currentCleanStreak = 0;
         }
+
+        void HandleJoustEvent(string winner)
+        {
+            if (gameData.LocalPlayer?.Name == winner) _joustsWonSession++;
+        }
+
         void HandleGameEnd()
         {
             if (_hasReported) return;
@@ -123,12 +138,11 @@ namespace CosmicShore.Game.Arcade
             if (_currentDriftTime > MaxDriftTimeRecord) MaxDriftTimeRecord = _currentDriftTime;
             if (_currentBoostTime > MaxHighBoostTimeRecord) MaxHighBoostTimeRecord = _currentBoostTime;
 
-            // Get crystals remaining
             int crystalsRemaining = 0;
             if (turnMonitor && int.TryParse(turnMonitor.GetRemainingCrystalsCountToCollect(), out int parsed))
                 crystalsRemaining = parsed;
 
-            bool isWinner = DetermineIfWinner(crystalsRemaining);
+            bool isWinner = crystalsRemaining <= 0;
 
             float finalScore = isWinner ? _elapsedRaceTime : (penaltyScoreBase + crystalsRemaining);
 
@@ -137,48 +151,30 @@ namespace CosmicShore.Game.Arcade
             if (showDebugLogs)
                 Debug.Log($"<color=yellow>[HexRaceTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
 
-            bool handledByController = ReportToMultiplayerController(finalScore, isWinner);
-
-            if (!handledByController)
+            if (isWinner)
             {
-                // Only report single-player stats when no multiplayer controller is
-                // handling the game end (avoids double-reporting in solo-with-AI mode
-                // where the multiplayer tracker reports its own stats).
-                if (UGSStatsManager.Instance && !gameData.IsMultiplayerMode && isWinner)
+                if (UGSStatsManager.Instance)
                 {
                     UGSStatsManager.Instance.ReportHexRaceStats(
-                        gameData.GameMode,
+                        GameModes.HexRace,
                         gameData.SelectedIntensity.Value,
                         MaxCleanStreak,
                         MaxDriftTimeRecord,
-                        MaxHighBoostTimeRecord,
+                        _joustsWonSession,
                         finalScore
                     );
                 }
 
-                SortAndInvokeResults();
+                if (controller) controller.ReportLocalPlayerFinished(finalScore);
             }
-        }
 
-        protected virtual bool DetermineIfWinner(int localCrystalsRemaining)
-        {
-            // Singleplayer: Always a winner if crystals remaining = 0
-            if (!gameData.IsMultiplayerMode)
-                return localCrystalsRemaining == 0;
-
-            // Multiplayer: Determined by child class
-            return false;
+            if (controller == null)
+                SortAndInvokeResults();
         }
 
         protected override void CalculateWinnerAndInvokeEvent()
         {
-            // Not used anymore
-        }
-
-        protected virtual bool ReportToMultiplayerController(float finalScore, bool isWinner)
-        {
-            // Overridden in multiplayer — returns true if a controller handled the game end
-            return false;
+            // Not used — HandleGameEnd drives the flow
         }
 
         public Dictionary<string, object> GetExposedStats()
@@ -187,7 +183,8 @@ namespace CosmicShore.Game.Arcade
             {
                 { "Max Clean Streak", MaxCleanStreak },
                 { "Longest Drift", MaxDriftTimeRecord },
-                { "Max Boost Time", MaxHighBoostTimeRecord }
+                { "Max Boost Time", MaxHighBoostTimeRecord },
+                { "Jousts Won", JoustsWonSession }
             };
         }
     }

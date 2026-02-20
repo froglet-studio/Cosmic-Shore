@@ -1,6 +1,5 @@
 ﻿using System.Collections;
-using CosmicShore.Core;
-using CosmicShore.Game.Analytics;
+using System.Linq;
 using CosmicShore.Game.Cinematics;
 using UnityEngine;
 
@@ -8,7 +7,8 @@ namespace CosmicShore.Game.Arcade
 {
     public class HexRaceEndGameController : EndGameCinematicController
     {
-        private const float PenaltyScoreBase = 10000f;
+        [Header("Hex Race")]
+        [SerializeField] private HexRaceController hexRaceController;
 
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
@@ -17,44 +17,53 @@ namespace CosmicShore.Game.Arcade
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
 
-            gameData.IsLocalDomainWinner(out DomainStats stats);
-            float rawScore = stats.Score;
+            var localName = gameData.LocalPlayer?.Name;
+            if (string.IsNullOrEmpty(localName))
+            {
+                Debug.LogError("[HexRaceEndGame] LocalPlayer.Name is null or empty.");
+                yield break;
+            }
 
-            bool isWin = rawScore < PenaltyScoreBase;
+            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
+            if (localStats == null)
+            {
+                Debug.LogError($"[HexRaceEndGame] Could not find RoundStats for '{localName}'. " +
+                               $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
+                yield break;
+            }
+
+            // Single source of truth — the controller received this authoritatively from the server
+            bool didWin = hexRaceController != null
+                && hexRaceController.RaceResultsReady
+                && hexRaceController.WinnerName == localName;
+
+            string headerText = didWin ? "VICTORY" : "DEFEAT";
+            string label;
             int displayValue;
-            string labelText;
             bool formatAsTime;
 
-            if (isWin)
+            if (didWin)
             {
-                displayValue = Mathf.FloorToInt(rawScore); 
-                labelText = "RACE TIME";
+                label = "RACE TIME";
+                displayValue = (int)localStats.Score;
                 formatAsTime = true;
-                if (UGSStatsManager.Instance && System.Enum.TryParse(gameData.GameMode.ToString(), out GameModes modeEnum))
-                {
-                    float bestTime = UGSStatsManager.Instance.GetEvaluatedHighScore(
-                        modeEnum, 
-                        gameData.SelectedIntensity.Value, 
-                        rawScore
-                    );
-                    if (bestTime <= 0.01f) bestTime = rawScore;
-                }
             }
             else
             {
-                // LOSS: Show Crystals
-                displayValue = Mathf.FloorToInt(rawScore - PenaltyScoreBase);
-                labelText = "CRYSTALS LEFT";
+                label = "CRYSTALS LEFT";
+                displayValue = Mathf.Max(0, (int)(localStats.Score - 10000f));
                 formatAsTime = false;
             }
 
-            string finalLabel = isWin ? cinematic.GetCinematicTextForScore(100) : "OUT OF FUEL";
+            Debug.Log($"[HexRaceEndGame] Local='{localName}' Score={localStats.Score} didWin={didWin} " +
+                      $"WinnerName='{hexRaceController?.WinnerName}' " +
+                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 
             yield return view.PlayScoreRevealAnimation(
-                finalLabel + $"\n<size=60%>{labelText}</size>",
+                headerText + $"\n<size=60%>{label}</size>",
                 displayValue,
                 cinematic.scoreRevealSettings,
-                formatAsTime 
+                formatAsTime
             );
         }
     }

@@ -7,7 +7,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
-        [SerializeField] private MultiplayerHexRaceController controller;
+        [SerializeField] private HexRaceController controller;
 
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
