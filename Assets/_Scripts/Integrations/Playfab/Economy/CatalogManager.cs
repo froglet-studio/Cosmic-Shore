@@ -19,6 +19,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {
+        [SerializeField]
+        NetworkMonitorDataVariable  _networkMonitorDataVariable;
+        NetworkMonitorData _networkMonitorData => _networkMonitorDataVariable.Value;
+        
         // PlayFab Economy API instance
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
@@ -49,7 +53,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             OnLoadCatalogSuccess += LoadPlayerInventory;
             OnLoadInventory += GrantStartingInventoryIfInventoryIsEmpty;
 
-            NetworkMonitor.OnNetworkConnectionLost += Inventory.LoadFromDisk;
+            _networkMonitorData.OnNetworkLost.OnRaised += Inventory.LoadFromDisk;
         }
 
         public void OnDestroy()
@@ -59,7 +63,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             OnLoadCatalogSuccess -= LoadPlayerInventory;
             OnLoadInventory -= GrantStartingInventoryIfInventoryIsEmpty;
 
-            NetworkMonitor.OnNetworkConnectionLost -= Inventory.LoadFromDisk;
+            _networkMonitorData.OnNetworkLost.OnRaised -= Inventory.LoadFromDisk;
         }
 
         #region Initialize PlayFab Economy API with Auth Context

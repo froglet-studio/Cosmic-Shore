@@ -20,6 +20,10 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
     /// </summary>
     public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     {
+        [SerializeField]
+        NetworkMonitorDataVariable  _networkMonitorDataVariable;
+        NetworkMonitorData _networkMonitorData => _networkMonitorDataVariable.Value;
+        
         /// <summary>
         /// Leaderboard Entry struct
         /// Has members: Position(Rank), Score and Player Display Name
@@ -54,8 +58,8 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         private void Start()
         {
-            NetworkMonitor.OnNetworkConnectionFound += ComeOnline;
-            NetworkMonitor.OnNetworkConnectionLost += GoOffline;
+            _networkMonitorData.OnNetworkFound.OnRaised += ComeOnline;
+            _networkMonitorData.OnNetworkLost.OnRaised += GoOffline;
             PlayerDataController.OnProfileLoaded += ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "Initiated.");
         }
@@ -65,8 +69,8 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         /// </summary>
         private void OnDestroy()
         {
-            NetworkMonitor.OnNetworkConnectionFound -= ComeOnline;
-            NetworkMonitor.OnNetworkConnectionLost -= GoOffline;
+            _networkMonitorData.OnNetworkFound.OnRaised -= ComeOnline;
+            _networkMonitorData.OnNetworkLost.OnRaised -= GoOffline;
             PlayerDataController.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "this instance is disposed.");
         }

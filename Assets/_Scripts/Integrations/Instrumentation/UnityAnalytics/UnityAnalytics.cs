@@ -5,29 +5,37 @@ using UnityEngine;
 
 namespace CosmicShore.Integrations.Instrumentation.UnityAnalytics
 {
-    public class UnityAnalytics : SingletonPersistent<UnityAnalytics>
+    public class UnityAnalytics : MonoBehaviour
     {
-        private const bool IsConsented = true;
-
+        [SerializeField]
+        NetworkMonitorDataVariable  _networkMonitorDataVariable;
+        NetworkMonitorData _networkMonitorData => _networkMonitorDataVariable.Value;
+        
+        [SerializeField]
+        AuthenticationDataVariable  _authenticationDataVariable;
+        AuthenticationData _authenticationData => _authenticationDataVariable.Value;
+        
+        private const bool IS_CONSENTED = true;
         private bool _isConnected = true;
-        // Start is called before the first frame update
-        private async void Start()
-        {
-            await UnityServices.InitializeAsync();
-            AskForConsents();
-            SetUserId();
-        }
 
         private void OnEnable()
         {
-            NetworkMonitor.OnNetworkConnectionFound += OnNetworkEnabled;
-            NetworkMonitor.OnNetworkConnectionLost += OnNetworkDisabled;
+            _authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
+            _networkMonitorData.OnNetworkFound.OnRaised += OnNetworkEnabled;
+            _networkMonitorData.OnNetworkLost.OnRaised += OnNetworkDisabled;
         }
 
         private void OnDisable()
         {
-            NetworkMonitor.OnNetworkConnectionFound -= OnNetworkEnabled;
-            NetworkMonitor.OnNetworkConnectionLost -= OnNetworkDisabled;
+            _authenticationData.OnSignedIn.OnRaised -= OnAuthenticationSignedIn;
+            _networkMonitorData.OnNetworkFound.OnRaised -= OnNetworkEnabled;
+            _networkMonitorData.OnNetworkLost.OnRaised -= OnNetworkDisabled;
+        }
+
+        void OnAuthenticationSignedIn()
+        {
+            AskForConsents();
+            SetUserId();
         }
 
         /// <summary>
@@ -36,7 +44,7 @@ namespace CosmicShore.Integrations.Instrumentation.UnityAnalytics
         /// </summary>
         private void AskForConsents()
         {
-            if(IsConsented && _isConnected) AnalyticsService.Instance.StartDataCollection();
+            if(IS_CONSENTED && _isConnected) AnalyticsService.Instance.StartDataCollection();
             else AnalyticsService.Instance.StopDataCollection();
         }
 
@@ -68,7 +76,7 @@ namespace CosmicShore.Integrations.Instrumentation.UnityAnalytics
         /// </summary>
         private void SetUserId()
         {
-            if (!_isConnected || !IsConsented) return;
+            if (!_isConnected || !IS_CONSENTED) return;
             UnityServices.ExternalUserId = SystemInfo.deviceUniqueIdentifier;
         }
 
@@ -78,7 +86,7 @@ namespace CosmicShore.Integrations.Instrumentation.UnityAnalytics
         /// </summary>
         public void ForceUploadData()
         {
-            if (!_isConnected || !IsConsented) return;
+            if (!_isConnected || !IS_CONSENTED) return;
             AnalyticsService.Instance.Flush();
         }
     }
