@@ -11,18 +11,31 @@ namespace CosmicShore.Game.Arcade
     /// Attach to minigame scene alongside the minigame controller. Assign a comeback profile
     /// to configure per-vessel, per-element weights.
     ///
-    /// Example: In HexRace with SpaceWeight=1, a player 4 crystals behind the leader
-    /// gets their Space element raised by 4 levels, increasing their skimmer size.
-    /// In CrystalCapture with TimeWeight=1, the losing player's speed increases instead.
+    /// Example: In HexRace with SpaceWeight=1 and source=CrystalsCollected,
+    /// a player 4 crystals behind the leader gets Space element +4, growing their skimmer.
+    /// In CrystalCapture with TimeWeight=1 and source=Score, the losing player speeds up.
     /// </summary>
     public class ElementalComebackSystem : MonoBehaviour
     {
+        /// <summary>
+        /// Which stat to use when calculating who is ahead/behind.
+        /// HexRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
+        /// CrystalCapture uses Score directly.
+        /// </summary>
+        public enum ScoreDifferenceSource
+        {
+            Score,
+            CrystalsCollected,
+        }
+
         [Header("Config")]
         [SerializeField] SO_ElementalComebackProfile comebackProfile;
         [SerializeField] GameDataSO gameData;
 
         [Header("Scoring")]
-        [Tooltip("Enable for games where lower score is better (e.g. race times)")]
+        [Tooltip("Which stat drives the comeback calculation")]
+        [SerializeField] ScoreDifferenceSource differenceSource = ScoreDifferenceSource.CrystalsCollected;
+        [Tooltip("For Score source: enable when lower score is better (e.g. race times)")]
         [SerializeField] bool useGolfRules;
 
         [Header("Update Settings")]
@@ -35,17 +48,26 @@ namespace CosmicShore.Game.Arcade
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
 
-        // Baseline elemental levels captured at turn start (before any comeback adjustments)
         readonly Dictionary<string, float[]> _baselines = new();
         float _lastUpdateTime;
         bool _isActive;
 
         void OnEnable()
         {
-            if (gameData == null) return;
+            if (gameData == null)
+            {
+                Debug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
+                return;
+            }
+            if (comebackProfile == null)
+                Debug.LogWarning("[ElementalComebackSystem] No comeback profile assigned. System will be inactive.");
+
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd += OnGameEnded;
+
+            if (debugLogging)
+                Debug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
         }
 
         void OnDisable()
@@ -58,6 +80,12 @@ namespace CosmicShore.Game.Arcade
 
         void OnTurnStarted()
         {
+            if (debugLogging)
+                Debug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
+                          $"Profile={(comebackProfile != null ? comebackProfile.name : "NULL")}, " +
+                          $"Players={gameData.Players?.Count ?? 0}, " +
+                          $"Source={differenceSource}");
+
             if (comebackProfile == null) return;
 
             _isActive = true;
@@ -66,29 +94,35 @@ namespace CosmicShore.Game.Arcade
             foreach (var player in gameData.Players)
             {
                 var rs = GetResourceSystem(player);
-                if (rs == null) continue;
+                if (rs == null)
+                {
+                    if (debugLogging)
+                        Debug.LogWarning($"[ElementalComebackSystem] Player '{player?.Name}' has no ResourceSystem. Skipping.");
+                    continue;
+                }
 
                 var vesselType = player.Vessel.VesselStatus.VesselType;
                 var config = comebackProfile.GetConfig(vesselType);
 
-                // Apply minigame-specific initial elemental values for this vessel
                 ApplyInitialValues(rs, config);
 
-                // Capture baseline levels after initialization
                 var baseline = new float[AllElements.Length];
                 for (int i = 0; i < AllElements.Length; i++)
                     baseline[i] = rs.GetNormalizedLevel(AllElements[i]);
 
                 _baselines[player.Name] = baseline;
-            }
 
-            if (debugLogging)
-                Debug.Log("[ElementalComebackSystem] Turn started. Baselines captured for " +
-                          _baselines.Count + " players.");
+                if (debugLogging)
+                    Debug.Log($"[ElementalComebackSystem] Baseline for {player.Name} ({vesselType}): " +
+                              $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
+                              $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
+            }
         }
 
         void OnTurnEnded()
         {
+            if (debugLogging && _isActive)
+                Debug.Log("[ElementalComebackSystem] Turn ended. Deactivating.");
             _isActive = false;
         }
 
@@ -111,7 +145,7 @@ namespace CosmicShore.Game.Arcade
             var players = gameData.Players;
             if (players == null || players.Count < 2) return;
 
-            float leaderScore = GetLeaderScore();
+            float leaderValue = GetLeaderValue();
 
             for (int p = 0; p < players.Count; p++)
             {
@@ -120,8 +154,8 @@ namespace CosmicShore.Game.Arcade
                 if (rs == null) continue;
                 if (!_baselines.TryGetValue(player.Name, out var baseline)) continue;
 
-                float playerScore = GetPlayerScore(player);
-                float scoreDiff = CalculateScoreDifference(leaderScore, playerScore);
+                float playerValue = GetPlayerValue(player);
+                float scoreDiff = CalculateScoreDifference(leaderValue, playerValue);
 
                 var vesselType = player.Vessel.VesselStatus.VesselType;
                 var config = comebackProfile.GetConfig(vesselType);
@@ -130,67 +164,86 @@ namespace CosmicShore.Game.Arcade
                 {
                     var element = AllElements[i];
                     float weight = config.GetWeight(element);
-                    // Each unit of score difference increases the element by 'weight' levels
                     float bonusLevels = scoreDiff * weight;
-                    // Convert from integer levels to normalized (1 level = 0.1 normalized)
                     float targetNormalized = baseline[i] + (bonusLevels / 10f);
 
                     rs.SetElementLevel(element, targetNormalized);
                 }
 
-                if (debugLogging && scoreDiff > 0)
+                if (debugLogging)
                     Debug.Log($"[ElementalComebackSystem] {player.Name} ({vesselType}): " +
-                              $"scoreDiff={scoreDiff:F1}, " +
+                              $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1} → " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }
         }
 
-        /// <summary>
-        /// Set initial elemental values from the profile for this vessel type.
-        /// These provide per-vessel per-minigame balancing (e.g., Squirrel starts with
-        /// different Space level than Manta in HexRace).
-        /// </summary>
         void ApplyInitialValues(ResourceSystem rs, SO_ElementalComebackProfile.VesselComebackConfig config)
         {
             for (int i = 0; i < AllElements.Length; i++)
             {
                 float initialLevel = config.GetInitialLevel(AllElements[i]);
-                // Convert from integer level (-5 to 15) to normalized (-0.5 to 1.5)
                 rs.SetElementLevel(AllElements[i], initialLevel / 10f);
             }
         }
 
-        float GetLeaderScore()
+        // ---------------------------------------------------------------
+        // Value reading — uses the configured ScoreDifferenceSource
+        // ---------------------------------------------------------------
+
+        float GetLeaderValue()
         {
             var stats = gameData.RoundStatsList;
             if (stats == null || stats.Count == 0) return 0f;
 
-            float leader = stats[0].Score;
+            float leader = ReadValue(stats[0]);
             for (int i = 1; i < stats.Count; i++)
             {
-                float s = stats[i].Score;
-                if (useGolfRules ? s < leader : s > leader)
-                    leader = s;
+                float v = ReadValue(stats[i]);
+                if (IsHigherBetter() ? v > leader : v < leader)
+                    leader = v;
             }
             return leader;
         }
 
-        float GetPlayerScore(IPlayer player)
+        float GetPlayerValue(IPlayer player)
         {
-            return gameData.TryGetRoundStats(player.Name, out var stats) ? stats.Score : 0f;
+            return gameData.TryGetRoundStats(player.Name, out var stats) ? ReadValue(stats) : 0f;
+        }
+
+        float ReadValue(IRoundStats stats)
+        {
+            return differenceSource switch
+            {
+                ScoreDifferenceSource.CrystalsCollected => stats.CrystalsCollected,
+                ScoreDifferenceSource.Score => stats.Score,
+                _ => stats.Score
+            };
+        }
+
+        /// <summary>
+        /// For CrystalsCollected the leader has MORE crystals (higher is better).
+        /// For Score it depends on useGolfRules (golf = lower is better).
+        /// </summary>
+        bool IsHigherBetter()
+        {
+            return differenceSource switch
+            {
+                ScoreDifferenceSource.CrystalsCollected => true,
+                ScoreDifferenceSource.Score => !useGolfRules,
+                _ => !useGolfRules
+            };
         }
 
         /// <summary>
         /// Returns a non-negative value representing how far behind this player is.
         /// 0 for the leader; positive for everyone else.
         /// </summary>
-        float CalculateScoreDifference(float leaderScore, float playerScore)
+        float CalculateScoreDifference(float leaderValue, float playerValue)
         {
-            if (useGolfRules)
-                return Mathf.Max(0f, playerScore - leaderScore);
-            else
-                return Mathf.Max(0f, leaderScore - playerScore);
+            return IsHigherBetter()
+                ? Mathf.Max(0f, leaderValue - playerValue)
+                : Mathf.Max(0f, playerValue - leaderValue);
         }
 
         static ResourceSystem GetResourceSystem(IPlayer player)
