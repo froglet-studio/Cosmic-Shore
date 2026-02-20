@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Game;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Arcade.Tournament;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utilities;
@@ -177,6 +178,29 @@ namespace CosmicShore.Core
         public SO_ArcadeGame GetArcadeGameSOByName(string displayName)
         {
             return ArcadeGames.Games.Where(x => x.DisplayName == displayName).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Start a tournament of 5 random games (Crystal Capture, Hex Race, Joust).
+        /// Each game's intensity is randomly chosen at or below maxIntensity.
+        /// The scoreboard tracks game wins; the domain with the most wins after
+        /// 5 games is the tournament winner.
+        /// </summary>
+        public void LaunchTournament(int maxIntensity)
+        {
+            if (TournamentManager.Instance == null)
+            {
+                Debug.LogError("[Arcade] TournamentManager not found! " +
+                               "Add a TournamentManager to the persistent managers scene.");
+                return;
+            }
+
+            gameData.IsDailyChallenge = false;
+            gameData.IsTraining = false;
+            gameData.IsMission = false;
+            gameData.GameMode = GameModes.Tournament;
+
+            TournamentManager.Instance.StartTournament(maxIntensity, gameData);
         }
     }
 }

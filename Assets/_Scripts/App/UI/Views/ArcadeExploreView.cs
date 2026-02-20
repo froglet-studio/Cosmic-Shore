@@ -140,6 +140,12 @@ namespace CosmicShore.App.UI.Views
 
         public void PlaySelectedGame()
         {
+            if (SelectedGame.Mode == GameModes.Tournament)
+            {
+                Arcade.Instance.LaunchTournament(MiniGame.IntensityLevel);
+                return;
+            }
+
             LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
             Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
         }
