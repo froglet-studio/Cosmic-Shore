@@ -30,7 +30,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 38f86662381aa0c4da8018fa5fc4e62a, type: 2}
   - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
   - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
-  MinPlayers: 2
+  MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1
   MaxIntensity: 4

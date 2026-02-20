@@ -40,7 +40,7 @@ namespace CosmicShore.Game.Arcade
             return localCrystalsRemaining <= 0;
         }
 
-        protected override void ReportToMultiplayerController(float finalScore, bool isWinner)
+        protected override bool ReportToMultiplayerController(float finalScore, bool isWinner)
         {
             if (isWinner)
             {
@@ -48,11 +48,11 @@ namespace CosmicShore.Game.Arcade
                 if (UGSStatsManager.Instance)
                 {
                     UGSStatsManager.Instance.ReportMultiplayerHexStats(
-                        GameModes.MultiplayerHexRaceGame, 
+                        GameModes.MultiplayerHexRaceGame,
                         gameData.SelectedIntensity.Value,
-                        MaxCleanStreak, 
-                        MaxDriftTimeRecord, 
-                        _joustsWonSession, 
+                        MaxCleanStreak,
+                        MaxDriftTimeRecord,
+                        _joustsWonSession,
                         finalScore
                     );
                 }
@@ -61,6 +61,9 @@ namespace CosmicShore.Game.Arcade
             }
             // Losers do NOT call ReportLocalPlayerFinished — the server handles their score
             // assignment inside ReportPlayerFinished_ServerRpc when the winner reports.
+
+            // The multiplayer controller handles all game-end logic (even in solo mode)
+            return controller != null;
         }
         
         public Dictionary<string, object> GetExposedStats()

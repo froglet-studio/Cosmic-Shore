@@ -148,9 +148,9 @@ namespace CosmicShore.Game.Arcade
                     finalScore
                 );
             }
-            ReportToMultiplayerController(finalScore, isWinner);
+            bool handledByController = ReportToMultiplayerController(finalScore, isWinner);
 
-            if (!gameData.IsMultiplayerMode)
+            if (!handledByController && !gameData.IsMultiplayerMode)
             {
                 SortAndInvokeResults();
             }
@@ -171,9 +171,10 @@ namespace CosmicShore.Game.Arcade
             // Not used anymore
         }
 
-        protected virtual void ReportToMultiplayerController(float finalScore, bool isWinner)
+        protected virtual bool ReportToMultiplayerController(float finalScore, bool isWinner)
         {
-            // Overridden in multiplayer
+            // Overridden in multiplayer — returns true if a controller handled the game end
+            return false;
         }
 
         public Dictionary<string, object> GetExposedStats()

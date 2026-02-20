@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Mode: 33
   IsMultiplayer: 1
-  DisplayName: Multiplayer Hex Race
+  DisplayName: Hex Race
   Description: Find the fastest path to the crystal by skimming trails for a speed
     boost.
   IconActive: {fileID: 21300000, guid: 9842120c8e297c64d8e6e9bed82feeb5, type: 3}
@@ -31,7 +31,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
   - {fileID: 11400000, guid: 04eb553bdf07bae41b9c078b60e1cfaf, type: 2}
   - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}
-  MinPlayers: 2
+  MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1
   MaxIntensity: 4
