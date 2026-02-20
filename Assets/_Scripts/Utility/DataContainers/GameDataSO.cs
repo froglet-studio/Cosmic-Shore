@@ -82,7 +82,7 @@ namespace CosmicShore.Soap
             InvokeInitializeGame();
         }
 
-        public void SetupForMultiplayer()
+        public void DestroyPlayerAndVessel()
         {
             if (Players == null || Players.Count == 0)
                 return;
