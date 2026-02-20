@@ -113,7 +113,7 @@ namespace CosmicShore.Game.Arcade.Tournament
 
             // Use the Arcade singleton to launch the game
             // The Arcade.LaunchArcadeGame sets up gameData and loads the scene
-            Arcade.Instance.LaunchArcadeGame(
+            Core.Arcade.Instance.LaunchArcadeGame(
                 mode,
                 gameData.selectedVesselClass.Value,
                 gameData.ResourceCollection,

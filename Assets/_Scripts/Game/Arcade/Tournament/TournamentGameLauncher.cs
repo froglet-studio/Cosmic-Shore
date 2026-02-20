@@ -43,7 +43,7 @@ namespace CosmicShore.Game.Arcade.Tournament
             int maxIntensity = config.Intensity > 0 ? config.Intensity : 1;
 
             Debug.Log($"[TournamentLauncher] Starting tournament with max intensity {maxIntensity}");
-            Arcade.Instance.LaunchTournament(maxIntensity);
+            Core.Arcade.Instance.LaunchTournament(maxIntensity);
         }
     }
 }
