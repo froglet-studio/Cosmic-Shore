@@ -167,43 +167,52 @@ namespace CosmicShore.Game
                 return;
             }
 
-            // Spawn one AI opponent
-            var aiPlayerNO = Instantiate(playerPrefabNO);
+            // Determine how many AI opponents to spawn (fill remaining slots up to MaxPlayers)
+            int aiCount = 1;
+            var game = FindGameByMode(gameData.GameMode);
+            if (game != null && game.MaxPlayers > 1)
+                aiCount = game.MaxPlayers - 1;
 
-            // Position AI at second spawn point if available
-            if (_playerOrigins != null && _playerOrigins.Length > 1)
-                aiPlayerNO.transform.SetPositionAndRotation(_playerOrigins[1].position, _playerOrigins[1].rotation);
-
-            aiPlayerNO.Spawn(true); // server-owned
-
-            var aiPlayer = aiPlayerNO.GetComponent<Player>();
-            if (!aiPlayer)
+            for (int i = 0; i < aiCount; i++)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] AI Player prefab missing Player component.");
-                aiPlayerNO.Despawn(true);
-                return;
+                var aiPlayerNO = Instantiate(playerPrefabNO);
+
+                // Position AI at successive spawn points (index 1, 2, ...)
+                int spawnIndex = 1 + i;
+                if (_playerOrigins != null && spawnIndex < _playerOrigins.Length)
+                    aiPlayerNO.transform.SetPositionAndRotation(_playerOrigins[spawnIndex].position, _playerOrigins[spawnIndex].rotation);
+
+                aiPlayerNO.Spawn(true); // server-owned
+
+                var aiPlayer = aiPlayerNO.GetComponent<Player>();
+                if (!aiPlayer)
+                {
+                    Debug.LogError("[ServerPlayerVesselInitializer] AI Player prefab missing Player component.");
+                    aiPlayerNO.Despawn(true);
+                    continue;
+                }
+
+                // Configure AI player
+                var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
+                var aiVesselType = PickAIVesselType();
+
+                aiPlayer.NetDefaultVesselType.Value = aiVesselType;
+                aiPlayer.NetName.Value = $"AI Pilot {i + 1}";
+                aiPlayer.NetDomain.Value = aiDomain;
+                aiPlayer.NetIsAI.Value = true;
+
+                // Spawn AI vessel (server-owned)
+                if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
+                {
+                    aiPlayerNO.Despawn(true);
+                    continue;
+                }
+
+                // Configure the AI pilot on the spawned vessel
+                ConfigureAIPilot(aiVesselNO);
+
+                Debug.Log($"[ServerPlayerVesselInitializer] Spawned AI opponent {i + 1}/{aiCount}: domain={aiDomain}, vessel={aiVesselType}");
             }
-
-            // Configure AI player
-            var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
-            var aiVesselType = PickAIVesselType();
-
-            aiPlayer.NetDefaultVesselType.Value = aiVesselType;
-            aiPlayer.NetName.Value = "AI Pilot";
-            aiPlayer.NetDomain.Value = aiDomain;
-            aiPlayer.NetIsAI.Value = true;
-
-            // Spawn AI vessel (server-owned)
-            if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
-            {
-                aiPlayerNO.Despawn(true);
-                return;
-            }
-
-            // Configure the AI pilot on the spawned vessel
-            ConfigureAIPilot(aiVesselNO);
-
-            Debug.Log($"[ServerPlayerVesselInitializer] Spawned AI opponent: domain={aiDomain}, vessel={aiVesselType}");
         }
 
         protected VesselClassType PickAIVesselType()
