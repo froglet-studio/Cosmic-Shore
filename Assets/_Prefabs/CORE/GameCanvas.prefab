@@ -1355,7 +1355,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1, y: 156}
+  m_AnchoredPosition: {x: -1, y: 133.2}
   m_SizeDelta: {x: 294, y: 40}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &2414549302454134856
@@ -4559,10 +4559,12 @@ MonoBehaviour:
   - {fileID: 6321302944073798153}
   - {fileID: 5343430980437873163}
   - {fileID: 5527159050076986097}
+  - {fileID: 6471922825841577665}
   PlayerScoreTextFields:
   - {fileID: 1994725692957625995}
   - {fileID: 4599956750197074444}
   - {fileID: 8842360616807825148}
+  - {fileID: 1614650243603070201}
   rematchInvitedPanel: {fileID: 1966683219612160927}
   rematchReceivedPanel: {fileID: 2642576341138188555}
   rematchReceivedText: {fileID: 8000010984139768975}
@@ -4964,7 +4966,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -149}
-  m_SizeDelta: {x: 431, y: 103}
+  m_SizeDelta: {x: 500, y: 109.5131}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &810648386785747974
 CanvasRenderer:
@@ -5024,8 +5026,8 @@ MonoBehaviour:
   m_ChildAlignment: 4
   m_StartCorner: 0
   m_StartAxis: 1
-  m_CellSize: {x: 145, y: 25}
-  m_Spacing: {x: -14.5, y: 11.35}
+  m_CellSize: {x: 152.4, y: 25}
+  m_Spacing: {x: 5.3, y: 11.35}
   m_Constraint: 1
   m_ConstraintCount: 3
 --- !u!1 &4819888564493780604
@@ -7865,8 +7867,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController,
-          Assembly-CSharp
+        m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController, Assembly-CSharp
         m_MethodName: OnReadyClicked
         m_Mode: 1
         m_Arguments:
