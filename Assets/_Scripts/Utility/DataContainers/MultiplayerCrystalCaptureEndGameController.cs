@@ -8,6 +8,13 @@ namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerCrystalCaptureEndGameController : EndGameCinematicController
     {
+        protected override bool DetermineLocalPlayerWon()
+        {
+            var localName = gameData.LocalPlayer?.Name;
+            return gameData.RoundStatsList.Count > 0
+                && gameData.RoundStatsList[0].Name == localName;
+        }
+
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
             if (!view || !cinematic) yield break;

@@ -18,7 +18,10 @@ MonoBehaviour:
     speedMultiplier: 3
     enhanceTrail: 1
     fadeLoserTrail: 1
-  scoreRevealToastString: RACE FINISHED
+  victoryToastStrings:
+  - RACE FINISHED
+  defeatToastStrings:
+  - RACE FINISHED
   showVictoryToast: 1
   toastSettings:
     yOffset: 1

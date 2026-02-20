@@ -18,7 +18,10 @@ MonoBehaviour:
     speedMultiplier: 3
     enhanceTrail: 1
     fadeLoserTrail: 1
-  scoreRevealToastString: TIME UP BUDDY!
+  victoryToastStrings:
+  - TIME UP BUDDY!
+  defeatToastStrings:
+  - TIME UP BUDDY!
   showVictoryToast: 1
   toastSettings:
     yOffset: 1
