@@ -16,8 +16,8 @@ MonoBehaviour:
   - VesselClass: 6
     MassWeight: 0
     ChargeWeight: 0
-    SpaceWeight: 1
-    TimeWeight: 0
+    SpaceWeight: 3
+    TimeWeight: 3
     InitialMass: 0
     InitialCharge: 0
     InitialSpace: 0
