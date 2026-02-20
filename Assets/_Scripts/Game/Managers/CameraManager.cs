@@ -179,6 +179,16 @@ public class CameraManager : Singleton<CameraManager>
 
     public ICameraController GetActiveController() => _activeController;
 
+    /// <summary>
+    /// Snaps the player camera to its follow target's current position.
+    /// Call after vessel teleport or end-game cinematic to reset the camera.
+    /// </summary>
+    public void SnapPlayerCameraToTarget()
+    {
+        if (_playerCamera is CustomCameraController pcc)
+            pcc.SnapToTarget();
+    }
+
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
         if (_playerCamera == null) return;
