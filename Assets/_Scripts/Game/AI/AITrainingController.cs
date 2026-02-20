@@ -5,14 +5,13 @@ using UnityEngine;
 namespace CosmicShore.Game.AI
 {
     /// <summary>
-    /// Automates AI training races for overnight evolutionary learning.
-    /// Drop this into a HexRace scene alongside the existing game controller.
+    /// Fully automated spectator training mode.
+    /// Runs AI-only races in a loop with no human input required.
     ///
     /// Setup:
-    /// 1. Replace MiniGamePlayerSpawnerAdapter with TrainingPlayerSpawnerAdapter
-    ///    and configure 3 AI entries in _initializeDatas (IsAI=true, AllowSpawning=true).
-    /// 2. On the game controller, set numberOfRounds = 1, numberOfTurnsPerRound = 1.
-    /// 3. Optionally reduce CountdownTimer.countdownDuration for faster cycles.
+    /// 1. Use TrainingPlayerSpawnerAdapter with 3 AI entries (IsAI=true).
+    /// 2. Set numberOfRounds = 1, numberOfTurnsPerRound = 1 on the game controller.
+    /// 3. Assign the CrystalCollisionTurnMonitor so this controller knows the crystal target.
     /// 4. Assign the same PilotEvolution SO to this controller and to each AI vessel's
     ///    AIPilot + PilotFitnessTracker.
     /// 5. Press Play and walk away.
@@ -23,20 +22,22 @@ namespace CosmicShore.Game.AI
         [SerializeField] GameDataSO gameData;
         [SerializeField] Arcade.MiniGameControllerBase gameController;
         [SerializeField] PilotEvolution evolution;
+        [SerializeField] Arcade.CrystalCollisionTurnMonitor turnMonitor;
 
         [Header("Training Config")]
         [SerializeField] int maxRaces = 10000;
         [SerializeField] float delayBetweenRaces = 1f;
-        [SerializeField] float raceTimeoutSeconds = 300f;
+        [SerializeField] float raceTimeoutSeconds = 120f;
         [SerializeField, Range(1, 4)] int trainingIntensity = 4;
 
         int _racesCompleted;
         float _raceStartTime;
         bool _raceActive;
+        bool _cameraInitialized;
+        int _crystalTarget;
 
         void OnEnable()
         {
-            // Set intensity so all genome-aware code paths are active
             if (gameData.SelectedIntensity != null)
                 gameData.SelectedIntensity.Value = trainingIntensity;
 
@@ -54,8 +55,7 @@ namespace CosmicShore.Game.AI
 
         void OnRoundStarted()
         {
-            // Ready button is about to be shown by SetupNewTurn().
-            // Auto-click after one frame so the turn setup completes first.
+            // Auto-click Ready after one frame so SetupNewTurn completes first.
             StartCoroutine(AutoClickReady());
         }
 
@@ -69,6 +69,65 @@ namespace CosmicShore.Game.AI
         {
             _raceActive = true;
             _raceStartTime = Time.time;
+
+            // Cache the crystal target from the turn monitor (set during StartMonitor)
+            if (turnMonitor != null)
+            {
+                if (int.TryParse(turnMonitor.GetRemainingCrystalsCountToCollect(), out int remaining))
+                    _crystalTarget = remaining;
+            }
+
+            // Point camera at the first AI vessel on the first turn
+            if (!_cameraInitialized && gameData.Players.Count > 0)
+            {
+                SetupSpectatorCamera();
+                _cameraInitialized = true;
+            }
+        }
+
+        void SetupSpectatorCamera()
+        {
+            var player = gameData.Players[0];
+            var vessel = player.Vessel;
+            if (vessel == null) return;
+
+            vessel.VesselStatus.VesselCameraCustomizer.Initialize(vessel);
+            Debug.Log($"[AITraining] Spectator camera following {vessel.VesselStatus.PlayerName}");
+        }
+
+        void Update()
+        {
+            if (!_raceActive) return;
+
+            // Check if any AI has collected enough crystals to finish the race.
+            // The standard CrystalCollisionTurnMonitor only watches LocalPlayer,
+            // which doesn't exist in all-AI mode, so we check all players here.
+            if (_crystalTarget > 0 && CheckAnyPlayerFinished())
+            {
+                Debug.Log($"[AITraining] An AI finished the race!");
+                _raceActive = false;
+                gameData.InvokeGameTurnConditionsMet();
+                return;
+            }
+
+            // Safety timeout
+            if (Time.time - _raceStartTime > raceTimeoutSeconds)
+            {
+                Debug.LogWarning($"[AITraining] Race timed out after {raceTimeoutSeconds}s, forcing turn end");
+                _raceActive = false;
+                gameData.InvokeGameTurnConditionsMet();
+            }
+        }
+
+        bool CheckAnyPlayerFinished()
+        {
+            var stats = gameData.RoundStatsList;
+            for (int i = 0; i < stats.Count; i++)
+            {
+                if (stats[i].CrystalsCollected >= _crystalTarget)
+                    return true;
+            }
+            return false;
         }
 
         void OnRaceEnd()
@@ -78,9 +137,7 @@ namespace CosmicShore.Game.AI
             LogProgress();
 
             if (_racesCompleted < maxRaces)
-            {
                 StartCoroutine(RestartRace());
-            }
             else
             {
                 Debug.Log($"[AITraining] === TRAINING COMPLETE === " +
@@ -93,16 +150,6 @@ namespace CosmicShore.Game.AI
         {
             yield return new WaitForSeconds(delayBetweenRaces);
             gameData.ResetForReplay();
-        }
-
-        void Update()
-        {
-            if (_raceActive && Time.time - _raceStartTime > raceTimeoutSeconds)
-            {
-                Debug.LogWarning($"[AITraining] Race timed out after {raceTimeoutSeconds}s, forcing turn end");
-                _raceActive = false;
-                gameData.InvokeGameTurnConditionsMet();
-            }
         }
 
         void LogProgress()

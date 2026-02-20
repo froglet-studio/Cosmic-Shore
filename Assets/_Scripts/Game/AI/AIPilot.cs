@@ -182,8 +182,6 @@ namespace CosmicShore.Game.AI
             throttle = defaultThrottle;
 
             _trailBlockLayer = LayerMask.NameToLayer("TrailBlocks");
-
-            LoadGenome();
         }
 
         void LoadGenome()
