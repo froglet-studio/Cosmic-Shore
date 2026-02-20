@@ -23,6 +23,10 @@ namespace CosmicShore.Game.AI
         [SerializeField] int evaluationIndex;
         [SerializeField] List<PilotGenome> population = new();
 
+        // Runtime tracking for multi-pilot checkout/return (not serialized)
+        int _evaluationsReturned;
+        bool _needsEvolution;
+
         public int Generation => generation;
         public int PopulationSize => population.Count;
         public PilotGenome BestGenome => population.Count > 0
@@ -42,48 +46,59 @@ namespace CosmicShore.Game.AI
 
             generation = 0;
             evaluationIndex = 0;
+            _evaluationsReturned = 0;
+            _needsEvolution = false;
             MarkDirty();
         }
 
         /// <summary>
-        /// Returns the next genome to evaluate. Cycles through the population.
+        /// Checks out the next genome for evaluation. Each call returns a different
+        /// genome and advances the internal index, so multiple pilots can each get
+        /// their own genome from the same population.
+        /// If a full generation has been evaluated, evolves before serving new genomes.
         /// </summary>
-        public PilotGenome GetNextGenome()
+        public PilotGenome CheckoutGenome(out int genomeIndex)
         {
             if (population.Count == 0) InitializePopulation();
 
-            var genome = population[evaluationIndex % population.Count];
-            Debug.Log($"[PilotEvolution] Serving genome {evaluationIndex % population.Count} of {population.Count} (gen {generation})");
+            if (_needsEvolution)
+            {
+                Evolve();
+                _needsEvolution = false;
+                _evaluationsReturned = 0;
+                evaluationIndex = 0;
+            }
+
+            genomeIndex = evaluationIndex % population.Count;
+            var genome = population[genomeIndex];
+            evaluationIndex++;
+
+            Debug.Log($"[PilotEvolution] Checked out genome {genomeIndex} of {population.Count} (gen {generation})");
+            MarkDirty();
             return genome;
         }
 
         /// <summary>
-        /// Advances to the next genome in the evaluation queue.
+        /// Reports fitness for a specific genome by index (returned from CheckoutGenome).
+        /// When enough evaluations complete, flags the population for evolution on next checkout.
         /// </summary>
-        public void AdvanceEvaluation()
+        public void ReturnFitness(int genomeIndex, float fitness)
         {
-            evaluationIndex++;
-            Debug.Log($"[PilotEvolution] Advanced to eval index {evaluationIndex}/{population.Count}");
-            if (evaluationIndex >= population.Count)
-            {
-                Evolve();
-                evaluationIndex = 0;
-            }
-            MarkDirty();
-        }
+            if (genomeIndex < 0 || genomeIndex >= population.Count) return;
 
-        /// <summary>
-        /// Records fitness for the genome currently being evaluated.
-        /// Uses running average if evaluated multiple times.
-        /// </summary>
-        public void ReportFitness(float fitness)
-        {
-            if (population.Count == 0) return;
-            var genome = population[evaluationIndex % population.Count];
+            var genome = population[genomeIndex];
             genome.evaluationCount++;
-            // Running average
             genome.fitness += (fitness - genome.fitness) / genome.evaluationCount;
-            Debug.Log($"[PilotEvolution] Genome {evaluationIndex % population.Count} fitness={genome.fitness:F2} (eval #{genome.evaluationCount})");
+
+            _evaluationsReturned++;
+
+            Debug.Log($"[PilotEvolution] Genome {genomeIndex} fitness={genome.fitness:F2} " +
+                $"(eval #{genome.evaluationCount}, {_evaluationsReturned}/{population.Count} returned)");
+
+            if (_evaluationsReturned >= population.Count)
+                _needsEvolution = true;
+
+            MarkDirty();
         }
 
         /// <summary>

@@ -17,14 +17,14 @@ namespace CosmicShore.Game
         [SerializeField] private ScriptableEventBoostChanged boostChanged;
 
         // [Visual Note] 1. New Event for the Tracker to listen to
-        public static event Action OnPrismCollision;
+        public static event Action<string> OnPrismCollision;
 
         public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
         {
             if (!impactor) return;
 
-            // [Visual Note] 2. Fire the Streak Reset Event
-            OnPrismCollision?.Invoke();
+            // [Visual Note] 2. Fire the Streak Reset Event (includes player name for multi-pilot tracking)
+            OnPrismCollision?.Invoke(impactor.Vessel.VesselStatus.PlayerName);
 
             // 3. Stats Logging (Optional, kept for backend data)
             if (StatsManager.Instance)

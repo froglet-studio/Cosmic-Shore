@@ -185,12 +185,14 @@ namespace CosmicShore.Game.AI
         {
             if (evolution != null)
             {
-                _activeGenome = evolution.GetNextGenome();
+                _activeGenome = evolution.CheckoutGenome(out int genomeIndex);
                 throttle = Mathf.Lerp(defaultThrottle, _activeGenome.throttleBase, IntensityT);
 
                 _fitnessTracker = GetComponent<PilotFitnessTracker>();
-                Debug.Log($"[AIPilot] Loaded genome at intensity {Intensity} (IntensityT={IntensityT:F2}). " +
-                    $"FitnessTracker found: {_fitnessTracker != null}");
+                if (_fitnessTracker != null)
+                    _fitnessTracker.SetGenomeIndex(genomeIndex);
+
+                Debug.Log($"[AIPilot] {VesselStatus.PlayerName} loaded genome {genomeIndex} at intensity {Intensity} (IntensityT={IntensityT:F2})");
             }
             else
             {
@@ -201,6 +203,9 @@ namespace CosmicShore.Game.AI
         public void StartAIPilot()
         {
             AutoPilotEnabled = true;
+
+            // Reload genome each race so each start gets the next genome from the population
+            LoadGenome();
 
             if (_fitnessTracker != null)
                 _fitnessTracker.StartTracking(VesselStatus);

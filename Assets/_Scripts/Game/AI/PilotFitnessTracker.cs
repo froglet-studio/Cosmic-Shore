@@ -23,8 +23,17 @@ namespace CosmicShore.Game.AI
         int _prismCollisions;
         float _highBoostTime;
         float _raceTime;
+        int _genomeIndex = -1;
 
         IVesselStatus _vesselStatus;
+
+        /// <summary>
+        /// Called by AIPilot after CheckoutGenome to bind this tracker to a specific genome.
+        /// </summary>
+        public void SetGenomeIndex(int genomeIndex)
+        {
+            _genomeIndex = genomeIndex;
+        }
 
         public void StartTracking(IVesselStatus vesselStatus)
         {
@@ -72,33 +81,27 @@ namespace CosmicShore.Game.AI
                 _crystalsCollected++;
         }
 
-        void OnPrismCollision()
+        void OnPrismCollision(string playerName)
         {
-            if (_tracking)
+            if (_tracking && playerName == _playerName)
                 _prismCollisions++;
         }
 
         void ReportFitness()
         {
-            if (evolution == null) return;
+            if (evolution == null || _genomeIndex < 0) return;
 
-            // Fitness function:
-            // + crystals collected (primary goal - this is what wins races)
-            // - collision penalty (hitting prisms resets boost, wastes time)
-            // + time spent at high boost (shows good skimming technique)
-            // - race time penalty (faster is better, but only matters if collecting crystals)
             float fitness = _crystalsCollected * crystalWeight
                           - _prismCollisions * collisionPenalty
                           + _highBoostTime * boostTimeWeight
                           - _raceTime * timePenaltyWeight;
 
-            evolution.ReportFitness(fitness);
-            evolution.AdvanceEvaluation();
+            evolution.ReturnFitness(_genomeIndex, fitness);
 
-            Debug.Log($"[PilotFitness] Gen {evolution.Generation} | " +
-                $"Fitness: {fitness:F1} | Crystals: {_crystalsCollected} | " +
-                $"Collisions: {_prismCollisions} | BoostTime: {_highBoostTime:F1}s | " +
-                $"RaceTime: {_raceTime:F1}s");
+            Debug.Log($"[PilotFitness] {_playerName} | Gen {evolution.Generation} | " +
+                $"Genome {_genomeIndex} | Fitness: {fitness:F1} | " +
+                $"Crystals: {_crystalsCollected} | Collisions: {_prismCollisions} | " +
+                $"BoostTime: {_highBoostTime:F1}s | RaceTime: {_raceTime:F1}s");
         }
     }
 }
