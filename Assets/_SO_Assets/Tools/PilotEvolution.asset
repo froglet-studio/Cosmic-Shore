@@ -24,11 +24,9 @@ MonoBehaviour:
     minPrismScanDistance: 26.8
     maxNudgeStrength: 0.131
     dotCrystalThreshold: 0.627
-    dotForwardThreshold: 0.481
     collisionAvoidanceDistance: 52.2
     avoidanceWeight: 0.266
-    crystalFadeDistance: 71.8
-    boostFadeStrength: 0.786
+    steeringAggressiveness: 147.9
     throttleBase: 0.875
     throttleRampRate: 0.00905
     fitness: 0
@@ -38,11 +36,9 @@ MonoBehaviour:
     minPrismScanDistance: 37.4
     maxNudgeStrength: 0.15
     dotCrystalThreshold: 0.577
-    dotForwardThreshold: 0.343
     collisionAvoidanceDistance: 31.1
     avoidanceWeight: 0.119
-    crystalFadeDistance: 30.3
-    boostFadeStrength: 0.247
+    steeringAggressiveness: 61.2
     throttleBase: 0.414
     throttleRampRate: 0.00097
     fitness: 0
@@ -52,11 +48,9 @@ MonoBehaviour:
     minPrismScanDistance: 34.8
     maxNudgeStrength: 0.152
     dotCrystalThreshold: 0.62
-    dotForwardThreshold: 0.45
     collisionAvoidanceDistance: 46.4
     avoidanceWeight: 0.223
-    crystalFadeDistance: 59
-    boostFadeStrength: 0.593
+    steeringAggressiveness: 118.1
     throttleBase: 0.676
     throttleRampRate: 0.0053
     fitness: 0
@@ -66,11 +60,9 @@ MonoBehaviour:
     minPrismScanDistance: 17.7
     maxNudgeStrength: 0.054
     dotCrystalThreshold: 0.404
-    dotForwardThreshold: 0.222
     collisionAvoidanceDistance: 21.5
     avoidanceWeight: 0.084
-    crystalFadeDistance: 24.8
-    boostFadeStrength: 0.264
+    steeringAggressiveness: 51.5
     throttleBase: 0.44
     throttleRampRate: 0.00204
     fitness: 0

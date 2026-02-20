@@ -187,6 +187,57 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 52d52803d2bd0384093e4705bcf57ed1, type: 3}
+--- !u!1 &299646662
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 299646664}
+  - component: {fileID: 299646663}
+  m_Layer: 0
+  m_Name: AITrainingController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &299646663
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 299646662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6133ecebea58aa48899950eaf200aab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  gameController: {fileID: 1078953717}
+  evolution: {fileID: 11400000, guid: 89a663abc12cfc04b80f600102e88ab4, type: 2}
+  maxRaces: 10000
+  delayBetweenRaces: 1
+  raceTimeoutSeconds: 300
+  trainingIntensity: 4
+--- !u!4 &299646664
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 299646662}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 974.5491, y: 19.235231, z: -244.87454}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &500613216
 GameObject:
   m_ObjectHideFlags: 0
@@ -347,6 +398,10 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
         type: 3}
       insertIndex: -1
+      addedObject: {fileID: 527365866}
+    - targetCorrespondingSourceObject: {fileID: 4144571732671332528, guid: a51d3a28670d8e64fbdb568abd6769e2,
+        type: 3}
+      insertIndex: -1
       addedObject: {fileID: 527365865}
   m_SourcePrefab: {fileID: 100100000, guid: a51d3a28670d8e64fbdb568abd6769e2, type: 3}
 --- !u!1 &527365863 stripped
@@ -374,7 +429,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 527365863}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b418899d51c04d9ea0bb2f928046963e, type: 3}
   m_Name: 
@@ -390,6 +445,38 @@ MonoBehaviour:
   _spawnTransforms:
   - {fileID: 1192541911}
   _spawnAIAtStart: 0
+--- !u!114 &527365866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 527365863}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e99affb6fb4ab8c418ed85a068f700eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  _playerSpawner: {fileID: 527365864}
+  _initializeDatas:
+  - vesselClass: 6
+    domain: 1
+    PlayerName: AI_jade
+    IsAI: 1
+    AllowSpawning: 1
+  - vesselClass: 6
+    domain: 2
+    PlayerName: AI_Ruby
+    IsAI: 1
+    AllowSpawning: 1
+  - vesselClass: 6
+    domain: 4
+    PlayerName: AI_Gold
+    IsAI: 1
+    AllowSpawning: 1
+  _spawnTransforms:
+  - {fileID: 1192541911}
 --- !u!1 &781179371
 GameObject:
   m_ObjectHideFlags: 0
@@ -1859,3 +1946,4 @@ SceneRoots:
   - {fileID: 500613219}
   - {fileID: 85210995}
   - {fileID: 527365862}
+  - {fileID: 299646664}
