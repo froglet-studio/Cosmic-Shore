@@ -21,6 +21,9 @@ namespace CosmicShore.Systems
 
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
+        
+        [SerializeField]
+        string Main_Menu_Name = "MainMenuFreestyle";
 
         // ✅ Reflex will inject these from the container
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
@@ -28,6 +31,7 @@ namespace CosmicShore.Systems
 
         void Start()
         {
+            ConfigureGameData();
             StartNetworkMonitor();
             StartAuthentication();
         }
@@ -64,7 +68,17 @@ namespace CosmicShore.Systems
 
         void StartNetworkMonitor() => networkMonitor?.StartMonitoring();
         void StopNetworkMonitor() => networkMonitor?.StopMonitoring();
-
         void StartAuthentication() => authenticationServiceFacade?.StartAuthentication();
+
+        void ConfigureGameData()
+        {
+            gameData.ResetAllData();
+            gameData.SceneName = Main_Menu_Name;
+            gameData.GameMode = GameModes.MultiplayerFreestyle;
+            gameData.IsMultiplayerMode = true;
+            gameData.SelectedPlayerCount.Value = 4;
+            gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
+            gameData.SelectedIntensity.Value = 1;
+        }
     }
 }
