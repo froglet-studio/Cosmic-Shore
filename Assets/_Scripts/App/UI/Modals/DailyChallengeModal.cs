@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -71,6 +72,7 @@ namespace CosmicShore.App.UI.Modals
 
         public void Play()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             DailyChallengeSystem.Instance.PlayDailyChallenge();
         }
     }

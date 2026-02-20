@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Soap;
@@ -173,8 +174,10 @@ namespace CosmicShore
         protected virtual void Die(string killerName = "")
         {
             if (isCleaningUp) return;
-            
-            if (crystal && crystal.gameObject.activeInHierarchy && !isCleaningUp) 
+
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CreatureDeath);
+
+            if (crystal && crystal.gameObject.activeInHierarchy && !isCleaningUp)
                 crystal.ActivateCrystal();
 
             int cellId = cell ? cell.ID : -1;

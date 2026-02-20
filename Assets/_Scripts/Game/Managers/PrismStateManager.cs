@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System;
+using CosmicShore.App.Systems.Audio;
 
 namespace CosmicShore.Core
 {
@@ -100,10 +101,13 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.Shielded;
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
 
         private void ApplyNormalState()
         {
+            var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
+
             materialAnimator.UpdateMaterial(
                 _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
                 _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
@@ -112,6 +116,9 @@ namespace CosmicShore.Core
             prism.prismProperties.IsShielded = false;
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
+
+            if (wasShielded)
+                AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
         }
 
         private IEnumerator TimedShieldCoroutine(float duration)

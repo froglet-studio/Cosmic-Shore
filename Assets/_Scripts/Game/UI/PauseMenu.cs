@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI.Modals;
 using UnityEngine;
 using CosmicShore.Core;
@@ -97,12 +98,14 @@ namespace CosmicShore.App.UI.Screens
         {
             pauseMenuPanel.gameObject.SetActive(true);
             settingsModalWindowManager.ModalWindowIn();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
         }
 
         public void Hide()
         {
             settingsModalWindowManager.ModalWindowOut();
             pauseMenuPanel.gameObject.SetActive(false);
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.PauseClose);
         }
         
         async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)

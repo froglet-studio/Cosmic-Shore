@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.App.Systems.Audio;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using CosmicShore.Soap; // Required for GameDataSO
@@ -85,6 +86,7 @@ namespace CosmicShore.Game.Projectiles
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.Explosion);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 
