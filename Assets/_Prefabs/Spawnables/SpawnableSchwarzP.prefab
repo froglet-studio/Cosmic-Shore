@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 23bf7adfa7ddf1e4fb62264a73907ac6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  domain: 4
+  domain: 3
   intenstyLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   blockScale: {x: 1, y: 2, z: 12}
@@ -54,4 +54,4 @@ MonoBehaviour:
   periodScale: 300
   colorBySide: 1
   positiveDomain: 3
-  negativeDomain: 1
+  negativeDomain: 3
