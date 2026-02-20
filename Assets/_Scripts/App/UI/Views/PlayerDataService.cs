@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CosmicShore.Game.Party;
-using CosmicShore.Services.Auth;
+using CosmicShore.Utilities;
 using TMPro;
-using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using UnityEngine;
@@ -17,11 +16,7 @@ namespace CosmicShore.App.Profile
     /// Loads and saves the local player's profile (displayName + avatarId).
     /// Single source of truth for profile data — PartyManager reads from here.
     ///
-    /// CHANGES from original:
-    ///   - Added static Instance for easy access by PartyManager.
-    ///   - After loading/creating a profile, display name is pushed to
-    ///     AuthenticationService.UpdatePlayerNameAsync() so UGS player name
-    ///     (used by MultiplayerSetup.GetPlayerNameAsync) stays in sync.
+    /// Authentication is now driven by AuthenticationDataVariable (no UGS AuthenticationService references).
     /// </summary>
     public class PlayerDataService : MonoBehaviour
     {
@@ -33,22 +28,23 @@ namespace CosmicShore.App.Profile
         // -----------------------------------------------------------------------------------------
         // Inspector
 
+        [Header("Auth (Source of Truth)")]
+        [SerializeField] AuthenticationDataVariable authenticationDataVariable;
+        AuthenticationData authenticationData => authenticationDataVariable.Value;
+
         [Header("Cloud Save")]
         [SerializeField] private string cloudSaveProfileKey = "player_profile";
         [SerializeField] private SO_ProfileIconList profileIcons;
 
         [Header("UI")]
         [SerializeField] private TMP_Text displayNameText;
-        [SerializeField] private Image    avatarImage;
-
-        [Header("Auth Hook")]
-        [SerializeField] private AuthenticationController authController;
+        [SerializeField] private Image avatarImage;
 
         // -----------------------------------------------------------------------------------------
         // Public state
 
         public PlayerProfileData CurrentProfile { get; private set; }
-        public bool              IsInitialized  { get; private set; }
+        public bool IsInitialized { get; private set; }
 
         public event Action<PlayerProfileData> OnProfileChanged;
 
@@ -65,18 +61,14 @@ namespace CosmicShore.App.Profile
         {
             try
             {
-                if (authController != null)
-                    authController.OnSignedIn += HandleSignedInFromAuth;
-
                 OnProfileChanged += HandleProfileChanged;
 
-                if (UnityServices.State != ServicesInitializationState.Initialized) return;
+                // If services aren't initialized, we can't use Cloud Save anyway.
+                if (UnityServices.State != ServicesInitializationState.Initialized)
+                    return;
 
-                bool canCheckAuth = true;
-                try   { _ = AuthenticationService.Instance.IsSignedIn; }
-                catch { canCheckAuth = false; }
-
-                if (canCheckAuth && AuthenticationService.Instance.IsSignedIn)
+                // If already signed in (eg: auth completed before this service started), initialize now.
+                if (IsAuthSignedIn())
                     await InitializeAfterAuth();
             }
             catch (Exception e)
@@ -86,9 +78,12 @@ namespace CosmicShore.App.Profile
         }
 
         // -----------------------------------------------------------------------------------------
-        // Auth callbacks
+        // Hooks for Soap events (wire these via ScriptableEvent listeners in the scene)
 
-        async void HandleSignedInFromAuth(string playerId)
+        /// <summary>
+        /// Hook this method to AuthenticationData.OnSignedIn (ScriptableEventNoParam) via a listener component.
+        /// </summary>
+        public async void HandleSignedInEvent()
         {
             try
             {
@@ -97,8 +92,20 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] HandleSignedIn error: {e.Message}");
+                Debug.LogWarning($"[PlayerDataService] HandleSignedInEvent error: {e.Message}");
             }
+        }
+
+        /// <summary>
+        /// Hook this method to AuthenticationData.OnSignedOut (ScriptableEventNoParam) via a listener component.
+        /// Optional: clears state so it can re-init after next sign-in.
+        /// </summary>
+        public void HandleSignedOutEvent()
+        {
+            // Depending on your design, you may or may not want to reset.
+            // Resetting allows re-initialization after a new sign-in.
+            IsInitialized = false;
+            CurrentProfile = null;
         }
 
         // -----------------------------------------------------------------------------------------
@@ -108,30 +115,15 @@ namespace CosmicShore.App.Profile
         {
             if (IsInitialized) return;
 
-            string playerId        = null;
-            bool   canUseCloudSave = false;
-
-            if (UnityServices.State == ServicesInitializationState.Initialized)
-            {
-                try
-                {
-                    canUseCloudSave = AuthenticationService.Instance != null &&
-                                      AuthenticationService.Instance.IsSignedIn;
-                }
-                catch { canUseCloudSave = false; }
-            }
-
-            if (canUseCloudSave)
-                playerId = AuthenticationService.Instance.PlayerId;
+            bool canUseCloudSave = CanUseCloudSave();
+            string playerId = canUseCloudSave ? authenticationData.PlayerId : null;
 
             await LoadOrCreateProfileAsync(playerId, canUseCloudSave);
 
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
 
-            // KEY CHANGE: sync display name to UGS so MultiplayerSetup.GetPlayerNameAsync() returns it
-            await SyncDisplayNameToUGSAsync();
-
+            // PartyManager reads from here
             PartyManager.Instance?.SyncProfileFromPlayerDataService();
         }
 
@@ -142,14 +134,14 @@ namespace CosmicShore.App.Profile
         {
             if (!canUseCloudSave)
             {
-                Debug.LogWarning("[PlayerDataService] Not signed in. Using local-only profile.");
+                Debug.LogWarning("[PlayerDataService] Not signed in (via AuthenticationData). Using local-only profile.");
                 CreateLocalDefaultProfile(playerId);
                 return;
             }
 
             try
             {
-                var keys   = new HashSet<string> { cloudSaveProfileKey };
+                var keys = new HashSet<string> { cloudSaveProfileKey };
                 var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
 
                 if (result.TryGetValue(cloudSaveProfileKey, out var item))
@@ -157,7 +149,11 @@ namespace CosmicShore.App.Profile
                     var json = item.Value.GetAs<string>();
                     var data = JsonUtility.FromJson<PlayerProfileData>(json);
 
-                    if (data != null) { CurrentProfile = data; return; }
+                    if (data != null)
+                    {
+                        CurrentProfile = data;
+                        return;
+                    }
 
                     Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Creating default.");
                     CreateLocalDefaultProfile(playerId);
@@ -179,9 +175,9 @@ namespace CosmicShore.App.Profile
         {
             CurrentProfile = new PlayerProfileData
             {
-                userId      = string.IsNullOrEmpty(playerId) ? Guid.NewGuid().ToString("N") : playerId,
+                userId = string.IsNullOrEmpty(playerId) ? Guid.NewGuid().ToString("N") : playerId,
                 displayName = "Pilot",
-                avatarId    = GetDefaultAvatarId()
+                avatarId = GetDefaultAvatarId()
             };
         }
 
@@ -193,37 +189,12 @@ namespace CosmicShore.App.Profile
         }
 
         // -----------------------------------------------------------------------------------------
-        // UGS Name Sync
-
-        /// <summary>
-        /// Pushes the local profile's displayName to the UGS Authentication service
-        /// so MultiplayerSetup.GetPlayerNameAsync() always returns the correct name.
-        /// </summary>
-        private async Task SyncDisplayNameToUGSAsync()
-        {
-            if (CurrentProfile == null) return;
-
-            try
-            {
-                if (UnityServices.State != ServicesInitializationState.Initialized) return;
-                if (AuthenticationService.Instance == null || !AuthenticationService.Instance.IsSignedIn) return;
-
-                await AuthenticationService.Instance.UpdatePlayerNameAsync(CurrentProfile.displayName);
-                Debug.Log($"[PlayerDataService] UGS player name synced to '{CurrentProfile.displayName}'");
-            }
-            catch (Exception e)
-            {
-                // Non-fatal: name sync failure shouldn't block the game
-                Debug.LogWarning($"[PlayerDataService] UGS name sync failed: {e.Message}");
-            }
-        }
-
-        // -----------------------------------------------------------------------------------------
         // Save
 
         async Task SaveProfileAsync(bool canUseCloudSave)
         {
-            if (CurrentProfile == null || !canUseCloudSave) return;
+            if (CurrentProfile == null || !canUseCloudSave)
+                return;
 
             try
             {
@@ -252,8 +223,7 @@ namespace CosmicShore.App.Profile
                 bool canUseCloudSave = CanUseCloudSave();
                 await SaveProfileAsync(canUseCloudSave);
 
-                // Update PartyManager's cached local profile
-               PartyManager.Instance?.SyncProfileFromPlayerDataService();
+                PartyManager.Instance?.SyncProfileFromPlayerDataService();
             }
             catch (Exception e)
             {
@@ -273,11 +243,11 @@ namespace CosmicShore.App.Profile
                 bool canUseCloudSave = CanUseCloudSave();
                 await SaveProfileAsync(canUseCloudSave);
 
-                // Sync the new name to UGS immediately
-                await SyncDisplayNameToUGSAsync();
+                // NOTE:
+                // Previously this synced to UGS AuthenticationService.UpdatePlayerNameAsync().
+                // That responsibility now belongs to your auth layer (if you still need it).
 
-                // Update PartyManager's cached local profile
-                CosmicShore.Game.Party.PartyManager.Instance?.SyncProfileFromPlayerDataService();
+                PartyManager.Instance?.SyncProfileFromPlayerDataService();
             }
             catch (Exception e)
             {
@@ -300,7 +270,11 @@ namespace CosmicShore.App.Profile
 
         Sprite ResolveAvatarSprite(int avatarId)
         {
-            return !profileIcons ? null : (from icon in profileIcons.profileIcons where icon.Id == avatarId select icon.IconSprite).FirstOrDefault();
+            return !profileIcons
+                ? null
+                : (from icon in profileIcons.profileIcons
+                   where icon.Id == avatarId
+                   select icon.IconSprite).FirstOrDefault();
         }
 
         public void RefreshProfileVisuals()
@@ -312,11 +286,19 @@ namespace CosmicShore.App.Profile
         // -----------------------------------------------------------------------------------------
         // Helpers
 
+        bool IsAuthSignedIn()
+        {
+            // Treat "SignedIn" as the authoritative state.
+            // (Some flows might set IsSignedIn true slightly earlier/later — we accept either.)
+            return authenticationData != null &&
+                   (authenticationData.State == AuthenticationData.AuthState.SignedIn || authenticationData.IsSignedIn);
+        }
+
         private bool CanUseCloudSave()
         {
             return UnityServices.State == ServicesInitializationState.Initialized &&
-                   AuthenticationService.Instance != null &&
-                   AuthenticationService.Instance.IsSignedIn;
+                   IsAuthSignedIn() &&
+                   !string.IsNullOrEmpty(authenticationData.PlayerId);
         }
     }
 }

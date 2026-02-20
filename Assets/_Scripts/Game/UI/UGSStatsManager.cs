@@ -1,42 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using CosmicShore.Services.Auth;
+using CosmicShore.Utilities;
 using Unity.Services.CloudSave;
 using Unity.Services.Leaderboards;
 using UnityEngine;
 
 namespace CosmicShore.Game.Analytics
 {
-    public class UGSStatsManager : MonoBehaviour
+    public class UGSStatsManager : SingletonPersistent<UGSStatsManager>
     {
-        public static UGSStatsManager Instance { get; private set; }
-
         [Header("Dependencies")] 
         [SerializeField] LeaderboardConfigSO leaderboardConfig; 
+        
+        [SerializeField]
+        AuthenticationDataVariable authenticationDataVariable;
+        AuthenticationData authenticationData => authenticationDataVariable.Value;
 
         private PlayerStatsProfile _cachedProfile = new PlayerStatsProfile();
         private const string CLOUD_KEY = "PLAYER_STATS_PROFILE";
         private bool _isReady = false;
 
-        void Awake()
+        private void OnEnable()
         {
-            if (Instance != null) { Destroy(gameObject); return; }
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
+            authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
         }
 
-        async void Start()
+        private void OnDisable()
         {
-            try
-            {
-                while (AuthenticationController.Instance == null || !AuthenticationController.Instance.IsSignedIn)
-                    await Task.Delay(500);
-
-                _isReady = true;
-                LoadProfile();
-            }
-            catch (Exception) { }
+            authenticationData.OnSignedIn.OnRaised -= OnAuthenticationSignedIn;
         }
 
         #region Public API - Smart High Score Evaluation
@@ -173,16 +164,22 @@ namespace CosmicShore.Game.Analytics
             SubmitScoreInternal(mode, intensity, crystals);
             SaveProfile();
         }
-
-        #endregion
-
-        #region Internal
-
+        
         public void TrackPlayAgain()
         {
             if (!_isReady) return;
             _cachedProfile.TotalPlayAgainPressed++;
             SaveProfile();
+        }
+
+        #endregion
+
+        #region Internal
+        
+        void OnAuthenticationSignedIn()
+        {
+            _isReady = true;
+            LoadProfile();
         }
 
         async void SubmitScoreInternal(GameModes mode, int intensity, double score)

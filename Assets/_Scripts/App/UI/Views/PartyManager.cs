@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.App.Profile;
-using CosmicShore.Services.Auth;
+using CosmicShore.Utilities;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
@@ -16,7 +16,7 @@ namespace CosmicShore.Game.Party
         {
             public string PlayerId;
             public string DisplayName;
-            public int    AvatarId;
+            public int AvatarId;
         }
 
         [Serializable]
@@ -51,6 +51,10 @@ namespace CosmicShore.Game.Party
         // -----------------------------------------------------------------------------------------
         // Inspector
 
+        [Header("Auth (Source of Truth)")]
+        [SerializeField] AuthenticationDataVariable authenticationDataVariable;
+        AuthenticationData authenticationData => authenticationDataVariable.Value;
+
         [Header("Presence Lobby")]
         [Tooltip("Max simultaneous players in the global presence lobby.")]
         [SerializeField] private int presenceLobbyMaxPlayers = 100;
@@ -61,31 +65,32 @@ namespace CosmicShore.Game.Party
         // -----------------------------------------------------------------------------------------
         // Public state
 
-        public bool     IsInPresenceLobby => _presenceLobby != null;
-        public bool     IsHost            { get; private set; }
-        public ISession PartySession      { get; private set; }
-        public ISession PresenceLobby     => _presenceLobby;
+        public bool IsInPresenceLobby => _presenceLobby != null;
+        public bool IsHost { get; private set; }
+        public ISession PartySession { get; private set; }
+        public ISession PresenceLobby => _presenceLobby;
 
-        public string LocalPlayerId    { get; private set; }
+        public string LocalPlayerId { get; private set; }
         public string LocalDisplayName { get; private set; }
-        public int    LocalAvatarId    { get; private set; }
+        public int LocalAvatarId { get; private set; }
 
         // -----------------------------------------------------------------------------------------
         // Private state
 
-        private ISession     _presenceLobby;
-        private float        _refreshTimer;
-        private bool         _initialized;
-        private bool         _leaving;
+        private ISession _presenceLobby;
+        private float _refreshTimer;
+        private bool _initialized;
+        private bool _leaving;
+        private bool _joining;
         private PartyInvite? _lastFiredInvite; // prevents re-firing the same invite every tick
 
         // -----------------------------------------------------------------------------------------
         // Constants
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
-        private const string DISPLAY_NAME_KEY         = "displayName";
-        private const string AVATAR_ID_KEY            = "avatarId";
-        private const string INVITE_PREFIX            = "invite_"; // session property key prefix: invite_{targetPlayerId}
+        private const string DISPLAY_NAME_KEY = "displayName";
+        private const string AVATAR_ID_KEY = "avatarId";
+        private const string INVITE_PREFIX = "invite_"; // session property key prefix: invite_{targetPlayerId}
 
         // -----------------------------------------------------------------------------------------
         // Unity Lifecycle
@@ -99,10 +104,14 @@ namespace CosmicShore.Game.Party
 
         async void Start()
         {
-            while (AuthenticationController.Instance == null || !AuthenticationController.Instance.IsSignedIn)
+            // If you wire HandleSignedInEvent() via Soap listener, this Start loop is still safe.
+            // It just ensures PartyManager works even if it starts before auth completes.
+            while (!IsAuthSignedInAndHasId())
                 await Task.Delay(300);
 
-            LocalPlayerId = AuthenticationController.Instance.PlayerId;
+            LocalPlayerId = authenticationData.PlayerId;
+
+            // Profile might load a bit after auth; we try now and keep using SyncProfileFromPlayerDataService() later.
             SyncProfileFromPlayerDataService();
 
             await JoinPresenceLobbyAsync();
@@ -127,6 +136,42 @@ namespace CosmicShore.Game.Party
         }
 
         // -----------------------------------------------------------------------------------------
+        // Optional: Hook these to AuthenticationData.OnSignedIn / OnSignedOut via Soap listeners
+
+        public async void HandleSignedInEvent()
+        {
+            // If Start already initialized, don't double-join.
+            if (_initialized || _joining) return;
+
+            if (!IsAuthSignedInAndHasId())
+                return;
+
+            LocalPlayerId = authenticationData.PlayerId;
+            SyncProfileFromPlayerDataService();
+
+            _joining = true;
+            try
+            {
+                await JoinPresenceLobbyAsync();
+                _initialized = true;
+            }
+            finally
+            {
+                _joining = false;
+            }
+        }
+
+        public async void HandleSignedOutEvent()
+        {
+            _initialized = false;
+            LocalPlayerId = string.Empty;
+            LocalDisplayName = string.Empty;
+            LocalAvatarId = 0;
+
+            await LeavePresenceLobbyAsync();
+        }
+
+        // -----------------------------------------------------------------------------------------
         // Profile sync
 
         /// <summary>Pull display name and avatar from PlayerDataService into local cache.</summary>
@@ -134,7 +179,7 @@ namespace CosmicShore.Game.Party
         {
             if (PlayerDataService.Instance?.CurrentProfile == null) return;
             LocalDisplayName = PlayerDataService.Instance.CurrentProfile.displayName;
-            LocalAvatarId    = PlayerDataService.Instance.CurrentProfile.avatarId;
+            LocalAvatarId = PlayerDataService.Instance.CurrentProfile.avatarId;
         }
 
         // -----------------------------------------------------------------------------------------
@@ -142,6 +187,8 @@ namespace CosmicShore.Game.Party
 
         private async Task JoinPresenceLobbyAsync()
         {
+            if (_presenceLobby != null) return;
+
             try
             {
                 var queryOptions = new QuerySessionsOptions();
@@ -177,10 +224,10 @@ namespace CosmicShore.Game.Party
             {
                 var opts = new SessionOptions
                 {
-                    MaxPlayers        = presenceLobbyMaxPlayers,
-                    IsLocked          = false,
-                    IsPrivate         = false,
-                    PlayerProperties  = BuildLocalPlayerProperties(),
+                    MaxPlayers = presenceLobbyMaxPlayers,
+                    IsLocked = false,
+                    IsPrivate = false,
+                    PlayerProperties = BuildLocalPlayerProperties(),
                     SessionProperties = new Dictionary<string, SessionProperty>
                     {
                         {
@@ -243,7 +290,7 @@ namespace CosmicShore.Game.Party
                     if (p.Id == LocalPlayerId) continue;
 
                     string displayName = "Unknown Pilot";
-                    int    avatarId    = 0;
+                    int avatarId = 0;
 
                     if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn))
                         displayName = dn.Value;
@@ -254,17 +301,15 @@ namespace CosmicShore.Game.Party
 
                     onlinePlayers.Add(new OnlinePlayerInfo
                     {
-                        PlayerId    = p.Id,
+                        PlayerId = p.Id,
                         DisplayName = displayName,
-                        AvatarId    = avatarId
+                        AvatarId = avatarId
                     });
                 }
 
                 OnOnlinePlayersUpdated?.Invoke(onlinePlayers);
 
                 // ── Invite check — read session property keyed to this player's ID ──
-                // Only the presence lobby host writes invite properties, so all
-                // clients can read them via the refreshed ISession.Properties.
                 string inviteKey = $"{INVITE_PREFIX}{LocalPlayerId}";
                 if (_presenceLobby.Properties.TryGetValue(inviteKey, out var inviteProp))
                 {
@@ -290,14 +335,6 @@ namespace CosmicShore.Game.Party
         // -----------------------------------------------------------------------------------------
         // Invite — Send (host of presence lobby only)
 
-        /// <summary>
-        /// Sends a party invite to <paramref name="targetPlayerId"/>.
-        /// Only the presence lobby host can call this — they write a session property
-        /// keyed to the target's player ID via IHostSession.SavePropertiesAsync().
-        ///
-        /// If this player is not the presence lobby host they cannot send invites in
-        /// this implementation. Promote them to host first or use Cloud Code.
-        /// </summary>
         public async Task SendInviteAsync(string targetPlayerId)
         {
             if (_presenceLobby == null)
@@ -314,14 +351,15 @@ namespace CosmicShore.Game.Party
 
             try
             {
+                // Ensure latest profile values before sending
+                SyncProfileFromPlayerDataService();
+
                 if (PartySession == null)
                     await CreatePartySessionAsync();
 
-                string inviteKey   = $"{INVITE_PREFIX}{targetPlayerId}";
+                string inviteKey = $"{INVITE_PREFIX}{targetPlayerId}";
                 string inviteValue = $"{LocalPlayerId}|{PartySession.Id}|{LocalDisplayName}|{LocalAvatarId}";
 
-                // IHostSession.Properties is the writable counterpart to ISession.Properties.
-                // Mutate then call the 0-arg SavePropertiesAsync() to persist.
                 var hostSession = _presenceLobby.AsHost();
                 hostSession.SetProperty(inviteKey, new SessionProperty(inviteValue, VisibilityPropertyOptions.Public));
                 await hostSession.SavePropertiesAsync();
@@ -337,11 +375,13 @@ namespace CosmicShore.Game.Party
         // -----------------------------------------------------------------------------------------
         // Invite — Accept / Decline
 
-        /// <summary>Called by UI when the local player accepts an incoming invite.</summary>
         public async Task AcceptInviteAsync(PartyInvite invite)
         {
             try
             {
+                // Ensure latest profile values before joining
+                SyncProfileFromPlayerDataService();
+
                 PartySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
                     invite.PartySessionId,
                     new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
@@ -350,7 +390,6 @@ namespace CosmicShore.Game.Party
                 Debug.Log($"[PartyManager] Joined party {PartySession.Id}");
                 OnJoinedParty?.Invoke(invite.HostDisplayName);
 
-                // Ask the lobby host to clear our invite slot
                 await RequestClearInviteAsync(invite.HostPlayerId);
             }
             catch (Exception e)
@@ -359,17 +398,12 @@ namespace CosmicShore.Game.Party
             }
         }
 
-        /// <summary>Called by UI when the local player declines an incoming invite.</summary>
         public async Task DeclineInviteAsync()
         {
             _lastFiredInvite = null;
             await RequestClearInviteAsync(LocalPlayerId);
         }
 
-        /// <summary>
-        /// If this client is the host, clears the invite property directly.
-        /// Clients set a player property flagging the host to clear it on next tick.
-        /// </summary>
         private async Task RequestClearInviteAsync(string hostPlayerId)
         {
             if (_presenceLobby == null) return;
@@ -381,17 +415,12 @@ namespace CosmicShore.Game.Party
                 if (_presenceLobby.IsHost)
                 {
                     string inviteKey = $"{INVITE_PREFIX}{LocalPlayerId}";
-                    var hostSession  = _presenceLobby.AsHost();
+                    var hostSession = _presenceLobby.AsHost();
                     hostSession.SetProperty(inviteKey, new SessionProperty(string.Empty, VisibilityPropertyOptions.Public));
                     await hostSession.SavePropertiesAsync();
                 }
                 else
                 {
-                    // Signal to the host via player property — host polls this and clears on next tick
-                    // Note: SaveCurrentPlayerDataAsync() saves whatever the SDK's internal player state holds.
-                    // Since we cannot write to IPlayer.Properties directly, we store the clear request
-                    // in our own Cloud Save private key; the host reads it on refresh.
-                    // For now: the invite will simply expire when the host next creates a new session.
                     Debug.Log("[PartyManager] Invite cleared locally (host will expire it naturally).");
                 }
             }
@@ -408,9 +437,9 @@ namespace CosmicShore.Game.Party
         {
             var opts = new SessionOptions
             {
-                MaxPlayers       = 8,
-                IsLocked         = false,
-                IsPrivate        = true,
+                MaxPlayers = 8,
+                IsLocked = false,
+                IsPrivate = true,
                 PlayerProperties = BuildLocalPlayerProperties()
             }.WithRelayNetwork();
 
@@ -419,10 +448,6 @@ namespace CosmicShore.Game.Party
             Debug.Log($"[PartyManager] Created party session {PartySession.Id}");
         }
 
-        /// <summary>
-        /// Call when the host confirms game start.
-        /// Assigns the party session into GameDataSO so MultiplayerSetup can take over.
-        /// </summary>
         public void HandOffToMultiplayerSetup(CosmicShore.Soap.GameDataSO gameData)
         {
             if (PartySession != null)
@@ -450,11 +475,23 @@ namespace CosmicShore.Game.Party
 
             return new PartyInvite
             {
-                HostPlayerId    = parts[0],
-                PartySessionId  = parts[1],
+                HostPlayerId = parts[0],
+                PartySessionId = parts[1],
                 HostDisplayName = parts[2],
-                HostAvatarId    = avatarId
+                HostAvatarId = avatarId
             };
+        }
+
+        private bool IsAuthSignedInAndHasId()
+        {
+            if (authenticationData == null)
+                return false;
+
+            bool signedIn =
+                authenticationData.IsSignedIn ||
+                authenticationData.State == AuthenticationData.AuthState.SignedIn;
+
+            return signedIn && !string.IsNullOrEmpty(authenticationData.PlayerId);
         }
     }
 }
