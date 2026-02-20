@@ -21,7 +21,7 @@ namespace CosmicShore.App.UI.Modals
 
         public void Play()
         {
-            Arcade.Instance.LaunchMission(Mission.Mode, SquadSystem.SquadLeader, Intensity);
+            // Arcade.Instance.LaunchMission(Mission.Mode, SquadSystem.SquadLeader, Intensity);
         }
 
         public void SetIntensity(float intensity)

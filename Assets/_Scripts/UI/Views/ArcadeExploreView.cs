@@ -3,15 +3,14 @@ using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.Modals;
-using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Obvious.Soap;
+using CosmicShore.Soap;
+using Reflex.Attributes;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Views
@@ -34,6 +33,8 @@ namespace CosmicShore.App.UI.Views
         
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
+        
+        [Inject] GameDataSO gameData;
 
         void OnEnable()
         {
@@ -88,7 +89,7 @@ namespace CosmicShore.App.UI.Views
             {
                 var game = sortedGames[i];
 
-                Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
+                // Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
 
                 var gameCard = GameCards[i];
                 gameCard.GameMode = game.Mode;
@@ -140,8 +141,9 @@ namespace CosmicShore.App.UI.Views
 
         public void PlaySelectedGame()
         {
-            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
-            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
+            // LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
+            // Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
+            gameData.InvokeGameLaunch();
         }
 
         public void ToggleFavorite()

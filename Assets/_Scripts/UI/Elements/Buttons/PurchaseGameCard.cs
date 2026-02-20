@@ -11,7 +11,7 @@ namespace CosmicShore
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
             Debug.Log($"SetVirtualItem - Name:{virtualItem.Name}");
-            game = Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
+            game = null; // Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
             Debug.Log($"SetVirtualItem - game:{game}");
             ItemImage.sprite = game.CardBackground;
             ItemNameLabel.text = game.DisplayName;

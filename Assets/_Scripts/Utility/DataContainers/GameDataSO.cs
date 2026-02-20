@@ -21,9 +21,9 @@ namespace CosmicShore.Soap
         menuName = "ScriptableObjects/DataContainers/" + nameof(GameDataSO))]
     public class GameDataSO : ScriptableObject
     {
-        // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP 
+        // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP
+        public ScriptableEventNoParam OnLaunchGame;
         public ScriptableEventBool OnSceneTransition;
-        public ScriptableEventNoParam OnLaunchGameScene;
         public ScriptableEventNoParam OnSessionStarted;
         public ScriptableEventNoParam OnInitializeGame;
         public ScriptableEventNoParam OnMiniGameRoundStarted;
@@ -103,8 +103,8 @@ namespace CosmicShore.Soap
             InvokeTurnStarted();
         }
 
+        public void InvokeGameLaunch() => OnLaunchGame?.Raise();
         public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
-        public void InvokeGameLaunch() => OnLaunchGameScene?.Raise();
         public void InvokeSessionStarted() => OnSessionStarted?.Raise();
         public void InvokeInitializeGame() => OnInitializeGame?.Raise();
         public void InvokeClientReady() => OnClientReady?.Raise();

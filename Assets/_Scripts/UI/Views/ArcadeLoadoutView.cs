@@ -4,6 +4,8 @@ using CosmicShore.Core;
 using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Soap;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -37,6 +39,9 @@ namespace CosmicShore.App.UI.Views
         VesselClassType activeVesselType = 0;
         GameModes activeGameMode = 0;
 
+        [Inject]
+        GameDataSO gameData;
+        
         void Start()
         {
             LoadoutSystem.Init();
@@ -104,7 +109,8 @@ namespace CosmicShore.App.UI.Views
         public void OnClickPlayButton() 
         {
             Loadout loadout = LoadoutSystem.GetActiveLoadout();
-            Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
+            // Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
+            gameData.InvokeGameLaunch();
         }
 
         // Sets ShipTypes

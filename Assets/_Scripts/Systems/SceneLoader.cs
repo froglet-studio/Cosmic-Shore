@@ -22,17 +22,17 @@ namespace CosmicShore.App.Systems
         private void OnEnable()
         {
             PauseSystem.TogglePauseGame(false);
-            gameData.OnLaunchGameScene.OnRaised += LaunchGameScene;
+            gameData.OnLaunchGame.OnRaised += LaunchGame;
         }
 
         private void Start()
         {
-            gameData.OnSceneTransition?.Raise(true);
+            gameData.InvokeSceneTransition(true);
         }
 
         private void OnDisable()
         {
-            gameData.OnLaunchGameScene.OnRaised -= LaunchGameScene;
+            gameData.OnLaunchGame.OnRaised -= LaunchGame;
         }
 
         #endregion
@@ -50,7 +50,7 @@ namespace CosmicShore.App.Systems
         /// <summary>
         /// Automatically decides based on multiplayer flag.
         /// </summary>
-        private void LaunchGameScene()
+        private void LaunchGame()
         {
             bool useNetworkSceneLoading = gameData.IsMultiplayerMode;
             LoadScene(gameData.SceneName, useNetworkSceneLoading);
@@ -62,7 +62,7 @@ namespace CosmicShore.App.Systems
 
         private async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)
         {
-            gameData.OnSceneTransition?.Raise(false);
+            gameData.InvokeSceneTransition(false);
             gameData.ResetRuntimeData();
 
             await UniTask.Delay(

@@ -1,5 +1,4 @@
-﻿using CosmicShore.Game;
-using CosmicShore.Game.Arcade;
+﻿using System;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utilities;
@@ -7,15 +6,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Soap;
-using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 
-namespace CosmicShore.Core
+namespace CosmicShore.Systems
 {
     /// <summary>
+    /// --------------- DEPRECATED --------------- 
+    /// 
     /// Singleton class responsible for interacting with games
     /// </summary>
     public class Arcade : SingletonPersistent<Arcade>
@@ -25,12 +25,7 @@ namespace CosmicShore.Core
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
 
-        [FormerlySerializedAs("miniGameData")] [SerializeField] private GameDataSO gameData;
-        
-        // [SerializeField] ScriptableEventArcadeData OnArcadeMultiplayerModeSelected;
-        
-        /*[SerializeField]
-        ScriptableEventNoParam _onStartSceneTransition;*/
+        [Inject] GameDataSO gameData;
 
         Dictionary<GameModes, SO_ArcadeGame> ArcadeGameLookup = new();
         Dictionary<GameModes, SO_TrainingGame> TrainingGameLookup = new();
@@ -82,17 +77,16 @@ namespace CosmicShore.Core
             */
         }
 
-        public void LaunchArcadeGame(GameModes gameMode, VesselClassType vessel, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isMultiplayer, bool isDailyChallenge = false)
+        void LaunchArcadeGame()
         {
-            gameData.ResourceCollection = shipResources;
+            /*gameData.ResourceCollection = shipResources;
             gameData.IsDailyChallenge = isDailyChallenge;
             gameData.IsTraining = false;
             gameData.IsMission = false;
             gameData.GameMode = gameMode;
             
             gameData.IsMultiplayerMode = isMultiplayer;
-            gameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
-            gameData.InvokeGameLaunch();
+            gameData.SceneName = ArcadeGameLookup[gameMode].SceneName;*/
 
             /*MiniGame.PlayerShipType = vessel;
             MiniGame.ResourceCollection = shipResources;
@@ -101,10 +95,6 @@ namespace CosmicShore.Core
             MiniGame.IsDailyChallenge = isDailyChallenge;
             MiniGame.IsTraining = false;
             MiniGame.IsMission = false;
-
-            // TODO - Not in hanger, but do this in MiniGameData, or PlayerSpawner
-            Hangar.Instance.SetAiIntensityLevel(intensity);
-
 
             var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.ARCADE);

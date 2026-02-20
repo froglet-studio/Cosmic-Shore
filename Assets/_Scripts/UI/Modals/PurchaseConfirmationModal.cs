@@ -43,13 +43,13 @@ namespace CosmicShore.App.UI.Modals
                     CaptainImage.gameObject.SetActive(true);
                     CaptainImage.sprite = captain.Image;
                     break;
-                case "Game":
+                /*case "Game":
                     var game = Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
                     CaptainImage.gameObject.SetActive(false);
                     TicketImage.gameObject.SetActive(false);
                     GameImage.gameObject.SetActive(true);
                     GameImage.sprite = game.CardBackground;
-                    break;
+                    break;*/
                 case "CaptainUpgrade":
                     var upgradeCaptain = CaptainManager.Instance.GetCaptainFromUpgrade(virtualItem);
                     GameImage.gameObject.SetActive(false);

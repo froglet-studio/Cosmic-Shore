@@ -142,25 +142,27 @@ namespace CosmicShore.App.Systems
             PlayerPrefs.Save();
 
             dailyChallenge = FetchDailyChallenge();
-            DailyGame = Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
+            DailyGame = null; // Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
             ShipResources = LoadGameResourceCollection(DailyGame);
         }
 
         DailyChallenge FetchDailyChallenge()
         {
+            return default;
+            
             // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed 
             DateTime currentDate = DateTime.UtcNow.Date;
             long dateTicks = currentDate.Ticks;
             var random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
 
-            var trainingGames = Arcade.Instance.TrainingGames.Games;
+            /*var trainingGames = Arcade.Instance.TrainingGames.Games;
             var index = random.Next(trainingGames.Count);
             var dailyGame = trainingGames[index];
             var challenge = new DailyChallenge();
             challenge.GameMode = dailyGame.Game.Mode;
             challenge.Intensity = random.Next(4);
 
-            return challenge;
+            return challenge;*/
         }
 
         public void PlayDailyChallenge()
@@ -170,7 +172,7 @@ namespace CosmicShore.App.Systems
             {
                 Debug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
                 CatalogManager.Instance.UseDailyChallengeTicket();
-                Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Ship.Class, ShipResources, dailyChallenge.Intensity, 1, true);
+                // Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Ship.Class, ShipResources, dailyChallenge.Intensity, 1, true);
             }
             else
             {
