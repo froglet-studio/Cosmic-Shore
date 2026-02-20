@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.App.Systems.Audio;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Game;
@@ -111,6 +112,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         int pipIndex = Mathf.Clamp(_available - 1, 0, _so.MaxCharges - 1);
         float duration = Mathf.Max(0.05f, _so.BoostDuration);
 
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
         OnChargeConsumed?.Invoke(pipIndex, duration);
         _available = Mathf.Max(0, _available - 1);
         OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);

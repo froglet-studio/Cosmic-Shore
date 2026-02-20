@@ -42,6 +42,10 @@ namespace CosmicShore.App.Systems.Audio
         ScoreReveal = 9,
         PauseOpen = 10,
         PauseClose = 11,
+        GunFire = 12,
+        BoostActivate = 13,
+        Explosion = 14,
+        CreatureDeath = 15,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -81,6 +85,10 @@ namespace CosmicShore.App.Systems.Audio
         [SerializeField] AudioClip ScoreRevealAudioClip;
         [SerializeField] AudioClip PauseOpenAudioClip;
         [SerializeField] AudioClip PauseCloseAudioClip;
+        [SerializeField] AudioClip GunFireAudioClip;
+        [SerializeField] AudioClip BoostActivateAudioClip;
+        [SerializeField] AudioClip ExplosionAudioClip;
+        [SerializeField] AudioClip CreatureDeathAudioClip;
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
@@ -310,6 +318,10 @@ namespace CosmicShore.App.Systems.Audio
                 {GameplaySFXCategory.ScoreReveal, ScoreRevealAudioClip},
                 {GameplaySFXCategory.PauseOpen, PauseOpenAudioClip},
                 {GameplaySFXCategory.PauseClose, PauseCloseAudioClip},
+                {GameplaySFXCategory.GunFire, GunFireAudioClip},
+                {GameplaySFXCategory.BoostActivate, BoostActivateAudioClip},
+                {GameplaySFXCategory.Explosion, ExplosionAudioClip},
+                {GameplaySFXCategory.CreatureDeath, CreatureDeathAudioClip},
             };
         }
     }

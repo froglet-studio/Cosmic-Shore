@@ -1,4 +1,5 @@
 ﻿using System;
+using CosmicShore.App.Systems.Audio;
 using Obvious.Soap;
 using CosmicShore.Core;
 using CosmicShore.Game;
@@ -112,6 +113,7 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
         var inheritedVelocityWS = status.Course * status.Speed;
 
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GunFire);
         OnGunFired?.Invoke();
 
         gun.FireGun(
