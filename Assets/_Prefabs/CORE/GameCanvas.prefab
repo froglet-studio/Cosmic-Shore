@@ -4539,7 +4539,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   multiplayerController: {fileID: 0}
-  endGameCinematicController: {fileID: 4433200535761759613}
+  endGameObject: {fileID: 0}
   scoreboardPanel: {fileID: 9008985313222444737}
   statsContainer: {fileID: 601443314736116061}
   statRowPrefab: {fileID: 7059799490313329322, guid: e5bce11a0462ceb468817b6050ccb94b,
@@ -4568,7 +4568,8 @@ MonoBehaviour:
   rematchReceivedText: {fileID: 8000010984139768975}
   rematchDeniedPanel: {fileID: 6330513423026764784}
   rematchDeniedText: {fileID: 4417955567440517670}
-  playAgainButton: {fileID: 7966497549685602406}
+  playAgainButton: {fileID: 0}
+  rematchPanelAutoDismissSeconds: 2
 --- !u!1 &4505094612981188546
 GameObject:
   m_ObjectHideFlags: 0
@@ -5956,7 +5957,7 @@ MonoBehaviour:
   m_fontSizeMax: 12
   m_fontStyle: 0
   m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -10678,12 +10679,6 @@ MonoBehaviour:
 --- !u!224 &1619673762671833843 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3780540842356262167, guid: 358e11ad6d037a24998bd295142ff242,
-    type: 3}
-  m_PrefabInstance: {fileID: 2453636514716022756}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &4433200535761759613 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2272335457649285785, guid: 358e11ad6d037a24998bd295142ff242,
     type: 3}
   m_PrefabInstance: {fileID: 2453636514716022756}
   m_PrefabAsset: {fileID: 0}
