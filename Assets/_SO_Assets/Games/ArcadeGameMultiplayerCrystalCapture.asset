@@ -25,11 +25,8 @@ MonoBehaviour:
   SceneName: MinigameCrystalCaptureMultiplayer_Gameplay
   Captains:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
-  - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}
   - {fileID: 11400000, guid: f2d76569deb637b4e90869cb5a908a6b, type: 2}
   - {fileID: 11400000, guid: 38f86662381aa0c4da8018fa5fc4e62a, type: 2}
-  - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
-  - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1

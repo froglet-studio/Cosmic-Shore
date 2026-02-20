@@ -28,9 +28,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
   - {fileID: 11400000, guid: 301b5318c7ea4074ab1561ae3e1f37a2, type: 2}
-  - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
-  - {fileID: 11400000, guid: 04eb553bdf07bae41b9c078b60e1cfaf, type: 2}
-  - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1

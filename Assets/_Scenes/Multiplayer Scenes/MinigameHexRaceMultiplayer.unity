@@ -755,6 +755,7 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1078953724}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
+  gameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
   _playerOrigins:
   - {fileID: 1194123993}
   - {fileID: 696378175}
@@ -2686,11 +2687,7 @@ MonoBehaviour:
     - {x: 350, y: -100, z: -400}
     - {x: 500, y: -50, z: -300}
     - {x: 600, y: 0, z: -150}
-  useSplinePerIntensity:
-  - 0
-  - 1
-  - 0
-  - 0
+  useSplinePerIntensity: 00000000010000000000000000000000
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   scale: {x: 10, y: 1, z: 5}
   blocksPerSegment: 50
