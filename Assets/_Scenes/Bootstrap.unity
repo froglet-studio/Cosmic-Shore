@@ -504,6 +504,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: NetworkManager
       objectReference: {fileID: 0}
+    - target: {fileID: 2377399360381651719, guid: f934e20c0b36bc64e8710d3c2e570629,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 9141771109742300572, guid: f934e20c0b36bc64e8710d3c2e570629,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -2785,6 +2790,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: AppManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 6778103901198434919, guid: 4eee63018bbefa743845cd8125957a2d,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9113152145594744158, guid: 4eee63018bbefa743845cd8125957a2d,
         type: 3}
