@@ -83,8 +83,8 @@ namespace CosmicShore.Game
                 // Set AI vessel type (server authority)
                 var aiVesselType = data.vesselClass;
                 if (aiVesselType == VesselClassType.Any || aiVesselType == VesselClassType.Random)
-                    aiVesselType = VesselClassType.Sparrow;
-                    
+                    aiVesselType = PickAIVesselType();
+
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = data.PlayerName;
                 aiPlayer.NetDomain.Value = data.domain;
@@ -96,6 +96,9 @@ namespace CosmicShore.Game
                     aiPlayerNO.Despawn(true);
                     continue;
                 }
+
+                // 3) Configure AI pilot on the spawned vessel
+                ConfigureAIPilot(aiVesselNO);
             }
         }
 

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using CosmicShore.Game.AI;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 using Unity.Multiplayer.Samples.Utilities;
@@ -26,6 +28,10 @@ namespace CosmicShore.Game
         [SerializeField] protected ClientPlayerVesselInitializer clientPlayerVesselInitializer;
 
         [SerializeField] protected VesselPrefabContainer vesselPrefabContainer;
+
+        [Header("AI Ship Selection")]
+        [Tooltip("Game list used to look up available ships for AI opponents. If unset, AI defaults to Sparrow.")]
+        [SerializeField] SO_GameList gameList;
 
         [Header("Spawn Origins")]
         [SerializeField] protected Transform[] _playerOrigins;
@@ -180,7 +186,7 @@ namespace CosmicShore.Game
 
             // Configure AI player
             var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
-            var aiVesselType = VesselClassType.Sparrow;
+            var aiVesselType = PickAIVesselType();
 
             aiPlayer.NetDefaultVesselType.Value = aiVesselType;
             aiPlayer.NetName.Value = "AI Pilot";
@@ -188,17 +194,75 @@ namespace CosmicShore.Game
             aiPlayer.NetIsAI.Value = true;
 
             // Spawn AI vessel (server-owned)
-            if (!TrySpawnVesselForAI(aiPlayer))
+            if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
             {
                 aiPlayerNO.Despawn(true);
                 return;
             }
 
+            // Configure the AI pilot on the spawned vessel
+            ConfigureAIPilot(aiVesselNO);
+
             Debug.Log($"[ServerPlayerVesselInitializer] Spawned AI opponent: domain={aiDomain}, vessel={aiVesselType}");
         }
 
-        bool TrySpawnVesselForAI(Player aiPlayer)
+        protected VesselClassType PickAIVesselType()
         {
+            // Try to pick a random ship from the game's available captains
+            if (gameList != null)
+            {
+                var game = FindGameByMode(gameData.GameMode);
+                if (game != null && game.Captains != null && game.Captains.Count > 0)
+                {
+                    var captain = game.Captains[UnityEngine.Random.Range(0, game.Captains.Count)];
+                    if (captain != null && captain.Ship != null)
+                    {
+                        var shipType = captain.Ship.Class;
+                        // Validate the prefab container can spawn this type
+                        if (vesselPrefabContainer.TryGetShipPrefab(shipType, out _))
+                        {
+                            Debug.Log($"[ServerPlayerVesselInitializer] AI picking ship {shipType} from captain {captain.Name}");
+                            return shipType;
+                        }
+                        Debug.LogWarning($"[ServerPlayerVesselInitializer] No prefab for {shipType}, falling back to Sparrow");
+                    }
+                }
+            }
+
+            return VesselClassType.Sparrow;
+        }
+
+        protected SO_ArcadeGame FindGameByMode(GameModes mode)
+        {
+            if (gameList == null || gameList.Games == null)
+                return null;
+
+            foreach (var game in gameList.Games)
+            {
+                if (game.Mode == mode)
+                    return game;
+            }
+            return null;
+        }
+
+        protected void ConfigureAIPilot(NetworkObject aiVesselNO)
+        {
+            var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
+            if (aiPilot == null)
+                return;
+
+            // Determine if this game mode needs player-seeking behavior (Joust)
+            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
+
+            // Scale AI skill with intensity (0.25 per intensity level, capped at 1)
+            float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+
+            aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
+        }
+
+        bool TrySpawnVesselForAI(Player aiPlayer, out NetworkObject vesselNO)
+        {
+            vesselNO = null;
             var vesselType = aiPlayer.NetDefaultVesselType.Value;
 
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
@@ -213,7 +277,7 @@ namespace CosmicShore.Game
                 return false;
             }
 
-            var vesselNO = Instantiate(shipNetworkObject);
+            vesselNO = Instantiate(shipNetworkObject);
             vesselNO.transform.SetPositionAndRotation(aiPlayer.transform.position, aiPlayer.transform.rotation);
             vesselNO.Spawn(true); // server-owned
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;

@@ -60,6 +60,16 @@ namespace CosmicShore.Game.AI
         [SerializeField] GameDataSO gameData;
         [SerializeField] float playerSeekUpdateInterval = 0.5f;
 
+        /// <summary>
+        /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
+        /// </summary>
+        public void ConfigureForGameMode(GameDataSO gameDataRef, bool shouldSeekPlayers, float skill)
+        {
+            gameData = gameDataRef;
+            seekPlayers = shouldSeekPlayers;
+            skillLevel = Mathf.Clamp01(skill);
+        }
+
         [SerializeField] List<AIAbility> abilities;
 
         [SerializeField]
