@@ -438,6 +438,7 @@ MonoBehaviour:
   gameData: {fileID: 0}
   spawnableSegments:
   - {fileID: 857195442}
+  spawnableByIntensity: []
   positioningScheme: 19
   spawnSegmentWeights:
   - 1
@@ -910,6 +911,7 @@ MonoBehaviour:
     - {x: 525, y: 38, z: 263}
     - {x: 625, y: 0, z: 113}
   spawnCrystalWithPlayerDomain: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 0
 --- !u!114 &1078953716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1486,6 +1488,55 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1471404063}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1298008502
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1298008504}
+  - component: {fileID: 1298008503}
+  m_Layer: 0
+  m_Name: Elemental Comeback System
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1298008503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1298008502}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5535b71527dab68459f2dfb3005a7a4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  comebackProfile: {fileID: 11400000, guid: 57125668d0b856746a63e472e6c2b3f9, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  useGolfRules: 0
+  updateInterval: 1
+  debugLogging: 0
+--- !u!4 &1298008504
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1298008502}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 730.77435, y: -37.39346, z: -58.745872}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1471404062
 GameObject:
   m_ObjectHideFlags: 0
@@ -1892,3 +1943,4 @@ SceneRoots:
   - {fileID: 500613219}
   - {fileID: 85210995}
   - {fileID: 527365862}
+  - {fileID: 1298008504}

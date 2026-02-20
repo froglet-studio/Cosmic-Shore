@@ -38,10 +38,11 @@ public class ElementalFloat
         }
     }
 
-    // TODO: need to convert this to an exponential curve instead of linear
+    // LerpUnclamped allows levels outside 0-10 (e.g. -5 to 15 from comeback system)
+    // to extrapolate beyond Min/Max
     void ScaleValueWithLevel(Element element, int level)
     {
         if (element == this.element)
-            Value = Mathf.Lerp(Min, Max, level / 10f);
+            Value = Mathf.LerpUnclamped(Min, Max, level / 10f);
     }
 }
