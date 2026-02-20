@@ -24050,11 +24050,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f37a582dc454f99851c1fdfec05d974, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  authenticationDataVariable: {fileID: 0}
   cloudSaveProfileKey: player_profile
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   displayNameText: {fileID: 1329041540}
   avatarImage: {fileID: 2082719813}
-  authController: {fileID: 1908113034}
 --- !u!1 &535000372
 GameObject:
   m_ObjectHideFlags: 0
@@ -41719,6 +41719,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05d2a62a83d04ff09cf64576701da0c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  authenticationDataVariable: {fileID: 0}
   presenceLobbyMaxPlayers: 100
   refreshIntervalSeconds: 3
 --- !u!4 &1009885522
@@ -82766,6 +82767,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   leaderboardConfig: {fileID: 11400000, guid: e04a023aee5d41345a2d6026306bb0ef, type: 2}
+  authenticationDataVariable: {fileID: 0}
 --- !u!4 &2008405516
 Transform:
   m_ObjectHideFlags: 0
@@ -104362,80 +104364,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5798805852805016383}
   m_CullTransparentMesh: 1
---- !u!1001 &6019225091298532568
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 2052326737652235165, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: <ArcadeGames>k__BackingField
-      value: 
-      objectReference: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57,
-        type: 2}
-    - target: {fileID: 4826558273232955342, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_Name
-      value: Arcade
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426512905390833613, guid: 05a0a8954cada1a4eab8ad2dbc328131,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 05a0a8954cada1a4eab8ad2dbc328131, type: 3}
 --- !u!1001 &6023862199913651122
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -110879,7 +110807,6 @@ SceneRoots:
   - {fileID: 1243749158}
   - {fileID: 7628750790309683641}
   - {fileID: 3028624634418711089}
-  - {fileID: 6019225091298532568}
   - {fileID: 2060726314631567713}
   - {fileID: 3451900300520415410}
   - {fileID: 2259673634671319691}

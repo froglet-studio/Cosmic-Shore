@@ -135,7 +135,7 @@ namespace CosmicShore.App.UI.Views
             {
                 if (SelectedGame.Captains.Contains(captain))
                     //MiniGame.ShipResources = captain.InitialResourceLevels;
-                    MiniGame.ResourceCollection = captain.InitialResourceLevels;
+                    gameData.ResourceCollection = captain.InitialResourceLevels;
             }
         }
 
