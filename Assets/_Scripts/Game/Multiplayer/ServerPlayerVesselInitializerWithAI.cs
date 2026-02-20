@@ -110,7 +110,12 @@ namespace CosmicShore.Game
                 return null;
 
             int idx = 2 + aiIndex;
-            idx = Mathf.Clamp(idx, 0, _playerOrigins.Length - 1);
+            if (idx >= _playerOrigins.Length)
+            {
+                Debug.LogWarning($"[ServerPlayerVesselInitializerWithAI] Not enough spawn origins for AI {aiIndex} " +
+                                 $"(need index {idx}, have {_playerOrigins.Length}). Wrapping with modulo.");
+                idx = idx % _playerOrigins.Length;
+            }
             return _playerOrigins[idx];
         }
 
