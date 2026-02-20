@@ -79,6 +79,7 @@ namespace CosmicShore.Game.Arcade
 
         // ── Game end ───────────────────────────────────────────────────────────
 
+
         void HandleGameEnd()
         {
             if (_hasReported) return;

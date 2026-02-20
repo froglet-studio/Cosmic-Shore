@@ -29,9 +29,11 @@ namespace CosmicShore.Game.Arcade.Scoring
 
         void HandleCrystalCollected(string playerName)
         {
+            if (GameData.LocalPlayer == null || GameData.LocalPlayer.Name != playerName) return;
+
             totalCrystalsCollected++;
-            UnityEngine.Debug.Log($"<color=cyan>💎 [COLLECT] {playerName} collected Crystal #{totalCrystalsCollected}! +{scoreMultiplier} pts</color>");
-            
+            UnityEngine.Debug.Log($"<color=cyan>[COLLECT] {playerName} collected Crystal #{totalCrystalsCollected}! +{scoreMultiplier} pts</color>");
+
             Score += scoreMultiplier;
         }
 
