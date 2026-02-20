@@ -110,9 +110,10 @@ namespace CosmicShore.Game.Arcade
             } 
         }
         
-        void HandlePrismCollision() 
-        { 
-            if (_isTracking) _currentCleanStreak = 0; 
+        void HandlePrismCollision(string playerName)
+        {
+            if (_isTracking && _observedVessel != null && _observedVessel.PlayerName == playerName)
+                _currentCleanStreak = 0;
         }
         void HandleGameEnd()
         {

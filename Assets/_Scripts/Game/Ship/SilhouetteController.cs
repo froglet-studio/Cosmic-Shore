@@ -198,6 +198,7 @@ namespace CosmicShore
 
         private void HandleMantaFlowerExplosion(VesselImpactor vessel)
         {
+            if (_vessel == null || vessel?.Vessel != _vessel) return;
             view?.ShowMantaFlowerOverlay();
         }
 
