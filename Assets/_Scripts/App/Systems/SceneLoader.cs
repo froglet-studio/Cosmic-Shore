@@ -15,24 +15,24 @@ namespace CosmicShore.App.Systems
         const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = 0.5f;
 
         [SerializeField] protected GameDataSO gameData;
-        [SerializeField] ScriptableEventBool _onSceneTransition;
+        
 
         #region Unity Lifecycle
 
         private void OnEnable()
         {
             PauseSystem.TogglePauseGame(false);
-            gameData.OnLaunchGameScene += LaunchGameScene;
+            gameData.OnLaunchGameScene.OnRaised += LaunchGameScene;
         }
 
         private void Start()
         {
-            _onSceneTransition?.Raise(true);
+            gameData.OnSceneTransition?.Raise(true);
         }
 
         private void OnDisable()
         {
-            gameData.OnLaunchGameScene -= LaunchGameScene;
+            gameData.OnLaunchGameScene.OnRaised -= LaunchGameScene;
         }
 
         #endregion
@@ -62,8 +62,7 @@ namespace CosmicShore.App.Systems
 
         private async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)
         {
-            _onSceneTransition?.Raise(false);
-
+            gameData.OnSceneTransition?.Raise(false);
             gameData.ResetRuntimeData();
 
             await UniTask.Delay(

@@ -1,31 +1,30 @@
-using System;
-using CosmicShore.App.Services;
+using CosmicShore.Services;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
+using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Enums;
 using UnityEngine;
+using Resolution = Reflex.Enums.Resolution;
 
-namespace CosmicShore.App.Systems
+namespace CosmicShore.Systems
 {
     [DefaultExecutionOrder(0)]
-    public class AppManager : SingletonNetworkPersistent<AppManager>
+    public class AppManager : SingletonNetworkPersistent<AppManager>, IInstaller
     {
-        [SerializeField]
-        AuthenticationDataVariable authenticationDataVariable;
-        
-        [SerializeField]
-        NetworkMonitorDataVariable networkMonitorDataVariable;
-        
-        [SerializeField]
-        bool autoSignInAnnonymously;
-        
-        [SerializeField]
-        bool authenticationWithLog;
+        [Header("Auth")]
+        [SerializeField] AuthenticationDataVariable authenticationDataVariable;
+        [SerializeField] bool authenticationWithLog;
 
-        [SerializeField]
-        GameDataSO gameData;
-        
-        AuthenticationServiceFacade authenticationServiceFacade;
-        NetworkMonitor networkMonitor;
+        [Header("Network")]
+        [SerializeField] NetworkMonitorDataVariable networkMonitorDataVariable;
+
+        [Header("Data")]
+        [SerializeField] GameDataSO gameData;
+
+        // ✅ Reflex will inject these from the container
+        [Inject] AuthenticationServiceFacade authenticationServiceFacade;
+        [Inject] NetworkMonitor networkMonitor;
 
         void Start()
         {
@@ -33,33 +32,39 @@ namespace CosmicShore.App.Systems
             StartAuthentication();
         }
 
-        private void OnDisable()
+        void OnDisable() => Shutdown();
+        void OnApplicationQuit() => Shutdown();
+
+        void Shutdown()
         {
             StopNetworkMonitor();
-            gameData.ResetAllData();
+            gameData?.ResetAllData();
         }
 
-        private void OnApplicationQuit()
+        public void InstallBindings(ContainerBuilder builder)
         {
-            StopNetworkMonitor();
-            gameData.ResetAllData();
+            // ScriptableObject assets / Variables: register as values (singleton bindings)
+            builder.RegisterValue(gameData);
+            builder.RegisterValue(authenticationDataVariable);
+            builder.RegisterValue(networkMonitorDataVariable);
+
+            // Persistent C# singletons (live as long as the RootScope container lives)
+            builder.RegisterFactory(
+                _ => new AuthenticationServiceFacade(authenticationDataVariable, authenticationWithLog),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new NetworkMonitor(networkMonitorDataVariable),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
         }
 
-        void StartNetworkMonitor()
-        {
-            var monitor = new NetworkMonitor(networkMonitorDataVariable);
-            monitor.StartMonitoring();
-        }
+        void StartNetworkMonitor() => networkMonitor?.StartMonitoring();
+        void StopNetworkMonitor() => networkMonitor?.StopMonitoring();
 
-        void StopNetworkMonitor()
-        {
-            networkMonitor.StopMonitoring();
-        }
-
-        void StartAuthentication()
-        {
-            authenticationServiceFacade = new(authenticationDataVariable, authenticationWithLog);
-            authenticationServiceFacade.StartAuthentication();
-        }
+        void StartAuthentication() => authenticationServiceFacade?.StartAuthentication();
     }
 }

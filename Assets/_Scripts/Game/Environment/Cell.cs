@@ -42,7 +42,7 @@ namespace CosmicShore.Game
         void OnEnable()
         {
             if (gameData != null)
-                gameData.OnInitializeGame += Initialize;
+                gameData.OnInitializeGame.OnRaised += Initialize;
 
             if (!runtime) return;
 
@@ -57,7 +57,7 @@ namespace CosmicShore.Game
         void OnDisable()
         {
             if (gameData != null)
-                gameData.OnInitializeGame -= Initialize;
+                gameData.OnInitializeGame.OnRaised -= Initialize;
 
             if (runtime != null)
             {

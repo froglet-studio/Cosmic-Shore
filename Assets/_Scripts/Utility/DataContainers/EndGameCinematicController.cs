@@ -24,7 +24,7 @@ namespace CosmicShore.Game.Cinematics
         protected virtual void OnEnable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated += OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
 
             if (!view) return;
             view.Initialize();
@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Cinematics
         protected virtual void OnDisable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
 
             if (view)
                 view.OnContinuePressed -= HandleContinuePressed;

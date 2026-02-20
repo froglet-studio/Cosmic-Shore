@@ -17,12 +17,12 @@ namespace CosmicShore.Game.Arcade
 
         void OnEnable()
         {
-            if (gameData != null) gameData.OnMiniGameEnd += ReportStats;
+            if (gameData != null) gameData.OnMiniGameEnd.OnRaised += ReportStats;
         }
 
         void OnDisable()
         {
-            if (gameData != null) gameData.OnMiniGameEnd -= ReportStats;
+            if (gameData != null) gameData.OnMiniGameEnd.OnRaised -= ReportStats;
         }
 
         void ReportStats()

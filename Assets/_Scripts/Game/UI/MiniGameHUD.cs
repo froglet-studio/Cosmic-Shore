@@ -74,7 +74,7 @@ namespace CosmicShore.Game.UI
         {
             if (gameData != null)
             {
-                gameData.OnClientReady += OnClientReady;
+                gameData.OnClientReady.OnRaised += OnClientReady;
                 gameData.OnMiniGameTurnStarted.OnRaised += OnMiniGameTurnStarted;
                 gameData.OnMiniGameTurnEnd.OnRaised += OnMiniGameTurnEnd;
 
@@ -92,7 +92,7 @@ namespace CosmicShore.Game.UI
         {
             if (gameData != null)
             {
-                gameData.OnClientReady -= OnClientReady;
+                gameData.OnClientReady.OnRaised -= OnClientReady;
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnMiniGameTurnStarted;
                 gameData.OnMiniGameTurnEnd.OnRaised -= OnMiniGameTurnEnd;
 

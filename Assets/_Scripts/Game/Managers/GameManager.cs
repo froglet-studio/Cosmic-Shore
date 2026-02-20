@@ -26,14 +26,14 @@ namespace CosmicShore.Core
         private void OnEnable()
         {
             PauseSystem.TogglePauseGame(false);
-            gameData.OnLaunchGameScene += LaunchGameScene;
+            gameData.OnLaunchGameScene.OnRaised += LaunchGameScene;
         }
 
         private void Start() => _onSceneTransition.Raise(true);
 
         private void OnDisable()
         {
-            gameData.OnLaunchGameScene -= LaunchGameScene;
+            gameData.OnLaunchGameScene.OnRaised -= LaunchGameScene;
         }
         
         public virtual void RestartGame()

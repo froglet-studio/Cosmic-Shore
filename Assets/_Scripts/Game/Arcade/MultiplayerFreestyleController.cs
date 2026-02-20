@@ -16,13 +16,13 @@ namespace CosmicShore.Game.Arcade
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            gameData.OnClientReady += OnClientReady;
+            gameData.OnClientReady.OnRaised += OnClientReady;
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            gameData.OnClientReady -= OnClientReady;
+            gameData.OnClientReady.OnRaised -= OnClientReady;
         }
         
         void OnClientReady() => gameData.SetNonOwnerPlayersActiveInNewClient();

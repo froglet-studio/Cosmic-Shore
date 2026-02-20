@@ -24,10 +24,10 @@ namespace CosmicShore.Game.Arcade
         {
             if (gameData == null) return;
 
-            gameData.OnInitializeGame += InitializeScoringMode;
+            gameData.OnInitializeGame.OnRaised += InitializeScoringMode;
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
-            gameData.OnMiniGameEnd += CalculateWinnerAndInvokeEvent;
+            gameData.OnMiniGameEnd.OnRaised += CalculateWinnerAndInvokeEvent;
             OnClickToMainMenu.OnRaised += OnTurnEnded;
         }
 
@@ -35,10 +35,10 @@ namespace CosmicShore.Game.Arcade
         {
             if (gameData == null) return;
 
-            gameData.OnInitializeGame -= InitializeScoringMode;
+            gameData.OnInitializeGame.OnRaised -= InitializeScoringMode;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
-            gameData.OnMiniGameEnd -= CalculateWinnerAndInvokeEvent;
+            gameData.OnMiniGameEnd.OnRaised -= CalculateWinnerAndInvokeEvent;
             OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
         #endregion

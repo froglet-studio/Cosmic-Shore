@@ -15,13 +15,13 @@ namespace CosmicShore.Game.Arcade
         void OnEnable()
         {
             if (gameData)
-                gameData.OnMiniGameEnd += CompileFinalStats;
+                gameData.OnMiniGameEnd.OnRaised += CompileFinalStats;
         }
 
         void OnDisable()
         {
             if (gameData)
-                gameData.OnMiniGameEnd -= CompileFinalStats;
+                gameData.OnMiniGameEnd.OnRaised -= CompileFinalStats;
         }
 
         void CompileFinalStats()

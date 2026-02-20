@@ -22,25 +22,21 @@ namespace CosmicShore.Soap
     public class GameDataSO : ScriptableObject
     {
         // Events - Maybe later it will be better to change all Actions to ScriptableEvent of SOAP 
-        public event Action OnLaunchGameScene;
-        public event Action OnSessionStarted;
-        public event Action OnInitializeGame;
+        public ScriptableEventBool OnSceneTransition;
+        public ScriptableEventNoParam OnLaunchGameScene;
+        public ScriptableEventNoParam OnSessionStarted;
+        public ScriptableEventNoParam OnInitializeGame;
         public ScriptableEventNoParam OnMiniGameRoundStarted;
-        public event Action OnClientReady;
+        public ScriptableEventNoParam OnClientReady;
         public ScriptableEventNoParam OnMiniGameTurnStarted;
         public ScriptableEventNoParam OnMiniGameTurnEnd;
-        // DTFC
         public ScriptableEventNoParam OnMiniGameRoundEnd;
-        public event Action OnMiniGameEnd;
-        public event Action OnWinnerCalculated;
-        
+        public ScriptableEventNoParam OnMiniGameEnd;
+        public ScriptableEventNoParam OnWinnerCalculated;
         public ScriptableEventNoParam OnResetForReplay;
 
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
-        public event Action<GameModes> OnGameModeTurnEnd;
-        public event Action<GameModes> OnGameModeRoundEnd;
-        public event Action<GameModes> OnGameModeEnd;
 
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         
@@ -104,14 +100,14 @@ namespace CosmicShore.Soap
         {
             IsTurnRunning = true;
             TurnStartTime = Time.time;
-
             InvokeTurnStarted();
         }
-        
-        public void InvokeGameLaunch() => OnLaunchGameScene?.Invoke();
-        public void InvokeSessionStarted() => OnSessionStarted?.Invoke();
-        public void InvokeInitializeGame() => OnInitializeGame?.Invoke();
-        public void InvokeClientReady() => OnClientReady?.Invoke();
+
+        public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
+        public void InvokeGameLaunch() => OnLaunchGameScene?.Raise();
+        public void InvokeSessionStarted() => OnSessionStarted?.Raise();
+        public void InvokeInitializeGame() => OnInitializeGame?.Raise();
+        public void InvokeClientReady() => OnClientReady?.Raise();
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
         public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
 
@@ -119,28 +115,11 @@ namespace CosmicShore.Soap
         {
             IsTurnRunning = false;
             OnMiniGameTurnEnd?.Raise();
-            
-            // Fire game mode-specific event
-            OnGameModeTurnEnd?.Invoke(GameMode);
         }
         
-        public void InvokeMiniGameRoundEnd() 
-        {
-            OnMiniGameRoundEnd?.Raise();
-            
-            // Fire game mode-specific event
-            OnGameModeRoundEnd?.Invoke(GameMode);
-        }
-        
-        public void InvokeMiniGameEnd() 
-        {
-            OnMiniGameEnd?.Invoke();
-            
-            // Fire game mode-specific event
-            OnGameModeEnd?.Invoke(GameMode);
-        }
-        
-        public void InvokeWinnerCalculated() => OnWinnerCalculated?.Invoke();
+        public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
+        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Raise();
+        public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
 
         public void ResetForReplay()
         {

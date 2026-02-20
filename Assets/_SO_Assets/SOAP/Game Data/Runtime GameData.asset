@@ -12,12 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccff787dc643e6d48a46c1b58af79d00, type: 3}
   m_Name: Runtime GameData
   m_EditorClassIdentifier: 
+  OnSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
+  OnLaunchGameScene: {fileID: 11400000, guid: b9f59339ba9d6994d93c9feae87bc841, type: 2}
+  OnSessionStarted: {fileID: 11400000, guid: 13dd97ab48cb50c4ba1dfee6a58e02ce, type: 2}
+  OnInitializeGame: {fileID: 11400000, guid: c16ee2f01e41a044fa3da1dc56419b19, type: 2}
   OnMiniGameRoundStarted: {fileID: 11400000, guid: 97086a0eecde5df4783ba65b3b12f3a2,
     type: 2}
+  OnClientReady: {fileID: 11400000, guid: e74fac1534233e041a98d1d5a2434b7e, type: 2}
   OnMiniGameTurnStarted: {fileID: 11400000, guid: c1e403b35fa04e64d9ab4dea06077e6c,
     type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
   OnMiniGameRoundEnd: {fileID: 11400000, guid: eadb3425134abb341a2ebc617fa5604a, type: 2}
+  OnMiniGameEnd: {fileID: 11400000, guid: 187b90044c9617f4b97f34a3a48f5d27, type: 2}
+  OnWinnerCalculated: {fileID: 11400000, guid: 88fb54bd4ac38264780b4222478f83ad, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   OnShowGameEndScreen: {fileID: 11400000, guid: 4c4df83a7f0a61f4aa7b643396bc9d45,
     type: 2}

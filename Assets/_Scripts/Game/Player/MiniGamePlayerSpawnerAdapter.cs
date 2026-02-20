@@ -8,7 +8,7 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            _gameData.OnInitializeGame += InitializeGame;
+            _gameData.OnInitializeGame.OnRaised += InitializeGame;
             AddSpawnPosesToGameData();
         }
 
@@ -20,7 +20,7 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
-            _gameData.OnInitializeGame -= InitializeGame;
+            _gameData.OnInitializeGame.OnRaised -= InitializeGame;
         }
 
         void InitializeGame()

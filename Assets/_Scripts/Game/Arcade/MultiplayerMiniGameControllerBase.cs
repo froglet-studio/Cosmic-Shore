@@ -24,7 +24,7 @@ namespace CosmicShore.Game.Arcade
             if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
-                gameData.OnSessionStarted += SubscribeToSessionEvents;
+                gameData.OnSessionStarted.OnRaised += SubscribeToSessionEvents;
             }
             
             InitializeAfterDelay().Forget();
@@ -35,7 +35,7 @@ namespace CosmicShore.Game.Arcade
             if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
-                gameData.OnSessionStarted -= SubscribeToSessionEvents;
+                gameData.OnSessionStarted.OnRaised -= SubscribeToSessionEvents;
             }
             
             UnsubscribeFromSessionEvents();
