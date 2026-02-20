@@ -101,9 +101,16 @@ namespace CosmicShore.App.UI.Views
         }
 
         //  Play Button press gets loadout and sends to game
-        public void OnClickPlayButton() 
+        public void OnClickPlayButton()
         {
             Loadout loadout = LoadoutSystem.GetActiveLoadout();
+
+            if (loadout.GameMode == GameModes.Tournament)
+            {
+                Arcade.Instance.LaunchTournament(loadout.Intensity);
+                return;
+            }
+
             Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
         }
 
