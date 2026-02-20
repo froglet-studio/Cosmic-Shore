@@ -1024,6 +1024,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1604234835}
+    - targetCorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1604234836}
   m_SourcePrefab: {fileID: 100100000, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
 --- !u!114 &400393570 stripped
 MonoBehaviour:
@@ -2464,6 +2468,19 @@ MonoBehaviour:
   playAgainButton: {fileID: 1315164671}
   rematchPanelAutoDismissSeconds: 3
   joustController: {fileID: 1628508346}
+--- !u!114 &1604234836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1046768871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87e6ed750945438e9e08f918293fefd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!225 &1617932949 stripped
 CanvasGroup:
   m_CorrespondingSourceObject: {fileID: 6286389942094070827, guid: 65bf1ed35b752374ca46ae214710e41c,
