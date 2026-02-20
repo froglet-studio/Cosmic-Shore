@@ -11,7 +11,7 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Utilities;
 
 
-namespace CosmicShore.App.Systems
+namespace CosmicShore.Systems
 {
     public class DailyChallengeSystem : SingletonPersistent<DailyChallengeSystem>
     {

@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Quests;
+using CosmicShore.Systems.Quests;
 using System.Collections.Generic;
 using UnityEngine;
 

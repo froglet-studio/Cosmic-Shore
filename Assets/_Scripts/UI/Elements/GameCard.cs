@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Favorites;
+using CosmicShore.Systems.Favorites;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Events;
 using CosmicShore.FTUE;

@@ -1,4 +1,4 @@
-namespace CosmicShore.App.Systems.CTA
+namespace CosmicShore.Systems.CTA
 {
     public enum CallToActionTargetType
     {

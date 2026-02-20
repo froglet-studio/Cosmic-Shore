@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Squads;
+using CosmicShore.Systems.Squads;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
 using TMPro;

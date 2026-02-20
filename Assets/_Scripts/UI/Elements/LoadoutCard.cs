@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Loadout;
+using CosmicShore.Systems.Loadout;
 using CosmicShore.App.UI.Views;
 using System.Linq;
 using TMPro;

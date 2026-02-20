@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.Loadout
+namespace CosmicShore.Systems.Loadout
 {
     public static class LoadoutSystem
     {

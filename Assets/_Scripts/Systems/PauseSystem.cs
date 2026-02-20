@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems
+namespace CosmicShore.Systems
 {
     public static class PauseSystem
     {

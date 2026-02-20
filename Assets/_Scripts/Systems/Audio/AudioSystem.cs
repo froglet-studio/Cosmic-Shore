@@ -9,7 +9,7 @@ using UnityEngine.Audio;
 /// <summary>
 /// Audio System to contain audio methods accessed by other classes
 /// </summary>
-namespace CosmicShore.App.Systems.Audio
+namespace CosmicShore.Systems.Audio
 {
     [Serializable]
     public enum MenuAudioCategory

@@ -5,13 +5,13 @@ using CosmicShore.Integrations.PlayFab.PlayStream;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using CosmicShore.App.Systems.UserActions;
+using CosmicShore.Systems.UserActions;
 using CosmicShore.Game.UI;
 using CosmicShore.Models.Enums;
-using CosmicShore.App.Systems;
+using CosmicShore.Systems;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.App.Systems.Xp;
+using CosmicShore.Systems.Xp;
 using UnityEngine.Serialization;
 
 

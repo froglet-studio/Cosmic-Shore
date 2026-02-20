@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems;
+using CosmicShore.Systems;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;

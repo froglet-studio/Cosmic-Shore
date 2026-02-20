@@ -1,4 +1,4 @@
-namespace CosmicShore.App.Systems.Loadout
+namespace CosmicShore.Systems.Loadout
 {
     /// <summary>
     /// Game launch configuration

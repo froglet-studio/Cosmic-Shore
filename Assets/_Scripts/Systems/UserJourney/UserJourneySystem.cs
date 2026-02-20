@@ -1,9 +1,9 @@
-using CosmicShore.App.Systems.Quests;
 using CosmicShore.Utilities;
 using System.Collections.Generic;
+using CosmicShore.Systems.Quests;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.UserJourney
+namespace CosmicShore.Systems.UserJourney
 {
     public class UserJourneySystem : SingletonPersistent<UserJourneySystem>
     {

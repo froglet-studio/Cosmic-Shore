@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.App.Systems.Favorites;
-using CosmicShore.App.Systems.Loadout;
+using CosmicShore.Systems.Favorites;
+using CosmicShore.Systems.Loadout;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Soap;

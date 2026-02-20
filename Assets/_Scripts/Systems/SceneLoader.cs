@@ -2,25 +2,29 @@ using System;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace CosmicShore.App.Systems
+namespace CosmicShore.Systems
 {
     [DefaultExecutionOrder(0)]
-    public class SceneLoader : SingletonNetworkPersistent<SceneLoader>
+    public class SceneLoader : MonoBehaviour
     {
-        const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = 0.5f;
-
-        [SerializeField] protected GameDataSO gameData;
+        [SerializeField] float waitBeforeLoading = 0.5f;
+        [Inject] GameDataSO gameData;
         
-
         #region Unity Lifecycle
 
         private void OnEnable()
         {
+            if (!gameData)
+            {
+                Debug.LogError("Game Data is null!");
+                return;
+            }
+            
             PauseSystem.TogglePauseGame(false);
             gameData.OnLaunchGame.OnRaised += LaunchGame;
         }
@@ -66,7 +70,7 @@ namespace CosmicShore.App.Systems
             gameData.ResetRuntimeData();
 
             await UniTask.Delay(
-                TimeSpan.FromSeconds(WAIT_FOR_SECONDS_BEFORE_SCENELOAD),
+                TimeSpan.FromSeconds(waitBeforeLoading),
                 DelayType.UnscaledDeltaTime
             );
 

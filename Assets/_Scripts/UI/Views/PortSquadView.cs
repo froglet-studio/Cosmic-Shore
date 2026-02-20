@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Squads;
+using CosmicShore.Systems.Squads;
 using System.Collections.Generic;
 using UnityEngine;
 

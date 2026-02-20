@@ -1,4 +1,4 @@
-namespace CosmicShore.App.Systems.Loadout
+namespace CosmicShore.Systems.Loadout
 {
     /// <summary>
     /// Launch information for a specific game type

@@ -5,7 +5,7 @@ using CosmicShore.Integrations.Firebase.Controller;
 using UnityEngine;
 using UnityEngine.Advertisements;
 
-namespace CosmicShore.App.Systems.Ads
+namespace CosmicShore.Systems.Ads
 {
     public class AdsSystem : MonoBehaviour, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener
     {

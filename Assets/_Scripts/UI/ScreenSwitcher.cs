@@ -1,11 +1,11 @@
-using CosmicShore.App.Systems.UserActions;
+using CosmicShore.Systems.UserActions;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.App.UI.Screens;
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.App.Systems;
+using CosmicShore.Systems;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;

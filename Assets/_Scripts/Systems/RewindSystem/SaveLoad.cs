@@ -3,7 +3,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.RewindSystem
+namespace CosmicShore.Systems.RewindSystem
 {
     public static class SaveLoad {
         public static List<TransformValues> SavedGames = new();

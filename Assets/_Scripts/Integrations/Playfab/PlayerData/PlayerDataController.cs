@@ -2,7 +2,7 @@
 using PlayFab;
 using PlayFab.ClientModels;
 using System.Collections.Generic;
-using CosmicShore.App.Systems.Xp;
+using CosmicShore.Systems.Xp;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Utility;
 using UnityEngine;

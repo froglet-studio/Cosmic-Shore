@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.Favorites
+namespace CosmicShore.Systems.Favorites
 {
     public static class FavoriteSystem
     { 

@@ -1,10 +1,10 @@
-using CosmicShore.App.Systems.CTA;
-using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Utilities;
 using System.Collections.Generic;
+using CosmicShore.Systems.CTA;
+using CosmicShore.Systems.UserActions;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.Quests
+namespace CosmicShore.Systems.Quests
 {
     public class QuestSystem : SingletonPersistent<QuestSystem>
     {

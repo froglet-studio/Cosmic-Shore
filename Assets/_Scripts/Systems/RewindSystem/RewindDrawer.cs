@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 
 #if UNITY_EDITOR
-namespace CosmicShore.App.Systems.RewindSystem
+namespace CosmicShore.Systems.RewindSystem
 {
     [CustomPropertyDrawer(typeof(OptionalParticleSettings))]
     public class OptionalPropertyDrawer : PropertyDrawer

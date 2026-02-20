@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.RewindSystem
+namespace CosmicShore.Systems.RewindSystem
 {
     public class CircularBuffer <T>
     {

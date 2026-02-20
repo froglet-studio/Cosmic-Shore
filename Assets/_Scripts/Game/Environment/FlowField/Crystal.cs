@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Audio;
+using CosmicShore.Systems.Audio;
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.UserActions
+namespace CosmicShore.Systems.UserActions
 {
     [System.Serializable]
     public class UserAction

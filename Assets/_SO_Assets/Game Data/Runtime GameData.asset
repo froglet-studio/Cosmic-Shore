@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccff787dc643e6d48a46c1b58af79d00, type: 3}
   m_Name: Runtime GameData
   m_EditorClassIdentifier: 
+  OnLaunchGame: {fileID: 11400000, guid: b9f59339ba9d6994d93c9feae87bc841, type: 2}
   OnSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
-  OnLaunchGameScene: {fileID: 11400000, guid: b9f59339ba9d6994d93c9feae87bc841, type: 2}
   OnSessionStarted: {fileID: 11400000, guid: 13dd97ab48cb50c4ba1dfee6a58e02ce, type: 2}
   OnInitializeGame: {fileID: 11400000, guid: c16ee2f01e41a044fa3da1dc56419b19, type: 2}
   OnMiniGameRoundStarted: {fileID: 11400000, guid: 97086a0eecde5df4783ba65b3b12f3a2,

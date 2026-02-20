@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.CTA;
+using CosmicShore.Systems.CTA;
 using CosmicShore.App.UI;
 using CosmicShore.App.UI.Screens;
 using UnityEngine;

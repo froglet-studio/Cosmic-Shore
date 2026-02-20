@@ -10,7 +10,7 @@ using Resolution = Reflex.Enums.Resolution;
 namespace CosmicShore.Systems
 {
     [DefaultExecutionOrder(0)]
-    public class AppManager : SingletonNetworkPersistent<AppManager>, IInstaller
+    public class AppManager : MonoBehaviour, IInstaller
     {
         [Header("Auth")]
         [SerializeField] AuthenticationDataVariable authenticationDataVariable;

@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems;
+using CosmicShore.Systems;
 using UnityEngine;
 
 namespace CosmicShore.Game.UI

@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems;
+using CosmicShore.Systems;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using Unity.Netcode;

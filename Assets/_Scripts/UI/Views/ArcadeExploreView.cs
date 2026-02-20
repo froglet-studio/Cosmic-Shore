@@ -1,6 +1,6 @@
-using CosmicShore.App.Systems.CTA;
-using CosmicShore.App.Systems.Favorites;
-using CosmicShore.App.Systems.Loadout;
+using CosmicShore.Systems.CTA;
+using CosmicShore.Systems.Favorites;
+using CosmicShore.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Game.Arcade;

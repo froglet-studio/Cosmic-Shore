@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Audio;
+using CosmicShore.Systems.Audio;
 using UnityEngine;
 
 namespace CosmicShore.App.UI

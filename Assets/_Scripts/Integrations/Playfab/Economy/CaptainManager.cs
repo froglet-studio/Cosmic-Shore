@@ -1,4 +1,4 @@
-﻿using CosmicShore.App.Systems.Xp;
+﻿using CosmicShore.Systems.Xp;
 using CosmicShore.Models;
 using CosmicShore.Utilities;
 using System;

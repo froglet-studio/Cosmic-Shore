@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore.App.Systems.Squads
+namespace CosmicShore.Systems.Squads
 {
     [Serializable]
     public struct Squad

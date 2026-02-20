@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.Audio
+namespace CosmicShore.Systems.Audio
 {
     public class Song
     {

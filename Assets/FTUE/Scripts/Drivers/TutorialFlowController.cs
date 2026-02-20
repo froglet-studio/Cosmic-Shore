@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.CTA;
+using CosmicShore.Systems.CTA;
 using CosmicShore.Events;
 using System.Collections;
 using System.Collections.Generic;
@@ -93,7 +93,7 @@ namespace CosmicShore.FTUE
         }
 
         /// <summary>
-        /// Called by each handler when it’s done.
+        /// Called by each handler when itï¿½s done.
         /// </summary>
         public void StepCompleted()
         {

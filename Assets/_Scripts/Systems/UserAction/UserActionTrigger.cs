@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.App.Systems.UserActions
+namespace CosmicShore.Systems.UserActions
 {
     public class UserActionTrigger : MonoBehaviour
     {

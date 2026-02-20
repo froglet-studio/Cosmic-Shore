@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.RewindSystem
+namespace CosmicShore.Systems.RewindSystem
 {
     public class GenericRewind : RewindBase
     {

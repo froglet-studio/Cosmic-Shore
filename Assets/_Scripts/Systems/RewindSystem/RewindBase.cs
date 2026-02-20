@@ -1,7 +1,7 @@
 ﻿using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.RewindSystem
+namespace CosmicShore.Systems.RewindSystem
 {
     public abstract class RewindBase : MonoBehaviour
     {

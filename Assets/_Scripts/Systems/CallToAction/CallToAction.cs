@@ -1,9 +1,9 @@
-using CosmicShore.App.Systems.UserActions;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Systems.UserActions;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.CTA
+namespace CosmicShore.Systems.CTA
 {
     [Serializable]
     public class CallToAction

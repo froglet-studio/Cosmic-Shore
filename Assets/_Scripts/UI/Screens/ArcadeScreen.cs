@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.UserActions;
+using CosmicShore.Systems.UserActions;
 using CosmicShore.App.UI.Views;
 using UnityEngine;
 using UnityEngine.Serialization;

@@ -1,10 +1,10 @@
-using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Utilities;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Systems.UserActions;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.CTA
+namespace CosmicShore.Systems.CTA
 {
     public class CallToActionSystem : SingletonPersistent<CallToActionSystem>
     {

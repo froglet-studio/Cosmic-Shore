@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using PlayFab.ClientModels;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.Xp
+namespace CosmicShore.Systems.Xp
 {
     /// <summary>
     /// Captain Xp Data

@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Squads;
+using CosmicShore.Systems.Squads;
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
 

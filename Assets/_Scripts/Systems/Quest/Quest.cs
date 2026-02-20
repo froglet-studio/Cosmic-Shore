@@ -1,10 +1,10 @@
-using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Systems.UserActions;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.Quests
+namespace CosmicShore.Systems.Quests
 {
     [Serializable]
     public class Quest

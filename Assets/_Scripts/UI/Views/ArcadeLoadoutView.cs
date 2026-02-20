@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Loadout;
+using CosmicShore.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
 using CosmicShore.Models.Enums;

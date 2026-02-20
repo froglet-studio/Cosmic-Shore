@@ -1,6 +1,6 @@
 using CosmicShore.Utilities;
 
-namespace CosmicShore.App.Systems.UserActions
+namespace CosmicShore.Systems.UserActions
 {
     public class UserActionSystem : SingletonPersistent<UserActionSystem>
     {

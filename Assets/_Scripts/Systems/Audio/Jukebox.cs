@@ -3,7 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Utilities;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.Audio
+namespace CosmicShore.Systems.Audio
 {
     public class Jukebox : SingletonPersistent<Jukebox>
     {

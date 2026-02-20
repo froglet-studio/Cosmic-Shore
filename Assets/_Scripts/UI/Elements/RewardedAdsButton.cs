@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Ads;
+using CosmicShore.Systems.Ads;
 using UnityEngine;
 using UnityEngine.UI;
 

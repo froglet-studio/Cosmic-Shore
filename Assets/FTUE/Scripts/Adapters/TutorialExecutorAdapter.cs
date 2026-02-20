@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.App.Systems.CTA;
+using CosmicShore.Systems.CTA;
 using CosmicShore.App.UI;
 using CosmicShore.FTUE;
 

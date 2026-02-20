@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.Audio;
+using CosmicShore.Systems.Audio;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Soap;

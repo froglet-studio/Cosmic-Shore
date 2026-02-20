@@ -2,7 +2,7 @@ using CosmicShore.Game.Arcade;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
-using CosmicShore.App.Systems.Squads;
+using CosmicShore.Systems.Squads;
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System.Linq;

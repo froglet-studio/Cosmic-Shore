@@ -2,7 +2,7 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CosmicShore.App.Systems.Squads
+namespace CosmicShore.Systems.Squads
 {
     public static class SquadSystem
     {

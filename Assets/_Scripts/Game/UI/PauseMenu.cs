@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems;
+using CosmicShore.Systems;
 using CosmicShore.App.UI.Modals;
 using UnityEngine;
 using CosmicShore.Core;
