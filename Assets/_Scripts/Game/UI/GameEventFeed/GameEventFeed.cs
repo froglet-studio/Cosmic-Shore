@@ -38,6 +38,10 @@ namespace CosmicShore.Game.UI
             if (contentContainer == null)
                 BuildScrollStructure();
 
+            // Ensure the container always has a VerticalLayoutGroup for proper spacing,
+            // even when contentContainer is pre-assigned from the prefab/inspector.
+            EnsureLayoutComponents();
+
             gameObject.SetActive(true);
         }
 
@@ -113,6 +117,37 @@ namespace CosmicShore.Game.UI
             scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
         }
 
+        /// <summary>
+        /// Guarantees the contentContainer has a VerticalLayoutGroup and ContentSizeFitter.
+        /// This covers the case where contentContainer is pre-assigned from the prefab
+        /// and BuildScrollStructure was skipped.
+        /// </summary>
+        private void EnsureLayoutComponents()
+        {
+            if (contentContainer == null) return;
+
+            var vlg = contentContainer.GetComponent<VerticalLayoutGroup>();
+            if (vlg == null)
+            {
+                vlg = contentContainer.gameObject.AddComponent<VerticalLayoutGroup>();
+                vlg.childAlignment = TextAnchor.LowerRight;
+                vlg.spacing = 4f;
+                vlg.childControlWidth = true;
+                vlg.childControlHeight = true;
+                vlg.childForceExpandWidth = true;
+                vlg.childForceExpandHeight = false;
+                vlg.padding = new RectOffset(4, 4, 4, 4);
+            }
+
+            var csf = contentContainer.GetComponent<ContentSizeFitter>();
+            if (csf == null)
+            {
+                csf = contentContainer.gameObject.AddComponent<ContentSizeFitter>();
+                csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            }
+        }
+
         private void OnPlayerAdded(string playerName, Domains domain)
         {
             var message = $"<b>{playerName}</b> joined";
@@ -147,17 +182,29 @@ namespace CosmicShore.Game.UI
             if (contentContainer == null || settings == null)
                 return;
 
-            // Enforce max visible entries — destroy oldest
+            // Enforce max visible entries — destroy oldest.
+            // Detach from parent first so childCount decreases immediately,
+            // preventing an infinite loop when multiple entries spawn in the same frame.
             while (contentContainer.childCount >= settings.maxVisibleEntries)
             {
-                var oldest = contentContainer.GetChild(0).gameObject;
-                Destroy(oldest);
+                var oldest = contentContainer.GetChild(0);
+                oldest.SetParent(null);
+                Destroy(oldest.gameObject);
             }
 
             GameFeedEntry entry;
             if (entryPrefab != null)
             {
                 entry = Instantiate(entryPrefab, contentContainer);
+
+                // Ensure prefab entries have a LayoutElement so the
+                // VerticalLayoutGroup can size them correctly
+                if (entry.GetComponent<LayoutElement>() == null)
+                {
+                    var le = entry.gameObject.AddComponent<LayoutElement>();
+                    le.minHeight = 20f;
+                    le.flexibleWidth = 1f;
+                }
             }
             else
             {
@@ -178,7 +225,9 @@ namespace CosmicShore.Game.UI
 
             for (int i = contentContainer.childCount - 1; i >= 0; i--)
             {
-                Destroy(contentContainer.GetChild(i).gameObject);
+                var child = contentContainer.GetChild(i);
+                child.SetParent(null);
+                Destroy(child.gameObject);
             }
         }
 
