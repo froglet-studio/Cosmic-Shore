@@ -33,7 +33,8 @@ namespace CosmicShore.Soap
         public ScriptableEventNoParam OnMiniGameRoundEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
-        
+        public event Action<string, Domains> OnPlayerAdded;
+
         public ScriptableEventNoParam OnResetForReplay;
 
         [Header("UI Flow")]
@@ -224,6 +225,8 @@ namespace CosmicShore.Soap
             
             if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
+
+            OnPlayerAdded?.Invoke(p.Name, p.RoundStats?.Domain ?? Domains.Unassigned);
         }
         
         public void SortRoundStats(bool golfRules)
