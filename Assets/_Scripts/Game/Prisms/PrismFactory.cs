@@ -15,7 +15,8 @@ namespace CosmicShore.Game
         Interactive,
         Explosion,
         Implosion,
-        Grow
+        Grow,
+        Froglet
     }
     
     public class PrismFactory : MonoBehaviour
@@ -31,7 +32,8 @@ namespace CosmicShore.Game
         [SerializeField] private InteractivePrismPoolManager squirrelPrismPool;
         [SerializeField] private InteractivePrismPoolManager rhinoPrismPool;
         [SerializeField] private InteractivePrismPoolManager interactivePrismPool;
-        
+        [SerializeField] private InteractivePrismPoolManager frogletPrismPool;
+
         [SerializeField] private PrismExplosionPoolManager explosionPool;
         [SerializeField] private PrismImplosionPoolManager implosionPool;
         // Add more later: PrismShockwavePoolManager, PrismDisintegrationPoolManager, etc.
@@ -107,6 +109,10 @@ namespace CosmicShore.Game
                     spawned = SpawnGrow(data);
                     break;
 
+                case PrismType.Froglet:
+                    spawned = SpawnFrogletPrism(data);
+                    break;
+
                 // Add more cases here later
                 // case "Shockwave":
                 //     spawned = SpawnShockwave(data.OwnTeam, data.Position, data.Rotation);
@@ -166,6 +172,15 @@ namespace CosmicShore.Game
         {
             if (rhinoPrismPool == null) { Debug.LogWarning("[PrismFactory] rhinoPrismPool not set."); return null; }
             var prism = rhinoPrismPool.Get(data.SpawnPosition, data.Rotation, rhinoPrismPool.transform);
+            return prism ? prism.gameObject : null;
+        }
+
+        GameObject SpawnFrogletPrism(PrismEventData data)
+        {
+            // Falls back to interactive pool if no dedicated froglet pool is set
+            var pool = frogletPrismPool != null ? frogletPrismPool : interactivePrismPool;
+            if (pool == null) { Debug.LogWarning("[PrismFactory] No pool available for Froglet prism."); return null; }
+            var prism = pool.Get(data.SpawnPosition, data.Rotation, pool.transform);
             return prism ? prism.gameObject : null;
         }
         
