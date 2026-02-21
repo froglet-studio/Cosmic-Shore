@@ -27,7 +27,6 @@ namespace CosmicShore.Game.UI
         [Header("Connecting Panel Animations")]
         [SerializeField] private DoTweenTypewriterAnimator hackerTextAnimator;
         [SerializeField] private ConnectingDotsAnimator dotsAnimator;
-        [SerializeField] private string hackerText = "INITIALIZING COSMIC SHORE";
 
         [Header("Player/AI Score Cards")]
         [SerializeField] private Transform playerScoreContainer;
@@ -81,18 +80,21 @@ namespace CosmicShore.Game.UI
 
         private void StartConnectingAnimations()
         {
-            // Start hacker text animation
-            if (hackerTextAnimator != null && !string.IsNullOrEmpty(hackerText))
+            // Start hacker text animation using the animator's own baked-in fullText
+            if (hackerTextAnimator != null)
             {
                 _hackerCts?.Cancel();
                 _hackerCts?.Dispose();
                 _hackerCts = new System.Threading.CancellationTokenSource();
-                hackerTextAnimator.PlayIn(hackerText, _hackerCts.Token).Forget();
+                hackerTextAnimator.PlayIn(_hackerCts.Token).Forget();
             }
 
             // Start dots animation
             if (dotsAnimator != null)
+            {
+                dotsAnimator.BaseText = "CONNECTING TO SHORE";
                 dotsAnimator.StartAnimation();
+            }
         }
 
         private void StopConnectingAnimations()

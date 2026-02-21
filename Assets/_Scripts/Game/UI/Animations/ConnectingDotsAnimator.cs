@@ -12,7 +12,13 @@ namespace CosmicShore.Game.UI
     public sealed class ConnectingDotsAnimator : MonoBehaviour
     {
         [SerializeField] private TMP_Text tmpText;
-        [SerializeField] private string baseText = "Connecting to Shore";
+        [SerializeField] private string baseText = "CONNECTING TO SHORE";
+
+        public string BaseText
+        {
+            get => baseText;
+            set => baseText = value;
+        }
         [SerializeField] private int maxDots = 3;
         [SerializeField] private float dotInterval = 0.4f;
 

@@ -141,6 +141,7 @@ namespace CosmicShore.Game.UI
             {
                 gameData.OnClientReady += OnClientReady;
                 gameData.OnMiniGameTurnStarted.OnRaised += OnMiniGameTurnStarted;
+                gameData.OnMiniGameTurnStarted.OnRaised += ShowLocalVesselHUD;
                 gameData.OnMiniGameTurnEnd.OnRaised += OnMiniGameTurnEnd;
 
                 var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData.OnResetForReplay;
@@ -159,6 +160,7 @@ namespace CosmicShore.Game.UI
             {
                 gameData.OnClientReady -= OnClientReady;
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnMiniGameTurnStarted;
+                gameData.OnMiniGameTurnStarted.OnRaised -= ShowLocalVesselHUD;
                 gameData.OnMiniGameTurnEnd.OnRaised -= OnMiniGameTurnEnd;
 
                 var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData.OnResetForReplay;
@@ -239,6 +241,7 @@ namespace CosmicShore.Game.UI
         {
             Show();
             CleanupUI();
+            HideLocalVesselHUD();
 
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay("0");
@@ -359,5 +362,15 @@ namespace CosmicShore.Game.UI
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
+
+        private void HideLocalVesselHUD()
+        {
+            gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselHUDController?.HideHUD();
+        }
+
+        private void ShowLocalVesselHUD()
+        {
+            gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselHUDController?.ShowHUD();
+        }
     }
 }
