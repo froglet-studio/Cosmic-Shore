@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Game.UI
 {
@@ -19,9 +21,13 @@ namespace CosmicShore.Game.UI
         [SerializeField] private GameObject pip;
         [SerializeField] private GameObject silhouette;
         [SerializeField] private GameObject trailDisplay;
-        [SerializeField] private CanvasGroup connectingPanelCanvasGroup; 
+        [SerializeField] private CanvasGroup connectingPanelCanvasGroup;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
+
+        [Header("Connecting Panel Animations")]
+        [SerializeField] private DoTweenTypewriterAnimator hackerTextAnimator;
+        [SerializeField] private ConnectingDotsAnimator dotsAnimator;
 
         [Header("Player/AI Score Cards")]
         [SerializeField] private Transform playerScoreContainer;
@@ -46,11 +52,39 @@ namespace CosmicShore.Game.UI
             canvasGroup.blocksRaycasts = active;
         }
 
+        private CancellationTokenSource _hackerCts;
+
         public void ToggleConnectingPanel(bool active)
         {
             connectingPanelCanvasGroup.alpha = active ? 1 : 0;
             connectingPanelCanvasGroup.interactable = active;
             connectingPanelCanvasGroup.blocksRaycasts = active;
+
+            // Drive connecting-panel animations when present
+            if (active)
+            {
+                if (dotsAnimator) dotsAnimator.gameObject.SetActive(true);
+
+                if (hackerTextAnimator)
+                {
+                    _hackerCts?.Cancel();
+                    _hackerCts?.Dispose();
+                    _hackerCts = new CancellationTokenSource();
+                    hackerTextAnimator.PlayIn(null, _hackerCts.Token).Forget();
+                }
+            }
+            else
+            {
+                if (hackerTextAnimator)
+                {
+                    _hackerCts?.Cancel();
+                    _hackerCts?.Dispose();
+                    _hackerCts = new CancellationTokenSource();
+                    hackerTextAnimator.PlayOut(_hackerCts.Token).Forget();
+                }
+
+                if (dotsAnimator) dotsAnimator.gameObject.SetActive(false);
+            }
         }
 
         public void ClearPlayerList()

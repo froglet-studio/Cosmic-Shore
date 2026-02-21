@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
+using CosmicShore.Game.Cinematics;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
@@ -31,6 +32,7 @@ namespace CosmicShore.Game.UI
 
         [Header("Intro / Connecting")]
         [SerializeField] private float minConnectingSeconds = 5f;
+        [SerializeField] private PreGameCinematicController preGameCinematic;
 
         [Header("AI Tracking")]
         [SerializeField] protected bool isAIAvailable;
@@ -191,11 +193,28 @@ namespace CosmicShore.Game.UI
 
             try
             {
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(minConnectingSeconds),
-                    DelayType.DeltaTime,
-                    PlayerLoopTiming.PreUpdate,
-                    ct);
+                // Run pre-game cinematic alongside the minimum connecting timer
+                if (preGameCinematic)
+                {
+                    var cam = Camera.main;
+                    // Run cinematic and minimum timer in parallel — whichever is longer wins
+                    await UniTask.WhenAll(
+                        preGameCinematic.PlayAsync(cam, ct),
+                        UniTask.Delay(
+                            TimeSpan.FromSeconds(minConnectingSeconds),
+                            DelayType.DeltaTime,
+                            PlayerLoopTiming.PreUpdate,
+                            ct)
+                    );
+                }
+                else
+                {
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(minConnectingSeconds),
+                        DelayType.DeltaTime,
+                        PlayerLoopTiming.PreUpdate,
+                        ct);
+                }
 
                 if (RequireClientReady)
                 {

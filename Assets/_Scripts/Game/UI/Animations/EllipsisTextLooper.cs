@@ -4,8 +4,13 @@ using UnityEngine;
 
 namespace CosmicShore.Game.UI
 {
+    /// <summary>
+    /// Animates "CONNECTING TO THE SHORE..." with progressively appearing dots.
+    /// Attach to the TMP_Text that shows the connecting message.
+    /// Starts looping on enable, stops on disable.
+    /// </summary>
     [RequireComponent(typeof(TMP_Text))]
-    public sealed class EllipsisTextLooper : MonoBehaviour
+    public sealed class ConnectingDotsAnimator : MonoBehaviour
     {
         [Header("Settings")]
         [SerializeField] private string baseText = "CONNECTING TO THE SHORE";
