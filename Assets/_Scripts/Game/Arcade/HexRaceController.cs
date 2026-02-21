@@ -1,12 +1,3 @@
-// =======================================================
-// MultiplayerHexRaceController.cs  (FINAL / FIXED)
-// - Ends race on first finisher (does NOT wait for all players to report)
-// - Computes losers as "10000 + crystalsLeft"
-// - Syncs snapshot (scores + crystals + domains) to ALL clients
-// - Triggers WinnerCalculated + MiniGameEnd only after snapshot is applied
-// - Receives authoritative CrystalsCollected from the server-side monitor sync
-// =======================================================
-
 using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
@@ -14,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class MultiplayerHexRaceController : MultiplayerDomainGamesController
+    public class HexRaceController : MultiplayerDomainGamesController
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
@@ -37,11 +28,13 @@ namespace CosmicShore.Game.Arcade
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         private bool _raceEnded;
+        private readonly NetworkVariable<int> _netCrystalsToFinish = new(0);
 
-        // Networked so server+clients always agree on target.
-        private readonly NetworkVariable<int> _netCrystalsToFinish = new NetworkVariable<int>(0);
+        // Single source of truth for who won — set authoritatively by server, read by end game controller
+        public string WinnerName { get; private set; } = "";
+        public bool RaceResultsReady { get; private set; } = false;
 
-        protected override bool UseGolfRules => true; // lower is better
+        protected override bool UseGolfRules => true;
 
         public override void OnNetworkSpawn()
         {
@@ -53,10 +46,8 @@ namespace CosmicShore.Game.Arcade
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer) return;
-
             int currentSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
             InitializeEnvironment_ClientRpc(currentSeed);
-
             base.OnCountdownTimerEnded();
         }
 
@@ -64,11 +55,13 @@ namespace CosmicShore.Game.Arcade
         void InitializeEnvironment_ClientRpc(int syncedSeed)
         {
             if (!segmentSpawner) return;
-
             segmentSpawner.Seed = syncedSeed;
-            segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity ? baseNumberOfSegments * Intensity : baseNumberOfSegments;
-            segmentSpawner.StraightLineLength = scaleLengthWithIntensity ? baseStraightLineLength / Intensity : baseStraightLineLength;
-
+            segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity
+                ? baseNumberOfSegments * Intensity
+                : baseNumberOfSegments;
+            segmentSpawner.StraightLineLength = scaleLengthWithIntensity
+                ? baseStraightLineLength / Intensity
+                : baseStraightLineLength;
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
         }
@@ -81,10 +74,10 @@ namespace CosmicShore.Game.Arcade
             helix.secondOrderRadius = radius;
         }
 
-        // Called by local finish logic when you "complete" the race
+        // Only called by the winner's ScoreTracker
         public void ReportLocalPlayerFinished(float finishTimeSeconds)
         {
-            string myName = gameData.LocalPlayer.Vessel.VesselStatus.PlayerName;
+            string myName = gameData.LocalPlayer.Name;
             ReportPlayerFinished_ServerRpc(finishTimeSeconds, myName);
         }
 
@@ -94,67 +87,59 @@ namespace CosmicShore.Game.Arcade
             if (_raceEnded) return;
             _raceEnded = true;
 
-            // 1) Winner time
             var winnerStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
-            if (winnerStats != null)
-                winnerStats.Score = finishTimeSeconds;
+            if (winnerStats == null)
+            {
+                Debug.LogError($"[HexRace] Could not find RoundStats for winner '{playerName}'. " +
+                               $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
+                return;
+            }
 
-            // 2) Losers: 10000 + crystalsLeft
+            winnerStats.Score = finishTimeSeconds;
+
             int crystalsToFinish = ResolveCrystalsToFinishTarget();
-
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (stats.Name == playerName) continue;
-
-                int collected = stats.CrystalsCollected; // server must know this (monitor sync)
-                int crystalsLeft = Mathf.Max(0, crystalsToFinish - collected);
-
+                int crystalsLeft = Mathf.Max(0, crystalsToFinish - stats.CrystalsCollected);
                 stats.Score = 10000f + crystalsLeft;
             }
 
-            // 3) Sort + domain stats
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
-
-            // 4) Sync snapshot + trigger endgame
-            SyncFinalScoresSnapshot();
+            SyncFinalScoresSnapshot(playerName);
         }
 
         int ResolveCrystalsToFinishTarget()
         {
             if (_netCrystalsToFinish.Value > 0) return _netCrystalsToFinish.Value;
             if (crystalsToFinishOverride > 0) return crystalsToFinishOverride;
-
-            // Last-resort fallback. Prefer using the monitor to set _netCrystalsToFinish.
             return 39;
         }
 
-        // Called by server-side monitor to set authoritative target
         public void SetCrystalsToFinishServer(int value)
         {
             if (!IsServer) return;
             _netCrystalsToFinish.Value = Mathf.Max(1, value);
         }
 
-        // Called by server-side monitor on stat change (authoritative)
         public void NotifyCrystalsCollected(string playerName, int crystalsCollected)
         {
             if (!IsServer) return;
-
             var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (stat != null)
                 stat.CrystalsCollected = crystalsCollected;
         }
 
-        void SyncFinalScoresSnapshot()
+        void SyncFinalScoresSnapshot(string winnerName)
         {
             var statsList = gameData.RoundStatsList;
             int count = statsList.Count;
 
-            FixedString64Bytes[] nameArray = new FixedString64Bytes[count];
-            float[] scoreArray = new float[count];
-            int[] domainArray = new int[count];
-            int[] crystalsArray = new int[count];
+            var nameArray = new FixedString64Bytes[count];
+            var scoreArray = new float[count];
+            var domainArray = new int[count];
+            var crystalsArray = new int[count];
 
             for (int i = 0; i < count; i++)
             {
@@ -164,26 +149,39 @@ namespace CosmicShore.Game.Arcade
                 crystalsArray[i] = statsList[i].CrystalsCollected;
             }
 
-            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, crystalsArray);
+            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, crystalsArray,
+                new FixedString64Bytes(winnerName));
         }
 
         [ClientRpc]
-        void SyncFinalScores_ClientRpc(FixedString64Bytes[] names, float[] scores, int[] domains, int[] crystalsCollected)
+        void SyncFinalScores_ClientRpc(
+            FixedString64Bytes[] names,
+            float[] scores,
+            int[] domains,
+            int[] crystalsCollected,
+            FixedString64Bytes winnerName)
         {
             for (int i = 0; i < names.Length; i++)
             {
                 string sName = names[i].ToString();
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
-                if (stat == null) continue;
-
+                if (stat == null)
+                {
+                    Debug.LogError($"[HexRace] Client could not match RoundStats for '{sName}'. " +
+                                   $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
+                    continue;
+                }
                 stat.Score = scores[i];
                 stat.Domain = (Domains)domains[i];
                 stat.CrystalsCollected = crystalsCollected[i];
             }
 
+            // Authoritative winner — single source of truth consumed by EndGameController
+            WinnerName = winnerName.ToString();
+            RaceResultsReady = true;
+
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
-
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
@@ -191,8 +189,9 @@ namespace CosmicShore.Game.Arcade
         protected override void OnResetForReplayCustom()
         {
             base.OnResetForReplayCustom();
-
             _raceEnded = false;
+            WinnerName = "";
+            RaceResultsReady = false;
 
             foreach (var s in gameData.RoundStatsList)
             {

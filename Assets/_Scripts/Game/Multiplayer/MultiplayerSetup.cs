@@ -61,11 +61,30 @@ namespace CosmicShore.Game
                     gameData.SetupForMultiplayer();
                     ExecuteMultiplayerSetup().Forget();
                 }
+                else
+                {
+                    // Solo play with AI — start a local host so NetworkBehaviours work
+                    // without online matchmaking. The ServerPlayerVesselInitializer will
+                    // detect solo mode and spawn AI opponents.
+                    StartLocalHostForSoloPlay();
+                }
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[MultiplayerSetup] UGS init/sign-in failed: {ex}");
             }
+        }
+
+        private void StartLocalHostForSoloPlay()
+        {
+            if (networkManager == null)
+            {
+                Debug.LogError("[MultiplayerSetup] Cannot start local host — NetworkManager is null.");
+                return;
+            }
+
+            Debug.Log("[MultiplayerSetup] Starting local host for solo play with AI.");
+            networkManager.StartHost();
         }
 
         private void OnDisable()

@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entries:
   - sceneName: MinigameHexRace
-    cinematic: {fileID: 11400000, guid: 1e29436b57bf93d40a242c33145a2311, type: 2}
+    cinematic: {fileID: 11400000, guid: b2367e638436b174db69c2f7a06f06f9, type: 2}
   - sceneName: MinigameWildlifeBlitz
     cinematic: {fileID: 11400000, guid: 124fb602b5370854b9aecc71400e11e9, type: 2}
-  - sceneName: MinigameHexRaceMultiplayer
-    cinematic: {fileID: 11400000, guid: b2367e638436b174db69c2f7a06f06f9, type: 2}
   - sceneName: MinigameJoust_Gameplay
     cinematic: {fileID: 11400000, guid: e64c16178285c594793e4e2fc140b0b9, type: 2}
   - sceneName: MinigameCrystalCaptureMultiplayer_Gameplay

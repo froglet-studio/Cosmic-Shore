@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿// MultiplayerJoustEndGameController.cs
+using System.Collections;
 using System.Linq;
 using CosmicShore.Game.Cinematics;
 using UnityEngine;
@@ -17,14 +18,22 @@ namespace CosmicShore.Game.Arcade
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
 
-            var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
-            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localPlayerName);
+            if (!joustController || !joustController.joustTurnMonitor) yield break;
+
+            var localName = gameData.LocalPlayer?.Name;
+            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) yield break;
 
             int needed = joustController.joustTurnMonitor.CollisionsNeeded;
-            int current = localStats.JoustCollisions;
+            int myJousts = localStats.JoustCollisions;
 
-            bool didWin = current >= needed;
+            // Single source of truth from controller — same pattern as HexRace
+            bool didWin = joustController.ResultsReady &&
+                          joustController.WinnerName == localName;
+
+            var opponentStats   = gameData.RoundStatsList.FirstOrDefault(s => s.Name != localName);
+            int opponentJousts  = opponentStats?.JoustCollisions ?? 0;
+            int joustDifference = Mathf.Abs(myJousts - opponentJousts);
 
             string headerText = didWin ? "VICTORY" : "DEFEAT";
             string label;
@@ -33,16 +42,22 @@ namespace CosmicShore.Game.Arcade
 
             if (didWin)
             {
-                label = "RACE TIME";
-                displayValue = (int)localStats.Score; // Score is time
+                label        = $"WON BY {joustDifference} JOUST{(joustDifference != 1 ? "S" : "")}";
+                displayValue = Mathf.FloorToInt(localStats.Score); // seconds → int, same as HexRace
                 formatAsTime = true;
             }
             else
             {
-                label = "JOUSTS LEFT";
-                displayValue = Mathf.Max(0, needed - current);
+                int joustsLeft = Mathf.Max(0, needed - myJousts);
+                label        = $"LOST BY {joustDifference} JOUST{(joustDifference != 1 ? "S" : "")}";
+                displayValue = joustsLeft;
                 formatAsTime = false;
             }
+
+            Debug.Log($"[JoustEndGame] Local='{localName}' Jousts={myJousts}/{needed} " +
+                      $"didWin={didWin} WinnerName='{joustController.WinnerName}' " +
+                      $"diff={joustDifference} RawScore={localStats.Score:F2} DisplayValue={displayValue} " +
+                      $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F2}({s.JoustCollisions}j)"))}]");
 
             yield return view.PlayScoreRevealAnimation(
                 headerText + $"\n<size=60%>{label}</size>",

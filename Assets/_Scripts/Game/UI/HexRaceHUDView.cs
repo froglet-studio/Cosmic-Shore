@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.UI
 {
-    public class MultiplayerHexRaceHUDView : MiniGameHUDView
+    public class HexRaceHUDView : MiniGameHUDView
     {
         [Header("Multiplayer Elements")]
         [SerializeField] private Transform playerScoreContainer;

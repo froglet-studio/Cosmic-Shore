@@ -55,7 +55,8 @@ namespace CosmicShore.Game.Projectiles
                 return null;
             }
 
-            var projectile = pool.Get(position, rotation, parent, true); 
+            var projectile = pool.Get(position, rotation, parent, true);
+            if (!projectile) return null;
             projectile.SetType(type);
             return projectile;
         }

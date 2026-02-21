@@ -62,15 +62,10 @@ namespace CosmicShore.Game.Arcade
             {
                 return optionalEnvironment.waypoints[optionalEnvironment.intenstyLevel - 1].positions.Count * optionalLaps;
             }
-            else if (CrystalCollisions == 0)
-            {
-                Debug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
-                return 39;
-            }
-            else
-            {
-                return CrystalCollisions;
-            }
+
+            if (CrystalCollisions != 0) return CrystalCollisions;
+            Debug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
+            return 39;
 
         }
     }

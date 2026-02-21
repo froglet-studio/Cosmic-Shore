@@ -1,7 +1,9 @@
+// Scoreboard.cs — rematch panels auto-dismiss after 2s (except received panel)
 using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
 using Obvious.Soap;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -13,137 +15,147 @@ namespace CosmicShore.Game.UI
     public class Scoreboard : MonoBehaviour
     {
         #region Serialized Fields
-        
+
         [Header("Data")]
-        [Tooltip("Main game data container")]
         [SerializeField] protected GameDataSO gameData;
-        
-        [Tooltip("Event triggered when replay is requested (optional override)")]
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
         [Header("References")]
-        [Tooltip("Required for multiplayer replay functionality")]
         [SerializeField] private MultiplayerMiniGameControllerBase multiplayerController;
 
+        [SerializeField] private GameObject endGameObject;
+
         [Header("UI Containers")]
-        [Tooltip("Root panel that contains the entire scoreboard")]
         [SerializeField] Transform scoreboardPanel;
-        
-        [Tooltip("Container where dynamic stat rows will be instantiated")]
         [SerializeField] Transform statsContainer;
-        
-        [Tooltip("Prefab for individual stat rows (Label + Value + Icon)")]
         [SerializeField] StatRowUI statRowPrefab;
 
         [Header("Banner")]
-        [Tooltip("Banner background image (colored based on winner)")]
         [SerializeField] Image BannerImage;
-        
-        [Tooltip("Banner text (shows VICTORY/DEFEAT or team name)")]
         [SerializeField] protected TMP_Text BannerText;
-        
         [SerializeField] Color SinglePlayerBannerColor = new Color(0.2f, 0.6f, 0.9f);
-        [SerializeField] Color JadeTeamBannerColor = new Color(0.0f, 0.8f, 0.4f);
-        [SerializeField] Color RubyTeamBannerColor = new Color(0.9f, 0.2f, 0.2f);
-        [SerializeField] Color GoldTeamBannerColor = new Color(1.0f, 0.8f, 0.0f);
-        [SerializeField] Color BlueTeamBannerColor = new Color(0.2f, 0.4f, 0.9f);
+        [SerializeField] Color JadeTeamBannerColor    = new Color(0.0f, 0.8f, 0.4f);
+        [SerializeField] Color RubyTeamBannerColor    = new Color(0.9f, 0.2f, 0.2f);
+        [SerializeField] Color GoldTeamBannerColor    = new Color(1.0f, 0.8f, 0.0f);
+        [SerializeField] Color BlueTeamBannerColor    = new Color(0.2f, 0.4f, 0.9f);
 
         [Header("Single Player View")]
-        [Tooltip("Root container for single-player scoreboard elements")]
         [SerializeField] protected Transform SingleplayerView;
-        
-        [Tooltip("Displays the player's final score")]
         [SerializeField] TMP_Text SinglePlayerScoreTextField;
-        
-        [Tooltip("Displays the player's high score (current or new)")]
         [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
 
         [Header("Multiplayer View")]
-        [Tooltip("Root container for multiplayer scoreboard elements")]
         [SerializeField] protected Transform MultiplayerView;
-        
-        [Tooltip("Text fields for player names (one per player slot)")]
         [SerializeField] protected List<TMP_Text> PlayerNameTextFields;
-        
-        [Tooltip("Text fields for player scores (one per player slot)")]
         [SerializeField] protected List<TMP_Text> PlayerScoreTextFields;
-        
+
+        [Header("Multiplayer Rematch")]
+        [Tooltip("Shown to the player who SENT the request — auto-dismisses after 2s if no response")]
+        [SerializeField] private GameObject rematchInvitedPanel;
+
+        [Tooltip("Shown to the player who RECEIVED the request — stays until Yes/No pressed")]
+        [SerializeField] private GameObject rematchReceivedPanel;
+        [SerializeField] private TMP_Text rematchReceivedText;
+
+        [Tooltip("Shown to the requester when DENIED — auto-dismisses after 2s")]
+        [SerializeField] private GameObject rematchDeniedPanel;
+        [SerializeField] private TMP_Text rematchDeniedText;
+
+        [Tooltip("Play Again button — hidden while rematch request is pending")]
+        [SerializeField] private GameObject playAgainButton;
+
+        [Tooltip("Seconds before invited/denied panels auto-dismiss")]
+        [SerializeField] private float rematchPanelAutoDismissSeconds = 2f;
+
         #endregion
 
         #region Private Fields
 
         private ScoreboardStatsProvider statsProvider;
-        
+        private Coroutine _invitedAutoDismiss;
+        private Coroutine _deniedAutoDismiss;
+
         #endregion
 
         #region Unity Lifecycle
 
         void Awake()
         {
-            // Get the stats provider component (UniversalStatsProvider, HexRaceStatsProvider, etc.)
             statsProvider = GetComponent<ScoreboardStatsProvider>();
-            
             if (!statsProvider)
-            {
-                Debug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found. Stats will not be displayed.");
-            }
-            
+                Debug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
             HideScoreboard();
         }
 
         void OnEnable()
         {
-            // Subscribe to show scoreboard event
-            if (gameData != null && gameData.OnShowGameEndScreen != null)
+            if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
-            
-            // Subscribe to reset event (prefer local override if set, otherwise use gameData)
-            var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData?.OnResetForReplay;
-            if (resetEvent != null) 
-                resetEvent.OnRaised += HideScoreboard;
+
+            var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
+            if (resetEvent != null) resetEvent.OnRaised += HideScoreboard;
         }
 
         void OnDisable()
         {
-            // Unsubscribe from events
-            if (gameData != null && gameData.OnShowGameEndScreen != null)
+            if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
-            
-            var resetEvent = OnResetForReplay != null ? OnResetForReplay : gameData?.OnResetForReplay;
-            if (resetEvent != null) 
-                resetEvent.OnRaised -= HideScoreboard;
+
+            var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
+            if (resetEvent != null) resetEvent.OnRaised -= HideScoreboard;
         }
-        
+
         #endregion
 
-        #region Core Scoreboard Logic
+        #region Core
 
         void ShowScoreboard()
         {
-            if (!gameData)
-            {
-                Debug.LogError("[Scoreboard] GameData is null! Cannot show scoreboard.");
-                return;
-            }
-            
-            // Show appropriate view based on game mode
-            if (gameData.IsMultiplayerMode) 
-                ShowMultiplayerView();
-            else 
-                ShowSinglePlayerView();
+            if (!gameData) { Debug.LogError("[Scoreboard] GameData is null!"); return; }
 
-            // Populate dynamic stats (crystals collected, drift time, etc.)
+            HideAllRematchPanels();
+
+            // Show multiplayer view when playing against opponents (online or AI).
+            // The multiplayerController being present means this is a multiplayer scene
+            // running with opponents, even in solo-with-AI mode.
+            if (gameData.IsMultiplayerMode || multiplayerController != null) ShowMultiplayerView();
+            else ShowSinglePlayerView();
+
             PopulateDynamicStats();
-            
-            // Make scoreboard visible
-            if (scoreboardPanel) 
-                scoreboardPanel.gameObject.SetActive(true);
+
+            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(true);
         }
 
         void HideScoreboard()
         {
-            if (scoreboardPanel) 
-                scoreboardPanel.gameObject.SetActive(false);
+            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
+            if(endGameObject) endGameObject.SetActive(false);
+            HideAllRematchPanels();
+        }
+
+        void HideAllRematchPanels()
+        {
+            StopAutoDismiss(ref _invitedAutoDismiss);
+            StopAutoDismiss(ref _deniedAutoDismiss);
+
+            if (rematchInvitedPanel)  rematchInvitedPanel.SetActive(false);
+            if (rematchReceivedPanel) rematchReceivedPanel.SetActive(false);
+            if (rematchDeniedPanel)   rematchDeniedPanel.SetActive(false);
+            if (playAgainButton)      playAgainButton.SetActive(true);
+        }
+
+        void StopAutoDismiss(ref Coroutine coroutine)
+        {
+            if (coroutine == null) return;
+            StopCoroutine(coroutine);
+            coroutine = null;
+        }
+
+        IEnumerator AutoDismissPanel(GameObject panel, float delay, Action onDismiss = null)
+        {
+            yield return new WaitForSeconds(delay);
+            if (panel) panel.SetActive(false);
+            onDismiss?.Invoke();
         }
 
         #endregion
@@ -152,120 +164,81 @@ namespace CosmicShore.Game.UI
 
         protected virtual void ShowSinglePlayerView()
         {
-            // Determine if player won and get their stats
             bool won = gameData.IsLocalDomainWinner(out DomainStats localDomainStats);
-            var bannerText = won ? "VICTORY" : "DEFEAT";
-            
-            // Set banner appearance
-            if (BannerImage) 
-                BannerImage.color = SinglePlayerBannerColor;
-            if (BannerText) 
-                BannerText.text = bannerText;
+            if (BannerImage) BannerImage.color = SinglePlayerBannerColor;
+            if (BannerText)  BannerText.text   = won ? "VICTORY" : "DEFEAT";
 
-            // Display player score
-            var playerScore = (int)localDomainStats.Score;
-            if (SinglePlayerScoreTextField) 
+            int playerScore = (int)localDomainStats.Score;
+            if (SinglePlayerScoreTextField)
                 SinglePlayerScoreTextField.text = playerScore.ToString();
 
-            // Display high score (either existing or new)
             if (SinglePlayerHighscoreTextField)
             {
-                float finalHighScore = playerScore;
-                
-                // Check with UGS for actual high score
-                if (UGSStatsManager.Instance && Enum.TryParse(gameData.GameMode.ToString(), out GameModes modeEnum))
+                float highScore = playerScore;
+                if (UGSStatsManager.Instance &&
+                    Enum.TryParse(gameData.GameMode.ToString(), out GameModes modeEnum))
                 {
-                    finalHighScore = UGSStatsManager.Instance.GetEvaluatedHighScore(
-                        modeEnum, 
-                        gameData.SelectedIntensity.Value, 
-                        playerScore
-                    );
+                    highScore = UGSStatsManager.Instance.GetEvaluatedHighScore(
+                        modeEnum, gameData.SelectedIntensity.Value, playerScore);
                 }
-                
-                SinglePlayerHighscoreTextField.text = ((int)finalHighScore).ToString();
+                SinglePlayerHighscoreTextField.text = ((int)highScore).ToString();
             }
 
-            // Toggle view visibility
-            if (MultiplayerView) 
-                MultiplayerView.gameObject.SetActive(false);
-            if (SingleplayerView) 
-                SingleplayerView.gameObject.SetActive(true);
+            if (MultiplayerView)  MultiplayerView.gameObject.SetActive(false);
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(true);
         }
 
         #endregion
 
         #region Multiplayer View
-        
+
         protected virtual void ShowMultiplayerView()
         {
-            // Determine winner and set banner
-            bool isLocalWinner = gameData.IsLocalDomainWinner(out DomainStats winnerStats);
+            gameData.IsLocalDomainWinner(out DomainStats winnerStats);
             SetBannerForDomain(winnerStats.Domain);
-            
-            // Display player scores
             DisplayPlayerScores();
 
-            // Toggle view visibility
-            if (SingleplayerView) 
-                SingleplayerView.gameObject.SetActive(false);
-            if (MultiplayerView) 
-                MultiplayerView.gameObject.SetActive(true);
+            if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
+            if (MultiplayerView)  MultiplayerView.gameObject.SetActive(true);
         }
-        
+
         protected virtual void SetBannerForDomain(Domains domain)
         {
             switch (domain)
             {
                 case Domains.Jade:
                     if (BannerImage) BannerImage.color = JadeTeamBannerColor;
-                    if (BannerText) BannerText.text = "JADE VICTORY";
-                    break;
-                    
+                    if (BannerText)  BannerText.text   = "JADE VICTORY"; break;
                 case Domains.Ruby:
                     if (BannerImage) BannerImage.color = RubyTeamBannerColor;
-                    if (BannerText) BannerText.text = "RUBY VICTORY";
-                    break;
-                    
+                    if (BannerText)  BannerText.text   = "RUBY VICTORY"; break;
                 case Domains.Gold:
                     if (BannerImage) BannerImage.color = GoldTeamBannerColor;
-                    if (BannerText) BannerText.text = "GOLD VICTORY";
-                    break;
-                    
+                    if (BannerText)  BannerText.text   = "GOLD VICTORY"; break;
                 case Domains.Blue:
                     if (BannerImage) BannerImage.color = BlueTeamBannerColor;
-                    if (BannerText) BannerText.text = "BLUE VICTORY";
-                    break;
-                    
+                    if (BannerText)  BannerText.text   = "BLUE VICTORY"; break;
                 default:
-                    if (BannerText) BannerText.text = "GAME OVER";
-                    break;
+                    if (BannerText) BannerText.text = "GAME OVER"; break;
             }
         }
-        
+
         protected virtual void DisplayPlayerScores()
         {
             var playerScores = gameData.RoundStatsList;
-            
-            // Fill player name and score fields
-            for (var i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
+
+            for (int i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
             {
-                var playerScore = playerScores[i];
-                
-                // Set player name
-                if (PlayerNameTextFields[i]) 
-                    PlayerNameTextFields[i].text = playerScore.Name;
-                
-                // Set player score (as integer by default)
+                if (PlayerNameTextFields[i])
+                    PlayerNameTextFields[i].text = playerScores[i].Name;
                 if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
-                    PlayerScoreTextFields[i].text = ((int)playerScore.Score).ToString();
+                    PlayerScoreTextFields[i].text = ((int)playerScores[i].Score).ToString();
             }
-            
-            // Clear unused slots
-            for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
+
+            for (int i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
-                if (PlayerNameTextFields[i]) 
-                    PlayerNameTextFields[i].text = "";
-                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i]) 
+                if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";
+                if (i < PlayerScoreTextFields.Count && PlayerScoreTextFields[i])
                     PlayerScoreTextFields[i].text = "";
             }
         }
@@ -273,27 +246,16 @@ namespace CosmicShore.Game.UI
         #endregion
 
         #region Dynamic Stats
-        
+
         void PopulateDynamicStats()
         {
-            // Clear existing stat rows
             if (statsContainer)
-            {
                 foreach (Transform child in statsContainer)
                     Destroy(child.gameObject);
-            }
-            
-            // Validate dependencies
-            if (!statsProvider || !statsContainer || !statRowPrefab)
-            {
-                if (!statsProvider)
-                    Debug.LogWarning("[Scoreboard] No stats provider attached. Skipping stats display.");
-                return;
-            }
 
-            // Get stats from provider and instantiate rows
-            var stats = statsProvider.GetStats();
-            foreach (var stat in stats)
+            if (!statsProvider || !statsContainer || !statRowPrefab) return;
+
+            foreach (var stat in statsProvider.GetStats())
             {
                 var row = Instantiate(statRowPrefab, statsContainer);
                 row.Initialize(stat.Label, stat.Value, stat.Icon);
@@ -302,35 +264,101 @@ namespace CosmicShore.Game.UI
 
         #endregion
 
-        #region Play Again Button
+        #region Play Again / Rematch
 
-        /// <summary>
-        /// Called when the "Play Again" button is pressed.
-        /// Handles replay for both single-player and multiplayer modes.
-        /// </summary>
         public void OnPlayAgainButtonPressed()
         {
-            // Track analytics
-            if (UGSStatsManager.Instance != null) 
+            if (UGSStatsManager.Instance != null)
                 UGSStatsManager.Instance.TrackPlayAgain();
 
             if (gameData.IsMultiplayerMode)
             {
-                // Multiplayer: Request replay through controller
-                if (multiplayerController != null) 
+                if (multiplayerController == null)
                 {
-                    multiplayerController.RequestReplay();
+                    Debug.LogError("[Scoreboard] multiplayerController not assigned!");
+                    return;
                 }
-                else
-                {
-                    Debug.LogError("[Scoreboard] Multiplayer Controller reference missing! Assign in Inspector.");
-                }
+
+                if (playAgainButton)     playAgainButton.SetActive(false);
+                if (rematchInvitedPanel) rematchInvitedPanel.SetActive(true);
+
+                // Invited panel auto-dismisses after 2s if opponent doesn't respond
+                // Restores play again button so local player isn't stuck waiting
+                StopAutoDismiss(ref _invitedAutoDismiss);
+                _invitedAutoDismiss = StartCoroutine(AutoDismissPanel(
+                    rematchInvitedPanel,
+                    rematchPanelAutoDismissSeconds,
+                    onDismiss: () => { if (playAgainButton) playAgainButton.SetActive(true); }
+                ));
+
+                multiplayerController.RequestRematch(gameData.LocalPlayer.Name);
+            }
+            else if (multiplayerController != null)
+            {
+                // Solo-with-AI: the game runs on the network stack, so go through the
+                // controller's replay flow to properly reset race state (_raceEnded, etc.)
+                // without showing the multiplayer rematch invitation UI.
+                multiplayerController.RequestReplay();
             }
             else
             {
-                // Single-player: Reset directly through game data
                 gameData.ResetForReplay();
             }
+        }
+
+        /// <summary>
+        /// Called by MultiplayerMiniGameControllerBase when the OPPONENT requests a rematch.
+        /// Received panel stays until the player responds — no auto-dismiss.
+        /// </summary>
+        public void ShowRematchRequest(string requesterName)
+        {
+            if (rematchReceivedText)
+                rematchReceivedText.text = $"{requesterName} wants a rematch!";
+
+            if (rematchReceivedPanel) rematchReceivedPanel.SetActive(true);
+            if (playAgainButton)      playAgainButton.SetActive(false);
+            // No auto-dismiss — player must actively accept or decline
+        }
+
+        /// <summary>
+        /// Bound to YES button inside rematchReceivedPanel.
+        /// </summary>
+        public void OnAcceptRematch()
+        {
+            HideAllRematchPanels();
+            multiplayerController?.RequestReplay();
+        }
+
+        /// <summary>
+        /// Bound to NO button inside rematchReceivedPanel.
+        /// </summary>
+        public void OnDeclineRematch()
+        {
+            if (rematchReceivedPanel) rematchReceivedPanel.SetActive(false);
+            if (playAgainButton)      playAgainButton.SetActive(true);
+            multiplayerController?.NotifyRematchDeclined(gameData.LocalPlayer.Name);
+        }
+
+        /// <summary>
+        /// Called by MultiplayerMiniGameControllerBase when the OPPONENT declined our request.
+        /// Denied panel auto-dismisses after 2s, then restores play again button.
+        /// </summary>
+        public void ShowRematchDeclined(string declinerName)
+        {
+            StopAutoDismiss(ref _invitedAutoDismiss); // cancel invited panel if still running
+            if (rematchInvitedPanel) rematchInvitedPanel.SetActive(false);
+
+            if (rematchDeniedText)
+                rematchDeniedText.text = $"{declinerName} declined the rematch.";
+
+            if (rematchDeniedPanel) rematchDeniedPanel.SetActive(true);
+
+            StopAutoDismiss(ref _deniedAutoDismiss);
+            _deniedAutoDismiss = StartCoroutine(AutoDismissPanel(
+                rematchDeniedPanel,
+                rematchPanelAutoDismissSeconds,
+                onDismiss: () => { if (playAgainButton) playAgainButton.SetActive(true); }
+            ));
         }
 
         #endregion

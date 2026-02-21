@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameHexRace
   m_EditorClassIdentifier: 
-  Mode: 31
-  IsMultiplayer: 0
+  Mode: 33
+  IsMultiplayer: 1
   DisplayName: Hex Race
   Description: Find the fastest path to the crystal by skimming trails for a speed
     boost.
@@ -26,10 +26,12 @@ MonoBehaviour:
   SceneName: MinigameHexRace
   Captains:
   - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
+  - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  - {fileID: 11400000, guid: 301b5318c7ea4074ab1561ae3e1f37a2, type: 2}
   MinPlayers: 1
-  MaxPlayers: 1
+  MaxPlayers: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 416
+  CallToActionTargetType: 431
   ViewUserAction: 0
   PlayUserAction: 0

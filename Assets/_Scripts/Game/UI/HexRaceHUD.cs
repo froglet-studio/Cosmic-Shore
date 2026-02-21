@@ -1,6 +1,6 @@
 ﻿namespace CosmicShore.Game.UI
 {
-    public class MultiplayerHexRaceHUD : MultiplayerHUD
+    public class HexRaceHUD : MultiplayerHUD
     {
         protected override int GetInitialCardValue(IRoundStats stats)
         {
