@@ -3,6 +3,7 @@ using System.Security;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using PlayFab;
 using PlayFab.ClientModels;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +12,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
 {
     public class AuthenticationView : MonoBehaviour
     {
+        [Inject] PlayerDataController playerDataController;
         [SerializeField] GameObject BusyIndicator;
 
         [Header("Player Display Name")]
@@ -80,7 +82,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
                 registerButton.onClick.AddListener(RegisterButton_OnClick);
             
             AuthenticationManager.Instance.AnonymousLogin();
-            AuthenticationManager.OnLoginSuccess += PlayerDataController.Instance.LoadPlayerProfile;
+            AuthenticationManager.OnLoginSuccess += playerDataController.LoadPlayerProfile;
             PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
 
@@ -296,7 +298,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             if (!CheckDisplayNameLength(displayNameInputField.text))
                 return;
 
-            PlayerDataController.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
+            playerDataController.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
 
             BusyIndicator.SetActive(true);
 

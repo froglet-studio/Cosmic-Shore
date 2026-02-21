@@ -5,8 +5,9 @@ using UnityEngine;
 namespace CosmicShore.Utilities
 {
     /// <summary>
-    /// Handles the display of Popup messages. 
-    /// Instantiates and reuses popup panel prefabs to allow displaying multiple messages in succession
+    /// Handles the display of Popup messages.
+    /// Instantiates and reuses popup panel prefabs to allow displaying multiple messages in succession.
+    /// Registered as a value in the Reflex root container via AppManager.
     /// </summary>
     public class PopupManager : MonoBehaviour
     {
@@ -21,24 +22,6 @@ namespace CosmicShore.Utilities
 
         private List<PopupPanel> _popupPanels = new List<PopupPanel>();
 
-        private static PopupManager _instance;
-
-        private void Awake()
-        {
-            if (_instance != null)
-            {
-                Debug.LogWarning("PopupManager Invalid State, instance already exists");
-                return;
-            }
-
-            _instance = this;            // since DontdestroyOnLoad only works on root objects, we need to make sure the canvas is a root object
-        }
-
-        private void OnDestroy()
-        {
-            _instance = null;
-        }
-
         /// <summary>
         /// Displays a popup panel message with the specified title and main text
         /// </summary>
@@ -46,23 +29,17 @@ namespace CosmicShore.Utilities
         /// <param name="mainText">the text just under the title- the main body of text</param>
         /// <param name="closeableByUser">Whether or not user can close the panel with a close button.</param>
         /// <returns></returns>
-        public static PopupPanel ShowPopupPanel(string titleText, string mainText, bool closeableByUser = true)
+        public PopupPanel ShowPopupPanel(string titleText, string mainText, bool closeableByUser = true)
         {
-            if (_instance != null)
-            {
-                return _instance.DisplayPopupPanel(titleText, mainText, closeableByUser);
-            }
-
-            Debug.LogError($"No popuppanel instance found. Cannot display message: {titleText}: {mainText}");
-            return null;
+            return DisplayPopupPanel(titleText, mainText, closeableByUser);
         }
 
         /// <summary>
         /// Used to display a status message notification at the top of the screen for a short duration
         /// </summary>
-        public static void DisplayStatus(string status, int duration)
+        public void DisplayStatus(string status, int duration)
         {
-            _instance._notificationUI.DisplayStatus(status, duration);
+            _notificationUI.DisplayStatus(status, duration);
         }
 
         private PopupPanel DisplayPopupPanel(string titleText, string mainText, bool closeableByUser)

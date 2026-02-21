@@ -2,13 +2,17 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.App.Profile;
-using CosmicShore.Utilities;
+using Reflex.Attributes;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Game.Party
 {
+    /// <summary>
+    /// Manages party/lobby lifecycle and invites.
+    /// Registered as a value in the Reflex root container via AppManager.
+    /// </summary>
     public class PartyManager : MonoBehaviour
     {
         [Serializable]
@@ -29,9 +33,9 @@ namespace CosmicShore.Game.Party
         }
 
         // -----------------------------------------------------------------------------------------
-        // Static access
+        // DI
 
-        public static PartyManager Instance { get; private set; }
+        [Inject] PlayerDataService playerDataService;
 
         // -----------------------------------------------------------------------------------------
         // Events
@@ -97,8 +101,6 @@ namespace CosmicShore.Game.Party
 
         void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
             DontDestroyOnLoad(gameObject);
         }
 
@@ -177,9 +179,9 @@ namespace CosmicShore.Game.Party
         /// <summary>Pull display name and avatar from PlayerDataService into local cache.</summary>
         public void SyncProfileFromPlayerDataService()
         {
-            if (PlayerDataService.Instance?.CurrentProfile == null) return;
-            LocalDisplayName = PlayerDataService.Instance.CurrentProfile.displayName;
-            LocalAvatarId = PlayerDataService.Instance.CurrentProfile.avatarId;
+            if (playerDataService?.CurrentProfile == null) return;
+            LocalDisplayName = playerDataService.CurrentProfile.displayName;
+            LocalAvatarId = playerDataService.CurrentProfile.avatarId;
         }
 
         // -----------------------------------------------------------------------------------------

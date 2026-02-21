@@ -2,6 +2,7 @@
 using CosmicShore.Core;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -10,6 +11,7 @@ namespace CosmicShore.Game
 {
     public class ClientPlayerVesselInitializer : NetworkBehaviour
     {
+        [Inject] CameraManager cameraManager;
         [SerializeField] 
         ThemeManagerDataContainerSO themeManagerData;
         
@@ -82,8 +84,8 @@ namespace CosmicShore.Game
             // AddPlayer teleports the vessel to its spawn position.
             // Re-snap the camera so it starts at the correct location
             // instead of the pre-teleport position.
-            if (player.IsLocalUser && CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (player.IsLocalUser && cameraManager)
+                cameraManager.SnapPlayerCameraToTarget();
         }
         
         async UniTaskVoid DelayInvokeClientReady(CancellationToken token)

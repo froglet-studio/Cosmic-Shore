@@ -1,20 +1,20 @@
 using System;
 using CosmicShore.Systems;
 using CosmicShore.Game;
-using CosmicShore.Utilities;
 using CosmicShore.Soap;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
     [DefaultExecutionOrder(0)]
     public class GameManager : NetworkBehaviour
     {
+        [Inject] protected CameraManager cameraManager;
         const float WAIT_FOR_SECONDS_BEFORE_SCENELOAD = 0.5f;
 
         [SerializeField] SceneNameListSO _sceneNames;
@@ -41,8 +41,8 @@ namespace CosmicShore.Core
             gameData.ResetStatsDataForReplay();
             InvokeOnResetForReplay();
 
-            if (CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (cameraManager)
+                cameraManager.SnapPlayerCameraToTarget();
         }
 
         public virtual void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();

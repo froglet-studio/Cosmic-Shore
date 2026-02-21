@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CosmicShore.Game.Party;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,6 +8,8 @@ namespace CosmicShore.App.UI.Panels
 {
     public class OnlinePlayersPanel : MonoBehaviour
     {
+        [Inject] PartyManager partyManager;
+
         [Header("References")]
         [SerializeField] private GameObject         playerEntryPrefab;
         [SerializeField] private Transform          entryContainer;
@@ -28,14 +31,14 @@ namespace CosmicShore.App.UI.Panels
 
         void OnEnable()
         {
-            if (PartyManager.Instance != null)
-                PartyManager.Instance.OnOnlinePlayersUpdated += Refresh;
+            if (partyManager != null)
+                partyManager.OnOnlinePlayersUpdated += Refresh;
         }
 
         void OnDisable()
         {
-            if (PartyManager.Instance != null)
-                PartyManager.Instance.OnOnlinePlayersUpdated -= Refresh;
+            if (partyManager != null)
+                partyManager.OnOnlinePlayersUpdated -= Refresh;
         }
 
         // -----------------------------------------------------------------------------------------
@@ -83,8 +86,8 @@ namespace CosmicShore.App.UI.Panels
 
         private async void OnInviteClicked(PartyManager.OnlinePlayerInfo target)
         {
-            if (PartyManager.Instance == null) return;
-            await PartyManager.Instance.SendInviteAsync(target.PlayerId);
+            if (partyManager == null) return;
+            await partyManager.SendInviteAsync(target.PlayerId);
             // Optionally: show a "Invite Sent" toast here
         }
 

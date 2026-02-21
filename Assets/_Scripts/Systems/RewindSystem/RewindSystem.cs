@@ -5,11 +5,15 @@ using UnityEngine;
 
 namespace CosmicShore.Systems.RewindSystem
 {
+    /// <summary>
+    /// Scene-scoped rewind system that tracks and replays object states.
+    /// No longer uses singleton pattern — can be registered via scene-level DI if needed.
+    /// </summary>
     public class RewindSystem : MonoBehaviour
     {
- 
+
         /// <summary>
-        /// Property defining how much into the past should be tracked. 
+        /// Property defining how much into the past should be tracked.
         /// You can edit this value to your preference
         /// </summary>
         [field:SerializeField] public float TrackSeconds { get; private set; } = 12;
@@ -23,11 +27,6 @@ namespace CosmicShore.Systems.RewindSystem
         /// Tells you if scene is currently being rewound
         /// </summary>
         public bool IsRewound { get; private set; }
-
-        /// <summary>
-        /// Singleton instance of RewindManager
-        /// </summary>
-        public static RewindSystem Instance { get; private set; }
 
         /// <summary>
         /// Property defining if Circular buffers should be written to, when the system is not rewinding and should normally be tracking values.
@@ -127,14 +126,6 @@ namespace CosmicShore.Systems.RewindSystem
         private void Awake()
         {
             _rewoundObjects = FindObjectsByType<RewindBase>(FindObjectsSortMode.None).ToList();
-
-            if (Instance != null && Instance != this)
-            {
-                Destroy(Instance);
-            }
-
-            Instance = this;
-
             _rewoundObjects.ForEach(x => x.Init());
         }
         private void OnEnable()

@@ -1,8 +1,10 @@
 using CosmicShore.Game.CameraSystem;
+using Reflex.Attributes;
 using UnityEngine;
 
 public class ZoomOutAction : ShipAction
 {
+    [Inject] CameraManager cameraManager;
     private IScaleProvider _scaleSource;
     private ICameraController _controller;
     
@@ -50,7 +52,7 @@ public class ZoomOutAction : ShipAction
         if (Vessel.VesselStatus.AutoPilotEnabled) 
             return;
         
-        _controller ??= CameraManager.Instance.GetActiveController();
+        _controller ??= cameraManager.GetActiveController();
         if (_scaleSource == null || _controller == null) return;
         
         var ratio = _scaleSource.CurrentScale / Mathf.Max(_scaleSource.MinScale, 0.0001f);

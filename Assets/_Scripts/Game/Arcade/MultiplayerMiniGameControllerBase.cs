@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Systems;
 using CosmicShore.Game.UI;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -10,6 +11,7 @@ namespace CosmicShore.Game.Arcade
 {
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
+        [Inject] CameraManager cameraManager;
         [Header("Multiplayer")]
         [SerializeField] protected MultiplayerSetup multiplayerSetup;
         
@@ -265,8 +267,8 @@ namespace CosmicShore.Game.Arcade
 
             // Snap player camera to the vessel's new spawn position after
             // ResetPlayers teleported it, clearing any stale cinematic position.
-            if (CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (cameraManager)
+                cameraManager.SnapPlayerCameraToTarget();
 
             if (gameData.OnResetForReplay != null)
                 gameData.OnResetForReplay.Raise();

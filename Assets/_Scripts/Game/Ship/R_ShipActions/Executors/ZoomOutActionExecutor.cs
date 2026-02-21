@@ -2,10 +2,12 @@
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
 using Obvious.Soap;
+using Reflex.Attributes;
 
 [DefaultExecutionOrder(-1000)]
 public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
 {
+    [Inject] CameraManager cameraManager;
     [Header("Optional refs (auto-resolved if null)")]
     [SerializeField] private GrowTrailActionExecutor   trailProvider;
     [SerializeField] private GrowSkimmerActionExecutor skimmerProvider;
@@ -54,7 +56,7 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
     {
         if (_status == null) return false;
 
-        var cm = CameraManager.Instance;
+        var cm = cameraManager;
         
         var follow = cm.PlayerFollowTarget;
         var shipTransform  = _status.ShipTransform;
@@ -70,7 +72,7 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
             return;
         
         _so = so;
-        _controller ??= CameraManager.Instance?.GetActiveController();
+        _controller ??= cameraManager?.GetActiveController();
         if (_controller == null) return;
 
         var provider = Provider();
@@ -137,7 +139,7 @@ public sealed class ZoomOutActionExecutor : ShipActionExecutorBase
             return;
         }
 
-        _controller ??= CameraManager.Instance?.GetActiveController();
+        _controller ??= cameraManager?.GetActiveController();
         if (_controller == null)
         {
             CleanupToIdle();

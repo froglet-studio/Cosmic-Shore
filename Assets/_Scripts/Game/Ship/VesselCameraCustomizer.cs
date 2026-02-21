@@ -1,7 +1,7 @@
 using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
-using CosmicShore.Utilities;
+using Reflex.Attributes;
 
 
 namespace CosmicShore
@@ -12,9 +12,11 @@ namespace CosmicShore
     /// </summary>
     public class VesselCameraCustomizer : ElementalShipComponent, ICameraConfigurator
     {
+        [Inject] CameraManager cameraManager;
+
         [Header("Per-Vessel Camera Settings")]
         [SerializeField] private CameraSettingsSO settings;
-        
+
         [SerializeField] ScriptableEventTransform OnInitializePlayerCamera;
 
         private IVessel vessel;
@@ -65,7 +67,7 @@ namespace CosmicShore
         public void RetargetAndApply(IVessel vessel)
         {
             Initialize(vessel);
-            var active = CameraManager.Instance.GetActiveController();
+            var active = cameraManager.GetActiveController();
             if (active != null)
             {
                 Configure(active);

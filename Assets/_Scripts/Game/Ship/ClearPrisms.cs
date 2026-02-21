@@ -1,11 +1,13 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore
 {
     public class ClearPrisms : MonoBehaviour
     {
+        [Inject] CameraManager injectedCameraManager;
         Transform mainCamera;
 
         [SerializeField, RequireInterface(typeof(IVessel))]
@@ -21,7 +23,6 @@ namespace CosmicShore
 
         Vector3 capsuleDirection;
 
-        CameraManager cameraManager;
         GeometryUtils.LineData lineData;
         
         bool isInitialized;
@@ -51,8 +52,7 @@ namespace CosmicShore
 
         private void VesselInitialized()
         {
-            cameraManager = CameraManager.Instance;
-            mainCamera = cameraManager.GetCloseCamera();
+            mainCamera = injectedCameraManager.GetCloseCamera();
             if (mainCamera == null)
             {
                 Debug.LogError("Close main camera not found! This should not happen!");

@@ -1,9 +1,11 @@
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using Reflex.Attributes;
 
 public class GunVesselTransformer : VesselTransformer
 {
+    [Inject] CameraManager injectedCameraManager;
     BlockscapeFollower trailFollower;
     [SerializeField] float rechargeRate = .1f;
 
@@ -13,15 +15,12 @@ public class GunVesselTransformer : VesselTransformer
 
     bool moveForward = true;
     bool attached = false;
-    CameraManager cameraManager;
-
     [SerializeField] int ammoIndex = 0;
 
 
     public override void Initialize(IVessel vessel)
     {
         base.Initialize(vessel);
-        cameraManager = CameraManager.Instance;
         trailFollower = GetComponent<BlockscapeFollower>();
     }
 
@@ -32,9 +31,9 @@ public class GunVesselTransformer : VesselTransformer
             case true when !attached:
             {
                 trailFollower.Attach(VesselStatus.AttachedPrism);
-                if (Vessel.VesselStatus.AutoPilotEnabled && cameraManager != null)
+                if (Vessel.VesselStatus.AutoPilotEnabled && injectedCameraManager != null)
                 {
-                    cameraManager.SetNormalizedCloseCameraDistance(1);
+                    injectedCameraManager.SetNormalizedCloseCameraDistance(1);
                     Debug.Log("camera distance now set to 1");
                 }
 
@@ -43,9 +42,9 @@ public class GunVesselTransformer : VesselTransformer
             case false when attached:
             {
                 trailFollower.Detach();
-                if (!Vessel.VesselStatus.AutoPilotEnabled && cameraManager != null)
+                if (!Vessel.VesselStatus.AutoPilotEnabled && injectedCameraManager != null)
                 {
-                    cameraManager.SetNormalizedCloseCameraDistance(0);
+                    injectedCameraManager.SetNormalizedCloseCameraDistance(0);
                     Debug.Log("camera distance now set to 0");
                 }
 

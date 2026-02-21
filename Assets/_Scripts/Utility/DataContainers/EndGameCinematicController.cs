@@ -2,6 +2,7 @@
 using System.Collections;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -9,6 +10,8 @@ namespace CosmicShore.Game.Cinematics
 {
     public class EndGameCinematicController : MonoBehaviour
     {
+        [Inject] protected CameraManager cameraManager;
+
         [Header("References")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] protected SceneCinematicLibrarySO sceneCinematicLibrary;
@@ -151,8 +154,8 @@ namespace CosmicShore.Game.Cinematics
 
             // Snap player camera back to follow target after cinematic
             // moved it to a cinematic position.
-            if (CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (cameraManager)
+                cameraManager.SnapPlayerCameraToTarget();
         }
         
         protected virtual void HandleContinuePressed()

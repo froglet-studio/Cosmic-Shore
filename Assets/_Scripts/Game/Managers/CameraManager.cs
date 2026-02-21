@@ -3,14 +3,17 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Soap;
-using CosmicShore.Utilities;
 using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 
-public class CameraManager : Singleton<CameraManager>
+/// <summary>
+/// Manages all game cameras (player, death, end, main menu).
+/// Registered as a value in the Reflex root container via AppManager.
+/// </summary>
+public class CameraManager : MonoBehaviour
 {
     [SerializeField]
     CellRuntimeDataSO cellData;
@@ -48,9 +51,9 @@ public class CameraManager : Singleton<CameraManager>
     private Camera _vCam;
     private IVesselStatus vesselStatus;
 
-    public override void Awake()
+    void Awake()
     {
-        base.Awake();
+        DontDestroyOnLoad(gameObject);
         _playerCamera = GetOrFindCameraController("CM PlayerCam");
         _deathCamera = GetOrFindCameraController("CM DeathCam");
         endCamera = GetOrFindCameraController("CM EndCam") as CustomCameraController;

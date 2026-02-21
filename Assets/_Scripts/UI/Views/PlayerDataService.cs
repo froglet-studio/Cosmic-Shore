@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CosmicShore.Game.Party;
-using CosmicShore.Utilities;
+using Reflex.Attributes;
 using TMPro;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
@@ -17,13 +17,14 @@ namespace CosmicShore.App.Profile
     /// Single source of truth for profile data — PartyManager reads from here.
     ///
     /// Authentication is now driven by AuthenticationDataVariable (no UGS AuthenticationService references).
+    /// Registered as a value in the Reflex root container via AppManager.
     /// </summary>
     public class PlayerDataService : MonoBehaviour
     {
         // -----------------------------------------------------------------------------------------
-        // Singleton
+        // DI
 
-        public static PlayerDataService Instance { get; private set; }
+        [Inject] PartyManager partyManager;
 
         // -----------------------------------------------------------------------------------------
         // Inspector
@@ -50,12 +51,6 @@ namespace CosmicShore.App.Profile
 
         // -----------------------------------------------------------------------------------------
         // Unity Lifecycle
-
-        void Awake()
-        {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
-        }
 
         async void Start()
         {
@@ -124,7 +119,7 @@ namespace CosmicShore.App.Profile
             OnProfileChanged?.Invoke(CurrentProfile);
 
             // PartyManager reads from here
-            PartyManager.Instance?.SyncProfileFromPlayerDataService();
+            partyManager?.SyncProfileFromPlayerDataService();
         }
 
         // -----------------------------------------------------------------------------------------
@@ -223,7 +218,7 @@ namespace CosmicShore.App.Profile
                 bool canUseCloudSave = CanUseCloudSave();
                 await SaveProfileAsync(canUseCloudSave);
 
-                PartyManager.Instance?.SyncProfileFromPlayerDataService();
+                partyManager?.SyncProfileFromPlayerDataService();
             }
             catch (Exception e)
             {
@@ -247,7 +242,7 @@ namespace CosmicShore.App.Profile
                 // Previously this synced to UGS AuthenticationService.UpdatePlayerNameAsync().
                 // That responsibility now belongs to your auth layer (if you still need it).
 
-                PartyManager.Instance?.SyncProfileFromPlayerDataService();
+                partyManager?.SyncProfileFromPlayerDataService();
             }
             catch (Exception e)
             {

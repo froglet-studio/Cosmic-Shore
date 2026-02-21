@@ -6,13 +6,17 @@ using CosmicShore.Systems.Xp;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Utility;
 using UnityEngine;
-using CosmicShore.Utilities;
 
 namespace CosmicShore.Integrations.PlayFab.PlayerData
 {
-    public class PlayerDataController : SingletonPersistent<PlayerDataController>
+    /// <summary>
+    /// Manages PlayFab player data (profile, display name, avatar, XP).
+    /// Registered as a value in the Reflex root container via AppManager.
+    /// Static events and PlayerProfile are kept static for broad subscriber access.
+    /// </summary>
+    public class PlayerDataController : MonoBehaviour
     {
-        
+
         private const string DisplayNamePlayerPrefKey = "DisplayName";
         private const string ProfileIconIdPlayerPrefKey = "ProfileIconId";
         public static PlayerProfile PlayerProfile { get; private set; } = new();
@@ -21,19 +25,26 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
         public static event Action OnPlayerAvatarUpdated;
         public static event Action<GetUserDataResult> OnGettingPlayerData;
 
-        private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
-        
+        private PlayFabClientInstanceAPI _playFabClientInstanceAPI;
+        private System.Action _loadCaptainXpDataAction;
+
+        private void Awake()
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+
         private void Start()
         {
             //LoadPlayerProfileOffline();
-            AuthenticationManager.OnLoginSuccess += XpHandler.LoadCaptainXpData;
+            _loadCaptainXpDataAction = () => XpHandler.LoadCaptainXpData(this);
+            AuthenticationManager.OnLoginSuccess += _loadCaptainXpDataAction;
             AuthenticationManager.OnLoginSuccess += LoadPlayerProfile;
             OnGettingPlayerData += XpHandler.OnLoadCaptainXpData;
         }
 
         public void OnDestroy()
         {
-            AuthenticationManager.OnLoginSuccess -= XpHandler.LoadCaptainXpData;
+            AuthenticationManager.OnLoginSuccess -= _loadCaptainXpDataAction;
             AuthenticationManager.OnLoginSuccess -= LoadPlayerProfile;
             OnGettingPlayerData -= XpHandler.OnLoadCaptainXpData;
         }

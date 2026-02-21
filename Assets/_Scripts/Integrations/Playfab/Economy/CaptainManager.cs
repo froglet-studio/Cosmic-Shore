@@ -1,6 +1,8 @@
 ﻿using CosmicShore.Systems.Xp;
 using CosmicShore.Models;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Utilities;
+using Reflex.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,6 +53,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
     public  class CaptainManager : SingletonPersistent<CaptainManager>
     {
+        [Inject] PlayerDataController playerDataController;
+
         public static event Action OnLoadCaptainData;
         public static bool CaptainDataLoaded { get; private set; }
         [SerializeField] SO_CaptainList AllCaptains;
@@ -136,7 +140,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             // Save to Playfab
             Debug.Log($"CaptainManager.IssueXP {captain.Name}, {amount}");
-            XpHandler.IssueXP(captain, amount);
+            XpHandler.IssueXP(playerDataController, captain, amount);
         }
 
         public bool IsCaptainEncountered(string  captainName)
@@ -188,7 +192,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public void EncounterCaptain(string captainName)
         {
-            XpHandler.EncounterCaptain(GetCaptainByName(captainName));
+            XpHandler.EncounterCaptain(playerDataController, GetCaptainByName(captainName));
         }
 
         int GetCaptainUpgradeCount(Captain captain)

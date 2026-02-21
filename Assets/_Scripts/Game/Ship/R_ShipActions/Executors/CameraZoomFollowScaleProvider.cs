@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Game.CameraSystem;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -6,6 +7,7 @@ namespace CosmicShore.Game
     [DefaultExecutionOrder(-900)]
     public sealed class CameraZoomFollowScaleProvider : MonoBehaviour
     {
+        [Inject] CameraManager cameraManager;
         public enum Mode { Fixed, FollowScale }
 
         [SerializeField] private Mode mode = Mode.FollowScale;
@@ -32,7 +34,7 @@ namespace CosmicShore.Game
         {
             if (mode != Mode.FollowScale) return;
 
-            _controller = CameraManager.Instance?.GetActiveController();
+            _controller = cameraManager?.GetActiveController();
             if (_controller == null || _provider == null) return;
 
             _baseScale    = Mathf.Max(_provider.MinScale, 0.0001f);

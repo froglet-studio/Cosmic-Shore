@@ -61,17 +61,18 @@ namespace CosmicShore.Systems.Xp
 
         /// <summary>
         /// A wrapper to get player data for now.
+        /// Accepts a PlayerDataController instance (provided via DI from the caller).
         /// </summary>
-        public static void LoadCaptainXpData()
+        public static void LoadCaptainXpData(PlayerDataController playerDataController)
         {
             if (ClassXpData == null)
             {
                 // For now we don't pass any keys, pull all player data and query locally.
-                PlayerDataController.Instance.GetPlayerData();
+                playerDataController.GetPlayerData();
             }
         }
 
-        public static void IssueXP(Captain captain, int amount)
+        public static void IssueXP(PlayerDataController playerDataController, Captain captain, int amount)
         {
             Debug.Log($"XPHandler.IssueXP {captain.Name}, {amount}");
 
@@ -91,12 +92,12 @@ namespace CosmicShore.Systems.Xp
                 { ClassXpKey, JsonConvert.SerializeObject(ClassXpData) }
             };
 
-            PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
+            playerDataController.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
             Debug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
         }
 
-        public static void EncounterCaptain(Captain captain)
+        public static void EncounterCaptain(PlayerDataController playerDataController, Captain captain)
         {
             if (EncounteredCaptainsData.ContainsKey(captain.Ship.Class))
             {
@@ -115,7 +116,7 @@ namespace CosmicShore.Systems.Xp
                 { EncounteredCaptainsKey, JsonConvert.SerializeObject(EncounteredCaptainsData) }
             };
 
-            PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
+            playerDataController.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
             Debug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
         }

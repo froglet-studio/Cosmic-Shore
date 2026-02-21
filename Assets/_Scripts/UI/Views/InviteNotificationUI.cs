@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.Party;
+using CosmicShore.Game.Party;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,6 +8,8 @@ namespace CosmicShore.App.UI.Panels
 {
     public class InviteNotificationUI : MonoBehaviour
     {
+        [Inject] PartyManager partyManager;
+
         [Header("UI References")]
         [SerializeField] private Image          hostAvatarImage;
         [SerializeField] private TMP_Text       hostNameText;
@@ -30,14 +33,14 @@ namespace CosmicShore.App.UI.Panels
 
         void OnEnable()
         {
-            if (PartyManager.Instance != null)
-                PartyManager.Instance.OnInviteReceived += ShowInvite;
+            if (partyManager != null)
+                partyManager.OnInviteReceived += ShowInvite;
         }
 
         void OnDisable()
         {
-            if (PartyManager.Instance != null)
-                PartyManager.Instance.OnInviteReceived -= ShowInvite;
+            if (partyManager != null)
+                partyManager.OnInviteReceived -= ShowInvite;
         }
 
         // -----------------------------------------------------------------------------------------
@@ -68,16 +71,16 @@ namespace CosmicShore.App.UI.Panels
         {
             HidePopup();
 
-            if (PartyManager.Instance != null)
-                await PartyManager.Instance.AcceptInviteAsync(_pendingInvite);
+            if (partyManager != null)
+                await partyManager.AcceptInviteAsync(_pendingInvite);
         }
 
         private async void OnDecline()
         {
             HidePopup();
 
-            if (PartyManager.Instance != null)
-                await PartyManager.Instance.DeclineInviteAsync();
+            if (partyManager != null)
+                await partyManager.DeclineInviteAsync();
         }
 
         // -----------------------------------------------------------------------------------------

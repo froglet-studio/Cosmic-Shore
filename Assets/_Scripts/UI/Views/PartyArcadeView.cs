@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CosmicShore.App.Profile;
 using CosmicShore.App.UI.Panels;
 using CosmicShore.Game.Party;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,6 +11,9 @@ namespace CosmicShore.App.UI.Views
 {
     public class PartyArcadeView : MonoBehaviour
     {
+        [Inject] PartyManager partyManager;
+        [Inject] PlayerDataService playerDataService;
+
         [Header("Local Player")]
         [SerializeField] private Image    localAvatarImage;
         [SerializeField] private TMP_Text localDisplayNameText;
@@ -37,19 +41,19 @@ namespace CosmicShore.App.UI.Views
 
         void OnEnable()
         {
-            if (PartyManager.Instance != null)
+            if (partyManager != null)
             {
-                PartyManager.Instance.OnPartyMemberJoined += OnPartyMemberJoined;
-                PartyManager.Instance.OnJoinedParty        += OnJoinedParty;
+                partyManager.OnPartyMemberJoined += OnPartyMemberJoined;
+                partyManager.OnJoinedParty        += OnJoinedParty;
             }
         }
 
         void OnDisable()
         {
-            if (PartyManager.Instance != null)
+            if (partyManager != null)
             {
-                PartyManager.Instance.OnPartyMemberJoined -= OnPartyMemberJoined;
-                PartyManager.Instance.OnJoinedParty        -= OnJoinedParty;
+                partyManager.OnPartyMemberJoined -= OnPartyMemberJoined;
+                partyManager.OnJoinedParty        -= OnJoinedParty;
             }
         }
 
@@ -64,8 +68,8 @@ namespace CosmicShore.App.UI.Views
         /// <summary>Call this after profile changes to update the local player display.</summary>
         public void RefreshLocalPlayerDisplay()
         {
-            if (PlayerDataService.Instance == null) return;
-            var profile = PlayerDataService.Instance.CurrentProfile;
+            if (playerDataService == null) return;
+            var profile = playerDataService.CurrentProfile;
             if (profile == null) return;
 
             if (localDisplayNameText != null)

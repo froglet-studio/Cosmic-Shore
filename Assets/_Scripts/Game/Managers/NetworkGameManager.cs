@@ -23,8 +23,8 @@ namespace CosmicShore.Core
         {
             InvokeOnResetForReplay();
 
-            if (CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (cameraManager)
+                cameraManager.SnapPlayerCameraToTarget();
         }
     }
 }
