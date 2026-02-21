@@ -9,6 +9,9 @@ namespace CosmicShore.Game.UI
         [Header("Multiplayer View")]
         [SerializeField] protected MultiplayerHUDView multiplayerView;
 
+        [Header("Avatar Icons")]
+        [SerializeField] private SO_ProfileIconList profileIconList;
+
         protected Dictionary<string, PlayerScoreCard> _playerCards = new();
 
         protected override void OnEnable()
@@ -94,11 +97,36 @@ namespace CosmicShore.Game.UI
             var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var isLocal = gameData.LocalPlayer != null && stats.Name == gameData.LocalPlayer.Name;
             var teamColor = view.GetColorForDomain(stats.Domain);
-            
+
             card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal);
+
+            // Resolve avatar sprite from the player's AvatarId
+            var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
+            if (player != null && profileIconList != null)
+            {
+                var sprite = ResolveAvatarSprite(player.AvatarId);
+                card.SetAvatar(sprite);
+            }
+
             _playerCards[stats.Name] = card;
 
             SubscribeToPlayerStats(stats);
+        }
+
+        private Sprite ResolveAvatarSprite(int avatarId)
+        {
+            if (profileIconList == null || profileIconList.profileIcons == null)
+                return null;
+
+            foreach (var icon in profileIconList.profileIcons)
+            {
+                if (icon.Id == avatarId)
+                    return icon.IconSprite;
+            }
+
+            return profileIconList.profileIcons.Count > 0
+                ? profileIconList.profileIcons[0].IconSprite
+                : null;
         }
 
         private void UnsubscribeFromAllStats()
