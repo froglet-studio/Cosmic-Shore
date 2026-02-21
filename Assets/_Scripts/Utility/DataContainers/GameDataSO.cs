@@ -89,15 +89,20 @@ namespace CosmicShore.Soap
 
         public void SetupForMultiplayer()
         {
+            // Ensure the domain pool is fresh for the new session so every
+            // player gets a unique domain.  Without this, leftover state from
+            // a previous session could cause duplicate or swapped domains.
+            DomainAssigner.Initialize();
+
             if (Players == null || Players.Count == 0)
                 return;
-            
+
             for (int i = Players.Count - 1; i >= 0; i--)
             {
                 Players[i].Vessel?.DestroyVessel();
                 Players[i].DestroyPlayer();
             }
-            
+
             Players.Clear();
         }
 
