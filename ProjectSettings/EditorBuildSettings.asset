@@ -12,8 +12,8 @@ EditorBuildSettings:
     path: Assets/_Scenes/Tools/MattsRecording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37
   - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameWildlifeBlitz.unity
-    guid: d5418cffe1da8b840bcc2e1a92a7b1db
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeBlitz.unity
+    guid: ad3b1401174bb7d46af84ae67c6ffbe3
   - enabled: 1
     path: Assets/_Scenes/Singleplayer Scenes/MinigameFreestyle.unity
     guid: 6f71535b00043c345b3216d994f22499
