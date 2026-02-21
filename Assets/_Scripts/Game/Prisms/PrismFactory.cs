@@ -16,7 +16,7 @@ namespace CosmicShore.Game
         Explosion,
         Implosion,
         Grow,
-        Froglet
+        Spider
     }
     
     public class PrismFactory : MonoBehaviour
@@ -32,7 +32,7 @@ namespace CosmicShore.Game
         [SerializeField] private InteractivePrismPoolManager squirrelPrismPool;
         [SerializeField] private InteractivePrismPoolManager rhinoPrismPool;
         [SerializeField] private InteractivePrismPoolManager interactivePrismPool;
-        [SerializeField] private InteractivePrismPoolManager frogletPrismPool;
+        [SerializeField] private InteractivePrismPoolManager spiderPrismPool;
 
         [SerializeField] private PrismExplosionPoolManager explosionPool;
         [SerializeField] private PrismImplosionPoolManager implosionPool;
@@ -109,8 +109,8 @@ namespace CosmicShore.Game
                     spawned = SpawnGrow(data);
                     break;
 
-                case PrismType.Froglet:
-                    spawned = SpawnFrogletPrism(data);
+                case PrismType.Spider:
+                    spawned = SpawnSpiderPrism(data);
                     break;
 
                 // Add more cases here later
@@ -175,11 +175,11 @@ namespace CosmicShore.Game
             return prism ? prism.gameObject : null;
         }
 
-        GameObject SpawnFrogletPrism(PrismEventData data)
+        GameObject SpawnSpiderPrism(PrismEventData data)
         {
-            // Falls back to interactive pool if no dedicated froglet pool is set
-            var pool = frogletPrismPool != null ? frogletPrismPool : interactivePrismPool;
-            if (pool == null) { Debug.LogWarning("[PrismFactory] No pool available for Froglet prism."); return null; }
+            // Falls back to interactive pool if no dedicated spider pool is set
+            var pool = spiderPrismPool != null ? spiderPrismPool : interactivePrismPool;
+            if (pool == null) { Debug.LogWarning("[PrismFactory] No pool available for Spider prism."); return null; }
             var prism = pool.Get(data.SpawnPosition, data.Rotation, pool.transform);
             return prism ? prism.gameObject : null;
         }
