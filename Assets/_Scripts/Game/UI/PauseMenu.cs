@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine.Serialization;
 
 /// <summary>
@@ -30,17 +31,12 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField]
         ModalWindowManager settingsModalWindowManager;
 
-        GameSetting gameSetting;
+        [Inject] GameSetting gameSetting;
 
         /// <summary>
         /// stores if the local player input was paused before entering pause menu.
         /// </summary>
         bool wasLocalPlayerInputPausedBefore;
-
-        //void Awake() => Hide();
-        
-        // Start is called before the first frame update
-        void Start() => gameSetting = GameSetting.Instance;
 
         /// <summary>
         /// Toggles the Master Volume On/Off

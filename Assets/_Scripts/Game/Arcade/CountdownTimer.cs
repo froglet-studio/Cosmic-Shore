@@ -1,4 +1,5 @@
 using CosmicShore.Systems.Audio;
+using Reflex.Attributes;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -16,6 +17,8 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] AudioClip countdownBeep;
         [SerializeField] float     countdownDuration  = 1f;
         [SerializeField] float     countdownGrowScale = 1.5f;
+
+        [Inject] AudioSystem audioSystem;
 
         Sprite[] _sprites;
 
@@ -40,7 +43,7 @@ namespace CosmicShore.Game.Arcade
             {
                 countdownDisplay.sprite = spr;
                 countdownDisplay.transform.localScale = Vector3.one;
-                AudioSystem.Instance.PlaySFXClip(countdownBeep);
+                audioSystem.PlaySFXClip(countdownBeep);
 
                 float elapsed = 0f;
                 while (elapsed < countdownDuration)

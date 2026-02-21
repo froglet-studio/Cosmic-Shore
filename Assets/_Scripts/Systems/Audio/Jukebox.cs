@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Utilities;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Systems.Audio
@@ -10,7 +11,7 @@ namespace CosmicShore.Systems.Audio
         [SerializeField] SO_Song[] so_songs;  // Used for random and indexed song selection
         [SerializeField] SO_Song onDeathSong;
 
-        AudioSystem audioSystem;
+        [Inject] AudioSystem audioSystem;
         Dictionary<string, Song> Playlist = new(); //use song title key to access a specific song
 
         int nextSongIndex = 0;
@@ -30,9 +31,8 @@ namespace CosmicShore.Systems.Audio
 
         void Start()
         {
-            audioSystem = AudioSystem.Instance;
             InitializeJukebox();
-            StartJukebox();     // Start the jukebox once initialization is complete
+            StartJukebox();
         }
 
         void Update()

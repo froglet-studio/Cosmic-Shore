@@ -1,4 +1,5 @@
 using CosmicShore.Systems.Audio;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.App.UI
@@ -7,9 +8,11 @@ namespace CosmicShore.App.UI
     {
         [SerializeField] MenuAudioCategory category;
 
+        [Inject] AudioSystem audioSystem;
+
         public void PlayAudio()
         {
-            AudioSystem.Instance.PlayMenuAudio(category);
+            audioSystem.PlayMenuAudio(category);
         }
     }
 }

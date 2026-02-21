@@ -1,5 +1,7 @@
+using CosmicShore.Core;
 using CosmicShore.Services;
 using CosmicShore.Soap;
+using CosmicShore.Systems.Audio;
 using CosmicShore.Utilities;
 using Reflex.Attributes;
 using Reflex.Core;
@@ -21,7 +23,11 @@ namespace CosmicShore.Systems
 
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
-        
+
+        [Header("Persistent Systems")]
+        [SerializeField] GameSetting gameSetting;
+        [SerializeField] AudioSystem audioSystem;
+
         [SerializeField]
         string Main_Menu_Name = "MainMenuFreestyle";
 
@@ -51,6 +57,10 @@ namespace CosmicShore.Systems
             builder.RegisterValue(gameData);
             builder.RegisterValue(authenticationDataVariable);
             builder.RegisterValue(networkMonitorDataVariable);
+
+            // Persistent MonoBehaviour systems: register existing scene instances
+            builder.RegisterValue(gameSetting);
+            builder.RegisterValue(audioSystem);
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             builder.RegisterFactory(

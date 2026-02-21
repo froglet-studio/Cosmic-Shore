@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Utilities;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -65,6 +66,8 @@ namespace CosmicShore.Systems.Audio
 
         Dictionary<MenuAudioCategory, AudioClip> MenuAudioClips;
 
+        [Inject] GameSetting gameSetting;
+
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
         #endregion
@@ -73,10 +76,10 @@ namespace CosmicShore.Systems.Audio
         {
             InitializeMenuAudioClips();
 
-            musicEnabled = GameSetting.Instance.MusicEnabled;
-            sfxEnabled = GameSetting.Instance.SFXEnabled;
-            ChangeMusicLevel(GameSetting.Instance.MusicLevel);
-            ChangeSFXLevel(GameSetting.Instance.SFXLevel);
+            musicEnabled = gameSetting.MusicEnabled;
+            sfxEnabled = gameSetting.SFXEnabled;
+            ChangeMusicLevel(gameSetting.MusicLevel);
+            ChangeSFXLevel(gameSetting.SFXLevel);
             ChangeMusicEnabledStatus(musicEnabled);
         }
 

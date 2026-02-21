@@ -1,46 +1,49 @@
 using CosmicShore.Core;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.App.UI.Modals
 {
     public class SettingsModal : ModalWindowManager
     {
+        [Inject] GameSetting gameSetting;
+
         public void ToggleMusicEnabledSetting()
         {
-            GameSetting.Instance.ChangeMusicEnabledSetting();
+            gameSetting.ChangeMusicEnabledSetting();
         }
         public void AdjustMusicLevel(float level)
         {
             Debug.Log($"Music Level: {level}");
-            GameSetting.Instance.SetMusicLevel(level);
+            gameSetting.SetMusicLevel(level);
         }
         public void AdjustSFXLevel(float level)
         {
-            GameSetting.Instance.SetSFXLevel(level);
+            gameSetting.SetSFXLevel(level);
         }
         public void AdjustHapticsLevel(float level)
         {
-            GameSetting.Instance.SetHapticsLevel(level);
+            gameSetting.SetHapticsLevel(level);
         }
         public void ToggleSFXEnabledSetting()
         {
-            GameSetting.Instance.ChangeSFXEnabledSetting();
+            gameSetting.ChangeSFXEnabledSetting();
         }
         public void ToggleHapticEnabledSetting()
         {
-            GameSetting.Instance.ChangeHapticsEnabledSetting();
+            gameSetting.ChangeHapticsEnabledSetting();
         }
         public void ToggleInvertYEnabledSetting()
         {
-            GameSetting.Instance.ChangeInvertYEnabledStatus();
+            gameSetting.ChangeInvertYEnabledStatus();
         }
         public void ToggleInvertThrottleEnabledSetting()
         {
-            GameSetting.Instance.ChangeInvertThrottleEnabledStatus();
+            gameSetting.ChangeInvertThrottleEnabledStatus();
         }
         public void ToggleJoystickVisualsEnabledSetting()
         {
-            GameSetting.Instance.ChangeJoystickVisualsStatus();
+            gameSetting.ChangeJoystickVisualsStatus();
         }
     }
 }

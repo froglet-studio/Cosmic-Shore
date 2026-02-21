@@ -4,6 +4,7 @@ using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Soap;
 using PlayFab;
 using PlayFab.ClientModels;
+using Reflex.Attributes;
 using System;
 using System.Collections;
 using System.Security;
@@ -15,6 +16,8 @@ namespace CosmicShore.App.UI.Modals
 {
     public class ProfileModal : ModalWindowManager
     {
+        [Inject] AudioSystem audioSystem;
+
         [SerializeField] GameObject BusyIndicator;
 
         [Header("Shared Game Data")] [SerializeField]
@@ -184,7 +187,7 @@ namespace CosmicShore.App.UI.Modals
                 if (displayNameInputField)
                 {
                     displayNameInputField.text = randomName.Substring(0, i);
-                    AudioSystem.Instance.PlaySFXClip(TypingAudio);
+                    audioSystem.PlaySFXClip(TypingAudio);
                 }
 
                 yield return new WaitForSeconds(.075f);
