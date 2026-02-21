@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using CosmicShore.Core;
+using Reflex.Attributes;
 using System;
 
 namespace CosmicShore.Game.UI
@@ -14,6 +15,8 @@ namespace CosmicShore.Game.UI
         [SerializeField] Sprite InactiveImage;
         [SerializeField] Sprite ActiveImage;
         [SerializeField] Player player;
+
+        [Inject] GameSetting gameSetting;
 
         Image image;
         bool initialized;
@@ -42,7 +45,7 @@ namespace CosmicShore.Game.UI
         {
             image = GetComponent<Image>();
             image.sprite = InactiveImage;
-            imageEnabled = GameSetting.Instance.JoystickVisualsEnabled;
+            imageEnabled = gameSetting.JoystickVisualsEnabled;
             StartCoroutine(InitializeCoroutine());
         }
 

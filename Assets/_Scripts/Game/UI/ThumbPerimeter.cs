@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
+using Reflex.Attributes;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,6 +23,8 @@ namespace CosmicShore.Game.UI
 
         bool initialized;
         bool imageEnabled = true;
+
+        [Inject] GameSetting gameSetting;
 
         Vector2 leftStartPosition, rightStartPosition;
         IInputStatus _inputStatus;
@@ -48,7 +51,7 @@ namespace CosmicShore.Game.UI
         {
             image = GetComponent<Image>();
             image.sprite = ActivePerimeterImage;
-            imageEnabled = GameSetting.Instance.JoystickVisualsEnabled;
+            imageEnabled = gameSetting.JoystickVisualsEnabled;
 
             color.a = 0;
             image.color = color;
