@@ -2629,7 +2629,7 @@ MonoBehaviour:
   vesselPrismController: {fileID: 509996660808769138}
   driftTrailAction: {fileID: 1396157652283013214}
   config: {fileID: 11400000, guid: 24c3d542313e98e4cbc5c759fa60be10, type: 2}
-  energyResourceIndex: 0
+  energyResourceIndex: 1
   view: {fileID: 257326519381942953}
 --- !u!114 &8590080875247618286
 MonoBehaviour:
@@ -2743,7 +2743,7 @@ MonoBehaviour:
   baseView: {fileID: 117603555638778835}
   silhouette: {fileID: 8438934208232307470}
   view: {fileID: 117603555638778835}
-  energyResourceIndex: 0
+  energyResourceIndex: 1
 --- !u!114 &5259057883249728580
 MonoBehaviour:
   m_ObjectHideFlags: 0
