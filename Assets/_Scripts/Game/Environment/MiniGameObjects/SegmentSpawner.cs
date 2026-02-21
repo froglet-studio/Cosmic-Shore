@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using CosmicShore.Soap;
@@ -10,14 +11,15 @@ public class SegmentSpawner : MonoBehaviour
 {
     [Header("Dependencies")]
     [SerializeField] private GameDataSO gameData;
-    [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
+    [SerializeField] List<SpawnableBase> spawnableSegments;
 
     [Header("Intensity-Mapped Spawning")]
     [Tooltip("Optional: map specific spawnables to intensity levels (index 0 = intensity 1). " +
              "When set, overrides random selection for that intensity.")]
-    [SerializeField] SpawnableAbstractBase[] spawnableByIntensity;
-    
+    [SerializeField] SpawnableBase[] spawnableByIntensity;
+
     [Header("Configuration")]
+    [Tooltip("Legacy positioning scheme. Prefer using generator tree structure on SpawnableBase children instead.")]
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
     [SerializeField] List<float> spawnSegmentWeights;
     [SerializeField] public int Seed;
@@ -78,7 +80,7 @@ public class SegmentSpawner : MonoBehaviour
         if (InitializeOnStart)
             Initialize();
     }
-    
+
     private void OnEnable()
     {
         if (gameData != null) gameData.OnResetForReplay.OnRaised += ResetTrack;
@@ -88,8 +90,7 @@ public class SegmentSpawner : MonoBehaviour
     {
         if (gameData != null) gameData.OnResetForReplay.OnRaised -= ResetTrack;
     }
-    
-    // [Optimization] Logic separated to handle Event response cleanly
+
     private void ResetTrack()
     {
         NukeTheTrails();
@@ -106,7 +107,7 @@ public class SegmentSpawner : MonoBehaviour
             }
         };
     }
-    
+
     public void Initialize()
     {
         if (SpawnedSegmentContainer == null) CreateContainer();
@@ -116,9 +117,7 @@ public class SegmentSpawner : MonoBehaviour
             random = new System.Random(Seed);
             Random.InitState(Seed);
         }
-        
-        // [Optimization] Instead of destroying blocks individually (O(N)), NukeTheTrails destroys the parent container (O(1))
-        // This check ensures we don't duplicate objects if Initialize is called manually without a Reset
+
         if (SpawnedSegmentContainer.transform.childCount > 0)
             NukeTheTrails();
 
@@ -127,7 +126,6 @@ public class SegmentSpawner : MonoBehaviour
 
         normalizeWeights();
 
-        // [Optimization] Cache intensity level once to avoid variable access overhead in the loop
         int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
         for (int i = 0; i < NumberOfSegments; i++)
@@ -146,9 +144,6 @@ public class SegmentSpawner : MonoBehaviour
         trails.Clear();
         spawnedItemCount = 0;
 
-        // [Optimization] Major performance fix:
-        // Instead of iterating through hundreds of children and calling Destroy() on each,
-        // we destroy the container itself. This is much faster for the engine to handle.
         if (SpawnedSegmentContainer)
         {
             Destroy(SpawnedSegmentContainer);
@@ -156,7 +151,6 @@ public class SegmentSpawner : MonoBehaviour
         CreateContainer();
     }
 
-    // [Optimization] Pass intensity as parameter to avoid repeated property access
     GameObject SpawnRandom(int intensity)
     {
         // Check for intensity-specific spawnable first
@@ -192,13 +186,15 @@ public class SegmentSpawner : MonoBehaviour
         float totalWeight = 0;
         foreach (var weight in spawnSegmentWeights)
             totalWeight += weight;
-        
+
         if (totalWeight <= 0) return;
 
         for (int i = 0; i < spawnSegmentWeights.Count; i++)
             spawnSegmentWeights[i] = spawnSegmentWeights[i] * (1 / totalWeight);
     }
 
+    // Legacy positioning scheme support.
+    // New code should use generator tree structure on SpawnableBase children instead.
     void PositionSpawnedObject(GameObject spawned, PositioningScheme positioningScheme)
     {
         switch (positioningScheme)
@@ -304,15 +300,13 @@ public class SegmentSpawner : MonoBehaviour
                 {
                     hilbertPositioner = gameObject.AddComponent<HilbertCurveLSystemPositioning>();
                 }
-                
-                // [Optimization] Cache intensity usage
+
                 int hilbertIntensity = intensityLevelData ? intensityLevelData.Value : 1;
                 hilbertPositioner.segmentLength = 60 - (hilbertIntensity * 10);
                 hilbertPositioner.GenerateHilbertCurve();
                 var positions = hilbertPositioner.GetPositions();
                 var rotations = hilbertPositioner.GetRotations();
 
-                // [Safety] Ensure array bounds
                 if (hilbertIntensity > 0 && hilbertIntensity <= mazeData.Length)
                 {
                      mazeData[hilbertIntensity - 1].walls.Clear();
@@ -332,7 +326,7 @@ public class SegmentSpawner : MonoBehaviour
                      {
                          spawned.transform.SetPositionAndRotation(
                              Quaternion.Euler(0, 0, RotationAmount) * (positions[spawnedItemCount] + origin + transform.position),
-                             Quaternion.Euler(0, 0, RotationAmount) * rotations[spawnedItemCount] 
+                             Quaternion.Euler(0, 0, RotationAmount) * rotations[spawnedItemCount]
                          );
                      }
                 }

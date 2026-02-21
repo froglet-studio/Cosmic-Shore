@@ -1,7 +1,8 @@
-﻿using CosmicShore.Core;
+using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 
-public class SpawnableRaceTrack : SpawnableAbstractBase
+public class SpawnableRaceTrack : SpawnableBase
 {
     [Header("Block Settings")]
     [SerializeField] Prism prism;
@@ -47,21 +48,27 @@ public class SpawnableRaceTrack : SpawnableAbstractBase
     [SerializeField] Domains checkpointDomain = Domains.Jade;
 
     [Header("Randomization")]
-    [Tooltip("Seed for reproducible track generation. Use -1 for random seed.")]
-    [SerializeField] int seed = -1;
     [Tooltip("The actual seed used (for reference)")]
     [SerializeField] int actualSeed;
 
-    static int TracksSpawned = 0;
-
-    public override GameObject Spawn()
+    protected override int GetParameterHash()
     {
+        return System.HashCode.Combine(seed, targetLapTime, expectedShipSpeed, blockCount,
+            System.HashCode.Combine(trackWidth, trackDepth, maxElevation, complexity, includeCorkscrew, includeBanking, featureCount,
+                System.HashCode.Combine(checkpointCount, checkpointScaleMultiplier, startFinishDomain, checkpointDomain)));
+    }
+
+    public override GameObject Spawn(int intensity = 1)
+    {
+        intensityLevel = intensity;
+        trails.Clear();
+
         // Initialize seeded random
-        actualSeed = seed == -1 ? System.Environment.TickCount : seed;
+        actualSeed = seed == 0 ? System.Environment.TickCount : seed;
         rng = new System.Random(actualSeed);
 
         GameObject container = new GameObject();
-        container.name = $"RaceTrack_{TracksSpawned++}_Seed{actualSeed}";
+        container.name = $"RaceTrack_Seed{actualSeed}";
 
         var trail = new Trail();
 
@@ -140,8 +147,17 @@ public class SpawnableRaceTrack : SpawnableAbstractBase
                 blockScale.x *= curveWidening;
             }
 
-            CreateBlock(position, lookPosition, $"{container.name}::BLOCK::{block}",
-                       trail, blockScale, blockPrism, container, blockDomain);
+            var rotation = SpawnPoint.LookRotation(position, lookPosition, Vector3.up);
+
+            var spawnedBlock = Instantiate(blockPrism, container.transform);
+            spawnedBlock.ChangeTeam(blockDomain);
+            spawnedBlock.ownerID = $"{container.name}::BLOCK::{block}";
+            spawnedBlock.transform.localPosition = position;
+            spawnedBlock.transform.localRotation = rotation;
+            spawnedBlock.TargetScale = blockScale;
+            spawnedBlock.Trail = trail;
+            spawnedBlock.Initialize();
+            trail.Add(spawnedBlock);
         }
 
         trails.Add(trail);
@@ -222,7 +238,7 @@ public class SpawnableRaceTrack : SpawnableAbstractBase
         float tNorm = t / (Mathf.PI * 2f);
 
         // Base elliptical shape scaled to approximate target length
-        // Circumference of ellipse ≈ π * (3(a+b) - sqrt((3a+b)(a+3b)))
+        // Circumference of ellipse ~ pi * (3(a+b) - sqrt((3a+b)(a+3b)))
         float a = trackWidth * 0.5f * p.widthRatio;
         float b = trackDepth * 0.5f * p.depthRatio;
         float approxCircumference = Mathf.PI * (3f * (a + b) - Mathf.Sqrt((3f * a + b) * (a + 3f * b)));
@@ -347,6 +363,7 @@ public class SpawnableRaceTrack : SpawnableAbstractBase
     public GameObject SpawnWithSeed(int trackSeed)
     {
         seed = trackSeed;
+        InvalidateCache();
         return Spawn();
     }
 
