@@ -73,6 +73,7 @@ namespace CosmicShore.Game.Projectiles
                 for (int ray = 0; ray < numberOfRays; ray++)
                 {
                     ct.ThrowIfCancellationRequested();
+                    if (!this) return; // guard against base conic animation destroying gameObject
 
                     Trail trail = new Trail();
                     trails.Add(trail);

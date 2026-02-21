@@ -40,8 +40,11 @@ namespace CosmicShore.Game.Projectiles
 
             coneContainer.transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);
 
-            // Parent our object to the container
+            // Parent our object to the container and reset local transform
+            // so it sits at the container's origin (the spawn position)
             transform.SetParent(coneContainer.transform, false);
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
 
             // create CTS for explosion
             explosionCts = new CancellationTokenSource();
@@ -92,9 +95,28 @@ namespace CosmicShore.Game.Projectiles
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+
+                // Clean up when the animation finishes
+                DestroyContainer();
+                if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException)
             {
+            }
+        }
+
+        protected override void PerformResetCleanup()
+        {
+            DestroyContainer();
+            base.PerformResetCleanup();
+        }
+
+        private void DestroyContainer()
+        {
+            if (coneContainer != null)
+            {
+                Destroy(coneContainer);
+                coneContainer = null;
             }
         }
     }
