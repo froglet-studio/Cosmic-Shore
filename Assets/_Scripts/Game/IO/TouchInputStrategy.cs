@@ -221,6 +221,17 @@ namespace CosmicShore.Game.IO
             inputStatus.YSum = -Ease(rightNormalizedJoystickPosition.y + leftNormalizedJoystickPosition.y);
             inputStatus.XDiff = (rightNormalizedJoystickPosition.x - leftNormalizedJoystickPosition.x + 2) / 4;
             inputStatus.YDiff = Ease(rightNormalizedJoystickPosition.y - leftNormalizedJoystickPosition.y);
+
+            if (inputStatus.InvertYEnabled)
+            {
+                inputStatus.YSum *= -1f;
+                inputStatus.YDiff *= -1f;
+            }
+
+            if (inputStatus.InvertThrottleEnabled)
+            {
+                inputStatus.XDiff = 1f - inputStatus.XDiff;
+            }
         }
 
         private void PerformSpeedAndDirectionalEffects()
