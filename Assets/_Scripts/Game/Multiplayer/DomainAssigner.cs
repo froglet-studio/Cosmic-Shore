@@ -29,10 +29,16 @@ public static class DomainAssigner
     /// </summary>
     public static Domains GetDomainsByGameModes(GameModes gameMode)
     {
-        // If no teams left, return error
+        // If no teams left, log a warning and return Unassigned instead of
+        // silently re-initializing.  Re-initializing mid-session was the root
+        // cause of duplicate / swapped domains in 3-player games because the
+        // fresh pool could hand out a domain that was already assigned to
+        // another player earlier in the same session.
         if (availableDomains.Count == 0)
         {
-            Initialize();
+            Debug.LogWarning("[DomainAssigner] No domains left in pool. " +
+                             "Call Initialize() before assigning domains for a new session.");
+            return Domains.Unassigned;
         }
 
         // Considering in co-op modes, all local users will be assigned to Jade Domain
