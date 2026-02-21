@@ -39,11 +39,6 @@ namespace CosmicShore.Soap
         
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
-        public event Action<GameModes> OnGameModeTurnEnd;
-        public event Action<GameModes> OnGameModeRoundEnd;
-        public event Action<GameModes> OnGameModeEnd;
-
-        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         
         // Local player config / state
         public VesselClassTypeVariable selectedVesselClass;
