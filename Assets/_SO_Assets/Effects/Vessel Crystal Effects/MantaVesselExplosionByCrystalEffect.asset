@@ -12,9 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a148940713548a4b5905021dc45785b, type: 3}
   m_Name: MantaVesselExplosionByCrystalEffect
   m_EditorClassIdentifier: 
+  rhinoCrystalExplosionEvent: {fileID: 0}
+  squirrelCrystalExplosionEvent: {fileID: 0}
   _aoePrefabs:
-  - {fileID: 6875622972764638977, guid: f5ecfb9923155a84c860975d559b2714, type: 3}
+  - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
   _minExplosionScale: 50
   _maxExplosionScale: 500
   _resourceIndex: 0
   _aoeExplosionMaterial: {fileID: 0}
+  _spawnOffset: {x: 0, y: 0, z: -5}
+  _explosionCooldown: 0.15

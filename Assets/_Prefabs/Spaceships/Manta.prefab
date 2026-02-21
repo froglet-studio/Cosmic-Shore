@@ -2189,6 +2189,7 @@ MonoBehaviour:
   _shipInstance: {fileID: 7318663848403301360}
   vesselHUDController: {fileID: 6733957700513663958}
   boostMultiplier: 4
+  inertia: 1
   _name: Manta
   vesselType: 1
   _nearFieldSkimmer: {fileID: 874579554510349383}
@@ -2256,6 +2257,8 @@ MonoBehaviour:
   TargetScale: {x: 0, y: 0, z: 0}
   spawnerEnabled: 1
   startDelay: 2
+  Trail:
+    TrailRenderer: {fileID: 0}
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -2313,6 +2316,9 @@ MonoBehaviour:
   raycastWidth: 2
   ram: 0
   drift: 0
+  seekPlayers: 0
+  gameData: {fileID: 0}
+  playerSeekUpdateInterval: 0.5
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 6891956288899835182}
@@ -2420,12 +2426,15 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 6891956288899835182}
   _inputEventShipActions:
-  - InputEvent: 1
+  - InputEvent: 11
     ShipActions:
     - {fileID: 11400000, guid: 84774ce2f6617b54c8fd2d4acdd26a43, type: 2}
-  - InputEvent: 2
+  - InputEvent: 12
     ShipActions:
     - {fileID: 11400000, guid: 9959da05222d3d546934b4c1cc1a64d0, type: 2}
+  - InputEvent: 13
+    ShipActions:
+    - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
