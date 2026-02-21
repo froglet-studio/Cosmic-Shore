@@ -1,29 +1,28 @@
 using System;
-using System.Linq;
 using CosmicShore.Game.Arcade;
 using UnityEngine;
 
 namespace CosmicShore.Game.UI
 {
     /// <summary>
-    /// Scoreboard for multiplayer co-op Wildlife Blitz.
-    /// All players share the same team result (win/loss).
+    /// Unified scoreboard for Wildlife Blitz (solo and co-op multiplayer).
+    /// In co-op all players share the same team result (win/loss).
     /// Shows each player's name and individual kill contribution.
+    /// In solo mode falls back to the base single-player view.
     /// </summary>
-    public class MultiplayerWildlifeBlitzScoreboard : Scoreboard
+    public class WildlifeBlitzScoreboard : Scoreboard
     {
         [Header("Wildlife Blitz References")]
-        [SerializeField] private MultiplayerWildlifeBlitzMiniGame blitzController;
+        [SerializeField] private WildlifeBlitzController blitzController;
 
         protected override void ShowMultiplayerView()
         {
             if (blitzController != null && blitzController.ResultsReady)
             {
-                bool didWin = blitzController.DidCoOpWin;
+                bool didWin = blitzController.DidWin;
                 if (BannerText)
-                    BannerText.text = didWin ? "VICTORY — CO-OP CLEAR" : "DEFEAT — TIME'S UP";
+                    BannerText.text = didWin ? "VICTORY — ALL CLEAR" : "DEFEAT — TIME'S UP";
 
-                // For co-op, all players are Jade, so use Jade banner
                 SetBannerForDomain(Domains.Jade);
             }
             else
@@ -53,18 +52,15 @@ namespace CosmicShore.Game.UI
 
                 if (score < 999f)
                 {
-                    // Won: show finish time + kills
                     TimeSpan t = TimeSpan.FromSeconds(score);
                     PlayerScoreTextFields[i].text = $"{t.Minutes:D2}:{t.Seconds:D2} — {kills} Kills";
                 }
                 else
                 {
-                    // Lost: show kill count only
                     PlayerScoreTextFields[i].text = $"{kills} Kills";
                 }
             }
 
-            // Clear unused slots
             for (var i = playerScores.Count; i < PlayerNameTextFields.Count; i++)
             {
                 if (PlayerNameTextFields[i]) PlayerNameTextFields[i].text = "";

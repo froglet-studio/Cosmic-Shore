@@ -1,11 +1,12 @@
 namespace CosmicShore.Game.UI
 {
     /// <summary>
-    /// Multiplayer HUD for co-op Wildlife Blitz.
+    /// Co-op HUD for Wildlife Blitz.
     /// Shows per-player kill count cards during gameplay.
-    /// Uses BlocksDestroyed as the kill counter (co-op reuse of this stat field).
+    /// Used when multiple players are present; the existing WildlifeBlitzHUD
+    /// handles the single-player score/lifeform display.
     /// </summary>
-    public class MultiplayerWildlifeBlitzHUD : MultiplayerHUD
+    public class WildlifeBlitzCoOpHUD : MultiplayerHUD
     {
         protected override int GetInitialCardValue(IRoundStats stats)
         {

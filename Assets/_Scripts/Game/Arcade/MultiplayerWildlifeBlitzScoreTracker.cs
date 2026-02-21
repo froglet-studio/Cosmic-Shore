@@ -7,14 +7,13 @@ using UnityEngine;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>
-    /// Networked score tracker for multiplayer co-op Wildlife Blitz.
+    /// Unified score tracker for Wildlife Blitz (solo and multiplayer).
     /// Tracks kills and crystals locally, reports kills to the controller for server sync.
-    /// All players contribute to a shared team score.
     /// </summary>
-    public class MultiplayerWildlifeBlitzScoreTracker : BaseScoreTracker
+    public class WildlifeBlitzScoreTracker : BaseScoreTracker
     {
         [Header("Blitz Settings")]
-        [SerializeField] private MultiplayerWildlifeBlitzMiniGame controller;
+        [SerializeField] private WildlifeBlitzController controller;
 
         [Header("Events")]
         [SerializeField] ScriptableEventNoParam eventOnScoreChanged;
@@ -35,7 +34,7 @@ namespace CosmicShore.Game.Arcade
             LifeForm.OnLifeFormDeath += OnLifeFormKilled;
             ElementalCrystalImpactor.OnCrystalCollected += OnCrystalCollected;
             _isTracking = true;
-            Debug.Log("[MPBlitzScoreTracker] Started Tracking");
+            Debug.Log("[WildlifeBlitzScoreTracker] Started Tracking");
         }
 
         public void StopTracking()
@@ -45,7 +44,7 @@ namespace CosmicShore.Game.Arcade
             LifeForm.OnLifeFormDeath -= OnLifeFormKilled;
             ElementalCrystalImpactor.OnCrystalCollected -= OnCrystalCollected;
             _isTracking = false;
-            Debug.Log("[MPBlitzScoreTracker] Stopped Tracking");
+            Debug.Log("[WildlifeBlitzScoreTracker] Stopped Tracking");
         }
 
         void OnLifeFormKilled(string playerName, int cellId)
@@ -90,8 +89,8 @@ namespace CosmicShore.Game.Arcade
 
         protected override void CalculateWinnerAndInvokeEvent()
         {
-            // In multiplayer co-op, the controller handles final score calculation
-            // and syncs results to all clients via RPCs. Nothing to do here.
+            // The controller handles final score calculation
+            // and syncs results to all clients via RPCs.
         }
     }
 }
