@@ -21,5 +21,6 @@ namespace CosmicShore.Game.Arcade
         FriendlyPrismsDestroyed = 14,
         LifeFormsKilled = 15,                   
         ElementalCrystalsCollectedBlitz = 16,
+        GoalsScored = 17,
     }
 }
