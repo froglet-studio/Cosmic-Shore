@@ -11,20 +11,25 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameTournament
-  m_EditorClassIdentifier: 
-  Mode: 0
-  IsMultiplayer: 0
-  DisplayName: 
-  Description: 
+  m_EditorClassIdentifier:
+  Mode: 36
+  IsMultiplayer: 1
+  DisplayName: Tournament
+  Description: Compete in a best-of-5 series across Crystal Capture, Hex Race, and
+    Joust. Each game's intensity is randomly chosen. The domain with the most wins
+    takes the tournament.
   IconActive: {fileID: 0}
   IconInactive: {fileID: 0}
   CardBackground: {fileID: 0}
   PreviewClip: {fileID: 0}
   GolfScoring: 0
-  SceneName: 
-  Captains: []
+  SceneName:
+  Captains:
+  - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
+  - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  - {fileID: 11400000, guid: 301b5318c7ea4074ab1561ae3e1f37a2, type: 2}
   MinPlayers: 1
-  MaxPlayers: 2
+  MaxPlayers: 3
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 0
