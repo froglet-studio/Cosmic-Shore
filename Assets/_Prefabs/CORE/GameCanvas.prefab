@@ -4361,6 +4361,7 @@ GameObject:
   - component: {fileID: 1309544587842810198}
   - component: {fileID: 4350961247989066478}
   - component: {fileID: 1171819396819455383}
+  - component: {fileID: 7081435693084207854}
   m_Layer: 5
   m_Name: NotificationUI
   m_TagString: Untagged
@@ -4384,7 +4385,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -101.89188, y: 37.5}
+  m_AnchoredPosition: {x: -131, y: 37.5}
   m_SizeDelta: {x: 203.7837, y: 175}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4350961247989066478
@@ -4425,6 +4426,24 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7081435693084207854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4312219345516419528}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d8046e5bcbe4fb9b94ffb6314eeaada, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  feedChannel: {fileID: 11400000, guid: 9e4151d947b14932b1f4e5ef38fc9bb2, type: 2}
+  settings: {fileID: 11400000, guid: 1b63dfbbc0894c8eb0dd7fddde2d3c47, type: 2}
+  entryPrefab: {fileID: 0}
+  contentContainer: {fileID: 1309544587842810198}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  domainColors: []
 --- !u!1 &4359458827158284290
 GameObject:
   m_ObjectHideFlags: 0

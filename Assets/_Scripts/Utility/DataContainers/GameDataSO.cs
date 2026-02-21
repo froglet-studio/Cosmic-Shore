@@ -35,10 +35,15 @@ namespace CosmicShore.Soap
         public ScriptableEventNoParam OnWinnerCalculated;
         public ScriptableEventNoParam OnResetForReplay;
         public ScriptableEventNoParam OnSessionEnded;
-
+        public event Action<string, Domains> OnPlayerAdded;
+        
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
+        public event Action<GameModes> OnGameModeTurnEnd;
+        public event Action<GameModes> OnGameModeRoundEnd;
+        public event Action<GameModes> OnGameModeEnd;
 
+        public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
         
         // Local player config / state
         public VesselClassTypeVariable selectedVesselClass;
@@ -205,6 +210,8 @@ namespace CosmicShore.Soap
             
             if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
+
+            OnPlayerAdded?.Invoke(p.Name, p.RoundStats?.Domain ?? Domains.Unassigned);
         }
         
         public void SortRoundStats(bool golfRules)
