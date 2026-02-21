@@ -1,4 +1,4 @@
-﻿using CosmicShore.Game.Arcade.Scoring;
+using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.Soap;
 using UnityEngine;
 
@@ -8,10 +8,10 @@ namespace CosmicShore.Game.Arcade
     {
         [Header("References")]
         [SerializeField] GameDataSO gameData;
-        [SerializeField] SingleplayerWildlifeBlitzTurnMonitor blitzMonitor;
+        [SerializeField] WildlifeBlitzController blitzController;
         [SerializeField] TimeBasedTurnMonitor timeMonitor;
-        [SerializeField] SinglePlayerWildlifeBlitzScoreTracker scoreTracker;
-        
+        [SerializeField] WildlifeBlitzScoreTracker scoreTracker;
+
         void OnEnable()
         {
             if (gameData)
@@ -26,16 +26,16 @@ namespace CosmicShore.Game.Arcade
 
         void CompileFinalStats()
         {
-            if (!blitzMonitor || !timeMonitor || !scoreTracker)
+            if (!blitzController || !timeMonitor || !scoreTracker)
             {
                 Debug.LogError("[BlitzStats] Missing references!");
                 return;
             }
 
             var stats = gameData.LocalRoundStats;
-            bool didWin = blitzMonitor.DidPlayerWin;
-            
-            float elapsedTime = timeMonitor.ElapsedTime;
+            bool didWin = blitzController.ResultsReady && blitzController.DidWin;
+
+            float elapsedTime = blitzController.FinishTime;
             float finalScore = didWin ? elapsedTime : 999f;
 
             stats.Score = finalScore;
@@ -46,13 +46,13 @@ namespace CosmicShore.Game.Arcade
         void LogFinalStats(bool didWin, float elapsedTime, float finalScore)
         {
             Debug.Log("========================================");
-            Debug.Log($"<color=cyan>📊 WILDLIFE BLITZ - FINAL STATS</color>");
-            Debug.Log($"<color=yellow>⏱️  Time Taken:</color> {FormatTime(elapsedTime)}");
-            Debug.Log(didWin ? $"<color=green>🏆 VICTORY!</color>" : $"<color=red>❌ DEFEAT</color>");
-            Debug.Log($"<color=white>🎯 Final Ranked Score:</color> {finalScore}");
+            Debug.Log($"<color=cyan>WILDLIFE BLITZ - FINAL STATS</color>");
+            Debug.Log($"<color=yellow>Time Taken:</color> {FormatTime(elapsedTime)}");
+            Debug.Log(didWin ? $"<color=green>VICTORY!</color>" : $"<color=red>DEFEAT</color>");
+            Debug.Log($"<color=white>Final Ranked Score:</color> {finalScore}");
             Debug.Log("========================================");
         }
-        
+
         public static string FormatTime(float seconds)
         {
             int minutes = (int)(seconds / 60);
@@ -65,8 +65,8 @@ namespace CosmicShore.Game.Arcade
             var lifeFormScoring = scoreTracker.GetScoring<LifeFormsKilledScoring>();
             return (
                 lifeFormScoring?.GetTotalLifeFormsKilled() ?? 0,
-                timeMonitor.ElapsedTime,
-                blitzMonitor.DidPlayerWin
+                blitzController.FinishTime,
+                blitzController.ResultsReady && blitzController.DidWin
             );
         }
     }

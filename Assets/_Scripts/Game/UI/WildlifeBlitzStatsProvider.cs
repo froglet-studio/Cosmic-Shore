@@ -8,7 +8,7 @@ namespace CosmicShore.Game.UI
     public class WildlifeBlitzStatsProvider : ScoreboardStatsProvider
     {
         [Header("Dependencies")]
-        [SerializeField] SinglePlayerWildlifeBlitzScoreTracker scoreTracker;
+        [SerializeField] WildlifeBlitzScoreTracker scoreTracker;
 
         [Header("Icons")]
         [SerializeField] Sprite lifeFormIcon;

@@ -35,8 +35,8 @@ public static class DomainAssigner
             Initialize();
         }
 
-        // Considering in co-op modes, all local users will be assigned to Jade Domain
-        return gameMode is GameModes.Multiplayer2v2CoOpVsAI or GameModes.MultiplayerWildlifeBlitzGame ? Domains.Jade : GetAvailableDomain();
+        // In co-op modes, all players are assigned to Jade Domain (same team)
+        return gameMode is GameModes.Multiplayer2v2CoOpVsAI or GameModes.WildlifeBlitz ? Domains.Jade : GetAvailableDomain();
     }
 
     /// <summary>
