@@ -1,6 +1,5 @@
 using CosmicShore.Core;
 using CosmicShore.Soap;
-using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Scoring
 {
@@ -8,31 +7,44 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         private readonly bool trackBlocks;
 
-        public VolumeAndBlocksStolenScoring(IScoreTracker tracker, GameDataSO data, float scoreNormalizationQuotient, bool trackBlocks = false) 
+        public VolumeAndBlocksStolenScoring(IScoreTracker tracker, GameDataSO data, float scoreNormalizationQuotient, bool trackBlocks = false)
             : base(tracker, data, scoreNormalizationQuotient)
         {
             this.trackBlocks = trackBlocks;
         }
-        
-        /*public override void CalculateScore()
-        {
-            foreach (var playerScore in GameData.RoundStatsList)
-            {
-                if (!TryGetRoundStats(playerScore.Name, out IRoundStats roundStats))
-                    return;
-                
-                playerScore.Score += (trackBlocks ? roundStats.PrismStolen : roundStats.VolumeStolen) * scoreMultiplier;
-            }
-        }*/
 
         public override void Subscribe()
         {
-            throw new System.NotImplementedException();
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                if (trackBlocks)
+                    roundStats.OnPrismsStolenChanged += UpdateScore;
+                else
+                    roundStats.OnVolumeStolenChanged += UpdateScore;
+            }
         }
 
         public override void Unsubscribe()
         {
-            throw new System.NotImplementedException();
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                if (trackBlocks)
+                    roundStats.OnPrismsStolenChanged -= UpdateScore;
+                else
+                    roundStats.OnVolumeStolenChanged -= UpdateScore;
+            }
+        }
+
+        void UpdateScore(IRoundStats roundStats)
+        {
+            Score = (trackBlocks ? roundStats.PrismStolen : roundStats.VolumeStolen) * scoreMultiplier;
+            ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }
 }

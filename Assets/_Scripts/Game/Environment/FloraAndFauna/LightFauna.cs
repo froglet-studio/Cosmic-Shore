@@ -146,7 +146,11 @@ public class LightFauna : Fauna
 
     protected override void Die(string killername = "")
     {
-        throw new System.NotImplementedException();
+        StopAllCoroutines();
+        if (LightFaunaManager)
+            LightFaunaManager.RemoveFauna(this);
+        else
+            Destroy(gameObject);
     }
 
     static bool IsFinite(Vector3 v) =>

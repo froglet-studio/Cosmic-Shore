@@ -26,10 +26,7 @@ public class BodySegmentFauna : Fauna
         ParentWorm.RemoveSegment(this);
     }
 
-    public override void Initialize(Cell cell)
-    {
-        throw new System.NotImplementedException();
-    }
+    public override void Initialize(Cell cell) { }
 
     protected override void Spawn()
     {

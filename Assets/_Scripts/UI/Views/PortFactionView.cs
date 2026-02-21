@@ -4,9 +4,6 @@ namespace CosmicShore
 {
     public class PortFactionView : View
     {
-        public override void UpdateView()
-        {
-            throw new System.NotImplementedException();
-        }
+        public override void UpdateView() { }
     }
 }

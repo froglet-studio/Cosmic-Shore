@@ -1,9 +1,5 @@
-using System.Linq;
-using CosmicShore.Core;
 using CosmicShore.Soap;
-using Unity.Services.Matchmaker.Models;
 using UnityEngine;
-
 
 namespace CosmicShore.Game.Arcade.Scoring
 {
@@ -11,29 +7,37 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         public TeamVolumeDifferenceScoring(IScoreTracker tracker, GameDataSO scoreData, float scoreMultiplier) : base(tracker, scoreData, scoreMultiplier) { }
 
-        /*public override void CalculateScore()
-        {
-            var sorted = GameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
-            if (sorted == null || sorted.Count == 0) return;
-
-            // last element (descending list) has the smallest volume
-            float minVol = sorted[^1].VolumeRemaining;
-
-            foreach (var ps in GameData.RoundStatsList)
-            {
-                float rel = Mathf.Max(0f, ps.VolumeRemaining - minVol); // relative to last place
-                ps.Score += rel * scoreMultiplier;                      // accumulate like before
-            }
-        }*/
-
         public override void Subscribe()
         {
-            throw new System.NotImplementedException();
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                roundStats.OnVolumeRemainingChanged += UpdateScore;
+            }
         }
 
         public override void Unsubscribe()
         {
-            throw new System.NotImplementedException();
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
+                    return;
+
+                roundStats.OnVolumeRemainingChanged -= UpdateScore;
+            }
+        }
+
+        void UpdateScore(IRoundStats roundStats)
+        {
+            var sorted = GameData.GetSortedListInDecendingOrderBasedOnVolumeRemaining();
+            if (sorted == null || sorted.Count == 0) return;
+
+            float minVol = sorted[^1].VolumeRemaining;
+            float rel = Mathf.Max(0f, roundStats.VolumeRemaining - minVol);
+            Score = rel * scoreMultiplier;
+            ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }
 }

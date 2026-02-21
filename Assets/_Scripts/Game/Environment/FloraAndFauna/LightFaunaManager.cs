@@ -20,19 +20,21 @@ namespace CosmicShore
             SpawnGroup();
         }
 
-        public override void Initialize(Cell cell)
-        {
-            throw new System.NotImplementedException();
-        }
+        public override void Initialize(Cell cell) { }
 
         protected override void Spawn()
         {
-            throw new System.NotImplementedException();
+            SpawnGroup();
         }
 
         protected override void Die(string killername = "")
         {
-            throw new System.NotImplementedException();
+            foreach (var fauna in activeFauna.ToArray())
+            {
+                if (fauna) Destroy(fauna.gameObject);
+            }
+            activeFauna.Clear();
+            Destroy(gameObject);
         }
 
         void SpawnGroup()

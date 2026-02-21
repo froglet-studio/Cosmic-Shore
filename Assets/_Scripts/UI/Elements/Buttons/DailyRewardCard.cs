@@ -157,8 +157,7 @@ namespace CosmicShore
 
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
-            // TODO: reconsider implementation now that this class is not using the abstract method
-            throw new NotImplementedException();
+            this.virtualItem = virtualItem;
         }
 
         IEnumerator RotateCoroutine(Action modeChangeRoutine)

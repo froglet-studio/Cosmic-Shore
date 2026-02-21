@@ -9,19 +9,8 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         public TurnsPlayedScoring(IScoreTracker tracker, GameDataSO data, float scoreMultiplier) : base(tracker, data, scoreMultiplier) { }
 
-        /*public override void CalculateScore()
-        {
-            return turnsPlayed;
-        }*/
+        public override void Subscribe() { }
 
-        public override void Subscribe()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override void Unsubscribe()
-        {
-            throw new System.NotImplementedException();
-        }
+        public override void Unsubscribe() { }
     }
 }

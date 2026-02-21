@@ -29,19 +29,21 @@ public class WormManager : Fauna
         SpawnInitialWorms();
     }
 
-    public override void Initialize(Cell cell)
-    {
-        throw new System.NotImplementedException();
-    }
+    public override void Initialize(Cell cell) { }
 
     protected override void Spawn()
     {
-        throw new System.NotImplementedException();
+        SpawnInitialWorms();
     }
 
     protected override void Die(string killername = "")
     {
-        throw new System.NotImplementedException();
+        foreach (var worm in activeWorms.ToArray())
+        {
+            if (worm) Destroy(worm.gameObject);
+        }
+        activeWorms.Clear();
+        Destroy(gameObject);
     }
 
     private void Update()

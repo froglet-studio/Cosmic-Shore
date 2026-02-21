@@ -209,9 +209,13 @@ public class Boid : Fauna
     }
 
     protected override void Spawn() { }
+
     protected override void Die(string killername = "")
     {
-        throw new System.NotImplementedException();
+        isKilled = true;
+        StopAllCoroutines();
+        if (BoidManager) BoidManager.Boids.Remove(this);
+        Destroy(gameObject);
     }
 
     IEnumerator AddToMoundCoroutine()
