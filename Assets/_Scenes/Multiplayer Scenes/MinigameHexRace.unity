@@ -936,8 +936,6 @@ MonoBehaviour:
   controller: {fileID: 1078953729}
   penaltyScoreBase: 10000
   showDebugLogs: 1
-  OnJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
-    type: 2}
 --- !u!1 &1194123992
 GameObject:
   m_ObjectHideFlags: 0
@@ -1401,6 +1399,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1171819396819455383, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -1455,6 +1458,11 @@ PrefabInstance:
         type: 3}
       propertyPath: BlueTeamBannerColor.r
       value: 0.08018869
+      objectReference: {fileID: 0}
+    - target: {fileID: 4312219345516419528, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5054612726490372294, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1855,6 +1863,91 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[0].Domain
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[1].Domain
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[2].Domain
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[3].Domain
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[0].Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[0].Color.b
+      value: 0.6912031
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[0].Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[1].Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[1].Color.b
+      value: 0.8427868
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[1].Color.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[2].Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[2].Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[2].Color.g
+      value: 0.15447235
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[3].Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[3].Color.g
+      value: 0.62498116
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081435693084207854, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: domainColors.Array.data[3].Color.r
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
