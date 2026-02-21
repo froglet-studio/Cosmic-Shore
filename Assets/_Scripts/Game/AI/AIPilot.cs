@@ -80,6 +80,7 @@ namespace CosmicShore.Game.AI
         // Active genome parameters (loaded from evolution or defaults)
         PilotGenome _activeGenome;
         PilotFitnessTracker _fitnessTracker;
+        int _currentGenomeIndex = -1;
 
         // Genome-aware accessors: lerp from inspector defaults toward genome values by IntensityT.
         // At intensity 2 (IntensityT=0.33) mostly defaults; at intensity 4 (IntensityT=1) fully genome.
@@ -92,6 +93,9 @@ namespace CosmicShore.Game.AI
         float G_AvoidanceWeight => _activeGenome != null ? Mathf.Lerp(0.15f, _activeGenome.avoidanceWeight, IntensityT) : Mathf.Lerp(0.05f, 0.15f, IntensityT);
         float G_SteeringAggressiveness => _activeGenome != null ? Mathf.Lerp(100f, _activeGenome.steeringAggressiveness, IntensityT) : 100f;
         float G_ThrottleRampRate => _activeGenome != null ? Mathf.Lerp(throttleIncrease, _activeGenome.throttleRampRate, IntensityT) : throttleIncrease;
+        float G_ThrottleBrakeResponse => _activeGenome != null ? Mathf.Lerp(0.5f, _activeGenome.throttleBrakeResponse, IntensityT) : 0.5f;
+        float G_DriftThreshold => _activeGenome != null ? Mathf.Lerp(0.6f, _activeGenome.driftThreshold, IntensityT) : 0.6f;
+        float G_SkimBiasStrength => _activeGenome != null ? Mathf.Lerp(1f, _activeGenome.skimBiasStrength, IntensityT) : 1f;
 
         IVessel vessel;
         IVesselStatus VesselStatus => vessel.VesselStatus;
@@ -117,6 +121,10 @@ namespace CosmicShore.Game.AI
         float _prismScanTimer;
         float _prismScanInterval = 0.25f;
         static readonly Collider[] _prismScanResults = new Collider[64];
+
+        // Collision avoidance state
+        float _collisionThreat; // 0-1 scale of collision proximity/urgency
+        float _lastCollisionBrakeTime;
 
         public bool AutoPilotEnabled { get; private set; }
 
@@ -189,6 +197,7 @@ namespace CosmicShore.Game.AI
             if (evolution != null)
             {
                 _activeGenome = evolution.CheckoutGenome(out int genomeIndex);
+                _currentGenomeIndex = genomeIndex;
                 throttle = Mathf.Lerp(defaultThrottle, _activeGenome.throttleBase, IntensityT);
 
                 _fitnessTracker = GetComponent<PilotFitnessTracker>();
@@ -200,8 +209,11 @@ namespace CosmicShore.Game.AI
             else
             {
                 _activeGenome = null;
+                _currentGenomeIndex = -1;
             }
         }
+
+        public int CurrentGenomeIndex => _currentGenomeIndex;
 
         public void StartAIPilot()
         {
@@ -258,28 +270,55 @@ namespace CosmicShore.Game.AI
 
             Vector3 desiredDirection = _distance.normalized;
 
+            // Compute collision threat and take evasive action if needed
+            Vector3 avoidanceSteer = ComputeCollisionAvoidance();
+            _collisionThreat = avoidanceSteer.magnitude;
+
+            // Apply throttle braking based on collision threat
+            if (_collisionThreat > 0.001f)
+            {
+                ApplyCollisionBraking(_collisionThreat, _distance.magnitude);
+            }
+
             // Apply a small lateral nudge to pass near prisms that are along our route
             ScanForPrisms();
             Vector3 prismNudge = ComputePrismNudge(desiredDirection);
             if (prismNudge.sqrMagnitude > 0.001f)
+            {
+                // Bias skim nudge based on angle to crystal: far away = stronger bias toward skim paths
+                float distToCrystal = _distance.magnitude;
+                float maxSkimBiasDistance = 100f;
+                float skimBiasFalloff = Mathf.Clamp01(1f - (distToCrystal / maxSkimBiasDistance));
+                prismNudge *= G_SkimBiasStrength * Mathf.Lerp(0.3f, 1f, skimBiasFalloff);
+
                 desiredDirection = (desiredDirection + prismNudge).normalized;
+            }
 
             // Subtle collision avoidance - small corrections, never overrides crystal heading
-            Vector3 avoidanceSteer = ComputeCollisionAvoidance();
             if (avoidanceSteer.sqrMagnitude > 0.001f)
             {
                 desiredDirection = (desiredDirection + avoidanceSteer * G_AvoidanceWeight).normalized;
             }
 
             LookingAtCrystal = Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
+
+            // Use single drift to set up next crystal trajectory when already aligned with current crystal
             if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
             {
                 VesselStatus.Course = desiredDirection;
                 vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
                 desiredDirection *= -1;
             }
-            else if (LookingAtCrystal && VesselStatus.IsDrifting) desiredDirection *= -1;
-            else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
+            else if (LookingAtCrystal && VesselStatus.IsDrifting)
+            {
+                desiredDirection *= -1;
+            }
+            else if (VesselStatus.IsDrifting && _collisionThreat < 0.1f)
+            {
+                // Release drift when collision threat is low and not aligned with crystal
+                vessel.StopShipControllerActions(InputEvents.LeftStickAction);
+                vessel.StopShipControllerActions(InputEvents.BothSticksAction);
+            }
 
             ApplySteering(desiredDirection, _distance.sqrMagnitude);
         }
@@ -422,6 +461,34 @@ namespace CosmicShore.Game.AI
             float nudgeMag = G_MaxNudgeStrength * gapNorm;
 
             return nudgeDir * nudgeMag;
+        }
+
+        #endregion
+
+        #region Collision Braking & Drift Control (Intensity 2+)
+
+        void ApplyCollisionBraking(float threat, float distToCrystal)
+        {
+            if (Intensity < 2 || threat < 0.01f) return;
+
+            // Threat is 0-1 scale. Apply throttle braking proportional to threat.
+            // Stronger braking response when threat is high.
+            float brakePower = threat * G_ThrottleBrakeResponse;
+            float brakeDuration = 0.3f;
+
+            // Brake: reduce to 30% throttle
+            vessel.ModifyThrottle(0.3f + (0.7f * (1f - brakePower)), brakeDuration);
+
+            // At high threat, consider drift-based evasion (tight turn + release)
+            if (threat > G_DriftThreshold && drift && !VesselStatus.IsDrifting && Time.time > _lastCollisionBrakeTime + 1f)
+            {
+                // Trigger double drift for better emergency maneuver
+                vessel.PerformShipControllerActions(InputEvents.BothSticksAction);
+                _lastCollisionBrakeTime = Time.time;
+
+                // Set course away from danger (use collision normal from ComputeCollisionAvoidance)
+                // This will be released naturally when collision threat drops
+            }
         }
 
         #endregion

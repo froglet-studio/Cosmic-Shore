@@ -24,6 +24,13 @@ namespace CosmicShore.Game.AI
         [Range(0.3f, 1f)]   public float throttleBase = 0.6f;
         [Range(0f, 0.01f)]  public float throttleRampRate = 0.001f;
 
+        // --- Collision Avoidance (Intensity 2+) ---
+        [Range(0.1f, 1f)]   public float throttleBrakeResponse = 0.5f;
+        [Range(0.2f, 1f)]   public float driftThreshold = 0.6f;
+
+        // --- Skimming Bias (Intensity 2+) ---
+        [Range(0.5f, 2f)]   public float skimBiasStrength = 1f;
+
         // --- Fitness (set after evaluation) ---
         [HideInInspector] public float fitness;
         [HideInInspector] public int evaluationCount;
@@ -42,6 +49,9 @@ namespace CosmicShore.Game.AI
             steeringAggressiveness = other.steeringAggressiveness;
             throttleBase = other.throttleBase;
             throttleRampRate = other.throttleRampRate;
+            throttleBrakeResponse = other.throttleBrakeResponse;
+            driftThreshold = other.driftThreshold;
+            skimBiasStrength = other.skimBiasStrength;
             fitness = 0f;
             evaluationCount = 0;
         }
@@ -60,6 +70,9 @@ namespace CosmicShore.Game.AI
                 steeringAggressiveness = UnityEngine.Random.Range(20f, 200f),
                 throttleBase = UnityEngine.Random.Range(0.3f, 1f),
                 throttleRampRate = UnityEngine.Random.Range(0f, 0.01f),
+                throttleBrakeResponse = UnityEngine.Random.Range(0.1f, 1f),
+                driftThreshold = UnityEngine.Random.Range(0.2f, 1f),
+                skimBiasStrength = UnityEngine.Random.Range(0.5f, 2f),
                 fitness = 0f,
                 evaluationCount = 0
             };
@@ -78,6 +91,9 @@ namespace CosmicShore.Game.AI
             child.steeringAggressiveness     = Pick(a.steeringAggressiveness, b.steeringAggressiveness);
             child.throttleBase               = Pick(a.throttleBase, b.throttleBase);
             child.throttleRampRate           = Pick(a.throttleRampRate, b.throttleRampRate);
+            child.throttleBrakeResponse      = Pick(a.throttleBrakeResponse, b.throttleBrakeResponse);
+            child.driftThreshold             = Pick(a.driftThreshold, b.driftThreshold);
+            child.skimBiasStrength           = Pick(a.skimBiasStrength, b.skimBiasStrength);
             return child;
         }
 
@@ -93,6 +109,9 @@ namespace CosmicShore.Game.AI
             steeringAggressiveness      = MutateGene(steeringAggressiveness, rate, strength, 20f, 200f);
             throttleBase                = MutateGene(throttleBase, rate, strength, 0.3f, 1f);
             throttleRampRate            = MutateGene(throttleRampRate, rate, strength, 0f, 0.01f);
+            throttleBrakeResponse       = MutateGene(throttleBrakeResponse, rate, strength, 0.1f, 1f);
+            driftThreshold              = MutateGene(driftThreshold, rate, strength, 0.2f, 1f);
+            skimBiasStrength            = MutateGene(skimBiasStrength, rate, strength, 0.5f, 2f);
         }
 
         static float Pick(float a, float b) => UnityEngine.Random.value < 0.5f ? a : b;
