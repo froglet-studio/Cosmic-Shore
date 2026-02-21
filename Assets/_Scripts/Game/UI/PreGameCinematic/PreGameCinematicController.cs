@@ -47,6 +47,7 @@ namespace CosmicShore.Game.UI
         private Coroutine _runningCoroutine;
         private bool _isPlaying;
         private bool _skipped;
+        private Vector3 _playerCameraFollowOffset = new(0f, 10f, 0f);
 
         /// <summary>
         /// Whether the cinematic is currently playing.
@@ -93,26 +94,39 @@ namespace CosmicShore.Game.UI
         {
             if (_isPlaying) return;
 
-            _mainCamera = Camera.main;
-            if (_mainCamera == null)
-            {
-                Debug.LogWarning("[PreGameCinematic] No main camera found, skipping cinematic.");
-                OnCinematicFinished?.Invoke();
-                return;
-            }
-
-            _cameraTransform = _mainCamera.transform;
             _playerTarget = playerTarget;
-            _isPlaying = true;
-            _skipped = false;
+            _cameraTransform = null;
 
-            // Disable the normal player camera controller while cinematic runs
+            // Prefer CameraManager for reliable camera access over Camera.main
             if (CameraManager.Instance != null)
             {
                 _playerCameraController = CameraManager.Instance.GetActiveController();
                 if (_playerCameraController is CustomCameraController pcc)
+                {
+                    _cameraTransform = pcc.transform;
+                    _mainCamera = pcc.Camera;
+                    _playerCameraFollowOffset = pcc.GetFollowOffset();
                     pcc.enabled = false;
+                }
             }
+
+            // Fallback to Camera.main
+            if (_cameraTransform == null)
+            {
+                _mainCamera = Camera.main;
+                if (_mainCamera != null)
+                    _cameraTransform = _mainCamera.transform;
+            }
+
+            if (_cameraTransform == null)
+            {
+                Debug.LogWarning("[PreGameCinematic] No camera found, skipping cinematic.");
+                OnCinematicFinished?.Invoke();
+                return;
+            }
+
+            _isPlaying = true;
+            _skipped = false;
 
             SetSkipButtonVisible(true);
             _runningCoroutine = StartCoroutine(RunCinematic(lookAtCenter));
@@ -232,11 +246,11 @@ namespace CosmicShore.Game.UI
             Vector3 startPos = _cameraTransform.position;
             Quaternion startRot = _cameraTransform.rotation;
 
-            // Calculate target position behind the player
+            // Use the actual camera follow offset for the target position
             Vector3 behindPlayer = _playerTarget.position
-                + _playerTarget.rotation * new Vector3(0f, 10f, 0f);
+                + _playerTarget.rotation * _playerCameraFollowOffset;
             Vector3 lookDir = _playerTarget.position - behindPlayer;
-            Quaternion targetRot = lookDir != Vector3.zero
+            Quaternion targetRot = lookDir.sqrMagnitude > 0.001f
                 ? Quaternion.LookRotation(lookDir, _playerTarget.up)
                 : startRot;
 
@@ -250,9 +264,9 @@ namespace CosmicShore.Game.UI
 
                 // Recalculate target each frame in case player moves
                 behindPlayer = _playerTarget.position
-                    + _playerTarget.rotation * new Vector3(0f, 10f, 0f);
+                    + _playerTarget.rotation * _playerCameraFollowOffset;
                 lookDir = _playerTarget.position - behindPlayer;
-                if (lookDir != Vector3.zero)
+                if (lookDir.sqrMagnitude > 0.001f)
                     targetRot = Quaternion.LookRotation(lookDir, _playerTarget.up);
 
                 _cameraTransform.position = Vector3.Lerp(startPos, behindPlayer, t);

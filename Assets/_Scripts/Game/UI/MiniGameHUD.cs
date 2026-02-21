@@ -112,7 +112,6 @@ namespace CosmicShore.Game.UI
             var skipCanvasGroup = skipGO.AddComponent<CanvasGroup>();
 
             preGameCinematic.SetupSkipButton(skipButton, skipCanvasGroup);
-            skipGO.SetActive(false);
         }
 
         protected virtual void OnEnable()
