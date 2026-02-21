@@ -40,7 +40,7 @@ namespace CosmicShore.Game.Arcade
         protected override void OnReadyClicked_()
         {
             RaiseToggleReadyButtonEvent(false);
-            OnReadyClicked_ServerRpc(gameData.LocalPlayerDisplayName);
+            OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
         }
 
         [ServerRpc(RequireOwnership = false)]
