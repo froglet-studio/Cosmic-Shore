@@ -68,6 +68,23 @@ namespace CosmicShore.Game.UI
         }
 
         /// <summary>
+        /// Configure the skip button at runtime (used when auto-created by MiniGameHUD).
+        /// </summary>
+        public void SetupSkipButton(Button button, CanvasGroup canvasGroup)
+        {
+            if (skipButton != null)
+                skipButton.onClick.RemoveListener(Skip);
+
+            skipButton = button;
+            skipButtonCanvasGroup = canvasGroup;
+
+            if (skipButton != null)
+                skipButton.onClick.AddListener(Skip);
+
+            SetSkipButtonVisible(false);
+        }
+
+        /// <summary>
         /// Start the cinematic flythrough.
         /// </summary>
         /// <param name="lookAtCenter">Center of the scene to look at during orbit.</param>

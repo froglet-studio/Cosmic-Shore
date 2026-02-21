@@ -37,6 +37,19 @@ namespace CosmicShore.Game.UI
         public Transform PlayerScoreContainer => playerScoreContainer;
         public PlayerScoreCard PlayerScoreCardPrefab => playerScoreCardPrefab;
 
+        private void Awake()
+        {
+            // Auto-discover connecting panel animation components when not assigned in Inspector
+            if (connectingPanelCanvasGroup != null)
+            {
+                var panelGO = connectingPanelCanvasGroup.gameObject;
+                if (hackerTextAnimator == null)
+                    hackerTextAnimator = panelGO.GetComponentInChildren<DoTweenTypewriterAnimator>();
+                if (dotsAnimator == null)
+                    dotsAnimator = panelGO.GetComponentInChildren<ConnectingDotsAnimator>();
+            }
+        }
+
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
         public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
         public void UpdateLifeFormCounter(string message) 

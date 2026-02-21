@@ -6,7 +6,9 @@ using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.Game.UI
 {
@@ -35,6 +37,7 @@ namespace CosmicShore.Game.UI
         [Header("Pre-Game Cinematic")]
         [SerializeField] private PreGameCinematicController preGameCinematic;
         [SerializeField] private Vector3 cinematicLookAtCenter = Vector3.zero;
+        [SerializeField] private bool enablePreGameCinematic = true;
 
         [Header("AI Tracking")]
         [SerializeField] protected bool isAIAvailable;
@@ -51,6 +54,65 @@ namespace CosmicShore.Game.UI
         private void OnValidate()
         {
             if (view == null) view = GetComponent<MiniGameHUDView>();
+        }
+
+        private void Awake()
+        {
+            if (enablePreGameCinematic && preGameCinematic == null)
+                EnsurePreGameCinematic();
+        }
+
+        /// <summary>
+        /// Auto-creates a PreGameCinematicController with a skip button
+        /// when none is assigned via Inspector.
+        /// </summary>
+        private void EnsurePreGameCinematic()
+        {
+            // Check if one already exists in the scene
+            preGameCinematic = FindAnyObjectByType<PreGameCinematicController>();
+            if (preGameCinematic != null) return;
+
+            // Create the cinematic controller
+            var cinematicGO = new GameObject("PreGameCinematic");
+            cinematicGO.transform.SetParent(transform.parent, false);
+            preGameCinematic = cinematicGO.AddComponent<PreGameCinematicController>();
+
+            // Create skip button on the HUD canvas
+            var skipGO = new GameObject("SkipCinematicButton");
+            skipGO.transform.SetParent(transform.parent, false);
+
+            var skipRect = skipGO.AddComponent<RectTransform>();
+            skipRect.anchorMin = new Vector2(1f, 0f);
+            skipRect.anchorMax = new Vector2(1f, 0f);
+            skipRect.pivot = new Vector2(1f, 0f);
+            skipRect.anchoredPosition = new Vector2(-30f, 30f);
+            skipRect.sizeDelta = new Vector2(120f, 45f);
+
+            var skipImage = skipGO.AddComponent<Image>();
+            skipImage.color = new Color(0f, 0f, 0f, 0.5f);
+
+            var skipButton = skipGO.AddComponent<Button>();
+            skipButton.targetGraphic = skipImage;
+
+            // Add text label
+            var textGO = new GameObject("Text");
+            textGO.transform.SetParent(skipGO.transform, false);
+
+            var textRect = textGO.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.sizeDelta = Vector2.zero;
+
+            var tmpText = textGO.AddComponent<TextMeshProUGUI>();
+            tmpText.text = "SKIP >";
+            tmpText.fontSize = 18;
+            tmpText.alignment = TextAlignmentOptions.Center;
+            tmpText.color = Color.white;
+
+            var skipCanvasGroup = skipGO.AddComponent<CanvasGroup>();
+
+            preGameCinematic.SetupSkipButton(skipButton, skipCanvasGroup);
+            skipGO.SetActive(false);
         }
 
         protected virtual void OnEnable()
