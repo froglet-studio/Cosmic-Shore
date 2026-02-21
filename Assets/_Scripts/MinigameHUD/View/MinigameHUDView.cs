@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Game.UI
 {
@@ -19,9 +20,14 @@ namespace CosmicShore.Game.UI
         [SerializeField] private GameObject pip;
         [SerializeField] private GameObject silhouette;
         [SerializeField] private GameObject trailDisplay;
-        [SerializeField] private CanvasGroup connectingPanelCanvasGroup; 
+        [SerializeField] private CanvasGroup connectingPanelCanvasGroup;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
+
+        [Header("Connecting Panel Animations")]
+        [SerializeField] private DoTweenTypewriterAnimator hackerTextAnimator;
+        [SerializeField] private ConnectingDotsAnimator dotsAnimator;
+        [SerializeField] private string hackerText = "INITIALIZING COSMIC SHORE";
 
         [Header("Player/AI Score Cards")]
         [SerializeField] private Transform playerScoreContainer;
@@ -51,6 +57,46 @@ namespace CosmicShore.Game.UI
             connectingPanelCanvasGroup.alpha = active ? 1 : 0;
             connectingPanelCanvasGroup.interactable = active;
             connectingPanelCanvasGroup.blocksRaycasts = active;
+
+            if (active)
+                StartConnectingAnimations();
+            else
+                StopConnectingAnimations();
+        }
+
+        private System.Threading.CancellationTokenSource _hackerCts;
+
+        private void StartConnectingAnimations()
+        {
+            // Start hacker text animation
+            if (hackerTextAnimator != null && !string.IsNullOrEmpty(hackerText))
+            {
+                _hackerCts?.Cancel();
+                _hackerCts?.Dispose();
+                _hackerCts = new System.Threading.CancellationTokenSource();
+                hackerTextAnimator.PlayIn(hackerText, _hackerCts.Token).Forget();
+            }
+
+            // Start dots animation
+            if (dotsAnimator != null)
+                dotsAnimator.StartAnimation();
+        }
+
+        private void StopConnectingAnimations()
+        {
+            // Stop hacker text
+            if (_hackerCts != null)
+            {
+                _hackerCts.Cancel();
+                _hackerCts.Dispose();
+                _hackerCts = null;
+            }
+            if (hackerTextAnimator != null)
+                hackerTextAnimator.ClearInstant();
+
+            // Stop dots animation
+            if (dotsAnimator != null)
+                dotsAnimator.StopAnimation();
         }
 
         public void ClearPlayerList()
@@ -80,5 +126,12 @@ namespace CosmicShore.Game.UI
         public GameObject Pip => pip;
         public GameObject Silhouette => silhouette;
         public GameObject TrailDisplay => trailDisplay;
+
+        private void OnDestroy()
+        {
+            _hackerCts?.Cancel();
+            _hackerCts?.Dispose();
+            _hackerCts = null;
+        }
     }
 }

@@ -32,6 +32,10 @@ namespace CosmicShore.Game.UI
         [Header("Intro / Connecting")]
         [SerializeField] private float minConnectingSeconds = 5f;
 
+        [Header("Pre-Game Cinematic")]
+        [SerializeField] private PreGameCinematicController preGameCinematic;
+        [SerializeField] private Vector3 cinematicLookAtCenter = Vector3.zero;
+
         [Header("AI Tracking")]
         [SerializeField] protected bool isAIAvailable;
 
@@ -204,6 +208,22 @@ namespace CosmicShore.Game.UI
                 }
 
                 view.ToggleConnectingPanel(false);
+
+                // Play pre-game cinematic if available
+                if (preGameCinematic != null)
+                {
+                    Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
+                    if (playerTarget != null)
+                    {
+                        bool cinematicDone = false;
+                        preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
+                        preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
+
+                        while (!cinematicDone)
+                            await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
+                    }
+                }
+
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException) { }
