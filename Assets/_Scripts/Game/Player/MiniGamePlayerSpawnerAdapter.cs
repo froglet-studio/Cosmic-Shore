@@ -1,3 +1,4 @@
+using CosmicShore.App.Profile;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -31,15 +32,29 @@ namespace CosmicShore.Game
 
         private IPlayer.InitializeData InitializePlayerData()
         {
-            // TODO: Wire player name/uuid/teams from your profile/select flow.
+            // Resolve display name and avatar from PlayerDataService if available
+            string displayName = "HumanJade";
+            int avatarId = 0;
+
+            var profileService = FindAnyObjectByType<PlayerDataService>();
+            if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
+            {
+                displayName = profileService.CurrentProfile.displayName;
+                avatarId = profileService.CurrentProfile.avatarId;
+            }
+            else if (!string.IsNullOrEmpty(_gameData.LocalPlayerDisplayName))
+            {
+                displayName = _gameData.LocalPlayerDisplayName;
+            }
+
             return new IPlayer.InitializeData
             {
-                vesselClass      = _gameData.selectedVesselClass.Value,
-                domain           = Domains.Jade,         // Default for now
-                PlayerName     = "HumanJade",        // Placeholder
-                // PlayerUUID     = "HumanJade1",       // Placeholder
+                vesselClass    = _gameData.selectedVesselClass.Value,
+                domain         = Domains.Jade,
+                PlayerName     = displayName,
+                AvatarId       = avatarId,
                 AllowSpawning  = true,
-                IsAI  = false,
+                IsAI           = false,
             };
         }
     }

@@ -21,9 +21,11 @@ namespace CosmicShore.Game
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<ulong> NetVesselId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        
+        public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         public Domains Domain { get; private set; }
         public string Name { get; private set; }
+        public int AvatarId { get; private set; }
         public string PlayerUUID => Name;
         public ulong PlayerNetId => NetworkObjectId;
         /// <summary>
@@ -76,6 +78,7 @@ namespace CosmicShore.Game
             IsInitializedAsAI = InitializeData.IsAI;
             Domain = InitializeData.domain;
             Name = InitializeData.PlayerName;
+            AvatarId = InitializeData.AvatarId;
             InputController.Initialize();
             ToggleInputPause(true);
             Vessel = vessel;
@@ -91,6 +94,7 @@ namespace CosmicShore.Game
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
             Name = NetName.Value.ToString();
+            AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
             if (!IsServer) 
@@ -113,12 +117,19 @@ namespace CosmicShore.Game
             NetDomain.OnValueChanged += OnNetDomainChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
             NetVesselId.OnValueChanged += OnNetVesselIdChanged;
+            NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
 
-            if (!IsLocalUser) 
+            if (!IsLocalUser)
                 return;
-            
+
             NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
             NetName.Value = AuthenticationService.Instance.PlayerName;
+
+            // Sync local avatar ID to network
+            var profileService = FindAnyObjectByType<App.Profile.PlayerDataService>();
+            if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
+                NetAvatarId.Value = profileService.CurrentProfile.avatarId;
+
             InputController.Initialize();
         }
         
@@ -126,7 +137,8 @@ namespace CosmicShore.Game
         {
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
-            NetVesselId.OnValueChanged += OnNetVesselIdChanged;
+            NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
+            NetAvatarId.OnValueChanged -= OnNetAvatarIdChanged;
         }
 
 
@@ -198,6 +210,9 @@ namespace CosmicShore.Game
         
         void OnNetVesselIdChanged(ulong previousValue, ulong newValue) =>
             VesselNetId = newValue;
+
+        void OnNetAvatarIdChanged(int previousValue, int newValue) =>
+            AvatarId = newValue;
         
         void SetGameObjectName()
         {
