@@ -219,6 +219,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   gameController: {fileID: 1078953717}
   evolution: {fileID: 11400000, guid: 89a663abc12cfc04b80f600102e88ab4, type: 2}
+  turnMonitor: {fileID: 1078953710}
   maxRaces: 10000
   delayBetweenRaces: 1
   raceTimeoutSeconds: 300
