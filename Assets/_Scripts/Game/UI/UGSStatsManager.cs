@@ -38,13 +38,11 @@ namespace CosmicShore.Game.Analytics
 
             string key = $"{mode}_{intensity}";
 
-            if (mode is GameModes.HexRace or GameModes.MultiplayerHexRaceGame or GameModes.MultiplayerJoust)
+            if (mode is GameModes.HexRace or GameModes.MultiplayerJoust)
             {
                 float cloudBest = 0f;
-                
+
                 if (mode == GameModes.HexRace)
-                    cloudBest = _cachedProfile.HexRaceStats.BestRaceTimes.GetValueOrDefault(key, 0f);
-                else if (mode == GameModes.MultiplayerHexRaceGame)
                     cloudBest = _cachedProfile.MultiHexStats.BestMultiplayerRaceTimes.GetValueOrDefault(key, 0f);
                 else if (mode == GameModes.MultiplayerJoust)
                     cloudBest = _cachedProfile.JoustStats.BestRaceTimes.GetValueOrDefault(key, 0f);
@@ -85,38 +83,16 @@ namespace CosmicShore.Game.Analytics
             SaveProfile();
         }
 
-        public void ReportHexRaceStats(GameModes mode, int intensity, int cleanCrystals, float maxDrift, float maxBoost, float raceTime)
-        {
-            if (!_isReady) return;
-
-            _cachedProfile.HexRaceStats.TotalCleanCrystalsCollected += cleanCrystals;
-            _cachedProfile.HexRaceStats.TotalDriftTime += maxDrift;
-            _cachedProfile.TotalGamesPlayed++;
-
-            if (maxDrift > _cachedProfile.HexRaceStats.LongestSingleDrift) 
-                _cachedProfile.HexRaceStats.LongestSingleDrift = maxDrift;
-            if (maxBoost > _cachedProfile.HexRaceStats.MaxTimeAtHighBoost) 
-                _cachedProfile.HexRaceStats.MaxTimeAtHighBoost = maxBoost;
-
-            if (raceTime < 10000f)
-            {
-                string key = $"{mode}_{intensity}";
-                _cachedProfile.HexRaceStats.TryUpdateBestTime(key, raceTime);
-                SubmitScoreInternal(mode, intensity, raceTime);
-            }
-            SaveProfile();
-        }
-
-        public void ReportMultiplayerHexStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
+        public void ReportHexRaceStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
         {
             if (!_isReady) return;
 
             _cachedProfile.MultiHexStats.TotalCleanCrystalsCollected += clean;
-            _cachedProfile.MultiHexStats.TotalDriftTime += drift; 
+            _cachedProfile.MultiHexStats.TotalDriftTime += drift;
             _cachedProfile.MultiHexStats.TotalJoustsWon += jousts;
             _cachedProfile.TotalGamesPlayed++;
 
-            if (drift > _cachedProfile.MultiHexStats.LongestSingleDrift) 
+            if (drift > _cachedProfile.MultiHexStats.LongestSingleDrift)
                 _cachedProfile.MultiHexStats.LongestSingleDrift = drift;
 
             string key = $"{mode}_{intensity}";
@@ -127,7 +103,7 @@ namespace CosmicShore.Game.Analytics
 
                 SubmitScoreInternal(mode, intensity, score);
             }
-    
+
             SaveProfile();
         }
 
@@ -206,8 +182,7 @@ namespace CosmicShore.Game.Analytics
                     _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
                 
                 _cachedProfile.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
-                _cachedProfile.HexRaceStats ??= new HexRacePlayerStatsProfile();
-                _cachedProfile.MultiHexStats ??= new MultiplayerHexRacePlayerStatsProfile();
+                _cachedProfile.MultiHexStats ??= new HexRacePlayerStatsProfile();
                 _cachedProfile.JoustStats ??= new JoustPlayerStatsProfile();
                 _cachedProfile.CrystalCaptureStats ??= new CrystalCapturePlayerStatsProfile();
             }

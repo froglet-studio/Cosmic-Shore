@@ -38,17 +38,15 @@ namespace CosmicShore.Game.Arcade
             bool isWinner = gameData.RoundStatsList.Count > 0 &&
                             gameData.RoundStatsList[0].Name == localName;
 
-            if (isWinner)
-            {
-                float raceTime = localStats.Score;
-                UGSStatsManager.Instance.ReportJoustStats(
-                    gameMode,
-                    gameData.SelectedIntensity.Value,
-                    localStats.JoustCollisions,
-                    raceTime
-                );
-                Debug.Log($"[JoustStats] Reported Win - Time: {raceTime:F2}s Jousts: {localStats.JoustCollisions}");
-            }
+            if (!isWinner) return;
+            float raceTime = localStats.Score;
+            UGSStatsManager.Instance.ReportJoustStats(
+                gameMode,
+                gameData.SelectedIntensity.Value,
+                localStats.JoustCollisions,
+                raceTime
+            );
+            Debug.Log($"[JoustStats] Reported Win - Time: {raceTime:F2}s Jousts: {localStats.JoustCollisions}");
         }
     }
 }

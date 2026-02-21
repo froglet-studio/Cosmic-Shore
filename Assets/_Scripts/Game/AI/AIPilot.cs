@@ -54,6 +54,22 @@ namespace CosmicShore.Game.AI
         [SerializeField] bool ram;
         [SerializeField] bool drift;
 
+        [Header("Targeting")]
+        [Tooltip("When true, AI targets enemy players instead of crystals/items (used for Joust)")]
+        [SerializeField] bool seekPlayers;
+        [SerializeField] GameDataSO gameData;
+        [SerializeField] float playerSeekUpdateInterval = 0.5f;
+
+        /// <summary>
+        /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
+        /// </summary>
+        public void ConfigureForGameMode(GameDataSO gameDataRef, bool shouldSeekPlayers, float skill)
+        {
+            gameData = gameDataRef;
+            seekPlayers = shouldSeekPlayers;
+            skillLevel = Mathf.Clamp01(skill);
+        }
+
         [SerializeField] List<AIAbility> abilities;
 
         [SerializeField]
@@ -122,6 +138,9 @@ namespace CosmicShore.Game.AI
 
         void UpdateCellContent()
         {
+            // When seeking players (Joust mode), ignore cell item updates
+            if (seekPlayers) return;
+
             var activeCell = cellData.Cell;
             var cellItems = cellData.CellItems;
             float MinDistance = Mathf.Infinity;
@@ -133,6 +152,12 @@ namespace CosmicShore.Game.AI
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
                     (item.ItemType != ItemType.Debuff || item.ownDomain == VesselStatus.Domain)) continue;
+
+                // Skip buff items that belong to another player's domain (e.g. domain crystals in HexRace).
+                // Only target items with no domain or matching our own domain.
+                if (item.ItemType == ItemType.Buff && item.ownDomain != Domains.None && item.ownDomain != VesselStatus.Domain)
+                    continue;
+
                 var sqDistance = Vector3.SqrMagnitude(item.transform.position - transform.position);
                 if (sqDistance < (MinDistance * MinDistance))
                 {
@@ -142,6 +167,38 @@ namespace CosmicShore.Game.AI
             }
 
             _targetPosition = !closestItem ? activeCell.transform.position : closestItem.transform.position;
+        }
+
+        IEnumerator UpdatePlayerTarget()
+        {
+            while (AutoPilotEnabled)
+            {
+                if (gameData != null && vessel != null)
+                {
+                    var myDomain = VesselStatus.Domain;
+                    float closestSqDist = Mathf.Infinity;
+                    Vector3 bestPos = _targetPosition;
+
+                    foreach (var player in gameData.Players)
+                    {
+                        // Skip self and teammates
+                        if (player.Domain == myDomain) continue;
+                        if (player.Vessel == null) continue;
+
+                        var pos = player.Vessel.Transform.position;
+                        var sqDist = Vector3.SqrMagnitude(pos - transform.position);
+                        if (sqDist < closestSqDist)
+                        {
+                            closestSqDist = sqDist;
+                            bestPos = pos;
+                        }
+                    }
+
+                    _targetPosition = bestPos;
+                }
+
+                yield return new WaitForSeconds(playerSeekUpdateInterval);
+            }
         }
 
         public void Initialize(IVessel v)
@@ -174,10 +231,15 @@ namespace CosmicShore.Game.AI
         public void StartAIPilot()
         {
             AutoPilotEnabled = true;
-            
+
             foreach (var ability in abilities)
             {
                 StartCoroutine(UseAbilityCoroutine(ability));
+            }
+
+            if (seekPlayers)
+            {
+                StartCoroutine(UpdatePlayerTarget());
             }
         }
 

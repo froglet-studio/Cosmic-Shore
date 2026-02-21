@@ -119,6 +119,60 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &154101602 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1966683219612160927, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &154101603 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4417955567440517670, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &154101604 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6330513423026764784, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &154101605 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5280097156800733539, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &154101606 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8000010984139768975, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &154101607 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4433200535761759613, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &154101608 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2642576341138188555, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556114762}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
@@ -583,8 +637,7 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 1078953729}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.MultiplayerHexRaceController,
-            Assembly-CSharp
+          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController, Assembly-CSharp
           m_MethodName: OnClickReturnToMainMenu
           m_Mode: 1
           m_Arguments:
@@ -701,6 +754,7 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1078953724}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
+  gameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
   _playerOrigins:
   - {fileID: 1194123993}
   - {fileID: 696378175}
@@ -763,6 +817,7 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   multiplayerSetup: {fileID: 1300603919}
+  localScoreboard: {fileID: 1897523411}
   segmentSpawner: {fileID: 1881177335}
   baseNumberOfSegments: 1
   baseStraightLineLength: 1
@@ -813,19 +868,6 @@ MonoBehaviour:
     - {x: 235, y: 567, z: -303}
     - {x: 483, y: 275, z: -368}
   - positions:
-    - {x: 660, y: -37, z: 74}
-    - {x: 404, y: -276, z: 492}
-    - {x: 212, y: -471, z: 418}
-    - {x: -37, y: -660, z: -74}
-    - {x: -276, y: -404, z: -492}
-    - {x: -471, y: -212, z: -418}
-    - {x: -660, y: 37, z: 74}
-    - {x: -404, y: 276, z: 492}
-    - {x: -212, y: 471, z: 418}
-    - {x: 37, y: 660, z: -74}
-    - {x: 276, y: 404, z: -492}
-    - {x: 471, y: 212, z: -418}
-  - positions:
     - {x: 655, y: -27, z: 82}
     - {x: 367, y: -181, z: 561}
     - {x: 170, y: -238, z: 622}
@@ -841,6 +883,34 @@ MonoBehaviour:
     - {x: 166, y: 460, z: -482}
     - {x: 206, y: 188, z: -636}
     - {x: 447, y: 152, z: -463}
+  - positions:
+    - {x: 685, y: 15, z: -53}
+    - {x: 563, y: 130, z: -380}
+    - {x: 298, y: 330, z: -543}
+    - {x: -45, y: 508, z: -463}
+    - {x: -330, y: 528, z: -198}
+    - {x: -508, y: 370, z: 138}
+    - {x: -535, y: 155, z: 380}
+    - {x: -428, y: -153, z: 535}
+    - {x: -285, y: -480, z: 413}
+    - {x: -208, y: -635, z: 155}
+    - {x: -265, y: -505, z: -130}
+    - {x: -358, y: -213, z: -308}
+    - {x: -385, y: 23, z: -373}
+    - {x: -270, y: 165, z: -508}
+    - {x: -63, y: 258, z: -528}
+    - {x: 180, y: 285, z: -363}
+    - {x: 358, y: 185, z: -105}
+    - {x: 385, y: 85, z: 188}
+    - {x: 278, y: -23, z: 423}
+    - {x: 128, y: -173, z: 528}
+    - {x: -15, y: -308, z: 363}
+    - {x: -85, y: -343, z: 113}
+    - {x: 23, y: -285, z: -130}
+    - {x: 180, y: -185, z: -315}
+    - {x: 373, y: -93, z: -385}
+    - {x: 515, y: -43, z: -278}
+    - {x: 615, y: 0, z: -128}
   spawnCrystalWithPlayerDomain: 1
   extraCrystalsToSpawnBeyondPlayerCount: 0
 --- !u!114 &1078953732
@@ -863,11 +933,11 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
+  controller: {fileID: 1078953729}
   penaltyScoreBase: 10000
   showDebugLogs: 1
   OnJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
     type: 2}
-  controller: {fileID: 1078953729}
 --- !u!1 &1194123992
 GameObject:
   m_ObjectHideFlags: 0
@@ -1286,6 +1356,41 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1897523411}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnDeclineRematch
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.Game.UI.HexRaceScoreboard, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 794137688714031000, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 927851357614173340, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -1309,7 +1414,7 @@ PrefabInstance:
     - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerHexRaceHUD, Assembly-CSharp
+      value: CosmicShore.Game.UI.HexRaceHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2143510943989971611, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1334,7 +1439,7 @@ PrefabInstance:
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerHexRaceHUD, Assembly-CSharp
+      value: CosmicShore.Game.UI.HexRaceHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 4080277108912208582, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1374,7 +1479,7 @@ PrefabInstance:
     - target: {fileID: 5054612726792906818, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerHexRaceScoreboard, Assembly-CSharp
+      value: CosmicShore.Game.UI.HexRaceScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5054612726792906828, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1619,7 +1724,7 @@ PrefabInstance:
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerHexRaceHUD, Assembly-CSharp
+      value: CosmicShore.Game.UI.HexRaceHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5838682480467937893, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1729,7 +1834,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerHexRaceController, Assembly-CSharp
+      value: CosmicShore.Game.Arcade.HexRaceController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1751,6 +1856,41 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1897523411}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnAcceptRematch
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.Game.UI.HexRaceScoreboard, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 7481915839530707293, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 7966497549685602406, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -1764,7 +1904,7 @@ PrefabInstance:
     - target: {fileID: 7966497549685602406, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.UI.MultiplayerHexRaceScoreboard, Assembly-CSharp
+      value: CosmicShore.Game.UI.HexRaceScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 8004287346060025796, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -2366,6 +2506,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   multiplayerController: {fileID: 1078953729}
+  endGameObject: {fileID: 154101607}
   scoreboardPanel: {fileID: 1556114763}
   statsContainer: {fileID: 708648002}
   statRowPrefab: {fileID: 7059799490313329322, guid: e5bce11a0462ceb468817b6050ccb94b,
@@ -2389,6 +2530,13 @@ MonoBehaviour:
   - {fileID: 708648010}
   - {fileID: 708648008}
   - {fileID: 708648006}
+  rematchInvitedPanel: {fileID: 154101602}
+  rematchReceivedPanel: {fileID: 154101608}
+  rematchReceivedText: {fileID: 154101606}
+  rematchDeniedPanel: {fileID: 154101604}
+  rematchDeniedText: {fileID: 154101603}
+  playAgainButton: {fileID: 154101605}
+  rematchPanelAutoDismissSeconds: 2
 --- !u!114 &1897523412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2416,17 +2564,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1897523407}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 20436afcb3f3470081840cc70fa3a9b3, type: 3}
+  m_Script: {fileID: 11500000, guid: 87e6ed750945438e9e08f918293fefd6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scoreTracker: {fileID: 1078953732}
-  statBindings:
-  - StatModule: {fileID: 11400000, guid: 7b5533777bcc1774ab03f64001432266, type: 2}
-    StatKey: Jousts Won
-  - StatModule: {fileID: 11400000, guid: 1682deace86b18b4db42a83f752572df, type: 2}
-    StatKey: Max Boost Time
-  - StatModule: {fileID: 11400000, guid: 51d0ae58d07dcb049970a2f4958ab4d8, type: 2}
-    StatKey: Longest Drift
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &1899528608
 GameObject:
   m_ObjectHideFlags: 0
@@ -2496,19 +2637,6 @@ MonoBehaviour:
     - {x: 445, y: 324, z: -433}
   - positions:
     - {x: 700, y: 0, z: 0}
-    - {x: 431, y: -249, z: 492}
-    - {x: 249, y: -431, z: 492}
-    - {x: 0, y: -700, z: 0}
-    - {x: -249, y: -431, z: -492}
-    - {x: -431, y: -249, z: -492}
-    - {x: -700, y: 0, z: 0}
-    - {x: -431, y: 249, z: 492}
-    - {x: -249, y: 431, z: 492}
-    - {x: 0, y: 700, z: 0}
-    - {x: 249, y: 431, z: -492}
-    - {x: 431, y: 249, z: -492}
-  - positions:
-    - {x: 700, y: 0, z: 0}
     - {x: 402, y: -179, z: 545}
     - {x: 171, y: -190, z: 652}
     - {x: 165, y: -508, z: 452}
@@ -2523,6 +2651,35 @@ MonoBehaviour:
     - {x: 165, y: 508, z: -452}
     - {x: 171, y: 190, z: -652}
     - {x: 402, y: 179, z: -545}
+  - positions:
+    - {x: 700, y: 0, z: 0}
+    - {x: 600, y: 100, z: -350}
+    - {x: 350, y: 300, z: -550}
+    - {x: 0, y: 500, z: -500}
+    - {x: -300, y: 550, z: -250}
+    - {x: -500, y: 400, z: 100}
+    - {x: -550, y: 200, z: 350}
+    - {x: -450, y: -100, z: 550}
+    - {x: -300, y: -450, z: 450}
+    - {x: -200, y: -650, z: 200}
+    - {x: -250, y: -550, z: -100}
+    - {x: -350, y: -250, z: -300}
+    - {x: -400, y: 0, z: -350}
+    - {x: -300, y: 150, z: -500}
+    - {x: -100, y: 250, z: -550}
+    - {x: 150, y: 300, z: -400}
+    - {x: 350, y: 200, z: -150}
+    - {x: 400, y: 100, z: 150}
+    - {x: 300, y: 0, z: 400}
+    - {x: 150, y: -150, z: 550}
+    - {x: 0, y: -300, z: 400}
+    - {x: -100, y: -350, z: 150}
+    - {x: 0, y: -300, z: -100}
+    - {x: 150, y: -200, z: -300}
+    - {x: 350, y: -100, z: -400}
+    - {x: 500, y: -50, z: -300}
+    - {x: 600, y: 0, z: -150}
+  useSplinePerIntensity: 00000000010000000000000000000000
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   scale: {x: 10, y: 1, z: 5}
   blocksPerSegment: 50

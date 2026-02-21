@@ -1,33 +1,34 @@
 using System;
 using CosmicShore.Systems;
+using CosmicShore.Game.UI;
 using Cysharp.Threading.Tasks;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    /// <summary>
-    /// Base controller for multiplayer game modes.
-    /// Handles network synchronization, session management, and client-server communication.
-    /// </summary>
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
         [Header("Multiplayer")]
         [SerializeField] protected MultiplayerSetup multiplayerSetup;
         
+        [Header("Rematch")]
+        [SerializeField] private Scoreboard localScoreboard;
+        
         protected virtual int InitDelayMs => 1000;
         private bool _isResetting;
-        
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            
+
             if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised += SubscribeToSessionEvents;
             }
-            
+
             InitializeAfterDelay().Forget();
         }
 
@@ -252,7 +253,7 @@ namespace CosmicShore.Game.Arcade
             // Initiate reset on all machines
             ResetForReplay_ClientRpc();
         }
-        
+
         [ClientRpc]
         void ResetForReplay_ClientRpc()
         {
@@ -262,14 +263,19 @@ namespace CosmicShore.Game.Arcade
             gameData.ResetStatsDataForReplay();
             gameData.ResetPlayers();
 
+            // Snap player camera to the vessel's new spawn position after
+            // ResetPlayers teleported it, clearing any stale cinematic position.
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
+
             if (gameData.OnResetForReplay != null)
                 gameData.OnResetForReplay.Raise();
             else
-                Debug.LogError("[MultiplayerController] OnResetForReplay Event is missing on GameData!");
-            
+                Debug.LogError("[MultiplayerController] OnResetForReplay Event missing!");
+
             OnResetForReplayCustom();
             RaiseToggleReadyButtonEvent(true);
- 
+
             if (IsServer)
                 ResetServerRoundAfterDelay().Forget();
         }
@@ -279,10 +285,67 @@ namespace CosmicShore.Game.Arcade
             await UniTask.Delay(100); 
             SetupNewRound();
         }
-        
-        protected virtual void OnResetForReplayCustom()
+
+        protected virtual void OnResetForReplayCustom() { }
+
+        // ---------------- Rematch ----------------
+
+        /// <summary>
+        /// Called by Scoreboard when local player presses Play Again.
+        /// Broadcasts rematch request to opponent.
+        /// </summary>
+        public void RequestRematch(string requesterName)
         {
-            // Override in subclass to reset game-specific elements
+            RequestRematch_ServerRpc(new FixedString64Bytes(requesterName));
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void RequestRematch_ServerRpc(FixedString64Bytes requesterName)
+        {
+            RequestRematch_ClientRpc(requesterName);
+        }
+
+        [ClientRpc]
+        void RequestRematch_ClientRpc(FixedString64Bytes requesterName)
+        {
+            string name = requesterName.ToString();
+
+            // Don't show the panel to the player who sent the request
+            if (gameData.LocalPlayer?.Name == name) return;
+
+            if (localScoreboard != null)
+                localScoreboard.ShowRematchRequest(name);
+            else
+                Debug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch request.");
+        }
+
+        /// <summary>
+        /// Called by Scoreboard when local player declines a rematch request.
+        /// Notifies the requester.
+        /// </summary>
+        public void NotifyRematchDeclined(string declinerName)
+        {
+            NotifyRematchDeclined_ServerRpc(new FixedString64Bytes(declinerName));
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void NotifyRematchDeclined_ServerRpc(FixedString64Bytes declinerName)
+        {
+            NotifyRematchDeclined_ClientRpc(declinerName);
+        }
+
+        [ClientRpc]
+        void NotifyRematchDeclined_ClientRpc(FixedString64Bytes declinerName)
+        {
+            string name = declinerName.ToString();
+
+            // Only show denied panel to the player whose request was rejected
+            if (gameData.LocalPlayer?.Name == name) return;
+
+            if (localScoreboard != null)
+                localScoreboard.ShowRematchDeclined(name);
+            else
+                Debug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch declined.");
         }
     }
 }

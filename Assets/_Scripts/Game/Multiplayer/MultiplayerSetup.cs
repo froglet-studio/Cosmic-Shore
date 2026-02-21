@@ -7,7 +7,6 @@ using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
 using CosmicShore.Soap;
-using CosmicShore.Utilities;
 using Reflex.Attributes;
 
 namespace CosmicShore.Systems

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.UI
 {
-    public class MultiplayerHexRaceScoreboard : Scoreboard
+    public class HexRaceScoreboard : Scoreboard
     {
         protected override void ShowMultiplayerView()
         {

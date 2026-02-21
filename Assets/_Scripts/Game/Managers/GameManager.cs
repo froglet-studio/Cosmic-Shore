@@ -40,6 +40,9 @@ namespace CosmicShore.Core
         {
             gameData.ResetStatsDataForReplay();
             InvokeOnResetForReplay();
+
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
 
         public virtual void ReturnToMainMenu() => LoadSceneAsync(_sceneNames.MainMenuScene).Forget();

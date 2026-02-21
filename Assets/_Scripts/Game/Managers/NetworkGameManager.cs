@@ -22,6 +22,9 @@ namespace CosmicShore.Core
         void RestartGame_ClientRpc()
         {
             InvokeOnResetForReplay();
+
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
     }
 }
