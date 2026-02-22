@@ -1290,8 +1290,8 @@ MonoBehaviour:
   cinematicLookAtCenter: {x: 0, y: 0, z: 0}
   enablePreGameCinematic: 1
   isAIAvailable: 0
-  multiplayerView: {fileID: 400393585}
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
+  multiplayerView: {fileID: 400393585}
 --- !u!114 &400393585
 MonoBehaviour:
   m_ObjectHideFlags: 0
