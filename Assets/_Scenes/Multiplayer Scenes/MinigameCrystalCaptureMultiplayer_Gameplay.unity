@@ -2249,6 +2249,7 @@ MonoBehaviour:
   enablePreGameCinematic: 1
   isAIAvailable: 0
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
+  aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   multiplayerView: {fileID: 400393584}
 --- !u!1 &420213765
 GameObject:
@@ -3453,6 +3454,7 @@ MonoBehaviour:
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
   gameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
+  aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   _playerOrigins:
   - {fileID: 1468661147}
   - {fileID: 1074736317}
