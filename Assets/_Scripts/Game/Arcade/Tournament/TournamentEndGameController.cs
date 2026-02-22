@@ -14,6 +14,9 @@ namespace CosmicShore.Game.Arcade.Tournament
         [SerializeField] GameDataSO gameData;
 
         [Header("Regular Scoreboard (to hide during tournament)")]
+        [Tooltip("The entire regular scoreboard panel (hidden so tournament scoreboard takes over)")]
+        [SerializeField] GameObject regularScoreboardPanel;
+        [Tooltip("Optional: buttons container if separate from panel")]
         [SerializeField] GameObject regularScoreboardButtons;
 
         void OnEnable()
@@ -33,6 +36,8 @@ namespace CosmicShore.Game.Arcade.Tournament
             if (TournamentManager.Instance == null || !TournamentManager.Instance.IsTournamentActive)
                 return;
 
+            if (regularScoreboardPanel)
+                regularScoreboardPanel.SetActive(false);
             if (regularScoreboardButtons)
                 regularScoreboardButtons.SetActive(false);
         }

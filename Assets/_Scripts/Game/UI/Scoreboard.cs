@@ -113,6 +113,9 @@ namespace CosmicShore.Game.UI
         {
             if (!gameData) { Debug.LogError("[Scoreboard] GameData is null!"); return; }
 
+            // During a tournament, TournamentScoreboard handles end-game display.
+            if (gameData.GameMode == GameModes.Tournament) return;
+
             HideAllRematchPanels();
 
             // Show multiplayer view when playing against opponents (online or AI).
