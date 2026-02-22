@@ -209,13 +209,9 @@ namespace CosmicShore.Game.UI
         private void SetupLocalPlayerCard()
         {
             if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null)
-            {
-                Debug.LogWarning($"[MiniGameHUD] SetupLocalPlayerCard skipped: LocalPlayer={gameData.LocalPlayer != null}, Prefab={view.PlayerScoreCardPrefab != null}");
                 return;
-            }
 
             var localPlayer = gameData.LocalPlayer;
-            Debug.Log($"[MiniGameHUD] SetupLocalPlayerCard: Name='{localPlayer.Name}', AvatarId={localPlayer.AvatarId}, Domain={localPlayer.RoundStats?.Domain}");
             var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
             var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
             card.Setup(localPlayer.Name, 0, teamColor, true);
@@ -284,21 +280,14 @@ namespace CosmicShore.Game.UI
         protected Sprite ResolveAvatarSprite(int avatarId)
         {
             if (profileIconList == null || profileIconList.profileIcons == null)
-            {
-                Debug.LogWarning($"[MiniGameHUD] ResolveAvatarSprite: profileIconList is {(profileIconList == null ? "NULL" : "has null profileIcons")}! avatarId={avatarId}");
                 return null;
-            }
 
             foreach (var icon in profileIconList.profileIcons)
             {
                 if (icon.Id == avatarId)
-                {
-                    Debug.Log($"[MiniGameHUD] ResolveAvatarSprite: Matched avatarId={avatarId} -> icon.Name='{icon.Name}', sprite={icon.IconSprite?.name ?? "NULL"}");
                     return icon.IconSprite;
-                }
             }
 
-            Debug.LogWarning($"[MiniGameHUD] ResolveAvatarSprite: No match for avatarId={avatarId}. Available IDs: [{string.Join(", ", profileIconList.profileIcons.Select(i => i.Id))}]. Falling back to first icon.");
             return profileIconList.profileIcons.Count > 0
                 ? profileIconList.profileIcons[0].IconSprite
                 : null;
