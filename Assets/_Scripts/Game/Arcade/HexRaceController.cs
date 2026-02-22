@@ -30,6 +30,7 @@ namespace CosmicShore.Game.Arcade
 
         private bool _raceEnded;
         private bool _trackSpawned;
+        private int _syncedSeed;
         private readonly NetworkVariable<int> _netCrystalsToFinish = new(0);
 
         // Single source of truth for who won — set authoritatively by server, read by end game controller
@@ -59,21 +60,26 @@ namespace CosmicShore.Game.Arcade
             await UniTask.Delay(1500, DelayType.UnscaledDeltaTime);
             if (!IsServer || _trackSpawned) return;
 
-            int currentSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
-            InitializeEnvironment_ClientRpc(currentSeed);
+            _syncedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+            InitializeEnvironment_ClientRpc(_syncedSeed);
         }
 
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer) return;
-            // Track is already spawned early; just start the game
+
+            // Re-send track initialization for any clients that missed the early spawn
+            if (!_trackSpawned)
+                _syncedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+            InitializeEnvironment_ClientRpc(_syncedSeed);
+
             base.OnCountdownTimerEnded();
         }
 
         [ClientRpc]
         void InitializeEnvironment_ClientRpc(int syncedSeed)
         {
-            if (!segmentSpawner) return;
+            if (_trackSpawned || !segmentSpawner) return;
             segmentSpawner.Seed = syncedSeed;
             segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity
                 ? baseNumberOfSegments * Intensity
