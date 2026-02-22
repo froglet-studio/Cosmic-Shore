@@ -23957,9 +23957,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cloudSaveProfileKey: player_profile
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
-  displayNameText: {fileID: 1314398021}
-  avatarImage: {fileID: 534303185}
+  displayNameText: {fileID: 231317289}
+  avatarImage: {fileID: 653179561}
   authController: {fileID: 1908113034}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &535000372
 GameObject:
   m_ObjectHideFlags: 0
@@ -109521,6 +109522,9 @@ MonoBehaviour:
   DebugFirstAppLaunch: 1
   FirstAppLaunchScreen: {fileID: 0}
   NavBar: {fileID: 1658454449}
+  usernameText: {fileID: 1314398021}
+  avatarImage: {fileID: 534303185}
+  playerDataService: {fileID: 534436446}
 --- !u!222 &8986689966932541172
 CanvasRenderer:
   m_ObjectHideFlags: 0
