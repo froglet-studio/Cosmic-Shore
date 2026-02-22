@@ -29,7 +29,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: fab0d24809f34316828f73de969ccb8b, type: 2}
   - {fileID: 11400000, guid: 7c602162ccd84a77bf52b4cfe8d1b56d, type: 2}
   - {fileID: 11400000, guid: 45940b9b19ee4ecdbe8f61770d5eb02f, type: 2}
-  Games: []
+  Games:
+  - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
+  - {fileID: 11400000, guid: 6314c903ddaceab4cbbd4c5a930101a2, type: 2}
+  - {fileID: 11400000, guid: f575ea6d5ac47f94788b26826f5e7c16, type: 2}
   TrainingGames: []
   gameplayParameter1:
     LeftHandLabel: Casual
