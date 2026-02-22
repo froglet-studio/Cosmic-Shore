@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Services.Auth;
+using CosmicShore.Soap;
 using TMPro;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
@@ -21,8 +22,11 @@ namespace CosmicShore.App.Profile
         [SerializeField] private TMP_Text displayNameText;
         [SerializeField] private Image  avatarImage;
         
-        [Header("Auth Hook ")]
+        [Header("Auth Hook")]
         [SerializeField] private AuthenticationController authController;
+
+        [Header("Game Data")]
+        [SerializeField] private GameDataSO gameData;
 
         public PlayerProfileData CurrentProfile { get; private set; }
         public bool              IsInitialized  { get; private set; }
@@ -245,6 +249,9 @@ namespace CosmicShore.App.Profile
                 avatarImage.sprite = sprite;
                 avatarImage.enabled = sprite != null;
             }
+
+            if (gameData != null)
+                gameData.LocalPlayerDisplayName = data.displayName;
         }
 
         Sprite ResolveAvatarSprite(int avatarId)
@@ -261,6 +268,8 @@ namespace CosmicShore.App.Profile
             // Fallback to first icon
             return profileIcons.profileIcons[0].IconSprite;
         }
+
+        public Sprite GetAvatarSprite(int avatarId) => ResolveAvatarSprite(avatarId);
 
         /// <summary>
         /// Forcing a UI refresh without a save (e.g. when an external system

@@ -123,12 +123,18 @@ namespace CosmicShore.Game
                 return;
 
             NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
-            NetName.Value = AuthenticationService.Instance.PlayerName;
 
-            // Sync local avatar ID to network
+            // Use the clean display name from profile service; fall back to UGS name with suffix stripped
             var profileService = FindAnyObjectByType<App.Profile.PlayerDataService>();
             if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
+            {
+                NetName.Value = profileService.CurrentProfile.displayName;
                 NetAvatarId.Value = profileService.CurrentProfile.avatarId;
+            }
+            else
+            {
+                NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
+            }
 
             InputController.Initialize();
         }
@@ -222,6 +228,17 @@ namespace CosmicShore.Game
             else
                 playerName = "Player_" + OwnerClientId;
             gameObject.name = playerName;
+        }
+
+        /// <summary>
+        /// Strips the "#XXXX" suffix that Unity Authentication appends to PlayerName.
+        /// e.g. "MyName#1234" → "MyName"
+        /// </summary>
+        static string StripPlayerNameSuffix(string ugsName)
+        {
+            if (string.IsNullOrEmpty(ugsName)) return ugsName;
+            int hashIndex = ugsName.LastIndexOf('#');
+            return hashIndex > 0 ? ugsName.Substring(0, hashIndex) : ugsName;
         }
     }
 }

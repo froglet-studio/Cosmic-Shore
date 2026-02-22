@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
@@ -8,9 +8,6 @@ namespace CosmicShore.Game.UI
     {
         [Header("Multiplayer View")]
         [SerializeField] protected MultiplayerHUDView multiplayerView;
-
-        [Header("Avatar Icons")]
-        [SerializeField] private SO_ProfileIconList profileIconList;
 
         protected Dictionary<string, PlayerScoreCard> _playerCards = new();
 
@@ -62,9 +59,9 @@ namespace CosmicShore.Game.UI
 
         protected override void OnMiniGameTurnStarted()
         {
-            // Note: We do NOT call base.OnMiniGameTurnStarted() here if we want to 
+            // Note: We do NOT call base.OnMiniGameTurnStarted() here if we want to
             // override the AI setup logic with full multiplayer card logic.
-            
+
             localRoundStats = gameData.LocalRoundStats;
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
@@ -102,7 +99,7 @@ namespace CosmicShore.Game.UI
 
             // Resolve avatar sprite from the player's AvatarId
             var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
-            if (player != null && profileIconList != null)
+            if (player != null)
             {
                 var sprite = ResolveAvatarSprite(player.AvatarId);
                 card.SetAvatar(sprite);
@@ -111,22 +108,6 @@ namespace CosmicShore.Game.UI
             _playerCards[stats.Name] = card;
 
             SubscribeToPlayerStats(stats);
-        }
-
-        private Sprite ResolveAvatarSprite(int avatarId)
-        {
-            if (profileIconList == null || profileIconList.profileIcons == null)
-                return null;
-
-            foreach (var icon in profileIconList.profileIcons)
-            {
-                if (icon.Id == avatarId)
-                    return icon.IconSprite;
-            }
-
-            return profileIconList.profileIcons.Count > 0
-                ? profileIconList.profileIcons[0].IconSprite
-                : null;
         }
 
         private void UnsubscribeFromAllStats()

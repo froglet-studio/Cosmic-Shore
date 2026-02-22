@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+using CosmicShore.App.Profile;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Screens
 {
@@ -10,6 +13,11 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField] bool DebugFirstAppLaunch = false;
         [SerializeField] GameObject FirstAppLaunchScreen;
         [SerializeField] GameObject NavBar;
+
+        [Header("Profile Display")]
+        [SerializeField] private TMP_Text usernameText;
+        [SerializeField] private Image avatarImage;
+        [SerializeField] private PlayerDataService playerDataService;
 
         enum PlayerPrefKeys
         {
@@ -25,12 +33,41 @@ namespace CosmicShore.App.UI.Screens
                 FirstAppLaunchScreen.SetActive(true);
                 NavBar.SetActive(false);
             }
+
+            if (playerDataService != null)
+            {
+                playerDataService.OnProfileChanged += RefreshProfile;
+
+                if (playerDataService.IsInitialized)
+                    RefreshProfile(playerDataService.CurrentProfile);
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= RefreshProfile;
+        }
+
+        void RefreshProfile(PlayerProfileData profile)
+        {
+            if (profile == null) return;
+
+            if (usernameText != null)
+                usernameText.text = profile.displayName;
+
+            if (avatarImage != null && playerDataService != null)
+            {
+                var sprite = playerDataService.GetAvatarSprite(profile.avatarId);
+                avatarImage.sprite = sprite;
+                avatarImage.enabled = sprite != null;
+            }
         }
 
         /// <summary>
         /// Detect whether the app has been launched in the past by looking for a specific player pref key.
-        /// This enables the app to show a special initial app flow to new users. 
-        /// 
+        /// This enables the app to show a special initial app flow to new users.
+        ///
         /// *Consider replacing this implementation with a quest progression.
         /// </summary>
         /// <returns>True if the app has never been launched before (player pref key doesn't exist). False otherwise.</returns>
