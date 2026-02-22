@@ -239,19 +239,27 @@ namespace CosmicShore.App.Profile
             if (displayNameText != null)
                 displayNameText.text = data.displayName;
 
-            var sprite = ResolveAvatarSprite(data.avatarId);
-            avatarImage.sprite  = sprite;
+            if (avatarImage != null)
+            {
+                var sprite = ResolveAvatarSprite(data.avatarId);
+                avatarImage.sprite = sprite;
+                avatarImage.enabled = sprite != null;
+            }
         }
 
         Sprite ResolveAvatarSprite(int avatarId)
         {
+            if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)
+                return null;
+
             for (int i = 0; i < profileIcons.profileIcons.Count; i++)
             {
                 if (profileIcons.profileIcons[i].Id == avatarId)
                     return profileIcons.profileIcons[i].IconSprite;
             }
 
-            return null;
+            // Fallback to first icon
+            return profileIcons.profileIcons[0].IconSprite;
         }
 
         /// <summary>
