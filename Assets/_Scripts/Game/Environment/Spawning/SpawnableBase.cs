@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Game.Spawning
 {
@@ -48,7 +49,8 @@ namespace CosmicShore.Game.Spawning
         // Runtime state
         protected System.Random rng;
         protected List<Trail> trails = new();
-        protected int intensityLevel = 1;
+        [FormerlySerializedAs("intenstyLevel")]
+        public int intensityLevel = 1;
 
         #region Abstract / Virtual Generation
 
