@@ -50,12 +50,17 @@ namespace CosmicShore.App.Profile
         {
             try
             {
+                Debug.Log("[PlayerDataService] Start() called.");
                 if (authController != null)
                 {
                     authController.OnSignedIn += HandleSignedInFromAuth;
                 }
                 OnProfileChanged += HandleProfileChanged;
-                if (UnityServices.State != ServicesInitializationState.Initialized) return;
+                if (UnityServices.State != ServicesInitializationState.Initialized)
+                {
+                    Debug.Log("[PlayerDataService] UnityServices not initialized yet, skipping auth check.");
+                    return;
+                }
                 bool canCheckAuth = true;
                 try
                 {
@@ -68,12 +73,17 @@ namespace CosmicShore.App.Profile
 
                 if (canCheckAuth && AuthenticationService.Instance.IsSignedIn)
                 {
+                    Debug.Log("[PlayerDataService] Already signed in, initializing profile...");
                     await InitializeAfterAuth();
+                }
+                else
+                {
+                    Debug.Log("[PlayerDataService] Not signed in yet, waiting for auth callback.");
                 }
             }
             catch (Exception e)
             {
-              // TODO handle exception
+                Debug.LogError($"[PlayerDataService] Start() exception: {e.Message}");
             }
         }
 
@@ -81,6 +91,7 @@ namespace CosmicShore.App.Profile
         {
             try
             {
+                Debug.Log($"[PlayerDataService] HandleSignedInFromAuth called. playerId={playerId}, IsInitialized={IsInitialized}");
                 if (IsInitialized)
                     return;
 
@@ -88,15 +99,19 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                 // TODO handle exception
+                Debug.LogError($"[PlayerDataService] HandleSignedInFromAuth exception: {e.Message}");
             }
         }
 
         private async Task InitializeAfterAuth()
         {
             if (IsInitialized)
+            {
+                Debug.Log("[PlayerDataService] InitializeAfterAuth skipped — already initialized.");
                 return;
+            }
 
+            Debug.Log("[PlayerDataService] InitializeAfterAuth starting...");
             string playerId        = null;
             bool   canUseCloudSave = false;
 
@@ -121,6 +136,7 @@ namespace CosmicShore.App.Profile
             await LoadOrCreateProfileAsync(playerId, canUseCloudSave);
 
             IsInitialized = true;
+            Debug.Log($"[PlayerDataService] Profile initialized. displayName='{CurrentProfile?.displayName}', avatarId={CurrentProfile?.avatarId}, userId='{CurrentProfile?.userId}'");
             OnProfileChanged?.Invoke(CurrentProfile);
         }
 
@@ -141,15 +157,17 @@ namespace CosmicShore.App.Profile
                 if (result.TryGetValue(cloudSaveProfileKey, out var item))
                 {
                     var json = item.Value.GetAs<string>();
+                    Debug.Log($"[PlayerDataService] Cloud Save JSON loaded: {json}");
                     var data = JsonUtility.FromJson<PlayerProfileData>(json);
 
                     if (data != null)
                     {
                         CurrentProfile = data;
+                        Debug.Log($"[PlayerDataService] Cloud profile parsed OK. displayName='{data.displayName}', avatarId={data.avatarId}");
                         return;
                     }
 
-                    Debug.LogWarning("[UgsPlayerProfileService] Failed to parse profile JSON. Creating default.");
+                    Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Creating default.");
                     CreateLocalDefaultProfile(playerId);
                 }
                 else
@@ -212,8 +230,12 @@ namespace CosmicShore.App.Profile
             try
             {
                 if (CurrentProfile == null)
+                {
+                    Debug.LogWarning("[PlayerDataService] SetAvatarId called but CurrentProfile is null!");
                     return;
+                }
 
+                Debug.Log($"[PlayerDataService] SetAvatarId: old={CurrentProfile.avatarId}, new={avatarId}");
                 CurrentProfile.avatarId = avatarId;
                 OnProfileChanged?.Invoke(CurrentProfile);
 
@@ -234,8 +256,12 @@ namespace CosmicShore.App.Profile
             try
             {
                 if (CurrentProfile == null)
+                {
+                    Debug.LogWarning("[PlayerDataService] SetDisplayNameAsync called but CurrentProfile is null!");
                     return;
+                }
 
+                Debug.Log($"[PlayerDataService] SetDisplayNameAsync: old='{CurrentProfile.displayName}', new='{displayName}'");
                 CurrentProfile.displayName = displayName;
                 OnProfileChanged?.Invoke(CurrentProfile);
 
@@ -253,6 +279,8 @@ namespace CosmicShore.App.Profile
         
         void HandleProfileChanged(PlayerProfileData data)
         {
+            Debug.Log($"[PlayerDataService] HandleProfileChanged: displayName='{data.displayName}', avatarId={data.avatarId}");
+
             if (displayNameText != null)
                 displayNameText.text = data.displayName;
 
@@ -267,6 +295,11 @@ namespace CosmicShore.App.Profile
             {
                 gameData.LocalPlayerDisplayName = data.displayName;
                 gameData.LocalPlayerAvatarId = data.avatarId;
+                Debug.Log($"[PlayerDataService] -> GameDataSO updated: LocalPlayerDisplayName='{gameData.LocalPlayerDisplayName}', LocalPlayerAvatarId={gameData.LocalPlayerAvatarId}");
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerDataService] HandleProfileChanged: gameData is null, cannot update GameDataSO!");
             }
         }
 

@@ -80,6 +80,7 @@ namespace CosmicShore.Game.UI
 
         private void InitializePlayerCards()
         {
+            Debug.Log($"[MultiplayerHUD] InitializePlayerCards: RoundStatsList.Count={gameData.RoundStatsList?.Count}, Players.Count={gameData.Players?.Count}");
             view.ClearPlayerList();
             _playerCards.Clear();
 
@@ -95,14 +96,22 @@ namespace CosmicShore.Game.UI
             var isLocal = gameData.LocalPlayer != null && stats.Name == gameData.LocalPlayer.Name;
             var teamColor = view.GetColorForDomain(stats.Domain);
 
+            Debug.Log($"[MultiplayerHUD] CreateCardForPlayer: stats.Name='{stats.Name}', stats.Domain={stats.Domain}, isLocal={isLocal}");
+
             card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal);
 
             // Resolve avatar sprite from the player's AvatarId
             var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
             if (player != null)
             {
+                Debug.Log($"[MultiplayerHUD] CreateCardForPlayer: Found player for '{stats.Name}', AvatarId={player.AvatarId}");
                 var sprite = ResolveAvatarSprite(player.AvatarId);
+                Debug.Log($"[MultiplayerHUD] CreateCardForPlayer: ResolveAvatarSprite returned {(sprite != null ? sprite.name : "NULL")}");
                 card.SetAvatar(sprite);
+            }
+            else
+            {
+                Debug.LogWarning($"[MultiplayerHUD] CreateCardForPlayer: No player found matching stats.Name='{stats.Name}'. Players list: [{string.Join(", ", gameData.Players.Select(p => $"'{p.Name}'"))}]");
             }
 
             _playerCards[stats.Name] = card;
