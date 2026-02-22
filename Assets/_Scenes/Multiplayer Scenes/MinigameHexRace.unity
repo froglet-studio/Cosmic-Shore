@@ -263,6 +263,62 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &435566727
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 435566729}
+  - component: {fileID: 435566728}
+  m_Layer: 0
+  m_Name: TournamentScoreboard
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &435566728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 435566727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf971b791c7b4cdf808d6825880df26b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  tournamentPanel: {fileID: 0}
+  roundHeaderText: {fileID: 0}
+  roundResultText: {fileID: 0}
+  tallyText: {fileID: 0}
+  scheduleText: {fileID: 0}
+  finalResultPanel: {fileID: 0}
+  finalResultHeaderText: {fileID: 0}
+  finalResultDetailText: {fileID: 0}
+  nextGameButton: {fileID: 0}
+  nextGameButtonText: {fileID: 0}
+  returnToMenuButton: {fileID: 0}
+--- !u!4 &435566729
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 435566727}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &454211663
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -534,6 +590,52 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &964255481
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 964255483}
+  - component: {fileID: 964255482}
+  m_Layer: 0
+  m_Name: TournamentEndGameController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &964255482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964255481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bc3ff14797e4fe9a9d55e1659d83ceb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  regularScoreboardButtons: {fileID: 0}
+--- !u!4 &964255483
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964255481}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -637,8 +739,7 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 1078953729}
-          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController,
-            Assembly-CSharp
+          m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController, Assembly-CSharp
           m_MethodName: OnClickReturnToMainMenu
           m_Mode: 1
           m_Arguments:
@@ -934,11 +1035,11 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
+  controller: {fileID: 1078953729}
   penaltyScoreBase: 10000
   showDebugLogs: 1
   OnJoustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
     type: 2}
-  controller: {fileID: 1078953729}
 --- !u!1 &1194123992
 GameObject:
   m_ObjectHideFlags: 0
@@ -2775,3 +2876,5 @@ SceneRoots:
   - {fileID: 420213768}
   - {fileID: 1300603918}
   - {fileID: 1488072648}
+  - {fileID: 964255483}
+  - {fileID: 435566729}
