@@ -23957,8 +23957,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cloudSaveProfileKey: player_profile
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
-  displayNameText: {fileID: 231317289}
-  avatarImage: {fileID: 653179561}
+  displayNameText: {fileID: 1314398021}
+  avatarImage: {fileID: 534303185}
   authController: {fileID: 1908113034}
 --- !u!1 &535000372
 GameObject:
