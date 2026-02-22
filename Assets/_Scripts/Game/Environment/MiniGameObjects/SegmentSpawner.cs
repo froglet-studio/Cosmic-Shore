@@ -106,7 +106,12 @@ public class SegmentSpawner : MonoBehaviour
     {
         var worldOrigin = origin + transform.position;
 
-        if (Radius > 0 && StraightLineLength == 0)
+        if (NumberOfSegments <= 1)
+        {
+            // Single segment: place at origin, no extra rotation.
+            segment.SetPositionAndRotation(worldOrigin, Quaternion.identity);
+        }
+        else if (Radius > 0 && StraightLineLength == 0)
         {
             segment.position = Random.insideUnitSphere * Radius + worldOrigin;
             segment.rotation = Random.rotation;
@@ -119,7 +124,7 @@ public class SegmentSpawner : MonoBehaviour
         }
         else
         {
-            segment.position = worldOrigin;
+            segment.SetPositionAndRotation(worldOrigin, Quaternion.identity);
         }
     }
 
