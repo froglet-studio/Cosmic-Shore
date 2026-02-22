@@ -14,6 +14,8 @@ namespace CosmicShore.App.Profile
 {
     public class PlayerDataService : MonoBehaviour
     {
+        public static PlayerDataService Instance { get; private set; }
+
         [Header("Cloud Save")]
         [SerializeField] private string cloudSaveProfileKey = "player_profile";
         [SerializeField] private SO_ProfileIconList profileIcons;
@@ -32,7 +34,18 @@ namespace CosmicShore.App.Profile
         public bool              IsInitialized  { get; private set; }
 
         public event Action<PlayerProfileData> OnProfileChanged;
-        
+
+        void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+
         async void Start()
         {
             try
@@ -251,7 +264,10 @@ namespace CosmicShore.App.Profile
             }
 
             if (gameData != null)
+            {
                 gameData.LocalPlayerDisplayName = data.displayName;
+                gameData.LocalPlayerAvatarId = data.avatarId;
+            }
         }
 
         Sprite ResolveAvatarSprite(int avatarId)

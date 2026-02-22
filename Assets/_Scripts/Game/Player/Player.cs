@@ -125,7 +125,7 @@ namespace CosmicShore.Game
             NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
             // Use the clean display name from profile service; fall back to UGS name with suffix stripped
-            var profileService = FindAnyObjectByType<App.Profile.PlayerDataService>();
+            var profileService = App.Profile.PlayerDataService.Instance;
             if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
             {
                 NetName.Value = profileService.CurrentProfile.displayName;

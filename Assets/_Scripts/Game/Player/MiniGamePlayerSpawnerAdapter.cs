@@ -36,15 +36,18 @@ namespace CosmicShore.Game
             string displayName = "HumanJade";
             int avatarId = 0;
 
-            var profileService = FindAnyObjectByType<PlayerDataService>();
+            var profileService = PlayerDataService.Instance;
             if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
             {
                 displayName = profileService.CurrentProfile.displayName;
                 avatarId = profileService.CurrentProfile.avatarId;
             }
-            else if (!string.IsNullOrEmpty(_gameData.LocalPlayerDisplayName))
+            else
             {
-                displayName = _gameData.LocalPlayerDisplayName;
+                if (!string.IsNullOrEmpty(_gameData.LocalPlayerDisplayName))
+                    displayName = _gameData.LocalPlayerDisplayName;
+                if (_gameData.LocalPlayerAvatarId != 0)
+                    avatarId = _gameData.LocalPlayerAvatarId;
             }
 
             return new IPlayer.InitializeData

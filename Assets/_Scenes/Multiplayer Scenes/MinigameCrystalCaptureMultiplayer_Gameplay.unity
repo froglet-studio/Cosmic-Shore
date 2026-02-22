@@ -2239,6 +2239,7 @@ MonoBehaviour:
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   minConnectingSeconds: 5
   isAIAvailable: 0
+  profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   multiplayerView: {fileID: 400393584}
 --- !u!1 &420213765
 GameObject:

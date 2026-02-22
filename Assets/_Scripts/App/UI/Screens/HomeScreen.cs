@@ -34,6 +34,10 @@ namespace CosmicShore.App.UI.Screens
                 NavBar.SetActive(false);
             }
 
+            // Prefer the Inspector reference; fall back to singleton (survives scene reload via DontDestroyOnLoad)
+            if (playerDataService == null)
+                playerDataService = PlayerDataService.Instance;
+
             if (playerDataService != null)
             {
                 playerDataService.OnProfileChanged += RefreshProfile;
