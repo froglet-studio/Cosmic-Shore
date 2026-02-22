@@ -1,6 +1,4 @@
 using UnityEngine;
-using System.Collections;
-using System;
 
 namespace CosmicShore.Core
 {
@@ -20,7 +18,6 @@ namespace CosmicShore.Core
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
         private PrismTeamManager teamManager;
-        private Coroutine activeStateCoroutine;
 
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
@@ -46,23 +43,21 @@ namespace CosmicShore.Core
 
         public void ActivateShield(float? duration = null)
         {
+            // Cancel any pending timer before applying new state
+            PrismTimerManager.Instance?.CancelTimers(this);
+
+            ApplyShieldState();
+
             if (duration.HasValue)
             {
-                if (activeStateCoroutine != null)
-                {
-                    StopCoroutine(activeStateCoroutine);
-                }
-
-                activeStateCoroutine = StartCoroutine(TimedShieldCoroutine(duration.Value));
-            }
-            else
-            {
-                ApplyShieldState();
+                PrismTimerManager.Instance?.ScheduleShieldDeactivation(this, duration.Value);
             }
         }
 
         public void ActivateSuperShield()
         {
+            PrismTimerManager.Instance?.CancelTimers(this);
+
             prism.prismProperties.IsSuperShielded = true;
             prism.prismProperties.IsDangerous = false;
 
@@ -75,19 +70,24 @@ namespace CosmicShore.Core
 
         public void DeactivateShields(float? delay = null)
         {
+            PrismTimerManager.Instance?.CancelTimers(this);
+
             if (delay.HasValue)
             {
-                if (activeStateCoroutine != null)
-                {
-                    StopCoroutine(activeStateCoroutine);
-                }
-
-                activeStateCoroutine = StartCoroutine(DelayedShieldDeactivationCoroutine(delay.Value));
+                PrismTimerManager.Instance?.ScheduleShieldDeactivation(this, delay.Value);
             }
             else
             {
                 ApplyNormalState();
             }
+        }
+
+        /// <summary>
+        /// Called by PrismTimerManager when a scheduled deactivation timer expires.
+        /// </summary>
+        internal void ExecuteTimerDeactivation()
+        {
+            ApplyNormalState();
         }
 
         private void ApplyShieldState()
@@ -114,19 +114,14 @@ namespace CosmicShore.Core
             CurrentState = BlockState.Normal;
         }
 
-        private IEnumerator TimedShieldCoroutine(float duration)
+        private void OnDisable()
         {
-            ApplyShieldState();
-            yield return new WaitForSeconds(duration);
-            ApplyNormalState();
-            activeStateCoroutine = null;
+            PrismTimerManager.Instance?.CancelTimers(this);
         }
 
-        private IEnumerator DelayedShieldDeactivationCoroutine(float delay)
+        private void OnDestroy()
         {
-            yield return new WaitForSeconds(delay);
-            ApplyNormalState();
-            activeStateCoroutine = null;
+            PrismTimerManager.Instance?.CancelTimers(this);
         }
     }
 }
