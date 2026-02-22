@@ -17,6 +17,7 @@ namespace CosmicShore.Game
             if (Crystal == null) return;
             var crystal = Instantiate(Crystal, container.transform);
             crystal.transform.localPosition = Vector3.zero;
+            crystal.ChangeDomain(domain);
         }
 
         protected override int GetParameterHash()
