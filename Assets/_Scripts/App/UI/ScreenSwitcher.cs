@@ -71,6 +71,7 @@ namespace CosmicShore.App.UI
         [SerializeField] private Transform NavBar;
         [SerializeField] private HangarScreen HangarMenu;
         [SerializeField] private LeaderboardsMenu LeaderboardMenu;
+        [SerializeField] private EpisodeScreen EpisodeMenu;
 
         [Header("Arcade Panel (separate)")]
         [Tooltip("Root GameObject for the Arcade panel/modal. It should start disabled and will be enabled when the Arcade tab is clicked.")]
@@ -393,8 +394,19 @@ namespace CosmicShore.App.UI
 
         public void OnClickPortNav()
         {
-            if (LeaderboardMenu != null)
+            // PORT screen now shows Episodes instead of Leaderboards
+            if (EpisodeMenu != null)
+                EpisodeMenu.LoadView();
+            else if (LeaderboardMenu != null)
                 LeaderboardMenu.LoadView();
+
+            NavigateTo(MenuScreens.PORT);
+        }
+
+        public void OnClickEpisodesNav()
+        {
+            if (EpisodeMenu != null)
+                EpisodeMenu.LoadView();
 
             NavigateTo(MenuScreens.PORT);
         }

@@ -267,6 +267,7 @@ namespace CosmicShore.App.Profile
             {
                 gameData.LocalPlayerDisplayName = data.displayName;
                 gameData.LocalPlayerAvatarId = data.avatarId;
+                gameData.LocalPlayerXP = data.xp;
             }
         }
 
@@ -286,6 +287,82 @@ namespace CosmicShore.App.Profile
         }
 
         public Sprite GetAvatarSprite(int avatarId) => ResolveAvatarSprite(avatarId);
+
+        /// <summary>
+        /// Returns the player's current XP, or 0 if no profile is loaded.
+        /// </summary>
+        public int GetXP()
+        {
+            return CurrentProfile?.xp ?? 0;
+        }
+
+        /// <summary>
+        /// Adds XP to the player's profile and syncs to Cloud Save.
+        /// Returns the new total XP.
+        /// </summary>
+        public async void AddXP(int amount)
+        {
+            try
+            {
+                if (CurrentProfile == null || amount <= 0)
+                    return;
+
+                CurrentProfile.xp += amount;
+                OnProfileChanged?.Invoke(CurrentProfile);
+
+                bool canUseCloudSave = UnityServices.State == ServicesInitializationState.Initialized &&
+                                       AuthenticationService.Instance != null &&
+                                       AuthenticationService.Instance.IsSignedIn;
+
+                await SaveProfileAsync(canUseCloudSave);
+                Debug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[PlayerDataService] AddXP failed: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Marks a reward as unlocked in the player's profile.
+        /// </summary>
+        public async void UnlockReward(string rewardId)
+        {
+            try
+            {
+                if (CurrentProfile == null || string.IsNullOrEmpty(rewardId))
+                    return;
+
+                if (CurrentProfile.unlockedRewardIds == null)
+                    CurrentProfile.unlockedRewardIds = new System.Collections.Generic.List<string>();
+
+                if (CurrentProfile.unlockedRewardIds.Contains(rewardId))
+                    return;
+
+                CurrentProfile.unlockedRewardIds.Add(rewardId);
+                OnProfileChanged?.Invoke(CurrentProfile);
+
+                bool canUseCloudSave = UnityServices.State == ServicesInitializationState.Initialized &&
+                                       AuthenticationService.Instance != null &&
+                                       AuthenticationService.Instance.IsSignedIn;
+
+                await SaveProfileAsync(canUseCloudSave);
+                Debug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[PlayerDataService] UnlockReward failed: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Checks if a reward has been unlocked.
+        /// </summary>
+        public bool IsRewardUnlocked(string rewardId)
+        {
+            return CurrentProfile?.unlockedRewardIds != null &&
+                   CurrentProfile.unlockedRewardIds.Contains(rewardId);
+        }
 
         /// <summary>
         /// Forcing a UI refresh without a save (e.g. when an external system
