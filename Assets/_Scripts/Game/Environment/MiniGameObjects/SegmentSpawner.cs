@@ -24,6 +24,13 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] bool InitializeOnStart;
     [SerializeField] public int NumberOfSegments = 1;
 
+    [Header("Segment Layout")]
+    [SerializeField] public Vector3 origin = Vector3.zero;
+    [SerializeField] public float Radius;
+    [SerializeField] public float StraightLineLength;
+    [SerializeField] public float RotationAmount;
+    [HideInInspector] public int DifficultyAngle = 90;
+
     // Runtime state
     private GameObject SpawnedSegmentContainer;
     private List<Trail> trails = new();
@@ -90,7 +97,29 @@ public class SegmentSpawner : MonoBehaviour
             if (!spawned) continue;
 
             spawned.transform.SetParent(SpawnedSegmentContainer.transform);
+            LayoutSegment(spawned.transform, i);
             trails.AddRange(spawnable.GetTrails());
+        }
+    }
+
+    void LayoutSegment(Transform segment, int index)
+    {
+        var worldOrigin = origin + transform.position;
+
+        if (Radius > 0 && StraightLineLength == 0)
+        {
+            segment.position = Random.insideUnitSphere * Radius + worldOrigin;
+            segment.rotation = Random.rotation;
+        }
+        else if (StraightLineLength > 0)
+        {
+            segment.position = new Vector3(0, 0, index * StraightLineLength) + worldOrigin;
+            if (RotationAmount != 0)
+                segment.Rotate(Vector3.forward, index * RotationAmount);
+        }
+        else
+        {
+            segment.position = worldOrigin;
         }
     }
 
