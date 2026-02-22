@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Spawning
     {
         [Header("Spawnable Base")]
         [SerializeField] protected int seed;
-        [SerializeField] protected Domains domain = Domains.Blue;
+        [SerializeField] public Domains domain = Domains.Blue;
 
         [Header("Tree Structure")]
         [Tooltip("Child generators to evaluate at each generated point. " +

@@ -1,5 +1,6 @@
 using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Soap;
 using UnityEngine;
 using Obvious.Soap;
@@ -86,8 +87,18 @@ public class SegmentSpawner : MonoBehaviour
 
         int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
+        // Collect active player domains so spawned segments cycle through them
+        var playerDomains = GetActivePlayerDomains();
+
         for (int i = 0; i < NumberOfSegments; i++)
         {
+            // Cycle through player domains for visual variety
+            if (playerDomains.Count > 0)
+            {
+                var segmentDomain = playerDomains[i % playerDomains.Count];
+                SetDomainOnSpawnables(segmentDomain);
+            }
+
             var spawnable = SelectSpawnable(currentIntensity);
             if (spawnable == null) continue;
 
@@ -179,5 +190,42 @@ public class SegmentSpawner : MonoBehaviour
 
         for (int i = 0; i < spawnSegmentWeights.Count; i++)
             spawnSegmentWeights[i] = spawnSegmentWeights[i] * (1 / totalWeight);
+    }
+
+    /// <summary>
+    /// Returns the list of unique player domains from current game data.
+    /// Falls back to {Jade, Ruby, Gold} if no players are available yet.
+    /// </summary>
+    List<Domains> GetActivePlayerDomains()
+    {
+        if (gameData != null && gameData.Players != null && gameData.Players.Count > 0)
+        {
+            var domains = gameData.Players
+                .Select(p => p.Domain)
+                .Where(d => d is not (Domains.None or Domains.Unassigned))
+                .Distinct()
+                .ToList();
+
+            if (domains.Count > 0)
+                return domains;
+        }
+
+        // Fallback: use the three assignable domains
+        return new List<Domains> { Domains.Jade, Domains.Ruby, Domains.Gold };
+    }
+
+    void SetDomainOnSpawnables(Domains domain)
+    {
+        if (spawnableSegments != null)
+        {
+            foreach (var s in spawnableSegments)
+                if (s != null) s.domain = domain;
+        }
+
+        if (spawnableByIntensity != null)
+        {
+            foreach (var s in spawnableByIntensity)
+                if (s != null) s.domain = domain;
+        }
     }
 }
