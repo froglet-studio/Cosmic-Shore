@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Soap;
 using UnityEngine;
 using Obvious.Soap;
+using CosmicShore.Core;
 
 public class SegmentSpawner : MonoBehaviour
 {
