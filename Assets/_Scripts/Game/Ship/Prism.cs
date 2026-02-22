@@ -366,10 +366,8 @@ namespace CosmicShore.Core
 
         private void OnDestroy()
         {
-            if (meshRenderer != null && meshRenderer.material != null)
-            {
-                Destroy(meshRenderer.material);
-            }
+            // No material cleanup needed — we use sharedMaterial exclusively,
+            // so no per-instance material clones are created.
         }
     }
 }
