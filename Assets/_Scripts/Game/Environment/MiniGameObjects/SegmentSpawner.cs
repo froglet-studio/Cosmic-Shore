@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Models.Enums;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Soap;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -130,8 +131,18 @@ public class SegmentSpawner : MonoBehaviour
         // [Optimization] Cache intensity level once to avoid variable access overhead in the loop
         int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
+        // Collect active player domains so spawned segments cycle through them
+        var playerDomains = GetActivePlayerDomains();
+
         for (int i = 0; i < NumberOfSegments; i++)
         {
+            // Cycle through player domains for visual variety
+            if (playerDomains.Count > 0)
+            {
+                var segmentDomain = playerDomains[i % playerDomains.Count];
+                SetDomainOnSpawnables(segmentDomain);
+            }
+
             var spawned = SpawnRandom(currentIntensity);
 
             if (!spawned) continue;
@@ -467,5 +478,42 @@ public class SegmentSpawner : MonoBehaviour
         float z = row * CellSize * Mathf.Sqrt(3) + (col % 2 == 0 ? 0 : CellSize * Mathf.Sqrt(3) / 2);
         spawned.transform.position = new Vector3(x, 0, z) + origin + transform.position;
         spawned.transform.rotation = Quaternion.Euler(0, random.Next(0, 6) * 60, 0);
+    }
+
+    /// <summary>
+    /// Returns the list of unique player domains from current game data.
+    /// Falls back to {Jade, Ruby, Gold} if no players are available yet.
+    /// </summary>
+    List<Domains> GetActivePlayerDomains()
+    {
+        if (gameData != null && gameData.Players != null && gameData.Players.Count > 0)
+        {
+            var domains = gameData.Players
+                .Select(p => p.Domain)
+                .Where(d => d is not (Domains.None or Domains.Unassigned))
+                .Distinct()
+                .ToList();
+
+            if (domains.Count > 0)
+                return domains;
+        }
+
+        // Fallback: use the three assignable domains
+        return new List<Domains> { Domains.Jade, Domains.Ruby, Domains.Gold };
+    }
+
+    void SetDomainOnSpawnables(Domains domain)
+    {
+        if (spawnableSegments != null)
+        {
+            foreach (var s in spawnableSegments)
+                if (s != null) s.domain = domain;
+        }
+
+        if (spawnableByIntensity != null)
+        {
+            foreach (var s in spawnableByIntensity)
+                if (s != null) s.domain = domain;
+        }
     }
 }
