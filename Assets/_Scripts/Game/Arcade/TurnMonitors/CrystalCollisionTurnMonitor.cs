@@ -60,7 +60,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (optionalEnvironment)
             {
-                return optionalEnvironment.waypoints[optionalEnvironment.intenstyLevel - 1].positions.Count * optionalLaps;
+                return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
             }
 
             if (CrystalCollisions != 0) return CrystalCollisions;
