@@ -33,6 +33,10 @@ namespace CosmicShore.Game
         [Tooltip("Game list used to look up available ships for AI opponents. If unset, AI defaults to Sparrow.")]
         [SerializeField] SO_GameList gameList;
 
+        [Header("AI Profiles")]
+        [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
+        [SerializeField] SO_AIProfileList aiProfileList;
+
         [Header("Spawn Origins")]
         [SerializeField] protected Transform[] _playerOrigins;
 
@@ -173,6 +177,9 @@ namespace CosmicShore.Game
             if (game != null && game.MaxPlayers > 1)
                 aiCount = game.MaxPlayers - 1;
 
+            // Pick AI profiles for unique names
+            var pickedProfiles = aiProfileList != null ? aiProfileList.PickRandom(aiCount) : null;
+
             for (int i = 0; i < aiCount; i++)
             {
                 var aiPlayerNO = Instantiate(playerPrefabNO);
@@ -204,8 +211,13 @@ namespace CosmicShore.Game
                 var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
                 var aiVesselType = PickAIVesselType();
 
+                // Use AI profile name if available, otherwise fall back to generic name
+                string aiName = (pickedProfiles != null && i < pickedProfiles.Count && !string.IsNullOrEmpty(pickedProfiles[i].Name))
+                    ? pickedProfiles[i].Name
+                    : $"AI Pilot {i + 1}";
+
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
-                aiPlayer.NetName.Value = $"AI Pilot {i + 1}";
+                aiPlayer.NetName.Value = aiName;
                 aiPlayer.NetDomain.Value = aiDomain;
                 aiPlayer.NetIsAI.Value = true;
 

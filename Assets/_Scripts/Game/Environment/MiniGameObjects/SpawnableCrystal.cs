@@ -14,6 +14,7 @@ namespace CosmicShore.Game
 
             var crystal = Instantiate(Crystal);
             crystal.transform.SetParent(container.transform);
+            crystal.ChangeDomain(domain);
 
             return container;
         }

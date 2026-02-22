@@ -82,6 +82,7 @@ namespace CosmicShore.Game.UI
         {
             view.ClearPlayerList();
             _playerCards.Clear();
+            AssignAIProfiles();
 
             foreach (var stats in gameData.RoundStatsList)
             {
@@ -97,13 +98,18 @@ namespace CosmicShore.Game.UI
 
             card.Setup(stats.Name, GetInitialCardValue(stats), teamColor, isLocal);
 
-            // Resolve avatar sprite from the player's AvatarId
-            var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
-            if (player != null)
+            // Resolve avatar: for non-local players, try AI profile first
+            Sprite avatarSprite = null;
+            if (!isLocal)
+                avatarSprite = ResolveAIAvatarSprite(stats.Name);
+
+            if (avatarSprite == null)
             {
-                var sprite = ResolveAvatarSprite(player.AvatarId);
-                card.SetAvatar(sprite);
+                var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
+                if (player != null)
+                    avatarSprite = ResolveAvatarSprite(player.AvatarId);
             }
+            card.SetAvatar(avatarSprite);
 
             _playerCards[stats.Name] = card;
 

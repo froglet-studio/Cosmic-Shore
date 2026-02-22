@@ -45,11 +45,13 @@ namespace CosmicShore.Game.UI
 
         [Header("Avatar Icons")]
         [SerializeField] protected SO_ProfileIconList profileIconList;
+        [SerializeField] protected SO_AIProfileList aiProfileList;
 
         protected IRoundStats localRoundStats;
         protected Dictionary<string, PlayerScoreCard> _aiCards = new();
         private Dictionary<IRoundStats, Action> _aiScoreHandlers = new();
         private PlayerScoreCard _localPlayerCard;
+        private Dictionary<string, AIProfile> _assignedAIProfiles = new();
 
         private CancellationTokenSource _connectingCts;
         private bool _clientReady;
@@ -235,6 +237,7 @@ namespace CosmicShore.Game.UI
         {
             _aiCards.Clear();
             _aiScoreHandlers.Clear();
+            AssignAIProfiles();
 
             foreach (var stats in gameData.RoundStatsList)
             {
@@ -244,13 +247,15 @@ namespace CosmicShore.Game.UI
                 var teamColor = view.GetColorForDomain(stats.Domain);
                 card.Setup(stats.Name, (int)stats.Score, teamColor, false);
 
-                // Set avatar for AI players
-                var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
-                if (player != null)
+                // Resolve avatar: try AI profile first, then fall back to player AvatarId
+                var avatarSprite = ResolveAIAvatarSprite(stats.Name);
+                if (avatarSprite == null)
                 {
-                    var sprite = ResolveAvatarSprite(player.AvatarId);
-                    card.SetAvatar(sprite);
+                    var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
+                    if (player != null)
+                        avatarSprite = ResolveAvatarSprite(player.AvatarId);
                 }
+                card.SetAvatar(avatarSprite);
 
                 _aiCards[stats.Name] = card;
 
@@ -291,6 +296,45 @@ namespace CosmicShore.Game.UI
             return profileIconList.profileIcons.Count > 0
                 ? profileIconList.profileIcons[0].IconSprite
                 : null;
+        }
+
+        /// <summary>
+        /// Assigns random AI profiles from the AI profile list to each AI player.
+        /// Cached in _assignedAIProfiles so the same profile is used throughout the game.
+        /// </summary>
+        protected void AssignAIProfiles()
+        {
+            _assignedAIProfiles.Clear();
+            if (aiProfileList == null || aiProfileList.aiProfiles == null || aiProfileList.aiProfiles.Count == 0)
+                return;
+
+            int aiCount = 0;
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == localRoundStats) continue;
+                aiCount++;
+            }
+
+            var picked = aiProfileList.PickRandom(aiCount);
+            int idx = 0;
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == localRoundStats) continue;
+                if (idx < picked.Count)
+                    _assignedAIProfiles[stats.Name] = picked[idx];
+                idx++;
+            }
+        }
+
+        /// <summary>
+        /// Returns the avatar sprite for an AI player from the assigned AI profile.
+        /// Returns null if no AI profile is assigned for this player name.
+        /// </summary>
+        protected Sprite ResolveAIAvatarSprite(string playerName)
+        {
+            if (_assignedAIProfiles.TryGetValue(playerName, out var profile))
+                return profile.AvatarSprite;
+            return null;
         }
 
         private void ResetForReplay()

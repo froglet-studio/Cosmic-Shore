@@ -34,7 +34,7 @@ public class SpawnableHelix : SpawnableAbstractBase
             var y = firstOrderRadius * (Mathf.Cos(t) * yc1) + (secondOrderRadius * (Mathf.Cos(t*yc2 + yc3) * yc4));
             var position = new Vector3(x, y, t*30f);
             var lookPosition = (block == 0) ? position : trail.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, scale, prism, container, Domains.Gold);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, scale, prism, container, domain);
         }
 
         trails.Add(trail);
