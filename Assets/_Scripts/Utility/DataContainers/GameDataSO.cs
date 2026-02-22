@@ -211,24 +211,31 @@ namespace CosmicShore.Soap
 
         public void AddPlayer(IPlayer p)
         {
-            if (p == null) 
+            if (p == null)
                 return;
+
+            Debug.Log($"[GameDataSO] AddPlayer: Name='{p.Name}', AvatarId={p.AvatarId}, Domain={p.RoundStats?.Domain}, IsLocalUser={p.IsLocalUser}, RoundStats.Name='{p.RoundStats?.Name}'");
 
             // Avoid duplicates by Name
             if (Players.All(player => player.Name != p.Name))
                 Players.Add(p);
-            
-            if (RoundStatsList.All(rs => rs.Name != p.Name)) 
+            else
+                Debug.LogWarning($"[GameDataSO] AddPlayer: Duplicate player Name='{p.Name}', not adding to Players list.");
+
+            if (RoundStatsList.All(rs => rs.Name != p.Name))
                 RoundStatsList.Add(p.RoundStats);
-            
+            else
+                Debug.LogWarning($"[GameDataSO] AddPlayer: Duplicate RoundStats Name='{p.Name}', not adding to RoundStatsList.");
+
             if (p.IsLocalUser)
             {
                 LocalPlayer = p;
                 LocalRoundStats = p.RoundStats;
+                Debug.Log($"[GameDataSO] AddPlayer: Set LocalPlayer='{p.Name}', AvatarId={p.AvatarId}");
             }
-            
+
             p.ResetForPlay();
-            
+
             if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
 

@@ -97,45 +97,59 @@ namespace CosmicShore.Game
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
-            if (!IsServer) 
+            Debug.Log($"[Player] InitializeForMultiplayerMode: Name='{Name}', AvatarId={AvatarId}, Domain={Domain}, IsAI={IsInitializedAsAI}, IsServer={IsServer}, IsOwner={IsOwner}");
+
+            if (!IsServer)
                 return;
-            
+
             RoundStats.Name = Name;
             RoundStats.Domain = Domain;
-            
+            Debug.Log($"[Player] InitializeForMultiplayerMode: RoundStats set — Name='{RoundStats.Name}', Domain={RoundStats.Domain}");
+
             SetGameObjectName();
         }
         
         public override void OnNetworkSpawn()
         {
+            Debug.Log($"[Player] OnNetworkSpawn: OwnerClientId={OwnerClientId}, IsOwner={IsOwner}, IsLocalUser={IsLocalUser}, NetworkObjectId={NetworkObjectId}");
+
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Players.Add(this);
 
             VesselNetId = NetVesselId.Value;
-            
+
             NetDomain.OnValueChanged += OnNetDomainChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
             NetVesselId.OnValueChanged += OnNetVesselIdChanged;
             NetAvatarId.OnValueChanged += OnNetAvatarIdChanged;
 
             if (!IsLocalUser)
+            {
+                Debug.Log($"[Player] OnNetworkSpawn: Not local user, skipping profile set. Current NetName='{NetName.Value}', NetAvatarId={NetAvatarId.Value}");
                 return;
+            }
 
             NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
 
             // Use the clean display name from profile service; fall back to UGS name with suffix stripped
             var profileService = App.Profile.PlayerDataService.Instance;
+            Debug.Log($"[Player] OnNetworkSpawn: ProfileService exists={profileService != null}, IsInitialized={profileService?.IsInitialized}, CurrentProfile={profileService?.CurrentProfile != null}");
             if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
             {
+                Debug.Log($"[Player] OnNetworkSpawn: Setting NetName='{profileService.CurrentProfile.displayName}', NetAvatarId={profileService.CurrentProfile.avatarId} from ProfileService");
                 NetName.Value = profileService.CurrentProfile.displayName;
                 NetAvatarId.Value = profileService.CurrentProfile.avatarId;
             }
             else
             {
-                NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
+                var ugsName = AuthenticationService.Instance.PlayerName;
+                var stripped = StripPlayerNameSuffix(ugsName);
+                Debug.LogWarning($"[Player] OnNetworkSpawn: ProfileService NOT ready! Falling back to UGS name. Raw='{ugsName}', Stripped='{stripped}'");
+                NetName.Value = stripped;
             }
 
+            Debug.Log($"[Player] OnNetworkSpawn: Final NetName='{NetName.Value}', NetAvatarId={NetAvatarId.Value}");
             InputController.Initialize();
         }
         
@@ -211,14 +225,20 @@ namespace CosmicShore.Game
         void OnNetDomainChanged(Domains previousValue, Domains newValue) =>
             Domain = newValue;
         
-        void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue) =>
+        void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
+        {
+            Debug.Log($"[Player] OnNetNameValueChanged: '{previousValue}' -> '{newValue}' (OwnerClientId={OwnerClientId})");
             Name = newValue.ToString();
-        
+        }
+
         void OnNetVesselIdChanged(ulong previousValue, ulong newValue) =>
             VesselNetId = newValue;
 
-        void OnNetAvatarIdChanged(int previousValue, int newValue) =>
+        void OnNetAvatarIdChanged(int previousValue, int newValue)
+        {
+            Debug.Log($"[Player] OnNetAvatarIdChanged: {previousValue} -> {newValue} (OwnerClientId={OwnerClientId})");
             AvatarId = newValue;
+        }
         
         void SetGameObjectName()
         {
