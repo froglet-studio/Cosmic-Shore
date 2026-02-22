@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
@@ -42,9 +43,13 @@ namespace CosmicShore.Game.UI
         [Header("AI Tracking")]
         [SerializeField] protected bool isAIAvailable;
 
+        [Header("Avatar Icons")]
+        [SerializeField] protected SO_ProfileIconList profileIconList;
+
         protected IRoundStats localRoundStats;
         protected Dictionary<string, PlayerScoreCard> _aiCards = new();
         private Dictionary<IRoundStats, Action> _aiScoreHandlers = new();
+        private PlayerScoreCard _localPlayerCard;
 
         private CancellationTokenSource _connectingCts;
         private bool _clientReady;
@@ -185,6 +190,7 @@ namespace CosmicShore.Game.UI
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
 
+            SetupLocalPlayerCard();
             if (isAIAvailable) SetupAICards();
         }
 
@@ -193,15 +199,40 @@ namespace CosmicShore.Game.UI
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged -= UpdateScoreUI;
 
+            CleanupLocalPlayerCard();
             if (isAIAvailable) CleanupAICards();
 
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay(string.Empty);
         }
 
+        private void SetupLocalPlayerCard()
+        {
+            if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null)
+                return;
+
+            var localPlayer = gameData.LocalPlayer;
+            var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
+            var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
+            card.Setup(localPlayer.Name, 0, teamColor, true);
+
+            var sprite = ResolveAvatarSprite(localPlayer.AvatarId);
+            card.SetAvatar(sprite);
+
+            _localPlayerCard = card;
+        }
+
+        private void CleanupLocalPlayerCard()
+        {
+            if (_localPlayerCard != null)
+            {
+                Destroy(_localPlayerCard.gameObject);
+                _localPlayerCard = null;
+            }
+        }
+
         private void SetupAICards()
         {
-            view.ClearPlayerList();
             _aiCards.Clear();
             _aiScoreHandlers.Clear();
 
@@ -212,6 +243,15 @@ namespace CosmicShore.Game.UI
                 var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
                 var teamColor = view.GetColorForDomain(stats.Domain);
                 card.Setup(stats.Name, (int)stats.Score, teamColor, false);
+
+                // Set avatar for AI players
+                var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
+                if (player != null)
+                {
+                    var sprite = ResolveAvatarSprite(player.AvatarId);
+                    card.SetAvatar(sprite);
+                }
+
                 _aiCards[stats.Name] = card;
 
                 Action handler = () => UpdateAICard(stats);
@@ -235,6 +275,22 @@ namespace CosmicShore.Game.UI
             _aiScoreHandlers.Clear();
             _aiCards.Clear();
             view.ClearPlayerList();
+        }
+
+        protected Sprite ResolveAvatarSprite(int avatarId)
+        {
+            if (profileIconList == null || profileIconList.profileIcons == null)
+                return null;
+
+            foreach (var icon in profileIconList.profileIcons)
+            {
+                if (icon.Id == avatarId)
+                    return icon.IconSprite;
+            }
+
+            return profileIconList.profileIcons.Count > 0
+                ? profileIconList.profileIcons[0].IconSprite
+                : null;
         }
 
         private void ResetForReplay()
@@ -341,6 +397,9 @@ namespace CosmicShore.Game.UI
             if (localRoundStats == null) return;
             var score = (int)localRoundStats.Score;
             view.UpdateScoreUI(score.ToString(CultureInfo.InvariantCulture));
+
+            if (_localPlayerCard != null)
+                _localPlayerCard.UpdateScore(score);
         }
 
         public void OnPipInitialized(PipData data)
@@ -354,7 +413,7 @@ namespace CosmicShore.Game.UI
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay(string.Empty);
             view.UpdateScoreUI("0");
-            if (isAIAvailable) view.ClearPlayerList();
+            view.ClearPlayerList();
         }
 
         public void Show() => view.ToggleView(true);
