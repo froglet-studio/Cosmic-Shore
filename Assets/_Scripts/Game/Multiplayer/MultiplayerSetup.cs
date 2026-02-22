@@ -83,6 +83,12 @@ namespace CosmicShore.Game
                 return;
             }
 
+            // Ensure domain pool is fresh so the host and AI opponents each get
+            // a unique domain.  The multiplayer path does this inside
+            // SetupForMultiplayer(); the solo path was missing it, which caused
+            // every player (and their crystals) to get Domains.Unassigned.
+            DomainAssigner.Initialize();
+
             Debug.Log("[MultiplayerSetup] Starting local host for solo play with AI.");
             networkManager.StartHost();
         }
