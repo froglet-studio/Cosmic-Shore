@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points on a hexagonal honeycomb grid.
-    /// Migrated from PositioningScheme.HoneycombGrid.
     /// </summary>
     public class HoneycombGridGenerator : SpawnableBase
     {

@@ -5,7 +5,6 @@ namespace CosmicShore.Game.Spawning
     /// <summary>
     /// Generates points distributed on the surface of a sphere
     /// with angular spread controlled by difficulty angle.
-    /// Migrated from PositioningScheme.SphereSurface.
     /// </summary>
     public class SphereSurfaceGenerator : SpawnableBase
     {

@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates a single point at the origin with no rotation.
-    /// Migrated from PositioningScheme.AtOriginNoRotation and SphereEmanating.
     /// </summary>
     public class AtOriginGenerator : SpawnableBase
     {

@@ -5,7 +5,6 @@ namespace CosmicShore.Game.Spawning
     /// <summary>
     /// Generates points along a path with random direction changes.
     /// Each step applies a random rotation to the forward vector.
-    /// Migrated from PositioningScheme.KinkyLine.
     /// </summary>
     public class KinkyLineGenerator : SpawnableBase
     {

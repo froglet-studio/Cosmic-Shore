@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points along a sinusoidal tube path.
-    /// Migrated from PositioningScheme.CurvyTubeNetwork.
     /// </summary>
     public class CurvyTubeGenerator : SpawnableBase
     {

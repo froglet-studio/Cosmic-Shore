@@ -5,7 +5,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points along a kinky line that can branch into tree structures.
-    /// Migrated from PositioningScheme.KinkyLineBranching.
     /// </summary>
     public class BranchingLineGenerator : SpawnableBase
     {

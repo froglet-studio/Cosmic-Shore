@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points along a cylindrical hex layout.
-    /// Migrated from PositioningScheme.HexRing.
     /// </summary>
     public class HexRingGenerator : SpawnableBase
     {

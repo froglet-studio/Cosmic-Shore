@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points uniformly distributed inside a sphere.
-    /// Migrated from PositioningScheme.SphereUniform.
     /// </summary>
     public class SphereUniformGenerator : SpawnableBase
     {

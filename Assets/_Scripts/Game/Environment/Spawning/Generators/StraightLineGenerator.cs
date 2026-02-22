@@ -5,8 +5,6 @@ namespace CosmicShore.Game.Spawning
     /// <summary>
     /// Generates points along a straight line on the Z axis.
     /// Supports random orientation per point or constant cumulative rotation.
-    /// Migrated from PositioningScheme.StraightLineRandomOrientation and
-    /// PositioningScheme.StraightLineConstantRotation.
     /// </summary>
     public class StraightLineGenerator : SpawnableBase
     {

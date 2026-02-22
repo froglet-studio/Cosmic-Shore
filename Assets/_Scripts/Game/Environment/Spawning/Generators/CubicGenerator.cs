@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points at random positions on a cubic voxel grid.
-    /// Migrated from PositioningScheme.Cubic.
     /// </summary>
     public class CubicGenerator : SpawnableBase
     {

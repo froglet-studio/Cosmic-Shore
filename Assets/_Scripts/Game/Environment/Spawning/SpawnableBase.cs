@@ -8,9 +8,8 @@ namespace CosmicShore.Game.Spawning
     /// <summary>
     /// Unified base class for spatial pattern generation and object spawning.
     ///
-    /// Replaces both SpawnableAbstractBase (per-spawnable positioning) and
-    /// PositioningScheme (SegmentSpawner's 20-case switch), unifying them into
-    /// a single composable, cacheable system.
+    /// Unified composable, cacheable system for spatial pattern generation
+    /// and object spawning.
     ///
     /// Key features:
     ///   1. Generates SpawnTrailData[] — position + rotation + scale per object, grouped by trail

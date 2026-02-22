@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points distributed on a toroidal surface.
-    /// Migrated from PositioningScheme.ToroidSurface.
     /// </summary>
     public class ToroidSurfaceGenerator : SpawnableBase
     {

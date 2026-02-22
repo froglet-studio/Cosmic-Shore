@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points along an ascending spiral (helix path).
-    /// Migrated from PositioningScheme.SpiralTower.
     /// </summary>
     public class SpiralTowerGenerator : SpawnableBase
     {

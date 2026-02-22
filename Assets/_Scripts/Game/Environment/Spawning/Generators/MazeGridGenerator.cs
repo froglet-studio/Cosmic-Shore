@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points at random positions on a 3D grid.
-    /// Migrated from PositioningScheme.MazeGrid.
     /// </summary>
     public class MazeGridGenerator : SpawnableBase
     {

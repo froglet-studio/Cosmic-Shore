@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points along the surface of a cylinder with random angle tilt.
-    /// Migrated from PositioningScheme.CylinderSurfaceWithAngle.
     /// </summary>
     public class CylinderSurfaceGenerator : SpawnableBase
     {

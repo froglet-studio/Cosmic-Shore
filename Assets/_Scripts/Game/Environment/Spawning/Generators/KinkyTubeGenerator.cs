@@ -4,7 +4,6 @@ namespace CosmicShore.Game.Spawning
 {
     /// <summary>
     /// Generates points along a tube path with periodic random direction jitter.
-    /// Migrated from PositioningScheme.KinkyTubeNetwork.
     /// </summary>
     public class KinkyTubeGenerator : SpawnableBase
     {
