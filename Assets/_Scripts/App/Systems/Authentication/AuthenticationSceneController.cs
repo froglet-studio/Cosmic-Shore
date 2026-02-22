@@ -11,7 +11,7 @@ namespace CosmicShore.Services.Auth
 {
     /// <summary>
     /// Controls the authentication scene UI flow.
-    /// Handles guest login, email login/register, and username setup for new players.
+    /// Handles guest login and username setup for new players.
     /// </summary>
     public class AuthenticationSceneController : MonoBehaviour
     {
@@ -22,13 +22,7 @@ namespace CosmicShore.Services.Auth
 
         [Header("Guest Login")]
         [SerializeField] private Button guestLoginButton;
-
-        [Header("Email Login")]
-        [SerializeField] private TMP_InputField emailInputField;
-        [SerializeField] private TMP_InputField passwordInputField;
-        [SerializeField] private Button emailLoginButton;
-        [SerializeField] private Button emailRegisterButton;
-        [SerializeField] private TMP_Text emailStatusText;
+        [SerializeField] private TMP_Text statusText;
 
         [Header("Username Setup")]
         [SerializeField] private TMP_InputField usernameInputField;
@@ -55,20 +49,8 @@ namespace CosmicShore.Services.Auth
             if (guestLoginButton)
                 guestLoginButton.onClick.AddListener(OnGuestLoginClicked);
 
-            if (emailLoginButton)
-                emailLoginButton.onClick.AddListener(OnEmailLoginClicked);
-
-            if (emailRegisterButton)
-                emailRegisterButton.onClick.AddListener(OnEmailRegisterClicked);
-
             if (confirmUsernameButton)
                 confirmUsernameButton.onClick.AddListener(OnConfirmUsernameClicked);
-
-            if (emailInputField)
-                emailInputField.contentType = TMP_InputField.ContentType.EmailAddress;
-
-            if (passwordInputField)
-                passwordInputField.contentType = TMP_InputField.ContentType.Password;
 
             ClearStatusMessages();
         }
@@ -99,7 +81,7 @@ namespace CosmicShore.Services.Auth
 
         void ClearStatusMessages()
         {
-            if (emailStatusText) emailStatusText.text = string.Empty;
+            if (statusText) statusText.text = string.Empty;
             if (usernameStatusText) usernameStatusText.text = string.Empty;
         }
 
@@ -116,97 +98,14 @@ namespace CosmicShore.Services.Auth
             try
             {
                 await authController.EnsureSignedInAnonymouslyAsync();
-                await OnAuthSuccess(isGuest: true);
+                await OnAuthSuccess();
             }
             catch (Exception ex)
             {
                 HideLoading();
-                if (emailStatusText)
-                    emailStatusText.text = $"Guest login failed: {ex.Message}";
+                if (statusText)
+                    statusText.text = $"Guest login failed: {ex.Message}";
                 Debug.LogWarning($"[AuthScene] Guest login failed: {ex}");
-            }
-            finally
-            {
-                _isProcessing = false;
-            }
-        }
-
-        // ----- Email Login -----
-
-        async void OnEmailLoginClicked()
-        {
-            if (_isProcessing) return;
-
-            string email = emailInputField ? emailInputField.text?.Trim() : string.Empty;
-            string password = passwordInputField ? passwordInputField.text : string.Empty;
-
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-            {
-                if (emailStatusText)
-                    emailStatusText.text = "Please enter both email and password.";
-                return;
-            }
-
-            _isProcessing = true;
-            ClearStatusMessages();
-            ShowLoading();
-
-            try
-            {
-                await authController.SignInWithEmailAsync(email, password);
-                await OnAuthSuccess(isGuest: false);
-            }
-            catch (Exception ex)
-            {
-                HideLoading();
-                if (emailStatusText)
-                    emailStatusText.text = $"Login failed: {ex.Message}";
-                Debug.LogWarning($"[AuthScene] Email login failed: {ex}");
-            }
-            finally
-            {
-                _isProcessing = false;
-            }
-        }
-
-        // ----- Email Register -----
-
-        async void OnEmailRegisterClicked()
-        {
-            if (_isProcessing) return;
-
-            string email = emailInputField ? emailInputField.text?.Trim() : string.Empty;
-            string password = passwordInputField ? passwordInputField.text : string.Empty;
-
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-            {
-                if (emailStatusText)
-                    emailStatusText.text = "Please enter both email and password.";
-                return;
-            }
-
-            if (password.Length < 8)
-            {
-                if (emailStatusText)
-                    emailStatusText.text = "Password must be at least 8 characters.";
-                return;
-            }
-
-            _isProcessing = true;
-            ClearStatusMessages();
-            ShowLoading();
-
-            try
-            {
-                await authController.SignUpWithEmailAsync(email, password);
-                await OnAuthSuccess(isGuest: false);
-            }
-            catch (Exception ex)
-            {
-                HideLoading();
-                if (emailStatusText)
-                    emailStatusText.text = $"Registration failed: {ex.Message}";
-                Debug.LogWarning($"[AuthScene] Email register failed: {ex}");
             }
             finally
             {
@@ -216,7 +115,7 @@ namespace CosmicShore.Services.Auth
 
         // ----- Post-Auth Flow -----
 
-        async Task OnAuthSuccess(bool isGuest)
+        async Task OnAuthSuccess()
         {
             // Wait for PlayerDataService to initialize after auth
             if (playerDataService != null)
@@ -241,8 +140,8 @@ namespace CosmicShore.Services.Auth
             }
             else
             {
-                // If service didn't initialize in time, treat guest as needing username
-                needsUsername = isGuest;
+                // If service didn't initialize in time, prompt for username
+                needsUsername = true;
             }
 
             if (needsUsername)
