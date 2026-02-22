@@ -20,7 +20,7 @@ namespace CosmicShore.Game.UI
             _rect = GetComponent<RectTransform>();
         }
 
-        public void Setup(string message, Color color, GameFeedSettingsSO settings, bool isRichText = false)
+        public void Setup(string message, Color color, bool isRichText = false)
         {
             if (textComponent == null)
                 textComponent = GetComponentInChildren<TMP_Text>();
@@ -34,24 +34,28 @@ namespace CosmicShore.Game.UI
                 textComponent.color = color;
             else
                 textComponent.color = Color.white;
-
-            PlayAnimation(settings);
         }
 
-        private void PlayAnimation(GameFeedSettingsSO settings)
+        /// <summary>
+        /// Start the slide-in / hold / fade-out animation.
+        /// Must be called AFTER layout rebuild so anchoredPosition is correct.
+        /// Only animates X so VerticalLayoutGroup can reposition Y when new entries arrive.
+        /// </summary>
+        public void AnimateIn(GameFeedSettingsSO settings)
         {
-            var targetPos = _rect.anchoredPosition;
-            var startPos = targetPos;
-            startPos.x += settings.slideInOffset;
+            var targetX = _rect.anchoredPosition.x;
 
-            _rect.anchoredPosition = startPos;
+            // Offset X for slide-in start
+            var pos = _rect.anchoredPosition;
+            pos.x += settings.slideInOffset;
+            _rect.anchoredPosition = pos;
             _canvasGroup.alpha = 0f;
 
             _seq = DOTween.Sequence();
             if (settings.useUnscaledTime) _seq.SetUpdate(true);
 
-            // IN: slide from right + fade in
-            _seq.Join(_rect.DOAnchorPos(targetPos, settings.slideInDuration).SetEase(settings.slideInEase));
+            // IN: slide X from right + fade in (Y stays under layout control)
+            _seq.Join(_rect.DOAnchorPosX(targetX, settings.slideInDuration).SetEase(settings.slideInEase));
             _seq.Join(_canvasGroup.DOFade(1f, settings.slideInDuration));
 
             // HOLD

@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Services.Auth;
+using CosmicShore.Soap;
 using TMPro;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
@@ -13,22 +14,38 @@ namespace CosmicShore.App.Profile
 {
     public class PlayerDataService : MonoBehaviour
     {
+        public static PlayerDataService Instance { get; private set; }
+
         [Header("Cloud Save")]
         [SerializeField] private string cloudSaveProfileKey = "player_profile";
         [SerializeField] private SO_ProfileIconList profileIcons;
-        
+
         [Header("UI")]
         [SerializeField] private TMP_Text displayNameText;
         [SerializeField] private Image  avatarImage;
-        
-        [Header("Auth Hook ")]
+
+        [Header("Auth Hook")]
         [SerializeField] private AuthenticationController authController;
+
+        [Header("Game Data")]
+        [SerializeField] private GameDataSO gameData;
 
         public PlayerProfileData CurrentProfile { get; private set; }
         public bool              IsInitialized  { get; private set; }
 
         public event Action<PlayerProfileData> OnProfileChanged;
-        
+
+        void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+
         async void Start()
         {
             try
@@ -56,7 +73,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-              // TODO handle exception
+                Debug.LogError($"[PlayerDataService] Start failed: {e.Message}");
             }
         }
 
@@ -71,7 +88,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                 // TODO handle exception
+                Debug.LogError($"[PlayerDataService] HandleSignedInFromAuth failed: {e.Message}");
             }
         }
 
@@ -111,7 +128,7 @@ namespace CosmicShore.App.Profile
         {
             if (!canUseCloudSave)
             {
-                Debug.LogWarning("[UgsPlayerProfileService] Not signed in. Using local-only profile.");
+                Debug.LogWarning("[PlayerDataService] Not signed in. Using local-only profile.");
                 CreateLocalDefaultProfile(playerId);
                 return;
             }
@@ -132,7 +149,7 @@ namespace CosmicShore.App.Profile
                         return;
                     }
 
-                    Debug.LogWarning("[UgsPlayerProfileService] Failed to parse profile JSON. Creating default.");
+                    Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Creating default.");
                     CreateLocalDefaultProfile(playerId);
                 }
                 else
@@ -144,7 +161,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[UgsPlayerProfileService] Load failed: {e.Message}");
+                Debug.LogWarning($"[PlayerDataService] Load failed: {e.Message}");
                 CreateLocalDefaultProfile(playerId);
             }
         }
@@ -184,7 +201,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[UgsPlayerProfileService] Save failed: {e.Message}");
+                Debug.LogWarning($"[PlayerDataService] Save failed: {e.Message}");
             }
         }
 
@@ -208,7 +225,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[UgsPlayerProfileService] SetAvatarId failed: {e.Message}");
+                Debug.LogWarning($"[PlayerDataService] SetAvatarId failed: {e.Message}");
             }
         }
 
@@ -230,29 +247,45 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[UgsPlayerProfileService] SetDisplayNameAsync failed: {e.Message}");
+                Debug.LogWarning($"[PlayerDataService] SetDisplayNameAsync failed: {e.Message}");
             }
         }
-        
+
         void HandleProfileChanged(PlayerProfileData data)
         {
             if (displayNameText != null)
                 displayNameText.text = data.displayName;
 
-            var sprite = ResolveAvatarSprite(data.avatarId);
-            avatarImage.sprite  = sprite;
+            if (avatarImage != null)
+            {
+                var sprite = ResolveAvatarSprite(data.avatarId);
+                avatarImage.sprite = sprite;
+                avatarImage.enabled = sprite != null;
+            }
+
+            if (gameData != null)
+            {
+                gameData.LocalPlayerDisplayName = data.displayName;
+                gameData.LocalPlayerAvatarId = data.avatarId;
+            }
         }
 
         Sprite ResolveAvatarSprite(int avatarId)
         {
+            if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)
+                return null;
+
             for (int i = 0; i < profileIcons.profileIcons.Count; i++)
             {
                 if (profileIcons.profileIcons[i].Id == avatarId)
                     return profileIcons.profileIcons[i].IconSprite;
             }
 
-            return null;
+            // Fallback to first icon
+            return profileIcons.profileIcons[0].IconSprite;
         }
+
+        public Sprite GetAvatarSprite(int avatarId) => ResolveAvatarSprite(avatarId);
 
         /// <summary>
         /// Forcing a UI refresh without a save (e.g. when an external system

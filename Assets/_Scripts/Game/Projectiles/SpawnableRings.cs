@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] int prismsPerRing = 8;
         [SerializeField] float ringRadius = 20f;
         [SerializeField] float ringSpacing = 15f;
-        float initialOffset = 50;
+        float initialOffset = 8;
 
         [Header("Prism Configuration")]
         [SerializeField] Vector3 prismScale = new Vector3(4, 4, 9);
@@ -91,7 +91,7 @@ namespace CosmicShore.Game.Projectiles
         public override GameObject Spawn(int intensityLevel)
         {
             prismAngle = intensityLevel * 0.3f;
-            initialOffset = intensityLevel * 0.2f;
+            //initialOffset = intensityLevel * 0.2f;
 
             return Spawn();
         }
