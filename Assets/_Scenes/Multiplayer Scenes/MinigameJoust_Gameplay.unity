@@ -1286,8 +1286,12 @@ MonoBehaviour:
     type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   minConnectingSeconds: 5
+  preGameCinematic: {fileID: 0}
+  cinematicLookAtCenter: {x: 0, y: 0, z: 0}
+  enablePreGameCinematic: 1
   isAIAvailable: 0
   multiplayerView: {fileID: 400393585}
+  profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
 --- !u!114 &400393585
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1312,6 +1316,8 @@ MonoBehaviour:
   connectingPanelCanvasGroup: {fileID: 1617932949}
   canvasGroup: {fileID: 400393581}
   lifeFormCounter: {fileID: 400393570}
+  hackerTextAnimator: {fileID: 0}
+  dotsAnimator: {fileID: 0}
   playerScoreContainer: {fileID: 1218125195}
   playerScoreCardPrefab: {fileID: 7783508904518771683, guid: ba84a682b21a0a742974715e5d7432b5,
     type: 3}
