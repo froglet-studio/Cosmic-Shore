@@ -10,6 +10,14 @@ namespace CosmicShore.Game.Arcade
         [Header("Hex Race")]
         [SerializeField] private HexRaceController hexRaceController;
 
+        protected override bool DetermineLocalPlayerWon()
+        {
+            var localName = gameData.LocalPlayer?.Name;
+            return hexRaceController != null
+                && hexRaceController.RaceResultsReady
+                && hexRaceController.WinnerName == localName;
+        }
+
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
             if (!view || !cinematic) yield break;

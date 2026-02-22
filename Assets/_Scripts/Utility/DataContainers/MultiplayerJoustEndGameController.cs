@@ -11,6 +11,14 @@ namespace CosmicShore.Game.Arcade
         [Header("References")]
         [SerializeField] private MultiplayerJoustController joustController;
 
+        protected override bool DetermineLocalPlayerWon()
+        {
+            var localName = gameData.LocalPlayer?.Name;
+            return joustController != null
+                && joustController.ResultsReady
+                && joustController.WinnerName == localName;
+        }
+
         protected override IEnumerator PlayScoreRevealSequence(CinematicDefinitionSO cinematic)
         {
             if (!view || !cinematic) yield break;

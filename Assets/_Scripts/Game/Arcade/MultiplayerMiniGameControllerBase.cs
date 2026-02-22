@@ -207,6 +207,11 @@ namespace CosmicShore.Game.Arcade
             gameData.ResetStatsDataForReplay();
             gameData.ResetPlayers();
 
+            // Snap player camera to the vessel's new spawn position after
+            // ResetPlayers teleported it, clearing any stale cinematic position.
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
+
             if (gameData.OnResetForReplay != null)
                 gameData.OnResetForReplay.Raise();
             else

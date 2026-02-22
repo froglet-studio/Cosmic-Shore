@@ -33,7 +33,8 @@ namespace CosmicShore.Soap
         public ScriptableEventNoParam OnMiniGameRoundEnd;
         public event Action OnMiniGameEnd;
         public event Action OnWinnerCalculated;
-        
+        public event Action<string, Domains> OnPlayerAdded;
+
         public ScriptableEventNoParam OnResetForReplay;
 
         [Header("UI Flow")]
@@ -154,12 +155,16 @@ namespace CosmicShore.Soap
         {
             IsTurnRunning = false;
             Players.Clear();
+            Vessels.Clear();
+            SlowedShipTransforms.Clear();
             RoundStatsList.Clear();
             DomainStatsList.Clear();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
             _playerSpawnPoseList.Clear();
+            LocalPlayer = null;
+            LocalRoundStats = null;
         }
 
         void ResetRuntimeDataForReplay()
@@ -220,6 +225,8 @@ namespace CosmicShore.Soap
             
             if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
+
+            OnPlayerAdded?.Invoke(p.Name, p.RoundStats?.Domain ?? Domains.Unassigned);
         }
         
         public void SortRoundStats(bool golfRules)
@@ -453,39 +460,49 @@ namespace CosmicShore.Soap
         public bool TryGetPlayerByOwnerClientId(ulong clientId, out IPlayer player)
         {
             player = null;
-            foreach (var p in Players.Where(p => p.OwnerClientNetId == clientId))
+            foreach (var p in Players)
             {
-                player = p;
-                return true;
+                if (p is UnityEngine.Object obj && !obj) continue;
+                if (p.OwnerClientNetId == clientId)
+                {
+                    player = p;
+                    return true;
+                }
             }
-            
+
             Debug.LogError($"No player found {clientId}");
             return false;
         }
-        
+
         public bool TryGetPlayerByNetworkObjectId(ulong playerId, out IPlayer player)
         {
             player = null;
-            foreach (var p in Players.Where(p => p.PlayerNetId == playerId))
+            foreach (var p in Players)
             {
-                player = p;
-                return true;
+                if (p is UnityEngine.Object obj && !obj) continue;
+                if (p.PlayerNetId == playerId)
+                {
+                    player = p;
+                    return true;
+                }
             }
-            
-            Debug.LogError($"No player found {playerId}");
+
             return false;
         }
-        
+
         public bool TryGetVesselByNetworkObjectId(ulong netVesselId, out IVessel vessel)
         {
             vessel = null;
-            foreach (var v in Vessels.Where(v => v.VesselNetId == netVesselId))
+            foreach (var v in Vessels)
             {
-                vessel = v;
-                return true;
+                if (v is UnityEngine.Object obj && !obj) continue;
+                if (v.VesselNetId == netVesselId)
+                {
+                    vessel = v;
+                    return true;
+                }
             }
-            
-            Debug.LogError($"No vessel found {netVesselId}");
+
             return false;
         }
         

@@ -1,4 +1,5 @@
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -28,6 +29,8 @@ namespace CosmicShore.Game.Arcade
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         private bool _raceEnded;
+        private bool _trackSpawned;
+        private int _syncedSeed;
         private readonly NetworkVariable<int> _netCrystalsToFinish = new(0);
 
         // Single source of truth for who won — set authoritatively by server, read by end game controller
@@ -41,20 +44,42 @@ namespace CosmicShore.Game.Arcade
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
+
+            // Spawn the track early so it's visible during connecting screen / cinematic
+            if (IsServer)
+                SpawnTrackEarly().Forget();
+        }
+
+        /// <summary>
+        /// Generates and broadcasts the track seed shortly after network spawn,
+        /// so the track is visible before players click ready.
+        /// </summary>
+        private async UniTaskVoid SpawnTrackEarly()
+        {
+            // Small delay to ensure all clients have joined and intensity is synced
+            await UniTask.Delay(1500, DelayType.UnscaledDeltaTime);
+            if (!IsServer || _trackSpawned) return;
+
+            _syncedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+            InitializeEnvironment_ClientRpc(_syncedSeed);
         }
 
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer) return;
-            int currentSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
-            InitializeEnvironment_ClientRpc(currentSeed);
+
+            // Re-send track initialization for any clients that missed the early spawn
+            if (!_trackSpawned)
+                _syncedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+            InitializeEnvironment_ClientRpc(_syncedSeed);
+
             base.OnCountdownTimerEnded();
         }
 
         [ClientRpc]
         void InitializeEnvironment_ClientRpc(int syncedSeed)
         {
-            if (!segmentSpawner) return;
+            if (_trackSpawned || !segmentSpawner) return;
             segmentSpawner.Seed = syncedSeed;
             segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity
                 ? baseNumberOfSegments * Intensity
@@ -64,6 +89,7 @@ namespace CosmicShore.Game.Arcade
                 : baseStraightLineLength;
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
+            _trackSpawned = true;
         }
 
         void ApplyHelixIntensity()
@@ -190,6 +216,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.OnResetForReplayCustom();
             _raceEnded = false;
+            _trackSpawned = false;
             WinnerName = "";
             RaceResultsReady = false;
 

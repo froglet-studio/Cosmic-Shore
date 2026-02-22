@@ -178,9 +178,17 @@ namespace CosmicShore.Game
                 var aiPlayerNO = Instantiate(playerPrefabNO);
 
                 // Position AI at successive spawn points (index 1, 2, ...)
-                int spawnIndex = 1 + i;
-                if (_playerOrigins != null && spawnIndex < _playerOrigins.Length)
+                if (_playerOrigins != null && _playerOrigins.Length > 0)
+                {
+                    int spawnIndex = 1 + i;
+                    if (spawnIndex >= _playerOrigins.Length)
+                    {
+                        Debug.LogWarning($"[ServerPlayerVesselInitializer] Not enough spawn origins for AI {i} " +
+                                         $"(need index {spawnIndex}, have {_playerOrigins.Length}). Wrapping with modulo.");
+                        spawnIndex = spawnIndex % _playerOrigins.Length;
+                    }
                     aiPlayerNO.transform.SetPositionAndRotation(_playerOrigins[spawnIndex].position, _playerOrigins[spawnIndex].rotation);
+                }
 
                 aiPlayerNO.Spawn(true); // server-owned
 

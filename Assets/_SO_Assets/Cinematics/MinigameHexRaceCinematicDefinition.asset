@@ -18,7 +18,14 @@ MonoBehaviour:
     speedMultiplier: 3
     enhanceTrail: 1
     fadeLoserTrail: 1
-  scoreRevealToastString: RACE FINISHED
+  victoryToastStrings:
+  - THE REAL RACER
+  - THE TRACK'S ON FIRE
+  - GOT THE RACE DONE
+  defeatToastStrings:
+  - BETTER LUCK NEXT TIME
+  - STEAL MORE TO SPEED MORE
+  - IS THAT ALL YOU GOT?
   showVictoryToast: 1
   toastSettings:
     yOffset: 1
