@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.App.Profile;
-using CosmicShore.Game.XP;
 using CosmicShore.Models;
 using DG.Tweening;
 using TMPro;
@@ -10,323 +8,199 @@ using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Views
 {
-    /// <summary>
-    /// Displays the XP track in the Profile Screen.
-    /// Shows current XP, a slider that animates with DOTween,
-    /// milestone indicators, and reward unlock animations.
-    /// </summary>
     public class XPTrackView : MonoBehaviour
     {
-        [Header("XP Display")]
-        [SerializeField] private TMP_Text xpText;
-        [SerializeField] private Slider xpSlider;
-        [SerializeField] private Image xpSliderFill;
-
-        [Header("Milestone Info")]
-        [SerializeField] private TMP_Text currentMilestoneText;
-        [SerializeField] private TMP_Text nextMilestoneText;
-
-        [Header("Reward Unlock Panel")]
-        [SerializeField] private GameObject rewardUnlockPanel;
-        [SerializeField] private Image rewardIcon;
-        [SerializeField] private TMP_Text rewardNameText;
-        [SerializeField] private TMP_Text rewardDescriptionText;
-        [SerializeField] private Button rewardCloseButton;
-        [SerializeField] private CanvasGroup rewardPanelCanvasGroup;
-
-        [Header("Animation Settings")]
-        [SerializeField] private float sliderAnimationDuration = 1.2f;
-        [SerializeField] private Ease sliderEase = Ease.OutQuad;
-        [SerializeField] private float rewardShowDelay = 0.3f;
-
         [Header("Data")]
         [SerializeField] private SO_XPTrackData xpTrackData;
 
-        private int _displayedXP;
-        private int _targetXP;
+        [Header("Prefabs")]
+        [SerializeField] private GameObject xpItemPrefab;
+        [SerializeField] private GameObject xpLevelPrefab;
+
+        [Header("Containers")]
+        [SerializeField] private Transform xpItemPanels;
+        [SerializeField] private Transform xpLevelDisplayPanel;
+
+        [Header("Slider")]
+        [SerializeField] private Slider xpSlider;
+
+        [Header("XP Label")]
+        [SerializeField] private TMP_Text xpText;
+
+        [Header("Animation")]
+        [SerializeField] private float sliderAnimDuration = 1f;
+        [SerializeField] private Ease sliderEase = Ease.OutCubic;
+
+        private readonly List<GameObject> _spawnedItems = new();
+        private readonly List<GameObject> _spawnedLevels = new();
         private Tween _sliderTween;
-        private Coroutine _animationRoutine;
 
         void OnEnable()
         {
-            if (rewardCloseButton != null)
-                rewardCloseButton.onClick.AddListener(HideRewardPanel);
+            LoadTrack();
 
-            if (rewardUnlockPanel != null)
-                rewardUnlockPanel.SetActive(false);
-
-            RefreshXPDisplay();
+            if (PlayerDataService.Instance != null)
+                PlayerDataService.Instance.OnProfileChanged += OnProfileChanged;
         }
 
         void OnDisable()
         {
-            if (rewardCloseButton != null)
-                rewardCloseButton.onClick.RemoveListener(HideRewardPanel);
+            if (PlayerDataService.Instance != null)
+                PlayerDataService.Instance.OnProfileChanged -= OnProfileChanged;
 
             KillTween();
+        }
 
-            if (_animationRoutine != null)
+        void OnProfileChanged(PlayerProfileData data)
+        {
+            UpdateXPDisplay(data.xp);
+        }
+
+        public void LoadTrack()
+        {
+            SpawnMilestones();
+            int currentXP = PlayerDataService.Instance != null ? PlayerDataService.Instance.GetXP() : 0;
+            SetXPImmediate(currentXP);
+        }
+
+        void SpawnMilestones()
+        {
+            ClearSpawned();
+
+            if (xpTrackData == null) return;
+
+            int totalMilestones = xpTrackData.milestones.Count;
+            int xpPerMilestone = xpTrackData.xpPerMilestone;
+            bool hasProfile = PlayerDataService.Instance != null &&
+                              PlayerDataService.Instance.CurrentProfile != null;
+            int currentXP = hasProfile ? PlayerDataService.Instance.GetXP() : 0;
+
+            for (int i = 0; i < totalMilestones; i++)
             {
-                StopCoroutine(_animationRoutine);
-                _animationRoutine = null;
+                int milestoneXP = (i + 1) * xpPerMilestone;
+                var milestone = xpTrackData.milestones[i];
+                bool isUnlocked = currentXP >= milestoneXP;
+
+                // Spawn XP item (reward display)
+                if (xpItemPrefab != null && xpItemPanels != null)
+                {
+                    var itemGO = Instantiate(xpItemPrefab, xpItemPanels);
+                    _spawnedItems.Add(itemGO);
+                    SetupXPItem(itemGO, milestone, isUnlocked);
+                }
+
+                // Spawn level label
+                if (xpLevelPrefab != null && xpLevelDisplayPanel != null)
+                {
+                    var levelGO = Instantiate(xpLevelPrefab, xpLevelDisplayPanel);
+                    _spawnedLevels.Add(levelGO);
+                    var label = levelGO.GetComponentInChildren<TMP_Text>();
+                    if (label != null)
+                        label.text = milestoneXP.ToString();
+                }
             }
         }
 
-        /// <summary>
-        /// Refreshes the XP display. If XP has changed since last display,
-        /// plays the slider animation from old value to new value.
-        /// </summary>
-        public void RefreshXPDisplay()
+        void SetupXPItem(GameObject itemGO, XPMilestone milestone, bool isUnlocked)
         {
-            var profileService = PlayerDataService.Instance;
-            if (profileService == null || profileService.CurrentProfile == null)
+            // Icon
+            var icon = itemGO.transform.Find("UnlockableIconBG/Icon");
+            if (icon != null && milestone.reward != null && milestone.reward.icon != null)
             {
-                SetXPImmediate(0);
-                return;
+                var img = icon.GetComponent<Image>();
+                if (img != null)
+                    img.sprite = milestone.reward.icon;
             }
 
-            _targetXP = profileService.GetXP();
-
-            // Check if we need to animate (XP increased since last display)
-            var xpRewardService = XPRewardService.Instance;
-            if (xpRewardService != null && xpRewardService.LastXPEarned > 0)
+            // Detail text
+            var detail = itemGO.transform.Find("UnlockableDetail");
+            if (detail != null)
             {
-                int previousXP = xpRewardService.PreviousXP;
-
-                // Only animate if we haven't already shown this animation
-                if (_displayedXP <= previousXP && _targetXP > previousXP)
-                {
-                    _displayedXP = previousXP;
-                    _animationRoutine = StartCoroutine(AnimateXPGain(previousXP, _targetXP,
-                        xpRewardService.LastUnlockedMilestones));
-                    return;
-                }
+                var txt = detail.GetComponentInChildren<TMP_Text>();
+                if (txt != null && milestone.reward != null)
+                    txt.text = milestone.reward.unlockDescription;
             }
 
-            // No animation needed, just set immediately
-            SetXPImmediate(_targetXP);
-        }
+            // Locked / Unlocked state
+            var lockedIcon = itemGO.transform.Find("LockedIcon");
+            if (lockedIcon != null)
+                lockedIcon.gameObject.SetActive(!isUnlocked);
 
-        /// <summary>
-        /// Animates the XP slider from oldXP to newXP, pausing at each milestone
-        /// to show reward unlock animations.
-        /// </summary>
-        IEnumerator AnimateXPGain(int fromXP, int toXP, List<XPMilestone> unlockedMilestones)
-        {
-            if (xpTrackData == null)
-            {
-                SetXPImmediate(toXP);
-                yield break;
-            }
-
-            // Update text immediately to show target
-            UpdateXPText(fromXP);
-
-            int currentXP = fromXP;
-            int milestoneInterval = xpTrackData.xpPerMilestone;
-            int unlockedIndex = 0;
-
-            // Find all milestone thresholds between fromXP and toXP
-            List<int> milestoneThresholds = new List<int>();
-            if (milestoneInterval > 0)
-            {
-                int nextThreshold = ((fromXP / milestoneInterval) + 1) * milestoneInterval;
-                while (nextThreshold <= toXP)
-                {
-                    milestoneThresholds.Add(nextThreshold);
-                    nextThreshold += milestoneInterval;
-                }
-            }
-
-            // Animate to each milestone, then show reward
-            foreach (int threshold in milestoneThresholds)
-            {
-                // Animate slider from current to this milestone
-                yield return AnimateSliderTo(currentXP, threshold);
-                currentXP = threshold;
-
-                // Show reward if one exists for this milestone
-                if (unlockedMilestones != null && unlockedIndex < unlockedMilestones.Count)
-                {
-                    var milestone = unlockedMilestones[unlockedIndex];
-                    if (milestone.reward != null)
-                    {
-                        yield return new WaitForSeconds(rewardShowDelay);
-                        ShowRewardPanel(milestone.reward);
-                        yield return new WaitUntil(() =>
-                            rewardUnlockPanel == null || !rewardUnlockPanel.activeSelf);
-                    }
-                    unlockedIndex++;
-                }
-            }
-
-            // Animate remaining XP (from last milestone to final value)
-            if (currentXP < toXP)
-            {
-                yield return AnimateSliderTo(currentXP, toXP);
-            }
-
-            _displayedXP = toXP;
-            _animationRoutine = null;
-        }
-
-        /// <summary>
-        /// Animates the slider from one XP value to another using DOTween.
-        /// </summary>
-        IEnumerator AnimateSliderTo(int fromXP, int toXP)
-        {
-            KillTween();
-
-            float fromNorm = GetNormalizedValue(fromXP);
-            float toNorm = GetNormalizedValue(toXP);
-
-            if (xpSlider != null)
-            {
-                xpSlider.value = fromNorm;
-                _sliderTween = DOTween.To(
-                    () => xpSlider.value,
-                    x =>
-                    {
-                        xpSlider.value = x;
-                        // Update XP text during animation
-                        int interpolatedXP = Mathf.RoundToInt(Mathf.Lerp(fromXP, toXP,
-                            Mathf.InverseLerp(fromNorm, toNorm, x)));
-                        UpdateXPText(interpolatedXP);
-                    },
-                    toNorm,
-                    sliderAnimationDuration
-                ).SetEase(sliderEase);
-
-                yield return _sliderTween.WaitForCompletion();
-            }
-
-            UpdateXPText(toXP);
-            UpdateMilestoneText(toXP);
+            var unlockedObj = itemGO.transform.Find("UnlockedObject");
+            if (unlockedObj != null)
+                unlockedObj.gameObject.SetActive(isUnlocked);
         }
 
         void SetXPImmediate(int xp)
         {
-            _displayedXP = xp;
-            _targetXP = xp;
-
-            if (xpSlider != null)
-                xpSlider.value = GetNormalizedValue(xp);
-
             UpdateXPText(xp);
-            UpdateMilestoneText(xp);
+            if (xpSlider != null)
+                xpSlider.value = GetNormalized(xp);
         }
 
-        float GetNormalizedValue(int xp)
+        void UpdateXPDisplay(int xp)
         {
-            if (xpTrackData != null)
-                return xpTrackData.GetNormalizedProgress(xp);
-
-            return 0f;
+            UpdateXPText(xp);
+            AnimateSlider(xp);
+            RefreshUnlockStates(xp);
         }
 
         void UpdateXPText(int xp)
         {
             if (xpText != null)
-            {
-                if (xpTrackData != null)
-                {
-                    int progress = xpTrackData.GetProgressInCurrentMilestone(xp);
-                    xpText.text = $"{xp} XP ({progress}/{xpTrackData.xpPerMilestone})";
-                }
-                else
-                {
-                    xpText.text = $"{xp} XP";
-                }
-            }
+                xpText.text = $"{xp} XP";
         }
 
-        void UpdateMilestoneText(int xp)
+        void AnimateSlider(int xp)
+        {
+            if (xpSlider == null) return;
+
+            KillTween();
+            float target = GetNormalized(xp);
+            _sliderTween = xpSlider.DOValue(target, sliderAnimDuration)
+                .SetEase(sliderEase)
+                .SetUpdate(true);
+        }
+
+        void RefreshUnlockStates(int currentXP)
         {
             if (xpTrackData == null) return;
 
-            int milestoneIndex = xpTrackData.GetMilestoneIndex(xp);
-
-            if (currentMilestoneText != null)
-                currentMilestoneText.text = $"Level {milestoneIndex + 1}";
-
-            if (nextMilestoneText != null)
+            int xpPerMilestone = xpTrackData.xpPerMilestone;
+            for (int i = 0; i < _spawnedItems.Count && i < xpTrackData.milestones.Count; i++)
             {
-                int nextMilestoneXP = (milestoneIndex + 1) * xpTrackData.xpPerMilestone;
-                nextMilestoneText.text = $"Next: {nextMilestoneXP} XP";
+                int milestoneXP = (i + 1) * xpPerMilestone;
+                bool isUnlocked = currentXP >= milestoneXP;
+
+                var itemGO = _spawnedItems[i];
+                var lockedIcon = itemGO.transform.Find("LockedIcon");
+                if (lockedIcon != null)
+                    lockedIcon.gameObject.SetActive(!isUnlocked);
+
+                var unlockedObj = itemGO.transform.Find("UnlockedObject");
+                if (unlockedObj != null)
+                    unlockedObj.gameObject.SetActive(isUnlocked);
             }
         }
 
-        /// <summary>
-        /// Shows the reward unlock panel with animation.
-        /// </summary>
-        void ShowRewardPanel(SO_XPTrackReward reward)
+        float GetNormalized(int xp)
         {
-            if (rewardUnlockPanel == null) return;
+            if (xpTrackData == null) return 0f;
 
-            if (rewardIcon != null && reward.icon != null)
-            {
-                rewardIcon.sprite = reward.icon;
-                rewardIcon.enabled = true;
-            }
-
-            if (rewardNameText != null)
-                rewardNameText.text = reward.rewardName;
-
-            if (rewardDescriptionText != null)
-                rewardDescriptionText.text = reward.unlockDescription;
-
-            rewardUnlockPanel.SetActive(true);
-
-            // Animate panel in
-            if (rewardPanelCanvasGroup != null)
-            {
-                rewardPanelCanvasGroup.alpha = 0f;
-                var rectTransform = rewardPanelCanvasGroup.GetComponent<RectTransform>();
-
-                var sequence = DOTween.Sequence();
-                sequence.Append(rewardPanelCanvasGroup.DOFade(1f, 0.4f).SetEase(Ease.OutQuad));
-
-                if (rectTransform != null)
-                {
-                    rectTransform.localScale = Vector3.one * 0.5f;
-                    sequence.Join(rectTransform.DOScale(1f, 0.5f).SetEase(Ease.OutBack));
-                }
-
-                sequence.Play();
-            }
-
-            // Animate the reward icon
-            if (rewardIcon != null)
-            {
-                var iconRect = rewardIcon.GetComponent<RectTransform>();
-                if (iconRect != null)
-                {
-                    iconRect.localScale = Vector3.zero;
-                    iconRect.DOScale(1.2f, 0.4f)
-                        .SetEase(Ease.OutBack)
-                        .SetDelay(0.2f)
-                        .OnComplete(() =>
-                        {
-                            iconRect.DOScale(1f, 0.15f).SetEase(Ease.InOutQuad);
-                        });
-                }
-            }
+            int totalXP = xpTrackData.milestones.Count * xpTrackData.xpPerMilestone;
+            if (totalXP <= 0) return 0f;
+            return Mathf.Clamp01((float)xp / totalXP);
         }
 
-        void HideRewardPanel()
+        void ClearSpawned()
         {
-            if (rewardUnlockPanel == null) return;
+            foreach (var go in _spawnedItems)
+                if (go != null) Destroy(go);
+            _spawnedItems.Clear();
 
-            if (rewardPanelCanvasGroup != null)
-            {
-                rewardPanelCanvasGroup.DOFade(0f, 0.3f)
-                    .SetEase(Ease.InQuad)
-                    .OnComplete(() => rewardUnlockPanel.SetActive(false));
-            }
-            else
-            {
-                rewardUnlockPanel.SetActive(false);
-            }
+            foreach (var go in _spawnedLevels)
+                if (go != null) Destroy(go);
+            _spawnedLevels.Clear();
         }
 
         void KillTween()

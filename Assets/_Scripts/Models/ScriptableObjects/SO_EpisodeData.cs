@@ -27,6 +27,9 @@ namespace CosmicShore.Models
         [Tooltip("Episode number (for ordering)")]
         public int episodeNumber;
 
+        [Tooltip("Price or cost displayed on the card")]
+        public string amount;
+
         [Tooltip("Whether this episode is currently available to play")]
         public bool isAvailable;
     }
