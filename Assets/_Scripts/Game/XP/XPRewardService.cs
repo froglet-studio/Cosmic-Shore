@@ -8,7 +8,7 @@ namespace CosmicShore.Game.XP
 {
     /// <summary>
     /// Calculates and awards XP after a game ends.
-    /// Attach to a persistent GameObject (e.g. alongside PlayerDataService).
+    /// Place on a GameObject in each game scene (e.g. alongside EndGameCinematicController).
     /// </summary>
     public class XPRewardService : MonoBehaviour
     {
@@ -20,30 +20,19 @@ namespace CosmicShore.Game.XP
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
 
-        /// <summary>
-        /// Stores the XP earned in the most recent game, for UI display.
-        /// </summary>
         public int LastXPEarned { get; private set; }
-
-        /// <summary>
-        /// Stores newly unlocked milestones from the most recent XP award.
-        /// </summary>
         public List<XPMilestone> LastUnlockedMilestones { get; private set; } = new();
-
-        /// <summary>
-        /// The XP value before the most recent award (for animation purposes).
-        /// </summary>
         public int PreviousXP { get; private set; }
 
         void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+        }
+
+        void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         /// <summary>

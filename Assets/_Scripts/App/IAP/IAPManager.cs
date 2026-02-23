@@ -29,13 +29,13 @@ namespace CosmicShore.App.UI.Screens
 
         void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+        }
+
+        void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         void Start()
