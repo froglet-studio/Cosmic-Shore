@@ -41,6 +41,10 @@ namespace CosmicShore.App.Profile
             }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+
+            // Always have a profile ready so AddXP/GetXP never fail.
+            // Cloud data will merge on top once auth completes.
+            CreateLocalDefaultProfile(null);
         }
 
         void OnDestroy()
@@ -125,10 +129,13 @@ namespace CosmicShore.App.Profile
 
         async Task LoadOrCreateProfileAsync(string playerId, bool canUseCloudSave)
         {
+            // Update userId now that we know the real player id
+            if (!string.IsNullOrEmpty(playerId))
+                CurrentProfile.userId = playerId;
+
             if (!canUseCloudSave)
             {
-                Debug.LogWarning("[PlayerDataService] Not signed in. Using local-only profile.");
-                CreateLocalDefaultProfile(playerId);
+                Debug.LogWarning("[PlayerDataService] Not signed in. Keeping local profile.");
                 return;
             }
 
@@ -140,28 +147,32 @@ namespace CosmicShore.App.Profile
                 if (result.TryGetValue(cloudSaveProfileKey, out var item))
                 {
                     var json = item.Value.GetAs<string>();
-                    var data = JsonUtility.FromJson<PlayerProfileData>(json);
+                    var cloudData = JsonUtility.FromJson<PlayerProfileData>(json);
 
-                    if (data != null)
+                    if (cloudData != null)
                     {
-                        CurrentProfile = data;
+                        // Merge: keep the higher XP (local may have earned XP before cloud loaded)
+                        int localXP = CurrentProfile.xp;
+                        CurrentProfile = cloudData;
+                        if (localXP > CurrentProfile.xp)
+                        {
+                            CurrentProfile.xp = localXP;
+                            await SaveProfileAsync(true);
+                        }
                         return;
                     }
 
-                    Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Creating default.");
-                    CreateLocalDefaultProfile(playerId);
+                    Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Keeping local.");
                 }
                 else
                 {
-                    // No profile yet → create & save
-                    CreateLocalDefaultProfile(playerId);
+                    // No cloud profile yet → upload local
                     await SaveProfileAsync(canUseCloudSave);
                 }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] Load failed: {e.Message}");
-                CreateLocalDefaultProfile(playerId);
+                Debug.LogWarning($"[PlayerDataService] Cloud load failed: {e.Message}. Keeping local.");
             }
         }
 
