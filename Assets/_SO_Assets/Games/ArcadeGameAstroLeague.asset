@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameAstroLeague
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   Mode: 36
   IsMultiplayer: 0
   DisplayName: Astro League
@@ -23,7 +23,8 @@ MonoBehaviour:
   PreviewClip: {fileID: 0}
   GolfScoring: 0
   SceneName: MinigameAstroLeague
-  Captains: []
+  Captains:
+  - {fileID: 11400000, guid: f2d76569deb637b4e90869cb5a908a6b, type: 2}
   MinPlayers: 1
   MaxPlayers: 2
   MinIntensity: 1
