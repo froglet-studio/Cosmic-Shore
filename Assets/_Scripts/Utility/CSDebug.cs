@@ -37,11 +37,49 @@ namespace CosmicShore.Utility
     public static class CSDebug
     {
         /// <summary>
-        /// Current log level. Defaults to <see cref="CSLogLevel.All"/>.
-        /// Set to <see cref="CSLogLevel.WarningsAndErrors"/> to suppress informational logs,
-        /// or <see cref="CSLogLevel.Off"/> to suppress all output.
+        /// Per-type flags for granular control. Toggle individual log types on/off.
         /// </summary>
-        public static CSLogLevel LogLevel = CSLogLevel.All;
+        public static bool LogEnabled = true;
+        public static bool WarningsEnabled = true;
+        public static bool ErrorsEnabled = true;
+
+        /// <summary>
+        /// Convenience property for preset log levels.
+        /// Getter derives the closest preset from the individual flags.
+        /// Setter applies the preset by setting all flags at once.
+        /// </summary>
+        public static CSLogLevel LogLevel
+        {
+            get
+            {
+                if (LogEnabled && WarningsEnabled && ErrorsEnabled) return CSLogLevel.All;
+                if (!LogEnabled && WarningsEnabled && ErrorsEnabled) return CSLogLevel.WarningsAndErrors;
+                if (!LogEnabled && !WarningsEnabled && !ErrorsEnabled) return CSLogLevel.Off;
+                // Custom combination that doesn't map to a preset; treat as All.
+                return CSLogLevel.All;
+            }
+            set
+            {
+                switch (value)
+                {
+                    case CSLogLevel.All:
+                        LogEnabled = true;
+                        WarningsEnabled = true;
+                        ErrorsEnabled = true;
+                        break;
+                    case CSLogLevel.WarningsAndErrors:
+                        LogEnabled = false;
+                        WarningsEnabled = true;
+                        ErrorsEnabled = true;
+                        break;
+                    case CSLogLevel.Off:
+                        LogEnabled = false;
+                        WarningsEnabled = false;
+                        ErrorsEnabled = false;
+                        break;
+                }
+            }
+        }
 
         // ──────────────────────────────────────────────
         //  Log  (info / debug level)
@@ -52,7 +90,7 @@ namespace CosmicShore.Utility
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Log(object message)
         {
-            if (LogLevel != CSLogLevel.All) return;
+            if (!LogEnabled) return;
             Debug.Log(message);
         }
 
@@ -60,21 +98,21 @@ namespace CosmicShore.Utility
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Log(object message, Object context)
         {
-            if (LogLevel != CSLogLevel.All) return;
+            if (!LogEnabled) return;
             Debug.Log(message, context);
         }
 
         [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
         public static void LogFormat(string format, params object[] args)
         {
-            if (LogLevel != CSLogLevel.All) return;
+            if (!LogEnabled) return;
             Debug.LogFormat(format, args);
         }
 
         [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
         public static void LogFormat(Object context, string format, params object[] args)
         {
-            if (LogLevel != CSLogLevel.All) return;
+            if (!LogEnabled) return;
             Debug.LogFormat(context, format, args);
         }
 
@@ -86,26 +124,26 @@ namespace CosmicShore.Utility
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogWarning(object message)
         {
-            if (LogLevel == CSLogLevel.Off) return;
+            if (!WarningsEnabled) return;
             Debug.LogWarning(message);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogWarning(object message, Object context)
         {
-            if (LogLevel == CSLogLevel.Off) return;
+            if (!WarningsEnabled) return;
             Debug.LogWarning(message, context);
         }
 
         public static void LogWarningFormat(string format, params object[] args)
         {
-            if (LogLevel == CSLogLevel.Off) return;
+            if (!WarningsEnabled) return;
             Debug.LogWarningFormat(format, args);
         }
 
         public static void LogWarningFormat(Object context, string format, params object[] args)
         {
-            if (LogLevel == CSLogLevel.Off) return;
+            if (!WarningsEnabled) return;
             Debug.LogWarningFormat(context, format, args);
         }
 
@@ -117,26 +155,26 @@ namespace CosmicShore.Utility
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogError(object message)
         {
-            if (LogLevel == CSLogLevel.Off) return;
+            if (!ErrorsEnabled) return;
             Debug.LogError(message);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogError(object message, Object context)
         {
-            if (LogLevel == CSLogLevel.Off) return;
+            if (!ErrorsEnabled) return;
             Debug.LogError(message, context);
         }
 
         public static void LogErrorFormat(string format, params object[] args)
         {
-            if (LogLevel == CSLogLevel.Off) return;
+            if (!ErrorsEnabled) return;
             Debug.LogErrorFormat(format, args);
         }
 
         public static void LogErrorFormat(Object context, string format, params object[] args)
         {
-            if (LogLevel == CSLogLevel.Off) return;
+            if (!ErrorsEnabled) return;
             Debug.LogErrorFormat(context, format, args);
         }
     }

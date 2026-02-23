@@ -9,21 +9,23 @@ namespace CosmicShore.Utility.Tools
     [InitializeOnLoad]
     public class FrogletTools : Editor
     {
-        const string LogLevelPrefKey = "CSDebug_LogLevel";
         const string MenuAll = "FrogletTools/Logging/All Logs";
         const string MenuWarningsErrors = "FrogletTools/Logging/Warnings & Errors Only";
         const string MenuOff = "FrogletTools/Logging/Off (Silent)";
 
         static FrogletTools()
         {
-            CSDebug.LogLevel = (CSLogLevel)EditorPrefs.GetInt(LogLevelPrefKey, (int)CSLogLevel.All);
+            LogControlWindow.LoadPrefs();
             EditorApplication.delayCall += UpdateLogMenuChecks;
         }
 
         static void SetLogLevel(CSLogLevel level)
         {
             CSDebug.LogLevel = level;
-            EditorPrefs.SetInt(LogLevelPrefKey, (int)level);
+            // Persist the individual flags that LogLevel setter just updated.
+            EditorPrefs.SetBool("CSDebug_LogEnabled", CSDebug.LogEnabled);
+            EditorPrefs.SetBool("CSDebug_WarningsEnabled", CSDebug.WarningsEnabled);
+            EditorPrefs.SetBool("CSDebug_ErrorsEnabled", CSDebug.ErrorsEnabled);
             UpdateLogMenuChecks();
         }
 
