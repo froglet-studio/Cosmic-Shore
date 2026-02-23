@@ -14,6 +14,21 @@ namespace CosmicShore.Game
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {
+        /// <summary>
+        /// Ensures a PrismEffectsManager instance exists. If none was placed in the scene,
+        /// creates one automatically so explosion/implosion effects don't silently fail.
+        /// </summary>
+        public static PrismEffectsManager EnsureInstance()
+        {
+            if (Instance != null) return Instance;
+
+            var go = new GameObject("[PrismEffectsManager]");
+            go.AddComponent<PrismEffectsManager>();
+            Debug.LogWarning("[PrismEffectsManager] No instance found in scene — auto-created. " +
+                             "Consider adding one to the scene to avoid this overhead.");
+            return Instance;
+        }
+
         private const int BATCH_SIZE = 128;
         private const int INITIAL_CAPACITY = 64;
 

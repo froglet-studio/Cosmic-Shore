@@ -44,19 +44,19 @@ namespace CosmicShore.Core
         public void ActivateShield(float? duration = null)
         {
             // Cancel any pending timer before applying new state
-            PrismTimerManager.Instance?.CancelTimers(this);
+            PrismTimerManager.EnsureInstance().CancelTimers(this);
 
             ApplyShieldState();
 
             if (duration.HasValue)
             {
-                PrismTimerManager.Instance?.ScheduleShieldDeactivation(this, duration.Value);
+                PrismTimerManager.EnsureInstance().ScheduleShieldDeactivation(this, duration.Value);
             }
         }
 
         public void ActivateSuperShield()
         {
-            PrismTimerManager.Instance?.CancelTimers(this);
+            PrismTimerManager.EnsureInstance().CancelTimers(this);
 
             prism.prismProperties.IsSuperShielded = true;
             prism.prismProperties.IsDangerous = false;
@@ -70,11 +70,11 @@ namespace CosmicShore.Core
 
         public void DeactivateShields(float? delay = null)
         {
-            PrismTimerManager.Instance?.CancelTimers(this);
+            PrismTimerManager.EnsureInstance().CancelTimers(this);
 
             if (delay.HasValue)
             {
-                PrismTimerManager.Instance?.ScheduleShieldDeactivation(this, delay.Value);
+                PrismTimerManager.EnsureInstance().ScheduleShieldDeactivation(this, delay.Value);
             }
             else
             {

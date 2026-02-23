@@ -56,7 +56,7 @@ namespace CosmicShore.Game
             if (IsActive)
             {
                 IsActive = false;
-                PrismEffectsManager.Instance?.UnregisterImplosion(this);
+                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
             }
 
             if (prismRenderer != null && mpb != null)
@@ -78,7 +78,7 @@ namespace CosmicShore.Game
             }
 
             if (IsActive)
-                PrismEffectsManager.Instance?.UnregisterImplosion(this);
+                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
 
             var targetPos = convergenceTransform.position;
 
@@ -96,8 +96,8 @@ namespace CosmicShore.Game
             mpb.SetVector(ConvergencePointID, targetPos);
             prismRenderer.SetPropertyBlock(mpb);
 
-            // Register with batched manager for frame updates
-            PrismEffectsManager.Instance?.RegisterImplosion(this);
+            // Register with batched manager for frame updates (auto-creates if not in scene)
+            PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
         }
 
         /// <summary> Start grow (shader: 1 -> 0). </summary>
@@ -110,7 +110,7 @@ namespace CosmicShore.Game
             }
 
             if (IsActive)
-                PrismEffectsManager.Instance?.UnregisterImplosion(this);
+                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
 
             var startPosition = ownerTransform.position;
 
@@ -128,8 +128,8 @@ namespace CosmicShore.Game
             mpb.SetVector(ConvergencePointID, startPosition);
             prismRenderer.SetPropertyBlock(mpb);
 
-            // Register with batched manager for frame updates
-            PrismEffectsManager.Instance?.RegisterImplosion(this);
+            // Register with batched manager for frame updates (auto-creates if not in scene)
+            PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace CosmicShore.Game
             if (IsActive)
             {
                 IsActive = false;
-                PrismEffectsManager.Instance?.UnregisterImplosion(this);
+                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
             }
 
             if (prismRenderer && mpb != null)

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Utilities; // for PrismEventChannelWithReturnSO
@@ -193,12 +194,16 @@ namespace CosmicShore.Game
             obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
 
-            obj.OnReturnToPool += _ =>
+            // Self-unsubscribing callback so lambdas don't accumulate on pool reuse
+            Action<PrismImplosion> growCallback = null;
+            growCallback = _ =>
             {
+                obj.OnReturnToPool -= growCallback;
                 data.OnGrowCompleted?.Invoke();
             };
+            obj.OnReturnToPool += growCallback;
 
-            obj.StartGrow(data.TargetTransform); // adjust if different
+            obj.StartGrow(data.TargetTransform);
 
             return obj.gameObject;
         }

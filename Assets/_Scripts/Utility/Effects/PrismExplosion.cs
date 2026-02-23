@@ -100,13 +100,17 @@ namespace CosmicShore.Game
             Elapsed = 0f;
             IsActive = true;
 
-            // Set initial velocity on shader (only needs to happen once)
+            // Set ALL animated shader properties to their initial values so
+            // we never fall back to the material's baked defaults
+            // (ExplodingBlockMaterial has _ExplosionAmount: 20.7 which looks fully exploded)
             _renderer.GetPropertyBlock(_mpb);
             _mpb.SetVector(VelocityID, velocity);
+            _mpb.SetFloat(ExplosionAmountID, 0f);
+            _mpb.SetFloat(OpacityID, 1f);
             _renderer.SetPropertyBlock(_mpb);
 
-            // Register with batched manager for frame updates
-            PrismEffectsManager.Instance?.RegisterExplosion(this);
+            // Register with batched manager for frame updates (auto-creates if not in scene)
+            PrismEffectsManager.EnsureInstance().RegisterExplosion(this);
         }
 
         /// <summary>

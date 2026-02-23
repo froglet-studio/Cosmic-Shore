@@ -18,6 +18,21 @@ namespace CosmicShore.Core
     /// </summary>
     public class PrismTimerManager : Singleton<PrismTimerManager>
     {
+        /// <summary>
+        /// Ensures a PrismTimerManager instance exists. If none was placed in the scene,
+        /// creates one automatically so timed shield operations don't silently fail.
+        /// </summary>
+        public static PrismTimerManager EnsureInstance()
+        {
+            if (Instance != null) return Instance;
+
+            var go = new GameObject("[PrismTimerManager]");
+            go.AddComponent<PrismTimerManager>();
+            Debug.LogWarning("[PrismTimerManager] No instance found in scene — auto-created. " +
+                             "Consider adding one to the scene to avoid this overhead.");
+            return Instance;
+        }
+
         internal enum TimerAction : byte
         {
             DeactivateShield = 0,
