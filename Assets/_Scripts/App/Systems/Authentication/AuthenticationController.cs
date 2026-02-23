@@ -46,7 +46,11 @@ namespace CosmicShore.Services.Auth
             Instance = this;
 
             if (dontDestroyOnLoad)
+            {
+                // DontDestroyOnLoad only works on root GameObjects.
+                transform.SetParent(null);
                 DontDestroyOnLoad(gameObject);
+            }
         }
 
         async void Start()

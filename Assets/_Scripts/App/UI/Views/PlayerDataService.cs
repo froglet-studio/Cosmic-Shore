@@ -40,6 +40,11 @@ namespace CosmicShore.App.Profile
                 return;
             }
             Instance = this;
+
+            // DontDestroyOnLoad only works on root GameObjects.
+            // Detach from any parent (Canvas, Panel, etc.) first so the
+            // object survives scene transitions.
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
 
             // Always have a profile ready so AddXP/GetXP never fail.
@@ -49,6 +54,9 @@ namespace CosmicShore.App.Profile
 
         void OnDestroy()
         {
+            if (Instance == this)
+                Instance = null;
+
             var auth = AuthenticationController.Instance;
             if (auth != null)
                 auth.OnSignedIn -= HandleSignedInFromAuth;
