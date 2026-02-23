@@ -35,13 +35,6 @@ namespace CosmicShore.Game.XP
         /// </summary>
         public int PreviousXP { get; private set; }
 
-        private static readonly HashSet<GameModes> XPEligibleModes = new()
-        {
-            GameModes.MultiplayerJoust,
-            GameModes.HexRace,
-            GameModes.MultiplayerCrystalCapture
-        };
-
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -54,26 +47,41 @@ namespace CosmicShore.Game.XP
         }
 
         /// <summary>
-        /// Calculates XP earned based on game mode, player count, placement, and whether the game is offline.
-        /// Call this after SortRoundStats has been called and winner is determined.
+        /// Calculates XP earned based on placement and player count.
+        /// Awards XP for all game modes.
         /// </summary>
-        /// <returns>The XP amount earned (0 if not eligible or player left).</returns>
         public int CalculateXP()
         {
-            if (gameData == null || gameData.LocalPlayer == null)
+            if (gameData == null)
+            {
+                Debug.LogWarning("[XPRewardService] gameData is null.");
                 return 0;
+            }
 
-            if (!XPEligibleModes.Contains(gameData.GameMode))
+            if (gameData.LocalPlayer == null)
+            {
+                Debug.LogWarning("[XPRewardService] LocalPlayer is null.");
                 return 0;
+            }
+
+            Debug.Log($"[XPRewardService] CalculateXP - Mode: {gameData.GameMode}, " +
+                      $"RoundStats count: {gameData.RoundStatsList?.Count ?? 0}");
 
             int placement = GetLocalPlayerPlacement();
             if (placement <= 0)
-                return 0; // Player left or not found
+            {
+                // Single-player mode or player not in round stats - award base XP
+                Debug.Log("[XPRewardService] Player not found in RoundStatsList, awarding base XP (10).");
+                return 10;
+            }
 
             bool isOffline = !gameData.IsMultiplayerMode;
             int playerCount = gameData.RoundStatsList.Count;
 
-            return CalculateXPForPlacement(placement, playerCount, isOffline);
+            int xp = CalculateXPForPlacement(placement, playerCount, isOffline);
+            Debug.Log($"[XPRewardService] Placement: {placement}/{playerCount}, " +
+                      $"Offline: {isOffline}, XP: {xp}");
+            return xp;
         }
 
         /// <summary>
@@ -82,17 +90,28 @@ namespace CosmicShore.Game.XP
         /// </summary>
         public int AwardXP()
         {
+            Debug.Log("[XPRewardService] AwardXP called.");
+
             int xpAmount = CalculateXP();
             LastXPEarned = xpAmount;
             LastUnlockedMilestones.Clear();
 
             if (xpAmount <= 0)
+            {
+                Debug.Log("[XPRewardService] XP amount is 0, nothing to award.");
                 return 0;
+            }
 
             var profileService = PlayerDataService.Instance;
             if (profileService == null)
             {
                 Debug.LogWarning("[XPRewardService] PlayerDataService.Instance is null, cannot award XP.");
+                return xpAmount;
+            }
+
+            if (profileService.CurrentProfile == null)
+            {
+                Debug.LogWarning("[XPRewardService] CurrentProfile is null, cannot award XP.");
                 return xpAmount;
             }
 
@@ -109,6 +128,7 @@ namespace CosmicShore.Game.XP
                     if (milestone.reward != null && !string.IsNullOrEmpty(milestone.reward.rewardId))
                     {
                         profileService.UnlockReward(milestone.reward.rewardId);
+                        Debug.Log($"[XPRewardService] Unlocked reward: {milestone.reward.rewardName}");
                     }
                 }
             }

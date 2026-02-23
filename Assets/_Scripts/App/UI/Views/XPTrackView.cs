@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.App.Profile;
 using CosmicShore.Models;
@@ -61,6 +62,9 @@ namespace CosmicShore.App.UI.Views
             SpawnMilestones();
             int currentXP = PlayerDataService.Instance != null ? PlayerDataService.Instance.GetXP() : 0;
             SetXPImmediate(currentXP);
+
+            // Stretch slider to match content after layout rebuilds
+            StartCoroutine(StretchSliderAfterLayout());
         }
 
         void SpawnMilestones()
@@ -97,6 +101,39 @@ namespace CosmicShore.App.UI.Views
                     var label = levelGO.GetComponentInChildren<TMP_Text>();
                     if (label != null)
                         label.text = milestoneXP.ToString();
+                }
+            }
+
+            // Force layout rebuild so content size fitter recalculates
+            if (xpItemPanels != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(xpItemPanels as RectTransform);
+            if (xpLevelDisplayPanel != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(xpLevelDisplayPanel as RectTransform);
+        }
+
+        IEnumerator StretchSliderAfterLayout()
+        {
+            // Wait one frame for layout to finish
+            yield return null;
+
+            if (xpSlider == null) yield break;
+
+            // Use the level display panel width as the reference since it spans all milestones
+            var referenceRect = xpLevelDisplayPanel as RectTransform;
+            if (referenceRect == null && xpItemPanels != null)
+                referenceRect = xpItemPanels as RectTransform;
+
+            if (referenceRect == null) yield break;
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(referenceRect);
+
+            var sliderRect = xpSlider.GetComponent<RectTransform>();
+            if (sliderRect != null)
+            {
+                float contentWidth = referenceRect.rect.width;
+                if (contentWidth > 0)
+                {
+                    sliderRect.sizeDelta = new Vector2(contentWidth, sliderRect.sizeDelta.y);
                 }
             }
         }

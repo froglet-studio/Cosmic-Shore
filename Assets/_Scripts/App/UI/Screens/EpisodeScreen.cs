@@ -19,7 +19,11 @@ namespace CosmicShore.App.UI.Screens
         [Header("Support Us")]
         [SerializeField] private Button supportUsButton;
 
+        [Header("Panel Toggle")]
+        [SerializeField] private GameObject episodePanel;
+
         private readonly List<GameObject> _spawnedCards = new();
+        private bool _loaded;
 
         void Start()
         {
@@ -27,9 +31,36 @@ namespace CosmicShore.App.UI.Screens
                 supportUsButton.onClick.AddListener(OnSupportUsClicked);
         }
 
+        public void TogglePanel()
+        {
+            if (episodePanel == null) return;
+
+            bool show = !episodePanel.activeSelf;
+            episodePanel.SetActive(show);
+
+            if (show && !_loaded)
+                LoadView();
+        }
+
+        public void ShowPanel()
+        {
+            if (episodePanel != null)
+                episodePanel.SetActive(true);
+
+            if (!_loaded)
+                LoadView();
+        }
+
+        public void HidePanel()
+        {
+            if (episodePanel != null)
+                episodePanel.SetActive(false);
+        }
+
         public void LoadView()
         {
             PopulateEpisodeCards();
+            _loaded = true;
         }
 
         void PopulateEpisodeCards()

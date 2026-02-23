@@ -61,7 +61,13 @@ namespace CosmicShore.Game.Cinematics
             // Award XP based on placement
             if (XPRewardService.Instance != null)
             {
-                XPRewardService.Instance.AwardXP();
+                int xp = XPRewardService.Instance.AwardXP();
+                Debug.Log($"[EndGameCinematic] XP awarded: {xp}");
+            }
+            else
+            {
+                Debug.LogWarning("[EndGameCinematic] XPRewardService.Instance is null - XP not awarded. " +
+                                 "Ensure XPRewardService exists on a DontDestroyOnLoad GameObject.");
             }
 
             var localPlayer = gameData.LocalPlayer;
