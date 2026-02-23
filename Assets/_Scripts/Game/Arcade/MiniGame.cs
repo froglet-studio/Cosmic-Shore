@@ -13,6 +13,7 @@ using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.App.Systems.Xp;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game.Arcade
@@ -164,7 +165,7 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void StartNewGame()
         {
-            //Debug.Log($"Playing as {PlayerCaptain.Name} - \"{PlayerCaptain.Description}\"");
+            //CSDebug.Log($"Playing as {PlayerCaptain.Name} - \"{PlayerCaptain.Description}\"");
             PauseSystem.TogglePauseGame(false);
 
             RemainingPlayers = new();
@@ -198,7 +199,7 @@ namespace CosmicShore.Game.Arcade
                 Instantiate(playerPrefab).TryGetComponent(out IPlayer player);
                 if (player == null)
                 {
-                    Debug.LogError($"Wrong prefab instantiated!");
+                    CSDebug.LogError($"Wrong prefab instantiated!");
                     return null;
                 }
 
@@ -224,7 +225,7 @@ namespace CosmicShore.Game.Arcade
         void StartGame()
         {
             gameRunning = true;
-            Debug.Log($"MiniGame.StartGame, ... {Time.time}");
+            CSDebug.Log($"MiniGame.StartGame, ... {Time.time}");
             // EndGameScreen.SetActive(false);
             RoundsPlayedThisGame = 0;
             OnMiniGameStart?.Invoke(gameMode, PlayerVesselType, NumberOfPlayers, IntensityLevel);
@@ -233,7 +234,7 @@ namespace CosmicShore.Game.Arcade
 
         void StartRound()
         {
-            Debug.Log($"MiniGame.StartRound - Round {RoundsPlayedThisGame + 1} Start, ... {Time.time}");
+            CSDebug.Log($"MiniGame.StartRound - Round {RoundsPlayedThisGame + 1} Start, ... {Time.time}");
             TurnsTakenThisRound = 0;
             SetupTurn();
         }
@@ -245,7 +246,7 @@ namespace CosmicShore.Game.Arcade
 
             // ScoreTracker.StartTracking(Players[activePlayerId].PlayerName, Players[activePlayerId].Team);
 
-            Debug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
+            CSDebug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
             
             ActivePlayer.InputController.InputStatus.Paused = false;
 
@@ -273,7 +274,7 @@ namespace CosmicShore.Game.Arcade
             TurnsTakenThisRound++;
 
             // ScoreTracker.EndTurn();
-            Debug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound}, ... {Time.time}");
+            CSDebug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound}, ... {Time.time}");
 
             if (TurnsTakenThisRound >= RemainingPlayers.Count)
                 EndRound();
@@ -287,7 +288,7 @@ namespace CosmicShore.Game.Arcade
 
             ResolveEliminations();
 
-            Debug.Log($"MiniGame.EndRound - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
+            CSDebug.Log($"MiniGame.EndRound - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
 
             if (RoundsPlayedThisGame >= NumberOfRounds || RemainingPlayers.Count <= 0)
                 EndGame();
@@ -297,13 +298,13 @@ namespace CosmicShore.Game.Arcade
 
         void EndGame()
         {
-            Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
-            // Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinnerScoreData().Name} ");
+            CSDebug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
+            // CSDebug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinnerScoreData().Name} ");
 
             
             // TODO - In MiniGameBase, use MiniGameData to get scores
             /*foreach (var player in Players)
-                Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.Name)} ");*/
+                CSDebug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.Name)} ");*/
 
             if (IsDailyChallenge)
             {
@@ -317,8 +318,8 @@ namespace CosmicShore.Game.Arcade
             {
                 GameCanvas.AwardsContainer.SetActive(true);
                 // Award Crystals
-                Debug.Log($"Mission EndGame - Award Mission Crystals -  Score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}");
-                Debug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
+                CSDebug.Log($"Mission EndGame - Award Mission Crystals -  Score:{0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/}");
+                CSDebug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
                 int crystalsEarned = 0;
                 switch (PlayerCaptain.PrimaryElement)
                 {
@@ -339,22 +340,22 @@ namespace CosmicShore.Game.Arcade
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
                         break;
                 }
-                Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
+                CSDebug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
                 GameCanvas.CrystalsEarnedImage.sprite = CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name).SO_Element.GetFullIcon(true);
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
 
                 // Award XP
-                Debug.Log($"Mission EndGame - Award Mission XP -  Score:{0/*(int)ScoreTracker.GetWinnerScoreData().Score*/}, element:{PlayerCaptain.PrimaryElement}");
+                CSDebug.Log($"Mission EndGame - Award Mission XP -  Score:{0/*(int)ScoreTracker.GetWinnerScoreData().Score*/}, element:{PlayerCaptain.PrimaryElement}");
                 XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
                 GameCanvas.XPEarnedText.text = "10";
 
                 // Report any encountered captains
-                Debug.Log($"Mission EndGame - Unlock Mission Captains");
+                CSDebug.Log($"Mission EndGame - Unlock Mission Captains");
                 
                 // TODO - Get Captains from Data Containers, not Hanger
                 // if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
                 /*{
-                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
+                    CSDebug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
                     
                     
@@ -364,7 +365,7 @@ namespace CosmicShore.Game.Arcade
                 // TODO - Get Captains from Data Containers, not Hanger
 
                 /*{
-                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
+                    CSDebug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI2Captain.Name);
                 }*/
             }
@@ -458,7 +459,7 @@ namespace CosmicShore.Game.Arcade
 
             foreach (var player in Players)
             {
-                Debug.Log($"PlayerUUID: {player.PlayerUUID}");
+                CSDebug.Log($"PlayerUUID: {player.PlayerUUID}");
                 player.ToggleGameObject(player.PlayerUUID == LocalPlayer.PlayerUUID);
             }
         }*/

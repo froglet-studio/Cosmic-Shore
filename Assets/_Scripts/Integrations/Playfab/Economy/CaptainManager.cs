@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Utility;
 
 // TODO: Renamespace - not using playfab directly here
 namespace CosmicShore.Integrations.PlayFab.Economy
@@ -43,7 +44,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 case 4: return LevelFour;
                 case 5: return LevelFive;
                 default:
-                    Debug.LogError($"UpgradeXPRequirements.GetRequirementByLevel - level out of range: {nextLevel}");
+                    CSDebug.LogError($"UpgradeXPRequirements.GetRequirementByLevel - level out of range: {nextLevel}");
                     return LevelTwo;
             }
         }
@@ -123,12 +124,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             if (invokeCallback)
                 OnLoadCaptainData?.Invoke();
 
-            Debug.Log($"LoadCaptainData - {captain.Name}, Level:{captain.Level}, XP:{captain.XP}, Unlocked:{captain.Unlocked}, Encountered:{captain.Encountered}");
+            CSDebug.Log($"LoadCaptainData - {captain.Name}, Level:{captain.Level}, XP:{captain.XP}, Unlocked:{captain.Unlocked}, Encountered:{captain.Encountered}");
         }
 
         public void IssueXP(string captainName, int amount)
         {
-            Debug.Log($"CaptainManager.IssueXP {captainName}, {amount}");
+            CSDebug.Log($"CaptainManager.IssueXP {captainName}, {amount}");
             IssueXP(GetCaptainByName(captainName), amount);
         }
 
@@ -138,7 +139,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             captainData.AllCaptains[captain.SO_Captain.Name].XP += amount;
 
             // Save to Playfab
-            Debug.Log($"CaptainManager.IssueXP {captain.Name}, {amount}");
+            CSDebug.Log($"CaptainManager.IssueXP {captain.Name}, {amount}");
             XpHandler.IssueXP(captain, amount);
         }
 

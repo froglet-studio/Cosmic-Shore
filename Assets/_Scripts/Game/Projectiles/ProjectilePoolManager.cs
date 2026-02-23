@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -12,7 +13,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!instance.gameObject.activeSelf)
             {
-                Debug.LogError("Projectile already released! Should not call twice!");
+                CSDebug.LogError("Projectile already released! Should not call twice!");
                 return;
             }
             

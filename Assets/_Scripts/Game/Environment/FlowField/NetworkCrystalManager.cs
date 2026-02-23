@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -40,7 +41,7 @@ namespace CosmicShore.Game
             
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = Vector3.zero;
-            Debug.Log("[NetworkCrystalManager] Reset for replay — anchor index and positions cleared.");
+            CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index and positions cleared.");
         }
 
         // ---------------- Server Turn Start ----------------

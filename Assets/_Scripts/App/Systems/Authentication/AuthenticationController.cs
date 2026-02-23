@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Services.Auth
 {
@@ -256,7 +257,7 @@ namespace CosmicShore.Services.Auth
         void Log(string msg)
         {
             if (verboseLogs)
-                Debug.Log($"[UGS Auth] {msg}");
+                CSDebug.Log($"[UGS Auth] {msg}");
         }
     }
 }

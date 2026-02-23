@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore._Scripts.Game.Ship.ShipActions
 {
@@ -17,14 +18,14 @@ namespace CosmicShore._Scripts.Game.Ship.ShipActions
         {
             if (leadActionMono == null || syncAction == null)
             {
-                Debug.LogError("[SyncWrapper] Missing references"); 
+                CSDebug.LogError("[SyncWrapper] Missing references"); 
                 enabled = false;
                 return;
             }
 
             if (!(leadActionMono is IScaleProvider provider))
             {
-                Debug.LogError("[SyncWrapper] Lead action does not implement IScaleProvider");
+                CSDebug.LogError("[SyncWrapper] Lead action does not implement IScaleProvider");
                 enabled = false;
                 return;
             }

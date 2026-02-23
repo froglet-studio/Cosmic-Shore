@@ -7,6 +7,7 @@ using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Utility;
 using UnityEngine;
 using CosmicShore.Utilities;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.PlayFab.PlayerData
 {
@@ -75,9 +76,9 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
                     // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name
                     PlayerProfile.Update(result.PlayerProfile.DisplayName, result.PlayerProfile.AvatarUrl);
                     
-                    Debug.Log($"PlayerDataController - LoadPlayerProfile - Avatar url {result.PlayerProfile.AvatarUrl}");
-                    Debug.Log($"PlayerDataController - LoadPlayerProfile - local Avatar url {PlayerProfile.AvatarUrl}");
-                    Debug.Log($"PlayerDataController - LoadPlayerProfile - Profile Icon id {PlayerProfile.ProfileIconId}");
+                    CSDebug.Log($"PlayerDataController - LoadPlayerProfile - Avatar url {result.PlayerProfile.AvatarUrl}");
+                    CSDebug.Log($"PlayerDataController - LoadPlayerProfile - local Avatar url {PlayerProfile.AvatarUrl}");
+                    CSDebug.Log($"PlayerDataController - LoadPlayerProfile - Profile Icon id {PlayerProfile.ProfileIconId}");
 
                     if (string.IsNullOrEmpty(result.PlayerProfile.AvatarUrl))
                         SetPlayerAvatar(new System.Random().Next(1,19));
@@ -86,8 +87,8 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
                     PlayerPrefs.SetString(ProfileIconIdPlayerPrefKey, PlayerProfile.AvatarUrl);
                     PlayerPrefs.Save();
 
-                    Debug.Log("AuthenticationManager - Successfully retrieved player profile");
-                    Debug.Log($"AuthenticationManager - Player id: {PlayerProfile.UniqueID}");
+                    CSDebug.Log("AuthenticationManager - Successfully retrieved player profile");
+                    CSDebug.Log($"AuthenticationManager - Player id: {PlayerProfile.UniqueID}");
 
                     OnProfileLoaded?.Invoke();
                 },PlayFabUtility.HandleErrorReport
@@ -113,7 +114,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
             PlayFabClientAPI.UpdateUserTitleDisplayName(request,
                 result =>
                 {
-                    Debug.Log($"AuthenticationManager - Successful updated player display name: {PlayerProfile.DisplayName}");
+                    CSDebug.Log($"AuthenticationManager - Successful updated player display name: {PlayerProfile.DisplayName}");
                     PlayerProfile.DisplayName = result.DisplayName;
                     OnPlayerDisplayNameUpdated?.Invoke();
                     PlayerPrefs.SetString(DisplayNamePlayerPrefKey, result.DisplayName);
@@ -137,7 +138,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
                 _ =>
                 {
                     PlayerProfile.AvatarUrl = avatarId.ToString();
-                    Debug.Log("PlayerDataController - Successfully updated player avatar.");
+                    CSDebug.Log("PlayerDataController - Successfully updated player avatar.");
                     PlayerPrefs.SetString(ProfileIconIdPlayerPrefKey, avatarId.ToString());
                     OnPlayerAvatarUpdated?.Invoke();
                 },
@@ -164,7 +165,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
         private void OnUpdatePlayerData(UpdateUserDataResult result)
         {
             if (result == null) return;
-            Debug.Log("PlayerDataController - OnUpdatePlayerData - Player data updated.");
+            CSDebug.Log("PlayerDataController - OnUpdatePlayerData - Player data updated.");
         }
 
         #endregion

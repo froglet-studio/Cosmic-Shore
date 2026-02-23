@@ -2,6 +2,7 @@
 using System;
 using CosmicShore.Game.Arcade;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -29,7 +30,7 @@ namespace CosmicShore.Game.UI
         {
             if (!joustController || !joustController.joustTurnMonitor)
             {
-                Debug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
+                CSDebug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
                 return;
             }
 

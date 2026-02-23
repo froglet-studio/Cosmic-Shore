@@ -11,6 +11,7 @@ using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Obvious.Soap;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -34,7 +35,7 @@ namespace CosmicShore.Game
             networkManager = NetworkManager.Singleton; // or NetworkManager.Instance if you’ve wrapped it
             if (networkManager == null)
             {
-                Debug.LogError("[MultiplayerSetup] NetworkManager missing in scene!");
+                CSDebug.LogError("[MultiplayerSetup] NetworkManager missing in scene!");
             }
         }
 
@@ -75,7 +76,7 @@ namespace CosmicShore.Game
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[MultiplayerSetup] UGS init/sign-in failed: {ex}");
+                CSDebug.LogError($"[MultiplayerSetup] UGS init/sign-in failed: {ex}");
             }
         }
 
@@ -83,7 +84,7 @@ namespace CosmicShore.Game
         {
             if (networkManager == null)
             {
-                Debug.LogError("[MultiplayerSetup] Cannot start local host — NetworkManager is null.");
+                CSDebug.LogError("[MultiplayerSetup] Cannot start local host — NetworkManager is null.");
                 return;
             }
 
@@ -93,7 +94,7 @@ namespace CosmicShore.Game
             // every player (and their crystals) to get Domains.Unassigned.
             DomainAssigner.Initialize();
 
-            Debug.Log("[MultiplayerSetup] Starting local host for solo play with AI.");
+            CSDebug.Log("[MultiplayerSetup] Starting local host for solo play with AI.");
             networkManager.StartHost();
         }
 
@@ -142,12 +143,12 @@ namespace CosmicShore.Game
                 catch (SessionException sx)
                 {
                     // Known cases to skip and try next: full/locked/deleted/etc.
-                    Debug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
                     continue;
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
                     continue;
                 }
             }
@@ -184,7 +185,7 @@ namespace CosmicShore.Game
             gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
             gameData.InvokeSessionStarted();
 
-            Debug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
+            CSDebug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
         }
 
         private async UniTask JoinSessionAsClientById(string sessionId)
@@ -196,7 +197,7 @@ namespace CosmicShore.Game
                 PlayerProperties = playerProperties
             };
 
-            Debug.Log($"[MultiplayerSetup] Joining session {sessionId}");
+            CSDebug.Log($"[MultiplayerSetup] Joining session {sessionId}");
             gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
         }
 
@@ -213,7 +214,7 @@ namespace CosmicShore.Game
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
 
             var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-            Debug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
+            CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
             return results.Sessions;
         }
 
@@ -240,14 +241,14 @@ namespace CosmicShore.Game
             {
                 if (clientId != networkManager.LocalClientId)
                 {
-                    Debug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    CSDebug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
                 }
                 return;
             }
 
             if (clientId == networkManager.LocalClientId)
             {
-                Debug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
+                CSDebug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
                 OnActiveSessionEnd?.Raise();
             }
         }
@@ -292,18 +293,18 @@ namespace CosmicShore.Game
                     if (gameData.ActiveSession.IsHost)
                     {
                         await gameData.ActiveSession.AsHost().DeleteAsync();
-                        Debug.Log("[MultiplayerSetup] Host deleted session.");
+                        CSDebug.Log("[MultiplayerSetup] Host deleted session.");
                     }
                     else
                     {
                         await gameData.ActiveSession.LeaveAsync();
-                        Debug.Log("[MultiplayerSetup] Client left session.");
+                        CSDebug.Log("[MultiplayerSetup] Client left session.");
                     }
                 }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[MultiplayerSetup] LeaveSession error: {e.Message}");
+                CSDebug.LogWarning($"[MultiplayerSetup] LeaveSession error: {e.Message}");
             }
             finally
             {
@@ -324,7 +325,7 @@ namespace CosmicShore.Game
         {
             try
             {
-                Debug.LogWarning("[Net] Transport failure. Recreating session/join…");
+                CSDebug.LogWarning("[Net] Transport failure. Recreating session/join…");
                 if (gameData.ActiveSession != null)
                 {
                     if (gameData.ActiveSession.IsHost)
@@ -343,7 +344,7 @@ namespace CosmicShore.Game
             }
             catch (Exception e)
             {
-                Debug.LogError($"[Net] Transport failure handling error: {e}");
+                CSDebug.LogError($"[Net] Transport failure handling error: {e}");
             }
         }
     }

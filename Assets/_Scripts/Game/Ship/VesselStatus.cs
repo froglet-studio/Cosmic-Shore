@@ -9,6 +9,7 @@ using CosmicShore.Game.Cinematics;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game
@@ -39,7 +40,7 @@ namespace CosmicShore.Game
                 if (_shipInstance is not null) 
                     return _shipInstance as IVessel;
                 
-                Debug.LogError("ShipInstance is not referenced in inspector of Vessel Prefab!");
+                CSDebug.LogError("ShipInstance is not referenced in inspector of Vessel Prefab!");
                 return null;
             }
         }
@@ -51,7 +52,7 @@ namespace CosmicShore.Game
             get
             {
                 if (vesselHUDController is IVesselHUDController c) return c;
-                Debug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
+                CSDebug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
                 return null;
             }
         }

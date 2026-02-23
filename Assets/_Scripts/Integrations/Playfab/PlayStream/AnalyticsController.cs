@@ -7,6 +7,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EventsModels;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.PlayFab.PlayStream
 {
@@ -72,13 +73,13 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 {
                     if (result == null)
                     {
-                        Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(GetUserData)} - no user data available.");
+                        CSDebug.LogWarning($"{nameof(AnalyticsController)} - {nameof(GetUserData)} - no user data available.");
                         return;
                     }
                 
                     foreach (var pair in result.Data)
                     {
-                        Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserData)} - key: {pair.Key} value: {pair.Value.Value}");
+                        CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserData)} - key: {pair.Key} value: {pair.Value.Value}");
                     }
                 }, PlayFabUtility.HandleErrorReport);
         }
@@ -98,11 +99,11 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 {
                     if (result == null)
                     {
-                        Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(SetUserData)} - Unable to retrieve data or no data available");
+                        CSDebug.LogWarning($"{nameof(AnalyticsController)} - {nameof(SetUserData)} - Unable to retrieve data or no data available");
                         return;
                     }
 
-                    Debug.Log($"{nameof(AnalyticsController)} - {nameof(SetUserData)} success.");
+                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(SetUserData)} success.");
                 }, PlayFabUtility.HandleErrorReport);
         }
 
@@ -119,7 +120,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 }, (result) =>
                 {
                     if (result == null) return;
-                    Debug.Log($"{nameof(AnalyticsController)} - {nameof(DeleteUserDataByKeys)} data successfully deleted by keys.");
+                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(DeleteUserDataByKeys)} data successfully deleted by keys.");
                 }, PlayFabUtility.HandleErrorReport);
         }
         #endregion
@@ -141,14 +142,14 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 {
                     if (result == null)
                     {
-                        Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - Unable to retrieve data or no data available");
+                        CSDebug.LogWarning($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - Unable to retrieve data or no data available");
                         return;
                     }
 
-                    Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - success.");
+                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - success.");
                     foreach (var data in result.Data)
                     {
-                        Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
+                        CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
                     }
                 }, PlayFabUtility.HandleErrorReport
             );
@@ -168,10 +169,10 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 }, (result) =>
                 {
                     if (result == null) return;
-                    Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - success.");
+                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - success.");
                     foreach (var data in result.Data)
                     {
-                        Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
+                        CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
                     }
                 },PlayFabUtility.HandleErrorReport);
         }
@@ -197,8 +198,8 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 }, (result) =>
                 {
                     if (result == null) return;
-                    Debug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} success.");
-                    Debug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} - event id: {result.EventId}");
+                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} success.");
+                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} - event id: {result.EventId}");
                 }, PlayFabUtility.HandleErrorReport);
         }
 
@@ -218,13 +219,13 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 {
                     if (result == null)
                     {
-                        Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(WritePlayStreamEvents)} no result.");
+                        CSDebug.LogWarning($"{nameof(AnalyticsController)} - {nameof(WritePlayStreamEvents)} no result.");
                         return;
                     }
 
                     foreach (var eventId in result.AssignedEventIds)
                     {
-                        Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(WritePlayStreamEvents)} - assigned event id: {eventId}.");
+                        CSDebug.LogWarning($"{nameof(AnalyticsController)} - {nameof(WritePlayStreamEvents)} - assigned event id: {eventId}.");
                     }
                 },PlayFabUtility.HandleErrorReport
             );

@@ -3,6 +3,7 @@ using CosmicShore.Game.Analytics;
 using CosmicShore.Game.Arcade.Scoring;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -32,7 +33,7 @@ namespace CosmicShore.Game.Arcade
             LifeForm.OnLifeFormDeath += OnScoringEvent;
             ElementalCrystalImpactor.OnCrystalCollected += OnCrystalScoringEvent;
             isTracking = true;
-            Debug.Log("[ScoreTracker] Started Tracking");
+            CSDebug.Log("[ScoreTracker] Started Tracking");
         }
 
         public void StopTracking()
@@ -42,7 +43,7 @@ namespace CosmicShore.Game.Arcade
             LifeForm.OnLifeFormDeath -= OnScoringEvent;
             ElementalCrystalImpactor.OnCrystalCollected -= OnCrystalScoringEvent;
             isTracking = false;
-            Debug.Log("[ScoreTracker] Stopped Tracking");
+            CSDebug.Log("[ScoreTracker] Stopped Tracking");
         }
         
         void OnScoringEvent(string playerName, int cellId)

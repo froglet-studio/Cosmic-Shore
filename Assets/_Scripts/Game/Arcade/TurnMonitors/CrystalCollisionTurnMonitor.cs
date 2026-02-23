@@ -1,5 +1,6 @@
 using System; // Required for Action
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -64,7 +65,7 @@ namespace CosmicShore.Game.Arcade
             }
 
             if (CrystalCollisions != 0) return CrystalCollisions;
-            Debug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
+            CSDebug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
             return 39;
 
         }

@@ -8,6 +8,7 @@ using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.Profile
 {
@@ -84,7 +85,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogError($"[PlayerDataService] Start failed: {e.Message}");
+                CSDebug.LogError($"[PlayerDataService] Start failed: {e.Message}");
             }
         }
 
@@ -99,7 +100,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogError($"[PlayerDataService] HandleSignedInFromAuth failed: {e.Message}");
+                CSDebug.LogError($"[PlayerDataService] HandleSignedInFromAuth failed: {e.Message}");
             }
         }
 
@@ -144,7 +145,7 @@ namespace CosmicShore.App.Profile
 
             if (!canUseCloudSave)
             {
-                Debug.LogWarning("[PlayerDataService] Not signed in. Keeping local profile.");
+                CSDebug.LogWarning("[PlayerDataService] Not signed in. Keeping local profile.");
                 return;
             }
 
@@ -191,7 +192,7 @@ namespace CosmicShore.App.Profile
                         return;
                     }
 
-                    Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Keeping local.");
+                    CSDebug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Keeping local.");
                 }
                 else
                 {
@@ -201,7 +202,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] Cloud load failed: {e.Message}. Keeping local.");
+                CSDebug.LogWarning($"[PlayerDataService] Cloud load failed: {e.Message}. Keeping local.");
             }
         }
 
@@ -240,7 +241,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] Save failed: {e.Message}");
+                CSDebug.LogWarning($"[PlayerDataService] Save failed: {e.Message}");
             }
         }
 
@@ -277,7 +278,7 @@ namespace CosmicShore.App.Profile
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] Debounced save failed: {e.Message}");
+                CSDebug.LogWarning($"[PlayerDataService] Debounced save failed: {e.Message}");
             }
             finally
             {
@@ -353,7 +354,7 @@ namespace CosmicShore.App.Profile
             CurrentProfile.xp += amount;
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleDebouncedSave();
-            Debug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
+            CSDebug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
         }
 
         /// <summary>
@@ -373,7 +374,7 @@ namespace CosmicShore.App.Profile
             CurrentProfile.unlockedRewardIds.Add(rewardId);
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleDebouncedSave();
-            Debug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
+            CSDebug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
         }
 
         /// <summary>

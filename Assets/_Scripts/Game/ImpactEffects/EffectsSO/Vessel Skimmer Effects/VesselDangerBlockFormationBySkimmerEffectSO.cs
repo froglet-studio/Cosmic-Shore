@@ -2,6 +2,7 @@
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -23,7 +24,7 @@ namespace CosmicShore.Game
         {
             if (!cellData)
             {
-                Debug.LogError("No Cell data found!");
+                CSDebug.LogError("No Cell data found!");
                 return;
             }
             
@@ -53,7 +54,7 @@ namespace CosmicShore.Game
             var toTarget = targetPos - victimPos;
             if (toTarget.sqrMagnitude < 0.01f)
             {
-                Debug.LogWarning("[VesselDangerBlockFormationBySkimmerEffectSO] Target too close to victim. Aborting AOE.");
+                CSDebug.LogWarning("[VesselDangerBlockFormationBySkimmerEffectSO] Target too close to victim. Aborting AOE.");
                 return;
             }
 

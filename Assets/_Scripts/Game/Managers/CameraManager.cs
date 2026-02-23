@@ -8,6 +8,7 @@ using Obvious.Soap;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Utility;
 
 
 public class CameraManager : Singleton<CameraManager>
@@ -96,7 +97,7 @@ public class CameraManager : Singleton<CameraManager>
             }
             return ctrl;
         }
-        Debug.LogWarning($"[CameraManager] Could not find camera controller: {name}");
+        CSDebug.LogWarning($"[CameraManager] Could not find camera controller: {name}");
         return null;
     }
 
@@ -138,7 +139,7 @@ public class CameraManager : Singleton<CameraManager>
         }
         else
         {
-            Debug.LogWarning("[CameraManager] Main menu camera is not assigned!");
+            CSDebug.LogWarning("[CameraManager] Main menu camera is not assigned!");
         }
         
         if (_playerCamera is CustomCameraController pcc)
