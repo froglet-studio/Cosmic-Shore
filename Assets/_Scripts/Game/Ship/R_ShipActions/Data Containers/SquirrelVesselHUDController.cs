@@ -25,6 +25,7 @@ namespace CosmicShore.Game
         [SerializeField] private DomainColorPaletteSO domainColors;
 
         private IVesselStatus _vesselStatus;
+        private Domains _lastSourceDomain = Domains.None;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -106,11 +107,26 @@ namespace CosmicShore.Game
             bool isBoosted = mult > baseMult + 0.0001f;
             bool isFull = mult >= maxMult - 0.0001f;
 
+            // Persist source domain across decay frames so the stolen color holds
+            Domains effectiveDomain = payload.SourceDomain;
+            if (effectiveDomain != Domains.None && effectiveDomain != Domains.Unassigned)
+            {
+                _lastSourceDomain = effectiveDomain;
+            }
+            else if (isBoosted)
+            {
+                effectiveDomain = _lastSourceDomain;
+            }
+            else
+            {
+                _lastSourceDomain = Domains.None;
+            }
+
             Color sourceColor = Color.white;
-            bool hasSourceDomain = payload.SourceDomain != Domains.None
-                                   && payload.SourceDomain != Domains.Unassigned;
+            bool hasSourceDomain = effectiveDomain != Domains.None
+                                   && effectiveDomain != Domains.Unassigned;
             if (hasSourceDomain && domainColors != null)
-                sourceColor = domainColors.Get(payload.SourceDomain);
+                sourceColor = domainColors.Get(effectiveDomain);
 
             view.SetBoostState(Mathf.Clamp01(boost01), isBoosted, isFull,
                 sourceColor, hasSourceDomain);

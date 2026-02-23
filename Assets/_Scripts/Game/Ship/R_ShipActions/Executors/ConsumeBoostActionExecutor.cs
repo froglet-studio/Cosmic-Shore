@@ -16,7 +16,10 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
     public event Action<float, float> OnBoostStarted;
     public event Action OnBoostEnded;
     
-    [SerializeField, Range(0,4)] private int initialCharges = 4; 
+    [Header("Events")]
+    [SerializeField] private ScriptableEventBoostChanged boostChanged;
+
+    [SerializeField, Range(0,4)] private int initialCharges = 4;
 
     IVesselStatus _status;
     ResourceSystem _resources;
@@ -154,8 +157,18 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
             _status.IsBoosting = false;
             _status.BoostMultiplier = 1f;
             OnBoostEnded?.Invoke();
+        }
 
-            if (!_so || _available != 0 || _reloading) return;
+        // Notify HUD of the multiplier change (MaxMultiplier = 0 → HUD uses its own config)
+        boostChanged?.Raise(new BoostChangedPayload
+        {
+            BoostMultiplier = _status.BoostMultiplier,
+            MaxMultiplier = 0f,
+            SourceDomain = Domains.None
+        });
+
+        if (stacks == 0 && _so && _available == 0 && !_reloading)
+        {
             _reloadCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             ReloadRoutineAsync(_so.ReloadCooldown, _so.ReloadFillTime, _reloadCts.Token).Forget();
         }

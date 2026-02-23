@@ -72,15 +72,11 @@ namespace CosmicShore.Game
 
             if (hasSourceDomain)
             {
-                // Blend between player domain color and the stolen block's domain color
-                // Higher boost = more of the source color, giving a gradient feel
-                _targetBoostColor = Color.Lerp(_playerDomainColor, sourceColor, boost01);
+                // Show the stolen block's domain color directly
+                _targetBoostColor = sourceColor;
             }
-            else
-            {
-                // Decay: ease back toward the player's own domain color
-                _targetBoostColor = _playerDomainColor;
-            }
+            // When no source domain but still boosted, keep current _targetBoostColor
+            // so the stolen color holds across decay frames
 
             if (isFull)
             {
