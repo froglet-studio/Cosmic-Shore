@@ -1,4 +1,4 @@
-﻿using Obvious.Soap;
+using Obvious.Soap;
 using UnityEngine;
 using System.Collections;
 
@@ -21,6 +21,9 @@ namespace CosmicShore.Game
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier;
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;
 
+        [Header("Colors")]
+        [SerializeField] private DomainColorPaletteSO domainColors;
+
         private IVesselStatus _vesselStatus;
 
         public override void Initialize(IVesselStatus vesselStatus)
@@ -33,7 +36,18 @@ namespace CosmicShore.Game
 
             if (!view) return;
 
+            if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser)
+            {
+                view.Hide();
+                return;
+            }
+
+            Color playerColor = domainColors != null
+                ? domainColors.Get(vesselStatus.Domain)
+                : Color.white;
+
             view.Initialize();
+            view.SetPlayerDomainColor(playerColor);
             Subscribe();
             PaintFromStatusFallback();
         }
@@ -92,7 +106,14 @@ namespace CosmicShore.Game
             bool isBoosted = mult > baseMult + 0.0001f;
             bool isFull = mult >= maxMult - 0.0001f;
 
-            view.SetBoostState(Mathf.Clamp01(boost01), isBoosted, isFull);
+            Color sourceColor = Color.white;
+            bool hasSourceDomain = payload.SourceDomain != Domains.None
+                                   && payload.SourceDomain != Domains.Unassigned;
+            if (hasSourceDomain && domainColors != null)
+                sourceColor = domainColors.Get(payload.SourceDomain);
+
+            view.SetBoostState(Mathf.Clamp01(boost01), isBoosted, isFull,
+                sourceColor, hasSourceDomain);
         }
 
         private void HandleJoustCollision(string playerName)
@@ -122,7 +143,8 @@ namespace CosmicShore.Game
             bool isBoosted = mult > baseMult + 0.0001f;
             bool isFull = mult >= maxMult - 0.0001f;
 
-            view.SetBoostState(Mathf.Clamp01(boost01), isBoosted, isFull);
+            view.SetBoostState(Mathf.Clamp01(boost01), isBoosted, isFull,
+                Color.white, false);
         }
 
         private void UpdateDrift()
@@ -147,6 +169,7 @@ namespace CosmicShore.Game
             if (!view || vesselImpactor.Vessel.VesselStatus.PlayerName != _vesselStatus.PlayerName)
                 return;
 
+            view.FlashCrystalSurge();
             StartCoroutine(ShieldFlash());
         }
         private IEnumerator ShieldFlash()

@@ -112,7 +112,6 @@ namespace CosmicShore.Game
                 VesselStatus.ActionHandler.ToggleSubscription(true);
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
                 VesselStatus.VesselHUDController.SubscribeToEvents();
-                VesselStatus.VesselHUDController.ShowHUD();
             }
             
             ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
