@@ -74,6 +74,8 @@ namespace CosmicShore.Game
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
         public event Action<Prism> OnBlockSpawned;
+        /// <summary>Static event: fired each time a danger block is created during overheat. Param = owner player name.</summary>
+        public static event Action<string> OnDangerBlockCreated;
 
         private void OnDisable()
         {
@@ -242,8 +244,10 @@ namespace CosmicShore.Game
                     if (_dangerBlendSeconds > 0f)
                         MaterialBlendUtility.BeginBlend(rend, _dangerMaterial, _dangerBlendSeconds, _dangerAppend);
                     else
-                        rend.sharedMaterial = _dangerMaterial; 
+                        rend.sharedMaterial = _dangerMaterial;
                 }
+
+                OnDangerBlockCreated?.Invoke(vesselStatus.PlayerName);
             }
 
             

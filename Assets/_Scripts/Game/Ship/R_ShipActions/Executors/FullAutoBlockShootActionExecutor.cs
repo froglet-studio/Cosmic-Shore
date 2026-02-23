@@ -10,6 +10,9 @@ namespace CosmicShore.Game
 {
     public class FullAutoBlockShootActionExecutor : ShipActionExecutorBase
     {
+        /// <summary>Static event: each time a block prism is shot. Param = player name.</summary>
+        public static event Action<string> OnBlockShot;
+
         [Header("Scene Refs")]
         [SerializeField] private Transform[] muzzles;
         [SerializeField] private BlockProjectileFactory blockFactory;
@@ -137,6 +140,8 @@ namespace CosmicShore.Game
                         }
 
                         float travelDistance = UnityEngine.Random.Range(so.MinStopDistance, so.MaxStopDistance);
+
+                        OnBlockShot?.Invoke(_status?.PlayerName);
 
                         var movementToken = this.GetCancellationTokenOnDestroy();
                         MoveAndAnchorAsync(

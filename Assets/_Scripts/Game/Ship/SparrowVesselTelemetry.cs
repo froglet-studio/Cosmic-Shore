@@ -6,9 +6,9 @@ namespace CosmicShore.Game
     /// <summary>
     /// Vessel-specific telemetry for the Sparrow.
     /// Adds on top of VesselTelemetry base (drift, boost, prisms damaged):
-    ///   - Prism blocks shot (volleys fired via FullAutoActionExecutor)
+    ///   - Prism blocks shot (block prisms spawned via FullAutoBlockShootActionExecutor)
     ///   - Skyburst missiles shot (fired via FireGunActionExecutor)
-    ///   - Danger blocks spawned (produced at top boost)
+    ///   - Danger blocks spawned (trail blocks created during overheat danger mode)
     /// </summary>
     public class SparrowVesselTelemetry : VesselTelemetry
     {
@@ -40,17 +40,17 @@ namespace CosmicShore.Game
 
         protected override void OnTurnStartedExtended()
         {
-            FullAutoActionExecutor.OnVolleyFired += HandleVolleyFired;
-            FireGunActionExecutor.OnShotFired    += HandleSkyburstFired;
-            VesselDangerBlockFormationBySkimmerEffectSO.OnDangerBlockSpawned += HandleDangerBlockSpawned;
-            Debug.Log("[SparrowTelemetry] Turn started — subscribed to VolleyFired, ShotFired, DangerBlockSpawned");
+            FullAutoBlockShootActionExecutor.OnBlockShot += HandleBlockShot;
+            FireGunActionExecutor.OnShotFired            += HandleSkyburstFired;
+            VesselPrismController.OnDangerBlockCreated   += HandleDangerBlockSpawned;
+            Debug.Log("[SparrowTelemetry] Turn started — subscribed to BlockShot, ShotFired, DangerBlockCreated");
         }
 
         protected override void OnTurnEndedExtended()
         {
-            FullAutoActionExecutor.OnVolleyFired -= HandleVolleyFired;
-            FireGunActionExecutor.OnShotFired    -= HandleSkyburstFired;
-            VesselDangerBlockFormationBySkimmerEffectSO.OnDangerBlockSpawned -= HandleDangerBlockSpawned;
+            FullAutoBlockShootActionExecutor.OnBlockShot -= HandleBlockShot;
+            FireGunActionExecutor.OnShotFired            -= HandleSkyburstFired;
+            VesselPrismController.OnDangerBlockCreated   -= HandleDangerBlockSpawned;
             Debug.Log($"[SparrowTelemetry] Turn ended — prismBlocks={PrismBlocksShot}, " +
                 $"skyburst={SkyburstMissilesShot}, dangerBlocks={DangerBlocksSpawned}");
         }
@@ -68,7 +68,7 @@ namespace CosmicShore.Game
 
         // ── Event handlers ─────────────────────────────────────────────────────
 
-        private void HandleVolleyFired(string playerName)
+        private void HandleBlockShot(string playerName)
         {
             if (!IsTracking || Vessel?.PlayerName != playerName) return;
             PrismBlocksShot++;
