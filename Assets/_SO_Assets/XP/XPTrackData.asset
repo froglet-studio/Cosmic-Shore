@@ -15,3 +15,9 @@ MonoBehaviour:
   xpPerMilestone: 50
   milestones:
   - reward: {fileID: 11400000, guid: bd67a0efa4b81034b82b978ee4803eca, type: 2}
+  - reward: {fileID: 11400000, guid: e62692f524d3b05488e027354d35a045, type: 2}
+  - reward: {fileID: 11400000, guid: c01d4674eb828ef4bb4390d954983d96, type: 2}
+  - reward: {fileID: 11400000, guid: 47bc7c6bfe1f32c4a8f52d386296bd9d, type: 2}
+  - reward: {fileID: 11400000, guid: ab2f2bb2cc457874f98e214b179270bb, type: 2}
+  - reward: {fileID: 11400000, guid: bada8970738eb5e479e3b3f7469142ad, type: 2}
+  - reward: {fileID: 11400000, guid: bbfc9f98afdf16045a1eaa693f9b01a8, type: 2}
