@@ -4,6 +4,7 @@ using UnityEngine;
 using CosmicShore.Game;
 using Obvious.Soap;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Utility;
 
 public sealed class YawsteryActionExecutor : ShipActionExecutorBase
 {
@@ -72,7 +73,7 @@ public sealed class YawsteryActionExecutor : ShipActionExecutorBase
 
         if (!vesselTransformer)
         {
-            Debug.LogWarning("[Yawstery] VesselTransformer not set/resolved.");
+            CSDebug.LogWarning("[Yawstery] VesselTransformer not set/resolved.");
             return;
         }
 

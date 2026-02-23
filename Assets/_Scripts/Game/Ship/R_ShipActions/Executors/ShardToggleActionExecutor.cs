@@ -2,6 +2,7 @@
 using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
 {
@@ -33,7 +34,7 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
     {
         if (!cellData)
         {
-            Debug.LogError("No Cell data found!");
+            CSDebug.LogError("No Cell data found!");
             return;
         }
         

@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -13,7 +14,7 @@ namespace CosmicShore.Game
             
             if (prismProperties == null)
             {
-                Debug.LogError("VesselAttachPrismEffectSO called with null data or prismProperties.");
+                CSDebug.LogError("VesselAttachPrismEffectSO called with null data or prismProperties.");
                 return;
             }
 
@@ -21,7 +22,7 @@ namespace CosmicShore.Game
 
             if (trailBlock.Trail == null)
             {
-                Debug.LogError("VesselAttachPrismEffectSO called with null data or Trail.");
+                CSDebug.LogError("VesselAttachPrismEffectSO called with null data or Trail.");
                 return;
             }
 

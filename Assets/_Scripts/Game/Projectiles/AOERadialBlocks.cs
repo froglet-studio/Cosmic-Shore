@@ -134,7 +134,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!_prismSpawnEvent)
             {
-                Debug.LogError("[AOERadialBlocks] Prism spawn event channel is not assigned.");
+                CSDebug.LogError("[AOERadialBlocks] Prism spawn event channel is not assigned.");
                 return null;
             }
 
@@ -155,14 +155,14 @@ namespace CosmicShore.Game.Projectiles
             var ret = _prismSpawnEvent.RaiseEvent(data);
             if (!ret.SpawnedObject)
             {
-                Debug.LogWarning("[AOERadialBlocks] PrismFactory returned null; spawn aborted.");
+                CSDebug.LogWarning("[AOERadialBlocks] PrismFactory returned null; spawn aborted.");
                 return null;
             }
 
             Prism prism = ret.SpawnedObject.GetComponent<Prism>();
             if (!prism)
             {
-                Debug.LogWarning("[AOERadialBlocks] Spawned object missing Prism component.");
+                CSDebug.LogWarning("[AOERadialBlocks] Spawned object missing Prism component.");
                 return null;
             }
 

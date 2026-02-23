@@ -8,6 +8,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.Ui.Menus
 {
@@ -105,11 +106,11 @@ namespace CosmicShore.App.Ui.Menus
 
             // Get all purchaseable captains
             var captains = CatalogManager.StoreShelve.captains.Values.ToList();
-            Debug.Log($"PopulateCaptainPurchaseCards, unfiltered: {captains.Count}");
+            CSDebug.Log($"PopulateCaptainPurchaseCards, unfiltered: {captains.Count}");
 
             // Filter out owned captains
             captains = captains.Where(x => !CatalogManager.Inventory.captains.Contains(x)).ToList();
-            Debug.Log($"PopulateCaptainPurchaseCards, excluding purchased: {captains.Count}");
+            CSDebug.Log($"PopulateCaptainPurchaseCards, excluding purchased: {captains.Count}");
 
             // Filter out unencountered captains
             captains = captains
@@ -166,11 +167,11 @@ namespace CosmicShore.App.Ui.Menus
 
             // Get all purchaseable games
             var games = CatalogManager.StoreShelve.games.Values.ToList();
-            Debug.Log($"PopulategamePurchaseCards, unfiltered: {games.Count}");
+            CSDebug.Log($"PopulategamePurchaseCards, unfiltered: {games.Count}");
 
             // Filter out owned games
             games = games.Where(x => !CatalogManager.Inventory.games.Contains(x)).ToList();
-            Debug.Log($"PopulateGamePurchaseCards, excluding purchased: {games.Count}");
+            CSDebug.Log($"PopulateGamePurchaseCards, excluding purchased: {games.Count}");
 
             // if no games, hide games section
             if (games.Count == 0)
@@ -218,7 +219,7 @@ namespace CosmicShore.App.Ui.Menus
         {
             var crystalBalance = int.Parse(CrystalBalance.text);
             var newCrystalBalance = CatalogManager.Instance.GetCrystalBalance();
-            Debug.Log($"UpdateBalanceCoroutine - initial Balance: {crystalBalance}, new Balance: {newCrystalBalance}");
+            CSDebug.Log($"UpdateBalanceCoroutine - initial Balance: {crystalBalance}, new Balance: {newCrystalBalance}");
             var delta = crystalBalance- newCrystalBalance;
             var duration = 1f;
             var elapsedTime = 0f;

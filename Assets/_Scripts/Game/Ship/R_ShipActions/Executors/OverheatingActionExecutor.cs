@@ -5,6 +5,7 @@ using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using Obvious.Soap;
+using CosmicShore.Utility;
 
 public sealed class OverheatingActionExecutor : ShipActionExecutorBase
 {
@@ -189,7 +190,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Overheating] BuildHeat error: {e}");
+            CSDebug.LogError($"[Overheating] BuildHeat error: {e}");
         }
     }
 
@@ -220,7 +221,7 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
         catch (OperationCanceledException) { }
         catch (Exception e)
         {
-            Debug.LogError($"[Overheating] DecayHeat error: {e}");
+            CSDebug.LogError($"[Overheating] DecayHeat error: {e}");
         }
     }
 

@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 /*
         Generic classes for the use of singleton
@@ -110,13 +111,13 @@ namespace CosmicShore.Utilities
                     T[] results = Resources.FindObjectsOfTypeAll<T>();
                     if (results.Length == 0)
                     {
-                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" + typeof(T).ToString() + ".");
+                        CSDebug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" + typeof(T).ToString() + ".");
                         return null;
 
                     }
                     if (results.Length > 1)
                     {
-                        Debug.LogError("SingletonScriptableObject -> Instance -> results length is greater than for type" + typeof(T).ToString() + ".");
+                        CSDebug.LogError("SingletonScriptableObject -> Instance -> results length is greater than for type" + typeof(T).ToString() + ".");
                         return null;
 
                     }

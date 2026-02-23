@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Core;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -12,10 +13,10 @@ namespace CosmicShore.Game
 
             if (StatsManager.Instance == null)
             {
-                Debug.LogError("[VesselCollisionReporter] StatsManager Instance is NULL! Collision not recorded.");
+                CSDebug.LogError("[VesselCollisionReporter] StatsManager Instance is NULL! Collision not recorded.");
                 return;
             }
-            Debug.Log($"<color=red>[Collision] {vesselImpactor.Vessel.VesselStatus.PlayerName} hit a crystal!</color>");
+            CSDebug.Log($"<color=red>[Collision] {vesselImpactor.Vessel.VesselStatus.PlayerName} hit a crystal!</color>");
             StatsManager.Instance.ExecuteSkimmerShipCollision(vesselImpactor.Vessel.VesselStatus.PlayerName);
         }
     }

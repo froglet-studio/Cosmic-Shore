@@ -3,6 +3,7 @@ using System.Collections;
 using CosmicShore.Game.CameraSystem;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -120,7 +121,7 @@ namespace CosmicShore.Game.UI
 
             if (_cameraTransform == null)
             {
-                Debug.LogWarning("[PreGameCinematic] No camera found, skipping cinematic.");
+                CSDebug.LogWarning("[PreGameCinematic] No camera found, skipping cinematic.");
                 OnCinematicFinished?.Invoke();
                 return;
             }

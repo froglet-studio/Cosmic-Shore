@@ -4,6 +4,7 @@ using CosmicShore.Game.Analytics; // [Visual Note] For StatsManager
 using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Arcade.Scoring;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -35,7 +36,7 @@ namespace CosmicShore.Game.Cinematics
                 
                 if (currentScore >= highScore && cachedBest > 0)
                 {
-                    Debug.Log($"<color=cyan>[Cinematic] New High Score Triggered! Old: {cachedBest} New: {currentScore}</color>");
+                    CSDebug.Log($"<color=cyan>[Cinematic] New High Score Triggered! Old: {cachedBest} New: {currentScore}</color>");
                 }
             }
 

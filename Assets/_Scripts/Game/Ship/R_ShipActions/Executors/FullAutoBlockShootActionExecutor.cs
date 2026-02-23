@@ -5,6 +5,7 @@ using Obvious.Soap;
 using CosmicShore.Core;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -83,7 +84,7 @@ namespace CosmicShore.Game
         {
             if (!blockFactory)
             {
-                Debug.LogError("[FullAutoBlockShootActionExecutor] BlockFactory not assigned.");
+                CSDebug.LogError("[FullAutoBlockShootActionExecutor] BlockFactory not assigned.");
                 return;
             }
 
@@ -163,7 +164,7 @@ namespace CosmicShore.Game
             }
             catch (Exception e)
             {
-                Debug.LogError($"[FullAutoBlockShoot] loop error: {e}");
+                CSDebug.LogError($"[FullAutoBlockShoot] loop error: {e}");
             }
         }
         #endregion
@@ -221,7 +222,7 @@ namespace CosmicShore.Game
             }
             catch (Exception e)
             {
-                Debug.LogError($"[FullAutoBlockShoot] SetupPrismVisual error: {e}");
+                CSDebug.LogError($"[FullAutoBlockShoot] SetupPrismVisual error: {e}");
             }
         }
         #endregion
@@ -272,7 +273,7 @@ namespace CosmicShore.Game
             }
             catch (Exception e)
             {
-                Debug.LogError($"[FullAutoBlockShoot] MoveAndAnchor error: {e}");
+                CSDebug.LogError($"[FullAutoBlockShoot] MoveAndAnchor error: {e}");
             }
         }
         #endregion

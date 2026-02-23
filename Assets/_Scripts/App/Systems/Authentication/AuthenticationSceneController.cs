@@ -6,6 +6,7 @@ using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Services.Auth
 {
@@ -105,7 +106,7 @@ namespace CosmicShore.Services.Auth
                 HideLoading();
                 if (statusText)
                     statusText.text = $"Guest login failed: {ex.Message}";
-                Debug.LogWarning($"[AuthScene] Guest login failed: {ex}");
+                CSDebug.LogWarning($"[AuthScene] Guest login failed: {ex}");
             }
             finally
             {
@@ -186,7 +187,7 @@ namespace CosmicShore.Services.Auth
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"[AuthScene] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+                    CSDebug.LogWarning($"[AuthScene] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
                 }
 
                 NavigateToMainMenu();
@@ -195,7 +196,7 @@ namespace CosmicShore.Services.Auth
             {
                 if (usernameStatusText)
                     usernameStatusText.text = $"Failed to set username: {ex.Message}";
-                Debug.LogWarning($"[AuthScene] Set username failed: {ex}");
+                CSDebug.LogWarning($"[AuthScene] Set username failed: {ex}");
             }
             finally
             {
@@ -207,7 +208,7 @@ namespace CosmicShore.Services.Auth
 
         void NavigateToMainMenu()
         {
-            Debug.Log("[AuthScene] Navigating to Main Menu...");
+            CSDebug.Log("[AuthScene] Navigating to Main Menu...");
             SceneManager.LoadScene(mainMenuSceneName);
         }
     }

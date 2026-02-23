@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.Systems.RewindSystem
 {
@@ -18,7 +19,7 @@ namespace CosmicShore.App.Systems.RewindSystem
         public void Init()
         {
             //TODO: Init is suppose to grab any relevant components on the game object.
-            Debug.Log("RewindBase.Init() is called.");
+            CSDebug.Log("RewindBase.Init() is called.");
         }
 
         #region ActiveState

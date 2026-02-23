@@ -5,6 +5,7 @@ using CosmicShore.Services.Auth;
 using Unity.Services.CloudSave;
 using Unity.Services.Leaderboards;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Analytics
 {
@@ -169,7 +170,7 @@ namespace CosmicShore.Game.Analytics
                 if (string.IsNullOrEmpty(id)) return;
 
                 try { await LeaderboardsService.Instance.AddPlayerScoreAsync(id, score); }
-                catch (Exception e) { Debug.LogWarning($"[Stats] Upload Failed: {e.Message}"); }
+                catch (Exception e) { CSDebug.LogWarning($"[Stats] Upload Failed: {e.Message}"); }
             }
             catch (Exception)
             {
@@ -200,7 +201,7 @@ namespace CosmicShore.Game.Analytics
                 var data = new Dictionary<string, object> { { CLOUD_KEY, _cachedProfile } };
                 await CloudSaveService.Instance.Data.Player.SaveAsync(data);
             }
-            catch (Exception e) { Debug.LogError($"[Stats] Save Failed: {e.Message}"); }
+            catch (Exception e) { CSDebug.LogError($"[Stats] Save Failed: {e.Message}"); }
         }
 
         #endregion
