@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Services.Auth;
 using CosmicShore.Soap;
-using TMPro;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CosmicShore.App.Profile
 {
@@ -19,10 +17,6 @@ namespace CosmicShore.App.Profile
         [Header("Cloud Save")]
         [SerializeField] private string cloudSaveProfileKey = "player_profile";
         [SerializeField] private SO_ProfileIconList profileIcons;
-
-        [Header("UI")]
-        [SerializeField] private TMP_Text displayNameText;
-        [SerializeField] private Image  avatarImage;
 
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
@@ -61,14 +55,14 @@ namespace CosmicShore.App.Profile
             if (auth != null)
                 auth.OnSignedIn -= HandleSignedInFromAuth;
 
-            OnProfileChanged -= HandleProfileChanged;
+            OnProfileChanged -= SyncProfileToGameData;
         }
 
         async void Start()
         {
             try
             {
-                OnProfileChanged += HandleProfileChanged;
+                OnProfileChanged += SyncProfileToGameData;
 
                 // Subscribe to auth events via singleton (survives scene transitions)
                 var auth = AuthenticationController.Instance;
@@ -269,18 +263,8 @@ namespace CosmicShore.App.Profile
             }
         }
 
-        void HandleProfileChanged(PlayerProfileData data)
+        void SyncProfileToGameData(PlayerProfileData data)
         {
-            if (displayNameText != null)
-                displayNameText.text = data.displayName;
-
-            if (avatarImage != null)
-            {
-                var sprite = ResolveAvatarSprite(data.avatarId);
-                avatarImage.sprite = sprite;
-                avatarImage.enabled = sprite != null;
-            }
-
             if (gameData != null)
             {
                 gameData.LocalPlayerDisplayName = data.displayName;
@@ -289,7 +273,7 @@ namespace CosmicShore.App.Profile
             }
         }
 
-        Sprite ResolveAvatarSprite(int avatarId)
+        public Sprite GetAvatarSprite(int avatarId)
         {
             if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)
                 return null;
@@ -300,11 +284,8 @@ namespace CosmicShore.App.Profile
                     return profileIcons.profileIcons[i].IconSprite;
             }
 
-            // Fallback to first icon
             return profileIcons.profileIcons[0].IconSprite;
         }
-
-        public Sprite GetAvatarSprite(int avatarId) => ResolveAvatarSprite(avatarId);
 
         /// <summary>
         /// Returns the player's current XP, or 0 if no profile is loaded.
