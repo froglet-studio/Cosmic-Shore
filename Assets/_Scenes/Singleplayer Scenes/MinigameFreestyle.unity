@@ -1957,12 +1957,24 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   guideLine: {fileID: 0}
+  ghostLine: {fileID: 0}
   revealCamera: {fileID: 6844639178813774020}
   shapeScale: 1
+  guideLineWidth: 1.5
+  guideLineColor: {r: 0, g: 1, b: 1, a: 0.8}
+  ghostLineWidth: 1
+  ghostLineColor: {r: 1, g: 1, b: 1, a: 0.2}
+  positionSampleInterval: 0.15
+  perfectDistanceThreshold: 15
+  zeroAccuracyDistance: 80
+  revealDuration: 5
   OnShapeCompleted:
     m_PersistentCalls:
       m_Calls: []
   OnFreestyleResumed:
+    m_PersistentCalls:
+      m_Calls: []
+  OnScoreCalculated:
     m_PersistentCalls:
       m_Calls: []
 --- !u!4 &868879491
@@ -3069,6 +3081,7 @@ MonoBehaviour:
   - {fileID: 1133063335}
   - {fileID: 1548339120}
   - {fileID: 1846890911}
+  shapeSignSpawner: {fileID: 981714501}
 --- !u!114 &1078953714
 MonoBehaviour:
   m_ObjectHideFlags: 0

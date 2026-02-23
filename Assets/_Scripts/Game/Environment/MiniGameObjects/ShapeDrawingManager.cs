@@ -21,6 +21,14 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] Camera revealCamera;
         [SerializeField] float shapeScale = 1f;
 
+        [Header("Guide Line Style")]
+        [SerializeField] float guideLineWidth = 1.5f;
+        [SerializeField] Color guideLineColor = new Color(0f, 1f, 1f, 0.8f);
+
+        [Header("Ghost Line Style")]
+        [SerializeField] float ghostLineWidth = 1f;
+        [SerializeField] Color ghostLineColor = new Color(1f, 1f, 1f, 0.2f);
+
         [Header("Scoring")]
         [Tooltip("How often (in seconds) to sample the player position for accuracy scoring.")]
         [SerializeField] float positionSampleInterval = 0.15f;
@@ -49,6 +57,12 @@ namespace CosmicShore.Game.ShapeDrawing
         readonly List<Vector3> _playerPathSamples = new();
         float _nextSampleTime;
         bool _trackingPath;
+
+        void Awake()
+        {
+            EnsureGuideLine();
+            EnsureGhostLine();
+        }
 
         void OnEnable()
         {
@@ -224,6 +238,48 @@ namespace CosmicShore.Game.ShapeDrawing
             if (!ghostLine) return;
             ghostLine.enabled = false;
             ghostLine.positionCount = 0;
+        }
+
+        // ── LineRenderer Auto-Creation ───────────────────────────────────────
+
+        void EnsureGuideLine()
+        {
+            if (guideLine) return;
+
+            var go = new GameObject("GuideLine");
+            go.transform.SetParent(transform);
+            guideLine = go.AddComponent<LineRenderer>();
+            ConfigureLineRenderer(guideLine, guideLineColor, guideLineWidth, 2);
+            guideLine.enabled = false;
+        }
+
+        void EnsureGhostLine()
+        {
+            if (ghostLine) return;
+
+            var go = new GameObject("GhostLine");
+            go.transform.SetParent(transform);
+            ghostLine = go.AddComponent<LineRenderer>();
+            ConfigureLineRenderer(ghostLine, ghostLineColor, ghostLineWidth, 0);
+            ghostLine.enabled = false;
+        }
+
+        static void ConfigureLineRenderer(LineRenderer lr, Color color, float width, int positionCount)
+        {
+            lr.useWorldSpace = true;
+            lr.positionCount = positionCount;
+            lr.startWidth = width;
+            lr.endWidth = width;
+            lr.startColor = color;
+            lr.endColor = color;
+            lr.numCapVertices = 4;
+            lr.numCornerVertices = 4;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+
+            // Use a default sprite material so it shows up without a custom material
+            lr.material = new Material(Shader.Find("Sprites/Default"));
+            lr.material.color = color;
         }
 
         // ── Scoring ─────────────────────────────────────────────────────────

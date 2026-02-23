@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
+  m_Name: Circle_Shape
+  m_EditorClassIdentifier:
+  shapeName: Circle Shape
+  description: This is a Circle Shape
+  thumbnail: {fileID: 0}
+  autoGeneratePreset: 0
+  autoGenerateRadius: 100
+  waypoints:
+  - {x: 100, y: 0, z: 0}
+  - {x: 92.38795, y: 38.26834, z: 0}
+  - {x: 70.71068, y: 70.71068, z: 0}
+  - {x: 38.26834, y: 92.38795, z: 0}
+  - {x: 0.0000061232343, y: 100, z: 0}
+  - {x: -38.26833, y: 92.38796, z: 0}
+  - {x: -70.71068, y: 70.71069, z: 0}
+  - {x: -92.38795, y: 38.26835, z: 0}
+  - {x: -100, y: 0.0000012246469, z: 0}
+  - {x: -92.38796, y: -38.26832, z: 0}
+  - {x: -70.7107, y: -70.71066, z: 0}
+  - {x: -38.26837, y: -92.38794, z: 0}
+  - {x: -0.0000018369703, y: -100, z: 0}
+  - {x: 38.26831, y: -92.38797, z: 0}
+  - {x: 70.71066, y: -70.71071, z: 0}
+  - {x: 92.38794, y: -38.26837, z: 0}
+  - {x: 100, y: -0.0000024492936, z: 0}
+  trailEnabledPerSegment: 01010101010101010101010101010101010101
+  playerStartOffset: {x: 0, y: 0, z: -150}
+  playerStartEuler: {x: 0, y: 0, z: 0}
+  revealCameraEuler: {x: 90, y: 0, z: 0}
+  revealCameraDistance: 400
+  parTime: 360
