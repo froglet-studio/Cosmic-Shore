@@ -51,6 +51,10 @@ namespace CosmicShore.App.Systems.Audio
         DriftEnd = 17,
         EnergyGain = 18,
         SpeedBurst = 19,
+        DoubleDriftStart = 20,
+        DoubleDriftEnd = 21,
+        SparrowGunFireStart = 22,
+        SparrowGunFireEnd = 23,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -98,6 +102,10 @@ namespace CosmicShore.App.Systems.Audio
         [SerializeField] AudioClip DriftEndAudioClip;
         [SerializeField] AudioClip EnergyGainAudioClip;
         [SerializeField] AudioClip SpeedBurstAudioClip;
+        [SerializeField] AudioClip DoubleDriftStartAudioClip;
+        [SerializeField] AudioClip DoubleDriftEndAudioClip;
+        [SerializeField] AudioClip SparrowGunFireStartAudioClip;
+        [SerializeField] AudioClip SparrowGunFireEndAudioClip;
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
@@ -337,6 +345,10 @@ namespace CosmicShore.App.Systems.Audio
                 {GameplaySFXCategory.DriftEnd, DriftEndAudioClip},
                 {GameplaySFXCategory.EnergyGain, EnergyGainAudioClip},
                 {GameplaySFXCategory.SpeedBurst, SpeedBurstAudioClip},
+                {GameplaySFXCategory.DoubleDriftStart, DoubleDriftStartAudioClip},
+                {GameplaySFXCategory.DoubleDriftEnd, DoubleDriftEndAudioClip},
+                {GameplaySFXCategory.SparrowGunFireStart, SparrowGunFireStartAudioClip},
+                {GameplaySFXCategory.SparrowGunFireEnd, SparrowGunFireEndAudioClip},
             };
         }
     }

@@ -485,6 +485,10 @@ MonoBehaviour:
   DriftEndAudioClip: {fileID: 8300000, guid: 39ea8a8c7e534e83a76cd25ff8ceda7d, type: 3}
   EnergyGainAudioClip: {fileID: 8300000, guid: 989a0e48e804482bbf3a677ada7d4ae8, type: 3}
   SpeedBurstAudioClip: {fileID: 8300000, guid: 653de36067c848a78ac947c561ec5143, type: 3}
+  DoubleDriftStartAudioClip: {fileID: 8300000, guid: 99bb663c44d84a5d9ac76ab938e89a6a, type: 3}
+  DoubleDriftEndAudioClip: {fileID: 8300000, guid: 7792afc473c8440b8c15709202e95ff6, type: 3}
+  SparrowGunFireStartAudioClip: {fileID: 8300000, guid: c09c211dd11c452b900305040d3bd109, type: 3}
+  SparrowGunFireEndAudioClip: {fileID: 8300000, guid: 6da0d19be2a44dac819a2636996f011b, type: 3}
 --- !u!114 &1452114705
 MonoBehaviour:
   m_ObjectHideFlags: 0

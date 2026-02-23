@@ -2,6 +2,7 @@
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
@@ -87,6 +88,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         _cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeToken);
         var token = _cts.Token;
 
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.SparrowGunFireStart);
         FireLoopAsync(so, token).Forget();
     }
 
@@ -94,6 +96,8 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     {
         if (_cts == null)
             return;
+
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.SparrowGunFireEnd);
 
         try
         {

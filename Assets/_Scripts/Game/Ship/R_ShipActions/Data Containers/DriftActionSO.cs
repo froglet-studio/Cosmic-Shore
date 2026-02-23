@@ -25,7 +25,9 @@ public class DriftActionSO : ShipActionSO
         t.DriftDamping = driftDamping;
         vesselStatus.IsDrifting = true;
 
-        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
+        AudioSystem.Instance.PlayGameplaySFX(isSharpDrifting
+            ? GameplaySFXCategory.DoubleDriftStart
+            : GameplaySFXCategory.DriftStart);
 
         if (isSharpDrifting)
         {
@@ -44,7 +46,9 @@ public class DriftActionSO : ShipActionSO
         t.YawScaler = savedRotations.y;
         t.RollScaler = savedRotations.z;
         vesselStatus.IsDrifting = false;
-        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
+        AudioSystem.Instance.PlayGameplaySFX(isSharpDrifting
+            ? GameplaySFXCategory.DoubleDriftEnd
+            : GameplaySFXCategory.DriftEnd);
         OnDriftEnded.Raise();
     }
 }
