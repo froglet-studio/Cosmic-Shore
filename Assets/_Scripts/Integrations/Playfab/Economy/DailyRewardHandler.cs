@@ -17,6 +17,9 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         private static EntityKey _entity;
         public void Start()
         {
+            // [PLAYFAB DISABLED] Daily rewards will be rebuilt on UGS. Pending removal.
+            return;
+
             AuthenticationManager.OnLoginSuccess += InitEntity;
         }
 

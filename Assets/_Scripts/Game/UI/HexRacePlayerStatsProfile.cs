@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 
-[Serializable]
-public class HexRacePlayerStatsProfile
+namespace CosmicShore.Game.Analytics
 {
+    [Serializable]
+    public class HexRacePlayerStatsProfile
+    {
     public int TotalCleanCrystalsCollected;
     public float TotalDriftTime; 
     public int TotalJoustsWon;
@@ -24,4 +26,5 @@ public class HexRacePlayerStatsProfile
         BestMultiplayerRaceTimes.Add(levelKey, newTime);
         return true;
     }
+}
 }

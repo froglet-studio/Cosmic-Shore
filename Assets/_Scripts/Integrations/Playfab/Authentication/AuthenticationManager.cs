@@ -32,9 +32,10 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         
         public override void Awake()
         {
+            // [PLAYFAB DISABLED] Authentication now handled by UGS AuthenticationController.
+            // This class will be removed after full UGS migration.
             base.Awake();
-            
-            StartCoroutine(LoginCoroutine());
+            return;
         }
 
         IEnumerator LoginCoroutine()

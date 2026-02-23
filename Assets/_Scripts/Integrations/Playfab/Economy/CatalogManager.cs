@@ -43,6 +43,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         void Start()
         {
+            // [PLAYFAB DISABLED] Economy/catalog will be rebuilt on UGS. Pending removal.
+            return;
+
             Debug.Log("CatalogManager.Start");
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;

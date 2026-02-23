@@ -19,6 +19,9 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         private void Start()
         {
+            // [PLAYFAB DISABLED] Analytics will be rebuilt on UGS. Pending removal.
+            return;
+
             // Load Player Client Instance API
             AuthenticationManager.OnLoginSuccess += InitializePlayerClientInstanceAPI;
             AuthenticationManager.OnLoginSuccess += InitializeEventsInstanceAPI;

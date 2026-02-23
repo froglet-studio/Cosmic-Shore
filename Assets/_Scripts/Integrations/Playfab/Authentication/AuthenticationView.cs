@@ -35,9 +35,11 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
 
         // [Inject] private AuthenticationManager _authManager;
 
-        // Start is called before the first frame update
         void Start()
         {
+            // [PLAYFAB DISABLED] This view relied on PlayFab AuthenticationManager. Pending removal.
+            return;
+
             // Subscribe Button OnClick Events
             setDisplayNameButton.onClick.AddListener(SetPlayerNameButton_OnClicked);
 

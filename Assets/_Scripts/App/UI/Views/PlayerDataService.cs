@@ -26,6 +26,11 @@ namespace CosmicShore.App.Profile
 
         public event Action<PlayerProfileData> OnProfileChanged;
 
+        // Save debouncing: coalesces rapid saves into a single cloud call
+        private const float SAVE_DEBOUNCE_SECONDS = 1.5f;
+        private bool _saveDirty;
+        private bool _saveInFlight;
+
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -112,8 +117,9 @@ namespace CosmicShore.App.Profile
                     canUseCloudSave = AuthenticationService.Instance != null &&
                                       AuthenticationService.Instance.IsSignedIn;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Debug.LogWarning($"[PlayerDataService] Auth state check failed: {ex.Message}");
                     canUseCloudSave = false;
                 }
             }
@@ -217,50 +223,69 @@ namespace CosmicShore.App.Profile
             }
         }
 
-        // ----------------- Public API -----------------
-
-        public async void SetAvatarId(int avatarId)
+        /// <summary>
+        /// Marks profile as dirty and schedules a debounced cloud save.
+        /// Multiple calls within SAVE_DEBOUNCE_SECONDS collapse into one save.
+        /// </summary>
+        void ScheduleDebouncedSave()
         {
+            _saveDirty = true;
+            if (!_saveInFlight)
+                RunDebouncedSave();
+        }
+
+        async void RunDebouncedSave()
+        {
+            if (_saveInFlight) return;
+            _saveInFlight = true;
+
             try
             {
-                if (CurrentProfile == null)
-                    return;
+                await Task.Delay((int)(SAVE_DEBOUNCE_SECONDS * 1000));
 
-                CurrentProfile.avatarId = avatarId;
-                OnProfileChanged?.Invoke(CurrentProfile);
+                while (_saveDirty)
+                {
+                    _saveDirty = false;
 
-                bool canUseCloudSave = UnityServices.State == ServicesInitializationState.Initialized &&
-                                       AuthenticationService.Instance != null &&
-                                       AuthenticationService.Instance.IsSignedIn;
+                    bool canSave = UnityServices.State == ServicesInitializationState.Initialized &&
+                                   AuthenticationService.Instance != null &&
+                                   AuthenticationService.Instance.IsSignedIn;
 
-                await SaveProfileAsync(canUseCloudSave);
+                    await SaveProfileAsync(canSave);
+                }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] SetAvatarId failed: {e.Message}");
+                Debug.LogWarning($"[PlayerDataService] Debounced save failed: {e.Message}");
+            }
+            finally
+            {
+                _saveInFlight = false;
+                if (_saveDirty)
+                    RunDebouncedSave();
             }
         }
 
-        public async Task SetDisplayNameAsync(string displayName)
+        // ----------------- Public API -----------------
+
+        public void SetAvatarId(int avatarId)
         {
-            try
-            {
-                if (CurrentProfile == null)
-                    return;
+            if (CurrentProfile == null)
+                return;
 
-                CurrentProfile.displayName = displayName;
-                OnProfileChanged?.Invoke(CurrentProfile);
+            CurrentProfile.avatarId = avatarId;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleDebouncedSave();
+        }
 
-                bool canUseCloudSave = UnityServices.State == ServicesInitializationState.Initialized &&
-                                       AuthenticationService.Instance != null &&
-                                       AuthenticationService.Instance.IsSignedIn;
+        public void SetDisplayName(string displayName)
+        {
+            if (CurrentProfile == null)
+                return;
 
-                await SaveProfileAsync(canUseCloudSave);
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PlayerDataService] SetDisplayNameAsync failed: {e.Message}");
-            }
+            CurrentProfile.displayName = displayName;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleDebouncedSave();
         }
 
         void SyncProfileToGameData(PlayerProfileData data)
@@ -299,59 +324,35 @@ namespace CosmicShore.App.Profile
         /// Adds XP to the player's profile and syncs to Cloud Save.
         /// Returns the new total XP.
         /// </summary>
-        public async void AddXP(int amount)
+        public void AddXP(int amount)
         {
-            try
-            {
-                if (CurrentProfile == null || amount <= 0)
-                    return;
+            if (CurrentProfile == null || amount <= 0)
+                return;
 
-                CurrentProfile.xp += amount;
-                OnProfileChanged?.Invoke(CurrentProfile);
-
-                bool canUseCloudSave = UnityServices.State == ServicesInitializationState.Initialized &&
-                                       AuthenticationService.Instance != null &&
-                                       AuthenticationService.Instance.IsSignedIn;
-
-                await SaveProfileAsync(canUseCloudSave);
-                Debug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PlayerDataService] AddXP failed: {e.Message}");
-            }
+            CurrentProfile.xp += amount;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleDebouncedSave();
+            Debug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
         }
 
         /// <summary>
         /// Marks a reward as unlocked in the player's profile.
         /// </summary>
-        public async void UnlockReward(string rewardId)
+        public void UnlockReward(string rewardId)
         {
-            try
-            {
-                if (CurrentProfile == null || string.IsNullOrEmpty(rewardId))
-                    return;
+            if (CurrentProfile == null || string.IsNullOrEmpty(rewardId))
+                return;
 
-                if (CurrentProfile.unlockedRewardIds == null)
-                    CurrentProfile.unlockedRewardIds = new System.Collections.Generic.List<string>();
+            if (CurrentProfile.unlockedRewardIds == null)
+                CurrentProfile.unlockedRewardIds = new List<string>();
 
-                if (CurrentProfile.unlockedRewardIds.Contains(rewardId))
-                    return;
+            if (CurrentProfile.unlockedRewardIds.Contains(rewardId))
+                return;
 
-                CurrentProfile.unlockedRewardIds.Add(rewardId);
-                OnProfileChanged?.Invoke(CurrentProfile);
-
-                bool canUseCloudSave = UnityServices.State == ServicesInitializationState.Initialized &&
-                                       AuthenticationService.Instance != null &&
-                                       AuthenticationService.Instance.IsSignedIn;
-
-                await SaveProfileAsync(canUseCloudSave);
-                Debug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PlayerDataService] UnlockReward failed: {e.Message}");
-            }
+            CurrentProfile.unlockedRewardIds.Add(rewardId);
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleDebouncedSave();
+            Debug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
         }
 
         /// <summary>

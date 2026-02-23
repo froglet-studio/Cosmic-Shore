@@ -142,7 +142,7 @@ namespace CosmicShore.App.UI
             if (!string.IsNullOrEmpty(newName) && newName.Length >= 3 && newName.Length <= 25)
             {
                 if (playerDataService != null && playerDataService.IsInitialized)
-                    await playerDataService.SetDisplayNameAsync(newName);
+                    playerDataService.SetDisplayName(newName);
             }
 
             // Restore display mode

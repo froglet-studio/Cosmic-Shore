@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
-using Unity.Services.Core;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
+using CosmicShore.Services.Auth;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Obvious.Soap;
@@ -51,10 +51,14 @@ namespace CosmicShore.Game
         {
             try
             {
-                await UnityServices.InitializeAsync();
+                // Use centralized UGS initialization via AuthenticationController
+                if (AuthenticationController.Instance == null)
+                {
+                    Debug.LogError("[MultiplayerSetup] AuthenticationController.Instance is null. Cannot initialize UGS.");
+                    return;
+                }
 
-                if (!AuthenticationService.Instance.IsSignedIn)
-                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                await AuthenticationController.Instance.EnsureSignedInAnonymouslyAsync();
 
                 if (gameData.IsMultiplayerMode)
                 {

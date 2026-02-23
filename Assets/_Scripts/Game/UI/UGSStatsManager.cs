@@ -19,6 +19,11 @@ namespace CosmicShore.Game.Analytics
         private const string CLOUD_KEY = "PLAYER_STATS_PROFILE";
         private bool _isReady = false;
 
+        // Save debouncing: coalesces rapid saves into a single cloud call
+        private const float SAVE_DEBOUNCE_SECONDS = 2f;
+        private bool _saveDirty;
+        private bool _saveInFlight;
+
         void Awake()
         {
             if (Instance != null) { Destroy(gameObject); return; }
@@ -30,13 +35,23 @@ namespace CosmicShore.Game.Analytics
         {
             try
             {
-                while (AuthenticationController.Instance == null || !AuthenticationController.Instance.IsSignedIn)
-                    await Task.Delay(500);
+                if (AuthenticationController.Instance == null)
+                {
+                    Debug.LogWarning("[UGSStats] AuthenticationController not found. Waiting...");
+                    while (AuthenticationController.Instance == null)
+                        await Task.Delay(500);
+                }
+
+                if (!AuthenticationController.Instance.IsSignedIn)
+                    await AuthenticationController.Instance.EnsureSignedInAnonymouslyAsync();
 
                 _isReady = true;
                 LoadProfile();
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[UGSStats] Failed to initialize: {ex.Message}");
+            }
         }
 
         #region Public API - Smart High Score Evaluation
@@ -166,13 +181,17 @@ namespace CosmicShore.Game.Analytics
             try
             {
                 string id = leaderboardConfig.GetLeaderboardId(mode, intensity);
-                if (string.IsNullOrEmpty(id)) return;
+                if (string.IsNullOrEmpty(id))
+                {
+                    Debug.LogWarning($"[UGSStats] No leaderboard mapping for {mode} intensity {intensity}");
+                    return;
+                }
 
-                try { await LeaderboardsService.Instance.AddPlayerScoreAsync(id, score); }
-                catch (Exception e) { Debug.LogWarning($"[Stats] Upload Failed: {e.Message}"); }
+                await LeaderboardsService.Instance.AddPlayerScoreAsync(id, score);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.LogWarning($"[UGSStats] Leaderboard submit failed for {mode}/{intensity}: {ex.Message}");
             }
         }
 
@@ -181,26 +200,64 @@ namespace CosmicShore.Game.Analytics
             try
             {
                 var data = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { CLOUD_KEY });
-                if (data.TryGetValue(CLOUD_KEY, out var item)) 
+                if (data.TryGetValue(CLOUD_KEY, out var item))
                     _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
-                
+
                 _cachedProfile.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
                 _cachedProfile.MultiHexStats ??= new HexRacePlayerStatsProfile();
                 _cachedProfile.JoustStats ??= new JoustPlayerStatsProfile();
                 _cachedProfile.CrystalCaptureStats ??= new CrystalCapturePlayerStatsProfile();
+
+                Debug.Log("[UGSStats] Profile loaded from cloud save.");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[UGSStats] Failed to load profile from cloud save: {ex.Message}. Using defaults.");
+            }
         }
 
-        async void SaveProfile()
+        /// <summary>
+        /// Marks profile as dirty and schedules a debounced cloud save.
+        /// Multiple calls within SAVE_DEBOUNCE_SECONDS collapse into one actual save.
+        /// </summary>
+        void SaveProfile()
         {
+            _saveDirty = true;
+            if (!_saveInFlight)
+                DebouncedSaveAsync();
+        }
+
+        async void DebouncedSaveAsync()
+        {
+            if (_saveInFlight) return;
+            _saveInFlight = true;
+
             try
             {
-                _cachedProfile.LastLoginTick = DateTime.UtcNow.Ticks;
-                var data = new Dictionary<string, object> { { CLOUD_KEY, _cachedProfile } };
-                await CloudSaveService.Instance.Data.Player.SaveAsync(data);
+                // Wait to coalesce rapid mutations
+                await Task.Delay((int)(SAVE_DEBOUNCE_SECONDS * 1000));
+
+                // Drain: keep saving while mutations arrive during the save
+                while (_saveDirty)
+                {
+                    _saveDirty = false;
+                    _cachedProfile.LastLoginTick = DateTime.UtcNow.Ticks;
+                    var data = new Dictionary<string, object> { { CLOUD_KEY, _cachedProfile } };
+                    await CloudSaveService.Instance.Data.Player.SaveAsync(data);
+                }
             }
-            catch (Exception e) { Debug.LogError($"[Stats] Save Failed: {e.Message}"); }
+            catch (Exception e)
+            {
+                Debug.LogError($"[UGSStats] Save failed: {e.Message}");
+            }
+            finally
+            {
+                _saveInFlight = false;
+
+                // If something dirtied during our save, kick off another cycle
+                if (_saveDirty)
+                    DebouncedSaveAsync();
+            }
         }
 
         #endregion

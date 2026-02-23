@@ -284,7 +284,7 @@ namespace CosmicShore.App.UI.Views
 
                 if (dataService != null && dataService.IsInitialized)
                 {
-                    await dataService.SetDisplayNameAsync(newName);
+                    dataService.SetDisplayName(newName);
                 }
 
                 ModalWindowOut();

@@ -25,6 +25,9 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
         
         private void Start()
         {
+            // [PLAYFAB DISABLED] Player data now handled by UGS PlayerDataService. Pending removal.
+            return;
+
             //LoadPlayerProfileOffline();
             AuthenticationManager.OnLoginSuccess += XpHandler.LoadCaptainXpData;
             AuthenticationManager.OnLoginSuccess += LoadPlayerProfile;

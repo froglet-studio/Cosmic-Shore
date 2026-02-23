@@ -61,6 +61,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         void OnEnable()
         {
+            // [PLAYFAB DISABLED] Captain management will be rebuilt on UGS. Pending removal.
+            return;
+
             XpHandler.OnCaptainDataLoaded += LoadCaptainsData;
 
             CatalogManager.OnLoadInventory += LoadCaptainsData;

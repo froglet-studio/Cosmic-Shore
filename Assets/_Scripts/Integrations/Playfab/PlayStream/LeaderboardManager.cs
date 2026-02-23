@@ -54,6 +54,9 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         private void Start()
         {
+            // [PLAYFAB DISABLED] Leaderboards now handled by UGS UGSStatsManager. Pending removal.
+            return;
+
             NetworkMonitor.OnNetworkConnectionFound += ComeOnline;
             NetworkMonitor.OnNetworkConnectionLost += GoOffline;
             PlayerDataController.OnProfileLoaded += ReportAndFlushOfflineStatistics;

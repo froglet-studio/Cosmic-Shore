@@ -176,7 +176,7 @@ namespace CosmicShore.Services.Auth
             {
                 if (playerDataService != null && playerDataService.IsInitialized)
                 {
-                    await playerDataService.SetDisplayNameAsync(username);
+                    playerDataService.SetDisplayName(username);
                 }
 
                 // Also set the UGS player name for multiplayer

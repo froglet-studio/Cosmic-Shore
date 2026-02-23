@@ -25,15 +25,17 @@ namespace CosmicShore.Services.Auth
 
         private AuthState State { get; set; } = AuthState.NotInitialized;
 
+        public bool IsInitialized => State == AuthState.Ready || State == AuthState.SignedIn;
         public bool IsSignedIn => AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn;
         public string PlayerId => IsSignedIn ? AuthenticationService.Instance.PlayerId : string.Empty;
         private string SessionTokenExists => AuthenticationService.Instance != null && AuthenticationService.Instance.SessionTokenExists ? "Yes" : "No";
 
-        public event Action<string> OnSignedIn;           
-        public event Action<string> OnSignInFailed;     
+        public event Action<string> OnSignedIn;
+        public event Action<string> OnSignInFailed;
         public event Action OnSignedOut;
 
         bool _startupAttempted;
+        private TaskCompletionSource<bool> _initTcs;
 
         void Awake()
         {
@@ -74,25 +76,42 @@ namespace CosmicShore.Services.Auth
                     OnSignInFailed?.Invoke(ex.Message);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                 // Ignored
+                Debug.LogError($"[UGS Auth] Unexpected error during Start: {ex.Message}");
             }
         }
 
         public async Task EnsureInitializedAsync()
         {
             if (State == AuthState.Ready || State == AuthState.SignedIn) return;
-            if (State == AuthState.Initializing) return;
+
+            // If already initializing, wait for the in-flight init to complete
+            if (State == AuthState.Initializing && _initTcs != null)
+            {
+                await _initTcs.Task;
+                return;
+            }
 
             State = AuthState.Initializing;
+            _initTcs = new TaskCompletionSource<bool>();
             Log("Initializing Unity Services...");
 
-            await UnityServices.InitializeAsync();
-            WireAuthEventsOnce();
+            try
+            {
+                await UnityServices.InitializeAsync();
+                WireAuthEventsOnce();
 
-            State = AuthState.Ready;
-            Log("Unity Services initialized.");
+                State = AuthState.Ready;
+                Log("Unity Services initialized.");
+                _initTcs.TrySetResult(true);
+            }
+            catch (Exception ex)
+            {
+                State = AuthState.Failed;
+                _initTcs.TrySetException(ex);
+                throw;
+            }
         }
 
         public async Task EnsureSignedInAnonymouslyAsync()

@@ -376,8 +376,10 @@ namespace CosmicShore.Game.Arcade
                     0 (int)ScoreTracker.GetWinnerScoreData().Score);*/
             }
             else
-                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerVesselType, IntensityLevel,
-                    0 /*(int)ScoreTracker.GetWinnerScoreData().Score*/, false);// ScoreTracker.GolfRules);
+            {
+                // [PLAYFAB DISABLED] Was: LeaderboardManager.Instance.ReportGameplayStatistic(...)
+                // Leaderboard reporting now handled by UGS via UGSStatsManager.
+            }
 
             UserActionSystem.Instance.CompleteAction(new UserAction(
                     UserActionType.PlayGame,
