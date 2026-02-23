@@ -152,7 +152,17 @@ namespace CosmicShore.Game.Analytics
         /// </summary>
         public void ReportVesselTelemetry(VesselTelemetry telemetry, string vesselTypeName)
         {
-            if (!_isReady || telemetry == null || string.IsNullOrEmpty(vesselTypeName)) return;
+            if (!_isReady || telemetry == null || string.IsNullOrEmpty(vesselTypeName))
+            {
+                Debug.LogWarning($"[UGSStats] ReportVesselTelemetry skipped — " +
+                    $"ready={_isReady}, telemetry={(telemetry != null ? telemetry.GetType().Name : "NULL")}, " +
+                    $"vessel='{vesselTypeName}'");
+                return;
+            }
+
+            Debug.Log($"[UGSStats] ReportVesselTelemetry — {telemetry.GetType().Name} for '{vesselTypeName}', " +
+                $"drift={telemetry.MaxDriftTime:F2}s, boost={telemetry.MaxBoostTime:F2}s, " +
+                $"prismsDmg={telemetry.PrismsDamaged}");
 
             var stats = _vesselStats.GetOrCreate(vesselTypeName);
             stats.GamesPlayed++;
@@ -168,15 +178,22 @@ namespace CosmicShore.Game.Analytics
             switch (telemetry)
             {
                 case SparrowVesselTelemetry sparrow:
+                    Debug.Log($"[UGSStats] Sparrow stats — prismBlocks={sparrow.PrismBlocksShot}, " +
+                        $"skyburst={sparrow.SkyburstMissilesShot}, dangerBlocks={sparrow.DangerBlocksSpawned}");
                     stats.IncrementCounter("PrismBlocksShot", sparrow.PrismBlocksShot);
                     stats.IncrementCounter("SkyburstMissilesShot", sparrow.SkyburstMissilesShot);
                     stats.IncrementCounter("DangerBlocksSpawned", sparrow.DangerBlocksSpawned);
                     break;
                 case SquirrelVesselTelemetry squirrel:
+                    Debug.Log($"[UGSStats] Squirrel stats — jousts={squirrel.JoustsWon}, " +
+                        $"stolen={squirrel.PrismsStolen}, cleanStreak={squirrel.MaxCleanStreak}");
                     stats.IncrementCounter("JoustsWon", squirrel.JoustsWon);
                     stats.IncrementCounter("PrismsStolen", squirrel.PrismsStolen);
                     if (squirrel.MaxCleanStreak > stats.Counters.GetValueOrDefault("BestCleanStreak", 0))
                         stats.Counters["BestCleanStreak"] = squirrel.MaxCleanStreak;
+                    break;
+                default:
+                    Debug.LogWarning($"[UGSStats] No vessel-specific handler for {telemetry.GetType().Name}");
                     break;
             }
 

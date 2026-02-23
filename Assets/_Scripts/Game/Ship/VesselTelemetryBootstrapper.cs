@@ -32,14 +32,17 @@ namespace CosmicShore.Game
 
             VesselTelemetry telemetry = vesselStatus.VesselType switch
             {
-                VesselClassType.Sparrow => gameObject.AddComponent<SparrowVesselTelemetry>(),
+                VesselClassType.Sparrow  => gameObject.AddComponent<SparrowVesselTelemetry>(),
+                VesselClassType.Squirrel => gameObject.AddComponent<SquirrelVesselTelemetry>(),
                 _ => gameObject.AddComponent<DefaultVesselTelemetry>()
             };
 
             // Inject gameData so the base class can subscribe to turn events
             telemetry.InjectGameData(gameData);
 
-            Debug.Log($"[TelemetryBootstrap] Added {telemetry.GetType().Name} to {vesselStatus.VesselType}");
+            Debug.LogWarning($"[TelemetryBootstrap] Added {telemetry.GetType().Name} to " +
+                $"{vesselStatus.VesselType} at runtime — serialized stat SO refs will be null. " +
+                $"Attach telemetry directly on the prefab with SO refs wired for full functionality.");
             Destroy(this);
         }
     }

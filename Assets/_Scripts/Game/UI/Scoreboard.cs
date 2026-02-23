@@ -253,9 +253,19 @@ namespace CosmicShore.Game.UI
                 foreach (Transform child in statsContainer)
                     Destroy(child.gameObject);
 
-            if (!statsProvider || !statsContainer || !statRowPrefab) return;
+            if (!statsProvider || !statsContainer || !statRowPrefab)
+            {
+                Debug.LogWarning($"[Scoreboard] PopulateDynamicStats skipped — " +
+                    $"provider={(statsProvider != null ? "OK" : "NULL")}, " +
+                    $"container={(statsContainer != null ? "OK" : "NULL")}, " +
+                    $"rowPrefab={(statRowPrefab != null ? "OK" : "NULL")}");
+                return;
+            }
 
-            foreach (var stat in statsProvider.GetStats())
+            var stats = statsProvider.GetStats();
+            Debug.Log($"[Scoreboard] Populating {stats.Count} dynamic stat row(s)");
+
+            foreach (var stat in stats)
             {
                 var row = Instantiate(statRowPrefab, statsContainer);
                 row.Initialize(stat.Label, stat.Value, stat.Icon);
