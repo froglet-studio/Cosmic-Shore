@@ -46,6 +46,15 @@ namespace CosmicShore.Game.Arcade
                 localStats.JoustCollisions,
                 raceTime
             );
+
+            // Report per-vessel telemetry
+            if (gameData.LocalPlayer?.Vessel is Component vc
+                && vc.TryGetComponent<VesselTelemetry>(out var vt))
+            {
+                UGSStatsManager.Instance.ReportVesselTelemetry(
+                    vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
+            }
+
             Debug.Log($"[JoustStats] Reported Win - Time: {raceTime:F2}s Jousts: {localStats.JoustCollisions}");
         }
     }

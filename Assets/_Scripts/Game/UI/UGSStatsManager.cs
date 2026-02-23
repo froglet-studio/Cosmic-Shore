@@ -18,7 +18,9 @@ namespace CosmicShore.Game.Analytics
         [SerializeField] LeaderboardConfigSO leaderboardConfig; 
 
         private PlayerStatsProfile _cachedProfile = new PlayerStatsProfile();
+        private VesselStatsCloudData _vesselStats = new VesselStatsCloudData();
         private const string CLOUD_KEY = UGSKeys.PlayerStatsProfile;
+        private const string VESSEL_KEY = UGSKeys.VesselStats;
         private bool _isReady = false;
 
         // Save debouncing: coalesces rapid saves into a single cloud call
@@ -144,6 +146,43 @@ namespace CosmicShore.Game.Analytics
             SaveProfile();
         }
 
+        /// <summary>
+        /// Reports per-vessel telemetry stats to UGS Cloud Save at game end.
+        /// Called by score trackers after they read the vessel's telemetry.
+        /// </summary>
+        public void ReportVesselTelemetry(VesselTelemetry telemetry, string vesselTypeName)
+        {
+            if (!_isReady || telemetry == null || string.IsNullOrEmpty(vesselTypeName)) return;
+
+            var stats = _vesselStats.GetOrCreate(vesselTypeName);
+            stats.GamesPlayed++;
+
+            // Common stats — keep best values
+            if (telemetry.MaxDriftTime > stats.BestDriftTime)
+                stats.BestDriftTime = telemetry.MaxDriftTime;
+            if (telemetry.MaxBoostTime > stats.BestBoostTime)
+                stats.BestBoostTime = telemetry.MaxBoostTime;
+            stats.TotalPrismsDamaged += telemetry.PrismsDamaged;
+
+            // Vessel-specific stats
+            switch (telemetry)
+            {
+                case SparrowVesselTelemetry sparrow:
+                    stats.IncrementCounter("PrismBlocksShot", sparrow.PrismBlocksShot);
+                    stats.IncrementCounter("SkyburstMissilesShot", sparrow.SkyburstMissilesShot);
+                    stats.IncrementCounter("DangerBlocksSpawned", sparrow.DangerBlocksSpawned);
+                    break;
+                case SquirrelVesselTelemetry squirrel:
+                    stats.IncrementCounter("JoustsWon", squirrel.JoustsWon);
+                    stats.IncrementCounter("PrismsStolen", squirrel.PrismsStolen);
+                    if (squirrel.MaxCleanStreak > stats.Counters.GetValueOrDefault("BestCleanStreak", 0))
+                        stats.Counters["BestCleanStreak"] = squirrel.MaxCleanStreak;
+                    break;
+            }
+
+            SaveVesselStats();
+        }
+
         #endregion
 
         #region Internal
@@ -186,20 +225,26 @@ namespace CosmicShore.Game.Analytics
         {
             try
             {
-                var data = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { CLOUD_KEY });
-                if (data.TryGetValue(CLOUD_KEY, out var item))
-                    _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
+                var keys = new HashSet<string> { CLOUD_KEY, VESSEL_KEY };
+                var data = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
+
+                if (data.TryGetValue(CLOUD_KEY, out var statsItem))
+                    _cachedProfile = statsItem.Value.GetAs<PlayerStatsProfile>();
+
+                if (data.TryGetValue(VESSEL_KEY, out var vesselItem))
+                    _vesselStats = vesselItem.Value.GetAs<VesselStatsCloudData>();
 
                 _cachedProfile.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
                 _cachedProfile.MultiHexStats ??= new HexRacePlayerStatsProfile();
                 _cachedProfile.JoustStats ??= new JoustPlayerStatsProfile();
                 _cachedProfile.CrystalCaptureStats ??= new CrystalCapturePlayerStatsProfile();
+                _vesselStats ??= new VesselStatsCloudData();
 
-                Debug.Log("[UGSStats] Profile loaded from cloud save.");
+                Debug.Log("[UGSStats] Profile and vessel stats loaded from cloud save.");
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[UGSStats] Failed to load profile from cloud save: {ex.Message}. Using defaults.");
+                Debug.LogWarning($"[UGSStats] Failed to load from cloud save: {ex.Message}. Using defaults.");
             }
         }
 
@@ -244,6 +289,20 @@ namespace CosmicShore.Game.Analytics
                 // If something dirtied during our save, kick off another cycle
                 if (_saveDirty)
                     DebouncedSaveAsync();
+            }
+        }
+
+        async void SaveVesselStats()
+        {
+            try
+            {
+                var data = new Dictionary<string, object> { { VESSEL_KEY, _vesselStats } };
+                await CloudSaveService.Instance.Data.Player.SaveAsync(data);
+                Debug.Log("[UGSStats] Vessel stats saved to cloud.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[UGSStats] Vessel stats save failed: {e.Message}");
             }
         }
 

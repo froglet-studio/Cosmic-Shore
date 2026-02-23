@@ -10,6 +10,9 @@ namespace CosmicShore.Game
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselDangerBlockFormationBySkimmerEffectSO")]
     public sealed class VesselDangerBlockFormationBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
+        /// <summary>Static event: fired when danger blocks are spawned. Param = attacker player name.</summary>
+        public static event System.Action<string> OnDangerBlockSpawned;
+
         [Header("AOE Prefab")]
         [SerializeField] private GameObject dangerHemispherePrefab;
         
@@ -73,6 +76,8 @@ namespace CosmicShore.Game
 
             aoe.Initialize(init);
             aoe.Detonate();
+
+            OnDangerBlockSpawned?.Invoke(attackerStatus.PlayerName);
         }
     }
 }

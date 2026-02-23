@@ -48,6 +48,14 @@ namespace CosmicShore.Game
             if (stat != null) _allStats.Add(stat);
         }
 
+        // ── Runtime injection (used by VesselTelemetryBootstrapper) ────────────
+
+        /// <summary>
+        /// Sets gameData when the component is added at runtime via AddComponent.
+        /// Must be called before OnEnable fires.
+        /// </summary>
+        public void InjectGameData(GameDataSO data) => gameData = data;
+
         // ── Private accumulators ───────────────────────────────────────────────
 
         private float _currentDriftTime;

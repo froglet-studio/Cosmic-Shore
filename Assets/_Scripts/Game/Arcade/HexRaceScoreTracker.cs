@@ -117,6 +117,10 @@ namespace CosmicShore.Game.Arcade
                     );
                 }
 
+                // Report per-vessel telemetry to UGS
+                if (UGSStatsManager.Instance && _vesselTelemetry != null && _observedVessel != null)
+                    UGSStatsManager.Instance.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
+
                 if (controller) controller.ReportLocalPlayerFinished(finalScore);
             }
 

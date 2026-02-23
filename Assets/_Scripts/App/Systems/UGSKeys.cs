@@ -6,8 +6,9 @@ namespace CosmicShore.App.Systems
     public static class UGSKeys
     {
         // ── Cloud Save ──
-        public const string PlayerProfile    = "player_profile";
+        public const string PlayerProfile      = "player_profile";
         public const string PlayerStatsProfile = "PLAYER_STATS_PROFILE";
+        public const string VesselStats        = "VESSEL_STATS";
 
         // ── Analytics Events ──
         public const string EventPlayAgain = "play_again_pressed";
