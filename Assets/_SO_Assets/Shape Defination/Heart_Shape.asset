@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
+  m_Name: Heart_Shape
+  m_EditorClassIdentifier: 
+  shapeName: Heart Shape
+  description: This is a Heart Shape
+  thumbnail: {fileID: 21300000, guid: f891eac8a4e23514f8896ba0e34647cc, type: 3}
+  waypoints:
+  - {x: 0, y: 31.25, z: 0}
+  - {x: 2.6557648, y: 42.71289, z: 0}
+  - {x: 18.276731, y: 64.99492, z: 0}
+  - {x: 47.655766, y: 74.358894, z: 0}
+  - {x: 77.421486, y: 58.570766, z: 0}
+  - {x: 90, y: 24.999996, z: 0}
+  - {x: 77.42147, y: -11.869925, z: 0}
+  - {x: 47.655766, y: -44.932613, z: 0}
+  - {x: 18.276726, y: -74.19578, z: 0}
+  - {x: 2.6557596, y: -97.139175, z: 0}
+  - {x: -6.013348e-20, y: -106.25, z: 0}
+  - {x: -2.6557703, y: -97.139145, z: 0}
+  - {x: -18.276743, y: -74.19576, z: 0}
+  - {x: -47.65579, y: -44.9326, z: 0}
+  - {x: -77.42147, y: -11.869929, z: 0}
+  - {x: -90, y: 25.000002, z: 0}
+  - {x: -77.42147, y: 58.570778, z: 0}
+  - {x: -47.655735, y: 74.3589, z: 0}
+  - {x: -18.276705, y: 64.994896, z: 0}
+  - {x: -2.6557634, y: 42.71289, z: 0}
+  - {x: 4.810678e-19, y: 31.25, z: 0}
+  trailEnabledPerSegment: 010101010101010101010101010101010101010101
+  playerStartOffset: {x: 0, y: 0, z: -150}
+  playerStartEuler: {x: 0, y: 0, z: 0}
+  revealCameraEuler: {x: 90, y: 0, z: 0}
+  revealCameraDistance: 400
+  parTime: 360

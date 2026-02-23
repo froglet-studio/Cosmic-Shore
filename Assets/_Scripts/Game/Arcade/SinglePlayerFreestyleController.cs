@@ -1,82 +1,101 @@
-
+using CosmicShore.Game.ShapeDrawing;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
-    /// <summary>
-    /// Freestyle game mode.
-    /// Features: Endless gameplay, no end condition, procedural environment
-    /// Flow: Start → Play infinitely (no end game)
-    /// </summary>
     public class SinglePlayerFreestyleController : SinglePlayerMiniGameControllerBase
     {
         [Header("Environment")]
         [SerializeField] SegmentSpawner segmentSpawner;
-        [SerializeField] int baseNumberOfSegments = 10;
-        [SerializeField] int baseStraightLineLength = 400;
-        [SerializeField] bool resetEnvironmentOnEachTurn = true;
-        [SerializeField] bool scaleCrystalPositionWithIntensity = true;
-        [SerializeField] bool scaleLengthWithIntensity = true;
-        [SerializeField] bool scaleSegmentsWithIntensity = true;
-        
-        [Header("Helix Optional")]
-        [SerializeField] SpawnableHelix helix;
-        [SerializeField] float helixIntensityScaling = 1.3f;
-        
-        [Header("Seed")]
-        [SerializeField] int Seed = 0;
-        
-        /// <summary>Freestyle has no end game - play forever!</summary>
+        [SerializeField] ShapeDrawingManager shapeDrawingManager;
+        [SerializeField] LocalCrystalManager localCrystalManager;
+        [SerializeField] Cell cellScript; 
+
+        [Header("Lobby Configuration")]
+        [SerializeField] Transform lobbyOrigin;
+        [SerializeField] List<ModeSelectTrigger> modeTriggers;
+
         protected override bool HasEndGame => false;
         protected override bool ShowEndGameSequence => false;
-        
-        int numberOfSegments => scaleSegmentsWithIntensity 
-            ? baseNumberOfSegments * gameData.SelectedIntensity.Value 
-            : baseNumberOfSegments;
-            
-        int straightLineLength => scaleLengthWithIntensity 
-            ? baseStraightLineLength / gameData.SelectedIntensity.Value 
-            : baseStraightLineLength;
-        
+
+        bool _isInLobby;
+
         protected override void OnCountdownTimerEnded()
         {
-            // Set random or fixed seed
-            segmentSpawner.Seed = Seed != 0 ? Seed : Random.Range(int.MinValue, int.MaxValue);
-            
-            // Apply helix intensity if helix exists
-            if (helix)
-            {
-                helix.firstOrderRadius = helix.secondOrderRadius = 
-                    gameData.SelectedIntensity.Value / helixIntensityScaling;
-            }
-            
-            if (resetEnvironmentOnEachTurn) 
-                ResetEnvironment();
-            
-            base.OnCountdownTimerEnded();
+            gameData.SetPlayersActive();
+            EnterLobby();
         }
 
-        protected override void SetupNewTurn() 
+        void EnterLobby()
         {
-            RaiseToggleReadyButtonEvent(true);
-            
-            if (resetEnvironmentOnEachTurn) 
-                ResetEnvironment();
-            
-            base.SetupNewTurn();
-        }
-        
-        void ResetEnvironment() 
-        {
-            if (!segmentSpawner)
+            _isInLobby = true;
+            if (cellScript) cellScript.enabled = false;
+            if (segmentSpawner) segmentSpawner.NukeTheTrails();
+
+            if (localCrystalManager)
             {
-                Debug.LogError($"Missing {nameof(segmentSpawner)} reference!", this);
-                return;
+                localCrystalManager.ManualTurnEnded();
+                localCrystalManager.enabled = false;
             }
+
+            foreach (var trigger in modeTriggers.Where(trigger => trigger))
+            {
+                trigger.gameObject.SetActive(true);
+                trigger.ResetTrigger();
+                trigger.OnModeSelected.RemoveListener(HandleModeSelection); 
+                trigger.OnModeSelected.AddListener(HandleModeSelection);
+            }
+        }
+
+        void HandleModeSelection(ShapeDefinition shapeDef)
+        {
+            _isInLobby = false;
+
+            // Hide triggers
+            foreach (var trigger in modeTriggers.Where(trigger => trigger)) trigger.gameObject.SetActive(false);
+
+            gameData.StartTurn();
+
+            if (!shapeDef)
+            {
+                StartStandardFreestyle();
+            }
+            else
+            {
+                StartShapeMode(shapeDef);
+            }
+        }
+
+        void StartStandardFreestyle()
+        {
+            Debug.Log("[Controller] Starting Standard Freestyle");
             
-            segmentSpawner.NumberOfSegments = numberOfSegments;
-            segmentSpawner.StraightLineLength = straightLineLength;
-            segmentSpawner.Initialize();
+            if (cellScript) cellScript.enabled = true;
+
+            if (localCrystalManager) localCrystalManager.enabled = true;
+            if (segmentSpawner) segmentSpawner.Initialize();
+            
+            RaiseToggleReadyButtonEvent(true);
+        }
+
+        void StartShapeMode(ShapeDefinition shapeDef)
+        {
+            Debug.Log("[Controller] Starting Shape Mode");
+            if (cellScript) cellScript.enabled = false;
+
+            shapeDrawingManager.StartShapeSequence(shapeDef, lobbyOrigin.position);
+        }
+
+        public void ReturnToLobby()
+        {
+            shapeDrawingManager.ExitShapeMode();
+            
+            // Optional: End the "turn" when returning to lobby if you want to stop time tracking
+            // gameData.EndTurn(); // (Only if your Base Controller supports this cleanly)
+
+            EnterLobby();
         }
     }
 }
