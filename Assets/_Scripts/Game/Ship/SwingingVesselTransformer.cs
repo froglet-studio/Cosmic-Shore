@@ -2,6 +2,7 @@ using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utility;
+using CosmicShore.Utilities;
 
 /// <summary>
 /// Vessel transformer that adds Spider-Man-style swinging mechanics.
