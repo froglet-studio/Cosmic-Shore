@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -20,7 +21,7 @@ namespace CosmicShore
                 }
                 else
                 {
-                    Debug.LogWarning($"Duplicate key found: {data.Element}");
+                    CSDebug.LogWarning($"Duplicate key found: {data.Element}");
                 }
             }
 
@@ -37,7 +38,7 @@ namespace CosmicShore
                 return data;
             }
 
-            Debug.LogError($"Data not found: {element}");
+            CSDebug.LogError($"Data not found: {element}");
             return null;
         }
     }

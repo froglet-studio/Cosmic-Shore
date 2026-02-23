@@ -6,6 +6,7 @@ using CosmicShore.Utilities;
 using PlayFab;
 using PlayFab.GroupsModels;
 using UnityEngine;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Integrations.PlayFab.Groups
@@ -48,7 +49,7 @@ namespace CosmicShore.Integrations.PlayFab.Groups
             if (AuthenticationManager.PlayFabAccount.AuthContext == null)
             {
                 // TODO: raise event to for user authentication 
-                Debug.LogWarning($"Current Player has not logged in yet.");
+                CSDebug.LogWarning($"Current Player has not logged in yet.");
                 return;
             }
 
@@ -79,8 +80,8 @@ namespace CosmicShore.Integrations.PlayFab.Groups
                     if (result == null) return;
                 
                     // Log group creation success.
-                    Debug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - Group: {result.GroupName} creation success.");
-                    Debug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - Group id: {result.Group.Id}.");
+                    CSDebug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - Group: {result.GroupName} creation success.");
+                    CSDebug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - Group id: {result.Group.Id}.");
                 
                     // Create a group list cache in memory
                     groups ??= new Dictionary<string, GroupModel>();
@@ -119,7 +120,7 @@ namespace CosmicShore.Integrations.PlayFab.Groups
                     if (result == null) return;
                 
                     // Log deleting group success
-                    Debug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - group deleted.");
+                    CSDebug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - group deleted.");
                 
                     // Remove the deleted group from local memory
                     // Returns false if id is not in the dictionary, no exception throws
@@ -145,8 +146,8 @@ namespace CosmicShore.Integrations.PlayFab.Groups
                 {
                     if (result == null) return;
 
-                    Debug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - group found.");
-                    Debug.Log(
+                    CSDebug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - group found.");
+                    CSDebug.Log(
                         $"{nameof(GroupController)} - {nameof(CreateGroup)} - Group name: {result.GroupName} Group id: {result.Group.Id}.");
                     var group = new GroupModel()
                     {
@@ -178,7 +179,7 @@ namespace CosmicShore.Integrations.PlayFab.Groups
             if (error == null) return;
         
             OnErrorHandler?.Invoke(this, error);
-            Debug.LogError(error.GenerateErrorReport());
+            CSDebug.LogError(error.GenerateErrorReport());
         }
         #endregion
     }

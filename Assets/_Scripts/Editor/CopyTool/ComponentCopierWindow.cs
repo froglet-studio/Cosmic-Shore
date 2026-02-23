@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using UnityEditorInternal;
+using CosmicShore.Utility;
 
 /// <summary>
 /// Editor window to copy selected components from one GameObject to another.
@@ -122,6 +123,6 @@ public class ComponentCopierWindow : EditorWindow
             copiedCount++;
         }
 
-        Debug.Log($"Copied {copiedCount} components from '{copyFrom.name}' to '{copyTo.name}'.");
+        CSDebug.Log($"Copied {copiedCount} components from '{copyFrom.name}' to '{copyTo.name}'.");
     }
 }

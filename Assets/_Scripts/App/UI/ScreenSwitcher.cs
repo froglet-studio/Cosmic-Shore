@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI
 {
@@ -177,7 +178,7 @@ namespace CosmicShore.App.UI
         {
             if (screens == null || screens.Count == 0)
             {
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     "[ScreenSwitcher] 'screens' list is empty. " +
                     "Falling back to transform children order. " +
                     "You can manually assign screens in the inspector for full control."
@@ -283,7 +284,7 @@ namespace CosmicShore.App.UI
                 int idx = screens.FindIndex(s => s != null && s.id == screen);
                 if (idx >= 0) return idx;
 
-                Debug.LogWarning($"[ScreenSwitcher] Screen '{screen}' not found in screens list. Falling back to enum value index.");
+                CSDebug.LogWarning($"[ScreenSwitcher] Screen '{screen}' not found in screens list. Falling back to enum value index.");
             }
 
             return (int)screen;
@@ -311,7 +312,7 @@ namespace CosmicShore.App.UI
             int max = GetScreenCount() - 1;
             if (max < 0)
             {
-                Debug.LogError("[ScreenSwitcher] No screens available. Please configure the 'screens' list or add child panels.");
+                CSDebug.LogError("[ScreenSwitcher] No screens available. Please configure the 'screens' list or add child panels.");
                 return;
             }
 

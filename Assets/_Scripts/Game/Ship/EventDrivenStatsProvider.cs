@@ -2,6 +2,7 @@
 using CosmicShore.Game.UI;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -52,7 +53,7 @@ namespace CosmicShore.Game.UI
 
             if (telemetry == null)
             {
-                Debug.LogWarning("[EventDrivenStatsProvider] No VesselTelemetry found on local vessel.");
+                CSDebug.LogWarning("[EventDrivenStatsProvider] No VesselTelemetry found on local vessel.");
                 return;
             }
 

@@ -6,6 +6,7 @@ using CosmicShore.Core.Visuals;
 using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -188,7 +189,7 @@ namespace CosmicShore.Game
         {
             if (!_onPrismSpawnedEventChannel)
             {
-                Debug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
+                CSDebug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
                 return;
             }
 
@@ -216,7 +217,7 @@ namespace CosmicShore.Game
 
             if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism))
             {
-                Debug.LogError("[PrismSpawner] Factory returned null or missing Prism component.");
+                CSDebug.LogError("[PrismSpawner] Factory returned null or missing Prism component.");
                 return;
             }
 

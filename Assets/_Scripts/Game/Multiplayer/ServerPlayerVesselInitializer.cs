@@ -7,6 +7,7 @@ using Unity.Multiplayer.Samples.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -160,14 +161,14 @@ namespace CosmicShore.Game
             var playerPrefabGO = NetworkManager.Singleton.NetworkConfig.PlayerPrefab;
             if (!playerPrefabGO)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] No player prefab configured in NetworkManager.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] No player prefab configured in NetworkManager.");
                 return;
             }
 
             var playerPrefabNO = playerPrefabGO.GetComponent<NetworkObject>();
             if (!playerPrefabNO)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] Player prefab missing NetworkObject component.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] Player prefab missing NetworkObject component.");
                 return;
             }
 
@@ -190,7 +191,7 @@ namespace CosmicShore.Game
                     int spawnIndex = 1 + i;
                     if (spawnIndex >= _playerOrigins.Length)
                     {
-                        Debug.LogWarning($"[ServerPlayerVesselInitializer] Not enough spawn origins for AI {i} " +
+                        CSDebug.LogWarning($"[ServerPlayerVesselInitializer] Not enough spawn origins for AI {i} " +
                                          $"(need index {spawnIndex}, have {_playerOrigins.Length}). Wrapping with modulo.");
                         spawnIndex = spawnIndex % _playerOrigins.Length;
                     }
@@ -202,7 +203,7 @@ namespace CosmicShore.Game
                 var aiPlayer = aiPlayerNO.GetComponent<Player>();
                 if (!aiPlayer)
                 {
-                    Debug.LogError("[ServerPlayerVesselInitializer] AI Player prefab missing Player component.");
+                    CSDebug.LogError("[ServerPlayerVesselInitializer] AI Player prefab missing Player component.");
                     aiPlayerNO.Despawn(true);
                     continue;
                 }
@@ -231,7 +232,7 @@ namespace CosmicShore.Game
                 // Configure the AI pilot on the spawned vessel
                 ConfigureAIPilot(aiVesselNO);
 
-                Debug.Log($"[ServerPlayerVesselInitializer] Spawned AI opponent {i + 1}/{aiCount}: domain={aiDomain}, vessel={aiVesselType}");
+                CSDebug.Log($"[ServerPlayerVesselInitializer] Spawned AI opponent {i + 1}/{aiCount}: domain={aiDomain}, vessel={aiVesselType}");
             }
         }
 
@@ -250,10 +251,10 @@ namespace CosmicShore.Game
                         // Validate the prefab container can spawn this type
                         if (vesselPrefabContainer.TryGetShipPrefab(shipType, out _))
                         {
-                            Debug.Log($"[ServerPlayerVesselInitializer] AI picking ship {shipType} from captain {captain.Name}");
+                            CSDebug.Log($"[ServerPlayerVesselInitializer] AI picking ship {shipType} from captain {captain.Name}");
                             return shipType;
                         }
-                        Debug.LogWarning($"[ServerPlayerVesselInitializer] No prefab for {shipType}, falling back to Sparrow");
+                        CSDebug.LogWarning($"[ServerPlayerVesselInitializer] No prefab for {shipType}, falling back to Sparrow");
                     }
                 }
             }
@@ -296,13 +297,13 @@ namespace CosmicShore.Game
 
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
             {
-                Debug.LogError($"[ServerPlayerVesselInitializer] No prefab for AI vessel type {vesselType}");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] No prefab for AI vessel type {vesselType}");
                 return false;
             }
 
             if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
             {
-                Debug.LogError($"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} missing NetworkObject");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} missing NetworkObject");
                 return false;
             }
 
@@ -355,7 +356,7 @@ namespace CosmicShore.Game
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[ServerPlayerVesselInitializer] Error in DelayedSpawnVesselForPlayer: {ex}");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] Error in DelayedSpawnVesselForPlayer: {ex}");
             }
         }
 
@@ -366,14 +367,14 @@ namespace CosmicShore.Game
             var playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
             if (!playerNetObj)
             {
-                Debug.LogError($"[ServerPlayerVesselInitializer] Player object not found for client {clientId}");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player object not found for client {clientId}");
                 return;
             }
 
             var player = playerNetObj.GetComponent<Player>();
             if (!player)
             {
-                Debug.LogError($"[ServerPlayerVesselInitializer] Player component missing on {clientId}");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player component missing on {clientId}");
                 return;
             }
 
@@ -383,7 +384,7 @@ namespace CosmicShore.Game
             // Spawn initial vessel if type already chosen
             if (player.NetDefaultVesselType.Value == VesselClassType.Random)
             {
-                Debug.LogWarning("Vessel type not set, setting default dolphin");
+                CSDebug.LogWarning("Vessel type not set, setting default dolphin");
                 player.NetDefaultVesselType.Value = VesselClassType.Dolphin;
             }
             SpawnVesselForPlayer(clientId, player);
@@ -398,13 +399,13 @@ namespace CosmicShore.Game
 
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselTypeToSpawn, out Transform shipPrefabTransform))
             {
-                Debug.LogError($"[ServerPlayerVesselInitializer] No prefab for vessel type {vesselTypeToSpawn}");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] No prefab for vessel type {vesselTypeToSpawn}");
                 return;
             }
 
             if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
             {
-                Debug.LogError($"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} missing NetworkObject");
+                CSDebug.LogError($"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} missing NetworkObject");
                 return;
             }
 

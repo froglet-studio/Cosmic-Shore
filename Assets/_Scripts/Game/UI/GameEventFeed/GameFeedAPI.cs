@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -27,7 +28,7 @@ namespace CosmicShore.Game.UI
             var ch = Channel;
             if (ch == null)
             {
-                Debug.LogWarning($"[GameFeedAPI] Missing channel at Resources/{ChannelPath}");
+                CSDebug.LogWarning($"[GameFeedAPI] Missing channel at Resources/{ChannelPath}");
                 return;
             }
             ch.Raise(new GameFeedPayload(message, domain, type));

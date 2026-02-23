@@ -3,6 +3,7 @@ using CosmicShore.Soap;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -112,7 +113,7 @@ namespace CosmicShore.Game.Arcade
         
         protected virtual void ResetEnvironmentForReplay()
         {
-            Debug.Log("[MiniGameControllerBase] ResetEnvironmentForReplay - Override in subclass");
+            CSDebug.Log("[MiniGameControllerBase] ResetEnvironmentForReplay - Override in subclass");
         }
     }
 }

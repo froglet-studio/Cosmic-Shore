@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Utilities;
 using UnityEngine;
 using UnityEngine.Audio;
+using CosmicShore.Utility;
 
 /// <summary>
 /// Audio System to contain audio methods accessed by other classes
@@ -96,7 +97,7 @@ namespace CosmicShore.App.Systems.Audio
 
         void ChangeMusicEnabledStatus(bool status)
         {
-            Debug.Log($"AudioSystem.OnChangeAudioEnabledStatus - status: {status}");
+            CSDebug.Log($"AudioSystem.OnChangeAudioEnabledStatus - status: {status}");
 
             musicEnabled = status;            
             SetMixerMusicVolume(musicEnabled ? musicVolume : 0);
@@ -108,7 +109,7 @@ namespace CosmicShore.App.Systems.Audio
 
         void ChangeMusicLevel(float level)
         {
-            Debug.Log($"ChangeMusicLevel: {level}, {level/5f}");
+            CSDebug.Log($"ChangeMusicLevel: {level}, {level/5f}");
             musicVolume = level / 5f;   // max .2 -- default max volume is too high
             musicSource1.volume = musicVolume;
             musicSource2.volume = musicVolume;
@@ -125,7 +126,7 @@ namespace CosmicShore.App.Systems.Audio
             activeAudioSource.clip = audioClip;
             activeAudioSource.volume = MusicVolume;
             activeAudioSource.Play();
-            Debug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
         }
 
         public void PlayNextMusicClip(AudioClip audioClip)
@@ -134,7 +135,7 @@ namespace CosmicShore.App.Systems.Audio
             activeAudioSource.clip = audioClip;
             activeAudioSource.volume = MusicVolume;
             activeAudioSource.Play();
-            Debug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
         }
 
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
@@ -159,7 +160,7 @@ namespace CosmicShore.App.Systems.Audio
             activeAudioSource.Stop();
             activeAudioSource.clip = newAudioClip; // Change AudioClip
             activeAudioSource.Play();
-            Debug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
 
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
@@ -181,7 +182,7 @@ namespace CosmicShore.App.Systems.Audio
             //Set the new audio source
             newAudioSource.clip = newAudioClip;
             newAudioSource.Play();
-            Debug.Log($"Playing New Music Clip: {newAudioSource.clip.name}");
+            CSDebug.Log($"Playing New Music Clip: {newAudioSource.clip.name}");
 
             //crossfade music
             StartCoroutine(UpdateMusicWithCrossFade(activeAudioSource, newAudioSource, transitionTime));

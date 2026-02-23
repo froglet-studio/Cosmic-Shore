@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -56,7 +57,7 @@ namespace CosmicShore.App.UI.Views
                 {
                     var def = GetDefaultType();
                     if (verboseLogging)
-                        Debug.Log($"[ShipSelectionView] Normalizing selected vessel from {current} to {def}.");
+                        CSDebug.Log($"[ShipSelectionView] Normalizing selected vessel from {current} to {def}.");
 
                     gameData.selectedVesselClass.Value = def;
                     if (gameData.VesselClassSelectedIndex != null)
@@ -81,7 +82,7 @@ namespace CosmicShore.App.UI.Views
                 if (_shipsByClass.ContainsKey(ship.Class))
                 {
                     if (verboseLogging)
-                        Debug.LogWarning($"[ShipSelectionView] Duplicate ship class in catalog: {ship.Class}");
+                        CSDebug.LogWarning($"[ShipSelectionView] Duplicate ship class in catalog: {ship.Class}");
                     continue;
                 }
 
@@ -89,7 +90,7 @@ namespace CosmicShore.App.UI.Views
             }
 
             if (verboseLogging)
-                Debug.Log($"[ShipSelectionView] Built ships lookup with {_shipsByClass.Count} entries.");
+                CSDebug.Log($"[ShipSelectionView] Built ships lookup with {_shipsByClass.Count} entries.");
         }
 
         bool IsValidSelectedType(VesselClassType type)
@@ -149,7 +150,7 @@ namespace CosmicShore.App.UI.Views
                 if (!_shipsByClass.TryGetValue(slot.vesselType, out var ship) || !ship)
                 {
                     if (verboseLogging)
-                        Debug.Log($"[ShipSelectionView] No ship in catalog for {slot.vesselType}, hiding slot {i}.");
+                        CSDebug.Log($"[ShipSelectionView] No ship in catalog for {slot.vesselType}, hiding slot {i}.");
                     slot.itemView.Clear();
                     continue;
                 }
@@ -157,7 +158,7 @@ namespace CosmicShore.App.UI.Views
                 bool isSelected = (selectedType == slot.vesselType);
 
                 if (verboseLogging)
-                    Debug.Log($"[ShipSelectionView] Slot {i} ({slot.vesselType}) → {ship.Name} (selected={isSelected})");
+                    CSDebug.Log($"[ShipSelectionView] Slot {i} ({slot.vesselType}) → {ship.Name} (selected={isSelected})");
 
                 var capturedType = slot.vesselType;
                 var capturedShip = ship;
@@ -180,7 +181,7 @@ namespace CosmicShore.App.UI.Views
             }
 
             if (verboseLogging)
-                Debug.Log($"[ShipSelectionView] Clicked {vesselType}, index {(int)vesselType}");
+                CSDebug.Log($"[ShipSelectionView] Clicked {vesselType}, index {(int)vesselType}");
 
             OnSelect?.Invoke(ship);
             _menuAudio?.PlayAudio();

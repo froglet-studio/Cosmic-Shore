@@ -225,7 +225,7 @@ namespace CosmicShore
                     break;
                 case CornerSiteType.None:
                 default:
-                    Debug.LogWarning("No Gyroid bond mate.");
+                    CSDebug.LogWarning("No Gyroid bond mate.");
                     break;
             }
             MateList.Add(gyroidBondMate.Mate);
@@ -416,12 +416,12 @@ namespace CosmicShore
         {
             if (preferedBlocks.Count > 0)
             {
-                Debug.Log($"GyroidAssembler: Preferred Block, Depth: {depth}");
+                CSDebug.Log($"GyroidAssembler: Preferred Block, Depth: {depth}");
                 var mate = CreateGyroidBondMate(preferedBlocks.Dequeue(), BlockType, siteType); 
                 return mate;
             }
 
-            Debug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
+            CSDebug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
 
             var closestDistance = float.MaxValue;
             GyroidAssembler closest = null;
@@ -519,7 +519,7 @@ namespace CosmicShore
                             break;
                         case CornerSiteType.None:
                         default:
-                            Debug.LogWarning("No Gyroid bond mate.");
+                            CSDebug.LogWarning("No Gyroid bond mate.");
                             break;
                     }   
                 }

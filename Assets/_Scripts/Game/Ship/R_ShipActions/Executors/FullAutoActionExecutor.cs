@@ -6,6 +6,7 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
 using Obvious.Soap;
+using CosmicShore.Utility;
 
 public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 {
@@ -52,7 +53,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
         if (!_resources)
         {
-            Debug.LogError("[FullAutoActionExecutor] ResourceSystem is missing on vessel.");
+            CSDebug.LogError("[FullAutoActionExecutor] ResourceSystem is missing on vessel.");
         }
 
         gun?.Initialize(shipStatus);
@@ -73,13 +74,13 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
         if (!gun)
         {
-            Debug.LogError("[FullAutoActionExecutor] Gun reference not assigned.");
+            CSDebug.LogError("[FullAutoActionExecutor] Gun reference not assigned.");
             return;
         }
 
         if (_resources == null)
         {
-            Debug.LogError("[FullAutoActionExecutor] No ResourceSystem available.");
+            CSDebug.LogError("[FullAutoActionExecutor] No ResourceSystem available.");
             return;
         }
 
@@ -111,7 +112,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     private void OnTurnEndOfMiniGame()
     {
         // Optional debug:
-        // Debug.Log("[FullAutoActionExecutor] Turn end received. Stopping full-auto.");
+        // CSDebug.Log("[FullAutoActionExecutor] Turn end received. Stopping full-auto.");
         End();
     }
     #endregion
@@ -121,7 +122,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     {
         if (muzzles == null || muzzles.Length == 0)
         {
-            Debug.LogError("[FullAutoActionExecutor] No muzzles assigned.");
+            CSDebug.LogError("[FullAutoActionExecutor] No muzzles assigned.");
             return;
         }
 
@@ -142,7 +143,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
             {
                 if (_resources == null || _resources.Resources == null || ammoIndex < 0 || ammoIndex >= _resources.Resources.Count)
                 {
-                    Debug.LogError("[FullAutoActionExecutor] Invalid resource index or ResourceSystem.");
+                    CSDebug.LogError("[FullAutoActionExecutor] Invalid resource index or ResourceSystem.");
                     return;
                 }
 
@@ -161,7 +162,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
                         if (!gun || !gun.gameObject)
                         {
-                            Debug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
+                            CSDebug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
                             return;
                         }
 
@@ -204,7 +205,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         }
         catch (Exception e)
         {
-            Debug.LogError($"[FullAutoActionExecutor] Loop error: {e}");
+            CSDebug.LogError($"[FullAutoActionExecutor] Loop error: {e}");
         }
     }
     #endregion

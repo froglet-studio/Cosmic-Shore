@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -51,7 +52,7 @@ namespace CosmicShore.Game.Cinematics
                 }
             }
 
-            Debug.LogWarning($"No icon found for vessel type: {vesselType}. Using default icon.");
+            CSDebug.LogWarning($"No icon found for vessel type: {vesselType}. Using default icon.");
             return defaultIcon;
         }
 

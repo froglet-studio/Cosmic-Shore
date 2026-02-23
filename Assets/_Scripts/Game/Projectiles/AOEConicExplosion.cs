@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -17,7 +18,7 @@ namespace CosmicShore.Game.Projectiles
 
             if (Vessel == null)
             {
-                Debug.LogError("Vessel is not initialized in AOEConicExplosion!");
+                CSDebug.LogError("Vessel is not initialized in AOEConicExplosion!");
                 return;
             }
 

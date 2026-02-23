@@ -3,6 +3,7 @@ using CosmicShore.Models;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Screens
 {
@@ -126,7 +127,7 @@ namespace CosmicShore.App.UI.Screens
 
         void OnSupportUsClicked()
         {
-            Debug.Log("[EpisodeScreen] Support Us clicked - IAP not yet configured.");
+            CSDebug.Log("[EpisodeScreen] Support Us clicked - IAP not yet configured.");
             IAPManager.Instance?.InitiateSupportPurchase();
         }
     }

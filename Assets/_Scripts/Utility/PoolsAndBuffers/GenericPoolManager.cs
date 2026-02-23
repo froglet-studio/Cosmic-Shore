@@ -4,6 +4,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Pool;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -123,7 +124,7 @@ namespace CosmicShore.Core
                 }
             }
             
-            Debug.Log($"[PoolManager] Cleaned up {processed} items gracefully.");
+            CSDebug.Log($"[PoolManager] Cleaned up {processed} items gracefully.");
         }
 
         public void Clear() => pool.Clear();

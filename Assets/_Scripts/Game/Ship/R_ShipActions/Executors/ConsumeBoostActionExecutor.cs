@@ -6,6 +6,7 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 {
@@ -150,7 +151,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
            // _status.BoostMultiplier = (_so ? _so.BoostMultiplier.Value : 4f) * stacks;
             // multiplicative
              _status.BoostMultiplier = Mathf.Pow( 4f, stacks);
-             Debug.Log($"Boost Multiplier Working {_status.BoostMultiplier}");
+             CSDebug.Log($"Boost Multiplier Working {_status.BoostMultiplier}");
         }
         else
         {
@@ -206,11 +207,11 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
         catch (OperationCanceledException)
         {
-            Debug.Log($"[ConsumeBoost] Reload cancelled.");
+            CSDebug.Log($"[ConsumeBoost] Reload cancelled.");
         }
         catch (Exception e)
         {
-            Debug.LogError($"[ConsumeBoost] ReloadRoutine error: {e}");
+            CSDebug.LogError($"[ConsumeBoost] ReloadRoutine error: {e}");
         }
         finally
         {
@@ -236,7 +237,7 @@ public class ConsumeBoostActionExecutor : ShipActionExecutorBase
         }
         catch (Exception e)
         {
-            Debug.LogError($"[ConsumeBoost] StackRoutine error: {e}");
+            CSDebug.LogError($"[ConsumeBoost] StackRoutine error: {e}");
         }
         finally
         {

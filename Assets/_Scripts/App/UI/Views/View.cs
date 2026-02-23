@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -17,7 +18,7 @@ namespace CosmicShore.App.UI.Views
         {
             if (Model == null)
             {
-                Debug.LogWarning($"{nameof(View)} on {name} received a null model.");
+                CSDebug.LogWarning($"{nameof(View)} on {name} received a null model.");
                 Models = null;
                 SelectedModel = null;
                 return;
@@ -41,7 +42,7 @@ namespace CosmicShore.App.UI.Views
         {
             if (Models == null || Models.Count == 0)
             {
-                Debug.LogWarning($"{nameof(View)} on {name} received an empty model list.");
+                CSDebug.LogWarning($"{nameof(View)} on {name} received an empty model list.");
                 this.Models = null;
                 SelectedModel = null;
                 return;
@@ -64,7 +65,7 @@ namespace CosmicShore.App.UI.Views
         {
             if (shipClassTypeVariable == null)
             {
-                Debug.LogWarning($"{nameof(View)} on {name} cannot select a model because shipClassTypeVariable is not set.");
+                CSDebug.LogWarning($"{nameof(View)} on {name} cannot select a model because shipClassTypeVariable is not set.");
                 return;
             }
 

@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -116,7 +117,7 @@ namespace CosmicShore.Game.Arcade
             var winnerStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (winnerStats == null)
             {
-                Debug.LogError($"[HexRace] Could not find RoundStats for winner '{playerName}'. " +
+                CSDebug.LogError($"[HexRace] Could not find RoundStats for winner '{playerName}'. " +
                                $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                 return;
             }
@@ -193,7 +194,7 @@ namespace CosmicShore.Game.Arcade
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
                 if (stat == null)
                 {
-                    Debug.LogError($"[HexRace] Client could not match RoundStats for '{sName}'. " +
+                    CSDebug.LogError($"[HexRace] Client could not match RoundStats for '{sName}'. " +
                                    $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                     continue;
                 }

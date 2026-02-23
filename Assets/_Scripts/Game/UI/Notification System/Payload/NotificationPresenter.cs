@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -47,7 +48,7 @@ namespace CosmicShore.Game.UI
         void EnsureInstance()
         {
             if (_viewInstance != null) return;
-            if (!viewPrefab) { Debug.LogError("[NotificationPresenter] Missing viewPrefab"); return; }
+            if (!viewPrefab) { CSDebug.LogError("[NotificationPresenter] Missing viewPrefab"); return; }
 
             var go = Instantiate(viewPrefab, parent ? parent : transform as RectTransform);
             _viewInstance = go;

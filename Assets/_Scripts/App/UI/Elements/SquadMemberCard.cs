@@ -2,6 +2,7 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -42,13 +43,13 @@ namespace CosmicShore
         /// <param name="captain"></param>
         public void SetCaptain(SO_Captain captain)
         {
-            Debug.Log($"SetCaptain:{captain.Name}");
+            CSDebug.Log($"SetCaptain:{captain.Name}");
             Captain = captain;
         }
 
         void UpdateView()
         {
-            Debug.Log($"UpdateView:{captain.Name}");
+            CSDebug.Log($"UpdateView:{captain.Name}");
             if (CaptainName != null) CaptainName.text = captain.Name;
             CaptainImage.sprite = captain.Image;
             ShipImage.sprite = captain.Ship.SquadImage;

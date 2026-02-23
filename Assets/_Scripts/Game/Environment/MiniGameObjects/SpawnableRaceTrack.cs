@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Game.Spawning;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public class SpawnableRaceTrack : SpawnableBase
 {
@@ -162,7 +163,7 @@ public class SpawnableRaceTrack : SpawnableBase
 
         trails.Add(trail);
 
-        Debug.Log($"[RaceTrack] Generated track with seed {actualSeed}, " +
+        CSDebug.Log($"[RaceTrack] Generated track with seed {actualSeed}, " +
                   $"approximate length: {EstimateTrackLength(positions):F0} units, " +
                   $"target lap time: {targetLapTime}s at {expectedShipSpeed} units/s");
 
