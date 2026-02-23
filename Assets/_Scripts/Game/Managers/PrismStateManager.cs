@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -66,6 +67,8 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.SuperShielded;
+
+            SyncAOERegistryShieldState();
         }
 
         public void DeactivateShields(float? delay = null)
@@ -100,6 +103,8 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.Shielded;
+
+            SyncAOERegistryShieldState();
         }
 
         private void ApplyNormalState()
@@ -112,6 +117,17 @@ namespace CosmicShore.Core
             prism.prismProperties.IsShielded = false;
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
+
+            SyncAOERegistryShieldState();
+        }
+
+        private void SyncAOERegistryShieldState()
+        {
+            if (prism.AOERegistryIndex >= 0)
+                PrismAOERegistry.Instance?.UpdateShieldState(
+                    prism.AOERegistryIndex,
+                    prism.prismProperties.IsShielded,
+                    prism.prismProperties.IsSuperShielded);
         }
 
         private void OnDisable()

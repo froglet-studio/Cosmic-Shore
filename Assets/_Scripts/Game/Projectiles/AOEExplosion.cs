@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Cysharp.Threading.Tasks;
 using System.Threading;
-using CosmicShore.Soap; // Required for GameDataSO
+using CosmicShore.Game;
+using CosmicShore.Soap;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -32,9 +33,15 @@ namespace CosmicShore.Game.Projectiles
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
 
+        private ExplosionImpactor _explosionImpactor;
+        private float _colliderRadius = 0.5f; // Default sphere collider radius
+
         protected virtual void Awake()
-        { 
+        {
             if (!meshRenderer) meshRenderer = GetComponent<MeshRenderer>();
+            _explosionImpactor = GetComponent<ExplosionImpactor>();
+            var sphereCol = GetComponent<SphereCollider>();
+            if (sphereCol) _colliderRadius = sphereCol.radius;
         }
 
         protected virtual void OnEnable()
@@ -111,11 +118,20 @@ namespace CosmicShore.Game.Projectiles
         
         protected virtual async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
+            // Cache impactor ref — _explosionImpactor may be null after Destroy
+            var impactor = _explosionImpactor;
             try
             {
+                // Start batch AOE processing — skips Physics OnTriggerEnter for prisms
+                impactor?.BeginBatchProcessing();
+
                 await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
-                if (!this || ct.IsCancellationRequested) return;
+                if (!this || ct.IsCancellationRequested)
+                {
+                    impactor?.EndBatchProcessing();
+                    return;
+                }
 
                 var cachedTransform = transform;
                 if (meshRenderer) meshRenderer.material = Material;
@@ -125,7 +141,11 @@ namespace CosmicShore.Game.Projectiles
                 while (time < ExplosionDuration)
                 {
                     ct.ThrowIfCancellationRequested();
-                    if (!this || cachedTransform == null) return;
+                    if (!this || cachedTransform == null)
+                    {
+                        impactor?.EndBatchProcessing();
+                        return;
+                    }
 
                     time += Time.deltaTime;
                     float t = time / ExplosionDuration;
@@ -133,14 +153,24 @@ namespace CosmicShore.Game.Projectiles
 
                     cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
 
+                    // Batch AOE damage via Burst job over cache-packed prism data
+                    // Effective radius = collider radius (local) * localScale
+                    float currentRadius = _colliderRadius * MaxScale * ease;
+                    impactor?.ProcessBatchFrame(
+                        cachedTransform.position, currentRadius, speed, Inertia);
+
                     if (Material != null) Material.SetFloat("_Opacity", 1 - ease);
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
+                impactor?.EndBatchProcessing();
                 if (this) Destroy(gameObject);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                impactor?.EndBatchProcessing();
+            }
         }
 
         public struct InitializeStruct
