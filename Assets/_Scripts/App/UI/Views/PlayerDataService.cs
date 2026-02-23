@@ -24,9 +24,6 @@ namespace CosmicShore.App.Profile
         [SerializeField] private TMP_Text displayNameText;
         [SerializeField] private Image  avatarImage;
 
-        [Header("Auth Hook")]
-        [SerializeField] private AuthenticationController authController;
-
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
 
@@ -46,27 +43,29 @@ namespace CosmicShore.App.Profile
             DontDestroyOnLoad(gameObject);
         }
 
+        void OnDestroy()
+        {
+            var auth = AuthenticationController.Instance;
+            if (auth != null)
+                auth.OnSignedIn -= HandleSignedInFromAuth;
+
+            OnProfileChanged -= HandleProfileChanged;
+        }
+
         async void Start()
         {
             try
             {
-                if (authController != null)
-                {
-                    authController.OnSignedIn += HandleSignedInFromAuth;
-                }
                 OnProfileChanged += HandleProfileChanged;
-                if (UnityServices.State != ServicesInitializationState.Initialized) return;
-                bool canCheckAuth = true;
-                try
-                {
-                    _ = AuthenticationService.Instance.IsSignedIn;
-                }
-                catch
-                {
-                    canCheckAuth = false;
-                }
 
-                if (canCheckAuth && AuthenticationService.Instance.IsSignedIn)
+                // Subscribe to auth events via singleton (survives scene transitions)
+                var auth = AuthenticationController.Instance;
+                if (auth != null)
+                    auth.OnSignedIn += HandleSignedInFromAuth;
+
+                // If already signed in, initialize immediately
+                if (UnityServices.State == ServicesInitializationState.Initialized &&
+                    auth != null && auth.IsSignedIn)
                 {
                     await InitializeAfterAuth();
                 }

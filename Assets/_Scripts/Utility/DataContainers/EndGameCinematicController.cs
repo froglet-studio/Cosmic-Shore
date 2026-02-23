@@ -67,7 +67,7 @@ namespace CosmicShore.Game.Cinematics
             else
             {
                 Debug.LogWarning("[EndGameCinematic] XPRewardService.Instance is null - XP not awarded. " +
-                                 "Ensure XPRewardService exists on a DontDestroyOnLoad GameObject.");
+                                 "Ensure XPRewardService exists in the game scene.");
             }
 
             var localPlayer = gameData.LocalPlayer;
