@@ -929,7 +929,6 @@ GameObject:
   - component: {fileID: 2035987173373189047}
   - component: {fileID: 2097479682748055481}
   - component: {fileID: 4851397628510934721}
-  - component: {fileID: 9379997974706577697}
   m_Layer: 0
   m_Name: Sparrow
   m_TagString: Player_Ship
@@ -3272,16 +3271,3 @@ MonoBehaviour:
   prismBlocksShotStat: {fileID: 11400000, guid: d6fe01bc7c9e42e083e467411228bbff, type: 2}
   skyburstMissilesShotStat: {fileID: 11400000, guid: 2d9e8d918051444ba4a28e9506eff2e4, type: 2}
   dangerBlocksSpawnedStat: {fileID: 11400000, guid: 2a796726f5a4448cbb76a0275666cafb, type: 2}
---- !u!114 &9379997974706577697
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8279817603024118164}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
