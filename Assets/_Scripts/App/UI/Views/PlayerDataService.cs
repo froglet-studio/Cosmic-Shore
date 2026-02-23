@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CosmicShore.App.Systems;
 using CosmicShore.Services.Auth;
 using CosmicShore.Soap;
 using Unity.Services.Authentication;
@@ -15,7 +16,7 @@ namespace CosmicShore.App.Profile
         public static PlayerDataService Instance { get; private set; }
 
         [Header("Cloud Save")]
-        [SerializeField] private string cloudSaveProfileKey = "player_profile";
+        [SerializeField] private string cloudSaveProfileKey = UGSKeys.PlayerProfile;
         [SerializeField] private SO_ProfileIconList profileIcons;
 
         [Header("Game Data")]
@@ -159,14 +160,34 @@ namespace CosmicShore.App.Profile
 
                     if (cloudData != null)
                     {
-                        // Merge: keep the higher XP (local may have earned XP before cloud loaded)
+                        bool needsResync = false;
+
+                        // Merge XP: keep the higher value (local may have earned XP before cloud loaded)
                         int localXP = CurrentProfile.xp;
-                        CurrentProfile = cloudData;
-                        if (localXP > CurrentProfile.xp)
+                        if (localXP > cloudData.xp)
                         {
-                            CurrentProfile.xp = localXP;
-                            await SaveProfileAsync(true);
+                            cloudData.xp = localXP;
+                            needsResync = true;
                         }
+
+                        // Merge unlocked rewards: union of local + cloud sets
+                        var localRewards = CurrentProfile.unlockedRewardIds ?? new List<string>();
+                        var cloudRewards = cloudData.unlockedRewardIds ?? new List<string>();
+                        foreach (var rewardId in localRewards)
+                        {
+                            if (!cloudRewards.Contains(rewardId))
+                            {
+                                cloudRewards.Add(rewardId);
+                                needsResync = true;
+                            }
+                        }
+                        cloudData.unlockedRewardIds = cloudRewards;
+
+                        CurrentProfile = cloudData;
+
+                        if (needsResync)
+                            await SaveProfileAsync(true);
+
                         return;
                     }
 

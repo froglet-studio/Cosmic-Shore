@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CosmicShore.App.Systems;
 using CosmicShore.Services.Auth;
+using Unity.Services.Analytics;
 using Unity.Services.CloudSave;
 using Unity.Services.Leaderboards;
 using UnityEngine;
@@ -16,7 +18,7 @@ namespace CosmicShore.Game.Analytics
         [SerializeField] LeaderboardConfigSO leaderboardConfig; 
 
         private PlayerStatsProfile _cachedProfile = new PlayerStatsProfile();
-        private const string CLOUD_KEY = "PLAYER_STATS_PROFILE";
+        private const string CLOUD_KEY = UGSKeys.PlayerStatsProfile;
         private bool _isReady = false;
 
         // Save debouncing: coalesces rapid saves into a single cloud call
@@ -96,10 +98,6 @@ namespace CosmicShore.Game.Analytics
         {
             if (!_isReady) return;
 
-            _cachedProfile.BlitzStats.LifetimeCrystalsCollected += crystals;
-            _cachedProfile.BlitzStats.LifetimeLifeFormsKilled += lifeForms;
-            _cachedProfile.TotalGamesPlayed++;
-
             string key = $"{mode}_{intensity}";
             _cachedProfile.BlitzStats.TryUpdateHighScore(key, score);
 
@@ -111,20 +109,10 @@ namespace CosmicShore.Game.Analytics
         {
             if (!_isReady) return;
 
-            _cachedProfile.MultiHexStats.TotalCleanCrystalsCollected += clean;
-            _cachedProfile.MultiHexStats.TotalDriftTime += drift;
-            _cachedProfile.MultiHexStats.TotalJoustsWon += jousts;
-            _cachedProfile.TotalGamesPlayed++;
-
-            if (drift > _cachedProfile.MultiHexStats.LongestSingleDrift)
-                _cachedProfile.MultiHexStats.LongestSingleDrift = drift;
-
             string key = $"{mode}_{intensity}";
             if (score < 10000f)
             {
                 _cachedProfile.MultiHexStats.TryUpdateBestTime(key, score);
-                _cachedProfile.MultiHexStats.TotalWins++;
-
                 SubmitScoreInternal(mode, intensity, score);
             }
 
@@ -135,28 +123,19 @@ namespace CosmicShore.Game.Analytics
         {
             if (!_isReady) return;
 
-            _cachedProfile.JoustStats.TotalJoustsWon += joustsWon;
-            _cachedProfile.TotalGamesPlayed++;
-
             string key = $"{mode}_{intensity}";
-            
             if (raceTime < 10000f)
             {
                 _cachedProfile.JoustStats.TryUpdateBestTime(key, raceTime);
-                _cachedProfile.JoustStats.TotalWins++;
                 SubmitScoreInternal(mode, intensity, raceTime);
             }
-    
+
             SaveProfile();
         }
 
         public void ReportCrystalCaptureStats(GameModes mode, int intensity, int crystals)
         {
             if (!_isReady) return;
-
-            _cachedProfile.CrystalCaptureStats.LifetimeCrystalsCollected += crystals;
-            _cachedProfile.CrystalCaptureStats.TotalWins++;
-            _cachedProfile.TotalGamesPlayed++;
 
             string key = $"{mode}_{intensity}";
             _cachedProfile.CrystalCaptureStats.TryUpdateHighScore(key, crystals);
@@ -171,9 +150,17 @@ namespace CosmicShore.Game.Analytics
 
         public void TrackPlayAgain()
         {
-            if (!_isReady) return;
-            _cachedProfile.TotalPlayAgainPressed++;
-            SaveProfile();
+            try
+            {
+                var evt = new CustomEvent(UGSKeys.EventPlayAgain);
+                AnalyticsService.Instance.RecordEvent(evt);
+                AnalyticsService.Instance.Flush();
+                Debug.Log("[UGSStats] Play Again analytics event sent.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[UGSStats] Failed to send Play Again event: {ex.Message}");
+            }
         }
 
         async void SubmitScoreInternal(GameModes mode, int intensity, double score)
