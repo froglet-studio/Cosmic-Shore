@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace CosmicShore.Utility.Tools
@@ -12,11 +13,13 @@ namespace CosmicShore.Utility.Tools
         const string PrefErrorsEnabled = "CSDebug_ErrorsEnabled";
         const string PrefUnityLoggerEnabled = "CSDebug_UnityLoggerEnabled";
 
+        Vector2 scrollPos;
+
         [MenuItem("FrogletTools/Log Control", false, 50)]
         static void Open()
         {
-            var window = GetWindow<LogControlWindow>("Log Control");
-            window.minSize = new Vector2(280, 220);
+            var window = GetWindow<LogControlWindow>("FrogletTools");
+            window.minSize = new Vector2(300, 380);
         }
 
         void OnEnable()
@@ -32,6 +35,36 @@ namespace CosmicShore.Utility.Tools
 
         void OnGUI()
         {
+            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+
+            EditorGUILayout.Space(4);
+
+            // ── Scene Shortcuts ──────────────────────────
+            EditorGUILayout.LabelField("Scene Shortcuts", EditorStyles.boldLabel);
+
+            if (GUILayout.Button("Main Menu"))
+            {
+                EditorSceneManager.OpenScene("Assets/_Scenes/Menu_Main.unity", OpenSceneMode.Single);
+                CSDebug.LogFormat("{0} - Opening Main Menu scene.", nameof(LogControlWindow));
+            }
+            if (GUILayout.Button("Photo Booth"))
+            {
+                EditorSceneManager.OpenScene("Assets/_Scenes/Tools/PhotoBooth.unity", OpenSceneMode.Single);
+                CSDebug.LogFormat("{0} - Opening Photo Booth.", nameof(LogControlWindow));
+            }
+            if (GUILayout.Button("Recording Studio (WIP)"))
+            {
+                EditorSceneManager.OpenScene("Assets/_Scenes/Tools/Recording Studio.unity", OpenSceneMode.Single);
+                CSDebug.LogFormat("{0} - Opening Recording Studio.", nameof(LogControlWindow));
+            }
+            if (GUILayout.Button("PlayFab Sandbox"))
+            {
+                EditorSceneManager.OpenScene("Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity", OpenSceneMode.Single);
+                CSDebug.LogFormat("{0} - Opening PlayFab Sandbox.", nameof(LogControlWindow));
+            }
+
+            EditorGUILayout.Space(8);
+            DrawHorizontalLine();
             EditorGUILayout.Space(4);
 
             // ── Unity Logger master switch ───────────────
@@ -102,6 +135,14 @@ namespace CosmicShore.Utility.Tools
                             $"Warnings: {OnOff(CSDebug.WarningsEnabled)}  |  " +
                             $"Errors: {OnOff(CSDebug.ErrorsEnabled)}";
             EditorGUILayout.HelpBox(status, MessageType.Info);
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        static void DrawHorizontalLine()
+        {
+            var rect = EditorGUILayout.GetControlRect(false, 1);
+            EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 1));
         }
 
         static string OnOff(bool value) => value ? "ON" : "OFF";
