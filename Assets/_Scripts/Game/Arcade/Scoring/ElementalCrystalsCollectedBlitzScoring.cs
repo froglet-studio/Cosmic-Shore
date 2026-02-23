@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Game;
 using CosmicShore.Soap;
 using CosmicShore.Utility;
+using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Scoring
 {
@@ -31,7 +32,7 @@ namespace CosmicShore.Game.Arcade.Scoring
         void HandleCrystalCollected(string playerName)
         {
             totalCrystalsCollected++;
-            UnityEngine.CSDebug.Log($"<color=cyan>💎 [COLLECT] {playerName} collected Crystal #{totalCrystalsCollected}! +{scoreMultiplier} pts</color>");
+            CSDebug.Log($"<color=cyan>💎 [COLLECT] {playerName} collected Crystal #{totalCrystalsCollected}! +{scoreMultiplier} pts</color>");
             
             Score += scoreMultiplier;
         }
