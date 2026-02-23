@@ -6,8 +6,8 @@ namespace CosmicShore.Game
     /// <summary>
     /// Vessel-specific telemetry for the Sparrow.
     /// Adds on top of VesselTelemetry base (drift, boost, prisms damaged):
-    ///   - Prism blocks shot (volleys fired via FullAutoAction)
-    ///   - Skyburst missiles shot (fired via FireGunAction)
+    ///   - Prism blocks shot (volleys fired via FullAutoActionExecutor)
+    ///   - Skyburst missiles shot (fired via FireGunActionExecutor)
     ///   - Danger blocks spawned (produced at top boost)
     /// </summary>
     public class SparrowVesselTelemetry : VesselTelemetry
@@ -36,15 +36,15 @@ namespace CosmicShore.Game
 
         protected override void OnTurnStartedExtended()
         {
-            FullAutoAction.OnVolleyFired += HandleVolleyFired;
-            FireGunAction.OnShotFired    += HandleSkyburstFired;
+            FullAutoActionExecutor.OnVolleyFired += HandleVolleyFired;
+            FireGunActionExecutor.OnShotFired    += HandleSkyburstFired;
             VesselDangerBlockFormationBySkimmerEffectSO.OnDangerBlockSpawned += HandleDangerBlockSpawned;
         }
 
         protected override void OnTurnEndedExtended()
         {
-            FullAutoAction.OnVolleyFired -= HandleVolleyFired;
-            FireGunAction.OnShotFired    -= HandleSkyburstFired;
+            FullAutoActionExecutor.OnVolleyFired -= HandleVolleyFired;
+            FireGunActionExecutor.OnShotFired    -= HandleSkyburstFired;
             VesselDangerBlockFormationBySkimmerEffectSO.OnDangerBlockSpawned -= HandleDangerBlockSpawned;
         }
 

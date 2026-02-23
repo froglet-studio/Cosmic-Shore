@@ -9,6 +9,9 @@ using Obvious.Soap;
 
 public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 {
+    /// <summary>Static event: each time a full-auto volley fires. Param = player name.</summary>
+    public static event Action<string> OnVolleyFired;
+
     [Header("Scene Refs")]
     [SerializeField] private Gun gun;
     [SerializeField] private Transform[] muzzles;
@@ -189,6 +192,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     }
 
                     _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
+                    OnVolleyFired?.Invoke(_status?.PlayerName);
                 }
 
                 await UniTask.Delay(
