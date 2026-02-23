@@ -1,4 +1,5 @@
-﻿using System.Collections;
+using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Events;
@@ -9,25 +10,45 @@ namespace CosmicShore.Game.ShapeDrawing
     {
         [Header("Dependencies")]
         [SerializeField] ShapeDrawingCrystalManager shapeCrystalManager;
-        [SerializeField] LocalCrystalManager localCrystalManager; 
-        [SerializeField] Cell cellScript; // ASSIGN THIS IN INSPECTOR
+        [SerializeField] LocalCrystalManager localCrystalManager;
+        [SerializeField] Cell cellScript;
         [SerializeField] GameDataSO gameData;
         [SerializeField] CellRuntimeDataSO cellData;
 
         [Header("Visuals")]
         [SerializeField] LineRenderer guideLine;
+        [SerializeField] LineRenderer ghostLine;
         [SerializeField] Camera revealCamera;
         [SerializeField] float shapeScale = 1f;
+
+        [Header("Scoring")]
+        [Tooltip("How often (in seconds) to sample the player position for accuracy scoring.")]
+        [SerializeField] float positionSampleInterval = 0.15f;
+        [Tooltip("Maximum distance (units) from ideal path that still counts as 100% accurate for that sample.")]
+        [SerializeField] float perfectDistanceThreshold = 15f;
+        [Tooltip("Distance at which accuracy drops to 0% for that sample.")]
+        [SerializeField] float zeroAccuracyDistance = 80f;
+
+        [Header("Reveal")]
+        [Tooltip("How long the reveal camera stays active before returning to lobby.")]
+        [SerializeField] float revealDuration = 5f;
 
         [Header("Events")]
         public UnityEvent OnShapeCompleted;
         public UnityEvent OnFreestyleResumed;
+        public UnityEvent<ShapeScoreData> OnScoreCalculated;
 
         ShapeDefinition _activeShape;
         Vector3 _shapeOrigin;
         int _currentWaypointIndex;
         bool _isActive;
         VesselStatus _vesselStatus;
+
+        // Scoring state
+        float _shapeStartTime;
+        readonly List<Vector3> _playerPathSamples = new();
+        float _nextSampleTime;
+        bool _trackingPath;
 
         void OnEnable()
         {
@@ -45,24 +66,30 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             if (!_isActive || _activeShape == null) return;
             UpdateGuideLine();
+            SamplePlayerPosition();
         }
 
         public bool IsInShapeMode => _isActive;
 
         public void StartShapeSequence(ShapeDefinition def, Vector3 origin)
         {
+            def.EnsureWaypoints();
+
             _activeShape = def;
             _shapeOrigin = origin;
             _isActive = true;
             _currentWaypointIndex = 0;
 
-            // --- FIX 2: Disable Cell to stop Lifeforms ---
-            // Disabling the component calls OnDisable(), which runs StopSpawner() inside Cell.cs
+            // Reset scoring
+            _playerPathSamples.Clear();
+            _trackingPath = false;
+
+            // Disable Cell to stop Lifeforms
             if (cellScript) cellScript.enabled = false;
 
             // Ensure Standard Manager is OFF
             if (localCrystalManager) localCrystalManager.enabled = false;
-            
+
             // Enable Shape Manager
             if (shapeCrystalManager) shapeCrystalManager.enabled = true;
             shapeCrystalManager.DestroyAllCrystals();
@@ -74,16 +101,22 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             // Get Vessel
             _vesselStatus = gameData.LocalPlayer?.Vessel?.Transform?.GetComponent<VesselStatus>();
-            
+
             if (_vesselStatus)
             {
-                // Ensure player is mobile (redundant safety check)
                 _vesselStatus.IsStationary = false;
-                _vesselStatus.VesselPrismController.StopSpawn(); 
+                _vesselStatus.VesselPrismController.StopSpawn();
+                _vesselStatus.VesselPrismController.ClearTrails();
             }
+
+            // Draw ghost shape outline
+            DrawGhostShape();
 
             // Position Player
             yield return StartCoroutine(PlacePlayer());
+
+            // Start timing
+            _shapeStartTime = Time.time;
 
             // Spawn First Crystal
             SpawnCrystal(_currentWaypointIndex);
@@ -101,9 +134,9 @@ namespace CosmicShore.Game.ShapeDrawing
 
             _vesselStatus.IsStationary = true;
             _vesselStatus.Vessel.Transform.SetPositionAndRotation(startPos, startRot);
-            
+
             yield return new WaitForSeconds(0.5f);
-            
+
             _vesselStatus.IsStationary = false;
         }
 
@@ -115,10 +148,9 @@ namespace CosmicShore.Game.ShapeDrawing
                 return;
             }
 
-            int crystalId = index + 1; 
+            int crystalId = index + 1;
             Vector3 pos = _activeShape.GetWorldWaypoint(index, _shapeOrigin, shapeScale);
-            
-            // This normally triggers Cell.cs OnCellItemUpdated -> but since Cell is disabled, it won't react!
+
             shapeCrystalManager.SpawnAtPosition(crystalId, pos);
         }
 
@@ -129,10 +161,12 @@ namespace CosmicShore.Game.ShapeDrawing
             int waypointIndex = crystalId - 1;
             if (waypointIndex != _currentWaypointIndex) return;
 
-            // Start trails only after hitting the first crystal
+            // Start trails and path tracking after hitting the first crystal
             if (_currentWaypointIndex == 0 && _vesselStatus)
             {
                 _vesselStatus.VesselPrismController.StartSpawn();
+                _trackingPath = true;
+                _nextSampleTime = Time.time;
             }
 
             // Toggle trail based on shape data
@@ -145,11 +179,13 @@ namespace CosmicShore.Game.ShapeDrawing
             SpawnCrystal(_currentWaypointIndex);
         }
 
+        // ── Guide Line ──────────────────────────────────────────────────────
+
         void UpdateGuideLine()
         {
             if (!guideLine || !_vesselStatus || _currentWaypointIndex >= _activeShape.waypoints.Count)
             {
-                if(guideLine) guideLine.enabled = false;
+                if (guideLine) guideLine.enabled = false;
                 return;
             }
 
@@ -166,26 +202,146 @@ namespace CosmicShore.Game.ShapeDrawing
             }
         }
 
+        // ── Ghost Shape ─────────────────────────────────────────────────────
+
+        void DrawGhostShape()
+        {
+            if (!ghostLine || _activeShape == null) return;
+
+            var worldPoints = _activeShape.GetAllWorldWaypoints(_shapeOrigin, shapeScale);
+
+            // Build a continuous polyline, but handle pen-up segments by inserting breaks.
+            // For simplicity, draw all waypoints as one polyline — pen-up segments still show
+            // as faint dashed connections (the ghost is just a guide).
+            ghostLine.positionCount = worldPoints.Length;
+            ghostLine.SetPositions(worldPoints);
+            ghostLine.enabled = true;
+            ghostLine.loop = false;
+        }
+
+        void HideGhostShape()
+        {
+            if (!ghostLine) return;
+            ghostLine.enabled = false;
+            ghostLine.positionCount = 0;
+        }
+
+        // ── Scoring ─────────────────────────────────────────────────────────
+
+        void SamplePlayerPosition()
+        {
+            if (!_trackingPath || !_vesselStatus) return;
+            if (Time.time < _nextSampleTime) return;
+
+            _nextSampleTime = Time.time + positionSampleInterval;
+            _playerPathSamples.Add(_vesselStatus.Vessel.Transform.position);
+        }
+
+        ShapeScoreData CalculateScore()
+        {
+            float elapsed = Time.time - _shapeStartTime;
+            float accuracy = CalculateAccuracy();
+
+            return new ShapeScoreData(
+                _activeShape.shapeName,
+                elapsed,
+                _activeShape.parTime,
+                accuracy
+            );
+        }
+
+        float CalculateAccuracy()
+        {
+            if (_playerPathSamples.Count == 0 || _activeShape.waypoints.Count < 2) return 0f;
+
+            // Build the ideal path segments in world space
+            var worldWaypoints = _activeShape.GetAllWorldWaypoints(_shapeOrigin, shapeScale);
+
+            float totalAccuracy = 0f;
+            int validSamples = 0;
+
+            foreach (var sample in _playerPathSamples)
+            {
+                // Find minimum distance from sample to any ideal path segment
+                float minDist = float.MaxValue;
+
+                for (int i = 0; i < worldWaypoints.Length - 1; i++)
+                {
+                    // Skip pen-up segments (trail disabled while moving to next)
+                    if (!_activeShape.IsTrailEnabledForSegment(i + 1) &&
+                        !_activeShape.IsTrailEnabledForSegment(i))
+                        continue;
+
+                    float dist = DistanceToSegment(sample, worldWaypoints[i], worldWaypoints[i + 1]);
+                    if (dist < minDist) minDist = dist;
+                }
+
+                if (minDist < float.MaxValue)
+                {
+                    // Map distance to 0-1 accuracy score
+                    float sampleAccuracy;
+                    if (minDist <= perfectDistanceThreshold)
+                        sampleAccuracy = 1f;
+                    else if (minDist >= zeroAccuracyDistance)
+                        sampleAccuracy = 0f;
+                    else
+                        sampleAccuracy = 1f - (minDist - perfectDistanceThreshold) /
+                                         (zeroAccuracyDistance - perfectDistanceThreshold);
+
+                    totalAccuracy += sampleAccuracy;
+                    validSamples++;
+                }
+            }
+
+            return validSamples > 0 ? (totalAccuracy / validSamples) * 100f : 0f;
+        }
+
+        static float DistanceToSegment(Vector3 point, Vector3 a, Vector3 b)
+        {
+            Vector3 ab = b - a;
+            float sqrLen = ab.sqrMagnitude;
+            if (sqrLen < 0.0001f) return Vector3.Distance(point, a);
+
+            float t = Mathf.Clamp01(Vector3.Dot(point - a, ab) / sqrLen);
+            Vector3 closest = a + t * ab;
+            return Vector3.Distance(point, closest);
+        }
+
+        // ── Finish & Reveal ─────────────────────────────────────────────────
+
         void FinishShape()
         {
+            _trackingPath = false;
             if (guideLine) guideLine.enabled = false;
             if (_vesselStatus) _vesselStatus.VesselPrismController.StopSpawn();
 
-            StartCoroutine(RevealSequence());
+            var score = CalculateScore();
+
+            Debug.Log($"[ShapeDrawing] Shape '{score.ShapeName}' completed! " +
+                      $"Time: {score.ElapsedTime:F1}s, Accuracy: {score.AccuracyPercent:F0}%, " +
+                      $"Stars: {score.StarRating}/5");
+
+            StartCoroutine(RevealSequence(score));
         }
 
-        IEnumerator RevealSequence()
+        IEnumerator RevealSequence(ShapeScoreData score)
         {
             OnShapeCompleted?.Invoke();
+            OnScoreCalculated?.Invoke(score);
+
+            // Hide the ghost shape — the player's trail IS the shape now
+            HideGhostShape();
 
             if (revealCamera)
             {
-                revealCamera.transform.position = _shapeOrigin + Vector3.up * _activeShape.revealCameraDistance;
-                revealCamera.transform.LookAt(_shapeOrigin);
+                // Position camera for a top-down view of the completed shape
+                revealCamera.transform.position = _shapeOrigin +
+                    Quaternion.Euler(_activeShape.revealCameraEuler) * (Vector3.back * _activeShape.revealCameraDistance);
+                revealCamera.transform.rotation = Quaternion.Euler(_activeShape.revealCameraEuler);
                 revealCamera.gameObject.SetActive(true);
             }
 
-            yield return new WaitForSeconds(4f); 
+            yield return new WaitForSeconds(revealDuration);
             ExitShapeMode();
         }
 
@@ -193,15 +349,15 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             _isActive = false;
             _activeShape = null;
+            _trackingPath = false;
 
             if (revealCamera) revealCamera.gameObject.SetActive(false);
             if (guideLine) guideLine.enabled = false;
-            
+            HideGhostShape();
+
             shapeCrystalManager.DestroyAllCrystals();
             shapeCrystalManager.enabled = false;
 
-            // --- Note: Cell re-enabling is handled by Controller.ReturnToLobby() ---
-            
             OnFreestyleResumed?.Invoke();
         }
     }

@@ -1,18 +1,20 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Game.ShapeDrawing
 {
+    public enum ShapePreset { None, Circle, Star, Heart, Lightning, Smiley }
+
     /// <summary>
     /// Defines a drawable shape for Shape Drawing Mode.
-    /// Create via: Assets → Create → CosmicShore → Shape Drawing → Shape Definition
+    /// Create via: Assets > Create > CosmicShore > Shape Drawing > Shape Definition
     ///
     /// Waypoints are defined in LOCAL space, normalized to roughly a 200-unit bounding box.
     /// The ShapeDrawingManager will offset them into world space at runtime.
     ///
     /// trailEnabledPerSegment controls whether the player's trail is active WHILE flying
     /// TOWARD that waypoint. Index 0 = trail state while flying to waypoint[0], etc.
-    /// A false entry = "pen up" (useful for smiley eyes → mouth gap).
+    /// A false entry = "pen up" (useful for smiley eyes -> mouth gap).
     /// </summary>
     [CreateAssetMenu(
         fileName = "Shape_New",
@@ -29,6 +31,14 @@ namespace CosmicShore.Game.ShapeDrawing
 
         [Tooltip("Thumbnail shown on the selection sign. Optional.")]
         public Sprite thumbnail;
+
+        [Header("Auto-Generation")]
+        [Tooltip("If set to anything other than None AND waypoints is empty, " +
+                 "waypoints will be auto-generated at runtime from this preset.")]
+        public ShapePreset autoGeneratePreset = ShapePreset.None;
+
+        [Tooltip("Radius used when auto-generating waypoints.")]
+        public float autoGenerateRadius = 100f;
 
         [Header("Waypoints")]
         [Tooltip("Ordered list of crystal spawn positions in local space (~200 unit bounding box).")]
@@ -56,6 +66,20 @@ namespace CosmicShore.Game.ShapeDrawing
         [Tooltip("Par time in seconds. Used to grade performance.")]
         public float parTime = 60f;
 
+        // ── Runtime auto-generation ───────────────────────────────────────────
+
+        /// <summary>
+        /// If waypoints is empty and autoGeneratePreset is set, generates waypoints procedurally.
+        /// Safe to call multiple times — no-ops if waypoints already exist.
+        /// </summary>
+        public void EnsureWaypoints()
+        {
+            if (waypoints != null && waypoints.Count > 0) return;
+            if (autoGeneratePreset == ShapePreset.None) return;
+
+            GeneratePreset(autoGeneratePreset, autoGenerateRadius);
+        }
+
         // ── Helpers ─────────────────────────────────────────────────────────────
 
         /// <summary>Returns whether the trail should be active while flying to waypointIndex.</summary>
@@ -79,11 +103,20 @@ namespace CosmicShore.Game.ShapeDrawing
             return worldOrigin + playerStartOffset * scale;
         }
 
-#if UNITY_EDITOR
         /// <summary>
-        /// Editor-only: auto-fills waypoints with a procedural shape for quick iteration.
-        /// Call from a custom Editor button, not at runtime.
+        /// Returns world-space positions for all waypoints. Used for ghost shape rendering.
         /// </summary>
+        public Vector3[] GetAllWorldWaypoints(Vector3 worldOrigin, float scale = 1f)
+        {
+            EnsureWaypoints();
+            var result = new Vector3[waypoints.Count];
+            for (int i = 0; i < waypoints.Count; i++)
+                result[i] = worldOrigin + waypoints[i] * scale;
+            return result;
+        }
+
+        // ── Procedural shape generation (available at runtime) ────────────────
+
         public void GeneratePreset(ShapePreset preset, float radius = 100f)
         {
             waypoints.Clear();
@@ -133,7 +166,6 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void GenerateHeart(float r)
         {
-            // Parametric heart curve, 20 points
             for (int i = 0; i <= 20; i++)
             {
                 float t = (i / 20f) * Mathf.PI * 2f;
@@ -149,7 +181,6 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void GenerateLightning(float r)
         {
-            // Simple lightning bolt: 6 points, no pen lifts
             float h = r;
             waypoints.AddRange(new[]
             {
@@ -159,7 +190,7 @@ namespace CosmicShore.Game.ShapeDrawing
                 new Vector3(-0.3f * r, -h,        0f),
                 new Vector3( 0.1f * r, -0.05f*h, 0f),
                 new Vector3(-0.2f * r, -0.1f*h,  0f),
-                new Vector3( 0.3f * r,  h,        0f),  // close
+                new Vector3( 0.3f * r,  h,        0f),
             });
             for (int i = 0; i < waypoints.Count; i++)
                 trailEnabledPerSegment.Add(true);
@@ -197,14 +228,11 @@ namespace CosmicShore.Game.ShapeDrawing
             float mouthR = r * 0.45f;
             for (int i = 0; i <= 8; i++)
             {
-                float angle = Mathf.PI + (i / 8f) * Mathf.PI; // π → 2π (bottom arc)
+                float angle = Mathf.PI + (i / 8f) * Mathf.PI;
                 waypoints.Add(new Vector3(Mathf.Cos(angle) * mouthR,
                     -r * 0.1f + Mathf.Sin(angle) * mouthR * 0.5f, 0f));
                 trailEnabledPerSegment.Add(true);
             }
         }
-        
-        public enum ShapePreset { Circle, Star, Heart, Lightning, Smiley }
-#endif
     }
 }
