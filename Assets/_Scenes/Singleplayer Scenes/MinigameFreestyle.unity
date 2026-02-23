@@ -2640,9 +2640,10 @@ MonoBehaviour:
   - signPrefab: {fileID: 8250031291886802508, guid: cd89d05c662a2e445b8a5838d04ae3db,
       type: 3}
     shapeDefinition: {fileID: 11400000, guid: b78982e8a49236c4ba9df9376c4577a8, type: 2}
-  ringRadius: 100
+  ringRadius: 40
   height: 0
   faceCenter: 1
+  signScale: 0.3
   origin: {x: 0, y: 0, z: 0}
 --- !u!1 &998674136
 GameObject:

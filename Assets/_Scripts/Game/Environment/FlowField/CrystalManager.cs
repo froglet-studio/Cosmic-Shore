@@ -97,8 +97,8 @@ namespace CosmicShore.Game
             crystal.InjectDependencies(this);
 
             var domain = Domains.None;
-            if (spawnCrystalWithPlayerDomain)
-                domain = gameData.Players[crystalId - 1].Domain; 
+            if (spawnCrystalWithPlayerDomain && crystalId - 1 < gameData.Players.Count)
+                domain = gameData.Players[crystalId - 1].Domain;
                 
             // Keep a list of crystals in the cell data (you already changed this).
             crystal.ChangeDomain(domain);
@@ -168,7 +168,8 @@ namespace CosmicShore.Game
             if (!TryGetCrystalPositionListByIntensity(out Vector3[] anchors) || anchors == null || anchors.Length == 0)
             {
                 var crystalRadius = cellData.TryGetLocalCrystal(out Crystal crystal) ? crystal.SphereRadius : 10f;
-                Vector3 fallback = Random.insideUnitSphere * crystalRadius + cellData.CellTransform.position;
+                var centerPos = cellData.CellTransform != null ? cellData.CellTransform.position : transform.position;
+                Vector3 fallback = Random.insideUnitSphere * crystalRadius + centerPos;
                 lastSpawnPosById[crystalId] = fallback;
                 return fallback;
             }

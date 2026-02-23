@@ -29,9 +29,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] List<ShapeSignEntry> signEntries;
 
         [Header("Placement")]
-        [SerializeField] float ringRadius = 300f;
+        [SerializeField] float ringRadius = 40f;
         [SerializeField] float height = 0f;
         [SerializeField] bool faceCenter = true;
+        [SerializeField] float signScale = 0.3f;
 
         [Header("Origin")]
         [Tooltip("Signs spawn around this point. Leave at (0,0,0) or set to your spawn area center.")]
@@ -42,10 +43,10 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void Start()
         {
-            SpawnSigns();
+            // Don't auto-spawn at Start — controller calls ShowSigns with player position
         }
 
-        public void SpawnSigns()
+        public void SpawnSigns(Vector3 center)
         {
             // Clean up any existing signs first
             foreach (var s in _spawnedSigns)
@@ -61,19 +62,20 @@ namespace CosmicShore.Game.ShapeDrawing
                 var entry = signEntries[i];
                 if (entry.signPrefab == null) continue;
 
-                // Evenly distribute around a circle
+                // Evenly distribute around a circle centered on the given position
                 float angle = (i / (float)count) * Mathf.PI * 2f;
-                Vector3 pos = origin + new Vector3(
+                Vector3 pos = center + new Vector3(
                     Mathf.Cos(angle) * ringRadius,
                     height,
                     Mathf.Sin(angle) * ringRadius);
 
                 var go = Instantiate(entry.signPrefab, pos, Quaternion.identity, transform);
+                go.transform.localScale *= signScale;
 
                 // Optionally face the center
                 if (faceCenter)
                 {
-                    Vector3 dirToCenter = (origin - pos).normalized;
+                    Vector3 dirToCenter = (center - pos).normalized;
                     if (dirToCenter != Vector3.zero)
                         go.transform.rotation = Quaternion.LookRotation(dirToCenter, Vector3.up);
                 }
@@ -88,12 +90,11 @@ namespace CosmicShore.Game.ShapeDrawing
                 _spawnedSigns.Add(go);
             }
 
-            Debug.Log($"[ShapeSignSpawner] Spawned {_spawnedSigns.Count} shape signs.");
+            Debug.Log($"[ShapeSignSpawner] Spawned {_spawnedSigns.Count} shape signs around {center}.");
         }
 
         /// <summary>
         /// Hide all signs — call this when shape drawing mode starts.
-        /// ShapeDrawingManager calls this automatically if you wire it in.
         /// </summary>
         public void HideSigns()
         {
@@ -102,7 +103,16 @@ namespace CosmicShore.Game.ShapeDrawing
         }
 
         /// <summary>
-        /// Show all signs again — call this when returning to freestyle.
+        /// Respawn signs around the given center (typically the player position).
+        /// Destroys old signs and creates fresh ones.
+        /// </summary>
+        public void ShowSigns(Vector3 center)
+        {
+            SpawnSigns(center);
+        }
+
+        /// <summary>
+        /// Show existing signs without repositioning.
         /// </summary>
         public void ShowSigns()
         {

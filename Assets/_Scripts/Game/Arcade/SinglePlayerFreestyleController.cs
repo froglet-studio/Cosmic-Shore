@@ -18,6 +18,11 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] List<ModeSelectTrigger> modeTriggers;
         [SerializeField] ShapeSignSpawner shapeSignSpawner;
 
+        [Header("Trigger Placement")]
+        [SerializeField] float triggerRingRadius = 40f;
+        [SerializeField] float triggerScale = 0.4f;
+        [SerializeField] float triggerForwardOffset = 50f;
+
         protected override bool HasEndGame => false;
         protected override bool ShowEndGameSequence => false;
 
@@ -27,12 +32,19 @@ namespace CosmicShore.Game.Arcade
         {
             base.OnEnable();
             ShapeSignEvents.OnShapeSelected += HandleShapeSignSelected;
+            if (shapeDrawingManager) shapeDrawingManager.OnFreestyleResumed.AddListener(OnShapeDrawingFinished);
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
             ShapeSignEvents.OnShapeSelected -= HandleShapeSignSelected;
+            if (shapeDrawingManager) shapeDrawingManager.OnFreestyleResumed.RemoveListener(OnShapeDrawingFinished);
+        }
+
+        void OnShapeDrawingFinished()
+        {
+            EnterLobby();
         }
 
         protected override void OnCountdownTimerEnded()
@@ -63,17 +75,36 @@ namespace CosmicShore.Game.Arcade
             // Clear existing player trails so the lobby is clean
             ClearPlayerTrails();
 
-            // Show mode selection triggers (collider-based)
-            foreach (var trigger in modeTriggers.Where(trigger => trigger))
+            // Position mode triggers in front of the player
+            var playerTransform = gameData.LocalPlayer?.Vessel?.Transform;
+            var center = playerTransform ? playerTransform.position : lobbyOrigin.position;
+            var forward = playerTransform ? playerTransform.forward : Vector3.forward;
+            var triggerCenter = center + forward * triggerForwardOffset;
+
+            var activeTriggers = modeTriggers.Where(trigger => trigger).ToList();
+            for (int i = 0; i < activeTriggers.Count; i++)
             {
+                var trigger = activeTriggers[i];
                 trigger.gameObject.SetActive(true);
                 trigger.ResetTrigger();
                 trigger.OnModeSelected.RemoveListener(HandleModeSelection);
                 trigger.OnModeSelected.AddListener(HandleModeSelection);
+
+                // Arrange in a small arc in front of the player
+                float angle = ((i - (activeTriggers.Count - 1) * 0.5f) / Mathf.Max(1, activeTriggers.Count - 1)) * Mathf.PI * 0.5f;
+                var offset = new Vector3(Mathf.Sin(angle) * triggerRingRadius, 0f, Mathf.Cos(angle) * triggerRingRadius);
+                trigger.transform.position = triggerCenter + offset;
+                trigger.transform.localScale = Vector3.one * triggerScale;
+
+                // Face the player
+                var dirToPlayer = (center - trigger.transform.position).normalized;
+                if (dirToPlayer != Vector3.zero)
+                    trigger.transform.rotation = Quaternion.LookRotation(dirToPlayer, Vector3.up);
             }
 
-            // Show shape sign spawner (button-based signs)
-            if (shapeSignSpawner) shapeSignSpawner.ShowSigns();
+            // Show shape sign spawner (button-based signs) near the player
+            if (shapeSignSpawner)
+                shapeSignSpawner.ShowSigns(triggerCenter);
         }
 
         void ExitLobby()
