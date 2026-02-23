@@ -109,6 +109,24 @@ namespace CosmicShore.Game.CameraSystem
         {
             _followTarget = target;
             _lastTargetPos = Vector3.zero;
+            _velocity = Vector3.zero;
+        }
+
+        /// <summary>
+        /// Immediately positions the camera at the correct follow offset from the target,
+        /// clearing all smoothing state. Call after configuring settings and follow target.
+        /// </summary>
+        public void SnapToTarget()
+        {
+            if (!_followTarget) return;
+
+            transform.position = _followTarget.position + _followTarget.rotation * _followOffset;
+
+            if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+                transform.rotation = targetRot;
+
+            _lastTargetPos = _followTarget.position;
+            _velocity = Vector3.zero;
         }
 
         public void Activate()

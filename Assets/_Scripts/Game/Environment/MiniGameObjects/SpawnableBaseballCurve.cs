@@ -1,26 +1,23 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class SpawnableBaseballCurve : SpawnableAbstractBase
+public class SpawnableBaseballCurve : SpawnableBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-    static int SpawnedCount = 0;
 
     public float radius = 1.0f;
     public int numSegments = 16;
     public float seamWidth = 0.2f;
-    public GameObject blockPrefab;
 
     public float b = 0.5f;
     public float c = 0.75f;
 
-
-    public override GameObject Spawn()
+    protected override SpawnTrailData[] GenerateTrailData()
     {
-        SpawnedCount++;
-        GameObject container = new GameObject();
-        container.name = "Baseball" + SpawnedCount++;
+        var seam1Points = new SpawnPoint[numSegments];
+        var seam2Points = new SpawnPoint[numSegments];
 
         for (int i = 0; i < numSegments; i++)
         {
@@ -29,17 +26,28 @@ public class SpawnableBaseballCurve : SpawnableAbstractBase
             float y = radius * Mathf.Cos(Mathf.PI / 2.0f - c) * Mathf.Cos(t) * Mathf.Sin(t / 2.0f + c * Mathf.Sin(2.0f * t));
             float z = radius * Mathf.Sin(Mathf.PI / 2.0f - c) * Mathf.Cos(t);
 
-            var go = Instantiate(blockPrefab);
-            go.transform.position = new Vector3(x, y, z);
-            go.transform.SetParent(container.transform, false);
-            go.GetComponent<Prism>().Initialize();
+            var position1 = new Vector3(x, y, z);
+            var position2 = new Vector3(x, y, z + seamWidth);
 
-            go = Instantiate(blockPrefab);
-            go.transform.position = new Vector3(x, y, z + seamWidth);
-            go.transform.SetParent(container.transform, false);
-            go.GetComponent<Prism>().Initialize();
+            seam1Points[i] = new SpawnPoint(position1, Quaternion.identity, Vector3.one);
+            seam2Points[i] = new SpawnPoint(position2, Quaternion.identity, Vector3.one);
         }
 
-        return container;
+        return new[]
+        {
+            new SpawnTrailData(seam1Points, false, domain),
+            new SpawnTrailData(seam2Points, false, domain)
+        };
+    }
+
+    protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+    {
+        foreach (var td in trailData)
+            SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+    }
+
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(seed, radius, numSegments, seamWidth, b, c);
     }
 }

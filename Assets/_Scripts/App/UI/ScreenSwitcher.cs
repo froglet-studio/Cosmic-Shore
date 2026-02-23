@@ -38,7 +38,6 @@ namespace CosmicShore.App.UI
             PROFILE                = 3,
             PROFILE_ICON_SELECT    = 4,
             SETTINGS               = 5,
-            XP_TRACK               = 6,
 
             // PORT MODALS
             FACTION_MISSION        = 7,

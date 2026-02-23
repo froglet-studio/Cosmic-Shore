@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿// MultiplayerJoustController.cs
+using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,6 +13,10 @@ namespace CosmicShore.Game.Arcade
 
         private bool _finalResultsSent;
 
+        // Single source of truth — set by server, read by EndGameController
+        public string WinnerName { get; private set; } = "";
+        public bool ResultsReady { get; private set; } = false;
+
         protected override bool UseGolfRules => true;
 
         public override void OnNetworkSpawn()
@@ -19,28 +24,39 @@ namespace CosmicShore.Game.Arcade
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
-
             _finalResultsSent = false;
         }
 
-        /// <summary>
-        /// Called by monitor when a collision occurs (server authoritative).
-        /// </summary>
         public void NotifyCollision(string playerName, int collisionCount)
         {
             if (!IsServer) return;
-
-            // Update server truth immediately too (important!)
             var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (stats != null) stats.JoustCollisions = collisionCount;
+            NotifyCollision_ClientRpc(playerName, collisionCount);
+        }
 
+        public void ReportCollisionToServer(string playerName, int collisionCount)
+        {
+            ReportCollision_ServerRpc(playerName, collisionCount);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void ReportCollision_ServerRpc(string playerName, int collisionCount)
+        {
+            var stats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
+            if (stats == null)
+            {
+                Debug.LogError($"[JoustController] ServerRpc: no stats for '{playerName}'");
+                return;
+            }
+            if (collisionCount <= stats.JoustCollisions) return;
+            stats.JoustCollisions = collisionCount;
             NotifyCollision_ClientRpc(playerName, collisionCount);
         }
 
         [ClientRpc]
         void NotifyCollision_ClientRpc(string playerName, int collisionCount)
         {
-            // This runs on clients (and host client too, which is fine)
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
             stats.JoustCollisions = collisionCount;
         }
@@ -49,8 +65,6 @@ namespace CosmicShore.Game.Arcade
         {
             base.OnTurnEndedCustom();
             if (!IsServer) return;
-
-            // Prevent double-send if something ends turn twice
             if (_finalResultsSent) return;
 
             CalculateJoustScores_Server();
@@ -69,21 +83,26 @@ namespace CosmicShore.Game.Arcade
             int collisionsNeeded = joustTurnMonitor.CollisionsNeeded;
             float currentTime = Time.time - gameData.TurnStartTime;
 
+            // Find the winner first — whoever completed all jousts
+            string winnerName = "";
             foreach (var stats in gameData.RoundStatsList)
             {
-                int current = stats.JoustCollisions;
-                int left = Mathf.Max(0, collisionsNeeded - current);
+                if (stats.JoustCollisions >= collisionsNeeded)
+                {
+                    winnerName = stats.Name;
+                    break;
+                }
+            }
 
-                if (left == 0)
-                {
-                    // Winner time (only set once)
-                    if (stats.Score > 0f && stats.Score < 99999f) continue;
+            Debug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Time={currentTime:F2}s " +
+                      $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.JoustCollisions}j"))}]");
+
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats.Name == winnerName)
                     stats.Score = currentTime;
-                }
                 else
-                {
                     stats.Score = 99999f;
-                }
             }
 
             gameData.SortRoundStats(UseGolfRules);
@@ -92,43 +111,64 @@ namespace CosmicShore.Game.Arcade
 
         void SyncJoustResults_Authoritative()
         {
+            // Winner is index 0 after ascending sort
+            string winnerName = gameData.RoundStatsList.Count > 0
+                ? gameData.RoundStatsList[0].Name
+                : "";
+
             var list = gameData.RoundStatsList;
             int count = list.Count;
 
-            FixedString64Bytes[] names = new FixedString64Bytes[count];
-            float[] scores = new float[count];
-            int[] collisions = new int[count];
-            int[] domains = new int[count];
+            var names      = new FixedString64Bytes[count];
+            var scores     = new float[count];
+            var collisions = new int[count];
+            var domains    = new int[count];
 
             for (int i = 0; i < count; i++)
             {
-                names[i] = new FixedString64Bytes(list[i].Name);
-                scores[i] = list[i].Score;
+                names[i]      = new FixedString64Bytes(list[i].Name);
+                scores[i]     = list[i].Score;
                 collisions[i] = list[i].JoustCollisions;
-                domains[i] = (int)list[i].Domain;
+                domains[i]    = (int)list[i].Domain;
             }
 
-            SyncJoustResults_ClientRpc(names, scores, collisions, domains);
+            SyncJoustResults_ClientRpc(names, scores, collisions, domains,
+                new FixedString64Bytes(winnerName));
         }
 
         [ClientRpc]
-        void SyncJoustResults_ClientRpc(FixedString64Bytes[] names, float[] scores, int[] collisions, int[] domains)
+        void SyncJoustResults_ClientRpc(
+            FixedString64Bytes[] names,
+            float[] scores,
+            int[] collisions,
+            int[] domains,
+            FixedString64Bytes winnerName)
         {
             for (int i = 0; i < names.Length; i++)
             {
                 string n = names[i].ToString();
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == n);
-                if (stat == null) continue;
-
-                stat.Score = scores[i];
+                if (stat == null)
+                {
+                    Debug.LogError($"[JoustController] Client could not match '{n}'. " +
+                                   $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
+                    continue;
+                }
+                stat.Score         = scores[i];
                 stat.JoustCollisions = collisions[i];
-                stat.Domain = (Domains)domains[i];
+                stat.Domain        = (Domains)domains[i];
             }
+
+            // Authoritative winner — EndGameController reads this, not RoundStatsList[0]
+            WinnerName   = winnerName.ToString();
+            ResultsReady = true;
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
 
-            // Only now trigger endgame pipeline everywhere
+            Debug.Log($"[JoustController] Client synced. Winner='{WinnerName}' " +
+                      $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score:F1}"))}]");
+
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
@@ -136,11 +176,11 @@ namespace CosmicShore.Game.Arcade
         protected override void OnResetForReplayCustom()
         {
             base.OnResetForReplayCustom();
-
             _finalResultsSent = false;
+            WinnerName   = "";
+            ResultsReady = false;
 
-            if (joustTurnMonitor)
-                joustTurnMonitor.ResetMonitor();
+            if (joustTurnMonitor) joustTurnMonitor.ResetMonitor();
 
             foreach (var s in gameData.RoundStatsList)
             {
@@ -148,7 +188,6 @@ namespace CosmicShore.Game.Arcade
                 s.Score = 0f;
             }
 
-            // If you want HUD refresh:
             gameData.InvokeTurnStarted();
         }
     }

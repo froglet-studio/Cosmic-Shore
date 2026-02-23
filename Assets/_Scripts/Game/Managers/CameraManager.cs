@@ -111,17 +111,22 @@ public class CameraManager : Singleton<CameraManager>
     public void SetupGamePlayCameras(Transform followTarget)
     {
         if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
-        
+
         _playerFollowTarget = followTarget;
         _playerCamera?.SetFollowTarget(_playerFollowTarget);
         _deathCamera?.SetFollowTarget(_playerFollowTarget);
         _themeManagerData.SetBackgroundColor(Camera.main);
-        
+
         SetCloseCameraActive();
 
         var shipGO = _playerFollowTarget.gameObject;
         var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
         shipCustomizer.Configure(_playerCamera);
+
+        // Snap camera to correct initial position to prevent retaining
+        // stale end-game or transition state from the previous session.
+        if (_playerCamera is CustomCameraController pcc)
+            pcc.SnapToTarget();
     }
 
     public void SetMainMenuCameraActive()
@@ -173,6 +178,16 @@ public class CameraManager : Singleton<CameraManager>
     }
 
     public ICameraController GetActiveController() => _activeController;
+
+    /// <summary>
+    /// Snaps the player camera to its follow target's current position.
+    /// Call after vessel teleport or end-game cinematic to reset the camera.
+    /// </summary>
+    public void SnapPlayerCameraToTarget()
+    {
+        if (_playerCamera is CustomCameraController pcc)
+            pcc.SnapToTarget();
+    }
 
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {

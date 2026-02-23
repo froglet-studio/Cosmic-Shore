@@ -276,14 +276,22 @@ namespace CosmicShore.App.UI.Views
 
                 string newName = displayNameInput.text?.Trim();
 
-                 await dataService.SetDisplayNameAsync(newName);
-                dataService.RefreshProfileVisuals();
+                if (string.IsNullOrEmpty(newName) || newName.Length < 3 || newName.Length > 25)
+                {
+                    Debug.LogWarning("[ProfileIconSelectView] Display name must be between 3 and 25 characters.");
+                    return;
+                }
+
+                if (dataService != null && dataService.IsInitialized)
+                {
+                    await dataService.SetDisplayNameAsync(newName);
+                }
 
                 ModalWindowOut();
             }
             catch (Exception e)
             {
-                 // TODO handle exception
+                Debug.LogWarning($"[ProfileIconSelectView] SaveDisplayName failed: {e.Message}");
             }
         }
 

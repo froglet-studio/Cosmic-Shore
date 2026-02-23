@@ -90,7 +90,10 @@ namespace CosmicShore.Core
             gameData.IsMission = false;
             gameData.GameMode = gameMode;
             
-            gameData.IsMultiplayerMode = isMultiplayer;
+            // For multiplayer-capable games with only 1 human player, run locally with AI
+            // instead of doing online matchmaking. Use gameData.SelectedPlayerCount (set by
+            // the config modal) rather than the legacy numberOfPlayers parameter.
+            gameData.IsMultiplayerMode = isMultiplayer && gameData.SelectedPlayerCount.Value > 1;
             gameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
             gameData.InvokeGameLaunch();
 

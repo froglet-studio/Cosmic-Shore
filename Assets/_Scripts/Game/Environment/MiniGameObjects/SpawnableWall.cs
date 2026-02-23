@@ -1,10 +1,11 @@
-using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace CosmicShore.Game
 {
-    public class SpawnableWall : SpawnableAbstractBase
+    public class SpawnableWall : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
         [SerializeField] Crystal crystal;
@@ -12,44 +13,57 @@ namespace CosmicShore.Game
         [SerializeField] float padding = .1f;
         public int Width = 6;
         public int Height = 6;
-        static ushort WallCount = 0;
 
-        private void Awake()
+        public override GameObject Spawn(int intensity = 1)
         {
-            WallCount++;
+            Width = 6 - intensity;
+            Height = 6 - intensity;
+            InvalidateCache();
+            return base.Spawn(intensity);
         }
 
-        public override GameObject Spawn()
+        protected override SpawnPoint[] GeneratePoints()
         {
-            return Spawn(1);
-        }
-
-        public override GameObject Spawn(int intensityLevel)
-        {
-            Width = 6 - intensityLevel;
-            Height = 6 - intensityLevel;
-            GameObject container = new GameObject("Wall");
-            var trail = new Trail();
-            var size = new Vector3(1, 1, .1f);
+            var points = new SpawnPoint[Width * Height];
+            var size = new Vector3(1, 1, .1f) * blockSize;
             var blockSpacing = blockSize + padding;
+            int idx = 0;
+
             for (int x = 0; x < Width; x++)
             {
                 for (int y = 0; y < Height; y++)
                 {
-                    Vector3 position = new Vector3(x * blockSpacing, y * blockSpacing, 0);
-                    var correction = new Vector3(blockSpacing * .5f , blockSpacing * .5f, 0);
-                    CreateBlock(position + correction, Vector3.up, $"WB:{WallCount}:{x}:{y}", trail, size * blockSize, prism, container, Vector3.forward, Domains.Blue, false);
-                    if (crystal != null)
-                    {
-                        var newCrystal = Instantiate(crystal,container.transform);
-                        newCrystal.transform.position = position + (Vector3.forward * Random.Range(-1f,1f) * Width * blockSize);
-                        newCrystal.transform.localScale *= 5f * Mathf.Pow(Random.Range(.1f,1f),16) + 1f;
-                    }
+                    var correction = new Vector3(blockSpacing * .5f, blockSpacing * .5f, 0);
+                    var position = new Vector3(x * blockSpacing, y * blockSpacing, 0) + correction;
+                    points[idx++] = new SpawnPoint(position, Quaternion.identity, size);
                 }
             }
 
-            trails.Add(trail);
-            return container;
+            return points;
+        }
+
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+        {
+            foreach (var td in trailData)
+            {
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, Domains.Blue);
+
+                if (crystal != null)
+                {
+                    foreach (var point in td.Points)
+                    {
+                        var newCrystal = Instantiate(crystal, container.transform);
+                        newCrystal.transform.localPosition = point.Position +
+                            (Vector3.forward * ((float)rng.NextDouble() * 2f - 1f) * Width * blockSize);
+                        newCrystal.transform.localScale *= 5f * Mathf.Pow((float)rng.NextDouble(), 16) + 1f;
+                    }
+                }
+            }
+        }
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(Width, Height, blockSize, padding, seed);
         }
     }
 }

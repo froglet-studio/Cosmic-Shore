@@ -1,11 +1,4 @@
-// =======================================================
-// NetworkCrystalCollisionTurnMonitor.cs  (FINAL / FIXED)
-// - Still updates local UI via base (ownStats)
-// - On SERVER: subscribes to ALL players' OnCrystalsCollectedChanged and pushes updates into controller
-// - On SERVER: sets networked crystals-to-finish target into controller (authoritative)
-// - CheckForEndOfTurn is SERVER-only and ends when ANY player reaches target
-// =======================================================
-
+// NetworkCrystalCollisionTurnMonitor.cs
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,21 +7,13 @@ namespace CosmicShore.Game.Arcade
 {
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
-        [SerializeField] private MultiplayerHexRaceController controller;
+        [SerializeField] private HexRaceController controller;
 
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-
-            if (!IsServer) return;
-
-            int target = GetCrystalCollisionCount();
-            _netCrystalCollisions.Value = target;
-
-            // Ensure controller uses the same target as the monitor
-            controller?.SetCrystalsToFinishServer(target);
         }
 
         public override void StartMonitor()
@@ -36,6 +21,12 @@ namespace CosmicShore.Game.Arcade
             base.StartMonitor();
 
             if (!IsServer) return;
+            int target = GetCrystalCollisionCount();
+            _netCrystalCollisions.Value = target;
+            controller?.SetCrystalsToFinishServer(target);
+
+            Debug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
+                      $"(intensity={gameData.SelectedIntensity.Value})");
 
             foreach (var stat in gameData.RoundStatsList)
                 stat.OnCrystalsCollectedChanged += ServerSideCrystalSync;
@@ -66,13 +57,18 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsServer) return false;
 
-            int target = _netCrystalCollisions.Value > 0 ? _netCrystalCollisions.Value : CrystalCollisions;
+            int target = _netCrystalCollisions.Value > 0
+                ? _netCrystalCollisions.Value
+                : CrystalCollisions;
+
             return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target);
         }
 
         protected override void UpdateCrystalsRemainingUI()
         {
-            int target = _netCrystalCollisions.Value > 0 ? _netCrystalCollisions.Value : CrystalCollisions;
+            int target = _netCrystalCollisions.Value > 0
+                ? _netCrystalCollisions.Value
+                : CrystalCollisions;
 
             int current = ownStats?.CrystalsCollected ?? 0;
             int remaining = Mathf.Max(0, target - current);

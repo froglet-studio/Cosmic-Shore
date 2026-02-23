@@ -78,6 +78,12 @@ namespace CosmicShore.Game
             vessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, vessel);
             gameData.AddPlayer(player);
+
+            // AddPlayer teleports the vessel to its spawn position.
+            // Re-snap the camera so it starts at the correct location
+            // instead of the pre-teleport position.
+            if (player.IsLocalUser && CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
         
         async UniTaskVoid DelayInvokeClientReady(CancellationToken token)

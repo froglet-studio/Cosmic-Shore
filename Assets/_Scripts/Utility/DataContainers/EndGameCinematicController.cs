@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.XP;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,6 +19,7 @@ namespace CosmicShore.Game.Cinematics
         [SerializeField] protected EndGameCinematicView view;
 
         protected bool isRunning;
+        protected bool localPlayerWon;
         protected Coroutine runningRoutine;
         protected float cachedBoostMultiplier;
         
@@ -56,6 +58,18 @@ namespace CosmicShore.Game.Cinematics
             if (isRunning) return;
             isRunning = true;
 
+            // Award XP based on placement
+            if (XPRewardService.Instance != null)
+            {
+                int xp = XPRewardService.Instance.AwardXP();
+                Debug.Log($"[EndGameCinematic] XP awarded: {xp}");
+            }
+            else
+            {
+                Debug.LogWarning("[EndGameCinematic] XPRewardService.Instance is null - XP not awarded. " +
+                                 "Ensure XPRewardService exists in the game scene.");
+            }
+
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel?.VesselStatus != null)
             {
@@ -68,6 +82,8 @@ namespace CosmicShore.Game.Cinematics
 
         protected virtual IEnumerator RunCompleteEndGameSequence(CinematicDefinitionSO cinematic)
         {
+            localPlayerWon = DetermineLocalPlayerWon();
+
             if (cinematic && cinematic.enableVictoryLap)
                 yield return StartCoroutine(RunVictoryLap(cinematic));
 
@@ -82,6 +98,11 @@ namespace CosmicShore.Game.Cinematics
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
+
+            // Show XP earned after score reveal
+            if (view)
+                view.ShowXPEarned();
+
             if (view)
             {
                 view.ShowContinueButton();
@@ -96,7 +117,10 @@ namespace CosmicShore.Game.Cinematics
             }
 
             if (view)
+            {
+                view.HideXPEarned();
                 view.HideScoreRevealPanel();
+            }
 
             gameData.InvokeShowGameEndScreen();
 
@@ -142,9 +166,14 @@ namespace CosmicShore.Game.Cinematics
             }
 
             gameData.ResetPlayers();
-            
+
             if (cinematicCameraController)
                 cinematicCameraController.StopCameraSetup();
+
+            // Snap player camera back to follow target after cinematic
+            // moved it to a cinematic position.
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
         }
         
         protected virtual void HandleContinuePressed()
@@ -170,9 +199,14 @@ namespace CosmicShore.Game.Cinematics
                     EnhanceTrailRenderer(localPlayer.Vessel);
                 }
                 
-                if (cinematic.showVictoryToast && !string.IsNullOrEmpty(cinematic.scoreRevealToastString))
+                if (cinematic.showVictoryToast)
                 {
-                    view?.ShowVictoryToast(cinematic.scoreRevealToastString, cinematic.toastSettings);
+                    var toastMessage = localPlayerWon
+                        ? cinematic.GetRandomVictoryToast()
+                        : cinematic.GetRandomDefeatToast();
+
+                    if (!string.IsNullOrEmpty(toastMessage))
+                        view?.ShowVictoryToast(toastMessage, cinematic.toastSettings);
                 }
                 
                 yield return new WaitForSeconds(settings.duration);
@@ -278,7 +312,16 @@ namespace CosmicShore.Game.Cinematics
         #endregion
 
         #region Helpers
-        
+
+        /// <summary>
+        /// Override in game-specific controllers to provide win/loss detection.
+        /// Called at the start of the end-game sequence to determine which toast strings to use.
+        /// </summary>
+        protected virtual bool DetermineLocalPlayerWon()
+        {
+            return gameData != null && gameData.IsLocalDomainWinner(out _);
+        }
+
         protected virtual CinematicDefinitionSO ResolveCinematicForThisScene()
         {
             var sceneName = SceneManager.GetActiveScene().name;
