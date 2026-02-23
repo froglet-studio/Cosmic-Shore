@@ -14,6 +14,7 @@ using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -89,7 +90,7 @@ namespace CosmicShore.App.UI.Views
             {
                 var game = sortedGames[i];
 
-                Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
+                CSDebug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
 
                 var gameCard = GameCards[i];
                 gameCard.GameMode = game.Mode;
@@ -104,7 +105,7 @@ namespace CosmicShore.App.UI.Views
                 }
                 else
                 {
-                    Debug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.", 
+                    CSDebug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.", 
                         nameof(ArcadeExploreView), game.CallToActionTargetType.ToString());
                 }
                 
@@ -123,7 +124,7 @@ namespace CosmicShore.App.UI.Views
 
         public void SelectShip(SO_Ship selectedShip)
         {
-            Debug.Log($"SelectShip: {selectedShip.Name}");
+            CSDebug.Log($"SelectShip: {selectedShip.Name}");
 
             selectedVesselClassType.Value = selectedShip.Class;
             // TODO - Remove statics from MiniGame, use SOAP Data Container

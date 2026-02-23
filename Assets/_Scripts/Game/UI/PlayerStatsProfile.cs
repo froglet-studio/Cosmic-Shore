@@ -10,8 +10,7 @@ namespace CosmicShore.Game.Analytics
         public long LastLoginTick;
 
         public WildlifeBlitzPlayerStatsProfile BlitzStats = new();
-        public HexRacePlayerStatsProfile HexRaceStats = new();
-        public MultiplayerHexRacePlayerStatsProfile MultiHexStats = new();
+        public HexRacePlayerStatsProfile MultiHexStats = new();
         public JoustPlayerStatsProfile JoustStats = new();
         public CrystalCapturePlayerStatsProfile CrystalCaptureStats = new();
     }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -24,7 +25,7 @@ namespace CosmicShore.Core
         {
             if (trailBlockIndices.ContainsKey(block))
             {
-                Debug.LogWarning($"[Trail] Attempted to add duplicate block {block.name}. Ignoring.");
+                CSDebug.LogWarning($"[Trail] Attempted to add duplicate block {block.name}. Ignoring.");
                 return;
             }
             trailBlockIndices.Add(block, (ushort)TrailList.Count);

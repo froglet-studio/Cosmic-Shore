@@ -1,21 +1,28 @@
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
-    public class SpawnableCrystal : SpawnableAbstractBase
+    public class SpawnableCrystal : SpawnableBase
     {
         [SerializeField] Crystal Crystal;
-        static int ObjectsSpawned = 0;
 
-        public override GameObject Spawn()
+        protected override SpawnPoint[] GeneratePoints()
         {
-            GameObject container = new GameObject();
-            container.name = "Crystal" + ObjectsSpawned++;
+            return new[] { new SpawnPoint(Vector3.zero, Quaternion.identity) };
+        }
 
-            var crystal = Instantiate(Crystal);
-            crystal.transform.SetParent(container.transform);
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+        {
+            if (Crystal == null) return;
+            var crystal = Instantiate(Crystal, container.transform);
+            crystal.transform.localPosition = Vector3.zero;
+            crystal.ChangeDomain(domain);
+        }
 
-            return container;
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(seed);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using UnityEngine;
+using CosmicShore.Utility;
 
 /*
 namespace CosmicShore.Game.Arcade
@@ -25,7 +26,7 @@ namespace CosmicShore.Game.Arcade
                 return true;
             }
 
-            Debug.LogError("This should never happen! Every Score data need to have a local player!");
+            CSDebug.LogError("This should never happen! Every Score data need to have a local player!");
             return false;
         }
     }

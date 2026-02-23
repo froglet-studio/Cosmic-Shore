@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -12,7 +13,7 @@ namespace CosmicShore.Game
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var rs = impactor.Skimmer.VesselStatus.ResourceSystem;
-            Debug.Log($"Applying Resource Value {_change}");
+            CSDebug.Log($"Applying Resource Value {_change}");
             _change.ApplyTo(rs, this);
         }
     }

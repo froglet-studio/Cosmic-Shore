@@ -1,3 +1,4 @@
+// NetworkJoustCollisionTurnMonitor.cs
 using Unity.Netcode;
 using System.Linq;
 using UnityEngine;
@@ -12,32 +13,37 @@ namespace CosmicShore.Game.Arcade
         {
             base.StartMonitor();
 
-            if (!IsServer) return;
+            // ALL machines subscribe — client needs to report its own collisions up to server
             foreach (var stat in gameData.RoundStatsList)
-                stat.OnJoustCollisionChanged += ServerSideCollisionSync;
+                stat.OnJoustCollisionChanged += OnCollisionChanged;
         }
 
         public override void StopMonitor()
         {
             base.StopMonitor();
 
-            if (IsServer)
-            {
-                foreach (var stat in gameData.RoundStatsList)
-                    stat.OnJoustCollisionChanged -= ServerSideCollisionSync;
-            }
+            foreach (var stat in gameData.RoundStatsList)
+                stat.OnJoustCollisionChanged -= OnCollisionChanged;
         }
 
-        void ServerSideCollisionSync(IRoundStats stats)
+        void OnCollisionChanged(IRoundStats stats)
         {
-            if (!IsServer) return;
-
-            // Important: Update server truth via controller
-            controller?.NotifyCollision(stats.Name, stats.JoustCollisions);
+            if (IsServer)
+            {
+                // Server detects it directly — notify controller to sync down to clients
+                controller?.NotifyCollision(stats.Name, stats.JoustCollisions);
+            }
+            else
+            {
+                // Client detected a collision the server missed (high-speed physics) 
+                // — report it up so the server can authoritative sync everyone
+                controller?.ReportCollisionToServer(stats.Name, stats.JoustCollisions);
+            }
         }
 
         public override bool CheckForEndOfTurn()
         {
+            // Only server ends the turn authoritatively
             if (!IsServer) return false;
 
             return gameData.RoundStatsList

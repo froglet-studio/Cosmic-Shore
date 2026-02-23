@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.DialogueSystem.Editor
 {
@@ -644,7 +645,7 @@ namespace CosmicShore.DialogueSystem.Editor
         {
             AssetDatabase.SaveAssets();
             _hasUnsavedChanges = false;
-            Debug.Log("[Dialogue Editor] All changes saved.");
+            CSDebug.Log("[Dialogue Editor] All changes saved.");
         }
 
         private T DrawColoredEnumPopup<T>(string label, T value, Color bgColor, params GUILayoutOption[] options) where T : Enum
