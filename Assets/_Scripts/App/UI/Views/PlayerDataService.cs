@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Services.Auth;
 using CosmicShore.Soap;
-using TMPro;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CosmicShore.App.Profile
 {
@@ -19,13 +17,6 @@ namespace CosmicShore.App.Profile
         [Header("Cloud Save")]
         [SerializeField] private string cloudSaveProfileKey = "player_profile";
         [SerializeField] private SO_ProfileIconList profileIcons;
-
-        [Header("UI")]
-        [SerializeField] private TMP_Text displayNameText;
-        [SerializeField] private Image  avatarImage;
-
-        [Header("Auth Hook")]
-        [SerializeField] private AuthenticationController authController;
 
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
@@ -43,30 +34,44 @@ namespace CosmicShore.App.Profile
                 return;
             }
             Instance = this;
+
+            // DontDestroyOnLoad only works on root GameObjects.
+            // Detach from any parent (Canvas, Panel, etc.) first so the
+            // object survives scene transitions.
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
+
+            // Always have a profile ready so AddXP/GetXP never fail.
+            // Cloud data will merge on top once auth completes.
+            CreateLocalDefaultProfile(null);
+        }
+
+        void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+
+            var auth = AuthenticationController.Instance;
+            if (auth != null)
+                auth.OnSignedIn -= HandleSignedInFromAuth;
+
+            OnProfileChanged -= SyncProfileToGameData;
         }
 
         async void Start()
         {
             try
             {
-                if (authController != null)
-                {
-                    authController.OnSignedIn += HandleSignedInFromAuth;
-                }
-                OnProfileChanged += HandleProfileChanged;
-                if (UnityServices.State != ServicesInitializationState.Initialized) return;
-                bool canCheckAuth = true;
-                try
-                {
-                    _ = AuthenticationService.Instance.IsSignedIn;
-                }
-                catch
-                {
-                    canCheckAuth = false;
-                }
+                OnProfileChanged += SyncProfileToGameData;
 
-                if (canCheckAuth && AuthenticationService.Instance.IsSignedIn)
+                // Subscribe to auth events via singleton (survives scene transitions)
+                var auth = AuthenticationController.Instance;
+                if (auth != null)
+                    auth.OnSignedIn += HandleSignedInFromAuth;
+
+                // If already signed in, initialize immediately
+                if (UnityServices.State == ServicesInitializationState.Initialized &&
+                    auth != null && auth.IsSignedIn)
                 {
                     await InitializeAfterAuth();
                 }
@@ -126,10 +131,13 @@ namespace CosmicShore.App.Profile
 
         async Task LoadOrCreateProfileAsync(string playerId, bool canUseCloudSave)
         {
+            // Update userId now that we know the real player id
+            if (!string.IsNullOrEmpty(playerId))
+                CurrentProfile.userId = playerId;
+
             if (!canUseCloudSave)
             {
-                Debug.LogWarning("[PlayerDataService] Not signed in. Using local-only profile.");
-                CreateLocalDefaultProfile(playerId);
+                Debug.LogWarning("[PlayerDataService] Not signed in. Keeping local profile.");
                 return;
             }
 
@@ -141,28 +149,32 @@ namespace CosmicShore.App.Profile
                 if (result.TryGetValue(cloudSaveProfileKey, out var item))
                 {
                     var json = item.Value.GetAs<string>();
-                    var data = JsonUtility.FromJson<PlayerProfileData>(json);
+                    var cloudData = JsonUtility.FromJson<PlayerProfileData>(json);
 
-                    if (data != null)
+                    if (cloudData != null)
                     {
-                        CurrentProfile = data;
+                        // Merge: keep the higher XP (local may have earned XP before cloud loaded)
+                        int localXP = CurrentProfile.xp;
+                        CurrentProfile = cloudData;
+                        if (localXP > CurrentProfile.xp)
+                        {
+                            CurrentProfile.xp = localXP;
+                            await SaveProfileAsync(true);
+                        }
                         return;
                     }
 
-                    Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Creating default.");
-                    CreateLocalDefaultProfile(playerId);
+                    Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Keeping local.");
                 }
                 else
                 {
-                    // No profile yet → create & save
-                    CreateLocalDefaultProfile(playerId);
+                    // No cloud profile yet → upload local
                     await SaveProfileAsync(canUseCloudSave);
                 }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] Load failed: {e.Message}");
-                CreateLocalDefaultProfile(playerId);
+                Debug.LogWarning($"[PlayerDataService] Cloud load failed: {e.Message}. Keeping local.");
             }
         }
 
@@ -251,26 +263,17 @@ namespace CosmicShore.App.Profile
             }
         }
 
-        void HandleProfileChanged(PlayerProfileData data)
+        void SyncProfileToGameData(PlayerProfileData data)
         {
-            if (displayNameText != null)
-                displayNameText.text = data.displayName;
-
-            if (avatarImage != null)
-            {
-                var sprite = ResolveAvatarSprite(data.avatarId);
-                avatarImage.sprite = sprite;
-                avatarImage.enabled = sprite != null;
-            }
-
             if (gameData != null)
             {
                 gameData.LocalPlayerDisplayName = data.displayName;
                 gameData.LocalPlayerAvatarId = data.avatarId;
+                gameData.LocalPlayerXP = data.xp;
             }
         }
 
-        Sprite ResolveAvatarSprite(int avatarId)
+        public Sprite GetAvatarSprite(int avatarId)
         {
             if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)
                 return null;
@@ -281,11 +284,84 @@ namespace CosmicShore.App.Profile
                     return profileIcons.profileIcons[i].IconSprite;
             }
 
-            // Fallback to first icon
             return profileIcons.profileIcons[0].IconSprite;
         }
 
-        public Sprite GetAvatarSprite(int avatarId) => ResolveAvatarSprite(avatarId);
+        /// <summary>
+        /// Returns the player's current XP, or 0 if no profile is loaded.
+        /// </summary>
+        public int GetXP()
+        {
+            return CurrentProfile?.xp ?? 0;
+        }
+
+        /// <summary>
+        /// Adds XP to the player's profile and syncs to Cloud Save.
+        /// Returns the new total XP.
+        /// </summary>
+        public async void AddXP(int amount)
+        {
+            try
+            {
+                if (CurrentProfile == null || amount <= 0)
+                    return;
+
+                CurrentProfile.xp += amount;
+                OnProfileChanged?.Invoke(CurrentProfile);
+
+                bool canUseCloudSave = UnityServices.State == ServicesInitializationState.Initialized &&
+                                       AuthenticationService.Instance != null &&
+                                       AuthenticationService.Instance.IsSignedIn;
+
+                await SaveProfileAsync(canUseCloudSave);
+                Debug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[PlayerDataService] AddXP failed: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Marks a reward as unlocked in the player's profile.
+        /// </summary>
+        public async void UnlockReward(string rewardId)
+        {
+            try
+            {
+                if (CurrentProfile == null || string.IsNullOrEmpty(rewardId))
+                    return;
+
+                if (CurrentProfile.unlockedRewardIds == null)
+                    CurrentProfile.unlockedRewardIds = new System.Collections.Generic.List<string>();
+
+                if (CurrentProfile.unlockedRewardIds.Contains(rewardId))
+                    return;
+
+                CurrentProfile.unlockedRewardIds.Add(rewardId);
+                OnProfileChanged?.Invoke(CurrentProfile);
+
+                bool canUseCloudSave = UnityServices.State == ServicesInitializationState.Initialized &&
+                                       AuthenticationService.Instance != null &&
+                                       AuthenticationService.Instance.IsSignedIn;
+
+                await SaveProfileAsync(canUseCloudSave);
+                Debug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[PlayerDataService] UnlockReward failed: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Checks if a reward has been unlocked.
+        /// </summary>
+        public bool IsRewardUnlocked(string rewardId)
+        {
+            return CurrentProfile?.unlockedRewardIds != null &&
+                   CurrentProfile.unlockedRewardIds.Contains(rewardId);
+        }
 
         /// <summary>
         /// Forcing a UI refresh without a save (e.g. when an external system

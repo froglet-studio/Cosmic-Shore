@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.XP;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -57,6 +58,18 @@ namespace CosmicShore.Game.Cinematics
             if (isRunning) return;
             isRunning = true;
 
+            // Award XP based on placement
+            if (XPRewardService.Instance != null)
+            {
+                int xp = XPRewardService.Instance.AwardXP();
+                Debug.Log($"[EndGameCinematic] XP awarded: {xp}");
+            }
+            else
+            {
+                Debug.LogWarning("[EndGameCinematic] XPRewardService.Instance is null - XP not awarded. " +
+                                 "Ensure XPRewardService exists in the game scene.");
+            }
+
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel?.VesselStatus != null)
             {
@@ -85,6 +98,11 @@ namespace CosmicShore.Game.Cinematics
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
+
+            // Show XP earned after score reveal
+            if (view)
+                view.ShowXPEarned();
+
             if (view)
             {
                 view.ShowContinueButton();
@@ -99,7 +117,10 @@ namespace CosmicShore.Game.Cinematics
             }
 
             if (view)
+            {
+                view.HideXPEarned();
                 view.HideScoreRevealPanel();
+            }
 
             gameData.InvokeShowGameEndScreen();
 
