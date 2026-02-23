@@ -825,6 +825,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 8.4
       objectReference: {fileID: 0}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: xpEarnedText
+      value: 
+      objectReference: {fileID: 776211957}
+    - target: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: xpEarnedCanvasGroup
+      value: 
+      objectReference: {fileID: 776211958}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -2377,6 +2387,24 @@ Transform:
   - {fileID: 808058267}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &776211957 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8519919900975884673, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!225 &776211958 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 5955435898294338417, guid: 65bf1ed35b752374ca46ae214710e41c,
+    type: 3}
+  m_PrefabInstance: {fileID: 400393569}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &808058266
 GameObject:
   m_ObjectHideFlags: 0
