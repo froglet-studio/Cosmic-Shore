@@ -24,8 +24,8 @@ Material:
     m_Floats:
     - _AmbientStrength: 0.12
     - _CoreBrightness: 1.5
-    - _CoreHaloSize: 0.15
-    - _CoreSize: 0.1
+    - _CoreHaloSize: 0.06
+    - _CoreSize: 0.03
     - _DriftSpeed: 0.008
     - _DustScale: 2
     - _DustStrength: 0.45

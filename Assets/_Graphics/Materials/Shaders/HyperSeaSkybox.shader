@@ -180,6 +180,22 @@ Shader "CosmicShore/HyperSeaSkybox"
         return v;
     }
 
+    // Ridge noise - creates sharp linear structures from folded value noise
+    float ridgeNoise(float3 p)
+    {
+        float n = valueNoise(p);
+        n = 1.0 - abs(n * 2.0 - 1.0); // fold at 0.5 to form ridges
+        return n * n;                   // sharpen the peaks
+    }
+
+    // Two-octave ridge FBM for filamentary detail
+    float ridgeFbm2(float3 p)
+    {
+        float v = ridgeNoise(p);
+        v += ridgeNoise(p * 2.3 + float3(17.1, 3.7, 8.4)) * 0.5;
+        return v / 1.5;
+    }
+
     // ================================================================
     // STAR COLOR from temperature hash (branchless)
     // Blue-white -> White -> Yellow -> Red-orange
@@ -299,14 +315,27 @@ Shader "CosmicShore/HyperSeaSkybox"
         float n2 = fbm4(p * 2.5 + float3(5.2, 1.3 + drift * 0.7, 9.1));
         float n3 = fbm4(p * 3.0 + float3(3.7, 8.4, 2.6 + drift * 1.3));
 
-        // Shape noise into cloud structures
-        n1 = smoothstep(0.38, 0.78, n1);
-        n2 = smoothstep(0.42, 0.82, n2);
-        n3 = smoothstep(0.40, 0.80, n3);
+        // Shape noise into isolated cloud structures
+        // Raised thresholds → more dark space between structures, less mixing
+        float c1 = smoothstep(0.52, 0.78, n1);
+        float c2 = smoothstep(0.55, 0.82, n2);
+        float c3 = smoothstep(0.53, 0.80, n3);
 
-        half3 color = n1 * _NebulaColor1.rgb
-                    + n2 * _NebulaColor2.rgb
-                    + n3 * _NebulaColor3.rgb;
+        half3 color = c1 * _NebulaColor1.rgb
+                    + c2 * _NebulaColor2.rgb
+                    + c3 * _NebulaColor3.rgb;
+
+        // Sharp filamentary ridges riddled throughout
+        float r1 = ridgeFbm2(p * 5.0 + float3(7.3, 2.1, drift * 0.5));
+        float r2 = ridgeNoise(p * 8.0 + float3(1.2, 6.5, 3.3));
+        float filaments = r1 * r2;
+        filaments = smoothstep(0.15, 0.45, filaments);
+
+        // Tint filaments by whichever nebula noise is locally dominant
+        half3 filamentTint = n1 * _NebulaColor1.rgb
+                           + n2 * _NebulaColor2.rgb
+                           + n3 * _NebulaColor3.rgb;
+        color += filaments * filamentTint * 0.5;
 
         return color * _NebulaStrength;
     }
