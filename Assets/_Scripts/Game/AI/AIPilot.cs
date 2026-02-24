@@ -141,6 +141,9 @@ namespace CosmicShore.Game.AI
             // When seeking players (Joust mode), ignore cell item updates
             if (seekPlayers) return;
 
+            // Guard against early calls before vessel is assigned
+            if (vessel == null || VesselStatus == null) return;
+
             var activeCell = cellData.Cell;
             var cellItems = cellData.CellItems;
             float MinDistance = Mathf.Infinity;
