@@ -38,6 +38,7 @@ namespace CosmicShore.Game
         public event Action<InputEvents> OnInputEventStarted;
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
+        bool _subscribedToInputPaused;
 
         void SubscribeToInputEvents()
         {
@@ -56,8 +57,13 @@ namespace CosmicShore.Game
             if (!IsSpawned) ShipHelper.DestroyRuntimeActions(_runtimeInstances);
             UnsubscribeFromInputEvents();
 
-            if (vesselStatus != null && vesselStatus.IsLocalUser)
+            // During scene teardown the Player may already be destroyed.
+            // The event lives on the Player, so it's GC'd with it — skip the unsubscribe.
+            if (_subscribedToInputPaused && vesselStatus?.Player is UnityEngine.Object obj && obj != null)
+            {
                 vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
+                _subscribedToInputPaused = false;
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -82,7 +88,10 @@ namespace CosmicShore.Game
             ShipHelper.InitializeClassResourceActions(_resourceEventClassActions, _classResourceActions);
             
             if (vesselStatus.IsLocalUser)
+            {
                 vesselStatus.InputStatus.OnToggleInputPaused += OnToggleInputPaused;
+                _subscribedToInputPaused = true;
+            }
         }
 
         public void PerformShipControllerActions(InputEvents controlType)

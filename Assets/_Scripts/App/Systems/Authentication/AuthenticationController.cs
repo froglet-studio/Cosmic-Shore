@@ -37,6 +37,7 @@ namespace CosmicShore.Services.Auth
 
         bool _startupAttempted;
         private TaskCompletionSource<bool> _initTcs;
+        private Task _signInTask;
 
         void Awake()
         {
@@ -115,7 +116,17 @@ namespace CosmicShore.Services.Auth
             }
         }
 
-        public async Task EnsureSignedInAnonymouslyAsync()
+        public Task EnsureSignedInAnonymouslyAsync()
+        {
+            // Coalesce concurrent callers into a single sign-in attempt
+            if (_signInTask != null && !_signInTask.IsCompleted)
+                return _signInTask;
+
+            _signInTask = SignInAnonymouslyCore();
+            return _signInTask;
+        }
+
+        private async Task SignInAnonymouslyCore()
         {
             await EnsureInitializedAsync();
 
