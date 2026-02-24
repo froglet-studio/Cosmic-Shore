@@ -651,11 +651,62 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8480519526357855017, guid: 71db726e5ddd9c54bb6e0f8db68fd551,
+        type: 3}
+      propertyPath: dotsAnimator
+      value: 
+      objectReference: {fileID: 4635620930570840451}
+    - target: {fileID: 8480519526357855017, guid: 71db726e5ddd9c54bb6e0f8db68fd551,
+        type: 3}
+      propertyPath: connectingPanel
+      value: 
+      objectReference: {fileID: 4635620930570840452}
+    - target: {fileID: 8480519526357855017, guid: 71db726e5ddd9c54bb6e0f8db68fd551,
+        type: 3}
+      propertyPath: hackerTextAnimator
+      value: 
+      objectReference: {fileID: 4635620930570840450}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 71db726e5ddd9c54bb6e0f8db68fd551, type: 3}
+--- !u!114 &4635620930570840450 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7106286477272601531, guid: 71db726e5ddd9c54bb6e0f8db68fd551,
+    type: 3}
+  m_PrefabInstance: {fileID: 4635620930570840449}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cf2fcbdafaa4800b4238c6c36188c22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4635620930570840451 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2208876315150136065, guid: 71db726e5ddd9c54bb6e0f8db68fd551,
+    type: 3}
+  m_PrefabInstance: {fileID: 4635620930570840449}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f47802ec00164de7922e6f4be7b10f48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4635620930570840452 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1097824998216649653, guid: 71db726e5ddd9c54bb6e0f8db68fd551,
+    type: 3}
+  m_PrefabInstance: {fileID: 4635620930570840449}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9d7d32a80a2fde429a78a0a3ccf421b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
