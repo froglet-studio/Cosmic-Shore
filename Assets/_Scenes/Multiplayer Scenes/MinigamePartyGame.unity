@@ -903,7 +903,7 @@ PrefabInstance:
         type: 3}
       propertyPath: playerScoreContainer
       value:
-      objectReference: {fileID: 900000002}
+      objectReference: {fileID: 900100002}
     - target: {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: playerScoreCardPrefab
@@ -1238,7 +1238,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 900000002}
+      addedObject: {fileID: 900100002}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1259559001432499751, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -3121,7 +3121,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8b8886c5e424ace48980294a663d65a3, type: 3}
---- !u!1 &900000001
+--- !u!1 &900100001
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3129,9 +3129,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 900000002}
-  - component: {fileID: 900000003}
-  - component: {fileID: 900000004}
+  - component: {fileID: 900100002}
+  - component: {fileID: 900100003}
+  - component: {fileID: 900100004}
   m_Layer: 5
   m_Name: PlayerScoreContainer
   m_TagString: Untagged
@@ -3139,13 +3139,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &900000002
+--- !u!224 &900100002
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 900000001}
+  m_GameObject: {fileID: 900100001}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -3158,13 +3158,13 @@ RectTransform:
   m_AnchoredPosition: {x: 189.985, y: 167.5}
   m_SizeDelta: {x: 211.61, y: 91}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &900000003
+--- !u!114 &900100003
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 900000001}
+  m_GameObject: {fileID: 900100001}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
@@ -3184,13 +3184,13 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!222 &900000004
+--- !u!222 &900100004
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 900000001}
+  m_GameObject: {fileID: 900100001}
   m_CullTransparentMesh: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
