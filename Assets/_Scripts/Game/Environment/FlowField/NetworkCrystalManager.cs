@@ -8,6 +8,10 @@ namespace CosmicShore.Game
 {
     public class NetworkCrystalManager : CrystalManager
     {
+        [Header("Early Spawn")]
+        [Tooltip("When true, crystals spawn on round start (before the ready button) instead of on turn start.")]
+        [SerializeField] private bool spawnOnRoundStart;
+
         private NetworkList<Vector3> n_Positions;
 
         protected override void Awake()
@@ -18,14 +22,22 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
-            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
+            if (spawnOnRoundStart)
+                gameData.OnMiniGameRoundStarted.OnRaised += OnTurnStarted;
+            else
+                gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
+
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
             n_Positions.OnListChanged += OnPositionsChanged;
         }
 
         public override void OnNetworkDespawn()
         {
-            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            if (spawnOnRoundStart)
+                gameData.OnMiniGameRoundStarted.OnRaised -= OnTurnStarted;
+            else
+                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
 
             if (n_Positions != null)
