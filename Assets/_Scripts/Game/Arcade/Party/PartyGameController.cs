@@ -225,12 +225,11 @@ namespace CosmicShore.Game.Arcade.Party
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // Timeout reached — fill with AI and move to ready phase
+                // Timeout reached — fill with AI and start the first round
                 if (CurrentPhase == PartyPhase.Lobby)
                 {
                     FillWithAI();
-                    SetPhase(PartyPhase.WaitingForReady);
-                    BroadcastGameStateText_ClientRpc("All players joined. Ready up!");
+                    StartNextRound().Forget();
                 }
             }
             catch (OperationCanceledException) { }
@@ -268,8 +267,7 @@ namespace CosmicShore.Game.Arcade.Party
 
                 if (CurrentPhase == PartyPhase.Lobby)
                 {
-                    SetPhase(PartyPhase.WaitingForReady);
-                    BroadcastGameStateText_ClientRpc("All players joined. Ready up!");
+                    StartNextRound().Forget();
                 }
             }
             catch (OperationCanceledException) { }
@@ -308,8 +306,7 @@ namespace CosmicShore.Game.Arcade.Party
                     FillWithAI();
 
                 _lobbyCts?.Cancel();
-                SetPhase(PartyPhase.WaitingForReady);
-                BroadcastGameStateText_ClientRpc("All players joined. Ready up!");
+                StartNextRound().Forget();
             }
         }
 
@@ -369,7 +366,9 @@ namespace CosmicShore.Game.Arcade.Party
             CSDebug.Log($"[PartyGame] Player '{playerName}' left. Replaced by AI.");
 
             // If we were waiting for ready and this was the last holdout, check ready state
-            if (CurrentPhase == PartyPhase.WaitingForReady || CurrentPhase == PartyPhase.RoundResults)
+            if (CurrentPhase == PartyPhase.WaitingForReady ||
+                CurrentPhase == PartyPhase.RoundResults ||
+                CurrentPhase == PartyPhase.MiniGameReady)
                 CheckAllPlayersReady();
         }
 
@@ -409,6 +408,10 @@ namespace CosmicShore.Game.Arcade.Party
             if (CurrentPhase == PartyPhase.WaitingForReady || CurrentPhase == PartyPhase.RoundResults)
             {
                 StartNextRound().Forget();
+            }
+            else if (CurrentPhase == PartyPhase.MiniGameReady)
+            {
+                BeginMiniGamePlay().Forget();
             }
         }
 
@@ -455,38 +458,50 @@ namespace CosmicShore.Game.Arcade.Party
 
                 await UniTask.Delay(TimeSpan.FromSeconds(1.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
-                // Phase: Countdown
-                SetPhase(PartyPhase.Countdown);
+                // Activate the mini-game environment and position players
+                gameData.GameMode = selectedMode;
+                ActivateMiniGameEnvironment_ClientRpc(miniGameIndex);
+                ResetGameDataForRound_ClientRpc((int)selectedMode);
+
+                // Notify listeners
+                OnRoundStarting?.Invoke(roundIndex, selectedMode);
+
+                // Small delay for environment activation to settle
+                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+
+                // Phase: MiniGameReady — environment is active, show ready button
+                SetPhase(PartyPhase.MiniGameReady);
+                ResetReadyStates();
                 ForceShowPartyPanel_ClientRpc();
+                BroadcastGameStateText_ClientRpc("Ready up!");
+            }
+            catch (OperationCanceledException) { }
+        }
 
-                for (int i = (int)config.PreRoundCountdownSeconds; i > 0; i--)
-                {
-                    BroadcastGameStateText_ClientRpc($"Starting in {i}...");
-                    await UniTask.Delay(TimeSpan.FromSeconds(1f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
-                }
+        /// <summary>
+        /// Called when all players are ready during MiniGameReady phase.
+        /// Hides the panel, runs the in-game countdown, and starts gameplay.
+        /// </summary>
+        async UniTaskVoid BeginMiniGamePlay()
+        {
+            if (!IsServer) return;
 
-                // Hide HUD, small delay, then start
+            _roundCts?.Cancel();
+            _roundCts = new CancellationTokenSource();
+            var ct = _roundCts.Token;
+
+            try
+            {
+                // Hide the party panel
                 HideMiniGameHUD_ClientRpc();
+
                 await UniTask.Delay(
                     TimeSpan.FromSeconds(config.PostCountdownDelaySeconds),
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // Phase: Playing — activate the mini-game environment
+                // Phase: Playing
                 SetPhase(PartyPhase.Playing);
-                ActivateMiniGameEnvironment_ClientRpc(miniGameIndex);
-
-                // Notify listeners
-                OnRoundStarting?.Invoke(roundIndex, selectedMode);
-
-                // Reset game data for the round and start gameplay
-                gameData.GameMode = selectedMode;
-                ResetGameDataForRound_ClientRpc((int)selectedMode);
-
-                // Small delay for environment activation to settle
-                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
-
-                // Start the actual gameplay — this is what the standalone controllers do
                 StartGameplay_ClientRpc();
 
                 // Start a round timer as a fallback end condition

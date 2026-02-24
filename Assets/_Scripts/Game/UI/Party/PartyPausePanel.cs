@@ -175,6 +175,11 @@ namespace CosmicShore.Game.UI.Party
                     if (readyButtonText) readyButtonText.text = "GET READY!";
                     break;
 
+                case PartyPhase.MiniGameReady:
+                    SetReadyButtonInteractable(true);
+                    if (readyButtonText) readyButtonText.text = "READY";
+                    break;
+
                 case PartyPhase.Playing:
                     SetReadyButtonInteractable(false);
                     if (readyButtonText) readyButtonText.text = "IN GAME";
@@ -347,7 +352,8 @@ namespace CosmicShore.Game.UI.Party
             }
 
             if (_currentPhase != PartyPhase.WaitingForReady &&
-                _currentPhase != PartyPhase.RoundResults)
+                _currentPhase != PartyPhase.RoundResults &&
+                _currentPhase != PartyPhase.MiniGameReady)
                 return;
 
             // Disable button after click to prevent double-tap

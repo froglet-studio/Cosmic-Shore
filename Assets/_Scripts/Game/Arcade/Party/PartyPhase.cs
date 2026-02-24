@@ -25,5 +25,8 @@ namespace CosmicShore.Game.Arcade.Party
 
         /// <summary>All rounds are complete; showing final standings.</summary>
         FinalResults = 6,
+
+        /// <summary>Mini-game environment is active; waiting for ready to start gameplay.</summary>
+        MiniGameReady = 7,
     }
 }
