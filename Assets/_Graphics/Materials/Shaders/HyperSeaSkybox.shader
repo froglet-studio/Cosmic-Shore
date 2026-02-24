@@ -180,22 +180,6 @@ Shader "CosmicShore/HyperSeaSkybox"
         return v;
     }
 
-    // Ridge noise - creates sharp linear structures from folded value noise
-    float ridgeNoise(float3 p)
-    {
-        float n = valueNoise(p);
-        n = 1.0 - abs(n * 2.0 - 1.0); // fold at 0.5 to form ridges
-        return n * n;                   // sharpen the peaks
-    }
-
-    // Two-octave ridge FBM for filamentary detail
-    float ridgeFbm2(float3 p)
-    {
-        float v = ridgeNoise(p);
-        v += ridgeNoise(p * 2.3 + float3(17.1, 3.7, 8.4)) * 0.5;
-        return v / 1.5;
-    }
-
     // ================================================================
     // STAR COLOR from temperature hash (branchless)
     // Blue-white -> White -> Yellow -> Red-orange
@@ -215,9 +199,9 @@ Shader "CosmicShore/HyperSeaSkybox"
     }
 
     // ================================================================
-    // STAR FIELD
-    // Voronoi-like 3D grid with gaussian points
-    // Stars concentrate toward the galactic plane
+    // STAR FIELD — Hubble Ultra Deep Field style
+    // Each object has unique structure: point stars with diffraction
+    // spikes, tiny edge-on/face-on galaxies, faint background smudges
     // ================================================================
 
     half3 computeStars(float3 dir, float time)
@@ -237,7 +221,7 @@ Shader "CosmicShore/HyperSeaSkybox"
             float3 neighbor = float3(x, y, z);
             float3 cellId = id + neighbor;
 
-            // Hash for star existence
+            // Hash for object existence
             float h = hash31(cellId);
 
             // Increase probability near galactic plane
@@ -248,25 +232,79 @@ Shader "CosmicShore/HyperSeaSkybox"
             if (h > probability)
                 continue;
 
-            // Star position within cell
+            // Object position within cell
             float3 offset = hash33(cellId) - 0.5;
             float3 starPos = neighbor + offset - f;
             float dist = length(starPos);
 
-            // Gaussian point spread
-            float star = exp(-dist * dist * 500.0);
-
-            // Color from temperature
+            // Per-object hashes for type, shape, orientation
+            float typeHash = hash31(cellId + 73.7);
+            float sizeHash = hash31(cellId + 191.3);
             float temp = hash31(cellId + 127.1);
-            half3 col = starColor(temp);
+            float3 orient = normalize(hash33(cellId + 53.0) - 0.5);
 
-            // Twinkle
-            float twinkle = sin(time * _TwinkleSpeed + h * 80.0) * 0.25 + 0.75;
+            float obj = 0;
+            half3 col = half3(0, 0, 0);
 
-            // Brightness variation
-            float brightness = 0.4 + h * 2.5;
+            if (typeHash < 0.18)
+            {
+                // ---- Bright star with diffraction spikes ----
+                float tightness = 600.0 + sizeHash * 800.0;
+                obj = exp(-dist * dist * tightness);
 
-            result += star * col * brightness * twinkle * _StarBrightness;
+                // Four-point diffraction cross
+                float3 spikeA = normalize(cross(orient, float3(0.17, 1.0, 0.31)));
+                float3 spikeB = normalize(cross(orient, spikeA));
+                float dA = length(cross(starPos, spikeA));
+                float dB = length(cross(starPos, spikeB));
+                float spikes = exp(-dA * dA * 3000.0) + exp(-dB * dB * 3000.0);
+                spikes *= exp(-dist * 12.0); // fade with distance from center
+                obj += spikes * 0.35;
+
+                col = starColor(temp);
+            }
+            else if (typeHash < 0.42)
+            {
+                // ---- Tiny edge-on galaxy (elongated streak) ----
+                float along = dot(starPos, orient);
+                float3 perpVec = starPos - along * orient;
+                float perp = length(perpVec);
+                float elongation = 3.0 + sizeHash * 5.0;
+                float spread = 250.0 + sizeHash * 200.0;
+                obj = exp(-(along * along * spread / elongation
+                          + perp * perp * spread * elongation));
+
+                // Warmer colors for galaxies
+                col = starColor(temp * 0.6 + 0.2);
+            }
+            else if (typeHash < 0.55)
+            {
+                // ---- Faint face-on galaxy (soft disk with bright nucleus) ----
+                float spread = 150.0 + sizeHash * 150.0;
+                float disk = exp(-dist * dist * spread);
+                float nucleus = exp(-dist * dist * spread * 6.0);
+                obj = disk * 0.4 + nucleus * 0.6;
+
+                col = starColor(temp * 0.5 + 0.25);
+            }
+            else
+            {
+                // ---- Point star (varied tightness) ----
+                float tightness = 400.0 + sizeHash * 800.0;
+                obj = exp(-dist * dist * tightness);
+
+                col = starColor(temp);
+            }
+
+            // Twinkle (stars only, galaxies are steady)
+            float twinkle = (typeHash < 0.18 || typeHash >= 0.55)
+                ? sin(time * _TwinkleSpeed + h * 80.0) * 0.25 + 0.75
+                : 1.0;
+
+            // Wide brightness range — most objects are faint
+            float brightness = 0.15 + h * h * 3.0;
+
+            result += obj * col * brightness * twinkle * _StarBrightness;
         }
 
         return result;
@@ -316,7 +354,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         float n3 = fbm4(p * 3.0 + float3(3.7, 8.4, 2.6 + drift * 1.3));
 
         // Shape noise into isolated cloud structures
-        // Raised thresholds → more dark space between structures, less mixing
+        // Raised thresholds create dark space between structures, less mixing
         float c1 = smoothstep(0.52, 0.78, n1);
         float c2 = smoothstep(0.55, 0.82, n2);
         float c3 = smoothstep(0.53, 0.80, n3);
@@ -324,18 +362,6 @@ Shader "CosmicShore/HyperSeaSkybox"
         half3 color = c1 * _NebulaColor1.rgb
                     + c2 * _NebulaColor2.rgb
                     + c3 * _NebulaColor3.rgb;
-
-        // Sharp filamentary ridges riddled throughout
-        float r1 = ridgeFbm2(p * 5.0 + float3(7.3, 2.1, drift * 0.5));
-        float r2 = ridgeNoise(p * 8.0 + float3(1.2, 6.5, 3.3));
-        float filaments = r1 * r2;
-        filaments = smoothstep(0.15, 0.45, filaments);
-
-        // Tint filaments by whichever nebula noise is locally dominant
-        half3 filamentTint = n1 * _NebulaColor1.rgb
-                           + n2 * _NebulaColor2.rgb
-                           + n3 * _NebulaColor3.rgb;
-        color += filaments * filamentTint * 0.5;
 
         return color * _NebulaStrength;
     }
@@ -365,25 +391,30 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     // ================================================================
     // GALACTIC CORE
-    // Bright warm directional glow with inner core and outer halo
+    // Brightness enhancement graded into the galactic plane
     // ================================================================
 
     half3 computeCore(float3 dir)
     {
         float3 coreDir = normalize(_CoreDirection.xyz);
+        float3 galNorm = normalize(_GalacticNormal.xyz);
         float coreDot = dot(dir, coreDir);
 
-        // Bright inner core
+        // Core only exists on the galactic plane — not a standalone circle
+        float galDist = abs(dot(dir, galNorm));
+        float onPlane = exp(-galDist * galDist / (2.0 * _GalacticWidth * _GalacticWidth));
+
+        // Tight inner brightening
         float inner = smoothstep(1.0 - _CoreSize, 1.0, coreDot);
-        inner *= inner;
+        inner *= inner * onPlane;
 
-        // Wide warm halo
+        // Broader glow, also constrained to the plane
         float halo = smoothstep(1.0 - _CoreHaloSize, 1.0, coreDot);
-        halo = pow(halo, 1.5);
+        halo *= onPlane;
 
-        // Subtle rays / structure
-        float rayNoise = valueNoise(dir * 6.0 + coreDir * 3.0);
-        halo *= (0.7 + 0.3 * rayNoise);
+        // Particulate structure in the halo
+        float rayNoise = valueNoise(dir * 8.0 + coreDir * 3.0);
+        halo *= (0.6 + 0.4 * rayNoise);
 
         half3 color = inner * _CoreColor.rgb * _CoreBrightness
                     + halo * _CoreHaloColor.rgb * (_CoreBrightness * 0.25);
