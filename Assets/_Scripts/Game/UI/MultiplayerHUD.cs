@@ -82,6 +82,10 @@ namespace CosmicShore.Game.UI
         {
             view.ClearPlayerList();
             _playerCards.Clear();
+
+            if (view.PlayerScoreCardPrefab == null || view.PlayerScoreContainer == null)
+                return;
+
             AssignAIProfiles();
 
             foreach (var stats in gameData.RoundStatsList)

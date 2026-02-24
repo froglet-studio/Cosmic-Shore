@@ -125,6 +125,7 @@ namespace CosmicShore.Game.UI
 
         public void ClearPlayerList()
         {
+            if (!playerScoreContainer) return;
             foreach (Transform child in playerScoreContainer)
             {
                 Destroy(child.gameObject);

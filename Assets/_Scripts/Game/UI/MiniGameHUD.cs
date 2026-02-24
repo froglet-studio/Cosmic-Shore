@@ -210,7 +210,7 @@ namespace CosmicShore.Game.UI
 
         private void SetupLocalPlayerCard()
         {
-            if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null)
+            if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null || view.PlayerScoreContainer == null)
                 return;
 
             var localPlayer = gameData.LocalPlayer;
@@ -237,6 +237,10 @@ namespace CosmicShore.Game.UI
         {
             _aiCards.Clear();
             _aiScoreHandlers.Clear();
+
+            if (view.PlayerScoreCardPrefab == null || view.PlayerScoreContainer == null)
+                return;
+
             AssignAIProfiles();
 
             foreach (var stats in gameData.RoundStatsList)
