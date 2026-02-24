@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using CosmicShore.App.UI.Modals;
 using CosmicShore.Game.Arcade.Party;
 using CosmicShore.Soap;
 using TMPro;
@@ -21,8 +20,6 @@ namespace CosmicShore.Game.UI.Party
         [SerializeField] PartyGameController partyController;
 
         [Header("Panel")]
-        [SerializeField] GameObject panelRoot;
-        [SerializeField] ModalWindowManager modalWindowManager;
         [SerializeField] CanvasGroup canvasGroup;
 
         [Header("Game State")]
@@ -37,13 +34,6 @@ namespace CosmicShore.Game.UI.Party
         [SerializeField] Button readyButton;
         [SerializeField] TMP_Text readyButtonText;
         [SerializeField] Button quitButton;
-        [SerializeField] Button settingsButton;
-
-        [Header("Final Results")]
-        [SerializeField] GameObject finalResultsContainer;
-        [SerializeField] List<TMP_Text> finalPlayerNameTexts = new();
-        [SerializeField] List<TMP_Text> finalPlayerWinsTexts = new();
-        [SerializeField] TMP_Text partyWinnerText;
 
         readonly List<PartyRoundTab> _roundTabs = new();
         PartyPhase _currentPhase;
@@ -54,7 +44,8 @@ namespace CosmicShore.Game.UI.Party
 
         void Awake()
         {
-            if (finalResultsContainer) finalResultsContainer.SetActive(false);
+            // Ensure initial state is hidden
+            _isVisible = true; // So Hide() doesn't early-return
             Hide();
         }
 
@@ -99,9 +90,6 @@ namespace CosmicShore.Game.UI.Party
                 _roundTabs.Add(tab);
             }
 
-            if (finalResultsContainer)
-                finalResultsContainer.SetActive(false);
-
             // Highlight the first round as active
             _activeRoundIndex = 0;
             SetActiveRound(0);
@@ -118,8 +106,6 @@ namespace CosmicShore.Game.UI.Party
             if (_isVisible) return;
             _isVisible = true;
 
-            if (panelRoot) panelRoot.SetActive(true);
-
             if (canvasGroup)
             {
                 canvasGroup.alpha = 1f;
@@ -127,8 +113,7 @@ namespace CosmicShore.Game.UI.Party
                 canvasGroup.blocksRaycasts = true;
             }
 
-            if (modalWindowManager)
-                modalWindowManager.ModalWindowIn();
+            gameObject.SetActive(true);
 
             // Auto-scroll to the current active round
             ScrollToActiveRound();
@@ -139,9 +124,6 @@ namespace CosmicShore.Game.UI.Party
             if (!_isVisible) return;
             _isVisible = false;
 
-            if (modalWindowManager)
-                modalWindowManager.ModalWindowOut();
-
             if (canvasGroup)
             {
                 canvasGroup.alpha = 0f;
@@ -149,14 +131,15 @@ namespace CosmicShore.Game.UI.Party
                 canvasGroup.blocksRaycasts = false;
             }
 
-            if (panelRoot) panelRoot.SetActive(false);
+            gameObject.SetActive(false);
         }
 
         /// <summary>
-        /// Forces the panel visible for all players (e.g., during countdown).
+        /// Forces the panel visible regardless of current state.
         /// </summary>
         public void ForceShow()
         {
+            _isVisible = false; // Reset so Show() doesn't early-return
             Show();
         }
 
@@ -204,10 +187,10 @@ namespace CosmicShore.Game.UI.Party
                     break;
 
                 case PartyPhase.FinalResults:
-                    SetReadyButtonInteractable(false);
-                    if (readyButtonText) readyButtonText.text = "PARTY OVER";
-                    if (finalResultsContainer) finalResultsContainer.SetActive(true);
-                    ForceShow();
+                    // Button state is set here but the panel is shown by
+                    // PartyEndGameHandler after the cinematic finishes
+                    SetReadyButtonInteractable(true);
+                    if (readyButtonText) readyButtonText.text = "NEXT";
                     break;
             }
         }
@@ -338,31 +321,13 @@ namespace CosmicShore.Game.UI.Party
 
         #region Final Results
 
+        /// <summary>
+        /// Called when final results are synced. Updates round tabs but does not
+        /// display final standings inline — the PartyScoreboard handles that
+        /// when the player clicks "Next".
+        /// </summary>
         public void OnFinalResults(IReadOnlyList<PartyPlayerState> sortedPlayers)
         {
-            if (finalResultsContainer) finalResultsContainer.SetActive(true);
-
-            for (int i = 0; i < finalPlayerNameTexts.Count; i++)
-            {
-                if (i < sortedPlayers.Count)
-                {
-                    if (finalPlayerNameTexts[i])
-                        finalPlayerNameTexts[i].text = sortedPlayers[i].PlayerName;
-                    if (i < finalPlayerWinsTexts.Count && finalPlayerWinsTexts[i])
-                        finalPlayerWinsTexts[i].text = $"{sortedPlayers[i].GamesWon} wins";
-                }
-                else
-                {
-                    if (finalPlayerNameTexts[i])
-                        finalPlayerNameTexts[i].text = "";
-                    if (i < finalPlayerWinsTexts.Count && finalPlayerWinsTexts[i])
-                        finalPlayerWinsTexts[i].text = "";
-                }
-            }
-
-            if (partyWinnerText && sortedPlayers.Count > 0)
-                partyWinnerText.text = $"{sortedPlayers[0].PlayerName} wins the party!";
-
             ForceShow();
         }
 
@@ -372,6 +337,15 @@ namespace CosmicShore.Game.UI.Party
 
         void OnReadyClicked()
         {
+            if (_currentPhase == PartyPhase.FinalResults)
+            {
+                // "Next" button pressed after last round — show the final scoreboard
+                SetReadyButtonInteractable(false);
+                Hide();
+                gameData.InvokeShowGameEndScreen();
+                return;
+            }
+
             if (_currentPhase != PartyPhase.WaitingForReady &&
                 _currentPhase != PartyPhase.RoundResults)
                 return;
@@ -398,21 +372,5 @@ namespace CosmicShore.Game.UI.Party
 
         #endregion
 
-        #region Helpers
-
-        int GetActiveRoundIndex()
-        {
-            if (!partyController) return 0;
-
-            // The active round is the first non-completed tab
-            for (int i = 0; i < _roundTabs.Count; i++)
-            {
-                if (i < partyController.RoundResults.Count && !partyController.RoundResults[i].IsCompleted)
-                    return i;
-            }
-            return _roundTabs.Count - 1;
-        }
-
-        #endregion
     }
 }

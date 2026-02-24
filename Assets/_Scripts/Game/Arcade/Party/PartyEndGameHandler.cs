@@ -1,4 +1,5 @@
 using CosmicShore.Game.Cinematics;
+using CosmicShore.Game.UI.Party;
 using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -7,14 +8,15 @@ namespace CosmicShore.Game.Arcade.Party
 {
     /// <summary>
     /// Overrides the end-game cinematic flow for party mode.
-    /// Runs the cinematic but skips the scoreboard — the party pause panel
-    /// handles result display instead.
-    /// At the final round, XP is shown in the cinematic.
+    /// After each round: cinematic → score reveal → party pause panel (Ready button).
+    /// After the final round: cinematic → score reveal → party pause panel (Next button → PartyScoreboard).
+    /// XP is only awarded on the final round.
     /// </summary>
     public class PartyEndGameHandler : EndGameCinematicController
     {
         [Header("Party")]
         [SerializeField] PartyGameController partyController;
+        [SerializeField] PartyPausePanel partyPausePanel;
 
         bool IsFinalRound => partyController != null &&
                              partyController.CurrentRound + 1 >= partyController.TotalRounds;
@@ -64,55 +66,33 @@ namespace CosmicShore.Game.Arcade.Party
                 yield return new WaitForSeconds(delay);
             }
 
-            // Score reveal
+            // Score reveal animation
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
 
-            // Only show XP on the final round
+            // Show XP only on the final round
             if (IsFinalRound && view)
                 view.ShowXPEarned();
 
-            // Skip the continue button and connecting panel for non-final rounds
-            // The party controller handles the transition
-            if (!IsFinalRound)
+            // Show continue button, wait for tap
+            if (view)
             {
-                // Brief pause then reset
-                yield return new WaitForSeconds(1f);
-                ResetGameForNewRound();
-
-                if (view)
-                {
-                    view.HideXPEarned();
-                    view.HideScoreRevealPanel();
-                }
-
-                // Do NOT invoke OnShowGameEndScreen — the party controller
-                // handles showing the party panel instead of the normal scoreboard
+                view.ShowContinueButton();
+                yield return new WaitUntil(() => !view.IsContinueButtonActive());
             }
-            else
+
+            // Reset game state and clean up cinematic UI
+            ResetGameForNewRound();
+
+            if (view)
             {
-                // Final round — show continue button and then the final scoreboard
-                if (view)
-                {
-                    view.ShowContinueButton();
-                    yield return new WaitUntil(() => !view.IsContinueButtonActive());
-                }
-
-                if (view && cinematic)
-                {
-                    view.ShowConnectingPanel();
-                    yield return new WaitForSeconds(cinematic.connectingPanelDuration);
-                    ResetGameForNewRound();
-                }
-
-                if (view)
-                {
-                    view.HideXPEarned();
-                    view.HideScoreRevealPanel();
-                }
-
-                // For final round, show the full scoreboard
-                gameData.InvokeShowGameEndScreen();
+                view.HideXPEarned();
+                view.HideScoreRevealPanel();
             }
+
+            // Show party pause panel — it will display either "Ready" (mid-party)
+            // or "Next" (final round) based on the phase set by PartyGameController
+            if (partyPausePanel)
+                partyPausePanel.ForceShow();
 
             runningRoutine = null;
             isRunning = false;

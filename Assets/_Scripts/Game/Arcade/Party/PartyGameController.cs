@@ -505,8 +505,7 @@ namespace CosmicShore.Game.Arcade.Party
                         : $"{result.WinnerName} wins!";
                     BroadcastGameStateText_ClientRpc(winnerText);
 
-                    // Force show party panel for all players
-                    ForceShowPartyPanel_ClientRpc();
+                    // PartyEndGameHandler shows the party panel after the cinematic finishes
 
                     OnRoundCompleted?.Invoke(roundIndex, result);
                 }
