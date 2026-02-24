@@ -10,9 +10,14 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
-      propertyPath: 'CellTypes.Array.data[0]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 9bd1f902703962b46bb3551afe81b0bc,
+      propertyPath: CellConfigs.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[0]'
+      value:
+      objectReference: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403,
         type: 2}
     - target: {fileID: 6588436221143428966, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}

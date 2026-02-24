@@ -850,17 +850,27 @@ namespace CosmicShore.Game.Arcade.Party
         {
             DeactivateAllEnvironments();
 
+            Transform envParent = null;
             if (miniGameIndex >= 0 && miniGameIndex < miniGameEnvironments.Count)
             {
                 var env = miniGameEnvironments[miniGameIndex];
-                if (env) env.SetActive(true);
+                if (env)
+                {
+                    env.SetActive(true);
+                    envParent = env.transform;
+
+                    // Initialize SegmentSpawners each round (Start only fires once,
+                    // so subsequent rounds need an explicit Initialize call).
+                    var spawner = env.GetComponentInChildren<SegmentSpawner>();
+                    if (spawner) spawner.Initialize();
+                }
             }
 
-            // Instantiate the visual environment prefab for this game mode
+            // Instantiate the visual environment prefab (Nucleus/Cell) under the env
             if (miniGameIndex >= 0 && miniGameIndex < config.AvailableMiniGames.Count)
             {
                 var mode = config.AvailableMiniGames[miniGameIndex];
-                SpawnEnvironmentPrefab(mode);
+                SpawnEnvironmentPrefab(mode, envParent);
             }
         }
 
@@ -877,14 +887,16 @@ namespace CosmicShore.Game.Arcade.Party
             gameData.ResetStatsDataForReplay();
         }
 
-        void SpawnEnvironmentPrefab(GameModes mode)
+        void SpawnEnvironmentPrefab(GameModes mode, Transform parent = null)
         {
             DestroyEnvironmentInstance();
 
             var entry = config.EnvironmentPrefabs.Find(e => e.gameMode == mode);
             if (entry?.environmentPrefab == null) return;
 
-            _activeEnvironmentInstance = Instantiate(entry.environmentPrefab);
+            _activeEnvironmentInstance = parent
+                ? Instantiate(entry.environmentPrefab, parent)
+                : Instantiate(entry.environmentPrefab);
             _activeEnvironmentInstance.name = $"PartyEnv_{mode}";
         }
 
