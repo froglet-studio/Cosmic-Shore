@@ -10,6 +10,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Game;
 
 namespace CosmicShore.Game.Arcade.Party
 {
@@ -48,7 +49,6 @@ namespace CosmicShore.Game.Arcade.Party
         int _readyPlayerCount;
         CancellationTokenSource _lobbyCts;
         CancellationTokenSource _roundCts;
-        GameObject _activeEnvironmentInstance;
 
         // --- Derived state ---
         bool IsSoloWithAI => !gameData.IsMultiplayerMode;
@@ -129,8 +129,6 @@ namespace CosmicShore.Game.Arcade.Party
             _lobbyCts?.Dispose();
             _roundCts?.Cancel();
             _roundCts?.Dispose();
-
-            DestroyEnvironmentInstance();
 
             base.OnNetworkDespawn();
         }
@@ -850,27 +848,37 @@ namespace CosmicShore.Game.Arcade.Party
         {
             DeactivateAllEnvironments();
 
-            Transform envParent = null;
-            if (miniGameIndex >= 0 && miniGameIndex < miniGameEnvironments.Count)
-            {
-                var env = miniGameEnvironments[miniGameIndex];
-                if (env)
-                {
-                    env.SetActive(true);
-                    envParent = env.transform;
+            if (miniGameIndex < 0 || miniGameIndex >= miniGameEnvironments.Count) return;
 
-                    // Initialize SegmentSpawners each round (Start only fires once,
-                    // so subsequent rounds need an explicit Initialize call).
-                    var spawner = env.GetComponentInChildren<SegmentSpawner>();
-                    if (spawner) spawner.Initialize();
-                }
-            }
+            var env = miniGameEnvironments[miniGameIndex];
+            if (!env) return;
 
-            // Instantiate the visual environment prefab (Nucleus/Cell) under the env
-            if (miniGameIndex >= 0 && miniGameIndex < config.AvailableMiniGames.Count)
+            env.SetActive(true);
+
+            // Initialize SegmentSpawners each round (Start only fires once,
+            // so subsequent rounds need an explicit Initialize call).
+            var spawner = env.GetComponentInChildren<SegmentSpawner>();
+            if (spawner) spawner.Initialize();
+
+            // Update spawn positions from this game mode's environment.
+            // Each env prefab has a ServerPlayerVesselInitializer with _playerOrigins
+            // configured for that game mode's specific spawn layout.
+            UpdateSpawnPositionsFromEnv(env);
+        }
+
+        /// <summary>
+        /// Finds the ServerPlayerVesselInitializer in the activated environment
+        /// and updates gameData spawn positions to that game mode's layout.
+        /// Then repositions all players to the new spawn points.
+        /// </summary>
+        void UpdateSpawnPositionsFromEnv(GameObject env)
+        {
+            var spvi = env.GetComponentInChildren<ServerPlayerVesselInitializer>(true);
+            if (spvi && spvi.PlayerOrigins is { Length: > 0 })
             {
-                var mode = config.AvailableMiniGames[miniGameIndex];
-                SpawnEnvironmentPrefab(mode, envParent);
+                gameData.SetSpawnPositions(spvi.PlayerOrigins);
+                gameData.ResetPlayers();
+                CSDebug.Log($"[PartyGame] Updated spawn positions from '{env.name}' ({spvi.PlayerOrigins.Length} origins)");
             }
         }
 
@@ -887,29 +895,8 @@ namespace CosmicShore.Game.Arcade.Party
             gameData.ResetStatsDataForReplay();
         }
 
-        void SpawnEnvironmentPrefab(GameModes mode, Transform parent = null)
-        {
-            DestroyEnvironmentInstance();
-
-            var entry = config.EnvironmentPrefabs.Find(e => e.gameMode == mode);
-            if (entry?.environmentPrefab == null) return;
-
-            _activeEnvironmentInstance = parent
-                ? Instantiate(entry.environmentPrefab, parent)
-                : Instantiate(entry.environmentPrefab);
-            _activeEnvironmentInstance.name = $"PartyEnv_{mode}";
-        }
-
-        void DestroyEnvironmentInstance()
-        {
-            if (!_activeEnvironmentInstance) return;
-            Destroy(_activeEnvironmentInstance);
-            _activeEnvironmentInstance = null;
-        }
-
         void DeactivateAllEnvironments()
         {
-            DestroyEnvironmentInstance();
             foreach (var env in miniGameEnvironments)
                 if (env) env.SetActive(false);
         }
@@ -917,6 +904,30 @@ namespace CosmicShore.Game.Arcade.Party
         #endregion
 
         #region Public API for UI
+
+        /// <summary>
+        /// Toggle the party pause panel visibility.
+        /// Wire this to the volume/pause button's OnClick in the inspector.
+        /// </summary>
+        public void TogglePartyPanel()
+        {
+            if (!partyPausePanel) return;
+
+            if (partyPausePanel.IsVisible)
+                partyPausePanel.Hide();
+            else
+                partyPausePanel.ForceShow();
+        }
+
+        /// <summary>
+        /// Show the party pause panel. Useful for external callers that
+        /// always want to open (not toggle).
+        /// </summary>
+        public void ShowPartyPanel()
+        {
+            if (partyPausePanel)
+                partyPausePanel.ForceShow();
+        }
 
         /// <summary>
         /// Called from the Quit button on the party pause panel.

@@ -41,6 +41,12 @@ namespace CosmicShore.Game
         [Header("Spawn Origins")]
         [SerializeField] protected Transform[] _playerOrigins;
 
+        /// <summary>
+        /// Read-only access to spawn origin transforms. Used by PartyGameController
+        /// to update spawn positions when switching mini-game environments.
+        /// </summary>
+        public Transform[] PlayerOrigins => _playerOrigins;
+
         protected NetcodeHooks _netcodeHooks;
 
         public Action OnAllPlayersSpawned;
