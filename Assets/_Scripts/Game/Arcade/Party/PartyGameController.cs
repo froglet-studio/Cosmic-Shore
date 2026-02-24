@@ -229,6 +229,7 @@ namespace CosmicShore.Game.Arcade.Party
                 if (CurrentPhase == PartyPhase.Lobby)
                 {
                     FillWithAI();
+                    EnableFreeFlightForLobby_ClientRpc();
                     StartNextRound().Forget();
                 }
             }
@@ -267,6 +268,7 @@ namespace CosmicShore.Game.Arcade.Party
 
                 if (CurrentPhase == PartyPhase.Lobby)
                 {
+                    EnableFreeFlightForLobby_ClientRpc();
                     StartNextRound().Forget();
                 }
             }
@@ -306,6 +308,7 @@ namespace CosmicShore.Game.Arcade.Party
                     FillWithAI();
 
                 _lobbyCts?.Cancel();
+                EnableFreeFlightForLobby_ClientRpc();
                 StartNextRound().Forget();
             }
         }
@@ -405,12 +408,19 @@ namespace CosmicShore.Game.Arcade.Party
         {
             if (!_playerStates.All(p => p.IsReady)) return;
 
-            if (CurrentPhase == PartyPhase.WaitingForReady || CurrentPhase == PartyPhase.RoundResults)
+            if (CurrentPhase == PartyPhase.RoundResults)
             {
+                // Between rounds — pick the next game
                 StartNextRound().Forget();
+            }
+            else if (CurrentPhase == PartyPhase.WaitingForReady)
+            {
+                // Game announced — load the environment
+                LoadMiniGameEnvironment().Forget();
             }
             else if (CurrentPhase == PartyPhase.MiniGameReady)
             {
+                // Environment loaded — start gameplay with countdown
                 BeginMiniGamePlay().Forget();
             }
         }
@@ -440,11 +450,10 @@ namespace CosmicShore.Game.Arcade.Party
             {
                 int roundIndex = _netCurrentRound.Value;
 
-                // Phase: Randomizing
+                // Phase: Randomizing — pick and announce the game
                 SetPhase(PartyPhase.Randomizing);
                 BroadcastGameStateText_ClientRpc("Randomizing game...");
 
-                // Randomize mini-game selection
                 int miniGameIndex = PickRandomMiniGame();
                 _netSelectedMiniGameIndex.Value = miniGameIndex;
                 var selectedMode = config.AvailableMiniGames[miniGameIndex];
@@ -458,6 +467,38 @@ namespace CosmicShore.Game.Arcade.Party
 
                 await UniTask.Delay(TimeSpan.FromSeconds(1.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
+                // Phase: WaitingForReady — show panel with game name, ready button.
+                // Environment is NOT loaded yet; it loads after all players ready up.
+                SetPhase(PartyPhase.WaitingForReady);
+                ResetReadyStates();
+                ForceShowPartyPanel_ClientRpc();
+                BroadcastGameStateText_ClientRpc("Ready up!");
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        /// <summary>
+        /// Called when all players ready during WaitingForReady.
+        /// Shows a loading transition, activates the mini-game environment,
+        /// positions players, then enters MiniGameReady for the gameplay-start ready.
+        /// </summary>
+        async UniTaskVoid LoadMiniGameEnvironment()
+        {
+            if (!IsServer) return;
+
+            _roundCts?.Cancel();
+            _roundCts = new CancellationTokenSource();
+            var ct = _roundCts.Token;
+
+            try
+            {
+                int miniGameIndex = _netSelectedMiniGameIndex.Value;
+                int roundIndex = _netCurrentRound.Value;
+                var selectedMode = config.AvailableMiniGames[miniGameIndex];
+
+                // Connecting / loading transition
+                BroadcastGameStateText_ClientRpc("Loading...");
+
                 // Activate the mini-game environment and position players
                 gameData.GameMode = selectedMode;
                 ActivateMiniGameEnvironment_ClientRpc(miniGameIndex);
@@ -466,10 +507,10 @@ namespace CosmicShore.Game.Arcade.Party
                 // Notify listeners
                 OnRoundStarting?.Invoke(roundIndex, selectedMode);
 
-                // Small delay for environment activation to settle
+                // Wait for environment activation to settle
                 await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
-                // Phase: MiniGameReady — environment is active, show ready button
+                // Phase: MiniGameReady — env is live, ready to start gameplay
                 SetPhase(PartyPhase.MiniGameReady);
                 ResetReadyStates();
                 ForceShowPartyPanel_ClientRpc();
@@ -829,6 +870,17 @@ namespace CosmicShore.Game.Arcade.Party
 
             if (partyPausePanel)
                 partyPausePanel.OnPlayerLeft(name);
+        }
+
+        /// <summary>
+        /// Enables vessel movement so players can fly freely in the lobby
+        /// while the first round is being selected.
+        /// </summary>
+        [ClientRpc]
+        void EnableFreeFlightForLobby_ClientRpc()
+        {
+            PauseSystem.TogglePauseGame(false);
+            gameData.SetPlayersActive();
         }
 
         [ClientRpc]
