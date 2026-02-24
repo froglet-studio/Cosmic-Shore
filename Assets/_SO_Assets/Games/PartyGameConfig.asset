@@ -11,21 +11,21 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e65e47684ea4836729090db48fcf756a, type: 3}
   m_Name: PartyGameConfig
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   MinPlayers: 1
   MaxPlayers: 3
   TotalRounds: 5
-  AvailableMiniGames:
-  - 35
-  - 33
-  - 34
+  AvailableMiniGames: 230000002100000022000000
   EnvironmentPrefabs:
   - gameMode: 35
-    environmentPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+    environmentPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
+      type: 3}
   - gameMode: 33
-    environmentPrefab: {fileID: 7817456538282590180, guid: d262ca9df284a7940985455518ad5442, type: 3}
+    environmentPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
+      type: 3}
   - gameMode: 34
-    environmentPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+    environmentPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
+      type: 3}
   LobbyWaitTimeSeconds: 120
   SoloLobbyWaitSeconds: 10
   PreRoundCountdownSeconds: 3
