@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,6 +48,7 @@ namespace CosmicShore.Game.Arcade.Party
         int _readyPlayerCount;
         CancellationTokenSource _lobbyCts;
         CancellationTokenSource _roundCts;
+        GameObject _activeEnvironmentInstance;
 
         // --- Derived state ---
         bool IsSoloWithAI => !gameData.IsMultiplayerMode;
@@ -127,6 +129,8 @@ namespace CosmicShore.Game.Arcade.Party
             _lobbyCts?.Dispose();
             _roundCts?.Cancel();
             _roundCts?.Dispose();
+
+            DestroyEnvironmentInstance();
 
             base.OnNetworkDespawn();
         }
@@ -831,6 +835,11 @@ namespace CosmicShore.Game.Arcade.Party
         [ClientRpc]
         void StartGameplay_ClientRpc()
         {
+            // Ensure the game is unpaused — PauseSystem is static and may carry
+            // over a paused state from menu navigation (ScreenSwitcher).
+            // Also restores Time.timeScale = 1 so physics/movement work.
+            PauseSystem.TogglePauseGame(false);
+
             gameData.InitializeGame();
             gameData.SetPlayersActive();
             gameData.StartTurn();
@@ -845,6 +854,13 @@ namespace CosmicShore.Game.Arcade.Party
             {
                 var env = miniGameEnvironments[miniGameIndex];
                 if (env) env.SetActive(true);
+            }
+
+            // Instantiate the visual environment prefab for this game mode
+            if (miniGameIndex >= 0 && miniGameIndex < config.AvailableMiniGames.Count)
+            {
+                var mode = config.AvailableMiniGames[miniGameIndex];
+                SpawnEnvironmentPrefab(mode);
             }
         }
 
@@ -861,8 +877,27 @@ namespace CosmicShore.Game.Arcade.Party
             gameData.ResetStatsDataForReplay();
         }
 
+        void SpawnEnvironmentPrefab(GameModes mode)
+        {
+            DestroyEnvironmentInstance();
+
+            var entry = config.EnvironmentPrefabs.Find(e => e.gameMode == mode);
+            if (entry?.environmentPrefab == null) return;
+
+            _activeEnvironmentInstance = Instantiate(entry.environmentPrefab);
+            _activeEnvironmentInstance.name = $"PartyEnv_{mode}";
+        }
+
+        void DestroyEnvironmentInstance()
+        {
+            if (!_activeEnvironmentInstance) return;
+            Destroy(_activeEnvironmentInstance);
+            _activeEnvironmentInstance = null;
+        }
+
         void DeactivateAllEnvironments()
         {
+            DestroyEnvironmentInstance();
             foreach (var env in miniGameEnvironments)
                 if (env) env.SetActive(false);
         }

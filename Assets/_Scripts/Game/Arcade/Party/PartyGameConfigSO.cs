@@ -1,8 +1,21 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Party
 {
+    /// <summary>
+    /// Maps a GameMode to the visual environment prefab that should be
+    /// instantiated when that mini-game round starts.
+    /// </summary>
+    [Serializable]
+    public class MiniGameEnvironmentEntry
+    {
+        public GameModes gameMode;
+        [Tooltip("Prefab to instantiate as the visual environment (Cell, Nucleus, etc.).")]
+        public GameObject environmentPrefab;
+    }
+
     [CreateAssetMenu(
         fileName = "PartyGameConfig",
         menuName = "ScriptableObjects/Party/PartyGameConfig")]
@@ -26,6 +39,11 @@ namespace CosmicShore.Game.Arcade.Party
             GameModes.HexRace,
             GameModes.MultiplayerJoust,
         };
+
+        [Header("Environment Prefabs")]
+        [Tooltip("Map each mini-game mode to its visual environment prefab (Cell, Nucleus, etc.). " +
+                 "These are instantiated locally on each client when a round starts.")]
+        public List<MiniGameEnvironmentEntry> EnvironmentPrefabs = new();
 
         [Header("Timing")]
         [Tooltip("Seconds to wait for players in online matchmaking before filling with AI.")]
