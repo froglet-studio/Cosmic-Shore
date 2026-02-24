@@ -47,6 +47,7 @@ namespace CosmicShore.Game.Arcade.Party
         readonly List<GameModes> _recentMiniGames = new();
         readonly List<MiniGameControllerBase> _miniGameControllers = new();
         int _readyPlayerCount;
+        int _activeMiniGameIndex = -1;
         CancellationTokenSource _lobbyCts;
         CancellationTokenSource _roundCts;
 
@@ -839,14 +840,48 @@ namespace CosmicShore.Game.Arcade.Party
             PauseSystem.TogglePauseGame(false);
 
             gameData.InitializeGame();
-            gameData.SetPlayersActive();
-            gameData.StartTurn();
+
+            // Use the active mini-game environment's CountdownTimer for the
+            // in-game 3-2-1-GO visual, then enable vessels. This replicates the
+            // standalone controller flow (OnReadyClicked → countdown → SetPlayersActive)
+            // without requiring the controller's NetworkObject to be spawned.
+            var countdownTimer = FindActiveCountdownTimer();
+            if (countdownTimer)
+            {
+                countdownTimer.BeginCountdown(() =>
+                {
+                    gameData.SetPlayersActive();
+                    gameData.StartTurn();
+                });
+            }
+            else
+            {
+                // No countdown timer in this env — start immediately.
+                gameData.SetPlayersActive();
+                gameData.StartTurn();
+            }
+        }
+
+        /// <summary>
+        /// Finds the CountdownTimer component in the currently active mini-game environment.
+        /// </summary>
+        CountdownTimer FindActiveCountdownTimer()
+        {
+            if (_activeMiniGameIndex < 0 || _activeMiniGameIndex >= miniGameEnvironments.Count)
+                return null;
+
+            var env = miniGameEnvironments[_activeMiniGameIndex];
+            if (!env || !env.activeSelf) return null;
+
+            return env.GetComponentInChildren<CountdownTimer>();
         }
 
         [ClientRpc]
         void ActivateMiniGameEnvironment_ClientRpc(int miniGameIndex)
         {
             DeactivateAllEnvironments();
+
+            _activeMiniGameIndex = miniGameIndex;
 
             if (miniGameIndex < 0 || miniGameIndex >= miniGameEnvironments.Count) return;
 
@@ -897,6 +932,7 @@ namespace CosmicShore.Game.Arcade.Party
 
         void DeactivateAllEnvironments()
         {
+            _activeMiniGameIndex = -1;
             foreach (var env in miniGameEnvironments)
                 if (env) env.SetActive(false);
         }
