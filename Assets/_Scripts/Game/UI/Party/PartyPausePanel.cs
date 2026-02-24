@@ -31,6 +31,7 @@ namespace CosmicShore.Game.UI.Party
         [Header("Round Tabs")]
         [SerializeField] Transform roundTabContainer;
         [SerializeField] PartyRoundTab roundTabPrefab;
+        [SerializeField] ScrollRect scrollRect;
 
         [Header("Buttons")]
         [SerializeField] Button readyButton;
@@ -47,6 +48,7 @@ namespace CosmicShore.Game.UI.Party
         readonly List<PartyRoundTab> _roundTabs = new();
         PartyPhase _currentPhase;
         bool _isVisible;
+        int _activeRoundIndex;
 
         #region Unity Lifecycle
 
@@ -100,6 +102,10 @@ namespace CosmicShore.Game.UI.Party
             if (finalResultsContainer)
                 finalResultsContainer.SetActive(false);
 
+            // Highlight the first round as active
+            _activeRoundIndex = 0;
+            SetActiveRound(0);
+
             SetReadyButtonInteractable(false);
         }
 
@@ -123,6 +129,9 @@ namespace CosmicShore.Game.UI.Party
 
             if (modalWindowManager)
                 modalWindowManager.ModalWindowIn();
+
+            // Auto-scroll to the current active round
+            ScrollToActiveRound();
         }
 
         public void Hide()
@@ -191,6 +200,7 @@ namespace CosmicShore.Game.UI.Party
                 case PartyPhase.RoundResults:
                     SetReadyButtonInteractable(true);
                     if (readyButtonText) readyButtonText.text = "READY";
+                    ScrollToActiveRound();
                     break;
 
                 case PartyPhase.FinalResults:
@@ -209,6 +219,10 @@ namespace CosmicShore.Game.UI.Party
         public void SetGameStateText(string text)
         {
             if (gameStateText) gameStateText.text = text;
+
+            // Also update the active round tab's game state text
+            if (_activeRoundIndex >= 0 && _activeRoundIndex < _roundTabs.Count)
+                _roundTabs[_activeRoundIndex].SetGameStateText(text);
         }
 
         #endregion
@@ -229,9 +243,8 @@ namespace CosmicShore.Game.UI.Party
         public void OnPlayerReadyChanged(string playerName, bool isReady)
         {
             // Update the current active round tab's ready indicator
-            int activeRound = GetActiveRoundIndex();
-            if (activeRound >= 0 && activeRound < _roundTabs.Count)
-                _roundTabs[activeRound].SetPlayerReady(playerName, isReady);
+            if (_activeRoundIndex >= 0 && _activeRoundIndex < _roundTabs.Count)
+                _roundTabs[_activeRoundIndex].SetPlayerReady(playerName, isReady);
         }
 
         #endregion
@@ -249,8 +262,13 @@ namespace CosmicShore.Game.UI.Party
 
             // Highlight the next round as active
             int nextRound = roundIndex + 1;
+            _activeRoundIndex = nextRound;
+
             for (int i = 0; i < _roundTabs.Count; i++)
                 _roundTabs[i].SetActive(i == nextRound);
+
+            // Auto-scroll to the completed round (so user can see the result)
+            ScrollToRound(roundIndex);
         }
 
         /// <summary>
@@ -258,8 +276,62 @@ namespace CosmicShore.Game.UI.Party
         /// </summary>
         public void SetActiveRound(int roundIndex)
         {
+            _activeRoundIndex = roundIndex;
             for (int i = 0; i < _roundTabs.Count; i++)
                 _roundTabs[i].SetActive(i == roundIndex);
+
+            ScrollToRound(roundIndex);
+        }
+
+        #endregion
+
+        #region Auto-Scroll
+
+        /// <summary>
+        /// Scrolls the scroll view to bring the active round tab into view.
+        /// </summary>
+        void ScrollToActiveRound()
+        {
+            ScrollToRound(_activeRoundIndex);
+        }
+
+        /// <summary>
+        /// Scrolls the scroll view so the specified round tab is visible.
+        /// Uses normalized scroll position based on the tab's index within the list.
+        /// </summary>
+        void ScrollToRound(int roundIndex)
+        {
+            if (!scrollRect || _roundTabs.Count <= 1) return;
+            if (roundIndex < 0 || roundIndex >= _roundTabs.Count) return;
+
+            var tab = _roundTabs[roundIndex];
+            if (!tab) return;
+
+            // Force layout rebuild so RectTransform positions are current
+            Canvas.ForceUpdateCanvases();
+
+            var contentRect = scrollRect.content;
+            var viewportRect = scrollRect.viewport ?? (RectTransform)scrollRect.transform;
+
+            if (!contentRect) return;
+
+            // Calculate the position of the tab within the content
+            var tabRect = (RectTransform)tab.transform;
+            float contentHeight = contentRect.rect.height;
+            float viewportHeight = viewportRect.rect.height;
+
+            if (contentHeight <= viewportHeight) return; // No scrolling needed
+
+            // Get the tab's position relative to the content top
+            float tabLocalY = contentRect.InverseTransformPoint(tabRect.position).y;
+            float contentTopY = contentRect.rect.yMax;
+            float distanceFromTop = contentTopY - tabLocalY;
+
+            // Center the tab in the viewport
+            float targetScroll = (distanceFromTop - viewportHeight * 0.5f) / (contentHeight - viewportHeight);
+            targetScroll = Mathf.Clamp01(1f - targetScroll); // ScrollRect vertical: 1 = top, 0 = bottom
+
+            scrollRect.verticalNormalizedPosition = targetScroll;
         }
 
         #endregion
