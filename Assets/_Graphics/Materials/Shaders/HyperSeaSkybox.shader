@@ -47,6 +47,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         [HDR]_AndromedaNucleusColor ("Nucleus Color", Color) = (0.6, 0.55, 0.4, 1)
         _AndromedaBrightness ("Brightness", Range(0, 3)) = 1.0
         _AndromedaSize ("Angular Size", Range(0.02, 0.4)) = 0.1
+        [HideInInspector]_AndromedaTex ("Andromeda (Baked)", 2D) = "black" {}
 
         [Header(Animation)]
         _DriftSpeed ("Drift Speed", Range(0, 0.1)) = 0.008
@@ -100,6 +101,7 @@ Shader "CosmicShore/HyperSeaSkybox"
     half4 _AndromedaNucleusColor;
     half _AndromedaBrightness;
     half _AndromedaSize;
+    sampler2D _AndromedaTex;
 
     half _DriftSpeed;
 
@@ -285,7 +287,7 @@ Shader "CosmicShore/HyperSeaSkybox"
             {
                 // ---- Edge-on galaxy (elongated streak with central bulge) ----
                 float elongation = 3.0 + sizeHash * 5.0;
-                float spread = 250.0 + sizeHash * 200.0;
+                float spread = 10.0 + sizeHash * 8.0;
                 float streak = exp(-(along * along * spread / elongation
                                    + perp * perp * spread * elongation));
                 // Central bulge brighter than the arms
@@ -297,7 +299,7 @@ Shader "CosmicShore/HyperSeaSkybox"
             else if (typeHash < 0.60)
             {
                 // ---- Face-on galaxy (disk + bright nucleus + arm hint) ----
-                float spread = 150.0 + sizeHash * 150.0;
+                float spread = 6.0 + sizeHash * 6.0;
                 float diskFalloff = exp(-dist * dist * spread);
                 float nucleus = exp(-dist * dist * spread * 8.0);
 
@@ -305,7 +307,7 @@ Shader "CosmicShore/HyperSeaSkybox"
                 float3 perpDir = normalize(perpVec + 0.001);
                 float3 secondAxis = normalize(cross(orient, perpDir));
                 float armAngle = atan2(dot(starPos, secondAxis), dot(starPos, perpDir));
-                float armPattern = sin(armAngle * 2.0 + dist * spread * 0.15) * 0.3 + 0.7;
+                float armPattern = sin(armAngle * 2.0 + dist * spread * 0.8) * 0.3 + 0.7;
 
                 obj = diskFalloff * armPattern * 0.4 + nucleus * 0.7;
 
@@ -319,7 +321,7 @@ Shader "CosmicShore/HyperSeaSkybox"
                 float3 asymPos = starPos + asymOffset;
                 float asymDist = length(asymPos);
 
-                float spread = 200.0 + sizeHash * 300.0;
+                float spread = 8.0 + sizeHash * 12.0;
                 float blob = exp(-asymDist * asymDist * spread);
 
                 // Secondary knot (interacting companion)
@@ -334,7 +336,7 @@ Shader "CosmicShore/HyperSeaSkybox"
             {
                 // ---- Faint elongated smudge (distant unresolved galaxy) ----
                 float elongation = 1.5 + sizeHash * 3.0;
-                float spread = 300.0 + sizeHash * 400.0;
+                float spread = 12.0 + sizeHash * 16.0;
                 obj = exp(-(along * along * spread / elongation
                           + perp * perp * spread * elongation));
 
@@ -415,10 +417,14 @@ Shader "CosmicShore/HyperSeaSkybox"
         float n2 = fbm4(wp * 2.5 + float3(5.2, 1.3 + drift * 0.7, 9.1));
         float n3 = fbm4(wp * 3.0 + float3(3.7, 8.4, 2.6 + drift * 1.3));
 
-        // High thresholds for isolated structures with dark gaps
-        float c1 = smoothstep(0.52, 0.78, n1);
-        float c2 = smoothstep(0.55, 0.82, n2);
-        float c3 = smoothstep(0.53, 0.80, n3);
+        // Wide smoothstep + square curve: dense bright cores with long
+        // wispy tails that gradually fade into darkness (no hard edges)
+        float c1 = smoothstep(0.28, 0.88, n1);
+        c1 *= c1;
+        float c2 = smoothstep(0.30, 0.90, n2);
+        c2 *= c2;
+        float c3 = smoothstep(0.29, 0.89, n3);
+        c3 *= c3;
 
         // Brightness variation within each cloud — creates illusion of
         // variable depth: bright hot-spots read as closer/denser,
@@ -497,60 +503,34 @@ Shader "CosmicShore/HyperSeaSkybox"
     }
 
     // ================================================================
-    // ANDROMEDA GALAXY
-    // Prominent nearby galaxy — elliptical inclined disk with spiral
-    // hints and a bright nucleus. In HyperSea the compressed distances
-    // make it a major feature in the sky.
+    // ANDROMEDA GALAXY — sampled from pre-baked texture
+    // Baked at startup by HyperSeaSkyboxController to eliminate
+    // per-pixel noise computation and rastering artifacts.
     // ================================================================
 
-    half3 computeAndromeda(float3 dir, float time)
+    half3 sampleAndromeda(float3 dir)
     {
         float3 androDir = normalize(_AndromedaDirection.xyz);
-
-        // Local sky-plane coordinate frame centered on Andromeda
         float3 up = normalize(cross(androDir, float3(0.13, 1.0, 0.24)));
         float3 right = normalize(cross(up, androDir));
 
-        // Project view direction into that frame
         float u = dot(dir, right);
         float v = dot(dir, up);
-        float w = dot(dir, androDir); // depth toward Andromeda
+        float w = dot(dir, androDir);
 
-        // Only compute detail when roughly facing Andromeda
-        float facing = saturate((w - 0.85) * 6.667); // ramps 0→1 over last ~15°
-        if (facing < 0.001) return half3(0, 0, 0);
+        // Smooth facing ramp (no hard branch — fixes warp divergence artifacts)
+        float facing = saturate((w - 0.7) * 5.0);
 
-        // Inclined elliptical disk (~77° tilt like real Andromeda)
-        float eu = u;
-        float ev = v * 3.2;
-        float r2 = eu * eu + ev * ev;
-        float size2 = _AndromedaSize * _AndromedaSize;
+        // Map to texture UV
+        float extent = _AndromedaSize * 1.5;
+        float2 uv = float2(u, v) / (extent * 2.0) + 0.5;
 
-        // Outer disk with smooth falloff
-        float disk = exp(-r2 / (size2 * 0.25));
+        // Smooth edge fade to avoid clamping artifacts
+        float edgeFade = smoothstep(0.0, 0.05, uv.x) * smoothstep(1.0, 0.95, uv.x)
+                       * smoothstep(0.0, 0.05, uv.y) * smoothstep(1.0, 0.95, uv.y);
 
-        // Bright compact nucleus
-        float nucleus = exp(-r2 / (size2 * 0.008));
-
-        // Spiral arm structure computed in disk's face-on frame
-        // Using tilted coords so the spiral foreshortens with the disk
-        float angle = atan2(ev, eu);
-        float r = sqrt(eu * eu + ev * ev);
-        float spiral = valueNoise(float3(
-            angle * 1.2 + r * 20.0 / _AndromedaSize,
-            r * 10.0 / _AndromedaSize,
-            3.7 + time * _DriftSpeed * 0.1
-        ));
-        disk *= (0.4 + spiral * 0.6);
-
-        // Dust lane across the minor axis
-        float dustLane = 1.0 - 0.35 * exp(-ev * ev / (size2 * 0.003));
-        disk *= dustLane;
-
-        half3 color = disk * _AndromedaDiskColor.rgb
-                    + nucleus * _AndromedaNucleusColor.rgb;
-
-        return color * _AndromedaBrightness * facing;
+        half4 texColor = tex2D(_AndromedaTex, uv);
+        return texColor.rgb * facing * edgeFade;
     }
 
     // ================================================================
@@ -601,8 +581,8 @@ Shader "CosmicShore/HyperSeaSkybox"
         // 6. Galactic core - brightness enhancement graded into the plane
         color += computeCore(dir);
 
-        // 7. Andromeda - prominent nearby galaxy
-        color += computeAndromeda(dir, time);
+        // 7. Andromeda - sampled from pre-baked texture
+        color += sampleAndromeda(dir);
 
         return half4(color, 1.0);
     }
