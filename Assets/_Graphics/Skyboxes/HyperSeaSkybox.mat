@@ -39,6 +39,8 @@ Material:
     - _StarConcentration: 1.2
     - _StarDensity: 80
     - _TwinkleSpeed: 1.5
+    - _AndromedaBrightness: 1.0
+    - _AndromedaSize: 0.1
     m_Colors:
     - _AmbientColor: {r: 0.04, g: 0.025, b: 0.07, a: 1}
     - _CoreColor: {r: 0.8, g: 0.85, b: 1, a: 1}
@@ -51,4 +53,7 @@ Material:
     - _NebulaColor1: {r: 0.5, g: 0.06, b: 0.3, a: 1}
     - _NebulaColor2: {r: 0.06, g: 0.35, b: 0.45, a: 1}
     - _NebulaColor3: {r: 0.5, g: 0.3, b: 0.05, a: 1}
+    - _AndromedaDirection: {r: -0.5, g: 0.35, b: 0.8, a: 0}
+    - _AndromedaDiskColor: {r: 0.3, g: 0.35, b: 0.55, a: 1}
+    - _AndromedaNucleusColor: {r: 0.6, g: 0.55, b: 0.4, a: 1}
   m_BuildTextureStacks: []

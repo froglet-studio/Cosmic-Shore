@@ -41,6 +41,13 @@ Shader "CosmicShore/HyperSeaSkybox"
         _CoreHaloSize ("Core Halo Size", Range(0.05, 1.0)) = 0.35
         [HDR]_CoreHaloColor ("Core Halo Color", Color) = (0.5, 0.3, 0.15, 1)
 
+        [Header(Andromeda)]
+        _AndromedaDirection ("Andromeda Direction", Vector) = (-0.5, 0.35, 0.8, 0)
+        [HDR]_AndromedaDiskColor ("Disk Color", Color) = (0.3, 0.35, 0.55, 1)
+        [HDR]_AndromedaNucleusColor ("Nucleus Color", Color) = (0.6, 0.55, 0.4, 1)
+        _AndromedaBrightness ("Brightness", Range(0, 3)) = 1.0
+        _AndromedaSize ("Angular Size", Range(0.02, 0.4)) = 0.1
+
         [Header(Animation)]
         _DriftSpeed ("Drift Speed", Range(0, 0.1)) = 0.008
     }
@@ -87,6 +94,12 @@ Shader "CosmicShore/HyperSeaSkybox"
     half _CoreSize;
     half _CoreHaloSize;
     half4 _CoreHaloColor;
+
+    float4 _AndromedaDirection;
+    half4 _AndromedaDiskColor;
+    half4 _AndromedaNucleusColor;
+    half _AndromedaBrightness;
+    half _AndromedaSize;
 
     half _DriftSpeed;
 
@@ -340,7 +353,8 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     // ================================================================
     // NEBULAE
-    // Three colored FBM clouds like ink diffusing in water
+    // Domain-warped clouds with large-scale directional variation
+    // Each direction in the sky has unique character
     // ================================================================
 
     half3 computeNebulae(float3 dir, float time)
@@ -348,13 +362,25 @@ Shader "CosmicShore/HyperSeaSkybox"
         float3 p = dir * _NebulaScale;
         float drift = time * _DriftSpeed;
 
-        // Three independent noise fields
-        float n1 = fbm4(p * 2.0 + float3(drift, 0, 0));
-        float n2 = fbm4(p * 2.5 + float3(5.2, 1.3 + drift * 0.7, 9.1));
-        float n3 = fbm4(p * 3.0 + float3(3.7, 8.4, 2.6 + drift * 1.3));
+        // Domain warping — organic flowing shapes instead of blobby camo
+        float3 warp = float3(
+            valueNoise(p * 1.5 + float3(drift * 0.2, 0, 0)),
+            valueNoise(p * 1.5 + float3(5.2, 1.3 + drift * 0.15, 0)),
+            valueNoise(p * 1.5 + float3(2.1, 0, 7.8))
+        );
+        float3 wp = p + (warp - 0.5) * 1.4;
 
-        // Shape noise into isolated cloud structures
-        // Raised thresholds create dark space between structures, less mixing
+        // Large-scale directional mask — breaks uniform tiling,
+        // creates nebula-rich regions and vast dark voids
+        float regionNoise = valueNoise(dir * 1.3 + float3(42.0, 17.0, 91.0));
+        float regionMask = smoothstep(0.3, 0.7, regionNoise);
+
+        // Three warped noise fields at different scales & offsets
+        float n1 = fbm4(wp * 2.0 + float3(drift, 0, 0));
+        float n2 = fbm4(wp * 2.5 + float3(5.2, 1.3 + drift * 0.7, 9.1));
+        float n3 = fbm4(wp * 3.0 + float3(3.7, 8.4, 2.6 + drift * 1.3));
+
+        // High thresholds for isolated structures with dark gaps
         float c1 = smoothstep(0.52, 0.78, n1);
         float c2 = smoothstep(0.55, 0.82, n2);
         float c3 = smoothstep(0.53, 0.80, n3);
@@ -362,6 +388,9 @@ Shader "CosmicShore/HyperSeaSkybox"
         half3 color = c1 * _NebulaColor1.rgb
                     + c2 * _NebulaColor2.rgb
                     + c3 * _NebulaColor3.rgb;
+
+        // Apply large-scale modulation — some sky regions are rich, others void
+        color *= regionMask;
 
         return color * _NebulaStrength;
     }
@@ -423,6 +452,62 @@ Shader "CosmicShore/HyperSeaSkybox"
     }
 
     // ================================================================
+    // ANDROMEDA GALAXY
+    // Prominent nearby galaxy — elliptical inclined disk with spiral
+    // hints and a bright nucleus. In HyperSea the compressed distances
+    // make it a major feature in the sky.
+    // ================================================================
+
+    half3 computeAndromeda(float3 dir, float time)
+    {
+        float3 androDir = normalize(_AndromedaDirection.xyz);
+
+        // Local sky-plane coordinate frame centered on Andromeda
+        float3 up = normalize(cross(androDir, float3(0.13, 1.0, 0.24)));
+        float3 right = normalize(cross(up, androDir));
+
+        // Project view direction into that frame
+        float u = dot(dir, right);
+        float v = dot(dir, up);
+        float w = dot(dir, androDir); // depth toward Andromeda
+
+        // Only compute detail when roughly facing Andromeda
+        float facing = saturate((w - 0.85) * 6.667); // ramps 0→1 over last ~15°
+        if (facing < 0.001) return half3(0, 0, 0);
+
+        // Inclined elliptical disk (~77° tilt like real Andromeda)
+        float eu = u;
+        float ev = v * 3.2;
+        float r2 = eu * eu + ev * ev;
+        float size2 = _AndromedaSize * _AndromedaSize;
+
+        // Outer disk with smooth falloff
+        float disk = exp(-r2 / (size2 * 0.25));
+
+        // Bright compact nucleus
+        float nucleus = exp(-r2 / (size2 * 0.008));
+
+        // Spiral arm structure from warped polar noise
+        float angle = atan2(v, u);
+        float r = sqrt(u * u + v * v);
+        float spiral = valueNoise(float3(
+            angle * 1.2 + r * 20.0 / _AndromedaSize,
+            r * 10.0 / _AndromedaSize,
+            3.7 + time * _DriftSpeed * 0.1
+        ));
+        disk *= (0.4 + spiral * 0.6);
+
+        // Dust lane across the minor axis
+        float dustLane = 1.0 - 0.35 * exp(-ev * ev / (size2 * 0.003));
+        disk *= dustLane;
+
+        half3 color = disk * _AndromedaDiskColor.rgb
+                    + nucleus * _AndromedaNucleusColor.rgb;
+
+        return color * _AndromedaBrightness * facing;
+    }
+
+    // ================================================================
     // AMBIENT ATMOSPHERE
     // Subtle living glow - the "translucent medium" feel
     // ================================================================
@@ -467,8 +552,11 @@ Shader "CosmicShore/HyperSeaSkybox"
         // 5. Dust lanes - murky silt (multiplicative)
         color *= computeDust(dir, time);
 
-        // 6. Galactic core - the overwhelming bright center
+        // 6. Galactic core - brightness enhancement graded into the plane
         color += computeCore(dir);
+
+        // 7. Andromeda - prominent nearby galaxy
+        color += computeAndromeda(dir, time);
 
         return half4(color, 1.0);
     }
