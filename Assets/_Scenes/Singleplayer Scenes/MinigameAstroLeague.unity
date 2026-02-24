@@ -238,7 +238,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  duration: 300
+  duration: 120
 --- !u!114 &110000007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -256,7 +256,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  goalLimit: 5
+  goalLimit: 3
   ball: {fileID: 130000005}
 --- !u!114 &110000008
 MonoBehaviour:
@@ -272,7 +272,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   ball: {fileID: 130000005}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  onScoreUpdated: {fileID: 0}
+  onScoreUpdated: {fileID: 11400000, guid: 5c60dbd6c70847fd8d21ea5ba0596548, type: 2}
 --- !u!1 &115000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1074,7 +1074,13 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 200000003}
-  _initializeDatas: []
+  _initializeDatas:
+  - vesselClass: 11
+    domain: 2
+    PlayerName: AI Ruby
+    AvatarId: 0
+    IsAI: 1
+    AllowSpawning: 1
   _spawnTransforms:
   - {fileID: 160000002}
   - {fileID: 170000002}
