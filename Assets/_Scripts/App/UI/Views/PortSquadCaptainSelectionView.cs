@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -74,7 +75,7 @@ namespace CosmicShore.App.UI.Views
 
         public override void Select(int index)
         {
-            Debug.Log($"Selected {index}");
+            CSDebug.Log($"Selected {index}");
             shipClassTypeVariable.Value = index;
             OnSelect?.Invoke(sortedCaptains[index]);
 

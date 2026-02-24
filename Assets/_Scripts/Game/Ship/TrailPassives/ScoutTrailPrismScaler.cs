@@ -1,6 +1,7 @@
 ﻿using CosmicShore;
 using CosmicShore.Game;
 using UnityEngine;
+using CosmicShore.Utility;
 
 /// <summary>
 /// Dynamically scales trail prisms based on surrounding open space.
@@ -47,7 +48,7 @@ public class ScoutTrailPrismScaler : MonoBehaviour
 
         if (config == null)
         {
-            Debug.LogError($"[{nameof(ScoutTrailPrismScaler)}] No config assigned on {gameObject.name}! Disabling.", this);
+            CSDebug.LogError($"[{nameof(ScoutTrailPrismScaler)}] No config assigned on {gameObject.name}! Disabling.", this);
             enabled = false;
             return;
         }
@@ -86,7 +87,7 @@ public class ScoutTrailPrismScaler : MonoBehaviour
     {
         if (newConfig == null)
         {
-            Debug.LogWarning($"[{nameof(ScoutTrailPrismScaler)}] Attempted to set null config.", this);
+            CSDebug.LogWarning($"[{nameof(ScoutTrailPrismScaler)}] Attempted to set null config.", this);
             return;
         }
 

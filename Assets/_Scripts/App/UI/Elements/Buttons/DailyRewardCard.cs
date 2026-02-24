@@ -9,6 +9,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Advertisements;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 namespace CosmicShore
 {
     enum ButtonMode
@@ -138,7 +139,7 @@ namespace CosmicShore
 
         void ClaimAdWatchReward(string adUnitId, UnityAdsShowCompletionState showCompletionState)
         {
-            Debug.Log("Claim Daily Reward via ad watch");
+            CSDebug.Log("Claim Daily Reward via ad watch");
             DailyRewardHandler.Instance.Claim();
             IconEmitter?.EmitIcons();
             StartCoroutine(RotateCoroutine(EnterClockMode));

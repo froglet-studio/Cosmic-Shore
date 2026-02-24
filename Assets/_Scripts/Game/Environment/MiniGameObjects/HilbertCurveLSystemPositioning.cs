@@ -94,7 +94,7 @@ public class HilbertCurveLSystemPositioning : MonoBehaviour
                     break;
             }
         }
-        Debug.Log("Positions: " + positions.Count);
+        CSDebug.Log("Positions: " + positions.Count);
     }
 
     private void RotateAroundAxis(ref Vector3 v1, ref Vector3 v2, Vector3 axis, float angle)

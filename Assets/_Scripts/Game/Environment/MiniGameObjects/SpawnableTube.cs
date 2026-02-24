@@ -1,12 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
-    public class SpawnableTube : SpawnableAbstractBase
+    public class SpawnableTube : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
         [SerializeField] int radius = 3;
@@ -14,10 +13,10 @@ namespace CosmicShore
         [SerializeField] int segments = 8;
         [SerializeField] float blockSize = 1f;
 
-        public override GameObject Spawn()
+        protected override SpawnPoint[] GeneratePoints()
         {
-            GameObject container = new GameObject("Tube");
-            var trail = new Trail();
+            var points = new SpawnPoint[length * segments];
+            int idx = 0;
 
             for (int z = 0; z < length; z++)
             {
@@ -29,12 +28,29 @@ namespace CosmicShore
                         Mathf.Sin(angle) * radius * blockSize,
                         z * blockSize
                     );
-                    CreateBlock(position, -position.normalized, container.name + $"::BLOCK::{z}:{i}", trail, Vector3.one * blockSize, prism, container);
+
+                    // Original: CreateBlock(position, -position.normalized, ...)
+                    // Old CreateBlock with flip=true computes forward = position - lookPosition
+                    // lookPosition = -position.normalized, so forward = position + position.normalized
+                    Vector3 forward = position + position.normalized;
+                    var rotation = SpawnPoint.LookRotation(forward, Vector3.up);
+
+                    points[idx++] = new SpawnPoint(position, rotation, Vector3.one * blockSize);
                 }
             }
 
-            trails.Add(trail);
-            return container;
+            return points;
+        }
+
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+        {
+            foreach (var td in trailData)
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+        }
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(radius, length, segments, blockSize, seed);
         }
     }
 }

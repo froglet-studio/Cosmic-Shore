@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
 {
@@ -49,7 +50,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         if (Time.unscaledTime < _cooldownUntilUtc)
         {
             if (so.Verbose)
-                Debug.Log($"[ChargeBoostAction] On cooldown {(_cooldownUntilUtc - Time.unscaledTime):F2}s");
+                CSDebug.Log($"[ChargeBoostAction] On cooldown {(_cooldownUntilUtc - Time.unscaledTime):F2}s");
             return;
         }
 
@@ -132,7 +133,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
             OnChargeEnded?.Invoke();
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) { Debug.LogError($"[ChargeBoost] ChargeRoutine error: {e}"); }
+        catch (Exception e) { CSDebug.LogError($"[ChargeBoost] ChargeRoutine error: {e}"); }
     }
 
     async UniTaskVoid DischargeRoutineAsync(ChargeBoostActionSO so, CancellationToken token)
@@ -167,7 +168,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
             OnDischargeEnded?.Invoke();
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) { Debug.LogError($"[ChargeBoost] DischargeRoutine error: {e}"); }
+        catch (Exception e) { CSDebug.LogError($"[ChargeBoost] DischargeRoutine error: {e}"); }
     }
 
     float GetUnits(ChargeBoostActionSO so)

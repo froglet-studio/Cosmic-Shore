@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -71,7 +72,7 @@ namespace CosmicShore.Game
         {
             if (_renderer == null || _mpb == null)
             {
-                Debug.LogError("[PrismExplosion] Missing required components, cannot trigger explosion.");
+                CSDebug.LogError("[PrismExplosion] Missing required components, cannot trigger explosion.");
                 return;
             }
 

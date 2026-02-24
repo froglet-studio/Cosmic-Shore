@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 ﻿using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -75,7 +76,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!segmentSpawner)
             {
-                Debug.LogError($"{nameof(SinglePlayerSlipnStrideController)} missing {nameof(segmentSpawner)}.", this);
+                CSDebug.LogError($"{nameof(SinglePlayerSlipnStrideController)} missing {nameof(segmentSpawner)}.", this);
                 return;
             }
 

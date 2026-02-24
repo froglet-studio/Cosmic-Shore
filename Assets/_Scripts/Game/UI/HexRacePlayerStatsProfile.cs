@@ -1,27 +1,24 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
-[Serializable]
-public class HexRacePlayerStatsProfile
+namespace CosmicShore.Game.Analytics
 {
-    public int TotalCleanCrystalsCollected;
-    public float TotalDriftTime; 
-    public int TotalJoustsWon;
-    public int TotalWins;
-    
-    public float LongestSingleDrift;
-
-    public Dictionary<string, float> BestMultiplayerRaceTimes = new();
-
-    public bool TryUpdateBestTime(string levelKey, float newTime)
+    [Serializable]
+    public class HexRacePlayerStatsProfile
     {
-        if (BestMultiplayerRaceTimes.TryGetValue(levelKey, out float currentBest))
+        // Key = "Mode_Intensity", Value = RaceTime (Lower is better)
+        public Dictionary<string, float> BestMultiplayerRaceTimes = new();
+
+        public bool TryUpdateBestTime(string levelKey, float newTime)
         {
-            if (newTime >= currentBest) return false;
-            BestMultiplayerRaceTimes[levelKey] = newTime;
+            if (BestMultiplayerRaceTimes.TryGetValue(levelKey, out float currentBest))
+            {
+                if (newTime >= currentBest) return false;
+                BestMultiplayerRaceTimes[levelKey] = newTime;
+                return true;
+            }
+            BestMultiplayerRaceTimes.Add(levelKey, newTime);
             return true;
         }
-        BestMultiplayerRaceTimes.Add(levelKey, newTime);
-        return true;
     }
 }

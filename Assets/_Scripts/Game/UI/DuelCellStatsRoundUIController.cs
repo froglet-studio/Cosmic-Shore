@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -120,7 +121,7 @@ namespace CosmicShore.Game.UI
 
             if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count != 2)
             {
-                Debug.LogWarning("DuelCellStatsRoundUIController: RoundStatsList not ready or not exactly 2 players.");
+                CSDebug.LogWarning("DuelCellStatsRoundUIController: RoundStatsList not ready or not exactly 2 players.");
                 return;
             }
 
@@ -129,7 +130,7 @@ namespace CosmicShore.Game.UI
                 var stats = gameData.RoundStatsList[i];
                 if (stats == null)
                 {
-                    Debug.LogWarning($"DuelCellStatsRoundUIController: RoundStatsList[{i}] is null.");
+                    CSDebug.LogWarning($"DuelCellStatsRoundUIController: RoundStatsList[{i}] is null.");
                     continue;
                 }
 
@@ -163,7 +164,7 @@ namespace CosmicShore.Game.UI
         {
             if (gameData.Players.Count != 2 || gameData.RoundStatsList.Count != 2)
             {
-                Debug.LogError("DuelCellStatsRoundUIController: Cannot snapshot Round 1. Players/RoundStatsList != 2.");
+                CSDebug.LogError("DuelCellStatsRoundUIController: Cannot snapshot Round 1. Players/RoundStatsList != 2.");
                 return;
             }
 
@@ -201,7 +202,7 @@ namespace CosmicShore.Game.UI
 
                 if (!rowRound1 || !rowRound2)
                 {
-                    Debug.LogError("DuelCellStatsRoundUIController: Row references missing.");
+                    CSDebug.LogError("DuelCellStatsRoundUIController: Row references missing.");
                     continue;
                 }
 

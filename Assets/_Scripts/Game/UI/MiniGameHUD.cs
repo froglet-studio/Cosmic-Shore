@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
@@ -42,9 +43,15 @@ namespace CosmicShore.Game.UI
         [Header("AI Tracking")]
         [SerializeField] protected bool isAIAvailable;
 
+        [Header("Avatar Icons")]
+        [SerializeField] protected SO_ProfileIconList profileIconList;
+        [SerializeField] protected SO_AIProfileList aiProfileList;
+
         protected IRoundStats localRoundStats;
         protected Dictionary<string, PlayerScoreCard> _aiCards = new();
         private Dictionary<IRoundStats, Action> _aiScoreHandlers = new();
+        private PlayerScoreCard _localPlayerCard;
+        private Dictionary<string, AIProfile> _assignedAIProfiles = new();
 
         private CancellationTokenSource _connectingCts;
         private bool _clientReady;
@@ -185,6 +192,7 @@ namespace CosmicShore.Game.UI
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
 
+            SetupLocalPlayerCard();
             if (isAIAvailable) SetupAICards();
         }
 
@@ -193,17 +201,43 @@ namespace CosmicShore.Game.UI
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged -= UpdateScoreUI;
 
+            CleanupLocalPlayerCard();
             if (isAIAvailable) CleanupAICards();
 
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay(string.Empty);
         }
 
+        private void SetupLocalPlayerCard()
+        {
+            if (gameData.LocalPlayer == null || view.PlayerScoreCardPrefab == null)
+                return;
+
+            var localPlayer = gameData.LocalPlayer;
+            var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
+            var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
+            card.Setup(localPlayer.Name, 0, teamColor, true);
+
+            var sprite = ResolveAvatarSprite(localPlayer.AvatarId);
+            card.SetAvatar(sprite);
+
+            _localPlayerCard = card;
+        }
+
+        private void CleanupLocalPlayerCard()
+        {
+            if (_localPlayerCard != null)
+            {
+                Destroy(_localPlayerCard.gameObject);
+                _localPlayerCard = null;
+            }
+        }
+
         private void SetupAICards()
         {
-            view.ClearPlayerList();
             _aiCards.Clear();
             _aiScoreHandlers.Clear();
+            AssignAIProfiles();
 
             foreach (var stats in gameData.RoundStatsList)
             {
@@ -212,6 +246,17 @@ namespace CosmicShore.Game.UI
                 var card = Instantiate(view.PlayerScoreCardPrefab, view.PlayerScoreContainer);
                 var teamColor = view.GetColorForDomain(stats.Domain);
                 card.Setup(stats.Name, (int)stats.Score, teamColor, false);
+
+                // Resolve avatar: try AI profile first, then fall back to player AvatarId
+                var avatarSprite = ResolveAIAvatarSprite(stats.Name);
+                if (avatarSprite == null)
+                {
+                    var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
+                    if (player != null)
+                        avatarSprite = ResolveAvatarSprite(player.AvatarId);
+                }
+                card.SetAvatar(avatarSprite);
+
                 _aiCards[stats.Name] = card;
 
                 Action handler = () => UpdateAICard(stats);
@@ -235,6 +280,64 @@ namespace CosmicShore.Game.UI
             _aiScoreHandlers.Clear();
             _aiCards.Clear();
             view.ClearPlayerList();
+        }
+
+        protected Sprite ResolveAvatarSprite(int avatarId)
+        {
+            if (profileIconList == null || profileIconList.profileIcons == null)
+                return null;
+
+            foreach (var icon in profileIconList.profileIcons)
+            {
+                if (icon.Id == avatarId)
+                    return icon.IconSprite;
+            }
+
+            return profileIconList.profileIcons.Count > 0
+                ? profileIconList.profileIcons[0].IconSprite
+                : null;
+        }
+
+        /// <summary>
+        /// Assigns random AI profiles from the AI profile list to each AI player.
+        /// Cached in _assignedAIProfiles so the same profile is used throughout the game.
+        /// Only assigns to actual AI players, not to remote human players in multiplayer.
+        /// </summary>
+        protected void AssignAIProfiles()
+        {
+            _assignedAIProfiles.Clear();
+            if (aiProfileList == null || aiProfileList.aiProfiles == null || aiProfileList.aiProfiles.Count == 0)
+                return;
+
+            // Collect only actual AI players, skipping local player and remote human players
+            var aiStatsList = new List<IRoundStats>();
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == localRoundStats) continue;
+
+                var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
+                if (player != null && !player.IsInitializedAsAI)
+                    continue; // skip remote human players
+
+                aiStatsList.Add(stats);
+            }
+
+            var picked = aiProfileList.PickRandom(aiStatsList.Count);
+            for (int i = 0; i < aiStatsList.Count && i < picked.Count; i++)
+            {
+                _assignedAIProfiles[aiStatsList[i].Name] = picked[i];
+            }
+        }
+
+        /// <summary>
+        /// Returns the avatar sprite for an AI player from the assigned AI profile.
+        /// Returns null if no AI profile is assigned for this player name.
+        /// </summary>
+        protected Sprite ResolveAIAvatarSprite(string playerName)
+        {
+            if (_assignedAIProfiles.TryGetValue(playerName, out var profile))
+                return profile.AvatarSprite;
+            return null;
         }
 
         private void ResetForReplay()
@@ -341,6 +444,9 @@ namespace CosmicShore.Game.UI
             if (localRoundStats == null) return;
             var score = (int)localRoundStats.Score;
             view.UpdateScoreUI(score.ToString(CultureInfo.InvariantCulture));
+
+            if (_localPlayerCard != null)
+                _localPlayerCard.UpdateScore(score);
         }
 
         public void OnPipInitialized(PipData data)
@@ -354,7 +460,7 @@ namespace CosmicShore.Game.UI
             UpdateTurnMonitorDisplay(string.Empty);
             UpdateLifeformCounterDisplay(string.Empty);
             view.UpdateScoreUI("0");
-            if (isAIAvailable) view.ClearPlayerList();
+            view.ClearPlayerList();
         }
 
         public void Show() => view.ToggleView(true);

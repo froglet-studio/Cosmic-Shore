@@ -144,7 +144,7 @@ namespace CosmicShore.Game
             }
 
             if (verbose)
-                Debug.Log($"[AssembledArchBurstEffectSO] Spawned {total} rods in front of IMPACTEE. hit={hitFound} seed={s} type={lattice}", container);
+                CSDebug.Log($"[AssembledArchBurstEffectSO] Spawned {total} rods in front of IMPACTEE. hit={hitFound} seed={s} type={lattice}", container);
         }
 
         // ---- Helpers (pure/static) ----
