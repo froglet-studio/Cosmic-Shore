@@ -2402,6 +2402,7 @@ GameObject:
   - component: {fileID: 2181276727717648378}
   - component: {fileID: 2533776000409001473}
   - component: {fileID: 4153572623014081666}
+  - component: {fileID: 8129399579174331655}
   m_Layer: 5
   m_Name: PartyPausePanelDataPrefab
   m_TagString: Untagged
@@ -2468,3 +2469,39 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &8129399579174331655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9082561756498012783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd669fd0952ac5f734130f57b17b5795, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameStateText: {fileID: 2411692955489150535}
+  winnerLabelText: {fileID: 7480254225071146867}
+  winnerNameText: {fileID: 3272150834029403228}
+  readyCountText: {fileID: 2192884366525665248}
+  playerNameTexts:
+  - {fileID: 3636241908060803570}
+  - {fileID: 6678748001669721355}
+  - {fileID: 3678557916348923622}
+  playerScoreTexts:
+  - {fileID: 6492208738431899986}
+  - {fileID: 5339348210529721499}
+  - {fileID: 4696238108630236075}
+  playerPositionTexts:
+  - {fileID: 7263922691827509543}
+  - {fileID: 1929742861526501727}
+  - {fileID: 5499278101050711597}
+  playerProfileIcons:
+  - {fileID: 736097544471342303}
+  - {fileID: 7984344784201700789}
+  - {fileID: 5950295660245933815}
+  roundHighlight: {fileID: 0}
+  activeRoundColor: {r: 0.2, g: 0.6, b: 0.9, a: 1}
+  completedRoundColor: {r: 0, g: 0.8, b: 0.4, a: 1}
+  pendingRoundColor: {r: 0.3, g: 0.3, b: 0.3, a: 0.5}
