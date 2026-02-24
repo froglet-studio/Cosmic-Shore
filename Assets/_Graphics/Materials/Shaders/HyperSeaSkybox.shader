@@ -213,8 +213,8 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     // ================================================================
     // STAR FIELD — Hubble Ultra Deep Field style
-    // Each object has unique structure: point stars with diffraction
-    // spikes, tiny edge-on/face-on galaxies, faint background smudges
+    // Every object has unique structure: no plain points.
+    // Foreground stars with spikes, edge-on/face-on/irregular galaxies
     // ================================================================
 
     half3 computeStars(float3 dir, float time)
@@ -259,9 +259,14 @@ Shader "CosmicShore/HyperSeaSkybox"
             float obj = 0;
             half3 col = half3(0, 0, 0);
 
-            if (typeHash < 0.18)
+            // Decompose starPos into components along orient axis
+            float along = dot(starPos, orient);
+            float3 perpVec = starPos - along * orient;
+            float perp = length(perpVec);
+
+            if (typeHash < 0.15)
             {
-                // ---- Bright star with diffraction spikes ----
+                // ---- Foreground star with diffraction spikes ----
                 float tightness = 600.0 + sizeHash * 800.0;
                 obj = exp(-dist * dist * tightness);
 
@@ -271,46 +276,76 @@ Shader "CosmicShore/HyperSeaSkybox"
                 float dA = length(cross(starPos, spikeA));
                 float dB = length(cross(starPos, spikeB));
                 float spikes = exp(-dA * dA * 3000.0) + exp(-dB * dB * 3000.0);
-                spikes *= exp(-dist * 12.0); // fade with distance from center
+                spikes *= exp(-dist * 12.0);
                 obj += spikes * 0.35;
 
                 col = starColor(temp);
             }
-            else if (typeHash < 0.42)
+            else if (typeHash < 0.40)
             {
-                // ---- Tiny edge-on galaxy (elongated streak) ----
-                float along = dot(starPos, orient);
-                float3 perpVec = starPos - along * orient;
-                float perp = length(perpVec);
+                // ---- Edge-on galaxy (elongated streak with central bulge) ----
                 float elongation = 3.0 + sizeHash * 5.0;
                 float spread = 250.0 + sizeHash * 200.0;
-                obj = exp(-(along * along * spread / elongation
-                          + perp * perp * spread * elongation));
+                float streak = exp(-(along * along * spread / elongation
+                                   + perp * perp * spread * elongation));
+                // Central bulge brighter than the arms
+                float bulge = exp(-dist * dist * spread * 2.0) * 0.5;
+                obj = streak + bulge;
 
-                // Warmer colors for galaxies
                 col = starColor(temp * 0.6 + 0.2);
             }
-            else if (typeHash < 0.55)
+            else if (typeHash < 0.60)
             {
-                // ---- Faint face-on galaxy (soft disk with bright nucleus) ----
+                // ---- Face-on galaxy (disk + bright nucleus + arm hint) ----
                 float spread = 150.0 + sizeHash * 150.0;
-                float disk = exp(-dist * dist * spread);
-                float nucleus = exp(-dist * dist * spread * 6.0);
-                obj = disk * 0.4 + nucleus * 0.6;
+                float diskFalloff = exp(-dist * dist * spread);
+                float nucleus = exp(-dist * dist * spread * 8.0);
+
+                // Hint of spiral structure via angular variation
+                float3 perpDir = normalize(perpVec + 0.001);
+                float3 secondAxis = normalize(cross(orient, perpDir));
+                float armAngle = atan2(dot(starPos, secondAxis), dot(starPos, perpDir));
+                float armPattern = sin(armAngle * 2.0 + dist * spread * 0.15) * 0.3 + 0.7;
+
+                obj = diskFalloff * armPattern * 0.4 + nucleus * 0.7;
 
                 col = starColor(temp * 0.5 + 0.25);
             }
+            else if (typeHash < 0.78)
+            {
+                // ---- Irregular / interacting galaxy (asymmetric blob) ----
+                // Offset the center slightly for asymmetry
+                float3 asymOffset = (hash33(cellId + 97.3) - 0.5) * 0.15;
+                float3 asymPos = starPos + asymOffset;
+                float asymDist = length(asymPos);
+
+                float spread = 200.0 + sizeHash * 300.0;
+                float blob = exp(-asymDist * asymDist * spread);
+
+                // Secondary knot (interacting companion)
+                float3 knot = starPos - asymOffset * 2.0;
+                float knotDist = length(knot);
+                blob += exp(-knotDist * knotDist * spread * 3.0) * 0.4;
+
+                col = starColor(temp * 0.7 + 0.15);
+                obj = blob;
+            }
             else
             {
-                // ---- Point star (varied tightness) ----
-                float tightness = 400.0 + sizeHash * 800.0;
-                obj = exp(-dist * dist * tightness);
+                // ---- Faint elongated smudge (distant unresolved galaxy) ----
+                float elongation = 1.5 + sizeHash * 3.0;
+                float spread = 300.0 + sizeHash * 400.0;
+                obj = exp(-(along * along * spread / elongation
+                          + perp * perp * spread * elongation));
 
-                col = starColor(temp);
+                // Slight central brightening
+                obj += exp(-dist * dist * spread * 3.0) * 0.3;
+
+                col = starColor(temp * 0.4 + 0.3);
             }
 
-            // Twinkle (stars only, galaxies are steady)
-            float twinkle = (typeHash < 0.18 || typeHash >= 0.55)
+            // Twinkle only for foreground stars — galaxies are steady
+            float twinkle = (typeHash < 0.15)
                 ? sin(time * _TwinkleSpeed + h * 80.0) * 0.25 + 0.75
                 : 1.0;
 
@@ -384,6 +419,16 @@ Shader "CosmicShore/HyperSeaSkybox"
         float c1 = smoothstep(0.52, 0.78, n1);
         float c2 = smoothstep(0.55, 0.82, n2);
         float c3 = smoothstep(0.53, 0.80, n3);
+
+        // Brightness variation within each cloud — creates illusion of
+        // variable depth: bright hot-spots read as closer/denser,
+        // dim regions recede into the background
+        float depth1 = valueNoise(wp * 4.5 + float3(11.3, 0, drift * 0.3));
+        float depth2 = valueNoise(wp * 5.0 + float3(0, 13.7, drift * 0.25));
+        float depth3 = valueNoise(wp * 5.5 + float3(0, drift * 0.2, 15.1));
+        c1 *= 0.3 + depth1 * 1.0;
+        c2 *= 0.3 + depth2 * 1.0;
+        c3 *= 0.3 + depth3 * 1.0;
 
         half3 color = c1 * _NebulaColor1.rgb
                     + c2 * _NebulaColor2.rgb
@@ -487,9 +532,10 @@ Shader "CosmicShore/HyperSeaSkybox"
         // Bright compact nucleus
         float nucleus = exp(-r2 / (size2 * 0.008));
 
-        // Spiral arm structure from warped polar noise
-        float angle = atan2(v, u);
-        float r = sqrt(u * u + v * v);
+        // Spiral arm structure computed in disk's face-on frame
+        // Using tilted coords so the spiral foreshortens with the disk
+        float angle = atan2(ev, eu);
+        float r = sqrt(eu * eu + ev * ev);
         float spiral = valueNoise(float3(
             angle * 1.2 + r * 20.0 / _AndromedaSize,
             r * 10.0 / _AndromedaSize,
