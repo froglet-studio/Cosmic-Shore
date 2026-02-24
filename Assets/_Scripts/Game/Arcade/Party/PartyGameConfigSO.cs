@@ -9,8 +9,8 @@ namespace CosmicShore.Game.Arcade.Party
     public class PartyGameConfigSO : ScriptableObject
     {
         [Header("Players")]
-        [Tooltip("Minimum human players required to start (AI fills remaining slots).")]
-        [Range(1, 3)] public int MinPlayers = 2;
+        [Tooltip("Minimum human players required to start (AI fills remaining slots). Set to 1 for offline/solo mode.")]
+        [Range(1, 3)] public int MinPlayers = 1;
 
         [Tooltip("Maximum players in the party (human + AI).")]
         [Range(2, 3)] public int MaxPlayers = 3;

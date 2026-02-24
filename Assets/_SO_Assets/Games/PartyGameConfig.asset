@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e65e47684ea4836729090db48fcf756a, type: 3}
   m_Name: PartyGameConfig
   m_EditorClassIdentifier:
-  MinPlayers: 2
+  MinPlayers: 1
   MaxPlayers: 3
   TotalRounds: 5
   AvailableMiniGames:

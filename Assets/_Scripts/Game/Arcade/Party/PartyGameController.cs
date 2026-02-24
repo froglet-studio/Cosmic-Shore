@@ -33,9 +33,12 @@ namespace CosmicShore.Game.Arcade.Party
         [Tooltip("Root GameObjects for each mini-game environment. Index must match AvailableMiniGames order in config.")]
         [SerializeField] List<GameObject> miniGameEnvironments = new();
 
-        [Header("Mini-Game Controllers")]
-        [Tooltip("Controllers for each mini-game. Must match AvailableMiniGames order in config.")]
-        [SerializeField] List<MiniGameControllerBase> miniGameControllers = new();
+        [Header("Offline Mode")]
+        [Tooltip("Enable to play solo with AI opponents (no network matchmaking required).")]
+        [SerializeField] bool offlineMode;
+
+        [Tooltip("Seconds to wait in lobby before auto-starting in offline mode.")]
+        [SerializeField] float offlineLobbyWaitSeconds = 10f;
 
         // --- Network state ---
         readonly NetworkVariable<int> _netCurrentRound = new(0);
@@ -47,6 +50,7 @@ namespace CosmicShore.Game.Arcade.Party
         readonly List<PartyRoundResult> _roundResults = new();
         readonly List<PartyPlayerState> _playerStates = new();
         readonly List<GameModes> _recentMiniGames = new();
+        readonly List<MiniGameControllerBase> _miniGameControllers = new();
         int _readyPlayerCount;
         CancellationTokenSource _lobbyCts;
         CancellationTokenSource _roundCts;
@@ -82,6 +86,9 @@ namespace CosmicShore.Game.Arcade.Party
             // Subscribe to player join events so we track who's in the party
             gameData.OnPlayerAdded += HandlePlayerAdded;
 
+            // Auto-discover mini-game controllers from environment GameObjects
+            DiscoverMiniGameControllers();
+
             // Initialize round results
             _roundResults.Clear();
             for (int i = 0; i < config.TotalRounds; i++)
@@ -95,12 +102,19 @@ namespace CosmicShore.Game.Arcade.Party
             {
                 _netLobbyStartTime.Value = Time.realtimeSinceStartup;
                 SetPhase(PartyPhase.Lobby);
-                StartLobbyTimer().Forget();
+
+                if (offlineMode)
+                    StartOfflineLobby().Forget();
+                else
+                    StartLobbyTimer().Forget();
             }
 
-            // Show party panel by default in lobby
+            // Initialize the party panel with round tabs
             if (partyPausePanel)
+            {
+                partyPausePanel.Initialize(config.TotalRounds, _playerStates);
                 partyPausePanel.Show();
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -119,6 +133,29 @@ namespace CosmicShore.Game.Arcade.Party
             _roundCts?.Dispose();
 
             base.OnNetworkDespawn();
+        }
+
+        /// <summary>
+        /// Auto-discovers MiniGameControllerBase components from the environment GameObjects.
+        /// Each environment root should have the controller as a component.
+        /// </summary>
+        void DiscoverMiniGameControllers()
+        {
+            _miniGameControllers.Clear();
+            foreach (var env in miniGameEnvironments)
+            {
+                if (!env)
+                {
+                    _miniGameControllers.Add(null);
+                    continue;
+                }
+
+                var controller = env.GetComponent<MiniGameControllerBase>();
+                _miniGameControllers.Add(controller);
+
+                if (!controller)
+                    CSDebug.LogWarning($"[PartyGame] No MiniGameControllerBase on environment '{env.name}'.");
+            }
         }
 
         #endregion
@@ -201,6 +238,51 @@ namespace CosmicShore.Game.Arcade.Party
         }
 
         /// <summary>
+        /// Offline solo mode: add the local player, fill with AI, wait a short
+        /// lobby period for atmosphere, then auto-transition to WaitingForReady.
+        /// </summary>
+        async UniTaskVoid StartOfflineLobby()
+        {
+            _lobbyCts?.Cancel();
+            _lobbyCts = new CancellationTokenSource();
+            var ct = _lobbyCts.Token;
+
+            try
+            {
+                BroadcastGameStateText_ClientRpc("Setting up party...");
+
+                // Add the local player
+                string localName = gameData.LocalPlayer != null
+                    ? gameData.LocalPlayer.Name
+                    : "Player";
+                var localDomain = DomainAssigner.GetDomainsByGameModes(GameModes.PartyGame);
+                OnPlayerJoined(localName, localDomain, false);
+
+                // Fill remaining slots with AI
+                FillWithAI();
+
+                // Initialize the panel now that we have players
+                if (partyPausePanel)
+                    partyPausePanel.Initialize(config.TotalRounds, _playerStates);
+
+                BroadcastGameStateText_ClientRpc("Get ready to party!");
+
+                // Short wait so the player can see the lobby
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(offlineLobbyWaitSeconds),
+                    DelayType.UnscaledDeltaTime,
+                    cancellationToken: ct);
+
+                if (CurrentPhase == PartyPhase.Lobby)
+                {
+                    SetPhase(PartyPhase.WaitingForReady);
+                    BroadcastGameStateText_ClientRpc("All players joined. Ready up!");
+                }
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        /// <summary>
         /// Called by the server player initializer when a new player joins.
         /// </summary>
         public void OnPlayerJoined(string playerName, Domains domain, bool isAI)
@@ -217,6 +299,9 @@ namespace CosmicShore.Game.Arcade.Party
             });
 
             SyncPlayerJoined_ClientRpc(playerName, (int)domain, isAI);
+
+            // In offline mode, StartOfflineLobby manages the full lobby flow
+            if (offlineMode) return;
 
             // Check if we have enough players
             int humanCount = _playerStates.Count(p => !p.IsAIReplacement);
