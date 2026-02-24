@@ -215,10 +215,10 @@ namespace CosmicShore.Game.AI
 
                 var inst = Instantiate(asset);
                 inst.name = $"{asset.name} [AI:{vessel.VesselStatus.PlayerName}]";
-                inst.Initialize(VesselStatus);             
+                inst.Initialize(VesselStatus);
                 ability.Ability = inst;
             }
-            
+
             _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -229,6 +229,9 @@ namespace CosmicShore.Game.AI
                 { Corner.BottomLeft, new AvoidanceBehavior (-raycastWidth, -raycastHeight, Clockwise, Vector3.zero ) },
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
+
+            // Pick up any crystals that were spawned before this AI was initialized
+            UpdateCellContent();
         }
 
         public void StartAIPilot()

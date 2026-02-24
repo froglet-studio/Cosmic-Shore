@@ -80,12 +80,19 @@ namespace CosmicShore.Game
             }
         }
 
-        private void StartLocalHostForSoloPlay()
+        private async void StartLocalHostForSoloPlay()
         {
             if (networkManager == null)
             {
                 CSDebug.LogError("[MultiplayerSetup] Cannot start local host — NetworkManager is null.");
                 return;
+            }
+
+            // Wait for any previous session's shutdown to complete before starting a new host
+            if (networkManager.IsListening)
+            {
+                networkManager.Shutdown();
+                await UniTask.WaitUntil(() => !networkManager.IsListening);
             }
 
             // Ensure domain pool is fresh so the host and AI opponents each get

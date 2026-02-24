@@ -55,11 +55,8 @@ namespace CosmicShore.Game
         {
             if (!IsSpawned) ShipHelper.DestroyRuntimeActions(_runtimeInstances);
             UnsubscribeFromInputEvents();
-            
-            // TODO - These are not static events, so unsubscribe is not necessary,
-            // but better to do it for safety. but not on OnDisable, as few references will be missing,
-            // better to do it earlier.
-            if (vesselStatus.IsLocalUser)
+
+            if (vesselStatus != null && vesselStatus.IsLocalUser)
                 vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
         }
 
