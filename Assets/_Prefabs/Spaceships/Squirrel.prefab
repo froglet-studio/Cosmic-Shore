@@ -1766,6 +1766,7 @@ MonoBehaviour:
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}
   boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}
+  domainColors: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
 --- !u!114 &8755860699239805343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2838,8 +2839,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   highlights: []
   boostFill: {fileID: 300298224612433471}
-  boostNormalColor: {r: 1, g: 1, b: 1, a: 1}
-  boostFullColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  colorLerpSpeed: 4
+  crystalFlashDuration: 0.5
+  fullBoostWhiteMix: 0.3
   driftButtonIcon: {fileID: 4781807749356232023}
   normalSprite: {fileID: 21300000, guid: 15d4c0157372e564882ed7a7ea6b0f2b, type: 3}
   driftingSprite: {fileID: 21300000, guid: 41c9f6e2ec44f0c458351500f1bfacdc, type: 3}

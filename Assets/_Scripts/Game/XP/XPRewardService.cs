@@ -3,6 +3,7 @@ using CosmicShore.App.Profile;
 using CosmicShore.Models;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.XP
 {
@@ -43,24 +44,24 @@ namespace CosmicShore.Game.XP
         {
             if (gameData == null)
             {
-                Debug.LogWarning("[XPRewardService] gameData is null.");
+                CSDebug.LogWarning("[XPRewardService] gameData is null.");
                 return 0;
             }
 
             if (gameData.LocalPlayer == null)
             {
-                Debug.LogWarning("[XPRewardService] LocalPlayer is null.");
+                CSDebug.LogWarning("[XPRewardService] LocalPlayer is null.");
                 return 0;
             }
 
-            Debug.Log($"[XPRewardService] CalculateXP - Mode: {gameData.GameMode}, " +
+            CSDebug.Log($"[XPRewardService] CalculateXP - Mode: {gameData.GameMode}, " +
                       $"RoundStats count: {gameData.RoundStatsList?.Count ?? 0}");
 
             int placement = GetLocalPlayerPlacement();
             if (placement <= 0)
             {
                 // Single-player mode or player not in round stats - award base XP
-                Debug.Log("[XPRewardService] Player not found in RoundStatsList, awarding base XP (10).");
+                CSDebug.Log("[XPRewardService] Player not found in RoundStatsList, awarding base XP (10).");
                 return 10;
             }
 
@@ -68,7 +69,7 @@ namespace CosmicShore.Game.XP
             int playerCount = gameData.RoundStatsList.Count;
 
             int xp = CalculateXPForPlacement(placement, playerCount, isOffline);
-            Debug.Log($"[XPRewardService] Placement: {placement}/{playerCount}, " +
+            CSDebug.Log($"[XPRewardService] Placement: {placement}/{playerCount}, " +
                       $"Offline: {isOffline}, XP: {xp}");
             return xp;
         }
@@ -79,7 +80,7 @@ namespace CosmicShore.Game.XP
         /// </summary>
         public int AwardXP()
         {
-            Debug.Log("[XPRewardService] AwardXP called.");
+            CSDebug.Log("[XPRewardService] AwardXP called.");
 
             int xpAmount = CalculateXP();
             LastXPEarned = xpAmount;
@@ -87,20 +88,20 @@ namespace CosmicShore.Game.XP
 
             if (xpAmount <= 0)
             {
-                Debug.Log("[XPRewardService] XP amount is 0, nothing to award.");
+                CSDebug.Log("[XPRewardService] XP amount is 0, nothing to award.");
                 return 0;
             }
 
             var profileService = PlayerDataService.Instance;
             if (profileService == null)
             {
-                Debug.LogWarning("[XPRewardService] PlayerDataService.Instance is null, cannot award XP.");
+                CSDebug.LogWarning("[XPRewardService] PlayerDataService.Instance is null, cannot award XP.");
                 return xpAmount;
             }
 
             if (profileService.CurrentProfile == null)
             {
-                Debug.LogWarning("[XPRewardService] CurrentProfile is null, cannot award XP.");
+                CSDebug.LogWarning("[XPRewardService] CurrentProfile is null, cannot award XP.");
                 return xpAmount;
             }
 
@@ -117,14 +118,14 @@ namespace CosmicShore.Game.XP
                     if (milestone.reward != null && !string.IsNullOrEmpty(milestone.reward.rewardId))
                     {
                         profileService.UnlockReward(milestone.reward.rewardId);
-                        Debug.Log($"[XPRewardService] Unlocked reward: {milestone.reward.rewardName}");
+                        CSDebug.Log($"[XPRewardService] Unlocked reward: {milestone.reward.rewardName}");
                     }
                 }
             }
 
             profileService.AddXP(xpAmount);
 
-            Debug.Log($"[XPRewardService] Awarded {xpAmount} XP. Previous: {PreviousXP}, New: {newXP}");
+            CSDebug.Log($"[XPRewardService] Awarded {xpAmount} XP. Previous: {PreviousXP}, New: {newXP}");
             return xpAmount;
         }
 

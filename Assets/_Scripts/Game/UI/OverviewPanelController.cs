@@ -6,6 +6,7 @@ using CosmicShore.Game;
 using UnityEngine;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.App.UI.Controllers
@@ -96,7 +97,7 @@ namespace CosmicShore.App.UI.Controllers
             if (vesselSpawner.SpawnShip(targetClass, out newVessel)) 
                 return true;
             
-            Debug.LogError($"Failed to spawn {targetClass}");
+            CSDebug.LogError($"Failed to spawn {targetClass}");
             return false;
         }
         

@@ -3,6 +3,7 @@ using CosmicShore.Game;
 using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public class SpawnableWaypointTrack : SpawnableBase
 {
@@ -81,7 +82,7 @@ public class SpawnableWaypointTrack : SpawnableBase
 
         if (!IsValidIntensityLevel(intensityLevel))
         {
-            Debug.LogError($"[WaypointTrack] Need at least 2 waypoints for intensity level {intensityLevel}.");
+            CSDebug.LogError($"[WaypointTrack] Need at least 2 waypoints for intensity level {intensityLevel}.");
             return new GameObject("EmptyTrack");
         }
 
@@ -159,7 +160,7 @@ public class SpawnableWaypointTrack : SpawnableBase
 
         trails.Add(trail);
 
-        Debug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
+        CSDebug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
            $"{totalBlocks} total blocks, spline={spline}, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
 
         return container;

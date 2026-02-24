@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 ﻿using UnityEngine;
 
 namespace CosmicShore.Game
@@ -10,7 +11,7 @@ namespace CosmicShore.Game
             // Default: Course * Speed * inertia
             if (status.Player == null)
             {
-                Debug.LogError("No player found to deal damage to prism!");
+                CSDebug.LogError("No player found to deal damage to prism!");
                 return;
             }
             
@@ -23,7 +24,7 @@ namespace CosmicShore.Game
             // Default: Course * Speed * inertia
             if (status.Player == null)
             {
-                Debug.LogError("No player found to deal damage to prism!");
+                CSDebug.LogError("No player found to deal damage to prism!");
                 return;
             }
             

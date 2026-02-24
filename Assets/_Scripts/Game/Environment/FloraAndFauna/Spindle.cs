@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -53,7 +54,7 @@ namespace CosmicShore
 
             if (RenderedObject == null || RenderedObject.sharedMaterial == null)
             {
-                Debug.LogError($"{gameObject.name}: RenderedObject does not have a valid material at Start.");
+                CSDebug.LogError($"{gameObject.name}: RenderedObject does not have a valid material at Start.");
                 yield break;
             }
 

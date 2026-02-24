@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Analytics
 {
@@ -33,7 +34,7 @@ namespace CosmicShore.Game.Analytics
             if (_cache.TryGetValue((mode, intensity), out string id))
                 return id;
 
-            Debug.LogWarning($"No leaderboard ID found for {mode} with intensity {intensity}");
+            CSDebug.LogWarning($"No leaderboard ID found for {mode} with intensity {intensity}");
             return null;
         }
 
@@ -113,7 +114,7 @@ namespace CosmicShore.Game.Analytics
                 }
                 else
                 {
-                    Debug.LogWarning($"Duplicate mapping found for {mapping.GameMode} - Intensity {mapping.Intensity}. Using first occurrence.");
+                    CSDebug.LogWarning($"Duplicate mapping found for {mapping.GameMode} - Intensity {mapping.Intensity}. Using first occurrence.");
                 }
             }
         }
@@ -143,7 +144,7 @@ namespace CosmicShore.Game.Analytics
                 var mapping = leaderboardMappings[i];
                 if (mapping.Intensity < 1 || mapping.Intensity > 4)
                 {
-                    Debug.LogError($"Invalid intensity value {mapping.Intensity} for {mapping.GameMode}. Must be between 1-4.");
+                    CSDebug.LogError($"Invalid intensity value {mapping.Intensity} for {mapping.GameMode}. Must be between 1-4.");
                 }
             }
         }

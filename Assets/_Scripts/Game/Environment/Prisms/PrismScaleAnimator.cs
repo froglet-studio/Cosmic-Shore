@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using CosmicShore.Utilities;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -50,7 +51,7 @@ namespace CosmicShore.Core
 
             if (meshRenderer == null)
             {
-                Debug.LogError($"MeshRenderer missing on {gameObject.name}");
+                CSDebug.LogError($"MeshRenderer missing on {gameObject.name}");
                 enabled = false;
                 return;
             }
@@ -153,7 +154,7 @@ namespace CosmicShore.Core
         {
             if (!enabled || !prism || prism.prismProperties == null)
             {
-                Debug.LogError($"Required components are null on {gameObject.name}");
+                CSDebug.LogError($"Required components are null on {gameObject.name}");
                 return 0f;
             }
 

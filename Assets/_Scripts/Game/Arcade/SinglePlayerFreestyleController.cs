@@ -1,101 +1,83 @@
-using CosmicShore.Game.ShapeDrawing;
-using System.Collections.Generic;
-using System.Linq;
+
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
+    /// <summary>
+    /// Freestyle game mode.
+    /// Features: Endless gameplay, no end condition, procedural environment
+    /// Flow: Start → Play infinitely (no end game)
+    /// </summary>
     public class SinglePlayerFreestyleController : SinglePlayerMiniGameControllerBase
     {
         [Header("Environment")]
         [SerializeField] SegmentSpawner segmentSpawner;
-        [SerializeField] ShapeDrawingManager shapeDrawingManager;
-        [SerializeField] LocalCrystalManager localCrystalManager;
-        [SerializeField] Cell cellScript; 
-
-        [Header("Lobby Configuration")]
-        [SerializeField] Transform lobbyOrigin;
-        [SerializeField] List<ModeSelectTrigger> modeTriggers;
-
+        [SerializeField] int baseNumberOfSegments = 10;
+        [SerializeField] int baseStraightLineLength = 400;
+        [SerializeField] bool resetEnvironmentOnEachTurn = true;
+        [SerializeField] bool scaleCrystalPositionWithIntensity = true;
+        [SerializeField] bool scaleLengthWithIntensity = true;
+        [SerializeField] bool scaleSegmentsWithIntensity = true;
+        
+        [Header("Helix Optional")]
+        [SerializeField] SpawnableHelix helix;
+        [SerializeField] float helixIntensityScaling = 1.3f;
+        
+        [Header("Seed")]
+        [SerializeField] int Seed = 0;
+        
+        /// <summary>Freestyle has no end game - play forever!</summary>
         protected override bool HasEndGame => false;
         protected override bool ShowEndGameSequence => false;
-
-        bool _isInLobby;
-
+        
+        int numberOfSegments => scaleSegmentsWithIntensity 
+            ? baseNumberOfSegments * gameData.SelectedIntensity.Value 
+            : baseNumberOfSegments;
+            
+        int straightLineLength => scaleLengthWithIntensity 
+            ? baseStraightLineLength / gameData.SelectedIntensity.Value 
+            : baseStraightLineLength;
+        
         protected override void OnCountdownTimerEnded()
         {
-            gameData.SetPlayersActive();
-            EnterLobby();
-        }
-
-        void EnterLobby()
-        {
-            _isInLobby = true;
-            if (cellScript) cellScript.enabled = false;
-            if (segmentSpawner) segmentSpawner.NukeTheTrails();
-
-            if (localCrystalManager)
-            {
-                localCrystalManager.ManualTurnEnded();
-                localCrystalManager.enabled = false;
-            }
-
-            foreach (var trigger in modeTriggers.Where(trigger => trigger))
-            {
-                trigger.gameObject.SetActive(true);
-                trigger.ResetTrigger();
-                trigger.OnModeSelected.RemoveListener(HandleModeSelection); 
-                trigger.OnModeSelected.AddListener(HandleModeSelection);
-            }
-        }
-
-        void HandleModeSelection(ShapeDefinition shapeDef)
-        {
-            _isInLobby = false;
-
-            // Hide triggers
-            foreach (var trigger in modeTriggers.Where(trigger => trigger)) trigger.gameObject.SetActive(false);
-
-            gameData.StartTurn();
-
-            if (!shapeDef)
-            {
-                StartStandardFreestyle();
-            }
-            else
-            {
-                StartShapeMode(shapeDef);
-            }
-        }
-
-        void StartStandardFreestyle()
-        {
-            Debug.Log("[Controller] Starting Standard Freestyle");
+            // Set random or fixed seed
+            segmentSpawner.Seed = Seed != 0 ? Seed : Random.Range(int.MinValue, int.MaxValue);
             
-            if (cellScript) cellScript.enabled = true;
-
-            if (localCrystalManager) localCrystalManager.enabled = true;
-            if (segmentSpawner) segmentSpawner.Initialize();
+            // Apply helix intensity if helix exists
+            if (helix)
+            {
+                helix.firstOrderRadius = helix.secondOrderRadius = 
+                    gameData.SelectedIntensity.Value / helixIntensityScaling;
+            }
             
+            if (resetEnvironmentOnEachTurn) 
+                ResetEnvironment();
+            
+            base.OnCountdownTimerEnded();
+        }
+
+        protected override void SetupNewTurn() 
+        {
             RaiseToggleReadyButtonEvent(true);
-        }
-
-        void StartShapeMode(ShapeDefinition shapeDef)
-        {
-            Debug.Log("[Controller] Starting Shape Mode");
-            if (cellScript) cellScript.enabled = false;
-
-            shapeDrawingManager.StartShapeSequence(shapeDef, lobbyOrigin.position);
-        }
-
-        public void ReturnToLobby()
-        {
-            shapeDrawingManager.ExitShapeMode();
             
-            // Optional: End the "turn" when returning to lobby if you want to stop time tracking
-            // gameData.EndTurn(); // (Only if your Base Controller supports this cleanly)
-
-            EnterLobby();
+            if (resetEnvironmentOnEachTurn) 
+                ResetEnvironment();
+            
+            base.SetupNewTurn();
+        }
+        
+        void ResetEnvironment() 
+        {
+            if (!segmentSpawner)
+            {
+                CSDebug.LogError($"Missing {nameof(segmentSpawner)} reference!", this);
+                return;
+            }
+            
+            segmentSpawner.NumberOfSegments = numberOfSegments;
+            segmentSpawner.StraightLineLength = straightLineLength;
+            segmentSpawner.Initialize();
         }
     }
 }

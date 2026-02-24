@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 ﻿using UnityEngine;
 
 namespace CosmicShore.Game
@@ -13,7 +14,7 @@ namespace CosmicShore.Game
         {
             var rs = impactor?.Skimmer?.VesselStatus?.ResourceSystem;
             if (!rs) return;
-            Debug.Log("This is getting called?");
+            CSDebug.Log("This is getting called?");
             rs.SetResourceAmount(shieldIndex, 1f);
         }
     }
