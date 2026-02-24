@@ -19,8 +19,16 @@ MonoBehaviour:
   - 35
   - 33
   - 34
+  EnvironmentPrefabs:
+  - gameMode: 35
+    environmentPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  - gameMode: 33
+    environmentPrefab: {fileID: 7817456538282590180, guid: d262ca9df284a7940985455518ad5442, type: 3}
+  - gameMode: 34
+    environmentPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
   LobbyWaitTimeSeconds: 120
   SoloLobbyWaitSeconds: 10
   PreRoundCountdownSeconds: 3
   PostCountdownDelaySeconds: 1
   PostRoundDelaySeconds: 2
+  RoundDurationSeconds: 60
