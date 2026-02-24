@@ -145,6 +145,8 @@ namespace CosmicShore.Game.AI
             if (vessel == null || VesselStatus == null) return;
 
             var activeCell = cellData.Cell;
+            if (activeCell == null) return;
+
             var cellItems = cellData.CellItems;
             float MinDistance = Mathf.Infinity;
             CellItem closestItem = null;

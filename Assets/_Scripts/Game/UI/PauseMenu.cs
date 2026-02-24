@@ -73,7 +73,9 @@ namespace CosmicShore.App.UI.Screens
         {
             PauseSystem.TogglePauseGame(false);
             Hide();
-            
+
+            if (gameData.LocalPlayer == null) return;
+
             if (!wasLocalPlayerInputPausedBefore)
                 _ = TogglePlayerPauseWithDelay(false);
         }
@@ -85,7 +87,9 @@ namespace CosmicShore.App.UI.Screens
         {
             PauseSystem.TogglePauseGame(true);
             Show();
-            
+
+            if (gameData.LocalPlayer == null) return;
+
             wasLocalPlayerInputPausedBefore = gameData.LocalPlayer.InputStatus.Paused;
             if (!wasLocalPlayerInputPausedBefore)
                 _ = TogglePlayerPauseWithDelay(true);

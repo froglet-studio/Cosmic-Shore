@@ -315,7 +315,7 @@ namespace CosmicShore.Game.Arcade.Party
             int currentCount = _playerStates.Count;
             for (int i = currentCount; i < config.MaxPlayers; i++)
             {
-                var aiDomain = DomainAssigner.GetDomainsByGameModes(GameModes.PartyGame);
+                var aiDomain = PickUnusedDomain();
                 string aiName = $"AI Pilot {i + 1}";
 
                 _playerStates.Add(new PartyPlayerState
@@ -329,6 +329,23 @@ namespace CosmicShore.Game.Arcade.Party
 
                 SyncPlayerJoined_ClientRpc(aiName, (int)aiDomain, true);
             }
+        }
+
+        /// <summary>
+        /// Picks a domain not already used by existing players.
+        /// Avoids drawing from the DomainAssigner pool which may already
+        /// be exhausted by the ServerPlayerVesselInitializer.
+        /// </summary>
+        Domains PickUnusedDomain()
+        {
+            var usedDomains = new HashSet<Domains>(_playerStates.Select(p => p.Domain));
+            Domains[] candidates = { Domains.Jade, Domains.Ruby, Domains.Gold };
+            foreach (var d in candidates)
+            {
+                if (!usedDomains.Contains(d))
+                    return d;
+            }
+            return Domains.Unassigned;
         }
 
         /// <summary>
