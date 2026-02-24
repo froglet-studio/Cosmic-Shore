@@ -42,5 +42,10 @@ namespace CosmicShore.Game.Arcade.Party
 
         [Tooltip("Delay (seconds) after a round ends before showing the party panel.")]
         public float PostRoundDelaySeconds = 2f;
+
+        [Header("Round Duration")]
+        [Tooltip("Maximum duration (seconds) for each mini-game round. The round ends when either " +
+                 "the game-specific end condition fires or this timer expires, whichever comes first.")]
+        public float RoundDurationSeconds = 60f;
     }
 }

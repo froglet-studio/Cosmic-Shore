@@ -150,7 +150,7 @@ namespace CosmicShore.Game.Arcade.Party
                 _miniGameControllers.Add(controller);
 
                 if (!controller)
-                    CSDebug.LogWarning($"[PartyGame] No MiniGameControllerBase on environment '{env.name}'.");
+                    CSDebug.Log($"[PartyGame] No MiniGameControllerBase on '{env.name}'. PartyGameController will drive game flow.");
             }
         }
 
@@ -459,9 +459,18 @@ namespace CosmicShore.Game.Arcade.Party
                 // Notify listeners
                 OnRoundStarting?.Invoke(roundIndex, selectedMode);
 
-                // Reset game data for the round
+                // Reset game data for the round and start gameplay
                 gameData.GameMode = selectedMode;
                 ResetGameDataForRound_ClientRpc((int)selectedMode);
+
+                // Small delay for environment activation to settle
+                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+
+                // Start the actual gameplay — this is what the standalone controllers do
+                StartGameplay_ClientRpc();
+
+                // Start a round timer as a fallback end condition
+                RunRoundTimer(ct).Forget();
             }
             catch (OperationCanceledException) { }
         }
@@ -487,6 +496,39 @@ namespace CosmicShore.Game.Arcade.Party
             _recentMiniGames.Add(available[chosen]);
 
             return chosen;
+        }
+
+        /// <summary>
+        /// Fallback round timer. If the game-specific end condition doesn't fire
+        /// within the configured duration, the server forces the round to end.
+        /// </summary>
+        async UniTaskVoid RunRoundTimer(CancellationToken ct)
+        {
+            try
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(config.RoundDurationSeconds),
+                    DelayType.UnscaledDeltaTime,
+                    cancellationToken: ct);
+
+                // Timer expired and we're still playing — force end
+                if (IsServer && CurrentPhase == PartyPhase.Playing)
+                {
+                    CSDebug.Log("[PartyGame] Round timer expired. Forcing round end.");
+                    ForceEndRound_ClientRpc();
+                }
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        [ClientRpc]
+        void ForceEndRound_ClientRpc()
+        {
+            gameData.InvokeGameTurnConditionsMet();
+            gameData.SortRoundStats(false);
+            gameData.CalculateDomainStats(false);
+            gameData.InvokeWinnerCalculated();
+            gameData.InvokeMiniGameEnd();
         }
 
         void OnMiniGameWinnerCalculated()
@@ -767,6 +809,14 @@ namespace CosmicShore.Game.Arcade.Party
             // The party scene should subscribe to this via the panel
             if (partyPausePanel)
                 partyPausePanel.Hide();
+        }
+
+        [ClientRpc]
+        void StartGameplay_ClientRpc()
+        {
+            gameData.InitializeGame();
+            gameData.SetPlayersActive();
+            gameData.StartTurn();
         }
 
         [ClientRpc]
