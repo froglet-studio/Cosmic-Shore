@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 5
   Name: Grizzly
-  Description: Don't mess with me or I will shoot. I will shoot anyway, but don't
-    mess with me.
+  Description: Charge up devastating shots and plant yourself as a turret. Patience
+    pays off with massive firepower.
   IconActive: {fileID: 21300000, guid: 3236299f467e7004fbfab2b0d07e6280, type: 3}
   IconInactive: {fileID: 21300000, guid: 720f23b964da1e948927d1b2b7c1c5a9, type: 3}
   PreviewImage: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac, type: 3}
@@ -25,7 +25,10 @@ MonoBehaviour:
   CardSilohoutteInactive: {fileID: 21300000, guid: 5462fd738d8582544aac2d25239412ca,
     type: 3}
   Abilities:
-  - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
+  - {fileID: 11400000, guid: e858c9aef2ea483bb3a8883adc8ab921, type: 2}
+  - {fileID: 11400000, guid: 9285555cd42c4b2d835f6fd65d3ad733, type: 2}
+  - {fileID: 11400000, guid: bdefc361360f4014b1b3bbeca9cc2f72, type: 2}
+  - {fileID: 11400000, guid: 4fbf6f7768dd4ccb88360c211a3875ea, type: 2}
   Captains:
   - {fileID: 11400000, guid: 8cde53ad485a0eb4999781d28e131067, type: 2}
   - {fileID: 11400000, guid: d1167a749c270634bbbef0ffc8a152a7, type: 2}

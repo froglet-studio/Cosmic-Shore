@@ -1367,7 +1367,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  settings: {fileID: 0}
+  settings: {fileID: 11400000, guid: 7b9955338fc34bbdb09f7c67c663c3ef, type: 2}
   OnInitializePlayerCamera: {fileID: 0}
 --- !u!114 &3734859533843191741
 MonoBehaviour:

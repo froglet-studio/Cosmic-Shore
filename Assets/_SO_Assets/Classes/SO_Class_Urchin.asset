@@ -25,10 +25,10 @@ MonoBehaviour:
   CardSilohoutteInactive: {fileID: 21300000, guid: 6e793e2d33035c54296e7d4f0522b1dc,
     type: 3}
   Abilities:
-  - {fileID: 11400000, guid: 59a526f543aa82b43920bafb7fb8684d, type: 2}
-  - {fileID: 11400000, guid: 9608a8095e3294548aa8e9da3bd634a0, type: 2}
-  - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
-  - {fileID: 11400000, guid: d28b6b5c008786c4998fb0cec02ab5bc, type: 2}
+  - {fileID: 11400000, guid: b25ea27b0a57440e9ae25864ac408553, type: 2}
+  - {fileID: 11400000, guid: 5f0fc93c153c4b1a8ee8b14967bdd402, type: 2}
+  - {fileID: 11400000, guid: b794f475b5cf45bcaa3659a9e98692ae, type: 2}
+  - {fileID: 11400000, guid: 1bb8dd2e9b85481a9d105b98c101486e, type: 2}
   Captains:
   - {fileID: 11400000, guid: 4706b17aa5898e5459d1b4f6ea80427d, type: 2}
   - {fileID: 11400000, guid: 880b85fe77b99a043adcd9e5a8581dce, type: 2}
