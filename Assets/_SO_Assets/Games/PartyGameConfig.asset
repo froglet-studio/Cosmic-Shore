@@ -20,6 +20,7 @@ MonoBehaviour:
   - 33
   - 34
   LobbyWaitTimeSeconds: 120
+  SoloLobbyWaitSeconds: 10
   PreRoundCountdownSeconds: 3
   PostCountdownDelaySeconds: 1
   PostRoundDelaySeconds: 2

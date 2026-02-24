@@ -28,8 +28,11 @@ namespace CosmicShore.Game.Arcade.Party
         };
 
         [Header("Timing")]
-        [Tooltip("Seconds to wait for players before filling with AI.")]
+        [Tooltip("Seconds to wait for players in online matchmaking before filling with AI.")]
         public float LobbyWaitTimeSeconds = 120f;
+
+        [Tooltip("Seconds to wait in lobby when playing solo (1 player). Gives the player time to see the lobby.")]
+        public float SoloLobbyWaitSeconds = 10f;
 
         [Tooltip("Countdown seconds before a mini-game round starts.")]
         public float PreRoundCountdownSeconds = 3f;

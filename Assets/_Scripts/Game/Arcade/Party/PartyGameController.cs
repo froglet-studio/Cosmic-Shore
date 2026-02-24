@@ -33,13 +33,6 @@ namespace CosmicShore.Game.Arcade.Party
         [Tooltip("Root GameObjects for each mini-game environment. Index must match AvailableMiniGames order in config.")]
         [SerializeField] List<GameObject> miniGameEnvironments = new();
 
-        [Header("Offline Mode")]
-        [Tooltip("Enable to play solo with AI opponents (no network matchmaking required).")]
-        [SerializeField] bool offlineMode;
-
-        [Tooltip("Seconds to wait in lobby before auto-starting in offline mode.")]
-        [SerializeField] float offlineLobbyWaitSeconds = 10f;
-
         // --- Network state ---
         readonly NetworkVariable<int> _netCurrentRound = new(0);
         readonly NetworkVariable<int> _netPhase = new((int)PartyPhase.Lobby);
@@ -54,6 +47,9 @@ namespace CosmicShore.Game.Arcade.Party
         int _readyPlayerCount;
         CancellationTokenSource _lobbyCts;
         CancellationTokenSource _roundCts;
+
+        // --- Derived state ---
+        bool IsSoloWithAI => !gameData.IsMultiplayerMode;
 
         // --- Public API ---
         public PartyPhase CurrentPhase => (PartyPhase)_netPhase.Value;
@@ -103,8 +99,8 @@ namespace CosmicShore.Game.Arcade.Party
                 _netLobbyStartTime.Value = Time.realtimeSinceStartup;
                 SetPhase(PartyPhase.Lobby);
 
-                if (offlineMode)
-                    StartOfflineLobby().Forget();
+                if (IsSoloWithAI)
+                    StartSoloLobby().Forget();
                 else
                     StartLobbyTimer().Forget();
             }
@@ -238,10 +234,11 @@ namespace CosmicShore.Game.Arcade.Party
         }
 
         /// <summary>
-        /// Offline solo mode: add the local player, fill with AI, wait a short
-        /// lobby period for atmosphere, then auto-transition to WaitingForReady.
+        /// Solo mode (1 player selected): wait for ServerPlayerVesselInitializer to
+        /// spawn players via HandlePlayerAdded, then use a short lobby timer so the
+        /// player can see the lobby before readying up.
         /// </summary>
-        async UniTaskVoid StartOfflineLobby()
+        async UniTaskVoid StartSoloLobby()
         {
             _lobbyCts?.Cancel();
             _lobbyCts = new CancellationTokenSource();
@@ -251,27 +248,20 @@ namespace CosmicShore.Game.Arcade.Party
             {
                 BroadcastGameStateText_ClientRpc("Setting up party...");
 
-                // Add the local player
-                string localName = gameData.LocalPlayer != null
-                    ? gameData.LocalPlayer.Name
-                    : "Player";
-                var localDomain = DomainAssigner.GetDomainsByGameModes(GameModes.PartyGame);
-                OnPlayerJoined(localName, localDomain, false);
-
-                // Fill remaining slots with AI
-                FillWithAI();
-
-                // Initialize the panel now that we have players
-                if (partyPausePanel)
-                    partyPausePanel.Initialize(config.TotalRounds, _playerStates);
-
-                BroadcastGameStateText_ClientRpc("Get ready to party!");
-
-                // Short wait so the player can see the lobby
+                // Wait for the ServerPlayerVesselInitializer to spawn human + AI
+                // Players arrive via HandlePlayerAdded → OnPlayerJoined
                 await UniTask.Delay(
-                    TimeSpan.FromSeconds(offlineLobbyWaitSeconds),
+                    TimeSpan.FromSeconds(config.SoloLobbyWaitSeconds),
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
+
+                // If players still haven't filled (e.g., initializer didn't add enough), fill now
+                if (_playerStates.Count < config.MaxPlayers)
+                    FillWithAI();
+
+                // Re-initialize the panel now that we have all players
+                if (partyPausePanel)
+                    partyPausePanel.Initialize(config.TotalRounds, _playerStates);
 
                 if (CurrentPhase == PartyPhase.Lobby)
                 {
@@ -300,8 +290,8 @@ namespace CosmicShore.Game.Arcade.Party
 
             SyncPlayerJoined_ClientRpc(playerName, (int)domain, isAI);
 
-            // In offline mode, StartOfflineLobby manages the full lobby flow
-            if (offlineMode) return;
+            // In solo mode, StartSoloLobby manages the lobby flow with a short timer
+            if (IsSoloWithAI) return;
 
             // Check if we have enough players
             int humanCount = _playerStates.Count(p => !p.IsAIReplacement);
