@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using CosmicShore.Game;
 using CosmicShore.Game.Cinematics;
 using CosmicShore.Game.UI;
 using CosmicShore.Game.UI.Party;
@@ -95,9 +96,13 @@ namespace CosmicShore.Game.Arcade.Party
             _netSelectedMiniGameIndex.OnValueChanged += OnNetMiniGameChanged;
 
             gameData.OnWinnerCalculated += OnMiniGameWinnerCalculated;
-            gameData.OnMiniGameEnd += OnMiniGameEnded;
             gameData.OnPlayerAdded += HandlePlayerAdded;
 
+            // Listen for end-game cinematic completion — NOT OnMiniGameEnd.
+            // Game-specific controllers (HexRace, Joust) fire InvokeMiniGameEnd
+            // directly from their own RPCs, which would trigger CompleteRound
+            // before the cinematic finishes. OnShowGameEndScreen only fires
+            // after the cinematic sequence completes (user clicks Continue).
             if (gameData.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised += OnShowGameEndScreen;
 
@@ -162,7 +167,6 @@ namespace CosmicShore.Game.Arcade.Party
             _netSelectedMiniGameIndex.OnValueChanged -= OnNetMiniGameChanged;
 
             gameData.OnWinnerCalculated -= OnMiniGameWinnerCalculated;
-            gameData.OnMiniGameEnd -= OnMiniGameEnded;
             gameData.OnPlayerAdded -= HandlePlayerAdded;
 
             if (gameData.OnShowGameEndScreen != null)
@@ -707,7 +711,7 @@ namespace CosmicShore.Game.Arcade.Party
                     if (IsServer && CurrentPhase == PartyPhase.Playing)
                     {
                         CSDebug.LogWarning("[PartyGame] Cinematic timeout — forcing CompleteRound.");
-                        gameData.InvokeMiniGameEnd();
+                        CompleteRound().Forget();
                     }
                 }
             }
@@ -761,28 +765,21 @@ namespace CosmicShore.Game.Arcade.Party
             CSDebug.Log($"[PartyGame] Round {roundIndex + 1} winner: {result.WinnerName}");
         }
 
-        void OnMiniGameEnded()
-        {
-            if (!IsServer) return;
-            if (CurrentPhase != PartyPhase.Playing) return;
-
-            CSDebug.Log("[PartyGame] OnMiniGameEnded → CompleteRound");
-            CompleteRound().Forget();
-        }
-
         /// <summary>
         /// Called after the EndGameCinematicController finishes its full sequence
-        /// (score reveal → Continue button → hide). This is the signal to transition
-        /// to the next round. We fire InvokeMiniGameEnd so other systems (score trackers,
-        /// etc.) get notified, and OnMiniGameEnded triggers CompleteRound.
+        /// (score reveal → Continue button → hide). This is the canonical signal
+        /// to transition to the next round. We do NOT listen to OnMiniGameEnd
+        /// because game-specific controllers (HexRace, Joust) fire it directly
+        /// from their own RPCs, which would trigger CompleteRound before the
+        /// cinematic finishes and kill the environment mid-animation.
         /// </summary>
         void OnShowGameEndScreen()
         {
             if (!IsServer) return;
             if (CurrentPhase != PartyPhase.Playing) return;
 
-            CSDebug.Log("[PartyGame] OnShowGameEndScreen → triggering mini-game end");
-            gameData.InvokeMiniGameEnd();
+            CSDebug.Log("[PartyGame] OnShowGameEndScreen → CompleteRound");
+            CompleteRound().Forget();
         }
 
         async UniTaskVoid CompleteRound()
@@ -1172,6 +1169,15 @@ namespace CosmicShore.Game.Arcade.Party
             foreach (var cc in cinematicControllers)
             {
                 cc.IsPartyMode = true;
+            }
+
+            // Disable MiniGamePlayerSpawnerAdapter — in party mode, PartyVesselSpawner
+            // handles player/vessel spawning. The adapter would spawn duplicates when
+            // gameData.InitializeGame() fires OnInitializeGame.
+            var playerSpawners = env.GetComponentsInChildren<MiniGamePlayerSpawnerAdapter>(true);
+            foreach (var spawner in playerSpawners)
+            {
+                spawner.enabled = false;
             }
 
             var spvis = env.GetComponentsInChildren<ServerPlayerVesselInitializer>(true);

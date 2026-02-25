@@ -22,16 +22,44 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
+            SubscribeToCrystalEvents();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            UnsubscribeFromCrystalEvents();
+        }
+
+        /// <summary>
+        /// Re-subscribe when the environment is reactivated (party mode SetActive
+        /// toggling). OnDisable already unsubscribes so events from inactive
+        /// environments don't fire and spawn invisible crystals.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (IsSpawned)
+                SubscribeToCrystalEvents();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFromCrystalEvents();
+        }
+
+        void SubscribeToCrystalEvents()
+        {
             if (spawnOnClientReady)
                 gameData.OnClientReady += OnClientReadySpawn;
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
 
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
-            n_Positions.OnListChanged += OnPositionsChanged;
+
+            if (n_Positions != null)
+                n_Positions.OnListChanged += OnPositionsChanged;
         }
 
-        public override void OnNetworkDespawn()
+        void UnsubscribeFromCrystalEvents()
         {
             if (spawnOnClientReady)
                 gameData.OnClientReady -= OnClientReadySpawn;

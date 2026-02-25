@@ -7,26 +7,49 @@ namespace CosmicShore.Game.Arcade
     {
         public override void OnNetworkSpawn()
         {
-            if (!IsServer)
-                return;
-
-            gameData.OnInitializeGame += InitializeScoringMode;
-            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
-            gameData.OnMiniGameEnd += CalculateWinnerOnServer;
-            OnClickToMainMenu.OnRaised += OnTurnEnded;
+            if (!IsServer) return;
+            SubscribeScoreEvents();
         }
 
         public override void OnNetworkDespawn()
         {
-            if (!IsServer)
-                return;
+            if (!IsServer) return;
+            UnsubscribeScoreEvents();
+        }
 
+        /// <summary>
+        /// Re-subscribe when the environment is reactivated (party mode SetActive
+        /// toggling). Prevents inactive environments' score trackers from
+        /// responding to events and firing conflicting RPCs.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (IsSpawned && IsServer)
+                SubscribeScoreEvents();
+        }
+
+        private void OnDisable()
+        {
+            if (!IsServer) return;
+            UnsubscribeScoreEvents();
+        }
+
+        void SubscribeScoreEvents()
+        {
+            gameData.OnInitializeGame += InitializeScoringMode;
+            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
+            gameData.OnMiniGameEnd += CalculateWinnerOnServer;
+            if (OnClickToMainMenu) OnClickToMainMenu.OnRaised += OnTurnEnded;
+        }
+
+        void UnsubscribeScoreEvents()
+        {
             gameData.OnInitializeGame -= InitializeScoringMode;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd -= CalculateWinnerOnServer;
-            OnClickToMainMenu.OnRaised -= OnTurnEnded;
+            if (OnClickToMainMenu) OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
 
         private void CalculateWinnerOnServer()
