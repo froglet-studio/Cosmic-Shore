@@ -22,13 +22,22 @@ namespace CosmicShore.Game
         {
             if (!cellData.TryGetLocalCrystal(out _))
                 return;
-            
+
+            // Don't unsubscribe until we can actually spawn — Cell.Initialize
+            // may not have run yet (party mode timing: crystals can spawn
+            // before the cell is fully initialized).
+            if (cellData.Config == null || cellData.CellTransform == null)
+                return;
+
             cellData.OnCellItemsUpdated.OnRaised -= OnCellItemsUpdated;
             SpawnSnows();
         }
-        
+
         private void SpawnSnows()
         {
+            if (cellData.Config == null || cellData.Config.CytoplasmPrefab == null || cellData.CellTransform == null)
+                return;
+
             var snowChanger = Instantiate(cellData.Config.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
             snowChanger.Initialize();
         }

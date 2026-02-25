@@ -51,7 +51,15 @@ namespace CosmicShore.Game
 
         void SubscribeToCrystalEvents()
         {
-            if (spawnOnClientReady)
+            // Unsubscribe first to prevent double-subscription when both
+            // OnNetworkSpawn and OnEnable fire in the same lifecycle.
+            UnsubscribeFromCrystalEvents();
+
+            // In party mode, always use OnMiniGameTurnStarted (not OnClientReady)
+            // to avoid timing issues: Cell.Initialize runs after 1s via InitializeAfterDelay,
+            // but OnClientReady fires at 0.5s on round 2+. Spawning crystals before Cell
+            // init causes null refs in SnowChangerManager and other cell-dependent systems.
+            if (spawnOnClientReady && !IsPartyMode)
                 gameData.OnClientReady += OnClientReadySpawn;
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
@@ -65,10 +73,10 @@ namespace CosmicShore.Game
 
         void UnsubscribeFromCrystalEvents()
         {
+            // Always unsubscribe from both paths to be safe
             if (spawnOnClientReady)
                 gameData.OnClientReady -= OnClientReadySpawn;
-            else
-                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
 
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
@@ -83,10 +91,13 @@ namespace CosmicShore.Game
 
         void OnResetForReplay()
         {
-            // In party mode without a working NetworkObject, clear crystals directly.
-            if (IsPartyMode && !IsSpawned)
+            // In party mode, bypass NetworkList and destroy crystals directly.
+            // The host is both server and client so no replication is needed.
+            // IsSpawned/IsServer may be unreliable after environment deactivation/reactivation.
+            if (IsPartyMode)
             {
                 DestroyCrystals();
+                serverBatchAnchorIndex = 0;
                 CSDebug.Log("[NetworkCrystalManager] Party mode reset — crystals destroyed.");
                 return;
             }
@@ -101,9 +112,9 @@ namespace CosmicShore.Game
 
         void OnTurnEnded()
         {
-            // In party mode without a working NetworkObject, destroy crystals
-            // so they can be freshly spawned next round (matching LocalCrystalManager).
-            if (IsPartyMode && !IsSpawned)
+            // In party mode, destroy crystals directly so they can be
+            // freshly spawned next round (matching LocalCrystalManager).
+            if (IsPartyMode)
             {
                 DestroyCrystals();
             }
@@ -134,12 +145,14 @@ namespace CosmicShore.Game
 
         private void OnTurnStarted()
         {
-            // In party mode, IsSpawned may be false after environment
-            // deactivation/reactivation, making IsServer also false.
-            // Fall back to direct local spawning since host = server = client.
-            if (IsPartyMode && !IsSpawned)
+            // In party mode, bypass the NetworkList mechanism entirely.
+            // The host is both server and client — direct local spawning works.
+            // IsSpawned/IsServer from NetworkBehaviour are unreliable after
+            // environment deactivation/reactivation in party mode.
+            if (IsPartyMode)
             {
                 SpawnBatchIfMissing();
+                CSDebug.Log($"[NetworkCrystalManager] Party mode — spawned crystals directly. Count={GetCrystalCountToSpawn()}");
                 return;
             }
 
@@ -212,8 +225,8 @@ namespace CosmicShore.Game
 
         public override void RespawnCrystal(int crystalId)
         {
-            // In party mode without network, respawn directly.
-            if (IsPartyMode && !IsSpawned)
+            // In party mode, respawn directly — no RPCs needed.
+            if (IsPartyMode)
             {
                 var newPos = CalculateNewSpawnPos(crystalId);
                 UpdateCrystalPos(crystalId, newPos);
@@ -235,8 +248,8 @@ namespace CosmicShore.Game
 
         public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
         {
-            // In party mode without network, explode directly.
-            if (IsPartyMode && !IsSpawned)
+            // In party mode, explode directly — no RPCs needed.
+            if (IsPartyMode)
             {
                 if (cellData.TryGetCrystalById(crystalId, out var crystal))
                     crystal.Explode(explodeParams);
