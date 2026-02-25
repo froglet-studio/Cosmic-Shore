@@ -428,6 +428,8 @@ namespace CosmicShore.Game.Arcade.Party
                     else
                         LoadMiniGameEnvironment().Forget();
                     break;
+                // MiniGameReady phase is no longer used — LoadMiniGameEnvironment
+                // now proceeds directly to gameplay. Kept as safety fallback.
                 case PartyPhase.MiniGameReady:
                     BeginMiniGamePlay().Forget();
                     break;
@@ -539,12 +541,21 @@ namespace CosmicShore.Game.Arcade.Party
                     await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
                 }
 
-                SetPhase(PartyPhase.MiniGameReady);
-                ResetReadyStates();
-                ShowPanel_ClientRpc();
-
                 string modeName = GetMiniGameDisplayName(selectedMode);
-                BroadcastGameStateText_ClientRpc($"{modeName} — Ready to play!");
+                BroadcastGameStateText_ClientRpc($"{modeName} — Starting...");
+
+                // Hide panel and go straight to gameplay — no extra ready step
+                HidePanel_ClientRpc();
+                DisableSceneCamera_ClientRpc();
+
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(config.PostCountdownDelaySeconds),
+                    DelayType.UnscaledDeltaTime,
+                    cancellationToken: ct);
+
+                SetPhase(PartyPhase.Playing);
+                StartGameplay_ClientRpc();
+                RunRoundTimer(ct).Forget();
             }
             catch (OperationCanceledException) { }
         }

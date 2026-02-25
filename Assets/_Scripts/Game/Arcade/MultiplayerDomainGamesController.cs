@@ -41,7 +41,11 @@ namespace CosmicShore.Game.Arcade
         protected override void OnReadyClicked_()
         {
             // In party mode, the party panel handles ready — ignore mini-game ready clicks
-            if (IsPartyMode) return;
+            if (IsPartyMode)
+            {
+                CSDebug.Log("[MultiplayerDomainGamesController] OnReadyClicked_ ignored — IsPartyMode=true. Use the party panel's Ready button instead.");
+                return;
+            }
 
             RaiseToggleReadyButtonEvent(false);
             OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
