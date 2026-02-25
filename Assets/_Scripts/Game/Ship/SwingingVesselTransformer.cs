@@ -9,9 +9,11 @@ using CosmicShore.Utilities;
 ///
 /// Controls overview:
 ///   Free flight (no triggers held):
-///     Standard two-thumb flying with drift. XDiff spreads cursors instead of throttle.
-///     Speed is a fixed cruise speed. Course persists from swing momentum —
-///     only tethers change the vessel's course. Forward rotation is independent.
+///     Standard two-thumb flying. XDiff spreads cursors instead of throttle.
+///     Speed is a fixed cruise speed. Course (movement direction) is fully
+///     decoupled from forward — joystick rotation only changes the vessel's
+///     facing direction, not its trajectory. Only tethers change course
+///     (via swing momentum on release).
 ///
 ///   Pull a trigger:
 ///     Fires a visible tether from that side's cursor. If it hits a prism the tether
@@ -107,6 +109,10 @@ public class SwingingVesselTransformer : VesselTransformer
     // Momentum tracking across state transitions
     Vector3 lastVelocity;
 
+    // Free-flight course direction — fully independent from transform.forward.
+    // Only tethers (swing momentum) change this; joystick rotation does not.
+    Vector3 freeFlightCourse;
+
     // Cursors
     Transform leftCursor;
     Transform rightCursor;
@@ -138,9 +144,12 @@ public class SwingingVesselTransformer : VesselTransformer
         leftCursor = CreateCursor("LeftCursor");
         rightCursor = CreateCursor("RightCursor");
 
-        // Initialize course to forward so there is a sane default
+        // Initialize course to forward so there is a sane default.
+        // freeFlightCourse is the authoritative direction during free flight —
+        // fully decoupled from transform.forward so rotation doesn't steer.
+        freeFlightCourse = transform.forward;
         if (VesselStatus != null)
-            VesselStatus.Course = transform.forward;
+            VesselStatus.Course = freeFlightCourse;
 
         var handler = VesselStatus?.ActionHandler;
         if (handler != null)
@@ -317,14 +326,14 @@ public class SwingingVesselTransformer : VesselTransformer
         switch (next)
         {
             case SwingState.FreeFlight:
-                // Carry swing momentum
+                // Carry swing momentum into free-flight course.
                 if (lastVelocity.sqrMagnitude > 0.01f)
                 {
-                    VesselStatus.Course = lastVelocity.normalized;
+                    freeFlightCourse = lastVelocity.normalized;
                     speed = lastVelocity.magnitude;
-                    if (SafeLookRotation.TryGet(lastVelocity.normalized, out var rot, this, logError: false))
-                        accumulatedRotation = rot;
                 }
+                // Sync VesselStatus.Course for external consumers.
+                VesselStatus.Course = freeFlightCourse;
                 break;
 
             case SwingState.SingleAnchor:
@@ -505,11 +514,13 @@ public class SwingingVesselTransformer : VesselTransformer
 
         VesselStatus.Speed = speed;
 
-        // Course persists from swing momentum — only tethers change it.
-        // Forward rotation is independent (controlled by RotateShip).
+        // Use freeFlightCourse — fully independent from transform.forward.
+        // Only tethers (swing momentum) change this direction.
+        // Forward rotation is cosmetic only (controlled by RotateShip).
+        VesselStatus.Course = freeFlightCourse;
 
-        transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;
-        lastVelocity = speed * VesselStatus.Course;
+        transform.position += (speed * freeFlightCourse + velocityShift) * Time.deltaTime;
+        lastVelocity = speed * freeFlightCourse;
     }
 
     // ---- Single anchor: sphere navigation ----
