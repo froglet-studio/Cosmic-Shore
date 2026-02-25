@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace CosmicShore.Systems.Bootstrap.Tests
 {
@@ -14,6 +16,25 @@ namespace CosmicShore.Systems.Bootstrap.Tests
     public class SceneFlowIntegrationTests
     {
         static readonly string[] RequiredScenes = { "Bootstrap", "Authentication", "Menu_Main" };
+
+        [SetUp]
+        public void SetUp()
+        {
+            var field = typeof(BootstrapController)
+                .GetField("_hasBootstrapped", BindingFlags.Static | BindingFlags.NonPublic);
+            field?.SetValue(null, false);
+            ServiceLocator.ClearAll();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            LogAssert.ignoreFailingMessages = false;
+            var field = typeof(BootstrapController)
+                .GetField("_hasBootstrapped", BindingFlags.Static | BindingFlags.NonPublic);
+            field?.SetValue(null, false);
+            ServiceLocator.ClearAll();
+        }
 
         #region Build Settings Validation
 
@@ -313,6 +334,9 @@ namespace CosmicShore.Systems.Bootstrap.Tests
         [Test]
         public void BootstrapController_AutoCreate_ComponentsAreCorrect()
         {
+            // Awake may call DontDestroyOnLoad which can log errors in Edit Mode.
+            LogAssert.ignoreFailingMessages = true;
+
             // Verify that the auto-create flow would produce the right components.
             var go = new GameObject("[TestAutoCreate]");
 

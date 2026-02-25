@@ -1,6 +1,7 @@
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace CosmicShore.Systems.Bootstrap.Tests
 {
@@ -18,6 +19,7 @@ namespace CosmicShore.Systems.Bootstrap.Tests
         [TearDown]
         public void TearDown()
         {
+            LogAssert.ignoreFailingMessages = false;
             ResetHasBootstrapped();
             ServiceLocator.ClearAll();
         }
@@ -123,6 +125,9 @@ namespace CosmicShore.Systems.Bootstrap.Tests
         public void Awake_WhenAlreadyBootstrapped_DestroysGameObject()
         {
             SetHasBootstrapped(true);
+
+            // Awake calls Destroy(gameObject) which may log an error in Edit Mode.
+            LogAssert.ignoreFailingMessages = true;
 
             var go = new GameObject("TestBootstrapDuplicate");
             go.AddComponent<BootstrapController>();

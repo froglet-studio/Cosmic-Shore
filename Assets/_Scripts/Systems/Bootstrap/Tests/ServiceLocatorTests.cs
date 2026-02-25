@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEngine.TestTools;
 
 namespace CosmicShore.Systems.Bootstrap.Tests
 {
@@ -34,6 +35,8 @@ namespace CosmicShore.Systems.Bootstrap.Tests
         [Test]
         public void Get_Unregistered_ReturnsNull()
         {
+            LogAssert.Expect(UnityEngine.LogType.Error, "[ServiceLocator] Service ServiceA not registered.");
+
             var result = ServiceLocator.Get<ServiceA>();
 
             Assert.IsNull(result);
