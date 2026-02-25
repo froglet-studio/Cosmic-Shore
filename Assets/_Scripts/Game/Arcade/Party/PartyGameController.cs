@@ -97,6 +97,16 @@ namespace CosmicShore.Game.Arcade.Party
             gameData.OnMiniGameEnd += OnMiniGameEnded;
             gameData.OnPlayerAdded += HandlePlayerAdded;
 
+            // Auto-resolve vesselSpawner if not assigned in Inspector
+            if (!vesselSpawner)
+            {
+                vesselSpawner = FindAnyObjectByType<PartyVesselSpawner>();
+                if (vesselSpawner)
+                    CSDebug.Log("[PartyGame] Auto-resolved PartyVesselSpawner reference.");
+                else
+                    CSDebug.LogError("[PartyGame] PartyVesselSpawner not found in scene! Vessel spawning will fail.");
+            }
+
             _roundResults.Clear();
             for (int i = 0; i < config.TotalRounds; i++)
                 _roundResults.Add(new PartyRoundResult { RoundIndex = i });
