@@ -6,6 +6,7 @@ using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -105,7 +106,7 @@ namespace CosmicShore.Game
             
             if (crystal.Id != 0)
             {
-                Debug.LogError("To initialize a cell item, its default Id must be 0");
+                CSDebug.LogError("To initialize a cell item, its default Id must be 0");
                 return crystal;
             }
 

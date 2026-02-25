@@ -3,6 +3,7 @@ using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -72,7 +73,7 @@ namespace CosmicShore.Game.Projectiles
 
         /*private void OnDestroy()
         {
-            Debug.LogError("Projectile destroyed! Should not happen! Should return to pool!");
+            CSDebug.LogError("Projectile destroyed! Should not happen! Should return to pool!");
         }*/
 
         #region Initialization
@@ -97,7 +98,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!_factory)
             {
-                Debug.LogError("No factory for this projectile found. Can't return to pool!");
+                CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
             }
             
             ProjectileTime = projectileTime;
@@ -149,7 +150,7 @@ namespace CosmicShore.Game.Projectiles
             else
             {
                 // This should not happen, make sure to handle later
-                Debug.LogWarning("No projectile factory found to release projectile!");
+                CSDebug.LogWarning("No projectile factory found to release projectile!");
                 Destroy(gameObject);
             }
         }
@@ -186,7 +187,7 @@ namespace CosmicShore.Game.Projectiles
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                Debug.LogError($"[Projectile] Move loop error: {ex}");
+                CSDebug.LogError($"[Projectile] Move loop error: {ex}");
             }
         }
 

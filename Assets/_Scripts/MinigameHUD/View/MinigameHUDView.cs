@@ -24,6 +24,9 @@ namespace CosmicShore.Game.UI
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
 
+        [Header("Connecting Panel")]
+        [SerializeField] private ConnectingPanel connectingPanel;
+
         [Header("Connecting Panel Animations")]
         [SerializeField] private DoTweenTypewriterAnimator hackerTextAnimator;
         [SerializeField] private ConnectingDotsAnimator dotsAnimator;
@@ -38,10 +41,12 @@ namespace CosmicShore.Game.UI
 
         private void Awake()
         {
-            // Auto-discover connecting panel animation components when not assigned in Inspector
+            // Auto-discover connecting panel components when not assigned in Inspector
             if (connectingPanelCanvasGroup != null)
             {
                 var panelGO = connectingPanelCanvasGroup.gameObject;
+                if (connectingPanel == null)
+                    connectingPanel = panelGO.GetComponent<ConnectingPanel>();
                 if (hackerTextAnimator == null)
                     hackerTextAnimator = panelGO.GetComponentInChildren<DoTweenTypewriterAnimator>();
                 if (dotsAnimator == null)
@@ -71,6 +76,10 @@ namespace CosmicShore.Game.UI
             connectingPanelCanvasGroup.alpha = active ? 1 : 0;
             connectingPanelCanvasGroup.interactable = active;
             connectingPanelCanvasGroup.blocksRaycasts = active;
+
+            // Enable/disable the ConnectingPanel component so OnEnable picks a random sprite
+            if (connectingPanel != null)
+                connectingPanel.enabled = active;
 
             if (active)
                 StartConnectingAnimations();

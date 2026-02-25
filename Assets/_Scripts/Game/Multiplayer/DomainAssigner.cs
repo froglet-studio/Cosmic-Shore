@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public static class DomainAssigner
 {
@@ -36,7 +37,7 @@ public static class DomainAssigner
         // another player earlier in the same session.
         if (availableDomains.Count == 0)
         {
-            Debug.LogWarning("[DomainAssigner] No domains left in pool. " +
+            CSDebug.LogWarning("[DomainAssigner] No domains left in pool. " +
                              "Call Initialize() before assigning domains for a new session.");
             return Domains.Unassigned;
         }
@@ -56,6 +57,6 @@ public static class DomainAssigner
             .Cast<Domains>()
             .Where(t => t is not (Domains.None or Domains.Unassigned or Domains.Blue))
             .ToList();
-        Debug.Log("[DomainAssigner] 🔄 Cleared assigned domains cache.");
+        CSDebug.Log("[DomainAssigner] 🔄 Cleared assigned domains cache.");
     }
 }

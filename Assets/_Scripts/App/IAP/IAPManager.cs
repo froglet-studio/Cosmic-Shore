@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Screens
 {
@@ -54,7 +55,7 @@ namespace CosmicShore.App.UI.Screens
             // builder.AddProduct(supportProductId, ProductType.Consumable);
             // UnityPurchasing.Initialize(this, builder);
 
-            Debug.Log("[IAPManager] IAP stub initialized. Unity IAP package required for full implementation.");
+            CSDebug.Log("[IAPManager] IAP stub initialized. Unity IAP package required for full implementation.");
             IsInitialized = false;
         }
 
@@ -65,13 +66,13 @@ namespace CosmicShore.App.UI.Screens
         {
             if (!IsInitialized)
             {
-                Debug.LogWarning("[IAPManager] IAP not initialized. Cannot process purchase.");
+                CSDebug.LogWarning("[IAPManager] IAP not initialized. Cannot process purchase.");
                 // TODO: Show UI message that purchases are not available yet
                 return;
             }
 
             // TODO: Implement with m_StoreController.InitiatePurchase(supportProductId)
-            Debug.Log($"[IAPManager] Initiating purchase for: {supportProductId}");
+            CSDebug.Log($"[IAPManager] Initiating purchase for: {supportProductId}");
         }
 
         /// <summary>
@@ -80,7 +81,7 @@ namespace CosmicShore.App.UI.Screens
         /// </summary>
         void HandlePurchaseSuccess(string productId)
         {
-            Debug.Log($"[IAPManager] Purchase successful: {productId}");
+            CSDebug.Log($"[IAPManager] Purchase successful: {productId}");
             OnPurchaseComplete?.Invoke(true);
         }
 
@@ -90,7 +91,7 @@ namespace CosmicShore.App.UI.Screens
         /// </summary>
         void HandlePurchaseFailure(string productId, string reason)
         {
-            Debug.LogWarning($"[IAPManager] Purchase failed: {productId} - {reason}");
+            CSDebug.LogWarning($"[IAPManager] Purchase failed: {productId} - {reason}");
             OnPurchaseComplete?.Invoke(false);
         }
     }

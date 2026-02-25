@@ -2,6 +2,7 @@ using CosmicShore.Game.ShapeDrawing;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {

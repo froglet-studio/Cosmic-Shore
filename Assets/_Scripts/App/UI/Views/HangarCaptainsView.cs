@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -77,10 +78,10 @@ namespace CosmicShore.App.UI.Views
             var model = SelectedModel as SO_Captain;
             captain = CaptainManager.Instance.GetCaptainByName(model.Name);
 
-            Debug.Log($"Populating Captain Details List: {captain.Name}");
-            Debug.Log($"Populating Captain Details List: {captain.Description}");
-            Debug.Log($"Populating Captain Details List: {captain.Icon}");
-            Debug.Log($"Populating Captain Details List: {captain.Image}");
+            CSDebug.Log($"Populating Captain Details List: {captain.Name}");
+            CSDebug.Log($"Populating Captain Details List: {captain.Description}");
+            CSDebug.Log($"Populating Captain Details List: {captain.Icon}");
+            CSDebug.Log($"Populating Captain Details List: {captain.Image}");
 
             EncounterButton.gameObject.SetActive(false);
             xpRequirementSatisfied = false;
@@ -184,10 +185,10 @@ namespace CosmicShore.App.UI.Views
 
         public void PurchaseUpgrade()
         {
-            Debug.Log("PurchaseUpgrade");
+            CSDebug.Log("PurchaseUpgrade");
             if (crystalRequirementSatisfied && xpRequirementSatisfied)
             {
-                Debug.Log("PurchaseUpgrade - Requirements satisfied");
+                CSDebug.Log("PurchaseUpgrade - Requirements satisfied");
 
                 CatalogManager.Instance.PurchaseCaptainUpgrade(captain, OnCaptainUpgraded);
                 ConfirmationModal.ModalWindowOut();
@@ -216,7 +217,7 @@ namespace CosmicShore.App.UI.Views
         /// <param name="index">Index of the displayed Captain list</param>
         public void SelectCaptain(int index)
         {
-            Debug.Log($"SelectCaptain: {index}");
+            CSDebug.Log($"SelectCaptain: {index}");
 
             try
             {
@@ -227,12 +228,12 @@ namespace CosmicShore.App.UI.Views
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", nameof(HangarScreen),
+                CSDebug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", nameof(HangarScreen),
                     nameof(SelectCaptain), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", nameof(HangarScreen),
+                CSDebug.LogWarningFormat("{0} - {1} - The vessel lacks captain assets. Please add them. {2}", nameof(HangarScreen),
                     nameof(SelectCaptain), nullReferenceException.Message);
             }
         }

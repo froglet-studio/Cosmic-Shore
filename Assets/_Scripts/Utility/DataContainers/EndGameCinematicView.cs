@@ -7,6 +7,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -124,7 +125,7 @@ namespace CosmicShore.Game.Cinematics
         {
             if (!scoreRevealToastText || !scoreRevealToastCanvasGroup)
             {
-                Debug.LogWarning("[EndGameView] Victory toast components not assigned!");
+                CSDebug.LogWarning("[EndGameView] Victory toast components not assigned!");
                 yield break;
             }
             
@@ -214,7 +215,7 @@ namespace CosmicShore.Game.Cinematics
 
             if (task.Status == UniTaskStatus.Faulted)
             {
-                Debug.LogError($"Casino counter animation failed: {task.AsTask().Exception}");
+                CSDebug.LogError($"Casino counter animation failed: {task.AsTask().Exception}");
             }
         }
 

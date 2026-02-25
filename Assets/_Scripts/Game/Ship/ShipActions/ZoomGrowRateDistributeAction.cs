@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -8,7 +9,7 @@ namespace CosmicShore
 
         void Awake()
         {
-            Debug.Log("Storing values");
+            CSDebug.Log("Storing values");
             // var grow = GetComponent<GrowActionBase>();
             // if (grow != null)
             //     grow.SetShrinkRate(sharedRate);

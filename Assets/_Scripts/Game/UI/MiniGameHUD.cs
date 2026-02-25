@@ -301,6 +301,7 @@ namespace CosmicShore.Game.UI
         /// <summary>
         /// Assigns random AI profiles from the AI profile list to each AI player.
         /// Cached in _assignedAIProfiles so the same profile is used throughout the game.
+        /// Only assigns to actual AI players, not to remote human players in multiplayer.
         /// </summary>
         protected void AssignAIProfiles()
         {
@@ -308,21 +309,23 @@ namespace CosmicShore.Game.UI
             if (aiProfileList == null || aiProfileList.aiProfiles == null || aiProfileList.aiProfiles.Count == 0)
                 return;
 
-            int aiCount = 0;
+            // Collect only actual AI players, skipping local player and remote human players
+            var aiStatsList = new List<IRoundStats>();
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (stats == localRoundStats) continue;
-                aiCount++;
+
+                var player = gameData.Players.FirstOrDefault(p => p.Name == stats.Name);
+                if (player != null && !player.IsInitializedAsAI)
+                    continue; // skip remote human players
+
+                aiStatsList.Add(stats);
             }
 
-            var picked = aiProfileList.PickRandom(aiCount);
-            int idx = 0;
-            foreach (var stats in gameData.RoundStatsList)
+            var picked = aiProfileList.PickRandom(aiStatsList.Count);
+            for (int i = 0; i < aiStatsList.Count && i < picked.Count; i++)
             {
-                if (stats == localRoundStats) continue;
-                if (idx < picked.Count)
-                    _assignedAIProfiles[stats.Name] = picked[idx];
-                idx++;
+                _assignedAIProfiles[aiStatsList[i].Name] = picked[i];
             }
         }
 

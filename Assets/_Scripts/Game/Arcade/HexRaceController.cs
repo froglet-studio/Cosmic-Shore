@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -30,7 +31,7 @@ namespace CosmicShore.Game.Arcade
 
         private bool _raceEnded;
         private bool _trackSpawned;
-        private int _syncedSeed;
+        private readonly NetworkVariable<int> _netTrackSeed = new(0);
         private readonly NetworkVariable<int> _netCrystalsToFinish = new(0);
 
         // Single source of truth for who won — set authoritatively by server, read by end game controller
@@ -45,13 +46,38 @@ namespace CosmicShore.Game.Arcade
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
 
-            // Spawn the track early so it's visible during connecting screen / cinematic
+            // Listen for seed changes so late-joining clients can spawn the track
+            _netTrackSeed.OnValueChanged += OnTrackSeedChanged;
+
             if (IsServer)
+            {
+                // Server generates the seed after a short delay for intensity sync
                 SpawnTrackEarly().Forget();
+            }
+            else if (_netTrackSeed.Value != 0)
+            {
+                // Client joined after the server already set the seed — spawn immediately
+                SpawnTrackLocally(_netTrackSeed.Value);
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
+            base.OnNetworkDespawn();
         }
 
         /// <summary>
-        /// Generates and broadcasts the track seed shortly after network spawn,
+        /// Called on all clients when the server writes a new seed to the NetworkVariable.
+        /// </summary>
+        private void OnTrackSeedChanged(int previousValue, int newValue)
+        {
+            if (newValue != 0)
+                SpawnTrackLocally(newValue);
+        }
+
+        /// <summary>
+        /// Generates and stores the track seed shortly after network spawn,
         /// so the track is visible before players click ready.
         /// </summary>
         private async UniTaskVoid SpawnTrackEarly()
@@ -60,27 +86,31 @@ namespace CosmicShore.Game.Arcade
             await UniTask.Delay(1500, DelayType.UnscaledDeltaTime);
             if (!IsServer || _trackSpawned) return;
 
-            _syncedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
-            InitializeEnvironment_ClientRpc(_syncedSeed);
+            int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+            _netTrackSeed.Value = generatedSeed;
         }
 
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer) return;
 
-            // Re-send track initialization for any clients that missed the early spawn
-            if (!_trackSpawned)
-                _syncedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
-            InitializeEnvironment_ClientRpc(_syncedSeed);
+            // Ensure track seed is set for any edge case where early spawn was missed
+            if (_netTrackSeed.Value == 0)
+            {
+                int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+                _netTrackSeed.Value = generatedSeed;
+            }
 
             base.OnCountdownTimerEnded();
         }
 
-        [ClientRpc]
-        void InitializeEnvironment_ClientRpc(int syncedSeed)
+        /// <summary>
+        /// Spawns the track locally using the given seed. Guards against double-spawning.
+        /// </summary>
+        private void SpawnTrackLocally(int trackSeed)
         {
             if (_trackSpawned || !segmentSpawner) return;
-            segmentSpawner.Seed = syncedSeed;
+            segmentSpawner.Seed = trackSeed;
             segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity
                 ? baseNumberOfSegments * Intensity
                 : baseNumberOfSegments;
@@ -116,7 +146,7 @@ namespace CosmicShore.Game.Arcade
             var winnerStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName);
             if (winnerStats == null)
             {
-                Debug.LogError($"[HexRace] Could not find RoundStats for winner '{playerName}'. " +
+                CSDebug.LogError($"[HexRace] Could not find RoundStats for winner '{playerName}'. " +
                                $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                 return;
             }
@@ -193,7 +223,7 @@ namespace CosmicShore.Game.Arcade
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
                 if (stat == null)
                 {
-                    Debug.LogError($"[HexRace] Client could not match RoundStats for '{sName}'. " +
+                    CSDebug.LogError($"[HexRace] Client could not match RoundStats for '{sName}'. " +
                                    $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                     continue;
                 }
@@ -227,7 +257,13 @@ namespace CosmicShore.Game.Arcade
             }
 
             if (IsServer)
+            {
                 _netCrystalsToFinish.Value = 0;
+                _netTrackSeed.Value = 0;
+
+                // Re-generate the track for the replay
+                SpawnTrackEarly().Forget();
+            }
 
             RaiseToggleReadyButtonEvent(true);
         }

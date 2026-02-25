@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using CosmicShore.Game;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
 {
@@ -82,6 +83,6 @@ public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
             }
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) { Debug.LogError($"[DriftTrail] loop error: {e}"); }
+        catch (Exception e) { CSDebug.LogError($"[DriftTrail] loop error: {e}"); }
     }
 }

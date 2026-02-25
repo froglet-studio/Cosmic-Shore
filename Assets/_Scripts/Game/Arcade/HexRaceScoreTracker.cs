@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Game.UI;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -62,7 +63,7 @@ namespace CosmicShore.Game.Arcade
                 _vesselTelemetry = vesselComponent.GetComponent<VesselTelemetry>();
 
             if (_vesselTelemetry == null)
-                Debug.LogWarning("[HexRaceScoreTracker] No VesselTelemetry found on local vessel.");
+                CSDebug.LogWarning("[HexRaceScoreTracker] No VesselTelemetry found on local vessel.");
 
             _isTracking = true;
         }
@@ -97,7 +98,7 @@ namespace CosmicShore.Game.Arcade
             gameData.LocalRoundStats.Score = finalScore;
 
             if (showDebugLogs)
-                Debug.Log($"<color=yellow>[HexRaceTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
+                CSDebug.Log($"<color=yellow>[HexRaceTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
 
             if (isWinner)
             {
@@ -116,6 +117,10 @@ namespace CosmicShore.Game.Arcade
                         finalScore
                     );
                 }
+
+                // Report per-vessel telemetry to UGS
+                if (UGSStatsManager.Instance && _vesselTelemetry != null && _observedVessel != null)
+                    UGSStatsManager.Instance.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
 
                 if (controller) controller.ReportLocalPlayerFinished(finalScore);
             }
@@ -145,7 +150,7 @@ namespace CosmicShore.Game.Arcade
             };
 
             foreach (var kvp in stats)
-                Debug.Log($"[HexRaceScoreTracker] {kvp.Key}: {kvp.Value}");
+                CSDebug.Log($"[HexRaceScoreTracker] {kvp.Key}: {kvp.Value}");
 
             return stats;
         }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using CosmicShore.Game.Cinematics;
 using CosmicShore.Utilities;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -67,7 +68,7 @@ namespace CosmicShore.Game
                 if (Player != null)
                     return Player.Name;
 
-                Debug.LogWarning("Player is null, returning empty string for PlayerName.");
+                CSDebug.LogWarning("Player is null, returning empty string for PlayerName.");
                 return "No-name";
             }
         }
@@ -78,7 +79,7 @@ namespace CosmicShore.Game
             {
                 if (Player == null)
                 {
-                    Debug.LogError("No Player found to get domain!");
+                    CSDebug.LogError("No Player found to get domain!");
                     return Domains.Jade;
                 }
                 return Player.Domain;

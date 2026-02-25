@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 ﻿using UnityEngine;
 
 namespace CosmicShore.Game.Cinematics
@@ -36,7 +37,7 @@ namespace CosmicShore.Game.Cinematics
             cameraTransform = camera.transform;
             vesselTransform = vessel;
             
-            Debug.Log($"CinematicCameraController initialized - Camera: {camera.name}, Vessel: {vessel.name}");
+            CSDebug.Log($"CinematicCameraController initialized - Camera: {camera.name}, Vessel: {vessel.name}");
         }
 
         /// <summary>
@@ -49,7 +50,7 @@ namespace CosmicShore.Game.Cinematics
             setupStartTime = Time.time;
             isStaticShot = false;
 
-            Debug.Log($"Starting camera setup: {setup.cameraType}");
+            CSDebug.Log($"Starting camera setup: {setup.cameraType}");
 
             switch (setup.cameraType)
             {
@@ -82,7 +83,7 @@ namespace CosmicShore.Game.Cinematics
             isActive = false;
             isStaticShot = false;
             currentSetup = null;
-            Debug.Log("Camera setup stopped");
+            CSDebug.Log("Camera setup stopped");
         }
 
         private void LateUpdate()
@@ -130,7 +131,7 @@ namespace CosmicShore.Game.Cinematics
             
             isStaticShot = true;
             
-            Debug.Log($"Static Front View initialized at {fixedCameraPosition}, looking at {vesselTransform.position}");
+            CSDebug.Log($"Static Front View initialized at {fixedCameraPosition}, looking at {vesselTransform.position}");
         }
 
         private void UpdateStaticFrontView()
@@ -166,7 +167,7 @@ namespace CosmicShore.Game.Cinematics
             
             isStaticShot = true;
             
-            Debug.Log($"Static Side View initialized at {fixedCameraPosition}");
+            CSDebug.Log($"Static Side View initialized at {fixedCameraPosition}");
         }
 
         private void UpdateStaticSideView()
@@ -188,7 +189,7 @@ namespace CosmicShore.Game.Cinematics
         private void InitializeFollowBehind()
         {
             followVelocity = Vector3.zero;
-            Debug.Log("Follow Behind initialized");
+            CSDebug.Log("Follow Behind initialized");
         }
 
         private void UpdateFollowBehind()
@@ -220,7 +221,7 @@ namespace CosmicShore.Game.Cinematics
         {
             circleAngle = 0f;
             circleCenter = vesselTransform.position;
-            Debug.Log($"Circle Around initialized - Center: {circleCenter}, Distance: {currentSetup.distance}");
+            CSDebug.Log($"Circle Around initialized - Center: {circleCenter}, Distance: {currentSetup.distance}");
         }
 
         private void UpdateCircleAround()
@@ -257,7 +258,7 @@ namespace CosmicShore.Game.Cinematics
         {
             // Start from current distance
             initialDistance = currentSetup.distance;
-            Debug.Log($"Zoom Out initialized - From: {initialDistance}, To: {currentSetup.zoomTargetDistance}");
+            CSDebug.Log($"Zoom Out initialized - From: {initialDistance}, To: {currentSetup.zoomTargetDistance}");
         }
 
         private void UpdateZoomOut()
@@ -292,7 +293,7 @@ namespace CosmicShore.Game.Cinematics
         #region Custom
         private void InitializeCustom()
         {
-            Debug.Log("Custom camera behavior - using default follow");
+            CSDebug.Log("Custom camera behavior - using default follow");
             InitializeFollowBehind();
         }
 
@@ -310,7 +311,7 @@ namespace CosmicShore.Game.Cinematics
         /// </summary>
         public void PrepareCinematicMode()
         {
-            Debug.Log("Camera prepared for cinematic mode");
+            CSDebug.Log("Camera prepared for cinematic mode");
         }
         
         /// <summary>
@@ -320,7 +321,7 @@ namespace CosmicShore.Game.Cinematics
         {
             isActive = false;
             isStaticShot = false;
-            Debug.Log("Camera restored to normal mode");
+            CSDebug.Log("Camera restored to normal mode");
         }
         
         #endregion

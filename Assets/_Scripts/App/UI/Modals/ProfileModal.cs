@@ -10,6 +10,7 @@ using System.Security;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Modals
 {
@@ -162,7 +163,7 @@ namespace CosmicShore.App.UI.Modals
             var nounIndex = random.Next(nouns.Count);
             var displayName = $"{adjectives[adjIndex]} {nouns[nounIndex]}";
 
-            Debug.Log($"AuthenticationView - Generated display name: {displayName}");
+            CSDebug.Log($"AuthenticationView - Generated display name: {displayName}");
             return displayName;
         }
 
@@ -227,7 +228,7 @@ namespace CosmicShore.App.UI.Modals
             }
             else
             {
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     "[ProfileModal] PlayerDataController.Instance is null. Setting display name only locally.");
                 CacheDisplayNameLocally(newName);
                 UpdatePlayerDisplayNameView(null);
@@ -236,7 +237,7 @@ namespace CosmicShore.App.UI.Modals
             if (BusyIndicator)
                 BusyIndicator.SetActive(true);
 
-            Debug.Log($"Current player display name: {newName}");
+            CSDebug.Log($"Current player display name: {newName}");
         }
 
         void CacheDisplayNameLocally(string name)
@@ -304,7 +305,7 @@ namespace CosmicShore.App.UI.Modals
         /// </summary>
         void UpdatePlayerDisplayNameView(UpdateUserTitleDisplayNameResult result)
         {
-            Debug.Log("Successfully Set Player Display Name (local or PlayFab).");
+            CSDebug.Log("Successfully Set Player Display Name (local or PlayFab).");
 
             if (BusyIndicator)
                 BusyIndicator.SetActive(false);

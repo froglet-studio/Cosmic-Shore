@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -2215,6 +2215,7 @@ MonoBehaviour:
   connectingPanelCanvasGroup: {fileID: 1617932949}
   canvasGroup: {fileID: 400393581}
   lifeFormCounter: {fileID: 400393570}
+  connectingPanel: {fileID: 0}
   hackerTextAnimator: {fileID: 0}
   dotsAnimator: {fileID: 0}
   playerScoreContainer: {fileID: 1562726424}
@@ -3676,6 +3677,7 @@ MonoBehaviour:
   listOfCrystalPositions: []
   spawnCrystalWithPlayerDomain: 0
   extraCrystalsToSpawnBeyondPlayerCount: 5
+  spawnOnClientReady: 1
 --- !u!114 &1628508345
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -4,6 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
 using System.Text;
 using System;
+using CosmicShore.Utility;
 
 /// <summary>
 /// Serializes objects to binary and saves to disk
@@ -64,7 +65,7 @@ static class DataAccessor
                 byte[] data = new byte[dataStream.Length];
                 dataStream.Read(data, 0, (int)dataStream.Length);
 
-                Debug.Log($"DataAccessor.Load -  Type:{typeof(T)}, Data:{Encoding.ASCII.GetString(data)}");
+                CSDebug.Log($"DataAccessor.Load -  Type:{typeof(T)}, Data:{Encoding.ASCII.GetString(data)}");
 
                 Data = (T)JsonConvert.DeserializeObject(Encoding.ASCII.GetString(data), typeof(T));
 
@@ -76,8 +77,8 @@ static class DataAccessor
                 // For now, let's just recreate the file as a poor version of self healing
                 // Once the app is in the wild, we will need a strategy for updating these data models
                 // Maybe it's enough to just make additive changes?
-                Debug.LogError($"Issue encountered while deserializing a save file :( {FilePath}");
-                Debug.LogError($"Exception Message: {ex.Message}");
+                CSDebug.LogError($"Issue encountered while deserializing a save file :( {FilePath}");
+                CSDebug.LogError($"Exception Message: {ex.Message}");
 
                 dataStream.Close();
 
@@ -92,8 +93,8 @@ static class DataAccessor
                 // For now, let's just recreate the file as a poor version of self healing
                 // Once the app is in the wild, we will need a strategy for updating these data models
                 // Maybe it's enough to just make additive changes?
-                Debug.LogError($"Could not deserialize Save file :( {FilePath}");
-                Debug.LogError($"Exception Message: {ex.Message}");
+                CSDebug.LogError($"Could not deserialize Save file :( {FilePath}");
+                CSDebug.LogError($"Exception Message: {ex.Message}");
 
                 File.Delete(FilePath);
 
