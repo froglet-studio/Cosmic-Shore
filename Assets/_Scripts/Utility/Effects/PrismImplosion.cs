@@ -99,7 +99,7 @@ namespace CosmicShore.Game
             prismRenderer.SetPropertyBlock(mpb);
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
-            PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
+            PrismEffectsManager.EnsureInstance()?.RegisterImplosion(this);
         }
 
         /// <summary> Start grow (shader: 1 -> 0). </summary>
@@ -131,7 +131,7 @@ namespace CosmicShore.Game
             prismRenderer.SetPropertyBlock(mpb);
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
-            PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
+            PrismEffectsManager.EnsureInstance()?.RegisterImplosion(this);
         }
 
         /// <summary>

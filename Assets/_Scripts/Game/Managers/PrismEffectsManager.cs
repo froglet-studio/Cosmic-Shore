@@ -14,13 +14,22 @@ namespace CosmicShore.Game
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {
+        private static bool _instanceDestroyed;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => _instanceDestroyed = false;
+
         /// <summary>
         /// Ensures a PrismEffectsManager instance exists. If none was placed in the scene,
         /// creates one automatically so explosion/implosion effects don't silently fail.
+        /// Returns null during scene teardown to avoid spawning objects from OnDestroy.
         /// </summary>
         public static PrismEffectsManager EnsureInstance()
         {
             if (Instance != null) return Instance;
+
+            // Don't auto-create after the previous instance was destroyed (scene teardown)
+            if (_instanceDestroyed) return null;
 
             var go = new GameObject("[PrismEffectsManager]");
             go.AddComponent<PrismEffectsManager>();
@@ -32,14 +41,14 @@ namespace CosmicShore.Game
         private const int BATCH_SIZE = 128;
         private const int INITIAL_CAPACITY = 64;
 
-        // Explosion tracking
-        private readonly List<PrismExplosion> activeExplosions = new(INITIAL_CAPACITY);
+        // Explosion tracking — HashSet for O(1) Add/Remove/Contains
+        private readonly HashSet<PrismExplosion> activeExplosionSet = new(INITIAL_CAPACITY);
         private readonly List<PrismExplosion> tempExplosionList = new(INITIAL_CAPACITY);
         private readonly List<PrismExplosion> explosionCompletionQueue = new(32);
         private NativeArray<ExplosionJobData> explosionJobData;
 
-        // Implosion tracking
-        private readonly List<PrismImplosion> activeImplosions = new(INITIAL_CAPACITY);
+        // Implosion tracking — same pattern
+        private readonly HashSet<PrismImplosion> activeImplosionSet = new(INITIAL_CAPACITY);
         private readonly List<PrismImplosion> tempImplosionList = new(INITIAL_CAPACITY);
         private readonly List<PrismImplosion> implosionCompletionQueue = new(32);
         private NativeArray<ImplosionJobData> implosionJobData;
@@ -56,6 +65,7 @@ namespace CosmicShore.Game
         public override void Awake()
         {
             base.Awake();
+            _instanceDestroyed = false;
             sharedMPB = new MaterialPropertyBlock();
             explosionJobData = new NativeArray<ExplosionJobData>(INITIAL_CAPACITY, Allocator.Persistent);
             implosionJobData = new NativeArray<ImplosionJobData>(INITIAL_CAPACITY, Allocator.Persistent);
@@ -65,26 +75,26 @@ namespace CosmicShore.Game
 
         public void RegisterExplosion(PrismExplosion explosion)
         {
-            if (explosion == null || activeExplosions.Contains(explosion)) return;
-            activeExplosions.Add(explosion);
-            EnsureExplosionCapacity();
+            if (explosion == null) return;
+            if (activeExplosionSet.Add(explosion))
+                EnsureExplosionCapacity();
         }
 
         public void UnregisterExplosion(PrismExplosion explosion)
         {
-            activeExplosions.Remove(explosion);
+            activeExplosionSet.Remove(explosion);
         }
 
         public void RegisterImplosion(PrismImplosion implosion)
         {
-            if (implosion == null || activeImplosions.Contains(implosion)) return;
-            activeImplosions.Add(implosion);
-            EnsureImplosionCapacity();
+            if (implosion == null) return;
+            if (activeImplosionSet.Add(implosion))
+                EnsureImplosionCapacity();
         }
 
         public void UnregisterImplosion(PrismImplosion implosion)
         {
-            activeImplosions.Remove(implosion);
+            activeImplosionSet.Remove(implosion);
         }
 
         #endregion
@@ -93,8 +103,8 @@ namespace CosmicShore.Game
 
         private void EnsureExplosionCapacity()
         {
-            if (activeExplosions.Count <= explosionJobData.Length) return;
-            var newSize = Mathf.NextPowerOfTwo(activeExplosions.Count);
+            if (activeExplosionSet.Count <= explosionJobData.Length) return;
+            var newSize = Mathf.NextPowerOfTwo(activeExplosionSet.Count);
             var newArray = new NativeArray<ExplosionJobData>(newSize, Allocator.Persistent);
             if (explosionJobData.IsCreated) explosionJobData.Dispose();
             explosionJobData = newArray;
@@ -102,8 +112,8 @@ namespace CosmicShore.Game
 
         private void EnsureImplosionCapacity()
         {
-            if (activeImplosions.Count <= implosionJobData.Length) return;
-            var newSize = Mathf.NextPowerOfTwo(activeImplosions.Count);
+            if (activeImplosionSet.Count <= implosionJobData.Length) return;
+            var newSize = Mathf.NextPowerOfTwo(activeImplosionSet.Count);
             var newArray = new NativeArray<ImplosionJobData>(newSize, Allocator.Persistent);
             if (implosionJobData.IsCreated) implosionJobData.Dispose();
             implosionJobData = newArray;
@@ -114,8 +124,8 @@ namespace CosmicShore.Game
         private void Update()
         {
             float dt = Time.deltaTime;
-            if (activeExplosions.Count > 0) ProcessExplosions(dt);
-            if (activeImplosions.Count > 0) ProcessImplosions(dt);
+            if (activeExplosionSet.Count > 0) ProcessExplosions(dt);
+            if (activeImplosionSet.Count > 0) ProcessImplosions(dt);
         }
 
         #region Explosion Processing
@@ -126,10 +136,13 @@ namespace CosmicShore.Game
             explosionCompletionQueue.Clear();
 
             int count = 0;
-            for (int i = 0; i < activeExplosions.Count; i++)
+            foreach (var exp in activeExplosionSet)
             {
-                var exp = activeExplosions[i];
-                if (exp == null || !exp.IsActive) continue;
+                if (exp == null || !exp.IsActive)
+                {
+                    explosionCompletionQueue.Add(exp);
+                    continue;
+                }
 
                 explosionJobData[count] = new ExplosionJobData
                 {
@@ -143,7 +156,12 @@ namespace CosmicShore.Game
                 count++;
             }
 
-            if (count == 0) return;
+            if (count == 0)
+            {
+                // Still process completion queue to clean up null/inactive entries
+                ProcessExplosionCompletions();
+                return;
+            }
 
             var job = new UpdateExplosionsJob
             {
@@ -184,12 +202,18 @@ namespace CosmicShore.Game
                 }
             }
 
-            // Process completions after iteration to avoid list mutation during traversal
+            ProcessExplosionCompletions();
+        }
+
+        private void ProcessExplosionCompletions()
+        {
+            // O(1) per removal with HashSet (was O(n) with List)
             for (int i = 0; i < explosionCompletionQueue.Count; i++)
             {
                 var exp = explosionCompletionQueue[i];
-                activeExplosions.Remove(exp);
-                exp.OnEffectComplete();
+                activeExplosionSet.Remove(exp);
+                if (exp != null && exp.IsActive)
+                    exp.OnEffectComplete();
             }
         }
 
@@ -203,10 +227,13 @@ namespace CosmicShore.Game
             implosionCompletionQueue.Clear();
 
             int count = 0;
-            for (int i = 0; i < activeImplosions.Count; i++)
+            foreach (var imp in activeImplosionSet)
             {
-                var imp = activeImplosions[i];
-                if (imp == null || !imp.IsActive) continue;
+                if (imp == null || !imp.IsActive)
+                {
+                    implosionCompletionQueue.Add(imp);
+                    continue;
+                }
 
                 implosionJobData[count] = new ImplosionJobData
                 {
@@ -221,7 +248,11 @@ namespace CosmicShore.Game
                 count++;
             }
 
-            if (count == 0) return;
+            if (count == 0)
+            {
+                ProcessImplosionCompletions();
+                return;
+            }
 
             var job = new UpdateImplosionsJob
             {
@@ -260,12 +291,18 @@ namespace CosmicShore.Game
                 }
             }
 
-            // Process completions after iteration
+            ProcessImplosionCompletions();
+        }
+
+        private void ProcessImplosionCompletions()
+        {
+            // O(1) per removal with HashSet (was O(n) with List)
             for (int i = 0; i < implosionCompletionQueue.Count; i++)
             {
                 var imp = implosionCompletionQueue[i];
-                activeImplosions.Remove(imp);
-                imp.OnEffectComplete();
+                activeImplosionSet.Remove(imp);
+                if (imp != null && imp.IsActive)
+                    imp.OnEffectComplete();
             }
         }
 
@@ -275,16 +312,17 @@ namespace CosmicShore.Game
 
         private void OnDisable()
         {
-            activeExplosions.Clear();
-            activeImplosions.Clear();
+            activeExplosionSet.Clear();
+            activeImplosionSet.Clear();
         }
 
         private void OnDestroy()
         {
+            _instanceDestroyed = true;
             if (explosionJobData.IsCreated) explosionJobData.Dispose();
             if (implosionJobData.IsCreated) implosionJobData.Dispose();
-            activeExplosions.Clear();
-            activeImplosions.Clear();
+            activeExplosionSet.Clear();
+            activeImplosionSet.Clear();
             tempExplosionList.Clear();
             tempImplosionList.Clear();
         }
