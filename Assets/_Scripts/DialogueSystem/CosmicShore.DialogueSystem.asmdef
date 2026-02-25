@@ -3,7 +3,8 @@
     "rootNamespace": "CosmicShore.DialogueSystem",
     "references": [
         "CosmicShore.Core",
-        "CosmicShore.Utility"
+        "CosmicShore.Utility",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

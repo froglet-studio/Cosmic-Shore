@@ -32,7 +32,7 @@ public class SpawnableCardioidSmear : SpawnableEllipsoid
                 var lookPosition = block == 0 ? position : points[block - 1].Position;
                 var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
 
-                points[block] = new SpawnPoint(position, rotation, prism.transform.localScale);
+                points[block] = new SpawnPoint(position, rotation, PrismScale);
             }
 
             trailDataList.Add(new SpawnTrailData(points, true, domain));

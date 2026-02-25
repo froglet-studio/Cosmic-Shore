@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Utility;
 
 /// <summary>
 /// Plain C# class (no MonoBehaviour, no static).
@@ -62,13 +63,13 @@ public class NetworkMonitor
             {
                 _connected = false;
                 _networkMonitorData.OnNetworkLost?.Raise();
-                Debug.Log("NetworkMonitor - Error. Check internet connection");
+                CSDebug.Log("NetworkMonitor - Error. Check internet connection");
             }
             else if (reachable && !_connected)
             {
                 _connected = true;
                 _networkMonitorData.OnNetworkFound?.Raise();
-                Debug.Log("NetworkMonitor Success. Internet connection established");
+                CSDebug.Log("NetworkMonitor Success. Internet connection established");
             }
 
             await UniTask.Delay(TimeSpan.FromSeconds(intervalSeconds), cancellationToken: token);
