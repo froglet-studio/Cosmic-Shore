@@ -6,6 +6,7 @@ using CosmicShore.Game.Arcade.Scoring;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Cinematics
 {

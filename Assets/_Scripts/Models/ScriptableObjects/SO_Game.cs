@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.Video;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore
 {

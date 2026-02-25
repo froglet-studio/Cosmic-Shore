@@ -4,6 +4,7 @@ using CosmicShore.Game;
 using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Arcade
 {

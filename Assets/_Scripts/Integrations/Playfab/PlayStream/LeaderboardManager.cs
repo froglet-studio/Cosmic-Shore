@@ -12,6 +12,7 @@ using CosmicShore.Utility.ClassExtensions;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Integrations.PlayFab.PlayStream
 {

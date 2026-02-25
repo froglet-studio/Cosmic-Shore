@@ -1,6 +1,7 @@
 using CosmicShore.App.Profile;
 using Reflex.Attributes;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game
 {

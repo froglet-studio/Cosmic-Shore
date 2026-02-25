@@ -13,6 +13,7 @@ using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
 using CosmicShore.Utilities;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Integrations.PlayFab.Economy

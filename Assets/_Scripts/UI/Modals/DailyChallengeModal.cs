@@ -5,6 +5,7 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using TMPro;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.App.UI.Modals
 {

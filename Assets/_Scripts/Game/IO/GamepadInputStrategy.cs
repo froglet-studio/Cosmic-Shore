@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Game.IO

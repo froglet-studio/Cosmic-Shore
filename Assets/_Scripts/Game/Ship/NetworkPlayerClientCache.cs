@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Unity.Multiplayer.Samples.Utilities;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game
 {

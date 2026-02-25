@@ -5,6 +5,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.App.UI.Elements
 {

@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Game.Spawning;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 public class SpawnableRaceTrack : SpawnableBase
 {

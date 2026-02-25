@@ -7,6 +7,7 @@ using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game
 {

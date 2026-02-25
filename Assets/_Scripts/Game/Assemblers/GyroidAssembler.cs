@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Utility;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore
 {

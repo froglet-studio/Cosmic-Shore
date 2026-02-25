@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Burst;
 using CosmicShore.Core;
 using System;
+using CosmicShore.Models.Enums;
 
 [BurstCompile]
 public struct FindDensestRegionJob : IJob

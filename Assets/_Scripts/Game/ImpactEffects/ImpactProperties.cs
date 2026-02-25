@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using System;
 using CosmicShore.Game.IO;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 [Serializable]
 public struct ImpactProperties

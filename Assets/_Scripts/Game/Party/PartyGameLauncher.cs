@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CosmicShore.Models.Enums;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;

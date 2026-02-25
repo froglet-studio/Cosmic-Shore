@@ -2,6 +2,7 @@
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Analytics
 {

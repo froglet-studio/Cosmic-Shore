@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Spawning
 {

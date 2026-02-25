@@ -7,6 +7,7 @@ using CosmicShore.Utilities;
 using Unity.Services.CloudSave;
 using Unity.Services.Leaderboards;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Game.Analytics

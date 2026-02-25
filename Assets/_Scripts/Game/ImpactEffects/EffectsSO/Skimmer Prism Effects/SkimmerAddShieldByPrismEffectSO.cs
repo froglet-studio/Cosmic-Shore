@@ -1,3 +1,5 @@
+using CosmicShore.Models.Enums;
+
 ﻿using UnityEngine;
 
 namespace CosmicShore.Game

@@ -7,6 +7,7 @@ using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Collections;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Game

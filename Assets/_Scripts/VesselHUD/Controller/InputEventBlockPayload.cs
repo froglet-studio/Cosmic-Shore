@@ -1,3 +1,5 @@
+using CosmicShore.Models.Enums;
+
 ﻿[System.Serializable]
 public struct InputEventBlockPayload
 {

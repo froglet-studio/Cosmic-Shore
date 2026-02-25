@@ -7,6 +7,7 @@ using CosmicShore.Game;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 public class ConsumeBoostActionExecutor : ShipActionExecutorBase
 {

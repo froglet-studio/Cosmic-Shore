@@ -4,6 +4,7 @@ using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 public class SpawnableWaypointTrack : SpawnableBase
 {

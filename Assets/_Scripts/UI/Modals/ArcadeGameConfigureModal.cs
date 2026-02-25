@@ -5,6 +5,7 @@ using CosmicShore.Systems.Loadout;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Game.Party;
 using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Models.Enums;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using TMPro;

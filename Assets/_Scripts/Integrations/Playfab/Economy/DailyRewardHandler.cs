@@ -6,6 +6,7 @@ using CosmicShore.Utilities;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Integrations.PlayFab.CloudScripts

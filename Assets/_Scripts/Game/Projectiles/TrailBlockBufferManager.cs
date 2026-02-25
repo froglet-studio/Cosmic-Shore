@@ -6,6 +6,7 @@ using CosmicShore.Utilities;
 using UnityEngine.Rendering;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Game.Projectiles

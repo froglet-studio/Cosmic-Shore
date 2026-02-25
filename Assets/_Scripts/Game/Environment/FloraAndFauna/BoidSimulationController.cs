@@ -6,6 +6,7 @@ using CosmicShore.Game;
 using CosmicShore.Soap;
 using CosmicShore.Utility;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Environment.FloraAndFauna
 {

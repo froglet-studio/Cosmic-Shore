@@ -1,6 +1,7 @@
 using System;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game
 {
