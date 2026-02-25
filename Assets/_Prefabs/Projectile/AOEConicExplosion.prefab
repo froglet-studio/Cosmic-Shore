@@ -4889,7 +4889,7 @@ MonoBehaviour:
   ExplosionDuration: 2.7
   ExplosionDelay: 0
   height: 800
-  coneContainer: {fileID: 9218889541719856748}
+  coneContainer: {fileID: 0}
 --- !u!33 &520348123677097672
 MeshFilter:
   m_ObjectHideFlags: 0
