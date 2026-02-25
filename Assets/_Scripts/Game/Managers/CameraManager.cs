@@ -59,14 +59,14 @@ public class CameraManager : Singleton<CameraManager>
     
     private void OnEnable()
     {
-        if (_onReturnToMainMenu) _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
-        if (_onInitializePlayerCamera) _onInitializePlayerCamera.OnRaised += SetupGamePlayCameras;
+        _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
+        _onInitializePlayerCamera.OnRaised += SetupGamePlayCameras;
     }
 
     void OnDisable()
     {
-        if (_onReturnToMainMenu) _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
-        if (_onInitializePlayerCamera) _onInitializePlayerCamera.OnRaised -= SetupGamePlayCameras;
+        _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
+        _onInitializePlayerCamera.OnRaised -= SetupGamePlayCameras;
     }
 
     void Start()

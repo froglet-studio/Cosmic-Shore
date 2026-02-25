@@ -26,12 +26,12 @@ namespace CosmicShore.Game
             _active = vesselStatus is { IsTranslationRestricted: true } ? stationaryFire : normalFire;
             _active?.StartAction(execs, vesselStatus);
             
-            if (stationaryModeChanged) stationaryModeChanged.OnRaised += OnStationaryModeChanged;
+            stationaryModeChanged.OnRaised += OnStationaryModeChanged;
         }
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
-            if (stationaryModeChanged) stationaryModeChanged.OnRaised -= OnStationaryModeChanged;
+            stationaryModeChanged.OnRaised -= OnStationaryModeChanged;
 
             _isHeld = false;
 

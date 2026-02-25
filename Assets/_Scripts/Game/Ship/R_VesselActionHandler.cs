@@ -42,14 +42,14 @@ namespace CosmicShore.Game
 
         void SubscribeToInputEvents()
         {
-            if (_onButtonPressed) _onButtonPressed.OnRaised  += OnButtonPressed;
-            if (_onButtonReleased) _onButtonReleased.OnRaised += OnButtonReleased;
+            _onButtonPressed.OnRaised  += OnButtonPressed;
+            _onButtonReleased.OnRaised += OnButtonReleased;
         }
 
         void UnsubscribeFromInputEvents()
         {
-            if (_onButtonPressed) _onButtonPressed.OnRaised  -= OnButtonPressed;
-            if (_onButtonReleased) _onButtonReleased.OnRaised -= OnButtonReleased;
+            _onButtonPressed.OnRaised  -= OnButtonPressed;
+            _onButtonReleased.OnRaised -= OnButtonReleased;
         }
 
         void OnDisable()
@@ -114,7 +114,7 @@ namespace CosmicShore.Game
             if (_inputAbilityStartTimes.TryGetValue(controlType, out var start))
                 duration = Time.time - start;
 
-            if (onAbilityExecuted) onAbilityExecuted.Raise(new AbilityStats
+            onAbilityExecuted.Raise(new AbilityStats
             {
                 PlayerName  = vesselStatus.PlayerName,
                 ControlType = controlType,

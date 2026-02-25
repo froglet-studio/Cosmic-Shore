@@ -67,7 +67,7 @@ namespace CosmicShore.Game
                 _resourceIndex,
                 _spawnOffset);
 
-            if (OnJoustCollision) OnJoustCollision.Raise(impacteeVessel.VesselStatus.PlayerName);
+            OnJoustCollision.Raise(impacteeVessel.VesselStatus.PlayerName);
 
             // Post two-tone joust notification to the game feed
             GameFeedAPI.PostJoust(

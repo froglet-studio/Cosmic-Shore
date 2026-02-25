@@ -20,7 +20,7 @@ namespace CosmicShore.Game
 
             // TODO - remove GameCanvas dependency
             // if (vesselStatus.Player.GameCanvas != null) vesselStatus.Player.GameCanvas.MiniGameHUD.SetPipActive(!vesselStatus.AIPilot.AutoPilotEnabled, mirrored);
-            if (_EventPipEventData) _EventPipEventData.Raise(new PipData()
+            _EventPipEventData.Raise(new PipData()
             {
                 IsActive = !vesselStatus.AutoPilotEnabled,
                 IsMirrored = mirrored

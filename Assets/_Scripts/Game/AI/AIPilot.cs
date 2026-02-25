@@ -127,12 +127,12 @@ namespace CosmicShore.Game.AI
 
         private void OnEnable()
         {
-            if (OnCellItemsUpdated) OnCellItemsUpdated.OnRaised += UpdateCellContent;
+            OnCellItemsUpdated.OnRaised += UpdateCellContent;
         }
 
         private void OnDisable()
         {
-            if (OnCellItemsUpdated) OnCellItemsUpdated.OnRaised -= UpdateCellContent;
+            OnCellItemsUpdated.OnRaised -= UpdateCellContent;
         }
 
 

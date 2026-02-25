@@ -41,7 +41,7 @@ namespace CosmicShore.Game.Arcade
         void UpdateUI()
         {
             string message = GetLifeFormsSafe().ToString();
-            if (onLifeFormCounterUpdatedEvent) onLifeFormCounterUpdatedEvent.Raise(message);
+            onLifeFormCounterUpdatedEvent.Raise(message);
         }
     }
 }

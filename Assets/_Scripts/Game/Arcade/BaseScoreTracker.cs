@@ -29,7 +29,7 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised += CalculateWinnerAndInvokeEvent;
-            if (OnClickToMainMenu) OnClickToMainMenu.OnRaised += OnTurnEnded;
+            OnClickToMainMenu.OnRaised += OnTurnEnded;
         }
 
         protected void UnsubscribeEvents()
@@ -40,7 +40,7 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised -= CalculateWinnerAndInvokeEvent;
-            if (OnClickToMainMenu) OnClickToMainMenu.OnRaised -= OnTurnEnded;
+            OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
         #endregion
 

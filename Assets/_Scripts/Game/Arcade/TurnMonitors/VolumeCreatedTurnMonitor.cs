@@ -54,7 +54,7 @@ namespace CosmicShore.Game.Arcade
             }*/
 
             string message = ((int)((amount - gameData.RoundStatsList[0].VolumeCreated) / volumeUnitConverstion)).ToString();
-            if (onUpdateTurnMonitorDisplay) onUpdateTurnMonitorDisplay.Raise(message);
+            onUpdateTurnMonitorDisplay.Raise(message);
         }
     }
 }

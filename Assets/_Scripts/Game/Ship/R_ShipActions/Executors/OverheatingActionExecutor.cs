@@ -28,14 +28,14 @@ public sealed class OverheatingActionExecutor : ShipActionExecutorBase
 
     void OnEnable()
     {
-        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
-        if (StationaryModeChanged) StationaryModeChanged.OnRaised += HandleStationaryModeChanged;
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        StationaryModeChanged.OnRaised += HandleStationaryModeChanged;
     }
 
     void OnDisable()
     {
-        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
-        if (StationaryModeChanged) StationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        StationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
     }
     
     void OnTurnEndOfMiniGame()

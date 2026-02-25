@@ -124,7 +124,7 @@ namespace CosmicShore.Core
         public void ExecuteOnScaleComplete()
         {
             var deltaVolume = UpdateVolume();
-            if (onPrismVolumeModified) onPrismVolumeModified.Raise(new PrismStats
+            onPrismVolumeModified.Raise(new PrismStats
             {
                 Volume = deltaVolume,
                 OwnName = prism.PlayerName,

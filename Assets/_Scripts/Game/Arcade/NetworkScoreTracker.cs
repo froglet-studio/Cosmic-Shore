@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised += CalculateWinnerOnServer;
-            if (OnClickToMainMenu) OnClickToMainMenu.OnRaised += OnTurnEnded;
+            OnClickToMainMenu.OnRaised += OnTurnEnded;
         }
 
         public override void OnNetworkDespawn()
@@ -26,7 +26,7 @@ namespace CosmicShore.Game.Arcade
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised -= CalculateWinnerOnServer;
-            if (OnClickToMainMenu) OnClickToMainMenu.OnRaised -= OnTurnEnded;
+            OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
 
         private void CalculateWinnerOnServer()

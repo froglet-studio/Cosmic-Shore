@@ -36,7 +36,7 @@ namespace CosmicShore
             }*/
 
             shipHUD.gameObject.SetActive(true);
-            if (onShipHUDInitialized) onShipHUDInitialized.Raise(new ShipHUDData()
+            onShipHUDInitialized.Raise(new ShipHUDData()
             {
                 ShipHUD = shipHUD
             });

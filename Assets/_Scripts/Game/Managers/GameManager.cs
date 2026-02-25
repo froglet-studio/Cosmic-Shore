@@ -31,7 +31,7 @@ namespace CosmicShore.Core
 
         private void Start()
         {
-            if (_onSceneTransition) _onSceneTransition.Raise(true);
+            _onSceneTransition.Raise(true);
         }
 
         private void OnDisable()
@@ -62,7 +62,7 @@ namespace CosmicShore.Core
 
         private async UniTaskVoid LoadSceneAsync(string sceneName)
         {
-            if (_onSceneTransition) _onSceneTransition.Raise(false);
+            _onSceneTransition.Raise(false);
 
             gameData.ResetRuntimeData();
             

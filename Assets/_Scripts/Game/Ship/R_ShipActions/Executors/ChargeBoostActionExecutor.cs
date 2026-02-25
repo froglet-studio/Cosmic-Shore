@@ -28,13 +28,13 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
 
     void OnEnable()
     {
-        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
     }
 
     void OnDisable()
     {
         CancelAll();
-        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
 
     void OnTurnEndOfMiniGame() => End(); 

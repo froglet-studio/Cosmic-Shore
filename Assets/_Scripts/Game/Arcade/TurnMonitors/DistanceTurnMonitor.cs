@@ -33,7 +33,7 @@ namespace CosmicShore
         void UpdateUI()
         {
             string message = ((int)(distance - distanceTraveled)).ToString();
-            if (onUpdateTurnMonitorDisplay) onUpdateTurnMonitorDisplay.Raise(message);
+            onUpdateTurnMonitorDisplay.Raise(message);
         }
     }
 }

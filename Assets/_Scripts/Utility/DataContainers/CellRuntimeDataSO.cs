@@ -49,7 +49,7 @@ namespace CosmicShore.Soap
             CellItems.Add(crystal);
             Crystals.Add(crystal);
 
-            OnCellItemsUpdated?.Raise();
+            OnCellItemsUpdated.Raise();
         }
         
         public bool TryRemoveItem(CellItem item)
@@ -60,7 +60,7 @@ namespace CosmicShore.Soap
             CellItems.Remove(item);
             if (item is Crystal crystal)
                 Crystals.Remove(crystal);
-            OnCellItemsUpdated?.Raise();
+            OnCellItemsUpdated.Raise();
             return true;
         }
 
