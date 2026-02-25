@@ -1,19 +1,16 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System;
-
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class SpawnableBatman : SpawnableAbstractBase
+public class SpawnableBatman : SpawnableBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-    static int BatsSpawned = 0;
 
-    public override GameObject Spawn()
+    protected override SpawnPoint[] GeneratePoints()
     {
-        GameObject container = new GameObject();
-        container.name = "BATMAN" + BatsSpawned++;
-
         Func<float, float> outerWing = (x) => (float)(2 * Math.Sqrt(-Math.Abs(Math.Abs(x) - 1) * Math.Abs(3 - Math.Abs(x)) / ((Math.Abs(x) - 1) * (3 - Math.Abs(x)))) * (1 + Math.Abs(Math.Abs(x) - 3) / (Math.Abs(x) - 3)) * Math.Sqrt(1 - Math.Pow((x / 7), 2)) + (5 + 0.97f * (Math.Abs(x - 0.5f) + Math.Abs(x + 0.5f)) - 3 * (Math.Abs(x - 0.75f) + Math.Abs(x + 0.75f))) * (1 + Math.Abs(1 - Math.Abs(x)) / (1 - Math.Abs(x))));
         Func<float, float> head1 = (x) => (float)(9 - 8 * Math.Abs(x));
         Func<float, float> head2 = (x) => (float)(3 * Math.Abs(x) + .75);
@@ -21,7 +18,7 @@ public class SpawnableBatman : SpawnableAbstractBase
         Func<float, float> bottom = (x) => (float)(Math.Abs(x / 2) - 0.0913722 * (Math.Pow(x, 2)) - 3 + Math.Sqrt(1 - Math.Pow((Math.Abs(Math.Abs(x) - 2) - 1), 2)));
         Func<float, float> innerWing = (x) => (float)((2.71052 + (1.5 - .5 * Math.Abs(x)) - 1.35526 * Math.Sqrt(4 - Math.Pow((Math.Abs(x) - 1), 2))) * Math.Sqrt(Math.Abs(Math.Abs(x) - 1) / (Math.Abs(x) - 1)) + 0.9);
 
-        var trail = new Trail();
+        var pointsList = new List<SpawnPoint>();
 
         // Outer Wings
         for (float block = 3.2f; block < 7; block += .2f)
@@ -30,21 +27,21 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = outerWing(block) * 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
 
             if (block > 4)
             {
                 position = new Vector3(x, -y, 0);
-                CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::1", trail, Vector3.one, prism, container);
+                pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
             }
 
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::2", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
 
             if (block > 4)
             {
                 position = new Vector3(-x, -y, 0);
-                CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::" + block + "::3", trail, Vector3.one, prism, container);
+                pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
             }
         }
 
@@ -55,10 +52,10 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = innerWing(block) * 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::INNER::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
 
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::INNER::" + block + "::1", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
         }
 
         // Bottom
@@ -68,10 +65,10 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = (bottom(block) * 5) - 2;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::BOTTOM::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
 
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::BOTTOM::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
         }
 
         // Head
@@ -81,9 +78,9 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = (head1(block) * 5) + 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD1::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD1::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
         }
         // Head2
         for (float block = .5f; block <= .75; block += .025f)
@@ -92,22 +89,32 @@ public class SpawnableBatman : SpawnableAbstractBase
             var y = (head2(block) * 5) + 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD2::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
 
             position = new Vector3(-x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD2::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
         }
-        // Head
+        // Head3
         for (float block = -.5f; block <= .5f; block += .025f)
         {
             var x = block * 5;
             var y = (head3(block) * 5) + 5;
 
             var position = new Vector3(x, y, 0);
-            CreateBlock(position, Vector3.zero, container.name + "::SEGMENT::HEAD3::" + block + "::0", trail, Vector3.one, prism, container);
+            pointsList.Add(new SpawnPoint(position, SpawnPoint.LookRotation(Vector3.zero, position, Vector3.up), Vector3.one));
         }
 
-        trails.Add(trail);
-        return container;
+        return pointsList.ToArray();
+    }
+
+    protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+    {
+        foreach (var td in trailData)
+            SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+    }
+
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(seed);
     }
 }

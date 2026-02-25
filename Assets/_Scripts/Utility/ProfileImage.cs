@@ -2,6 +2,7 @@ using CosmicShore.Integrations.PlayFab.PlayerData;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -36,7 +37,7 @@ namespace CosmicShore
         public Sprite GetProfileImage()
         {
             var profileIconId = PlayerDataController.PlayerProfile.ProfileIconId;
-            Debug.Log($"ProfileImage - GetProfileImage - {profileIconId}");
+            CSDebug.Log($"ProfileImage - GetProfileImage - {profileIconId}");
             return ProfileIcons.profileIcons.FirstOrDefault(x => x.Id == profileIconId).IconSprite;
         }
     }

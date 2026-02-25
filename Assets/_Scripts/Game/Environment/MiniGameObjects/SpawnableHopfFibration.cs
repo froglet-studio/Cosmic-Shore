@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace CosmicShore
     /// principal U(1)-bundle) and appears naturally in the geometry of spinors, Berry phase,
     /// and the Bloch sphere representation of qubits.
     /// </summary>
-    public class SpawnableHopfFibration : SpawnableAbstractBase
+    public class SpawnableHopfFibration : SpawnableBase
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
@@ -67,14 +68,9 @@ namespace CosmicShore
         [SerializeField] int villarceauFibers = 4;
         [SerializeField] int villarceauBlocks = 28;
 
-        static int ObjectsSpawned = 0;
-
-        public override GameObject Spawn()
+        protected override SpawnTrailData[] GenerateTrailData()
         {
-            GameObject container = new GameObject();
-            container.name = "HopfFibration" + ObjectsSpawned++;
-
-            int trailIndex = 0;
+            var trailDataList = new List<SpawnTrailData>();
 
             // --- Main fibration: sample latitude bands on S² ---
             for (int band = 0; band < latitudeBands; band++)
@@ -92,10 +88,9 @@ namespace CosmicShore
                     // phi ∈ [0, 2π) — longitude on S²
                     float phi = 2f * Mathf.PI * fiber / fibersPerBand;
 
-                    var trail = new Trail();
-                    trails.Add(trail);
-
-                    SpawnFiber(container, trail, theta, phi, blocksPerFiber, blockScale, bandDomain, ref trailIndex);
+                    var points = GenerateFiberPoints(theta, phi, blocksPerFiber, blockScale);
+                    if (points.Count > 0)
+                        trailDataList.Add(new SpawnTrailData(points.ToArray(), false, bandDomain));
                 }
             }
 
@@ -103,14 +98,14 @@ namespace CosmicShore
             if (includePolarFibers)
             {
                 // North pole (theta=0): projects to a circle at the "equator" of the projection
-                var northTrail = new Trail();
-                trails.Add(northTrail);
-                SpawnPolarFiber(container, northTrail, isNorth: true, ref trailIndex);
+                var northPoints = GeneratePolarFiberPoints(isNorth: true);
+                if (northPoints.Count > 0)
+                    trailDataList.Add(new SpawnTrailData(northPoints.ToArray(), false, Domains.Gold));
 
                 // South pole (theta=π): projects to a line through the origin (the axis)
-                var southTrail = new Trail();
-                trails.Add(southTrail);
-                SpawnPolarFiber(container, southTrail, isNorth: false, ref trailIndex);
+                var southPoints = GeneratePolarFiberPoints(isNorth: false);
+                if (southPoints.Count > 0)
+                    trailDataList.Add(new SpawnTrailData(southPoints.ToArray(), false, Domains.Gold));
             }
 
             // --- Villarceau circles: oblique linked circles ---
@@ -121,24 +116,17 @@ namespace CosmicShore
                     float thetaV = Mathf.PI * 0.35f; // mid-latitude slice
                     float phiV = 2f * Mathf.PI * v / villarceauFibers;
 
-                    // Tilt the fiber sampling to get Villarceau-style diagonal circles
-                    var trail = new Trail();
-                    trails.Add(trail);
-
-                    SpawnVillarceauFiber(container, trail, thetaV, phiV, ref trailIndex);
+                    var points = GenerateVillarceauFiberPoints(thetaV, phiV);
+                    if (points.Count > 0)
+                        trailDataList.Add(new SpawnTrailData(points.ToArray(), false, Domains.Ruby));
                 }
             }
 
-            return container;
-        }
-
-        public override GameObject Spawn(int intensityLevel)
-        {
-            return Spawn();
+            return trailDataList.ToArray();
         }
 
         /// <summary>
-        /// Spawn prisms along a single Hopf fiber corresponding to the point (theta, phi) on S².
+        /// Generate spawn points along a single Hopf fiber corresponding to the point (theta, phi) on S².
         ///
         /// The fiber parameterization:
         ///   z₁ = cos(θ/2) · e^{i(t + φ/2)}
@@ -147,9 +135,10 @@ namespace CosmicShore
         ///
         /// We then stereographically project (x₁,x₂,x₃,x₄) ∈ S³ → R³.
         /// </summary>
-        void SpawnFiber(GameObject container, Trail trail, float theta, float phi,
-            int blockCount, Vector3 scale, Domains fiberDomain, ref int blockIndex)
+        List<SpawnPoint> GenerateFiberPoints(float theta, float phi, int blockCount, Vector3 scale)
         {
+            var points = new List<SpawnPoint>();
+
             float cosHalfTheta = Mathf.Cos(theta * 0.5f);
             float sinHalfTheta = Mathf.Sin(theta * 0.5f);
             float halfPhi = phi * 0.5f;
@@ -189,13 +178,15 @@ namespace CosmicShore
                     lookTarget = prevPosition;
                 }
 
-                CreateBlock(position, lookTarget,
-                    $"{container.name}::FIBER::{blockIndex}",
-                    trail, scale, prism, container, fiberDomain);
+                // CreateBlock used flip=true (default), so forward = position - lookTarget
+                var rotation = SpawnPoint.LookRotation(lookTarget, position, Vector3.up);
+
+                points.Add(new SpawnPoint(position, rotation, scale));
 
                 prevPosition = position;
-                blockIndex++;
             }
+
+            return points;
         }
 
         /// <summary>
@@ -205,10 +196,10 @@ namespace CosmicShore
         /// After stereographic projection, one becomes a finite circle and the other
         /// passes through infinity (appears as a long line).
         /// </summary>
-        void SpawnPolarFiber(GameObject container, Trail trail, bool isNorth, ref int blockIndex)
+        List<SpawnPoint> GeneratePolarFiberPoints(bool isNorth)
         {
+            var points = new List<SpawnPoint>();
             int count = blocksPerFiber * 2; // More blocks for the polar fibers since they're prominent
-            Domains polarDomain = Domains.Gold;
 
             for (int i = 0; i < count; i++)
             {
@@ -251,12 +242,13 @@ namespace CosmicShore
                 if (float.IsInfinity(lookTarget.x) || float.IsNaN(lookTarget.x))
                     lookTarget = position + Vector3.forward;
 
-                CreateBlock(position, lookTarget,
-                    $"{container.name}::POLAR::{blockIndex}",
-                    trail, blockScale * 1.5f, prism, container, polarDomain);
+                // CreateBlock used flip=true (default), so forward = position - lookTarget
+                var rotation = SpawnPoint.LookRotation(lookTarget, position, Vector3.up);
 
-                blockIndex++;
+                points.Add(new SpawnPoint(position, rotation, blockScale * 1.5f));
             }
+
+            return points;
         }
 
         /// <summary>
@@ -265,9 +257,10 @@ namespace CosmicShore
         /// itself a Hopf fiber, but from a rotated fibration. The effect is additional
         /// linked circles cutting through the tori at oblique angles.
         /// </summary>
-        void SpawnVillarceauFiber(GameObject container, Trail trail,
-            float theta, float phi, ref int blockIndex)
+        List<SpawnPoint> GenerateVillarceauFiberPoints(float theta, float phi)
         {
+            var points = new List<SpawnPoint>();
+
             float cosHalfTheta = Mathf.Cos(theta * 0.5f);
             float sinHalfTheta = Mathf.Sin(theta * 0.5f);
 
@@ -302,12 +295,26 @@ namespace CosmicShore
                 if (float.IsInfinity(lookTarget.x) || float.IsNaN(lookTarget.x))
                     lookTarget = position + Vector3.forward;
 
-                CreateBlock(position, lookTarget,
-                    $"{container.name}::VILLARCEAU::{blockIndex}",
-                    trail, blockScale * 0.75f, prism, container, Domains.Ruby);
+                // CreateBlock used flip=true (default), so forward = position - lookTarget
+                var rotation = SpawnPoint.LookRotation(lookTarget, position, Vector3.up);
 
-                blockIndex++;
+                points.Add(new SpawnPoint(position, rotation, blockScale * 0.75f));
             }
+
+            return points;
+        }
+
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+        {
+            foreach (var td in trailData)
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+        }
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(latitudeBands, fibersPerBand, blocksPerFiber, projectionScale,
+                System.HashCode.Combine(projectionPole, includePolarFibers, includeVillarceauCircles,
+                    villarceauFibers, villarceauBlocks, blockScale, seed));
         }
 
         /// <summary>

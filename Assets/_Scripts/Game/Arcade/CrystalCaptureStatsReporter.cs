@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿// CrystalCaptureStatsReporter.cs
+using System.Linq;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
 using UnityEngine;
@@ -24,21 +25,29 @@ namespace CosmicShore.Game.Arcade
         {
             if (!UGSStatsManager.Instance) return;
 
-            var localPlayerName = gameData.LocalPlayer?.Vessel?.VesselStatus?.PlayerName;
-            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localPlayerName);
-
+            var localName = gameData.LocalPlayer?.Name;
+            var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) return;
 
-            bool isWinner = gameData.IsLocalDomainWinner(out _);
+            // Winner = index 0 after descending sort (highest crystals first)
+            bool isWinner = gameData.RoundStatsList.Count > 0 &&
+                            gameData.RoundStatsList[0].Name == localName;
 
             if (isWinner)
             {
-                // [Visual Note] Background payload transmission to UGS. No UI blocking. 
                 UGSStatsManager.Instance.ReportCrystalCaptureStats(
                     gameMode,
                     gameData.SelectedIntensity.Value,
                     (int)localStats.Score
                 );
+
+                // Report per-vessel telemetry
+                if (gameData.LocalPlayer?.Vessel is Component vc
+                    && vc.TryGetComponent<VesselTelemetry>(out var vt))
+                {
+                    UGSStatsManager.Instance.ReportVesselTelemetry(
+                        vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
+                }
             }
         }
     }

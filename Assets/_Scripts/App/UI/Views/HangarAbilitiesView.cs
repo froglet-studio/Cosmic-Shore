@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -17,13 +18,13 @@ namespace CosmicShore.App.UI.Views
 
         void Start()
         {
-            if (AbilityName == null) Debug.LogWarning("HangarAbilitiesView - AbilityName Serialized Field is not set");
-            if (AbilityDescription == null) Debug.LogWarning("HangarAbilitiesView - ShipDescription Serialized Field is not set");
-            if (AbilityPreviewWindow == null) Debug.LogWarning("HangarAbilitiesView - AbilityPreviewWindow Serialized Field is not set");
-            if (ClassName == null) Debug.LogWarning("HangarAbilitiesView - ClassName Serialized Field is not set");
-            if (ClassLockedImage == null) Debug.LogWarning("HangarAbilitiesView - ClassLockedImage Serialized Field is not set");
-            if (TrainButton == null) Debug.LogWarning("HangarOverviewView - TrainButton Serialized Field is not set");
-            if (GoToStoreButton == null) Debug.LogWarning("HangarOverviewView - GoToStoreButton Serialized Field is not set");
+            if (AbilityName == null) CSDebug.LogWarning("HangarAbilitiesView - AbilityName Serialized Field is not set");
+            if (AbilityDescription == null) CSDebug.LogWarning("HangarAbilitiesView - ShipDescription Serialized Field is not set");
+            if (AbilityPreviewWindow == null) CSDebug.LogWarning("HangarAbilitiesView - AbilityPreviewWindow Serialized Field is not set");
+            if (ClassName == null) CSDebug.LogWarning("HangarAbilitiesView - ClassName Serialized Field is not set");
+            if (ClassLockedImage == null) CSDebug.LogWarning("HangarAbilitiesView - ClassLockedImage Serialized Field is not set");
+            if (TrainButton == null) CSDebug.LogWarning("HangarOverviewView - TrainButton Serialized Field is not set");
+            if (GoToStoreButton == null) CSDebug.LogWarning("HangarOverviewView - GoToStoreButton Serialized Field is not set");
         }
 
         public override void UpdateView()

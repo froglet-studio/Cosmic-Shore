@@ -45,16 +45,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   domain: 3
-  intenstyLevel: 1
+  intenstyLevel: 3
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  blockScale: {x: 2, y: 2, z: 4}
-  latitudeBands: 6
-  fibersPerBand: 12
-  blocksPerFiber: 24
+  blockScale: {x: 1, y: 2, z: 6}
+  latitudeBands: 4
+  fibersPerBand: 8
+  blocksPerFiber: 64
   projectionScale: 80
   projectionPole: 0.85
   colorByLatitude: 1
-  bandDomains: 030000000100000004000000020000000300000001000000
+  bandDomains: 03000000010000000400000002000000
   includePolarFibers: 1
   includeVillarceauCircles: 0
   villarceauFibers: 8

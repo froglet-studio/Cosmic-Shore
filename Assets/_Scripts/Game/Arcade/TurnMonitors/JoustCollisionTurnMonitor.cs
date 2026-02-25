@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -52,7 +53,7 @@ namespace CosmicShore.Game.Arcade
             if (ownStats != null) return;
 
             if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out ownStats))
-                Debug.LogWarning("[JoustCollisionTurnMonitor] No round stats found for local player");
+                CSDebug.LogWarning("[JoustCollisionTurnMonitor] No round stats found for local player");
         }
     }
 }

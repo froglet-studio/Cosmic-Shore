@@ -8,6 +8,9 @@ using UnityEngine;
 
 public class FireGunActionExecutor : ShipActionExecutorBase
 {
+    /// <summary>Static event: each time a gun fires a single shot. Param = player name.</summary>
+    public static event Action<string> OnShotFired;
+
     public event Action OnGunFired;
     public event Action<float> OnAmmoChanged;
 
@@ -115,6 +118,7 @@ public class FireGunActionExecutor : ShipActionExecutorBase
 
         AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GunFire);
         OnGunFired?.Invoke();
+        OnShotFired?.Invoke(_status?.PlayerName);
 
         gun.FireGun(
             _worldMuzzleAnchor,

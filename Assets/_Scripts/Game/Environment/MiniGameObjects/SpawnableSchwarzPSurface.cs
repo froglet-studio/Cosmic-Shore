@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace CosmicShore
     /// Schwarz discovered this surface in 1865; it appears naturally in block copolymers,
     /// butterfly wing scales, and lipid membranes.
     /// </summary>
-    public class SpawnableSchwarzPSurface : SpawnableAbstractBase
+    public class SpawnableSchwarzPSurface : SpawnableBase
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
@@ -45,15 +46,36 @@ namespace CosmicShore
         [SerializeField] Domains positiveDomain = Domains.Blue;
         [SerializeField] Domains negativeDomain = Domains.Jade;
 
-        static int ObjectsSpawned = 0;
-
-        public override GameObject Spawn()
+        struct SurfaceNode
         {
-            var container = new GameObject($"SchwarzP{ObjectsSpawned++}");
-            int blockIndex = 0;
+            public Vector3 Position;
+            public Quaternion Rotation;
+            public Domains BlockDomain;
+        }
 
-            var trail = new Trail();
-            trails.Add(trail);
+        // Cache nodes for per-block domain assignment in SpawnLeafObjects
+        private List<SurfaceNode> _cachedNodes;
+
+        protected override SpawnTrailData[] GenerateTrailData()
+        {
+            var nodes = ComputeSurfacePositions();
+            var points = new SpawnPoint[nodes.Count];
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                var node = nodes[i];
+                points[i] = new SpawnPoint(node.Position, node.Rotation, blockScale);
+            }
+
+            // Store node data for SpawnLeafObjects to use for per-block domain coloring
+            _cachedNodes = nodes;
+
+            return new[] { new SpawnTrailData(points, false, domain) };
+        }
+
+        List<SurfaceNode> ComputeSurfacePositions()
+        {
+            var result = new List<SurfaceNode>();
 
             int totalSamples = periods * samplesPerPeriod;
             float halfExtent = periods * Mathf.PI; // f uses raw radians; one period = 2π
@@ -92,25 +114,55 @@ namespace CosmicShore
                             ? position + gradient.normalized
                             : position + Vector3.forward;
 
+                        // CreateBlock used flip=true (default), so forward = position - lookTarget
+                        var rotation = SpawnPoint.LookRotation(lookTarget, position, Vector3.up);
+
                         Domains blockDomain = colorBySide
                             ? (f >= 0 ? positiveDomain : negativeDomain)
                             : domain;
 
-                        CreateBlock(position, lookTarget,
-                            $"{container.name}::SURFACE::{blockIndex}",
-                            trail, blockScale, prism, container, blockDomain);
-
-                        blockIndex++;
+                        result.Add(new SurfaceNode
+                        {
+                            Position = position,
+                            Rotation = rotation,
+                            BlockDomain = blockDomain
+                        });
                     }
                 }
             }
 
-            return container;
+            return result;
         }
 
-        public override GameObject Spawn(int intensityLevel)
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
-            return Spawn();
+            if (prism == null || _cachedNodes == null) return;
+
+            var trail = new Trail();
+            var nodes = _cachedNodes;
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                var node = nodes[i];
+
+                var block = Instantiate(prism);
+                block.ChangeTeam(node.BlockDomain);
+                block.ownerID = $"{container.name}::SURFACE::{i}";
+                block.transform.SetPositionAndRotation(node.Position, node.Rotation);
+                block.transform.SetParent(container.transform, false);
+                block.TargetScale = blockScale;
+                block.Trail = trail;
+                block.Initialize();
+                trail.Add(block);
+            }
+
+            trails.Add(trail);
+        }
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(periods, samplesPerPeriod, surfaceThreshold, periodScale,
+                System.HashCode.Combine(colorBySide, positiveDomain, negativeDomain, blockScale, seed));
         }
     }
 }

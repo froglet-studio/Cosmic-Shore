@@ -317,7 +317,7 @@ namespace CosmicShore.Utility
 
             if (!currentAssetsPath.StartsWith("Assets/"))
             {
-                Debug.LogError("The set asset path must start with \"Assets/\".");
+                CSDebug.LogError("The set asset path must start with \"Assets/\".");
             }
             AssetDatabase.CreateFolder(parentPath, last);
 
@@ -343,7 +343,7 @@ namespace CosmicShore.Utility
                     Animator currentAnimator = currentGameObject.GetComponent<Animator>();
                     AnimationTrack animationTrack = currentTimelineAsset.CreateTrack<AnimationTrack>($"{currentGameObject.name} #{crn}");
                     string newAssetPath = GameObjectAssetPath(currentGameObject, currentRecordingNumber);
-                    Debug.Log($"new asset path: {newAssetPath}");
+                    CSDebug.Log($"new asset path: {newAssetPath}");
                     AnimationClip animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(newAssetPath);
                     animationTrack.CreateClip(animationClip);
                     director.SetGenericBinding(animationTrack, currentAnimator);
@@ -405,7 +405,7 @@ namespace CosmicShore.Utility
             GameObject gameObject = GameObject.Find(AnimationRecorderName);
             if (gameObject == null)
             {
-                Debug.LogWarning($"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
+                CSDebug.LogWarning($"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
                 gameObject = new GameObject(AnimationRecorderName);
             }
             DataHolder sceneData = gameObject.GetComponent<DataHolder>();

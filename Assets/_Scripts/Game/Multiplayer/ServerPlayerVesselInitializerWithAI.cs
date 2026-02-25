@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -53,7 +54,7 @@ namespace CosmicShore.Game
 
             if (!aiPlayerPrefab)
             {
-                Debug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
+                CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
                 return;
             }
 
@@ -75,7 +76,7 @@ namespace CosmicShore.Game
                 var aiPlayer = aiPlayerNO.GetComponent<Player>();
                 if (!aiPlayer)
                 {
-                    Debug.LogError("[ServerPlayerVesselInitializerWithAI] AI Player prefab missing Player component.");
+                    CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] AI Player prefab missing Player component.");
                     aiPlayerNO.Despawn(true);
                     continue;
                 }
@@ -83,8 +84,8 @@ namespace CosmicShore.Game
                 // Set AI vessel type (server authority)
                 var aiVesselType = data.vesselClass;
                 if (aiVesselType == VesselClassType.Any || aiVesselType == VesselClassType.Random)
-                    aiVesselType = VesselClassType.Sparrow;
-                    
+                    aiVesselType = PickAIVesselType();
+
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = data.PlayerName;
                 aiPlayer.NetDomain.Value = data.domain;
@@ -96,6 +97,9 @@ namespace CosmicShore.Game
                     aiPlayerNO.Despawn(true);
                     continue;
                 }
+
+                // 3) Configure AI pilot on the spawned vessel
+                ConfigureAIPilot(aiVesselNO);
             }
         }
 
@@ -107,7 +111,12 @@ namespace CosmicShore.Game
                 return null;
 
             int idx = 2 + aiIndex;
-            idx = Mathf.Clamp(idx, 0, _playerOrigins.Length - 1);
+            if (idx >= _playerOrigins.Length)
+            {
+                CSDebug.LogWarning($"[ServerPlayerVesselInitializerWithAI] Not enough spawn origins for AI {aiIndex} " +
+                                 $"(need index {idx}, have {_playerOrigins.Length}). Wrapping with modulo.");
+                idx = idx % _playerOrigins.Length;
+            }
             return _playerOrigins[idx];
         }
 
@@ -119,13 +128,13 @@ namespace CosmicShore.Game
 
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
             {
-                Debug.LogError($"[ServerPlayerVesselInitializerWithAI] No prefab for AI vessel type {vesselType}");
+                CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] No prefab for AI vessel type {vesselType}");
                 return false;
             }
 
             if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
             {
-                Debug.LogError($"[ServerPlayerVesselInitializerWithAI] Prefab {shipPrefabTransform.name} missing NetworkObject");
+                CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] Prefab {shipPrefabTransform.name} missing NetworkObject");
                 return false;
             }
 

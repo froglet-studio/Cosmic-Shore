@@ -3,6 +3,7 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using UnityEngine.Assertions;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Playfab.Utility
 {
@@ -60,7 +61,7 @@ namespace CosmicShore.Integrations.Playfab.Utility
         {
             if (!CatalogManager.StoreShelve.allItems.ContainsKey(item.Id))
             {
-                Debug.LogWarning($"Inventory Item no longer in catalog - id:{item.Id}, type:{item.Type}");
+                CSDebug.LogWarning($"Inventory Item no longer in catalog - id:{item.Id}, type:{item.Type}");
                 return null;
             }
 

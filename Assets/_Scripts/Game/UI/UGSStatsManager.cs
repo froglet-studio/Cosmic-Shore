@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CosmicShore.App.Systems;
 using CosmicShore.Services.Auth;
+using Unity.Services.Analytics;
 using Unity.Services.CloudSave;
 using Unity.Services.Leaderboards;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Analytics
 {
@@ -16,8 +19,15 @@ namespace CosmicShore.Game.Analytics
         [SerializeField] LeaderboardConfigSO leaderboardConfig; 
 
         private PlayerStatsProfile _cachedProfile = new PlayerStatsProfile();
-        private const string CLOUD_KEY = "PLAYER_STATS_PROFILE";
+        private VesselStatsCloudData _vesselStats = new VesselStatsCloudData();
+        private const string CLOUD_KEY = UGSKeys.PlayerStatsProfile;
+        private const string VESSEL_KEY = UGSKeys.VesselStats;
         private bool _isReady = false;
+
+        // Save debouncing: coalesces rapid saves into a single cloud call
+        private const float SAVE_DEBOUNCE_SECONDS = 2f;
+        private bool _saveDirty;
+        private bool _saveInFlight;
 
         void Awake()
         {
@@ -30,13 +40,23 @@ namespace CosmicShore.Game.Analytics
         {
             try
             {
-                while (AuthenticationController.Instance == null || !AuthenticationController.Instance.IsSignedIn)
-                    await Task.Delay(500);
+                if (AuthenticationController.Instance == null)
+                {
+                    Debug.LogWarning("[UGSStats] AuthenticationController not found. Waiting...");
+                    while (AuthenticationController.Instance == null)
+                        await Task.Delay(500);
+                }
+
+                if (!AuthenticationController.Instance.IsSignedIn)
+                    await AuthenticationController.Instance.EnsureSignedInAnonymouslyAsync();
 
                 _isReady = true;
                 LoadProfile();
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[UGSStats] Failed to initialize: {ex.Message}");
+            }
         }
 
         #region Public API - Smart High Score Evaluation
@@ -47,13 +67,11 @@ namespace CosmicShore.Game.Analytics
 
             string key = $"{mode}_{intensity}";
 
-            if (mode is GameModes.HexRace or GameModes.MultiplayerHexRaceGame or GameModes.MultiplayerJoust)
+            if (mode is GameModes.HexRace or GameModes.MultiplayerJoust)
             {
                 float cloudBest = 0f;
-                
+
                 if (mode == GameModes.HexRace)
-                    cloudBest = _cachedProfile.HexRaceStats.BestRaceTimes.GetValueOrDefault(key, 0f);
-                else if (mode == GameModes.MultiplayerHexRaceGame)
                     cloudBest = _cachedProfile.MultiHexStats.BestMultiplayerRaceTimes.GetValueOrDefault(key, 0f);
                 else if (mode == GameModes.MultiplayerJoust)
                     cloudBest = _cachedProfile.JoustStats.BestRaceTimes.GetValueOrDefault(key, 0f);
@@ -83,10 +101,6 @@ namespace CosmicShore.Game.Analytics
         {
             if (!_isReady) return;
 
-            _cachedProfile.BlitzStats.LifetimeCrystalsCollected += crystals;
-            _cachedProfile.BlitzStats.LifetimeLifeFormsKilled += lifeForms;
-            _cachedProfile.TotalGamesPlayed++;
-
             string key = $"{mode}_{intensity}";
             _cachedProfile.BlitzStats.TryUpdateHighScore(key, score);
 
@@ -94,49 +108,17 @@ namespace CosmicShore.Game.Analytics
             SaveProfile();
         }
 
-        public void ReportHexRaceStats(GameModes mode, int intensity, int cleanCrystals, float maxDrift, float maxBoost, float raceTime)
+        public void ReportHexRaceStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
         {
             if (!_isReady) return;
-
-            _cachedProfile.HexRaceStats.TotalCleanCrystalsCollected += cleanCrystals;
-            _cachedProfile.HexRaceStats.TotalDriftTime += maxDrift;
-            _cachedProfile.TotalGamesPlayed++;
-
-            if (maxDrift > _cachedProfile.HexRaceStats.LongestSingleDrift) 
-                _cachedProfile.HexRaceStats.LongestSingleDrift = maxDrift;
-            if (maxBoost > _cachedProfile.HexRaceStats.MaxTimeAtHighBoost) 
-                _cachedProfile.HexRaceStats.MaxTimeAtHighBoost = maxBoost;
-
-            if (raceTime < 10000f)
-            {
-                string key = $"{mode}_{intensity}";
-                _cachedProfile.HexRaceStats.TryUpdateBestTime(key, raceTime);
-                SubmitScoreInternal(mode, intensity, raceTime);
-            }
-            SaveProfile();
-        }
-
-        public void ReportMultiplayerHexStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
-        {
-            if (!_isReady) return;
-
-            _cachedProfile.MultiHexStats.TotalCleanCrystalsCollected += clean;
-            _cachedProfile.MultiHexStats.TotalDriftTime += drift; 
-            _cachedProfile.MultiHexStats.TotalJoustsWon += jousts;
-            _cachedProfile.TotalGamesPlayed++;
-
-            if (drift > _cachedProfile.MultiHexStats.LongestSingleDrift) 
-                _cachedProfile.MultiHexStats.LongestSingleDrift = drift;
 
             string key = $"{mode}_{intensity}";
             if (score < 10000f)
             {
                 _cachedProfile.MultiHexStats.TryUpdateBestTime(key, score);
-                _cachedProfile.MultiHexStats.TotalWins++;
-
                 SubmitScoreInternal(mode, intensity, score);
             }
-    
+
             SaveProfile();
         }
 
@@ -144,28 +126,19 @@ namespace CosmicShore.Game.Analytics
         {
             if (!_isReady) return;
 
-            _cachedProfile.JoustStats.TotalJoustsWon += joustsWon;
-            _cachedProfile.TotalGamesPlayed++;
-
             string key = $"{mode}_{intensity}";
-            
             if (raceTime < 10000f)
             {
                 _cachedProfile.JoustStats.TryUpdateBestTime(key, raceTime);
-                _cachedProfile.JoustStats.TotalWins++;
                 SubmitScoreInternal(mode, intensity, raceTime);
             }
-    
+
             SaveProfile();
         }
 
         public void ReportCrystalCaptureStats(GameModes mode, int intensity, int crystals)
         {
             if (!_isReady) return;
-
-            _cachedProfile.CrystalCaptureStats.LifetimeCrystalsCollected += crystals;
-            _cachedProfile.CrystalCaptureStats.TotalWins++;
-            _cachedProfile.TotalGamesPlayed++;
 
             string key = $"{mode}_{intensity}";
             _cachedProfile.CrystalCaptureStats.TryUpdateHighScore(key, crystals);
@@ -174,15 +147,77 @@ namespace CosmicShore.Game.Analytics
             SaveProfile();
         }
 
+        /// <summary>
+        /// Reports per-vessel telemetry stats to UGS Cloud Save at game end.
+        /// Called by score trackers after they read the vessel's telemetry.
+        /// </summary>
+        public void ReportVesselTelemetry(VesselTelemetry telemetry, string vesselTypeName)
+        {
+            if (!_isReady || telemetry == null || string.IsNullOrEmpty(vesselTypeName))
+            {
+                Debug.LogWarning($"[UGSStats] ReportVesselTelemetry skipped — " +
+                    $"ready={_isReady}, telemetry={(telemetry != null ? telemetry.GetType().Name : "NULL")}, " +
+                    $"vessel='{vesselTypeName}'");
+                return;
+            }
+
+            Debug.Log($"[UGSStats] ReportVesselTelemetry — {telemetry.GetType().Name} for '{vesselTypeName}', " +
+                $"drift={telemetry.MaxDriftTime:F2}s, boost={telemetry.MaxBoostTime:F2}s, " +
+                $"prismsDmg={telemetry.PrismsDamaged}");
+
+            var stats = _vesselStats.GetOrCreate(vesselTypeName);
+            stats.GamesPlayed++;
+
+            // Common stats — keep best values
+            if (telemetry.MaxDriftTime > stats.BestDriftTime)
+                stats.BestDriftTime = telemetry.MaxDriftTime;
+            if (telemetry.MaxBoostTime > stats.BestBoostTime)
+                stats.BestBoostTime = telemetry.MaxBoostTime;
+            stats.TotalPrismsDamaged += telemetry.PrismsDamaged;
+
+            // Vessel-specific stats
+            switch (telemetry)
+            {
+                case SparrowVesselTelemetry sparrow:
+                    Debug.Log($"[UGSStats] Sparrow stats — prismBlocks={sparrow.PrismBlocksShot}, " +
+                        $"skyburst={sparrow.SkyburstMissilesShot}, dangerBlocks={sparrow.DangerBlocksSpawned}");
+                    stats.IncrementCounter("PrismBlocksShot", sparrow.PrismBlocksShot);
+                    stats.IncrementCounter("SkyburstMissilesShot", sparrow.SkyburstMissilesShot);
+                    stats.IncrementCounter("DangerBlocksSpawned", sparrow.DangerBlocksSpawned);
+                    break;
+                case SquirrelVesselTelemetry squirrel:
+                    Debug.Log($"[UGSStats] Squirrel stats — jousts={squirrel.JoustsWon}, " +
+                        $"stolen={squirrel.PrismsStolen}, cleanStreak={squirrel.MaxCleanStreak}");
+                    stats.IncrementCounter("JoustsWon", squirrel.JoustsWon);
+                    stats.IncrementCounter("PrismsStolen", squirrel.PrismsStolen);
+                    if (squirrel.MaxCleanStreak > stats.Counters.GetValueOrDefault("BestCleanStreak", 0))
+                        stats.Counters["BestCleanStreak"] = squirrel.MaxCleanStreak;
+                    break;
+                default:
+                    Debug.LogWarning($"[UGSStats] No vessel-specific handler for {telemetry.GetType().Name}");
+                    break;
+            }
+
+            SaveVesselStats();
+        }
+
         #endregion
 
         #region Internal
 
         public void TrackPlayAgain()
         {
-            if (!_isReady) return;
-            _cachedProfile.TotalPlayAgainPressed++;
-            SaveProfile();
+            try
+            {
+                var evt = new CustomEvent(UGSKeys.EventPlayAgain);
+                AnalyticsService.Instance.RecordEvent(evt);
+                AnalyticsService.Instance.Flush();
+                Debug.Log("[UGSStats] Play Again analytics event sent.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[UGSStats] Failed to send Play Again event: {ex.Message}");
+            }
         }
 
         async void SubmitScoreInternal(GameModes mode, int intensity, double score)
@@ -190,13 +225,17 @@ namespace CosmicShore.Game.Analytics
             try
             {
                 string id = leaderboardConfig.GetLeaderboardId(mode, intensity);
-                if (string.IsNullOrEmpty(id)) return;
+                if (string.IsNullOrEmpty(id))
+                {
+                    Debug.LogWarning($"[UGSStats] No leaderboard mapping for {mode} intensity {intensity}");
+                    return;
+                }
 
-                try { await LeaderboardsService.Instance.AddPlayerScoreAsync(id, score); }
-                catch (Exception e) { Debug.LogWarning($"[Stats] Upload Failed: {e.Message}"); }
+                await LeaderboardsService.Instance.AddPlayerScoreAsync(id, score);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.LogWarning($"[UGSStats] Leaderboard submit failed for {mode}/{intensity}: {ex.Message}");
             }
         }
 
@@ -204,28 +243,85 @@ namespace CosmicShore.Game.Analytics
         {
             try
             {
-                var data = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { CLOUD_KEY });
-                if (data.TryGetValue(CLOUD_KEY, out var item)) 
-                    _cachedProfile = item.Value.GetAs<PlayerStatsProfile>();
-                
+                var keys = new HashSet<string> { CLOUD_KEY, VESSEL_KEY };
+                var data = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
+
+                if (data.TryGetValue(CLOUD_KEY, out var statsItem))
+                    _cachedProfile = statsItem.Value.GetAs<PlayerStatsProfile>();
+
+                if (data.TryGetValue(VESSEL_KEY, out var vesselItem))
+                    _vesselStats = vesselItem.Value.GetAs<VesselStatsCloudData>();
+
                 _cachedProfile.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
-                _cachedProfile.HexRaceStats ??= new HexRacePlayerStatsProfile();
-                _cachedProfile.MultiHexStats ??= new MultiplayerHexRacePlayerStatsProfile();
+                _cachedProfile.MultiHexStats ??= new HexRacePlayerStatsProfile();
                 _cachedProfile.JoustStats ??= new JoustPlayerStatsProfile();
                 _cachedProfile.CrystalCaptureStats ??= new CrystalCapturePlayerStatsProfile();
+                _vesselStats ??= new VesselStatsCloudData();
+
+                Debug.Log("[UGSStats] Profile and vessel stats loaded from cloud save.");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[UGSStats] Failed to load from cloud save: {ex.Message}. Using defaults.");
+            }
         }
 
-        async void SaveProfile()
+        /// <summary>
+        /// Marks profile as dirty and schedules a debounced cloud save.
+        /// Multiple calls within SAVE_DEBOUNCE_SECONDS collapse into one actual save.
+        /// </summary>
+        void SaveProfile()
+        {
+            _saveDirty = true;
+            if (!_saveInFlight)
+                DebouncedSaveAsync();
+        }
+
+        async void DebouncedSaveAsync()
+        {
+            if (_saveInFlight) return;
+            _saveInFlight = true;
+
+            try
+            {
+                // Wait to coalesce rapid mutations
+                await Task.Delay((int)(SAVE_DEBOUNCE_SECONDS * 1000));
+
+                // Drain: keep saving while mutations arrive during the save
+                while (_saveDirty)
+                {
+                    _saveDirty = false;
+                    _cachedProfile.LastLoginTick = DateTime.UtcNow.Ticks;
+                    var data = new Dictionary<string, object> { { CLOUD_KEY, _cachedProfile } };
+                    await CloudSaveService.Instance.Data.Player.SaveAsync(data);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[UGSStats] Save failed: {e.Message}");
+            }
+            finally
+            {
+                _saveInFlight = false;
+
+                // If something dirtied during our save, kick off another cycle
+                if (_saveDirty)
+                    DebouncedSaveAsync();
+            }
+        }
+
+        async void SaveVesselStats()
         {
             try
             {
-                _cachedProfile.LastLoginTick = DateTime.UtcNow.Ticks;
-                var data = new Dictionary<string, object> { { CLOUD_KEY, _cachedProfile } };
+                var data = new Dictionary<string, object> { { VESSEL_KEY, _vesselStats } };
                 await CloudSaveService.Instance.Data.Player.SaveAsync(data);
+                Debug.Log("[UGSStats] Vessel stats saved to cloud.");
             }
-            catch (Exception e) { Debug.LogError($"[Stats] Save Failed: {e.Message}"); }
+            catch (Exception e)
+            {
+                Debug.LogError($"[UGSStats] Vessel stats save failed: {e.Message}");
+            }
         }
 
         #endregion

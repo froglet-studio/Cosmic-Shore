@@ -161,7 +161,7 @@ namespace CosmicShore.Game
                 }
             }
 
-            Debug.Log($"[SpawnLatticeShieldAction] Spawned {total} rods. hit={hitFound} seed={s} type={lattice}");
+            CSDebug.Log($"[SpawnLatticeShieldAction] Spawned {total} rods. hit={hitFound} seed={s} type={lattice}");
         }
 
         public override void StopAction()
@@ -170,7 +170,7 @@ namespace CosmicShore.Game
             {
                 // Destroy(_container.gameObject);
                 // _container = null;
-                // Debug.Log("[SpawnLatticeShieldAction] Cleared lattice.");
+                // CSDebug.Log("[SpawnLatticeShieldAction] Cleared lattice.");
             }
         }
 

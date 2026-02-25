@@ -1,9 +1,10 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
 {
-    public class SpawnableRings : SpawnableAbstractBase
+    public class SpawnableRings : SpawnableBase
     {
         [Header("Ring Configuration")]
         [SerializeField] Prism prism;
@@ -11,7 +12,7 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] int prismsPerRing = 8;
         [SerializeField] float ringRadius = 20f;
         [SerializeField] float ringSpacing = 15f;
-        float initialOffset = 50;
+        float initialOffset = 8;
 
         [Header("Prism Configuration")]
         [SerializeField] Vector3 prismScale = new Vector3(4, 4, 9);
@@ -21,11 +22,19 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] bool isDangerous = false;
         [SerializeField] bool isShielded = false;
 
-        static int ObjectsSpawned = 0;
-
-        public override GameObject Spawn()
+        protected override int GetParameterHash()
         {
-            GameObject container = new GameObject($"Rings_{ObjectsSpawned++}");
+            return System.HashCode.Combine(seed, ringCount, prismsPerRing, ringRadius,
+                System.HashCode.Combine(ringSpacing, prismScale, prismAngle, isDangerous, isShielded));
+        }
+
+        public override GameObject Spawn(int intensity = 1)
+        {
+            intensityLevel = intensity;
+            prismAngle = intensity * 0.3f;
+            trails.Clear();
+
+            GameObject container = new GameObject($"Rings_{name}");
             container.transform.SetParent(transform, false);
             container.transform.SetPositionAndRotation(transform.position, transform.rotation);
 
@@ -65,35 +74,23 @@ namespace CosmicShore.Game.Projectiles
                 Vector3 adjustedPosition = tipPosition - lookDirection * halfLength;
 
                 string ownerId = $"{container.name}::R{ringIndex}::P{i}";
-                CreateBlock(adjustedPosition, lookDirection, ownerId, trail, prismScale, prism, container);
+
+                var block = Instantiate(prism, container.transform);
+                block.ChangeTeam(domain);
+                block.ownerID = ownerId;
+
+                Quaternion rotation = Quaternion.LookRotation(lookDirection, transform.up);
+                block.transform.SetPositionAndRotation(adjustedPosition, rotation);
+
+                block.TargetScale = prismScale;
+                block.Trail = trail;
+
+                if (isDangerous) block.MakeDangerous();
+                if (isShielded) block.ActivateShield();
+
+                block.Initialize();
+                trail.Add(block);
             }
-        }
-
-        protected void CreateBlock(Vector3 position, Vector3 lookDirection, string ownerId, Trail trail, Vector3 scale, Prism prefab, GameObject container)
-        {
-            var block = Instantiate(prefab, container.transform);
-            block.ChangeTeam(domain);
-            block.ownerID = ownerId;
-
-            Quaternion rotation = Quaternion.LookRotation(lookDirection, transform.up);
-            block.transform.SetPositionAndRotation(position, rotation);
-
-            block.TargetScale = scale;
-            block.Trail = trail;
-
-            if (isDangerous) block.MakeDangerous();
-            if (isShielded) block.ActivateShield();
-
-            block.Initialize();
-            trail.Add(block);
-        }
-
-        public override GameObject Spawn(int intensityLevel)
-        {
-            prismAngle = intensityLevel * 0.3f;
-            initialOffset = intensityLevel * 0.2f;
-
-            return Spawn();
         }
     }
 }
