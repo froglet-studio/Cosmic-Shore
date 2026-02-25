@@ -1,5 +1,6 @@
 using System; // Required for Action
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -60,11 +61,11 @@ namespace CosmicShore.Game.Arcade
         {
             if (optionalEnvironment)
             {
-                return optionalEnvironment.waypoints[optionalEnvironment.intenstyLevel - 1].positions.Count * optionalLaps;
+                return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
             }
 
             if (CrystalCollisions != 0) return CrystalCollisions;
-            Debug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
+            CSDebug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
             return 39;
 
         }

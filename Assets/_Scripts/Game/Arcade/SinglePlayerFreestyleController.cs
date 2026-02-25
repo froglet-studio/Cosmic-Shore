@@ -1,5 +1,6 @@
 
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -70,7 +71,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!segmentSpawner)
             {
-                Debug.LogError($"Missing {nameof(segmentSpawner)} reference!", this);
+                CSDebug.LogError($"Missing {nameof(segmentSpawner)} reference!", this);
                 return;
             }
             

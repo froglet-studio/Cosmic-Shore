@@ -37,7 +37,8 @@ namespace CosmicShore.Game
             boostChanged?.Raise(new BoostChangedPayload
             {
                 BoostMultiplier = status.BoostMultiplier,
-                MaxMultiplier = maxMult
+                MaxMultiplier = maxMult,
+                SourceDomain = prismImpactee.OwnDomain
             });
         }
     }

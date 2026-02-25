@@ -1,25 +1,21 @@
-
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class SpawnableZigzag : SpawnableAbstractBase
+public class SpawnableZigzag : SpawnableBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     [SerializeField] float amplitude = 25;
     [SerializeField] float period = 26;
-    static int ObjectsSpawned = 0;
+    [SerializeField] int blockCount = 160;
 
-    public override GameObject Spawn()
+    protected override SpawnPoint[] GeneratePoints()
     {
-        GameObject container = new GameObject();
-        container.name = "Zigzag" + ObjectsSpawned++;
+        var points = new SpawnPoint[blockCount];
 
-        var trail = new Trail();
-        int blockCount = 160;
-
-        var a = Random.Range(amplitude/ 2f, amplitude * 2f);
-        var p = Random.Range(period / 2f, period * 2f);
+        var a = NextFloat(amplitude / 2f, amplitude * 2f);
+        var p = NextFloat(period / 2f, period * 2f);
         var pOverTwo = p / 2f;
 
         for (int block = 0; block < blockCount; block++)
@@ -27,15 +23,30 @@ public class SpawnableZigzag : SpawnableAbstractBase
             float t = block;
             float x;
             if (t % p == t % pOverTwo)
-                x = (t%pOverTwo / pOverTwo) * a;
+                x = (t % pOverTwo / pOverTwo) * a;
             else
-                x = a - (t%p/p * a);
+                x = a - (t % p / p * a);
 
-            var position = new Vector3(x, 0, t*1.5f);
-            CreateBlock(position, Vector3.zero, container.name + "::BLOCK::" + block, trail, Vector3.one, prism, container);
+            var position = new Vector3(x, 0, t * 1.5f);
+            var rotation = SpawnPoint.LookRotation(position, Vector3.zero, Vector3.up);
+            points[block] = new SpawnPoint(position, rotation, Vector3.one);
         }
+        return points;
+    }
 
-        trails.Add(trail);
-        return container;
+    protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+    {
+        foreach (var td in trailData)
+            SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+    }
+
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(amplitude, period, blockCount, seed);
+    }
+
+    private float NextFloat(float min, float max)
+    {
+        return (float)rng.NextDouble() * (max - min) + min;
     }
 }

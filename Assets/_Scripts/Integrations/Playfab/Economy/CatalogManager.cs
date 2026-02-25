@@ -13,6 +13,7 @@ using PlayFab.EconomyModels;
 using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
 using CosmicShore.Utilities;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Integrations.PlayFab.Economy
@@ -43,7 +44,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         void Start()
         {
-            Debug.Log("CatalogManager.Start");
+            // [PLAYFAB DISABLED] Economy/catalog will be rebuilt on UGS. Pending removal.
+            return;
+
+            CSDebug.Log("CatalogManager.Start");
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             OnLoadCatalogSuccess += LoadPlayerInventory;
@@ -72,7 +76,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             // Null check for PlayFab Economy API instance
             _playFabEconomyInstanceAPI ??= new (AuthenticationManager.PlayFabAccount.AuthContext);
-            Debug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
+            CSDebug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
         }
 
         #endregion
@@ -115,7 +119,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 else
                 {
                     // If no more tokens, we've retrieved all items
-                    Debug.Log($"Total catalog items retrieved: {allCatalogItems.Count}");
+                    CSDebug.Log($"Total catalog items retrieved: {allCatalogItems.Count}");
                     callback?.Invoke();
                     OnLoadingCatalogItemsRecursive(allCatalogItems);
                 }
@@ -131,17 +135,17 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             if (allCatalogItems == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item.", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive));
+                CSDebug.LogWarningFormat("{0} - {1}: Unable to get catalog item.", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive));
                 return;
             }
 
             if (allCatalogItems.Count == 0)
             {
-                Debug.LogWarningFormat("{0} - {1}: No store items are available. Please check out PlayFab dashboard to fillout store items", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive));
+                CSDebug.LogWarningFormat("{0} - {1}: No store items are available. Please check out PlayFab dashboard to fillout store items", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive));
                 return;
             }
 
-            Debug.LogFormat("{0} - {1}: Catalog items Loaded: Count:{2}.", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive), allCatalogItems.Count);
+            CSDebug.LogFormat("{0} - {1}: Catalog items Loaded: Count:{2}.", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive), allCatalogItems.Count);
             if (StoreShelve == null)
             {
                 StoreShelve = new()
@@ -157,7 +161,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             foreach (var item in allCatalogItems)
             {
-                Debug.LogFormat("   CatalogManager - title: {0}, content type: {1}, tags:{2}", item.Title["NEUTRAL"], item.ContentType, string.Join(",", item.Tags));
+                CSDebug.LogFormat("   CatalogManager - title: {0}, content type: {1}, tags:{2}", item.Title["NEUTRAL"], item.ContentType, string.Join(",", item.Tags));
                 var converted = ModelConversionService.ConvertCatalogItemToVirtualItem(item);
                 AddToStoreShelve(item.ContentType, converted);
             }
@@ -188,17 +192,17 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     StoreShelve.captainUpgrades.Add(item.ItemId, item);
                     break;
                 case "Ticket":
-                    Debug.Log($"   AddToStoreShelve Ticket - Title: {item.Name}, ContentType:{item.ContentType}, Type:{item.Type}");
+                    CSDebug.Log($"   AddToStoreShelve Ticket - Title: {item.Name}, ContentType:{item.ContentType}, Type:{item.Type}");
                     StoreShelve.tickets.Add(item.ItemId, item);
                     if (item.Name == "Daily Challenge Ticket")
                         StoreShelve.DailyChallengeTicket = item;
                     else if (item.Name == "Faction Mission Ticket")
                         StoreShelve.FactionMissionTicket = item;
 
-                    Debug.Log("Ticket Product Found - name: " + item.Name +", " + item.Amount);
+                    CSDebug.Log("Ticket Product Found - name: " + item.Name +", " + item.Amount);
                     break;
                 default:
-                    Debug.LogWarningFormat($"CatalogManager - AddToStoreSelves: item content type is not part of the store, {item.Name}, {item.ContentType}");
+                    CSDebug.LogWarningFormat($"CatalogManager - AddToStoreSelves: item content type is not part of the store, {item.Name}, {item.ContentType}");
                     break;
             }
         }
@@ -209,16 +213,16 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public void GrantElementalCrystals(int amount, Element element)
         {
             string crystalItemId = "";
-            Debug.Log($"GrantElementalCrystals: amount: {amount}, element:{element}");
+            CSDebug.Log($"GrantElementalCrystals: amount: {amount}, element:{element}");
             foreach (var elementalCrystal in StoreShelve.crystals.Values)
             {
-                Debug.Log($"Crystal: {elementalCrystal.Name}");
+                CSDebug.Log($"Crystal: {elementalCrystal.Name}");
                 foreach (var tag in elementalCrystal.Tags)
-                    Debug.Log($"Crystal Tags: {tag}");
+                    CSDebug.Log($"Crystal Tags: {tag}");
 
                 if (elementalCrystal.Tags.Contains(element.ToString()))
                 {
-                    Debug.Log($"Found matching Crystal");
+                    CSDebug.Log($"Found matching Crystal");
                     crystalItemId = elementalCrystal.ItemId;
                     break;
                 }
@@ -226,7 +230,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             if (string.IsNullOrEmpty(crystalItemId))
             {
-                Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantElementalCrystals)} - Error Granting Crystals. No matching crystal found in catalog - element:{element}");
+                CSDebug.LogError($"{nameof(CatalogManager)}.{nameof(GrantElementalCrystals)} - Error Granting Crystals. No matching crystal found in catalog - element:{element}");
                 return;
             }
 
@@ -254,7 +258,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             if (response == null)
             {
-                Debug.LogWarningFormat($"{nameof(CatalogManager)}.{nameof(OnGrantElementalCrystals)}: received a null response.");
+                CSDebug.LogWarningFormat($"{nameof(CatalogManager)}.{nameof(OnGrantElementalCrystals)}: received a null response.");
                 return;
             }
 
@@ -267,8 +271,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 }
             }
 
-            Debug.Log("CatalogManager - OnGrantElementalCrystals Success.");
-            Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
+            CSDebug.Log("CatalogManager - OnGrantElementalCrystals Success.");
+            CSDebug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
         }
 
 
@@ -307,11 +311,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             if (response == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGrantStartingInventory));
+                CSDebug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGrantStartingInventory));
                 return;
             }
-            Debug.Log("CatalogManager - On Add Inventory Item Success.");
-            Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
+            CSDebug.Log("CatalogManager - On Add Inventory Item Success.");
+            CSDebug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
 
 
             // TODO: verify ownership of expected items to grant, update player data to have inventory granted flag set
@@ -327,7 +331,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// </summary>
         public void LoadPlayerInventory()
         {
-            Debug.Log("CatalogManager.LoadPlayerInventory");
+            CSDebug.Log("CatalogManager.LoadPlayerInventory");
             var request = new GetInventoryItemsRequest();
             request.Count = 50; // TODO: need to recursively load all like we don in the catalog
             //request.CustomTags
@@ -345,16 +349,16 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// <param name="response">Get Inventory Items Response</param>
         void OnGettingInventoryItems(GetInventoryItemsResponse response)
         {
-            Debug.Log("CatalogManager.OnGettingInventoryItems");
+            CSDebug.Log("CatalogManager.OnGettingInventoryItems");
 
             // If no inventory items no need to process the response.
             if (response == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGettingInventoryItems));
+                CSDebug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGettingInventoryItems));
                 return;
             }
             
-            Debug.Log("CatalogManager - Get Inventory Items success.");
+            CSDebug.Log("CatalogManager - Get Inventory Items success.");
 
             // Clear out previous loaded inventory, make sure no duplicates.
             ClearLocalInventoryOnLoading();
@@ -362,7 +366,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             // Iterate through the response, convert PlayFab item to virtual item, and add to inventory
             foreach (var item in response.Items)
             {
-                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", 
+                CSDebug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", 
                     nameof(CatalogManager), 
                     nameof(OnGettingInventoryItems), 
                     item.Id, item.Amount.ToString(), item.Type);
@@ -375,7 +379,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             foreach (var crystal in Inventory.crystals)
             {
-                Debug.Log($"Crystal: {crystal.Name}, Balance: {crystal.Amount}");
+                CSDebug.Log($"Crystal: {crystal.Name}, Balance: {crystal.Amount}");
             }
 
             Inventory.SaveToDisk();
@@ -400,33 +404,33 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             switch (item.ContentType)
             {
                 case "Captain":
-                    Debug.LogFormat("{0} - {1} - Adding Captain", nameof(CatalogManager), nameof(AddToInventory));
+                    CSDebug.LogFormat("{0} - {1} - Adding Captain", nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.captains.Add(item);
                     // If we ever own a captain, consider it encountered
                     CaptainManager.Instance.EncounterCaptain(item.Name);
                     break;
                 case "Class":
-                    Debug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));
+                    CSDebug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.shipClasses.Add(item);
                     break;
                 case "CaptainUpgrade":
-                    Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
+                    CSDebug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.captainUpgrades.Add(item);
                     break;
                 case "Game":
-                    Debug.LogFormat("{0} - {1} - Adding MiniGame",nameof(CatalogManager), nameof(AddToInventory));
+                    CSDebug.LogFormat("{0} - {1} - Adding MiniGame",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.games.Add(item);
                     break;
                 case "Crystal":
-                    Debug.LogFormat("{0} - {1} - Adding Crystal",nameof(CatalogManager), nameof(AddToInventory));
+                    CSDebug.LogFormat("{0} - {1} - Adding Crystal",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.crystals.Add(item);
                     break;
                 case "Ticket":
-                    Debug.LogFormat("{0} - {1} - Adding Ticket",nameof(CatalogManager), nameof(AddToInventory));
+                    CSDebug.LogFormat("{0} - {1} - Adding Ticket",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.tickets.Add(item);
                     break;
                 default:
-                    Debug.LogWarningFormat("{0} - {1} - Item Content Type not related to player inventory items, such as Stores and Subscriptions: {2}", nameof(CatalogManager), nameof(AddToInventory), item.ContentType);
+                    CSDebug.LogWarningFormat("{0} - {1} - Item Content Type not related to player inventory items, such as Stores and Subscriptions: {2}", nameof(CatalogManager), nameof(AddToInventory), item.ContentType);
                     break;
             }
 
@@ -456,17 +460,17 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             if (response == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: no response on adding inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
+                CSDebug.LogWarningFormat("{0} - {1}: no response on adding inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
                 return;
             }
 
             if (response.Item == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: no inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
+                CSDebug.LogWarningFormat("{0} - {1}: no inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
                 return;
             }
                     
-            Debug.Log("   CatalogManager - Id: " + response.Item.Id);
+            CSDebug.Log("   CatalogManager - Id: " + response.Item.Id);
         }
 
         /// <summary>
@@ -488,11 +492,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             if(response == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: no result.", nameof(CatalogManager), nameof(AddInventoryItem));
+                CSDebug.LogWarningFormat("{0} - {1}: no result.", nameof(CatalogManager), nameof(AddInventoryItem));
                 return;
             }
 
-            Debug.LogFormat("{0} - {1}: item added to player inventory.", nameof(CatalogManager), nameof(AddInventoryItem));
+            CSDebug.LogFormat("{0} - {1}: item added to player inventory.", nameof(CatalogManager), nameof(AddInventoryItem));
             OnInventoryChange?.Invoke();
         }
         
@@ -507,16 +511,16 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             var shipTypeTag = captain.Ship.Class.ToString();
             var upgradeLevelTag = "UpgradeLevel_" + (captain.Level+1);
 
-            Debug.Log($"PurchaseCaptainUpgrade - elementTag:{elementTag},shipTypeTag:{shipTypeTag},upgradeLevelTag:{upgradeLevelTag}");
+            CSDebug.Log($"PurchaseCaptainUpgrade - elementTag:{elementTag},shipTypeTag:{shipTypeTag},upgradeLevelTag:{upgradeLevelTag}");
 
             foreach (var upgrade in StoreShelve.captainUpgrades.Values)
             {
-                Debug.Log($"PurchaseCaptainUpgrade - upgrade:{upgrade.Name}, tags:{JsonConvert.SerializeObject(upgrade.Tags)}");
-                Debug.Log($"PurchaseCaptainUpgrade {upgrade.Tags.Contains(elementTag)},{upgrade.Tags.Contains(shipTypeTag)},{upgrade.Tags.Contains(upgradeLevelTag)}");
+                CSDebug.Log($"PurchaseCaptainUpgrade - upgrade:{upgrade.Name}, tags:{JsonConvert.SerializeObject(upgrade.Tags)}");
+                CSDebug.Log($"PurchaseCaptainUpgrade {upgrade.Tags.Contains(elementTag)},{upgrade.Tags.Contains(shipTypeTag)},{upgrade.Tags.Contains(upgradeLevelTag)}");
 
                 if (upgrade.Tags.Contains(elementTag) && upgrade.Tags.Contains(shipTypeTag) && upgrade.Tags.Contains(upgradeLevelTag))
                 {
-                    Debug.Log($"PurchaseCaptainUpgrade - found a match, attempting purchase");
+                    CSDebug.Log($"PurchaseCaptainUpgrade - found a match, attempting purchase");
 
                     PurchaseItem(upgrade, upgrade.Price[0], 1, successCallback, failureCallback);
                     break;
@@ -534,7 +538,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             var ownedItem = Inventory.allItems.Where(x => x.ItemId == item.ItemId).FirstOrDefault();
             if (ownedItem != null && ownedItem.Amount >= maxCount)
             {
-                Debug.LogWarning($"CatalogManager - Attempt to PurchaseItem when max amount already owned. Item:{item.Name}, Owned:{ownedItem.Amount}.");
+                CSDebug.LogWarning($"CatalogManager - Attempt to PurchaseItem when max amount already owned. Item:{item.Name}, Owned:{ownedItem.Amount}.");
                 return;
             }
 
@@ -563,7 +567,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     AddToInventory(item);
                     Inventory.SaveToDisk();
                     OnInventoryChange?.Invoke();
-                    Debug.Log($"CatalogManager - Purchase success.");
+                    CSDebug.Log($"CatalogManager - Purchase success.");
                     successCallback?.Invoke();
                 },
                 error =>
@@ -577,9 +581,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public VirtualItem GetCaptainUpgrade(Captain captain)
         {
-            Debug.Log($"GetCaptainUpgrade - Element:{captain.PrimaryElement}");
-            Debug.Log($"GetCaptainUpgrade - Class:{captain.Ship.Class}");
-            Debug.Log($"GetCaptainUpgrade - Level:{ "UpgradeLevel_" + (captain.Level + 1)}");
+            CSDebug.Log($"GetCaptainUpgrade - Element:{captain.PrimaryElement}");
+            CSDebug.Log($"GetCaptainUpgrade - Class:{captain.Ship.Class}");
+            CSDebug.Log($"GetCaptainUpgrade - Level:{ "UpgradeLevel_" + (captain.Level + 1)}");
 
             return StoreShelve.captainUpgrades.Values.FirstOrDefault(x => x.Tags.Contains(captain.PrimaryElement.ToString()) &&
                                                                           x.Tags.Contains(captain.Ship.Class.ToString()) &&
@@ -611,10 +615,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// <param name="result">Function execution result</param>
         private void OnPlayDailyChallengeSuccess(ExecuteFunctionResult result)
         {
-            Debug.Log("DailyRewardHandler - OnPlayDailyChallengeSuccess");
+            CSDebug.Log("DailyRewardHandler - OnPlayDailyChallengeSuccess");
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
+                CSDebug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
             
@@ -624,8 +628,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             
             // TODO: Invoke the result if needed for the UI and Daily Reward System
             
-            Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
-            Debug.Log($"Cloud script - Result: {result.FunctionResult}");
+            CSDebug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
+            CSDebug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
 
         public int GetCrystalBalance(Element crystalElementType=Element.Omni)
@@ -638,7 +642,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     balance = crystal.Amount;
                     break;
                 }
-                Debug.Log($"GetCrystalBalance - {crystal.Type}:{crystal.Name}:{crystal.Amount}");
+                CSDebug.Log($"GetCrystalBalance - {crystal.Type}:{crystal.Name}:{crystal.Amount}");
             }
 
             return balance;
@@ -665,7 +669,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     crystalId = crystal.ItemId;
                     break;
                 }
-                Debug.Log($"RewardClaimed - {crystal.Type}:{crystal.Name}:{value}");
+                CSDebug.Log($"RewardClaimed - {crystal.Type}:{crystal.Name}:{value}");
             }
             
             UpdateCurrencyBalance(crystalId, value);

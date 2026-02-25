@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using CosmicShore.Utility.ClassExtensions; // if you still need it elsewhere
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -73,7 +75,7 @@ namespace CosmicShore.Game
         {
             if (!prismRenderer || mpb == null)
             {
-                Debug.LogError("[PrismImplosion] Missing required components, cannot start implosion.");
+                CSDebug.LogError("[PrismImplosion] Missing required components, cannot start implosion.");
                 return;
             }
 
@@ -105,7 +107,7 @@ namespace CosmicShore.Game
         {
             if (!prismRenderer || mpb == null)
             {
-                Debug.LogError("[PrismImplosion] Missing required components, cannot start grow.");
+                CSDebug.LogError("[PrismImplosion] Missing required components, cannot start grow.");
                 return;
             }
 

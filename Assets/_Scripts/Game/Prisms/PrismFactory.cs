@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Utilities; // for PrismEventChannelWithReturnSO
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -74,7 +75,7 @@ namespace CosmicShore.Game
         {
             if (data == null)
             {
-                Debug.LogError("[PrismFactory] Received null PrismEventData");
+                CSDebug.LogError("[PrismFactory] Received null PrismEventData");
                 return new PrismReturnEventData { SpawnedObject = null };
             }
 
@@ -131,49 +132,49 @@ namespace CosmicShore.Game
         
         GameObject SpawnInteractivePrism(PrismEventData data)
         {
-            if (interactivePrismPool == null) { Debug.LogWarning("[PrismFactory] interactivePrismPool not set."); return null; }
+            if (interactivePrismPool == null) { CSDebug.LogWarning("[PrismFactory] interactivePrismPool not set."); return null; }
             var prism = interactivePrismPool.Get(data.SpawnPosition, data.Rotation, interactivePrismPool.transform);
             return prism ? prism.gameObject : null;
         }
             
         GameObject SpawnDolphinPrism(PrismEventData data)
         {
-            if (dolphinPrismPool == null) { Debug.LogWarning("[PrismFactory] dolphinPrismPool not set."); return null; }
+            if (dolphinPrismPool == null) { CSDebug.LogWarning("[PrismFactory] dolphinPrismPool not set."); return null; }
             var prism = dolphinPrismPool.Get(data.SpawnPosition, data.Rotation, dolphinPrismPool.transform);
             return prism ? prism.gameObject : null;
         }
 
         GameObject SpawnSerpentPrism(PrismEventData data)
         {
-            if (serpentPrismPool == null) { Debug.LogWarning("[PrismFactory] serpentPrismPool not set."); return null; }
+            if (serpentPrismPool == null) { CSDebug.LogWarning("[PrismFactory] serpentPrismPool not set."); return null; }
             var prism = serpentPrismPool.Get(data.SpawnPosition, data.Rotation, serpentPrismPool.transform);
             return prism ? prism.gameObject : null;
         }
 
         GameObject SpawnSparrowPrism(PrismEventData data)
         {
-            if (sparrowPrismPool == null) { Debug.LogWarning("[PrismFactory] sparrowPrismPool not set."); return null; }
+            if (sparrowPrismPool == null) { CSDebug.LogWarning("[PrismFactory] sparrowPrismPool not set."); return null; }
             var prism = sparrowPrismPool.Get(data.SpawnPosition, data.Rotation, sparrowPrismPool.transform);
             return prism ? prism.gameObject : null;
         }
 
         GameObject SpawnMantaPrism(PrismEventData data)
         {
-            if (mantaPrismPool == null) { Debug.LogWarning("[PrismFactory] mantaPrismPool not set."); return null; }
+            if (mantaPrismPool == null) { CSDebug.LogWarning("[PrismFactory] mantaPrismPool not set."); return null; }
             var prism = mantaPrismPool.Get(data.SpawnPosition, data.Rotation, mantaPrismPool.transform);
             return prism ? prism.gameObject : null;
         }
 
         GameObject SpawnSquirrelPrism(PrismEventData data)
         {
-            if (squirrelPrismPool == null) { Debug.LogWarning("[PrismFactory] squirrelPrismPool not set."); return null; }
+            if (squirrelPrismPool == null) { CSDebug.LogWarning("[PrismFactory] squirrelPrismPool not set."); return null; }
             var prism = squirrelPrismPool.Get(data.SpawnPosition, data.Rotation, squirrelPrismPool.transform);
             return prism ? prism.gameObject : null;
         }
 
         GameObject SpawnRhinoPrism(PrismEventData data)
         {
-            if (rhinoPrismPool == null) { Debug.LogWarning("[PrismFactory] rhinoPrismPool not set."); return null; }
+            if (rhinoPrismPool == null) { CSDebug.LogWarning("[PrismFactory] rhinoPrismPool not set."); return null; }
             var prism = rhinoPrismPool.Get(data.SpawnPosition, data.Rotation, rhinoPrismPool.transform);
             return prism ? prism.gameObject : null;
         }
@@ -245,13 +246,13 @@ namespace CosmicShore.Game
 
             if (!_themeManagerData || !_themeManagerData.ColorSet)
             {
-                Debug.LogWarning("[PrismFactory] ThemeManagerData or ColorSet is null.");
+                CSDebug.LogWarning("[PrismFactory] ThemeManagerData or ColorSet is null.");
                 return;
             }
 
             if (!_themeManagerData.TeamMaterialSets.TryGetValue(domain, out var materialSet))
             {
-                Debug.LogWarning($"[PrismFactory] No material set for team '{domain}'.");
+                CSDebug.LogWarning($"[PrismFactory] No material set for team '{domain}'.");
                 return;
             }
 
