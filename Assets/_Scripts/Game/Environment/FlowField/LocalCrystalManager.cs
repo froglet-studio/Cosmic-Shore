@@ -11,7 +11,7 @@ namespace CosmicShore.Game
         private void OnEnable()
         {
             if (spawnOnClientReady)
-                gameData.OnClientReady += MiniGameTurnStarted;
+                gameData.OnClientReady.OnRaised += MiniGameTurnStarted;
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStarted;
 
@@ -21,7 +21,7 @@ namespace CosmicShore.Game
         private void OnDisable()
         {
             if (spawnOnClientReady)
-                gameData.OnClientReady -= MiniGameTurnStarted;
+                gameData.OnClientReady.OnRaised -= MiniGameTurnStarted;
             else
                 gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStarted;
 
