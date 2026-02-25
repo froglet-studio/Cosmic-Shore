@@ -9,6 +9,8 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: HyperSeaSkybox
   m_Shader: {fileID: 4800000, guid: a8f4e2b6c9d1357024681acf3b5d7e90, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -17,51 +19,57 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _AndromedaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _AmbientStrength: 0.14
-    - _AtmosphereFalloff: 2.5
-    - _AtmosphereHeight: -0.3
-    - _AtmosphereStrength: 0.25
-    - _CellEdgeSharpness: 8
-    - _CellOverlayScale: 8
-    - _CellOverlayStrength: 0.12
-    - _CoreBrightness: 1.5
-    - _CoreHaloSize: 0.04
-    - _CoreSize: 0.015
-    - _DriftSpeed: 0.008
-    - _DustScale: 2
-    - _DustStrength: 0.4
-    - _GalacticBrightness: 0.6
-    - _GalacticNoiseScale: 4
-    - _GalacticNoiseStrength: 0.45
-    - _GalacticWidth: 0.18
+    - _AndromedaBrightness: 0.15
+    - _AndromedaSize: 0.4
+    - _AtmosphereFalloff: 8
+    - _AtmosphereHeight: 0.698
+    - _AtmosphereStrength: 0.02
+    - _CellEdgeSharpness: 18.95
+    - _CellOverlayScale: 12.1
+    - _CellOverlayStrength: 0.229
+    - _CoreBrightness: 1.29
+    - _CoreHaloSize: 0.303
+    - _CoreSize: 0.029
+    - _DriftSpeed: 0.1
+    - _DustScale: 4.99
+    - _DustStrength: 0.945
+    - _GalacticBrightness: 0.43
+    - _GalacticNoiseScale: 13.4
+    - _GalacticNoiseStrength: 0.876
+    - _GalacticWidth: 0.047
     - _NebulaScale: 2.5
     - _NebulaStrength: 0.4
-    - _StarBrightness: 2.5
-    - _StarConcentration: 1.2
-    - _StarDensity: 80
-    - _TwinkleSpeed: 1.5
-    - _AndromedaBrightness: 1.0
-    - _AndromedaSize: 0.1
+    - _StarBrightness: 0.34
+    - _StarConcentration: 100
+    - _StarDensity: 41
+    - _TwinkleSpeed: 1.06
     m_Colors:
     - _AmbientColor: {r: 0.03, g: 0.025, b: 0.08, a: 1}
-    - _AtmosphereColor: {r: 0.02, g: 0.04, b: 0.18, a: 1}
-    - _CellOverlayColor: {r: 0.14, g: 0.21, b: 0.62, a: 1}
-    - _CoreColor: {r: 0.7, g: 0.8, b: 1, a: 1}
+    - _AndromedaDirection: {r: -0.5, g: 0.35, b: 0.8, a: 0}
+    - _AndromedaDiskColor: {r: 0.78616345, g: 0.62676924, b: 0.16563806, a: 1}
+    - _AndromedaNucleusColor: {r: 0.78616345, g: 0.4853058, b: 0.2892487, a: 1}
+    - _AtmosphereColor: {r: 0, g: 0.02679205, b: 1, a: 1}
+    - _CellOverlayColor: {r: 0, g: 0.050716996, b: 0.70440245, a: 1}
+    - _CoreColor: {r: 0.9811321, g: 0.76181436, b: 0.39800632, a: 1}
     - _CoreDirection: {r: 1, g: -0.1, b: 0.3, a: 0}
-    - _CoreHaloColor: {r: 0.2, g: 0.28, b: 0.55, a: 1}
+    - _CoreHaloColor: {r: 0.754717, g: 0.53432167, b: 0.32514533, a: 1}
     - _DeepColor: {r: 0.008, g: 0.005, b: 0.035, a: 1}
-    - _GalacticColor: {r: 0.3, g: 0.38, b: 0.58, a: 1}
+    - _GalacticColor: {r: 0.3773585, g: 0.26409683, b: 0.11510615, a: 1}
     - _GalacticEmission: {r: 0.4, g: 0.48, b: 0.72, a: 1}
     - _GalacticNormal: {r: 0.1, g: 1, b: 0.15, a: 0}
     - _NebulaColor1: {r: 0.35, g: 0.06, b: 0.55, a: 1}
     - _NebulaColor2: {r: 0.04, g: 0.25, b: 0.55, a: 1}
     - _NebulaColor3: {r: 0.12, g: 0.08, b: 0.5, a: 1}
-    - _AndromedaDirection: {r: -0.5, g: 0.35, b: 0.8, a: 0}
-    - _AndromedaDiskColor: {r: 0.25, g: 0.32, b: 0.6, a: 1}
-    - _AndromedaNucleusColor: {r: 0.45, g: 0.5, b: 0.7, a: 1}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
