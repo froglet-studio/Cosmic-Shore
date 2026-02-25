@@ -10,7 +10,8 @@ using CosmicShore.Utilities;
 /// Controls overview:
 ///   Free flight (no triggers held):
 ///     Standard two-thumb flying with drift. XDiff spreads cursors instead of throttle.
-///     Speed is a fixed cruise speed.
+///     Speed is a fixed cruise speed. Course persists from swing momentum —
+///     only tethers change the vessel's course. Forward rotation is independent.
 ///
 ///   Pull a trigger:
 ///     Fires a visible tether from that side's cursor. If it hits a prism the tether
@@ -33,7 +34,8 @@ public class SwingingVesselTransformer : VesselTransformer
     [Header("Tether")]
     [SerializeField] float tetherSpeed = 300f;
     [SerializeField] float maxTetherLength = 150f;
-    [SerializeField] float tetherWidth = 0.15f;
+    [SerializeField] float tetherRadius = 0.08f;
+    [SerializeField] Material tetherMaterial;
 
     [Header("Swing")]
     [SerializeField] float swingAngularSpeed = 2.5f;
@@ -41,7 +43,11 @@ public class SwingingVesselTransformer : VesselTransformer
 
     [Header("Free Flight")]
     [SerializeField] float cruiseSpeed = 25f;
-    [SerializeField] float driftConvergeRate = 1.5f;
+
+    [Header("Cursor")]
+    [SerializeField] float cursorDistance = 8f;
+    [SerializeField] float cursorSize = 0.5f;
+    [SerializeField] Material cursorMaterial;
 
     [Header("Anchor Prism")]
     [SerializeField] Vector3 anchorPrismScale = new(6f, 6f, 6f);
@@ -61,7 +67,8 @@ public class SwingingVesselTransformer : VesselTransformer
         public float extension;
         public Vector3 fireOrigin;
         public Vector3 fireDirection;
-        public LineRenderer line;
+        public Transform capsule;
+        public MeshRenderer capsuleRenderer;
     }
 
     // ---- Public API ----
@@ -100,6 +107,14 @@ public class SwingingVesselTransformer : VesselTransformer
     // Momentum tracking across state transitions
     Vector3 lastVelocity;
 
+    // Cursors
+    Transform leftCursor;
+    Transform rightCursor;
+
+    // Deferred anchor spawns (spread prism creation across frames)
+    Vector3? pendingLeftSpawnPos;
+    Vector3? pendingRightSpawnPos;
+
     int trailBlocksLayer = -1;
     int TrailBlocksLayer
     {
@@ -117,8 +132,15 @@ public class SwingingVesselTransformer : VesselTransformer
     {
         base.Initialize(vessel);
 
-        leftTether.line = CreateTetherLine("LeftTether");
-        rightTether.line = CreateTetherLine("RightTether");
+        CreateTetherCapsule("LeftTether", ref leftTether);
+        CreateTetherCapsule("RightTether", ref rightTether);
+
+        leftCursor = CreateCursor("LeftCursor");
+        rightCursor = CreateCursor("RightCursor");
+
+        // Initialize course to forward so there is a sane default
+        if (VesselStatus != null)
+            VesselStatus.Course = transform.forward;
 
         var handler = VesselStatus?.ActionHandler;
         if (handler != null)
@@ -138,19 +160,47 @@ public class SwingingVesselTransformer : VesselTransformer
         }
     }
 
-    LineRenderer CreateTetherLine(string childName)
+    void OnDestroy()
     {
-        var go = new GameObject(childName);
-        go.transform.SetParent(transform);
-        go.transform.localPosition = Vector3.zero;
+        if (leftTether.capsule) Destroy(leftTether.capsule.gameObject);
+        if (rightTether.capsule) Destroy(rightTether.capsule.gameObject);
+        if (leftCursor) Destroy(leftCursor.gameObject);
+        if (rightCursor) Destroy(rightCursor.gameObject);
+    }
 
-        var lr = go.AddComponent<LineRenderer>();
-        lr.positionCount = 2;
-        lr.startWidth = tetherWidth;
-        lr.endWidth = tetherWidth * 0.5f;
-        lr.useWorldSpace = true;
-        lr.enabled = false;
-        return lr;
+    void CreateTetherCapsule(string childName, ref TetherState tether)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        go.name = childName;
+
+        // Remove collider — tether is visual only
+        var col = go.GetComponent<Collider>();
+        if (col) Destroy(col);
+
+        var mr = go.GetComponent<MeshRenderer>();
+        if (tetherMaterial != null)
+            mr.sharedMaterial = tetherMaterial;
+
+        mr.enabled = false;
+        tether.capsule = go.transform;
+        tether.capsuleRenderer = mr;
+    }
+
+    Transform CreateCursor(string cursorName)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = cursorName;
+        go.transform.localScale = Vector3.one * cursorSize;
+
+        // Remove collider — cursor is visual only
+        var col = go.GetComponent<Collider>();
+        if (col) Destroy(col);
+
+        var mr = go.GetComponent<MeshRenderer>();
+        if (cursorMaterial != null)
+            mr.sharedMaterial = cursorMaterial;
+
+        return go.transform;
     }
 
     // ==================================================================
@@ -204,7 +254,7 @@ public class SwingingVesselTransformer : VesselTransformer
         tether.extension = 0f;
         tether.fireOrigin = transform.position;
         tether.fireDirection = direction.normalized;
-        tether.line.enabled = true;
+        tether.capsuleRenderer.enabled = true;
     }
 
     void ReleaseTether(ref TetherState tether)
@@ -212,7 +262,7 @@ public class SwingingVesselTransformer : VesselTransformer
         tether.isAnchored = false;
         tether.isFiring = false;
         tether.anchor = null;
-        tether.line.enabled = false;
+        tether.capsuleRenderer.enabled = false;
     }
 
     // ==================================================================
@@ -224,13 +274,20 @@ public class SwingingVesselTransformer : VesselTransformer
         if (VesselStatus == null || VesselStatus.IsStationary)
             return;
 
-        // Pre-processing: advance firing tethers, validate anchors, draw lines
-        UpdateFiringTether(ref leftTether);
-        UpdateFiringTether(ref rightTether);
+        // Process deferred anchor spawns from previous frame
+        ProcessDeferredSpawn(ref leftTether, ref pendingLeftSpawnPos);
+        ProcessDeferredSpawn(ref rightTether, ref pendingRightSpawnPos);
+
+        // Pre-processing: advance firing tethers, validate anchors, update visuals
+        UpdateFiringTether(ref leftTether, true);
+        UpdateFiringTether(ref rightTether, false);
         ValidateAnchor(ref leftTether);
         ValidateAnchor(ref rightTether);
         UpdateTetherVisual(ref leftTether);
         UpdateTetherVisual(ref rightTether);
+
+        // Position cursor indicators
+        UpdateCursors();
 
         DetermineState();
 
@@ -284,7 +341,7 @@ public class SwingingVesselTransformer : VesselTransformer
     //  TETHER FIRING & VALIDATION
     // ==================================================================
 
-    void UpdateFiringTether(ref TetherState tether)
+    void UpdateFiringTether(ref TetherState tether, bool isLeft)
     {
         if (!tether.isFiring) return;
 
@@ -306,21 +363,32 @@ public class SwingingVesselTransformer : VesselTransformer
             }
         }
 
-        // Reached max range — spawn an anchor prism
+        // Reached max range — defer prism spawn to next frame to avoid lag spike
         if (tether.extension >= maxTetherLength)
         {
             Vector3 spawnPos = tether.fireOrigin + tether.fireDirection * maxTetherLength;
-            var anchor = SpawnAnchorPrism(spawnPos);
-            if (anchor != null)
-            {
-                float rl = Vector3.Distance(transform.position, anchor.position);
-                AnchorTether(ref tether, anchor, rl);
-            }
+            tether.isFiring = false;
+            tether.capsuleRenderer.enabled = false;
+
+            if (isLeft)
+                pendingLeftSpawnPos = spawnPos;
             else
-            {
-                tether.isFiring = false;
-                tether.line.enabled = false;
-            }
+                pendingRightSpawnPos = spawnPos;
+        }
+    }
+
+    void ProcessDeferredSpawn(ref TetherState tether, ref Vector3? pendingPos)
+    {
+        if (!pendingPos.HasValue) return;
+
+        var pos = pendingPos.Value;
+        pendingPos = null;
+
+        var anchor = SpawnAnchorPrism(pos);
+        if (anchor != null && tether.triggerHeld)
+        {
+            float rl = Vector3.Distance(transform.position, anchor.position);
+            AnchorTether(ref tether, anchor, rl);
         }
     }
 
@@ -348,14 +416,49 @@ public class SwingingVesselTransformer : VesselTransformer
 
     void UpdateTetherVisual(ref TetherState tether)
     {
-        if (!tether.line.enabled) return;
-
-        tether.line.SetPosition(0, transform.position);
+        Vector3 start = transform.position;
+        Vector3 end;
 
         if (tether.isAnchored && tether.anchor != null)
-            tether.line.SetPosition(1, tether.anchor.position);
+            end = tether.anchor.position;
         else if (tether.isFiring)
-            tether.line.SetPosition(1, tether.fireOrigin + tether.fireDirection * tether.extension);
+            end = tether.fireOrigin + tether.fireDirection * tether.extension;
+        else
+        {
+            tether.capsuleRenderer.enabled = false;
+            return;
+        }
+
+        float distance = Vector3.Distance(start, end);
+        if (distance < 0.01f)
+        {
+            tether.capsuleRenderer.enabled = false;
+            return;
+        }
+
+        tether.capsuleRenderer.enabled = true;
+
+        // Position at midpoint, orient Y-axis along tether direction
+        tether.capsule.position = (start + end) * 0.5f;
+        tether.capsule.rotation = Quaternion.FromToRotation(Vector3.up, (end - start) / distance);
+
+        // Capsule primitive is 2 units tall, 1 unit diameter at scale 1
+        tether.capsule.localScale = new Vector3(tetherRadius * 2f, distance * 0.5f, tetherRadius * 2f);
+    }
+
+    void UpdateCursors()
+    {
+        bool show = currentState == SwingState.FreeFlight;
+
+        if (leftCursor) leftCursor.gameObject.SetActive(show);
+        if (rightCursor) rightCursor.gameObject.SetActive(show);
+
+        if (!show) return;
+
+        if (leftCursor)
+            leftCursor.position = transform.position + GetCursorDirection(true) * cursorDistance;
+        if (rightCursor)
+            rightCursor.position = transform.position + GetCursorDirection(false) * cursorDistance;
     }
 
     // ==================================================================
@@ -384,7 +487,7 @@ public class SwingingVesselTransformer : VesselTransformer
         }
     }
 
-    // ---- Free flight: dolphin-like drift, fixed cruise speed ----
+    // ---- Free flight: course persists from swing momentum ----
 
     void FreeFlightMove()
     {
@@ -402,10 +505,8 @@ public class SwingingVesselTransformer : VesselTransformer
 
         VesselStatus.Speed = speed;
 
-        // Drift: course slowly converges toward current forward
-        VesselStatus.Course = Vector3.Slerp(
-            VesselStatus.Course, transform.forward,
-            driftConvergeRate * Time.deltaTime).normalized;
+        // Course persists from swing momentum — only tethers change it.
+        // Forward rotation is independent (controlled by RotateShip).
 
         transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;
         lastVelocity = speed * VesselStatus.Course;
