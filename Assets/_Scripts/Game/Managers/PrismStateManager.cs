@@ -1,6 +1,5 @@
+using CosmicShore.Game;
 using UnityEngine;
-using System.Collections;
-using System;
 
 namespace CosmicShore.Core
 {
@@ -20,7 +19,6 @@ namespace CosmicShore.Core
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
         private PrismTeamManager teamManager;
-        private Coroutine activeStateCoroutine;
 
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
@@ -46,23 +44,21 @@ namespace CosmicShore.Core
 
         public void ActivateShield(float? duration = null)
         {
+            // Cancel any pending timer before applying new state
+            PrismTimerManager.EnsureInstance().CancelTimers(this);
+
+            ApplyShieldState();
+
             if (duration.HasValue)
             {
-                if (activeStateCoroutine != null)
-                {
-                    StopCoroutine(activeStateCoroutine);
-                }
-
-                activeStateCoroutine = StartCoroutine(TimedShieldCoroutine(duration.Value));
-            }
-            else
-            {
-                ApplyShieldState();
+                PrismTimerManager.EnsureInstance().ScheduleShieldDeactivation(this, duration.Value);
             }
         }
 
         public void ActivateSuperShield()
         {
+            PrismTimerManager.EnsureInstance().CancelTimers(this);
+
             prism.prismProperties.IsSuperShielded = true;
             prism.prismProperties.IsDangerous = false;
 
@@ -71,23 +67,30 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.SuperShielded;
+
+            SyncAOERegistryShieldState();
         }
 
         public void DeactivateShields(float? delay = null)
         {
+            PrismTimerManager.EnsureInstance().CancelTimers(this);
+
             if (delay.HasValue)
             {
-                if (activeStateCoroutine != null)
-                {
-                    StopCoroutine(activeStateCoroutine);
-                }
-
-                activeStateCoroutine = StartCoroutine(DelayedShieldDeactivationCoroutine(delay.Value));
+                PrismTimerManager.EnsureInstance().ScheduleShieldDeactivation(this, delay.Value);
             }
             else
             {
                 ApplyNormalState();
             }
+        }
+
+        /// <summary>
+        /// Called by PrismTimerManager when a scheduled deactivation timer expires.
+        /// </summary>
+        internal void ExecuteTimerDeactivation()
+        {
+            ApplyNormalState();
         }
 
         private void ApplyShieldState()
@@ -100,6 +103,8 @@ namespace CosmicShore.Core
                 _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.Shielded;
+
+            SyncAOERegistryShieldState();
         }
 
         private void ApplyNormalState()
@@ -112,21 +117,27 @@ namespace CosmicShore.Core
             prism.prismProperties.IsShielded = false;
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
+
+            SyncAOERegistryShieldState();
         }
 
-        private IEnumerator TimedShieldCoroutine(float duration)
+        private void SyncAOERegistryShieldState()
         {
-            ApplyShieldState();
-            yield return new WaitForSeconds(duration);
-            ApplyNormalState();
-            activeStateCoroutine = null;
+            if (prism.AOERegistryIndex >= 0)
+                PrismAOERegistry.Instance?.UpdateShieldState(
+                    prism.AOERegistryIndex,
+                    prism.prismProperties.IsShielded,
+                    prism.prismProperties.IsSuperShielded);
         }
 
-        private IEnumerator DelayedShieldDeactivationCoroutine(float delay)
+        private void OnDisable()
         {
-            yield return new WaitForSeconds(delay);
-            ApplyNormalState();
-            activeStateCoroutine = null;
+            PrismTimerManager.Instance?.CancelTimers(this);
+        }
+
+        private void OnDestroy()
+        {
+            PrismTimerManager.Instance?.CancelTimers(this);
         }
     }
 }
