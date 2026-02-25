@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
@@ -101,8 +102,9 @@ namespace CosmicShore.App.UI.Views
         }
 
         //  Play Button press gets loadout and sends to game
-        public void OnClickPlayButton() 
+        public void OnClickPlayButton()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             Loadout loadout = LoadoutSystem.GetActiveLoadout();
             Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
         }

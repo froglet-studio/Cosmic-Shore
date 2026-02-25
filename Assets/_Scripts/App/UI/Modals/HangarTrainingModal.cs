@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems;
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
@@ -158,6 +159,7 @@ namespace CosmicShore
 
         public void LaunchSelectedGame()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             var shipResources = new ResourceCollection();
             if (SelectedGame.ElementOne.Element == Element.Charge || SelectedGame.ElementTwo.Element == Element.Charge)
                 shipResources.Charge = 1;

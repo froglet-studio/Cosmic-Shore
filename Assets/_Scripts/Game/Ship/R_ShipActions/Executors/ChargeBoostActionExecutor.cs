@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using CosmicShore.App.Systems.Audio;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Game;
@@ -69,7 +70,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
 
     public void BeginDischarge(ChargeBoostActionSO so, IVesselStatus status)
     {
-        End(); 
+        End();
         _charging = false;
 
         if (!_resources) return;
@@ -77,6 +78,7 @@ public sealed class ChargeBoostActionExecutor : ShipActionExecutorBase
         float start = GetUnits(so);
         status.IsChargedBoostDischarging = true;
 
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
         OnDischargeStarted?.Invoke(start);
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
