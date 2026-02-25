@@ -64,6 +64,26 @@ public class SwingingVesselTransformer : VesselTransformer
         public LineRenderer line;
     }
 
+    // ---- Public API ----
+
+    /// <summary>True when the vessel is attached to at least one anchor.</summary>
+    public bool IsSwinging => currentState != SwingState.FreeFlight;
+
+    /// <summary>Called by SwingActionSO.StartAction — enables swing mode.</summary>
+    public void StartSwing()
+    {
+        // Swing is input-driven; nothing extra needed on start.
+    }
+
+    /// <summary>Called by SwingActionSO.StopAction — releases all tethers.</summary>
+    public void ReleaseSwing()
+    {
+        ReleaseTether(ref leftTether);
+        leftTether.triggerHeld = false;
+        ReleaseTether(ref rightTether);
+        rightTether.triggerHeld = false;
+    }
+
     // ---- State ----
 
     TetherState leftTether;
