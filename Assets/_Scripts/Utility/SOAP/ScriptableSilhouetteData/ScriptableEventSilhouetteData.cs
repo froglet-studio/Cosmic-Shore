@@ -1,7 +1,7 @@
 using UnityEngine;
 using Obvious.Soap;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility.SOAP.ScriptableSilhouetteData
 {
     [CreateAssetMenu(fileName = "Event_" + nameof(SilhouetteData), menuName = "ScriptableObjects/SOAP/Events/"+ nameof(SilhouetteData))]
     public class ScriptableEventSilhouetteData : ScriptableEvent<SilhouetteData>

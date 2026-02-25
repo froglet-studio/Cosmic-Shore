@@ -5,7 +5,8 @@ using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_EDITOR
 using UnityEditor;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
+
 #endif
 
 namespace CosmicShore.Game.UI

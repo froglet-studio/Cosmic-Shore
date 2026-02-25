@@ -1,5 +1,5 @@
-using CosmicShore.Core;
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Environment.Spawning;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles

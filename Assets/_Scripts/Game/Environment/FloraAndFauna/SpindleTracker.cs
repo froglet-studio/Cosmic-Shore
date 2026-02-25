@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     /// <summary>
     /// Tracks spindles (visual components) for a LifeForm.

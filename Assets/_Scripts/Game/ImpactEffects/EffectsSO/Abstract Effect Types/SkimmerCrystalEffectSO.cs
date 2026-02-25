@@ -1,7 +1,8 @@
-﻿namespace CosmicShore.Game
+
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes
 {
     public abstract class SkimmerCrystalEffectSO : ImpactEffectSO
     {
         public abstract void Execute(SkimmerImpactor impactor, CrystalImpactor  impactee);
-    }   
+    }
 }

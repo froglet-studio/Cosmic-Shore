@@ -1,7 +1,7 @@
 using Obvious.Soap;
 using UnityEngine;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility.SOAP.ScriptableAuthenticationData
 {
     [System.Serializable]
     public class NetworkMonitorData

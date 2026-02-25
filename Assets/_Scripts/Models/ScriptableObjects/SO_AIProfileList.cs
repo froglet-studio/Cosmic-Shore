@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Models.ScriptableObjects
 {
     [CreateAssetMenu(fileName = "New AI Profile List", menuName = "CosmicShore/AIProfileList", order = 21)]
     public class SO_AIProfileList : ScriptableObject

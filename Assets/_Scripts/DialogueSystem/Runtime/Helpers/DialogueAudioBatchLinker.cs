@@ -1,10 +1,10 @@
 #if UNITY_EDITOR
 using UnityEngine;
-using CosmicShore.DialogueSystem.Models;
+using CosmicShore.DialogueSystem.Runtime.Models;
 using UnityEditor;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.DialogueSystem.Editor
+namespace CosmicShore.DialogueSystem.Runtime.Helpers
 {
     public static class DialogueAudioBatchLinker
     {

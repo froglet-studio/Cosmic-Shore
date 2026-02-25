@@ -2,7 +2,7 @@
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Ship.ShipActions.DataContainers
+namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
 {
     [CreateAssetMenu(fileName = "ApplyRotationAction", menuName = "ScriptableObjects/Vessel Actions/ApplyRotationActionSO")]
     public class ApplyRotationActionSO : ShipActionSO

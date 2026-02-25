@@ -2,7 +2,7 @@ using CosmicShore.Systems.Ads;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Elements
+namespace CosmicShore.UI.Elements
 {
     public class RewardedAdsButton : MonoBehaviour
     {

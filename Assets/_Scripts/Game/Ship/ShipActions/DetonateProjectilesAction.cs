@@ -1,19 +1,22 @@
-using CosmicShore.Game.Projectiles;
-using CosmicShore.Core;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
+using CosmicShore.Models.Enums;
 using UnityEngine;
 
-public class DetonateProjectilesAction : ShipAction
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    // TODO: WIP gun firing needs to be reworked
-    [SerializeField] Gun gun;
-
-    public override void StartAction()
+    public class DetonateProjectilesAction : ShipAction
     {
-        gun.DetonateProjectile();
-    }
+        // TODO: WIP gun firing needs to be reworked
+        [SerializeField] Gun gun;
 
-    public override void StopAction()
-    {
+        public override void StartAction()
+        {
+            gun.DetonateProjectile();
+        }
+
+        public override void StopAction()
+        {
         
+        }
     }
 }

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts.Interactive;
+namespace CosmicShore.SSUScripts.Interactive.Editor
 {
     [CustomEditor(typeof(InteractiveWindSSU)), CanEditMultipleObjects]
     public class InteractiveWindSSUEditor : Editor

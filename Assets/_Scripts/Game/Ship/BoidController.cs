@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game.IO;
-using CosmicShore.Game;
-using CosmicShore.Utilities;
-using Obvious.Soap;
+using CosmicShore.Game.Player;
 using CosmicShore.Utility;
+using Obvious.Soap;
+using CosmicShore.Game.UI;
+using CosmicShore.Game.Environment.FloraAndFauna;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Ship
 {
     public class BoidController : BoidManager
     {

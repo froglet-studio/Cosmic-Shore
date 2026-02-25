@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.PlayFab.PlayerModels
+namespace CosmicShore.Integrations.Playfab.PlayerData
 
 {
     public class PlayerSession

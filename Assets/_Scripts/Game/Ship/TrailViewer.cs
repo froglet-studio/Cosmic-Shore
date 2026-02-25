@@ -1,82 +1,84 @@
 using UnityEngine;
 using System.Collections.Generic;
-using CosmicShore.Core;
+using CosmicShore.Utility;
 using System;
 using System.Linq;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-
-public class TrailViewer : MonoBehaviour
+namespace CosmicShore.Game.Ship
 {
-    public Material TransparentMaterial;
-    public int radiusInBlocks = 5;
-    private TrailFollower trailFollower;
-    private LineRenderer lineRenderer;
-    [SerializeField] Material trailViewerMaterial;
-    private Trail attachedTrail;
-
-    List<Prism> transparentBlocks = new();
-    //List<Material> savedMaterials = new();
-    Dictionary<Prism, Material> originalMaterials = new Dictionary<Prism, Material>();
-
-
-    void Start()
+    public class TrailViewer : MonoBehaviour
     {
-        trailFollower = GetComponent<TrailFollower>();
-        lineRenderer = gameObject.AddComponent<LineRenderer>();
-        lineRenderer.material = trailViewerMaterial;
-        lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
-    }
+        public Material TransparentMaterial;
+        public int radiusInBlocks = 5;
+        private TrailFollower trailFollower;
+        private LineRenderer lineRenderer;
+        [SerializeField] Material trailViewerMaterial;
+        private Trail attachedTrail;
+
+        List<Prism> transparentBlocks = new();
+        //List<Material> savedMaterials = new();
+        Dictionary<Prism, Material> originalMaterials = new Dictionary<Prism, Material>();
 
 
-    void Update()
-    {
-        if (transparentBlocks != null)
+        void Start()
         {
-            CSDebug.Log("Number of entries in originalMaterials: " + originalMaterials.Count);
-            foreach (Prism block in transparentBlocks)
+            trailFollower = GetComponent<TrailFollower>();
+            lineRenderer = gameObject.AddComponent<LineRenderer>();
+            lineRenderer.material = trailViewerMaterial;
+            lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
+        }
+
+
+        void Update()
+        {
+            if (transparentBlocks != null)
             {
-                if (block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+                CSDebug.Log("Number of entries in originalMaterials: " + originalMaterials.Count);
+                foreach (Prism block in transparentBlocks)
                 {
-                    CSDebug.Log("restoring material");
-                    block.GetComponent<Renderer>().sharedMaterial = originalMaterials[block];  // Retrieve the original material
+                    if (block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+                    {
+                        CSDebug.Log("restoring material");
+                        block.GetComponent<Renderer>().sharedMaterial = originalMaterials[block];  // Retrieve the original material
+                    }
+                }
+                transparentBlocks.Clear();
+            }
+
+            lineRenderer.enabled = false;
+
+            if (!trailFollower.IsAttached) return;
+
+
+            attachedTrail = trailFollower.AttachedPrism.Trail;
+            int attachedBlockIndex = trailFollower.AttachedPrism.prismProperties.Index;
+
+
+            // Set materials of blocks in view distance
+            for (int i = attachedBlockIndex - radiusInBlocks; i < attachedBlockIndex + radiusInBlocks; i++)
+            {
+                Material tempMaterial;
+                if (i >= attachedTrail.TrailList.Count - 1 || i <= 0) continue;
+                var block = attachedTrail.TrailList[i];
+                if (!block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+                {
+                    CSDebug.Log("set material");
+                    tempMaterial = (block.GetComponent<Renderer>().material);
+                    block.GetComponent<Renderer>().sharedMaterial = TransparentMaterial;
+                    transparentBlocks.Add(block);
+                    originalMaterials[block] = tempMaterial;
                 }
             }
-            transparentBlocks.Clear();
-        }
 
-        lineRenderer.enabled = false;
-
-        if (!trailFollower.IsAttached) return;
-
-
-        attachedTrail = trailFollower.AttachedPrism.Trail;
-        int attachedBlockIndex = trailFollower.AttachedPrism.prismProperties.Index;
-
-
-        // Set materials of blocks in view distance
-        for (int i = attachedBlockIndex - radiusInBlocks; i < attachedBlockIndex + radiusInBlocks; i++)
-        {
-            Material tempMaterial;
-            if (i >= attachedTrail.TrailList.Count - 1 || i <= 0) continue;
-            var block = attachedTrail.TrailList[i];
-            if (!block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+            // Draw line
+            lineRenderer.positionCount = transparentBlocks.Count;
+            foreach (Prism block in transparentBlocks)
             {
-                CSDebug.Log("set material");
-                tempMaterial = (block.GetComponent<Renderer>().material);
-                block.GetComponent<Renderer>().sharedMaterial = TransparentMaterial;
-                transparentBlocks.Add(block);
-                originalMaterials[block] = tempMaterial;
+                lineRenderer.SetPosition(transparentBlocks.IndexOf(block), block.transform.position);
             }
-        }
+            lineRenderer.enabled = true;
 
-        // Draw line
-        lineRenderer.positionCount = transparentBlocks.Count;
-        foreach (Prism block in transparentBlocks)
-        {
-            lineRenderer.SetPosition(transparentBlocks.IndexOf(block), block.transform.position);
         }
-        lineRenderer.enabled = true;
-
     }
 }

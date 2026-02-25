@@ -1,6 +1,10 @@
-﻿using CosmicShore.DialogueSystem.Models;
 
-public interface IDialogueViewResolver
+namespace CosmicShore.DialogueSystem.Runtime.Models
 {
-    IDialogueView ResolveView(DialogueSet set);
+    ﻿using CosmicShore.DialogueSystem.Models;
+
+    public interface IDialogueViewResolver
+    {
+        IDialogueView ResolveView(DialogueSet set);
+    }
 }

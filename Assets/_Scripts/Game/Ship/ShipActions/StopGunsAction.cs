@@ -1,13 +1,16 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 
-public class StopGunsAction : ShipAction
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    public override void StartAction()
+    public class StopGunsAction : ShipAction
     {
-        VesselStatus.GunsActive = false;
-    }
+        public override void StartAction()
+        {
+            VesselStatus.GunsActive = false;
+        }
 
-    public override void StopAction()
-    {
+        public override void StopAction()
+        {
+        }
     }
 }

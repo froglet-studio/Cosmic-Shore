@@ -1,11 +1,10 @@
-using CosmicShore.App.Profile;
-using CosmicShore.App.UI.Views;
+using CosmicShore.Game.UI;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI.Views
 {
     /// <summary>
     /// Top-left profile widget on the main arcade/home screen.

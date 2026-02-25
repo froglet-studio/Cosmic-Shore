@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-
 #if UNITY_EDITOR
 using System.Security.Cryptography;
 using System.Text;
 #endif
-
 using UnityEngine;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     public class ProfileManager
     {

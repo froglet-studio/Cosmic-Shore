@@ -1,8 +1,10 @@
 ﻿using System.Reflection;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.Environment.Cytoplasm;
+using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Models.ScriptableObjects
 {
     public class SnowStressTestSpawner : MonoBehaviour
     {

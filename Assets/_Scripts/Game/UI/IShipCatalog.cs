@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CosmicShore.App.UI.Domain
+namespace CosmicShore.Game.UI
 {
     public interface IShipCatalog
     {

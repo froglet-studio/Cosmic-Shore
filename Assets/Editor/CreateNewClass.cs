@@ -23,7 +23,7 @@ using CosmicShore.Models.Enums;
  
  */
 
-namespace CosmicShore
+namespace CosmicShore.Editor
 {
     public class CreateNewClass : EditorWindow
     {

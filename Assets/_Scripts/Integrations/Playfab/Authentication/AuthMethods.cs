@@ -1,4 +1,4 @@
-namespace CosmicShore.Integrations.PlayFab.EventModels
+namespace CosmicShore.Integrations.Playfab.Authentication
 {
     /// <summary>
     /// Authentication methods

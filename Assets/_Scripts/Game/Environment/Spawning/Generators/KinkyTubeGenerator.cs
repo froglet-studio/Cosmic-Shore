@@ -1,6 +1,6 @@
 using UnityEngine;
-
-namespace CosmicShore.Game.Spawning
+using CosmicShore.Game.Environment.Spawning;
+namespace CosmicShore.Game.Environment.Spawning.Generators
 {
     /// <summary>
     /// Generates points along a tube path with periodic random direction jitter.

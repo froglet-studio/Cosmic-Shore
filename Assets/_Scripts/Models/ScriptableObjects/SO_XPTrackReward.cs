@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Models
+namespace CosmicShore.Models.ScriptableObjects
 {
     /// <summary>
     /// Defines a single reward that can be unlocked at an XP milestone.

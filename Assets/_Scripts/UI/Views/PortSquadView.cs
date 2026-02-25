@@ -2,7 +2,7 @@ using CosmicShore.Systems.Squads;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI.Views
 {
     public class PortSquadView : View
     {

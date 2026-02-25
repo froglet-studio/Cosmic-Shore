@@ -1,8 +1,8 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
 using UnityEngine;
 
-namespace CosmicShore.Game.Projectiles
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects
 {
     [CreateAssetMenu(
         fileName = "DangerHemisphereConfig",

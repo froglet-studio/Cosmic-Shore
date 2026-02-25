@@ -1,8 +1,10 @@
-using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.Containers;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.ImpactEffects.Impactors
 {
     [RequireComponent(typeof(Projectile))]
     public class ProjectileImpactor : ImpactorBase

@@ -1,4 +1,4 @@
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Player
 {
     public class VolumeTestPlayerSpawnerAdapter : PlayerSpawnerAdapterBase
     {

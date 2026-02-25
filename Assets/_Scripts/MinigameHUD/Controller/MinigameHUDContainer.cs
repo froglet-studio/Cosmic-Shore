@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.MinigameHUD.Controller
 {
     public class MinigameHUDContainer : MonoBehaviour
     {

@@ -1,7 +1,9 @@
 ﻿using CosmicShore.Core;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.VesselHUD.View;
+namespace CosmicShore.VesselHUD.Controller
 {
     public class SerpentVesselHUDController : VesselHUDController
     {

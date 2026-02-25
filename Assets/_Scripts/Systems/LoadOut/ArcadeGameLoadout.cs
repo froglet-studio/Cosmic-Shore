@@ -1,6 +1,6 @@
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Systems.Loadout
+namespace CosmicShore.Systems.LoadOut
 {
     /// <summary>
     /// Launch information for a specific game type

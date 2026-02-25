@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace CosmicShore.FTUE
+namespace CosmicShore.FTUE.Handlers
 {
     [AddComponentMenu("FTUE/Handlers/LockModesExceptFreestyleHandler")]
     public class LockModesExceptFreestyleHandler : MonoBehaviour, ITutorialStepHandler

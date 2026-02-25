@@ -1,4 +1,4 @@
-namespace CosmicShore.Integrations.Enums
+namespace CosmicShore.Models.Enums
 {
     /// <summary>
     /// Enum that tracks the product ContentTypes of upgrades defined in Playfab.

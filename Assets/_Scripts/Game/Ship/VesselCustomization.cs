@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Utility component for applying vessel specific customisation such as

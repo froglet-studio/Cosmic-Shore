@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CosmicShore.App.Profile;
-using CosmicShore.Soap;
-using CosmicShore.Utilities;
+using CosmicShore.UI.Views;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-
+using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.SOAP.ScriptablePartyData;
 namespace CosmicShore.Game.Party
 {
     /// <summary>

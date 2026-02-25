@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using System;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.Environment.FlowField;
+namespace CosmicShore.Game.Environment.CellModifiers
 {
     [Serializable]
     public class ExtraOmniCrystals : CellModifier

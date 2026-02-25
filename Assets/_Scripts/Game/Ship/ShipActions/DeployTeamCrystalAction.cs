@@ -1,8 +1,12 @@
 using System.Collections;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.Ship;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.Effects;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class DeployTeamCrystalAction : ShipAction
     {

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Game.Arcade.TurnMonitors
 {
     public class ResourceAccumulationTurnMonitor : TurnMonitor
     {

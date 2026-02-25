@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     public class TrailScaleModulator : MonoBehaviour
     {

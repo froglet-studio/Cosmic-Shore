@@ -1,6 +1,6 @@
 ﻿using CosmicShore.Game.UI;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Game.UI
 {
     public class MultiplayerCrystalCaptureScoreboard : Scoreboard
     {

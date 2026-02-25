@@ -1,20 +1,24 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using UnityEngine;
-
-[CreateAssetMenu(fileName = "BoostAction", menuName = "ScriptableObjects/Vessel Actions/Boost")]
-public class BoostActionSO : ShipActionSO
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship.ShipActions;
+namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
 {
-    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+    [CreateAssetMenu(fileName = "BoostAction", menuName = "ScriptableObjects/Vessel Actions/Boost")]
+    public class BoostActionSO : ShipActionSO
     {
-        if (vesselStatus == null) return;
-        vesselStatus.IsBoosting = true;
-        vesselStatus.IsStationary = false;
-    }
+        public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        {
+            if (vesselStatus == null) return;
+            vesselStatus.IsBoosting = true;
+            vesselStatus.IsStationary = false;
+        }
 
-    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-    {
-        if (vesselStatus == null) return;
-        vesselStatus.IsBoosting = false;
+        public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        {
+            if (vesselStatus == null) return;
+            vesselStatus.IsBoosting = false;
+        }
     }
 }

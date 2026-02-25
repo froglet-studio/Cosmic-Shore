@@ -1,14 +1,14 @@
-using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Integrations.PlayFab.PlayerData;
-using CosmicShore.Integrations.PlayFab.PlayStream;
+using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab.PlayerData;
+using CosmicShore.Integrations.Playfab.PlayStream;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI.Views
 {
     public class DailyChallengeLeaderboardView : View
     {

@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore.Game.Analytics
+namespace CosmicShore.Game.UI
 {
     [Serializable]
     public class PlayerStatsProfile

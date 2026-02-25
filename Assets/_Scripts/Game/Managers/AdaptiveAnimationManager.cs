@@ -1,11 +1,9 @@
 using UnityEngine;
 using Unity.Collections;
 using System.Collections.Generic;
-using CosmicShore.Utilities;
+using CosmicShore.Utility;
 
-
-
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Managers
 {
     public abstract class AdaptiveAnimationManager<TManager, TAnimator, TAnimationData> : Singleton<TManager>
         where TManager : AdaptiveAnimationManager<TManager, TAnimator, TAnimationData>

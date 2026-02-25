@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     /// <summary>
     /// A vertically looping scroll window.

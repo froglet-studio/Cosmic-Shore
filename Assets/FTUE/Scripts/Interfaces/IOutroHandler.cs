@@ -1,6 +1,9 @@
 using System.Collections;
 
-public interface IOutroHandler : ITutorialStepHandler
+namespace CosmicShore.FTUE.Interfaces
 {
-    IEnumerator PlayOutro();
+    public interface IOutroHandler : ITutorialStepHandler
+    {
+        IEnumerator PlayOutro();
+    }
 }

@@ -1,10 +1,9 @@
 ﻿using CosmicShore.Core;
 using Obvious.Soap;
-using Unity.Multiplayer.Samples.Utilities;
+using CosmicShore.Utility.Network;
 using UnityEngine;
-
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Managers;
+namespace CosmicShore.Game.Multiplayer
 {
     public class NetworkStatsManager : StatsManager
     {

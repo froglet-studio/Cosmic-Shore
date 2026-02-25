@@ -3,9 +3,10 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.Effects;
+using CosmicShore.Utility;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Managers
 {
     /// <summary>
     /// Centralized Jobs-based manager for prism explosion and implosion VFX.

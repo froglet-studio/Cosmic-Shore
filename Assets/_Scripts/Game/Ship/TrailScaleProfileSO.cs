@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "TrailScaleProfile", menuName = "CosmicShore/Trail/Scale Profile")]
     public class TrailScaleProfileSO : ScriptableObject

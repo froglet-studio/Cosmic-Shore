@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Game;
-using CosmicShore.Utility;
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Utility;
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     public class BranchingFlora : Flora
     {

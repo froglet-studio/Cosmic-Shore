@@ -1,7 +1,7 @@
 using UnityEngine;
 
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility.DataContainers
 {
     [CreateAssetMenu(fileName = "StringData", menuName = "ScriptableObjects/DataContainers/StringDataSO")]
     public class StringDataSO : GenericDataSO<string>

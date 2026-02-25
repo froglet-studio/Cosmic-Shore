@@ -1,7 +1,7 @@
 ﻿// ICellLifeSpawner.cs
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Environment
 {
     /// <summary>
     /// Spawners now operate on:

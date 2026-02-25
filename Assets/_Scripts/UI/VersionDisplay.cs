@@ -1,8 +1,8 @@
 using UnityEngine;
 using TMPro;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     public class VersionDisplay : MonoBehaviour
     {

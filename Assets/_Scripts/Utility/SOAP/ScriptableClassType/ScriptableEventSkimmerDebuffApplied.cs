@@ -1,7 +1,7 @@
 ﻿using Obvious.Soap;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Utility.SOAP.ScriptableClassType
 {
     [System.Serializable]
     public struct SkimmerDebuffPayload

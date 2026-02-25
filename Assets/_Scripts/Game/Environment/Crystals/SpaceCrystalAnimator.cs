@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Environment.Crystals
 {
     public class SpaceCrystalAnimator : MonoBehaviour
     {

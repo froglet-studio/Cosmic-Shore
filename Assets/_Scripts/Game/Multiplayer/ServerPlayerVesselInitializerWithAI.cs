@@ -2,9 +2,11 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.Player;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Multiplayer
 {
     /// <summary>
     /// Extension of ServerPlayerVesselInitializer:

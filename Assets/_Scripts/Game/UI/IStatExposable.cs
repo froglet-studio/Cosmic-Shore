@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Game.UI
 {
     public interface IStatExposable
     {

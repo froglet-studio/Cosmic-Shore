@@ -1,8 +1,8 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
-
-namespace CosmicShore.Game.CameraSystem
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
+namespace CosmicShore.Game.Camera
 {
     [CustomEditor(typeof(CameraSettingsSO))]
     public class CameraSettingsSOEditor : Editor

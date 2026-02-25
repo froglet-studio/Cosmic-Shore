@@ -1,13 +1,15 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Environment;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Utility.ClassExtensions;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility;
+using CosmicShore.Game.Environment.FloraAndFauna;
+namespace CosmicShore.Game.Assemblers
 {
 
     public class GyroidGrowthInfo : GrowthInfo

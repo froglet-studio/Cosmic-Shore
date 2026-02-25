@@ -1,33 +1,36 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
-
-public class ApplyRotationAction : ShipAction
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    [SerializeField] float rotationAmount = 45f;
-    [SerializeField] bool pitch = true;
-    [SerializeField] bool yaw = true;
-    [SerializeField] bool roll = true;
-
-    public override void StartAction()
+    public class ApplyRotationAction : ShipAction
     {
-        if (pitch)
-        {
-            Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.right);
-        }
-        
-        if (yaw)
-        {
-            Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.up);
-        }
-        
-        if (roll)
-        {
-            Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.forward);
-        }
-    }
+        [SerializeField] float rotationAmount = 45f;
+        [SerializeField] bool pitch = true;
+        [SerializeField] bool yaw = true;
+        [SerializeField] bool roll = true;
 
-    public override void StopAction()
-    {
-        // No need to undo the rotation when stopping
+        public override void StartAction()
+        {
+            if (pitch)
+            {
+                Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.right);
+            }
+        
+            if (yaw)
+            {
+                Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.up);
+            }
+        
+            if (roll)
+            {
+                Vessel.VesselStatus.VesselTransformer.ApplyRotation(rotationAmount, Vessel.Transform.forward);
+            }
+        }
+
+        public override void StopAction()
+        {
+            // No need to undo the rotation when stopping
+        }
     }
 }

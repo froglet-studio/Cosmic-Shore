@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.Environment.Spawning;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Spawning
+namespace CosmicShore.Game.Environment.Spawning.Generators
 {
     /// <summary>
     /// Generates points along a 3D Hilbert curve using an L-System.

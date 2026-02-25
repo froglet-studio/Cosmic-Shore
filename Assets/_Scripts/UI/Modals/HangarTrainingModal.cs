@@ -1,15 +1,20 @@
-using CosmicShore.Systems;
-using CosmicShore.App.UI;
-using CosmicShore.App.UI.Modals;
-using CosmicShore.Core;
+using CosmicShore.Game.Multiplayer;
+using CosmicShore.UI.Elements;
 using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.UI.Elements.Buttons;
 using CosmicShore.Utility;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship.ShipActions;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.UI.Elements.Hangar;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.UI.Modals
 {
     public class HangarTrainingModal : ModalWindowManager
     {

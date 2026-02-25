@@ -1,52 +1,55 @@
-using CosmicShore.Core;
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Environment.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class SpawnableZigzag : SpawnableBase
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
-    [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-    [SerializeField] float amplitude = 25;
-    [SerializeField] float period = 26;
-    [SerializeField] int blockCount = 160;
-
-    protected override SpawnPoint[] GeneratePoints()
+    public class SpawnableZigzag : SpawnableBase
     {
-        var points = new SpawnPoint[blockCount];
+        [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+        [SerializeField] float amplitude = 25;
+        [SerializeField] float period = 26;
+        [SerializeField] int blockCount = 160;
 
-        var a = NextFloat(amplitude / 2f, amplitude * 2f);
-        var p = NextFloat(period / 2f, period * 2f);
-        var pOverTwo = p / 2f;
-
-        for (int block = 0; block < blockCount; block++)
+        protected override SpawnPoint[] GeneratePoints()
         {
-            float t = block;
-            float x;
-            if (t % p == t % pOverTwo)
-                x = (t % pOverTwo / pOverTwo) * a;
-            else
-                x = a - (t % p / p * a);
+            var points = new SpawnPoint[blockCount];
 
-            var position = new Vector3(x, 0, t * 1.5f);
-            var rotation = SpawnPoint.LookRotation(position, Vector3.zero, Vector3.up);
-            points[block] = new SpawnPoint(position, rotation, Vector3.one);
+            var a = NextFloat(amplitude / 2f, amplitude * 2f);
+            var p = NextFloat(period / 2f, period * 2f);
+            var pOverTwo = p / 2f;
+
+            for (int block = 0; block < blockCount; block++)
+            {
+                float t = block;
+                float x;
+                if (t % p == t % pOverTwo)
+                    x = (t % pOverTwo / pOverTwo) * a;
+                else
+                    x = a - (t % p / p * a);
+
+                var position = new Vector3(x, 0, t * 1.5f);
+                var rotation = SpawnPoint.LookRotation(position, Vector3.zero, Vector3.up);
+                points[block] = new SpawnPoint(position, rotation, Vector3.one);
+            }
+            return points;
         }
-        return points;
-    }
 
-    protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
-    {
-        foreach (var td in trailData)
-            SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
-    }
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+        {
+            foreach (var td in trailData)
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+        }
 
-    protected override int GetParameterHash()
-    {
-        return System.HashCode.Combine(amplitude, period, blockCount, seed);
-    }
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(amplitude, period, blockCount, seed);
+        }
 
-    private float NextFloat(float min, float max)
-    {
-        return (float)rng.NextDouble() * (max - min) + min;
+        private float NextFloat(float min, float max)
+        {
+            return (float)rng.NextDouble() * (max - min) + min;
+        }
     }
 }

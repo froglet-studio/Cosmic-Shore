@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
-using CosmicShore.Core;
-using CosmicShore.Utility;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Utility;
 namespace CosmicShore.Game.IO
 {
     public class DeviceOrientationHandler

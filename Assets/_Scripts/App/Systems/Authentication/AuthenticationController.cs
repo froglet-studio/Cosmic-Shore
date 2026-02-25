@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Services.Auth
+namespace CosmicShore.App.Systems.Authentication
 {
     public class AuthenticationController : MonoBehaviour
     {

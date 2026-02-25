@@ -1,10 +1,9 @@
-using CosmicShore.Core;
-using CosmicShore.Game.Spawning;
+using CosmicShore.Models.Enums;
+using CosmicShore.Game.Environment.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Environment.MiniGameObjects
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
     public class SpawnablePumpkin : SpawnableEllipsoid
     {

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Game
+namespace CosmicShore.VesselHUD.View
 {
     public sealed class SquirrelVesselHUDView : VesselHUDView
     {

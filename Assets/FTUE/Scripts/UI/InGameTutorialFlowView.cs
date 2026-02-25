@@ -1,12 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Events;
-using CosmicShore.FTUE;
+using CosmicShore.FTUE.Helpers;
+using CosmicShore.FTUE.Adapters;
+using CosmicShore.FTUE.Data;
 using UnityEngine.SceneManagement;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore
+namespace CosmicShore.FTUE.UI
 {
     public class InGameTutorialFlowView : MonoBehaviour
     {

@@ -1,12 +1,20 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Game;
-using CosmicShore.Soap;
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.SOAP;
+using CosmicShore.Utility.SOAP.ScriptableInputEvents;
+using CosmicShore.Utility.SOAP.ScriptablePartyData;
+using CosmicShore.Utility.SOAP.ScriptablePipData;
+using CosmicShore.Game.Assemblers;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     public class GrowthInfo
     {

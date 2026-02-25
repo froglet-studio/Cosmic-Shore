@@ -1,4 +1,4 @@
-namespace CosmicShore.App.Systems
+namespace CosmicShore.Systems
 {
     /// <summary>
     /// Single source of truth for all UGS Cloud Save keys and analytics event names.

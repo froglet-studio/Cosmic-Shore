@@ -1,6 +1,6 @@
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Spawning
+namespace CosmicShore.Game.Environment.Spawning
 {
     /// <summary>
     /// A single trail's worth of spawn points plus metadata.

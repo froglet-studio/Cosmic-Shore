@@ -2,10 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Models.Enums;
+using CosmicShore.Game.Assemblers;
+using CosmicShore.Game.Ship;
 
-namespace CosmicShore
+
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class SeedWallAction : ShipAction
     {

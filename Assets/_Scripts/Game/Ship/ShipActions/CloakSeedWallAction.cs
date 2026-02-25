@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using CosmicShore.Core;
-using CosmicShore.Game;
-using CosmicShore.Utility;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Game.Assemblers;
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class CloakSeedWallAction : ShipAction
     {

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Models.ScriptableObjects
 {
     [CreateAssetMenu(fileName = "New Profile Icon List", menuName = "CosmicShore/ProfileIconList", order = 20)]
     public class SO_ProfileIconList : ScriptableObject

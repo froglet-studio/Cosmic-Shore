@@ -1,4 +1,4 @@
-namespace CosmicShore.Game.CameraSystem
+namespace CosmicShore.Game.Camera
 {
     public interface ICameraConfigurator
     {

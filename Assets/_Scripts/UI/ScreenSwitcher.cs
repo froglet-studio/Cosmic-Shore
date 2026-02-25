@@ -1,19 +1,19 @@
-using CosmicShore.Systems.UserActions;
+using CosmicShore.Systems.UserAction;
 using CosmicShore.Models.Enums;
-using CosmicShore.App.UI.Modals;
-using CosmicShore.App.UI.Screens;
-using CosmicShore.Core;
+using CosmicShore.UI.Modals;
+using CosmicShore.UI.Screens;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Systems;
+using CosmicShore.Game.Multiplayer;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     public class ScreenSwitcher : MonoBehaviour, IDragHandler, IEndDragHandler
     {

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Integrations.Instrumentation.DataCollectors
 {

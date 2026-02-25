@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.Video;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship.ShipActions;
+namespace CosmicShore.Models.ScriptableObjects
 {
     [System.Serializable]
     public class SO_Game : ScriptableObject

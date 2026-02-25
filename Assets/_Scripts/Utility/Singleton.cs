@@ -1,6 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 /*
         Generic classes for the use of singleton
@@ -10,7 +10,7 @@ using CosmicShore.Utility;
         - Persistent -> when we need to make sure that the object is not destroyed during the session.
 */
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     public class Singleton<T> : MonoBehaviour where T : Component
     {

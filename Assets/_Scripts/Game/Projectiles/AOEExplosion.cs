@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using CosmicShore.Models.Enums;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 
 namespace CosmicShore.Game.Projectiles
 {

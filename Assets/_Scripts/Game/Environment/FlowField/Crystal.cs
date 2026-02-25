@@ -1,16 +1,17 @@
 using CosmicShore.Systems.Audio;
-using CosmicShore.Core;
+using CosmicShore.Game.Environment;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Collections;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Environment.MiniGameObjects;
+using CosmicShore.Utility.Effects;
+namespace CosmicShore.Game.Environment.FlowField
 {
     [System.Serializable]
     public class CrystalModelData

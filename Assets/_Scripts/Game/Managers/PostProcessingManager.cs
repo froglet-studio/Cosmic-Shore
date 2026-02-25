@@ -1,8 +1,8 @@
-using CosmicShore.Utilities;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Managers
 {
     public class PostProcessingManager : Singleton<PostProcessingManager>
     {

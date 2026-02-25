@@ -2,8 +2,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.Ship;
+namespace CosmicShore.VesselHUD.View
 {
     public class RhinoVesselHUDView : VesselHUDView
     {

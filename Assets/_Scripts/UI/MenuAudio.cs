@@ -2,7 +2,7 @@ using CosmicShore.Systems.Audio;
 using Reflex.Attributes;
 using UnityEngine;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     public class MenuAudio : MonoBehaviour
     {

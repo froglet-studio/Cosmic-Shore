@@ -1,9 +1,9 @@
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Managers;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Ship
 {
     public class ClearPrisms : MonoBehaviour
     {

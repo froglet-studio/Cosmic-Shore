@@ -2,12 +2,17 @@
 using UnityEngine;
 using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
-using CosmicShore.Game;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Core
+using CosmicShore.Game.Environment.MiniGameObjects;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Prisms;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Utility.SOAP.ScriptablePrismStats;
+using CosmicShore.Game.Environment.Prisms;
+namespace CosmicShore.Game.Ship
 {
     [RequireComponent(typeof(MaterialPropertyAnimator))]
     [RequireComponent(typeof(PrismScaleAnimator))]

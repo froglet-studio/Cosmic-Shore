@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
 
@@ -141,7 +141,6 @@ namespace CosmicShore.Game.IO
                 || (leftJustPressed && rightHeld)
                 || (rightJustPressed && leftHeld))
                 inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
-
 
 
             // vessel.StopShipControllerActions(InputEvents.OnlyLeftStickAction);

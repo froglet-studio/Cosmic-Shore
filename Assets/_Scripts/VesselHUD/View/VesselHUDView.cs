@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game
+namespace CosmicShore.VesselHUD.View
 {
     public abstract class VesselHUDView : MonoBehaviour
     {

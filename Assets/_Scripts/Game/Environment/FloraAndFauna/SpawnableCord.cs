@@ -1,224 +1,227 @@
-using CosmicShore.Core;
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Environment.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct Cord
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
-    public Queue<int> EnergizedQueue;
-    public Vector3[] Vertices;
-    public LineRenderer LineRendererInstance;
-    public Vector3[] Velocities; // Added for momentum
-
-    public Cord(int verticesCount)
+    public struct Cord
     {
-        EnergizedQueue = new Queue<int>();
-        Vertices = new Vector3[verticesCount];
-        LineRendererInstance = null; // This can be initialized elsewhere
-        Velocities = new Vector3[verticesCount];
-    }
+        public Queue<int> EnergizedQueue;
+        public Vector3[] Vertices;
+        public LineRenderer LineRendererInstance;
+        public Vector3[] Velocities; // Added for momentum
 
-    // You can add methods related to the Cord behavior here, for example:
-    public void UpdateVertexPosition(int vertexIndex, Vector3 offset)
-    {
-        // add momentum
-        Vertices[vertexIndex] += offset + .5f*Velocities[vertexIndex];
-
-        // conserve momentum
-        Velocities[vertexIndex] += offset;
-
-        // Dampen momentum
-        Velocities[vertexIndex] *= 0.85f;
-    }
-}
-
-public class SpawnableCord : SpawnableBase
-{
-    [SerializeField] Prism healthBlock;
-    [SerializeField] Vector3 blockScale;
-    [SerializeField] Material lineMaterial;
-
-    [SerializeField] int blockCount = 50;
-    [SerializeField] int verticesCount = 200;
-    [SerializeField] float length = 150;
-
-    List<Cord> Cords = new ();
-
-    float equilibriumDistanceSqr;
-    float tolerance = .01f;
-
-    GameObject container;
-    LineRenderer lineRenderer = new();
-
-    protected override int GetParameterHash()
-    {
-        return System.HashCode.Combine(seed, blockCount, verticesCount, length, blockScale);
-    }
-
-    private void Start()
-    {
-        equilibriumDistanceSqr = Mathf.Pow(length / verticesCount, 2);
-    }
-
-    public override GameObject Spawn(int intensity = 1)
-    {
-        intensityLevel = intensity;
-        trails.Clear();
-
-        rng = seed != 0 ? new System.Random(seed) : new System.Random();
-
-        container = new GameObject();
-        container.name = "Cord_" + name;
-
-        Cord newCord = new Cord(verticesCount);
-
-        var trail = new Trail();
-        Vector3[] vertices = new Vector3[verticesCount];
-
-        var xc1 = (float)rng.NextDouble() * (16 - 4) + 4;
-        var xc2 = (float)rng.NextDouble() * (2f - .2f) + .2f;
-        var xc3 = (float)rng.NextDouble() * (5 - (-5)) + (-5);
-        var xc4 = (float)rng.NextDouble() * (3 - 1) + 1;
-        var yc1 = (float)rng.NextDouble() * (16 - 4) + 4;
-        var yc2 = (float)rng.NextDouble() * (2f - .2f) + .2f;
-        var yc3 = (float)rng.NextDouble() * (5 - (-5)) + (-5);
-        var yc4 = (float)rng.NextDouble() * (3 - 1) + 1;
-
-        lineRenderer = container.AddComponent<LineRenderer>();
-        //lineRenderer.material = lineMaterial;
-        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        lineRenderer.startColor = Color.green;
-        lineRenderer.endColor = Color.blue;
-        lineRenderer.startWidth = 0.5f;
-        lineRenderer.endWidth = 2f;
-        lineRenderer.positionCount = vertices.Length;
-        lineRenderer.transform.SetParent(container.transform, false);
-        lineRenderer.useWorldSpace = false;
-
-        for (int vertex = 0; vertex < verticesCount; vertex++)
+        public Cord(int verticesCount)
         {
+            EnergizedQueue = new Queue<int>();
+            Vertices = new Vector3[verticesCount];
+            LineRendererInstance = null; // This can be initialized elsewhere
+            Velocities = new Vector3[verticesCount];
+        }
 
-            var t = (float)vertex / verticesCount * Mathf.PI * 12;
-            var x = (Mathf.Sin(t) * xc1) + (Mathf.Sin(t * xc2 + xc3) * xc4);
-            var y = (Mathf.Cos(t) * yc1) + (Mathf.Cos(t * yc2 + yc3) * yc4);
-            var position = new Vector3(x, y, t * length / (Mathf.PI * 12));
+        // You can add methods related to the Cord behavior here, for example:
+        public void UpdateVertexPosition(int vertexIndex, Vector3 offset)
+        {
+            // add momentum
+            Vertices[vertexIndex] += offset + .5f*Velocities[vertexIndex];
 
-            vertices[vertex] = position;
+            // conserve momentum
+            Velocities[vertexIndex] += offset;
 
-            lineRenderer.SetPosition(vertex, position);
+            // Dampen momentum
+            Velocities[vertexIndex] *= 0.85f;
+        }
+    }
 
-            int block;
-            if (vertex%(verticesCount/blockCount) == 0)
+    public class SpawnableCord : SpawnableBase
+    {
+        [SerializeField] Prism healthBlock;
+        [SerializeField] Vector3 blockScale;
+        [SerializeField] Material lineMaterial;
+
+        [SerializeField] int blockCount = 50;
+        [SerializeField] int verticesCount = 200;
+        [SerializeField] float length = 150;
+
+        List<Cord> Cords = new ();
+
+        float equilibriumDistanceSqr;
+        float tolerance = .01f;
+
+        GameObject container;
+        LineRenderer lineRenderer = new();
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(seed, blockCount, verticesCount, length, blockScale);
+        }
+
+        private void Start()
+        {
+            equilibriumDistanceSqr = Mathf.Pow(length / verticesCount, 2);
+        }
+
+        public override GameObject Spawn(int intensity = 1)
+        {
+            intensityLevel = intensity;
+            trails.Clear();
+
+            rng = seed != 0 ? new System.Random(seed) : new System.Random();
+
+            container = new GameObject();
+            container.name = "Cord_" + name;
+
+            Cord newCord = new Cord(verticesCount);
+
+            var trail = new Trail();
+            Vector3[] vertices = new Vector3[verticesCount];
+
+            var xc1 = (float)rng.NextDouble() * (16 - 4) + 4;
+            var xc2 = (float)rng.NextDouble() * (2f - .2f) + .2f;
+            var xc3 = (float)rng.NextDouble() * (5 - (-5)) + (-5);
+            var xc4 = (float)rng.NextDouble() * (3 - 1) + 1;
+            var yc1 = (float)rng.NextDouble() * (16 - 4) + 4;
+            var yc2 = (float)rng.NextDouble() * (2f - .2f) + .2f;
+            var yc3 = (float)rng.NextDouble() * (5 - (-5)) + (-5);
+            var yc4 = (float)rng.NextDouble() * (3 - 1) + 1;
+
+            lineRenderer = container.AddComponent<LineRenderer>();
+            //lineRenderer.material = lineMaterial;
+            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+            lineRenderer.startColor = Color.green;
+            lineRenderer.endColor = Color.blue;
+            lineRenderer.startWidth = 0.5f;
+            lineRenderer.endWidth = 2f;
+            lineRenderer.positionCount = vertices.Length;
+            lineRenderer.transform.SetParent(container.transform, false);
+            lineRenderer.useWorldSpace = false;
+
+            for (int vertex = 0; vertex < verticesCount; vertex++)
             {
 
-                block = vertex / (verticesCount/blockCount);
-                var lookPosition = (block == 0) ? position : trail.GetBlock(block - 1).transform.position;
+                var t = (float)vertex / verticesCount * Mathf.PI * 12;
+                var x = (Mathf.Sin(t) * xc1) + (Mathf.Sin(t * xc2 + xc3) * xc4);
+                var y = (Mathf.Cos(t) * yc1) + (Mathf.Cos(t * yc2 + yc3) * yc4);
+                var position = new Vector3(x, y, t * length / (Mathf.PI * 12));
 
-                var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
+                vertices[vertex] = position;
 
-                var spawnedBlock = Instantiate(healthBlock, container.transform);
-                spawnedBlock.ChangeTeam(domain);
-                spawnedBlock.ownerID = $"{container.name}::BLOCK::{block}";
-                spawnedBlock.transform.localPosition = position;
-                spawnedBlock.transform.localRotation = rotation;
-                spawnedBlock.TargetScale = blockScale;
-                spawnedBlock.Trail = trail;
-                spawnedBlock.Initialize();
-                trail.Add(spawnedBlock);
+                lineRenderer.SetPosition(vertex, position);
+
+                int block;
+                if (vertex%(verticesCount/blockCount) == 0)
+                {
+
+                    block = vertex / (verticesCount/blockCount);
+                    var lookPosition = (block == 0) ? position : trail.GetBlock(block - 1).transform.position;
+
+                    var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
+
+                    var spawnedBlock = Instantiate(healthBlock, container.transform);
+                    spawnedBlock.ChangeTeam(domain);
+                    spawnedBlock.ownerID = $"{container.name}::BLOCK::{block}";
+                    spawnedBlock.transform.localPosition = position;
+                    spawnedBlock.transform.localRotation = rotation;
+                    spawnedBlock.TargetScale = blockScale;
+                    spawnedBlock.Trail = trail;
+                    spawnedBlock.Initialize();
+                    trail.Add(spawnedBlock);
+                }
+
             }
+            newCord.LineRendererInstance = lineRenderer;
+            newCord.Vertices = vertices;
+            Cords.Add(newCord);
 
-        }
-        newCord.LineRendererInstance = lineRenderer;
-        newCord.Vertices = vertices;
-        Cords.Add(newCord);
-
-        trails.Add(trail);
-        return container;
-    }
-
-    void CheckForEnergy(int cord, int vertexIndex)
-    {
-        bool qued = false;
-
-        Vector3 previousVector = Cords[cord].Vertices[vertexIndex - 1] - Cords[cord].Vertices[vertexIndex];
-        float previousDistanceSqr = previousVector.sqrMagnitude;
-
-        Vector3 nextVector = Cords[cord].Vertices[vertexIndex + 1] - Cords[cord].Vertices[vertexIndex];
-        float nextDistanceSqr = nextVector.sqrMagnitude;
-
-        Vector3 offset = Vector3.zero;
-
-        if (previousDistanceSqr - equilibriumDistanceSqr > tolerance)
-        {
-            offset += previousVector;
-            if (vertexIndex > 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex - 1);
-            Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
-            qued = true;
-        }
-        else if (previousDistanceSqr - equilibriumDistanceSqr < -tolerance)
-        {
-            offset -= previousVector;
-            if (vertexIndex > 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex - 1);
-            Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
-            qued = true;
+            trails.Add(trail);
+            return container;
         }
 
-        if (nextDistanceSqr - equilibriumDistanceSqr > tolerance)
+        void CheckForEnergy(int cord, int vertexIndex)
         {
-            offset += nextVector;
-            if (vertexIndex < Cords[cord].Vertices.Length - 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex + 1);
-            if (!qued)
+            bool qued = false;
+
+            Vector3 previousVector = Cords[cord].Vertices[vertexIndex - 1] - Cords[cord].Vertices[vertexIndex];
+            float previousDistanceSqr = previousVector.sqrMagnitude;
+
+            Vector3 nextVector = Cords[cord].Vertices[vertexIndex + 1] - Cords[cord].Vertices[vertexIndex];
+            float nextDistanceSqr = nextVector.sqrMagnitude;
+
+            Vector3 offset = Vector3.zero;
+
+            if (previousDistanceSqr - equilibriumDistanceSqr > tolerance)
             {
-                qued = true;
+                offset += previousVector;
+                if (vertexIndex > 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex - 1);
                 Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
-            }
-        }
-        else if (nextDistanceSqr - equilibriumDistanceSqr < -tolerance)
-        {
-            offset -= nextVector;
-            if (vertexIndex < Cords[cord].Vertices.Length - 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex + 1);
-            if (!qued)
-            {
                 qued = true;
+            }
+            else if (previousDistanceSqr - equilibriumDistanceSqr < -tolerance)
+            {
+                offset -= previousVector;
+                if (vertexIndex > 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex - 1);
                 Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
+                qued = true;
+            }
+
+            if (nextDistanceSqr - equilibriumDistanceSqr > tolerance)
+            {
+                offset += nextVector;
+                if (vertexIndex < Cords[cord].Vertices.Length - 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex + 1);
+                if (!qued)
+                {
+                    qued = true;
+                    Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
+                }
+            }
+            else if (nextDistanceSqr - equilibriumDistanceSqr < -tolerance)
+            {
+                offset -= nextVector;
+                if (vertexIndex < Cords[cord].Vertices.Length - 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex + 1);
+                if (!qued)
+                {
+                    qued = true;
+                    Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
+                }
+            }
+
+            if (qued)
+            {
+                Cords[cord].UpdateVertexPosition(vertexIndex, offset * Time.deltaTime);
+                var newPosition = Cords[cord].Vertices[vertexIndex];
+                Cords[cord].LineRendererInstance.SetPosition(vertexIndex, newPosition);
+                if (vertexIndex % (verticesCount / blockCount) == 0)
+                {
+                    var blockIndex = vertexIndex / (verticesCount / blockCount);
+                    trails[cord].GetBlock(blockIndex).transform.localPosition = newPosition;
+                }
             }
         }
 
-        if (qued)
+        private void Update()
         {
-            Cords[cord].UpdateVertexPosition(vertexIndex, offset * Time.deltaTime);
-            var newPosition = Cords[cord].Vertices[vertexIndex];
-            Cords[cord].LineRendererInstance.SetPosition(vertexIndex, newPosition);
-            if (vertexIndex % (verticesCount / blockCount) == 0)
-            {
-                var blockIndex = vertexIndex / (verticesCount / blockCount);
-                trails[cord].GetBlock(blockIndex).transform.localPosition = newPosition;
-            }
-        }
-    }
 
-    private void Update()
-    {
-
-        for (var cord = 0; cord < Cords.Count; cord++)
-        {
-            // Driven vertex is first
-            int drivenIndex = 15;
-            float amplitude = 20;
-            Cords[cord].Vertices[drivenIndex] = amplitude * Mathf.Sin((float)Time.frameCount / 100) * Vector3.forward;
-            Cords[cord].LineRendererInstance.SetPosition(drivenIndex, Cords[cord].Vertices[drivenIndex]);
-            //// check adjacent to driven
-            if (Mathf.Abs((Cords[cord].Vertices[drivenIndex + 1] - Cords[cord].Vertices[drivenIndex]).sqrMagnitude - equilibriumDistanceSqr) > tolerance )
+            for (var cord = 0; cord < Cords.Count; cord++)
             {
-                CheckForEnergy(cord, drivenIndex + 1);
-            }
-            //check the queue
-            int initialCount = Mathf.Min(Cords[cord].EnergizedQueue.Count, 300);
+                // Driven vertex is first
+                int drivenIndex = 15;
+                float amplitude = 20;
+                Cords[cord].Vertices[drivenIndex] = amplitude * Mathf.Sin((float)Time.frameCount / 100) * Vector3.forward;
+                Cords[cord].LineRendererInstance.SetPosition(drivenIndex, Cords[cord].Vertices[drivenIndex]);
+                //// check adjacent to driven
+                if (Mathf.Abs((Cords[cord].Vertices[drivenIndex + 1] - Cords[cord].Vertices[drivenIndex]).sqrMagnitude - equilibriumDistanceSqr) > tolerance )
+                {
+                    CheckForEnergy(cord, drivenIndex + 1);
+                }
+                //check the queue
+                int initialCount = Mathf.Min(Cords[cord].EnergizedQueue.Count, 300);
 
-            for (int i = 0; i < initialCount; i++)
-            {
-                int item = Cords[cord].EnergizedQueue.Dequeue();
-                CheckForEnergy(cord, item);
+                for (int i = 0; i < initialCount; i++)
+                {
+                    int item = Cords[cord].EnergizedQueue.Dequeue();
+                    CheckForEnergy(cord, item);
+                }
             }
         }
     }

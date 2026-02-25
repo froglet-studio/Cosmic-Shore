@@ -1,10 +1,12 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Settings;
 using CosmicShore.Game.IO;
 using Reflex.Attributes;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.UI
 {

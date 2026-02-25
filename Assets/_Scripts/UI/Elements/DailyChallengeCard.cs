@@ -1,5 +1,5 @@
-using CosmicShore.Systems;
-using CosmicShore.Core;
+using CosmicShore.Game.Multiplayer;
+using CosmicShore.Game.Managers;
 using System;
 using System.Linq;
 using TMPro;
@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.App.UI.Elements
+namespace CosmicShore.UI.Elements
 {
     public class DailyChallengeCard : MonoBehaviour
     {

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.SkimmerPrismEffects
 {
     [CreateAssetMenu(fileName = "SkimmerScaleTrailAndCameraPrismEffect", menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SkimmerScaleTrailAndCameraPrismEffectSO")]
     public class SkimmerScaleTrailAndCameraPrismEffectSO : SkimmerPrismEffectSO

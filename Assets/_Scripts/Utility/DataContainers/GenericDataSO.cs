@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility.DataContainers
 {
     /// <summary>
     /// This is a generic data scriptable object that can be used to store any type of data.

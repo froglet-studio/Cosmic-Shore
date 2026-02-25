@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.DialogueSystem.Events
+namespace CosmicShore.DialogueSystem.Runtime.Events
 {
     [CreateAssetMenu(
         fileName = "DialogueEventChannel",

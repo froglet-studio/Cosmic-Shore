@@ -1,13 +1,13 @@
 using System;
 using System.Threading;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Game.Arcade.TurnMonitors
 {
     public abstract class TurnMonitor : NetworkBehaviour
     {

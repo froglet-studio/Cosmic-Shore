@@ -1,14 +1,17 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 
-public class ToggleAlignAction : ShipAction
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    public override void StartAction()
+    public class ToggleAlignAction : ShipAction
     {
-        VesselStatus.AlignmentEnabled = false;
-    }
+        public override void StartAction()
+        {
+            VesselStatus.AlignmentEnabled = false;
+        }
 
-    public override void StopAction()
-    {
-        VesselStatus.AlignmentEnabled = true;
+        public override void StopAction()
+        {
+            VesselStatus.AlignmentEnabled = true;
+        }
     }
 }

@@ -1,11 +1,11 @@
 using UnityEngine;
-using CosmicShore.Game;
-using CosmicShore.Game.CameraSystem;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.SOAP.ScriptableTransform;
+using CosmicShore.Game.Managers;
 using CosmicShore.Utility;
+using CosmicShore.Game.Camera;
+using CosmicShore.Utility.Recording;
 
-
-namespace CosmicShore
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Applies the CameraSettingsSO—including any ControlOverrideFlags—

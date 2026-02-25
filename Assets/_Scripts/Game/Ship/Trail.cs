@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Ship
 {
     [System.Serializable]
     public class Trail

@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using CosmicShore.Core;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Environment;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
 using Random = UnityEngine.Random;
 
 namespace CosmicShore.Game.Projectiles

@@ -1,13 +1,14 @@
 ﻿using System.Threading;
-using CosmicShore.Core;
-using CosmicShore.Soap;
+using CosmicShore.Game.Managers;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Multiplayer
 {
     public class ClientPlayerVesselInitializer : NetworkBehaviour
     {

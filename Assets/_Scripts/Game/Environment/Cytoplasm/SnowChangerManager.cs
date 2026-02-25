@@ -1,7 +1,7 @@
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Environment.Cytoplasm
 {
     public class SnowChangerManager : MonoBehaviour
     {

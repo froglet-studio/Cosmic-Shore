@@ -1,7 +1,7 @@
 ﻿using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.UI.NotificationSystem.Payload
 {
     public sealed class NotificationView : MonoBehaviour
     {

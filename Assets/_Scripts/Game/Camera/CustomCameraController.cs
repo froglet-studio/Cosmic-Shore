@@ -1,8 +1,8 @@
 using System.Collections;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
 
-namespace CosmicShore.Game.CameraSystem
+namespace CosmicShore.Game.Camera
 {
     [RequireComponent(typeof(Camera))]
     public class CustomCameraController : MonoBehaviour, ICameraController

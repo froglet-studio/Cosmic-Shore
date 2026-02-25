@@ -1,6 +1,6 @@
-using CosmicShore.App.UI.Modals;
-using CosmicShore.App.UI.Views;
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.UI.Modals;
+using CosmicShore.UI.Views;
+using CosmicShore.Integrations.Playfab.Economy;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,9 +8,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Screens
+namespace CosmicShore.UI.Screens
 {
     public class StoreScreen : View
     {

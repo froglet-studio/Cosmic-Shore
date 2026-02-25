@@ -1,8 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.FlowField;
+namespace CosmicShore.Game.ImpactEffects.Impactors
 {
     public struct CrystalImpactData : INetworkSerializable
     {

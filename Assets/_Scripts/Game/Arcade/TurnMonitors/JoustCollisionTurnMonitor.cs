@@ -1,7 +1,7 @@
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Game.Arcade.TurnMonitors
 {
     public class JoustCollisionTurnMonitor : TurnMonitor
     {

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections;
-using CosmicShore.DialogueSystem.Models;
+using CosmicShore.DialogueSystem.Runtime.Models;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.DialogueSystem.View
+namespace CosmicShore.DialogueSystem.Runtime.View
 {
     public sealed class MainMenuDialogueView : MonoBehaviour, IDialogueView
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     public class R_ShipElementStatsHandler : MonoBehaviour
     {

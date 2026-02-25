@@ -1,10 +1,11 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Game.Assemblers;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.Environment.FloraAndFauna
 {

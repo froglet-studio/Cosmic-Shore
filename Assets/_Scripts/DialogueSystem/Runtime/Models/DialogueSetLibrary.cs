@@ -1,14 +1,16 @@
-using CosmicShore.DialogueSystem.Models;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "CosmicShore/Dialogue/Dialogue Library")]
-public class DialogueSetLibrary : ScriptableObject
+namespace CosmicShore.DialogueSystem.Runtime.Models
 {
-    public List<DialogueSet> allDialogueSets;
-
-    public DialogueSet GetSetById(string id)
+    [CreateAssetMenu(menuName = "CosmicShore/Dialogue/Dialogue Library")]
+    public class DialogueSetLibrary : ScriptableObject
     {
-        return allDialogueSets.Find(set => set.setId == id);
+        public List<DialogueSet> allDialogueSets;
+
+        public DialogueSet GetSetById(string id)
+        {
+            return allDialogueSets.Find(set => set.setId == id);
+        }
     }
 }

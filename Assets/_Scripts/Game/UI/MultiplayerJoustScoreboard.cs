@@ -1,8 +1,9 @@
 ﻿// MultiplayerJoustScoreboard.cs
 using System;
-using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Arcade.TurnMonitors;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.Arcade;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.UI
 {

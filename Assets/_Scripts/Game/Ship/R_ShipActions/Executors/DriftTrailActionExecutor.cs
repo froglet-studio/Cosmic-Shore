@@ -2,87 +2,91 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
+using CosmicShore.Utility.Recording;
 
-public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
-    public delegate void ChangeDriftAltitude(float dotproduct);
-    public event ChangeDriftAltitude OnChangeDriftAltitude;
-
-    [Header("Events")]
-    [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
-
-    IVessel _ship;
-    IVesselStatus _status;
-    VesselPrismController vesselPrismController;
-
-    CancellationTokenSource _cts;
-
-    void OnEnable()
+    public sealed class DriftTrailActionExecutor : ShipActionExecutorBase
     {
-        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
-    }
+        public delegate void ChangeDriftAltitude(float dotproduct);
+        public event ChangeDriftAltitude OnChangeDriftAltitude;
 
-    void OnDisable()
-    {
-        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
-    }
+        [Header("Events")]
+        [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
 
-    public override void Initialize(IVesselStatus shipStatus)
-    {
-        _status = shipStatus;
-        _ship   = shipStatus.Vessel;
-        vesselPrismController = _status.VesselPrismController;
-    }
+        IVessel _ship;
+        IVesselStatus _status;
+        VesselPrismController vesselPrismController;
 
-    public void Begin(DriftTrailActionSO so, IVesselStatus status)
-    {
-        if (_cts != null) return;
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-        UpdateDotProductLoopAsync(_cts.Token).Forget();
-    }
+        CancellationTokenSource _cts;
 
-    public void End(DriftTrailActionSO so, IVesselStatus status) => EndInternal();
-
-    void EndInternal()
-    {
-        if (_cts != null)
+        void OnEnable()
         {
-            try { _cts.Cancel(); }
-            catch
-            {
-                //
-            }
-
-            _cts.Dispose();
-            _cts = null;
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
         }
 
-        vesselPrismController?.SetDotProduct(1f);
-        if (_status != null && !_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1f);
-    }
-
-    void OnTurnEndOfMiniGame() => EndInternal();
-
-    async UniTaskVoid UpdateDotProductLoopAsync(CancellationToken token)
-    {
-        try
+        void OnDisable()
         {
-            while (!token.IsCancellationRequested)
-            {
-                var driftAltitude = Vector3.Dot(_status.Course, _ship.Transform.forward);
-                if (!_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
-                vesselPrismController?.SetDotProduct(driftAltitude);
-
-                await UniTask.Delay(TimeSpan.FromSeconds(0.05f),
-                                    DelayType.DeltaTime,
-                                    PlayerLoopTiming.Update,
-                                    token);
-            }
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
         }
-        catch (OperationCanceledException) { }
-        catch (Exception e) { CSDebug.LogError($"[DriftTrail] loop error: {e}"); }
+
+        public override void Initialize(IVesselStatus shipStatus)
+        {
+            _status = shipStatus;
+            _ship   = shipStatus.Vessel;
+            vesselPrismController = _status.VesselPrismController;
+        }
+
+        public void Begin(DriftTrailActionSO so, IVesselStatus status)
+        {
+            if (_cts != null) return;
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            UpdateDotProductLoopAsync(_cts.Token).Forget();
+        }
+
+        public void End(DriftTrailActionSO so, IVesselStatus status) => EndInternal();
+
+        void EndInternal()
+        {
+            if (_cts != null)
+            {
+                try { _cts.Cancel(); }
+                catch
+                {
+                    //
+                }
+
+                _cts.Dispose();
+                _cts = null;
+            }
+
+            vesselPrismController?.SetDotProduct(1f);
+            if (_status != null && !_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1f);
+        }
+
+        void OnTurnEndOfMiniGame() => EndInternal();
+
+        async UniTaskVoid UpdateDotProductLoopAsync(CancellationToken token)
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    var driftAltitude = Vector3.Dot(_status.Course, _ship.Transform.forward);
+                    if (!_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
+                    vesselPrismController?.SetDotProduct(driftAltitude);
+
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.05f),
+                                        DelayType.DeltaTime,
+                                        PlayerLoopTiming.Update,
+                                        token);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception e) { CSDebug.LogError($"[DriftTrail] loop error: {e}"); }
+        }
     }
 }

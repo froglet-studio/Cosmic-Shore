@@ -1,5 +1,5 @@
-using CosmicShore.Core;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;

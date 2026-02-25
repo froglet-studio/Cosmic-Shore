@@ -1,7 +1,7 @@
 using Obvious.Soap;
 using UnityEngine;
-
-namespace CosmicShore.Soap
+using CosmicShore.Utility.SOAP.ScriptablePartyData;
+namespace CosmicShore.Utility.DataContainers
 {
     /// <summary>
     /// Central SOAP data container for the host connection and party system.

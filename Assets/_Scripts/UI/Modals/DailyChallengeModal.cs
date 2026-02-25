@@ -1,13 +1,12 @@
-using CosmicShore.Systems;
-using CosmicShore.App.UI.Views;
-using CosmicShore.Core;
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Game.Multiplayer;
+using CosmicShore.UI.Views;
+using CosmicShore.Models.Enums;
+using CosmicShore.Integrations.Playfab.Economy;
 using System;
 using TMPro;
 using UnityEngine;
-using CosmicShore.Models.Enums;
 
-namespace CosmicShore.App.UI.Modals
+namespace CosmicShore.UI.Modals
 {
     public class DailyChallengeModal : ModalWindowManager
     {

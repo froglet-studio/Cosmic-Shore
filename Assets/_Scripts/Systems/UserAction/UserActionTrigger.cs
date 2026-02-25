@@ -2,7 +2,7 @@ using CosmicShore.Models.Enums;
 
 ﻿using UnityEngine;
 
-namespace CosmicShore.Systems.UserActions
+namespace CosmicShore.Systems.UserAction
 {
     public class UserActionTrigger : MonoBehaviour
     {

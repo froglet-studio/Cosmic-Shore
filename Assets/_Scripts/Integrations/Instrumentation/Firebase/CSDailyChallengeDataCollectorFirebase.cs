@@ -5,7 +5,7 @@ using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using Firebase.Analytics;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Integrations.Instrumentation.Firebase
 {

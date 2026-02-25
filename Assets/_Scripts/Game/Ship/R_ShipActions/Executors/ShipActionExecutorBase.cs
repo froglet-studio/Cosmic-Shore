@@ -1,7 +1,10 @@
 ﻿using CosmicShore.Game;
 using UnityEngine;
 
-public abstract class ShipActionExecutorBase : MonoBehaviour
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
-    public virtual void Initialize(IVesselStatus shipStatus) { }
+    public abstract class ShipActionExecutorBase : MonoBehaviour
+    {
+        public virtual void Initialize(IVesselStatus shipStatus) { }
+    }
 }

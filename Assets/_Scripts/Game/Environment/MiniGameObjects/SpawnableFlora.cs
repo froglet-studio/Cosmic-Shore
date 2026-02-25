@@ -1,8 +1,8 @@
-using CosmicShore;
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Environment.FloraAndFauna;
+using CosmicShore.Game.Environment.Spawning;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
     public class SpawnableFlora : SpawnableBase
     {

@@ -1,45 +1,48 @@
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-public class GhostAction : ShipAction
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    [SerializeField] float maxDuration;
-    List<GameObject> shipGeometries;
-
-    Coroutine intangibilityCoroutine;
-
-    public override void Initialize(IVessel vessel)
+    public class GhostAction : ShipAction
     {
-        shipGeometries = Vessel.VesselStatus.ShipGeometries;
-    }
+        [SerializeField] float maxDuration;
+        List<GameObject> shipGeometries;
 
-    public override void StartAction()
-    {
-        intangibilityCoroutine = StartCoroutine(TemporaryIntangibilityCoroutine());
-    }
+        Coroutine intangibilityCoroutine;
 
-    public override void StopAction()
-    {
-        if (intangibilityCoroutine != null)
+        public override void Initialize(IVessel vessel)
         {
-            StopCoroutine(intangibilityCoroutine);
-            intangibilityCoroutine = null;
+            shipGeometries = Vessel.VesselStatus.ShipGeometries;
         }
 
-        foreach (var geometry in shipGeometries)
-            geometry.GetComponent<Collider>().enabled = true;
-    }
+        public override void StartAction()
+        {
+            intangibilityCoroutine = StartCoroutine(TemporaryIntangibilityCoroutine());
+        }
 
-    IEnumerator TemporaryIntangibilityCoroutine()
-    {
-        foreach (var geometry in shipGeometries)
-            geometry.GetComponent<Collider>().enabled = false;
+        public override void StopAction()
+        {
+            if (intangibilityCoroutine != null)
+            {
+                StopCoroutine(intangibilityCoroutine);
+                intangibilityCoroutine = null;
+            }
 
-        yield return new WaitForSeconds(maxDuration);
+            foreach (var geometry in shipGeometries)
+                geometry.GetComponent<Collider>().enabled = true;
+        }
 
-        foreach (var geometry in shipGeometries)
-            geometry.GetComponent<Collider>().enabled = true;
+        IEnumerator TemporaryIntangibilityCoroutine()
+        {
+            foreach (var geometry in shipGeometries)
+                geometry.GetComponent<Collider>().enabled = false;
+
+            yield return new WaitForSeconds(maxDuration);
+
+            foreach (var geometry in shipGeometries)
+                geometry.GetComponent<Collider>().enabled = true;
+        }
     }
 }

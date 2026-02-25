@@ -1,9 +1,14 @@
 ﻿using System.Collections.Generic;
-using CosmicShore.Game.UI;
-using CosmicShore.Soap;
+using CosmicShore.Game.Arcade;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.UI.Animations;
+using CosmicShore.Game.UI.GameEventFeed;
+using CosmicShore.Game.UI.NotificationSystem.Payload;
+using CosmicShore.Game.UI.PreGameCinematic;
+using CosmicShore.MinigameHUD.View;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselPrismEffects;
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Abstract base for all vessel telemetry.

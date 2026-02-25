@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     [CreateAssetMenu(
         fileName = "LightFaunaDataSO",

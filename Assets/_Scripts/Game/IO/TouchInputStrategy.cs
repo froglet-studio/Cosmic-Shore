@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.IO

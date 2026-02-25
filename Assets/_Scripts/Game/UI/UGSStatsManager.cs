@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CosmicShore.App.Systems;
+using CosmicShore.Systems;
 using Unity.Services.Analytics;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
 using Unity.Services.CloudSave;
 using Unity.Services.Leaderboards;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-using CosmicShore.Utility;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Analytics
+namespace CosmicShore.Game.UI
 {
     public class UGSStatsManager : MonoBehaviour
     {

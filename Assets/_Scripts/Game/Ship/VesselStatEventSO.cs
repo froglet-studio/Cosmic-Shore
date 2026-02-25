@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// A SOAP-style scriptable event for a single vessel stat.

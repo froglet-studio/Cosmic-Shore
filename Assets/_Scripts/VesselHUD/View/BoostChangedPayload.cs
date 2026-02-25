@@ -2,7 +2,7 @@ using CosmicShore.Models.Enums;
 
 ﻿using System;
 
-namespace CosmicShore.Game
+namespace CosmicShore.VesselHUD.View
 {
     [Serializable]
     public struct BoostChangedPayload

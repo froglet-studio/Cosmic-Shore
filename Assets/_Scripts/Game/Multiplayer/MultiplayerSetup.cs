@@ -6,13 +6,12 @@ using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
-using CosmicShore.Soap;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.DataContainers;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using Reflex.Attributes;
-
-
-namespace CosmicShore.Systems
+using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+namespace CosmicShore.Game.Multiplayer
 {
     public class MultiplayerSetup : MonoBehaviour
     {

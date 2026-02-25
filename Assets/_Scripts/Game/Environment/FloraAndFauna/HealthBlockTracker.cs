@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore
+using CosmicShore.Game.Environment;
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     /// <summary>
     /// Tracks health blocks (HealthPrisms) for a LifeForm.

@@ -1,7 +1,7 @@
 ﻿using Unity.Multiplayer.Samples.Utilities;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Caches all active NetworkShip instances; must reside on the same GameObject as a NetworkShip and NetcodeHooks.

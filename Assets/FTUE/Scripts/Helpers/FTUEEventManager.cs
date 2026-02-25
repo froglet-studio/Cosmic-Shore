@@ -2,7 +2,7 @@ using System;
 using CosmicShore.Systems.CTA;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Events
+namespace CosmicShore.FTUE.Helpers
 {
     /// <summary>
     /// Central hub for FTUE-related events.

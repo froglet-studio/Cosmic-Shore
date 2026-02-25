@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.Elements
+namespace CosmicShore.UI.Elements
 {
     public class InputFieldUpdater : MonoBehaviour
     {

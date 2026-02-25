@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Ship
 {
     [Serializable]
     public class Resource

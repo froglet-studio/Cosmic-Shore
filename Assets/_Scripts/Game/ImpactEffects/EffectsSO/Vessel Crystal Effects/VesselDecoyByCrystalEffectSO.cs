@@ -1,8 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.Effects;
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselCrystalEffects
 {
     [CreateAssetMenu(fileName = "VesselDecoyByCrystalEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/VesselDecoyByCrystalEffectSO")]
     public class VesselDecoyByCrystalEffectSO : VesselCrystalEffectSO

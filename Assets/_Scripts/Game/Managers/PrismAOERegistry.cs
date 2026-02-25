@@ -4,10 +4,14 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using CosmicShore.Core;
-using CosmicShore.Utilities;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Game.Player;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.Ship;
 
-namespace CosmicShore.Game
+
+namespace CosmicShore.Game.Managers
 {
     /// <summary>
     /// Bit flags for prism status, packed into a single byte.

@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Game;
-using CosmicShore.Core;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselCrystalEffects;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.UI.Views;
+namespace CosmicShore.Game.Ship
 {
     public class SilhouetteController : MonoBehaviour
     {

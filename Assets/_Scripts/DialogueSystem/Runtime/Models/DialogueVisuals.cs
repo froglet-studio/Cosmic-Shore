@@ -1,7 +1,6 @@
-using CosmicShore.DialogueSystem.Models;
 using UnityEngine;
 
-namespace CosmicShore.DialogueSystem.Editor
+namespace CosmicShore.DialogueSystem.Runtime.Models
 {
     public static class DialogueVisuals
     {

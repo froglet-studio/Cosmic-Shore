@@ -1,6 +1,6 @@
 ﻿using CosmicShore.Game;
-using CosmicShore.Soap;
-using CosmicShore.Utility;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade.Scoring

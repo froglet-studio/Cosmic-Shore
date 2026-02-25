@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEditor;
 using System.Reflection;
-using CosmicShore.Core;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Editor
 {

@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Game
+namespace CosmicShore.VesselHUD.View
 {
     public class MantaVesselHUDView : VesselHUDView
     {

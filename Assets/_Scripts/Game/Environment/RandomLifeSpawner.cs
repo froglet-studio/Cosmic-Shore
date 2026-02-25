@@ -1,9 +1,9 @@
 ﻿using System.Collections;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Environment
 {
     public sealed class RandomLifeSpawner : CellLifeSpawnerBase
     {

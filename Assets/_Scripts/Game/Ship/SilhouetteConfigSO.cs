@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Environment;
 
-namespace CosmicShore
+
+namespace CosmicShore.Game.Ship
 {
     [CreateAssetMenu(fileName = "SilhouetteConfig", menuName = "CosmicShore/UI/Silhouette Config")]
     public class SilhouetteConfigSO : ScriptableObject

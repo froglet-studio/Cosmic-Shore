@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SpriteShadersUltimate
+namespace CosmicShore.SSUScripts.Interactive
 {
     public class WindManagerSSU : MonoBehaviour
     {

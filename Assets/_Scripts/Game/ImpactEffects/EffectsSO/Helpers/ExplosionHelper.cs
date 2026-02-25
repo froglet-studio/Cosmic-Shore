@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
-using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.Ship;
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.Helpers
 {
     public static class ExplosionHelper
     {

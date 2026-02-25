@@ -1,5 +1,9 @@
-public interface IScaleProvider
+
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    float MinScale   { get; }
-    float CurrentScale { get; }
+    public interface IScaleProvider
+    {
+        float MinScale   { get; }
+        float CurrentScale { get; }
+    }
 }

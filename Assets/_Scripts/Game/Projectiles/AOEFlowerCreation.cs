@@ -3,7 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 
 namespace CosmicShore.Game.Projectiles
 {

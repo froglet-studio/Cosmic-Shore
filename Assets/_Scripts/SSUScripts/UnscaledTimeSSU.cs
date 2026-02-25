@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SpriteShadersUltimate
+namespace CosmicShore.SSUScripts
 {
     public class UnscaledTimeSSU : MonoBehaviour
     {

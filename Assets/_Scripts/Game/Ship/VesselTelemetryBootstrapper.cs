@@ -1,7 +1,7 @@
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Ensures every vessel has a VesselTelemetry component at runtime.

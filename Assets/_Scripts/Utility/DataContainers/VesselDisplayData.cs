@@ -1,6 +1,6 @@
 using CosmicShore.Models.Enums;
 
-﻿namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility.DataContainers
 {
     /// <summary>
     /// Data structure for vessel display information

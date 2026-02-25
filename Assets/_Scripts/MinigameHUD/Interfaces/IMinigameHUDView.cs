@@ -1,4 +1,8 @@
-public interface IMiniGameHUDView
+
+namespace CosmicShore.MinigameHUD.Interfaces
 {
-    // void Initialize(IMiniGameHUDController controller);
+    public interface IMiniGameHUDView
+    {
+        // void Initialize(IMiniGameHUDController controller);
+    }
 }

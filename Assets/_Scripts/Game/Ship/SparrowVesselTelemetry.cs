@@ -1,7 +1,12 @@
-using CosmicShore.Game.UI;
+using CosmicShore.Game.Arcade;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.UI.Animations;
+using CosmicShore.Game.UI.GameEventFeed;
+using CosmicShore.Game.UI.NotificationSystem.Payload;
+using CosmicShore.Game.UI.PreGameCinematic;
+using CosmicShore.MinigameHUD.View;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Vessel-specific telemetry for the Sparrow.

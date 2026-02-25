@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-
+using CosmicShore.MinigameHUD.View;
 namespace CosmicShore.Game.UI
 {
     public abstract class MultiplayerHUD : MiniGameHUD

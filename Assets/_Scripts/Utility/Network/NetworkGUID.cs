@@ -1,7 +1,7 @@
 ﻿using System;
 using Unity.Netcode;
 
-namespace CosmicShore.Utilities.Network
+namespace CosmicShore.Utility.Network
 {
     /// <summary>
     /// This struct is used to represent a globally unique identifier for networked objects.

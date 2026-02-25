@@ -1,9 +1,9 @@
-using CosmicShore.App.Profile;
+using CosmicShore.UI.Views;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.Elements
+namespace CosmicShore.UI.Elements
 {
     /// <summary>
     /// Lightweight component that displays the player's XP on the Profile Screen (top right).

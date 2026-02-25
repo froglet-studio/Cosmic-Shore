@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.FTUE
+namespace CosmicShore.FTUE.Data
 {
     [CreateAssetMenu(fileName = "TutorialStep", menuName = "CosmicShore/FTUE/Tutorial Step", order = 0)]
     public class TutorialStep : ScriptableObject

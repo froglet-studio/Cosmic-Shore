@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts;
+namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(ImageSSU))]
     [CanEditMultipleObjects]
