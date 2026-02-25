@@ -1074,13 +1074,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 200000003}
-  _initializeDatas:
-  - vesselClass: 11
-    domain: 2
-    PlayerName: AI Ruby
-    AvatarId: 0
-    IsAI: 1
-    AllowSpawning: 1
+  _initializeDatas: []
   _spawnTransforms:
   - {fileID: 160000002}
   - {fileID: 170000002}
