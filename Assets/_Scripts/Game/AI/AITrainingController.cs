@@ -124,15 +124,11 @@ namespace CosmicShore.Game.AI
             vessel.VesselStatus.VesselCameraCustomizer.Initialize(vessel);
 
             // Display genome index for this pilot
-            var vesselGO = vessel.VesselStatus.GameObject;
-            if (vesselGO != null)
+            var aiPilot = vessel.VesselStatus.AIPilot;
+            if (aiPilot != null)
             {
-                var aiPilot = vesselGO.GetComponent<AIPilot>();
-                if (aiPilot != null)
-                {
-                    int genomeIndex = aiPilot.CurrentGenomeIndex;
-                    Debug.Log($"[AITraining] Camera on {vessel.VesselStatus.PlayerName} (Genome #{genomeIndex})");
-                }
+                int genomeIndex = aiPilot.CurrentGenomeIndex;
+                Debug.Log($"[AITraining] Camera on {vessel.VesselStatus.PlayerName} (Genome #{genomeIndex})");
             }
         }
 
