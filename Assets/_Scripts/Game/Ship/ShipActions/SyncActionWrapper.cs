@@ -1,7 +1,7 @@
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore._Scripts.Game.Ship.ShipActions
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class SyncActionWrapper : MonoBehaviour
     {

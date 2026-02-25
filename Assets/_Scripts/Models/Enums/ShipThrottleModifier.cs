@@ -1,13 +1,16 @@
-public struct ShipThrottleModifier
+namespace CosmicShore.Models.Enums
 {
-    public float initialValue;
-    public float duration;
-    public float elapsedTime;
-
-    public ShipThrottleModifier(float initialValue, float duration, float elapsedTime)
+    public struct ShipThrottleModifier
     {
-        this.initialValue = initialValue;
-        this.duration = duration;
-        this.elapsedTime = elapsedTime;
+        public float initialValue;
+        public float duration;
+        public float elapsedTime;
+
+        public ShipThrottleModifier(float initialValue, float duration, float elapsedTime)
+        {
+            this.initialValue = initialValue;
+            this.duration = duration;
+            this.elapsedTime = elapsedTime;
+        }
     }
 }

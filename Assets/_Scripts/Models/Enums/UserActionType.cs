@@ -1,4 +1,4 @@
-namespace CosmicShore.Systems.UserActions
+namespace CosmicShore.Models.Enums
 {
     public enum UserActionType
     {

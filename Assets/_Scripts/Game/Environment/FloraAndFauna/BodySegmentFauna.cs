@@ -1,39 +1,41 @@
 using CosmicShore;
 using CosmicShore.Game;
 
-public class BodySegmentFauna : Fauna
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
-    public Worm ParentWorm { get; set; }
-    public BodySegmentFauna PreviousSegment { get; set; }
-    public BodySegmentFauna NextSegment { get; set; }
-    public bool IsHead;
-    public bool IsTail;
-
-    protected override void Die(string killername = "")
+    public class BodySegmentFauna : Fauna
     {
-        if (!IsHead && !IsTail)
+        public Worm ParentWorm { get; set; }
+        public BodySegmentFauna PreviousSegment { get; set; }
+        public BodySegmentFauna NextSegment { get; set; }
+        public bool IsHead;
+        public bool IsTail;
+
+        protected override void Die(string killername = "")
         {
-            ParentWorm.SplitWorm(this);
+            if (!IsHead && !IsTail)
+            {
+                ParentWorm.SplitWorm(this);
+            }
+            else if (IsHead)
+            {
+                ParentWorm.UpdateHeadStatus(false);
+            }
+            else if (IsTail)
+            {
+                ParentWorm.UpdateTailStatus(false);
+            }
+            ParentWorm.RemoveSegment(this);
         }
-        else if (IsHead)
+
+        public override void Initialize(Cell cell)
         {
-            ParentWorm.UpdateHeadStatus(false);
+            throw new System.NotImplementedException();
         }
-        else if (IsTail)
+
+        protected override void Spawn()
         {
-            ParentWorm.UpdateTailStatus(false);
+
         }
-        ParentWorm.RemoveSegment(this);
     }
-
-    public override void Initialize(Cell cell)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    protected override void Spawn()
-    {
-
-    }
-
 }
