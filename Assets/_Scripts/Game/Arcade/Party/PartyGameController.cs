@@ -10,14 +10,21 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
-using CosmicShore.Game;
 
 namespace CosmicShore.Game.Arcade.Party
 {
     /// <summary>
-    /// Orchestrates a full Party Game session: lobby, 5 randomized mini-game rounds,
-    /// scoring, and final results. Lives in the party scene for the entire session.
-    /// Mini-game environments are child GameObjects that get enabled/disabled per round.
+    /// Orchestrates a Party Game session: lobby, randomized mini-game rounds,
+    /// scoring, and final results.
+    ///
+    /// KEY DESIGN:
+    /// - Mini-game controllers have IsPartyMode = true → suppresses autonomous lifecycle,
+    ///   but gameplay mechanics (collisions, race finish, crystals) still work.
+    /// - Environment SPVIs use a 3-state PartyMode:
+    ///     SpawnMode (first round) → spawns vessels + AI when triggered
+    ///     InertMode (subsequent rounds) → fully inert, vessels repositioned
+    /// - Environment canvases are disabled to prevent UI conflicts.
+    /// - Scene camera is disabled during gameplay, re-enabled between rounds.
     /// </summary>
     public class PartyGameController : NetworkBehaviour
     {
@@ -31,6 +38,10 @@ namespace CosmicShore.Game.Arcade.Party
         [Header("UI")]
         [SerializeField] PartyPausePanel partyPausePanel;
 
+        [Header("Camera")]
+        [Tooltip("The scene-level camera (Mini Game Main Camera). Disabled during gameplay so the vessel camera takes over.")]
+        [SerializeField] Camera sceneCamera;
+
         [Header("Mini-Game Environments")]
         [Tooltip("Root GameObjects for each mini-game environment. Index must match AvailableMiniGames order in config.")]
         [SerializeField] List<GameObject> miniGameEnvironments = new();
@@ -39,15 +50,14 @@ namespace CosmicShore.Game.Arcade.Party
         readonly NetworkVariable<int> _netCurrentRound = new(0);
         readonly NetworkVariable<int> _netPhase = new((int)PartyPhase.Lobby);
         readonly NetworkVariable<int> _netSelectedMiniGameIndex = new(-1);
-        readonly NetworkVariable<float> _netLobbyStartTime = new(0f);
 
         // --- Local state ---
         readonly List<PartyRoundResult> _roundResults = new();
         readonly List<PartyPlayerState> _playerStates = new();
         readonly List<GameModes> _recentMiniGames = new();
-        readonly List<MiniGameControllerBase> _miniGameControllers = new();
-        int _readyPlayerCount;
         int _activeMiniGameIndex = -1;
+        MultiplayerMiniGameControllerBase _activeMiniGameController;
+        bool _vesselsSpawned; // True after first round spawns vessels
         CancellationTokenSource _lobbyCts;
         CancellationTokenSource _roundCts;
 
@@ -78,42 +88,43 @@ namespace CosmicShore.Game.Arcade.Party
             _netCurrentRound.OnValueChanged += OnNetRoundChanged;
             _netSelectedMiniGameIndex.OnValueChanged += OnNetMiniGameChanged;
 
-            // Subscribe to game data events to capture round results
             gameData.OnWinnerCalculated += OnMiniGameWinnerCalculated;
             gameData.OnMiniGameEnd += OnMiniGameEnded;
-
-            // Subscribe to player join events so we track who's in the party
             gameData.OnPlayerAdded += HandlePlayerAdded;
 
-            // Auto-discover mini-game controllers from environment GameObjects
-            DiscoverMiniGameControllers();
-
-            // Initialize round results
             _roundResults.Clear();
             for (int i = 0; i < config.TotalRounds; i++)
                 _roundResults.Add(new PartyRoundResult { RoundIndex = i });
 
-            // Disable all mini-game environments at start
+            _vesselsSpawned = false;
+
             foreach (var env in miniGameEnvironments)
-                if (env) env.SetActive(false);
+            {
+                if (!env) continue;
+                SetPartyModeOnEnvironment(env, ServerPlayerVesselInitializer.PartyModeState.InertMode);
+                env.SetActive(false);
+            }
+
+            // Scene camera stays on during lobby (shows skybox/nucleus)
+            if (sceneCamera) sceneCamera.enabled = true;
+
+            if (partyPausePanel)
+            {
+                partyPausePanel.Initialize(config.TotalRounds, _playerStates);
+                partyPausePanel.ForceShow();
+            }
+
+            OnNetPhaseChanged(-1, (int)PartyPhase.Lobby);
 
             if (IsServer)
             {
-                _netLobbyStartTime.Value = Time.realtimeSinceStartup;
-                SetPhase(PartyPhase.Lobby);
-
                 if (IsSoloWithAI)
                     StartSoloLobby().Forget();
                 else
                     StartLobbyTimer().Forget();
             }
 
-            // Initialize the party panel with round tabs
-            if (partyPausePanel)
-            {
-                partyPausePanel.Initialize(config.TotalRounds, _playerStates);
-                partyPausePanel.Show();
-            }
+            CSDebug.Log($"[PartyGame] OnNetworkSpawn. IsServer={IsServer}, IsSolo={IsSoloWithAI}, Envs={miniGameEnvironments.Count}");
         }
 
         public override void OnNetworkDespawn()
@@ -134,29 +145,6 @@ namespace CosmicShore.Game.Arcade.Party
             base.OnNetworkDespawn();
         }
 
-        /// <summary>
-        /// Auto-discovers MiniGameControllerBase components from the environment GameObjects.
-        /// Each environment root should have the controller as a component.
-        /// </summary>
-        void DiscoverMiniGameControllers()
-        {
-            _miniGameControllers.Clear();
-            foreach (var env in miniGameEnvironments)
-            {
-                if (!env)
-                {
-                    _miniGameControllers.Add(null);
-                    continue;
-                }
-
-                var controller = env.GetComponent<MiniGameControllerBase>();
-                _miniGameControllers.Add(controller);
-
-                if (!controller)
-                    CSDebug.Log($"[PartyGame] No MiniGameControllerBase on '{env.name}'. PartyGameController will drive game flow.");
-            }
-        }
-
         #endregion
 
         #region Phase Management
@@ -164,7 +152,19 @@ namespace CosmicShore.Game.Arcade.Party
         void SetPhase(PartyPhase phase)
         {
             if (!IsServer) return;
-            _netPhase.Value = (int)phase;
+
+            int newVal = (int)phase;
+            int oldVal = _netPhase.Value;
+
+            if (oldVal == newVal)
+            {
+                CSDebug.Log($"[PartyGame] SetPhase: re-entering {phase}, forcing callback");
+                OnNetPhaseChanged(oldVal, newVal);
+            }
+            else
+            {
+                _netPhase.Value = newVal;
+            }
         }
 
         void OnNetPhaseChanged(int previous, int current)
@@ -193,20 +193,16 @@ namespace CosmicShore.Game.Arcade.Party
 
         #region Lobby & Player Management
 
-        /// <summary>
-        /// Bridge from GameDataSO.OnPlayerAdded event to our player tracking.
-        /// Called on the server when a new player is added to game data.
-        /// </summary>
         void HandlePlayerAdded(string playerName, Domains domain)
         {
             if (!IsServer) return;
 
             bool isAI = false;
-            // Check if this player is AI by looking at the game data
             var player = gameData.Players.FirstOrDefault(p => p.Name == playerName);
             if (player != null)
                 isAI = player.IsInitializedAsAI;
 
+            CSDebug.Log($"[PartyGame] HandlePlayerAdded: '{playerName}', domain={domain}, isAI={isAI}");
             OnPlayerJoined(playerName, domain, isAI);
         }
 
@@ -225,22 +221,20 @@ namespace CosmicShore.Game.Arcade.Party
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // Timeout reached — fill with AI and start the first round
                 if (CurrentPhase == PartyPhase.Lobby)
                 {
                     FillWithAI();
-                    EnableFreeFlightForLobby_ClientRpc();
-                    StartNextRound().Forget();
+                    ReinitializePanelWithPlayers_ClientRpc();
+
+                    SetPhase(PartyPhase.WaitingForReady);
+                    ResetReadyStates();
+                    ShowPanel_ClientRpc();
+                    BroadcastGameStateText_ClientRpc("Ready to party!");
                 }
             }
             catch (OperationCanceledException) { }
         }
 
-        /// <summary>
-        /// Solo mode (1 player selected): wait for ServerPlayerVesselInitializer to
-        /// spawn players via HandlePlayerAdded, then use a short lobby timer so the
-        /// player can see the lobby before readying up.
-        /// </summary>
         async UniTaskVoid StartSoloLobby()
         {
             _lobbyCts?.Cancel();
@@ -251,36 +245,43 @@ namespace CosmicShore.Game.Arcade.Party
             {
                 BroadcastGameStateText_ClientRpc("Setting up party...");
 
-                // Wait for the ServerPlayerVesselInitializer to spawn human + AI
-                // Players arrive via HandlePlayerAdded → OnPlayerJoined
                 await UniTask.Delay(
                     TimeSpan.FromSeconds(config.SoloLobbyWaitSeconds),
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // If players still haven't filled (e.g., initializer didn't add enough), fill now
+                if (!_playerStates.Any(p => !p.IsAIReplacement))
+                {
+                    string humanName = gameData.LocalPlayer?.Name ?? "Player 1";
+                    var domain = Domains.Jade;
+                    OnPlayerJoined(humanName, domain, false);
+                    CSDebug.Log($"[PartyGame] Registered human player directly: '{humanName}'");
+                }
+
                 if (_playerStates.Count < config.MaxPlayers)
                     FillWithAI();
 
-                // Re-initialize the panel now that we have all players
-                if (partyPausePanel)
-                    partyPausePanel.Initialize(config.TotalRounds, _playerStates);
+                CSDebug.Log($"[PartyGame] Solo lobby complete. Players: {_playerStates.Count}");
 
-                if (CurrentPhase == PartyPhase.Lobby)
-                {
-                    EnableFreeFlightForLobby_ClientRpc();
-                    StartNextRound().Forget();
-                }
+                ReinitializePanelWithPlayers_ClientRpc();
+
+                SetPhase(PartyPhase.WaitingForReady);
+                ResetReadyStates();
+                ShowPanel_ClientRpc();
+                BroadcastGameStateText_ClientRpc("Ready to party!");
             }
             catch (OperationCanceledException) { }
         }
 
-        /// <summary>
-        /// Called by the server player initializer when a new player joins.
-        /// </summary>
         public void OnPlayerJoined(string playerName, Domains domain, bool isAI)
         {
             if (_playerStates.Any(p => p.PlayerName == playerName)) return;
+
+            if (_playerStates.Count >= config.MaxPlayers)
+            {
+                CSDebug.Log($"[PartyGame] Max players ({config.MaxPlayers}) reached. Ignoring '{playerName}'.");
+                return;
+            }
 
             _playerStates.Add(new PartyPlayerState
             {
@@ -288,27 +289,25 @@ namespace CosmicShore.Game.Arcade.Party
                 Domain = domain,
                 GamesWon = 0,
                 IsAIReplacement = isAI,
-                IsReady = isAI, // AI is always ready
+                IsReady = isAI,
             });
 
             SyncPlayerJoined_ClientRpc(playerName, (int)domain, isAI);
+            CSDebug.Log($"[PartyGame] Player joined: '{playerName}' (AI={isAI}). Total: {_playerStates.Count}/{config.MaxPlayers}");
 
-            // In solo mode, StartSoloLobby manages the lobby flow with a short timer
             if (IsSoloWithAI) return;
 
-            // Check if we have enough players
             int humanCount = _playerStates.Count(p => !p.IsAIReplacement);
             int totalCount = _playerStates.Count;
 
             if (totalCount >= config.MaxPlayers ||
                 (humanCount >= config.MinPlayers && totalCount < config.MaxPlayers))
             {
-                // Fill remaining slots with AI
                 if (totalCount < config.MaxPlayers)
                     FillWithAI();
 
                 _lobbyCts?.Cancel();
-                EnableFreeFlightForLobby_ClientRpc();
+                ReinitializePanelWithPlayers_ClientRpc();
                 StartNextRound().Forget();
             }
         }
@@ -331,14 +330,10 @@ namespace CosmicShore.Game.Arcade.Party
                 });
 
                 SyncPlayerJoined_ClientRpc(aiName, (int)aiDomain, true);
+                CSDebug.Log($"[PartyGame] Filled slot {i} with AI: '{aiName}' ({aiDomain})");
             }
         }
 
-        /// <summary>
-        /// Picks a domain not already used by existing players.
-        /// Avoids drawing from the DomainAssigner pool which may already
-        /// be exhausted by the ServerPlayerVesselInitializer.
-        /// </summary>
         Domains PickUnusedDomain()
         {
             var usedDomains = new HashSet<Domains>(_playerStates.Select(p => p.Domain));
@@ -351,10 +346,6 @@ namespace CosmicShore.Game.Arcade.Party
             return Domains.Unassigned;
         }
 
-        /// <summary>
-        /// Called when a player leaves mid-party. Replaces them with AI.
-        /// AI replacement scores are not recorded.
-        /// </summary>
         public void OnPlayerLeft(string playerName)
         {
             if (!IsServer) return;
@@ -368,7 +359,6 @@ namespace CosmicShore.Game.Arcade.Party
             SyncPlayerLeft_ClientRpc(playerName);
             CSDebug.Log($"[PartyGame] Player '{playerName}' left. Replaced by AI.");
 
-            // If we were waiting for ready and this was the last holdout, check ready state
             if (CurrentPhase == PartyPhase.WaitingForReady ||
                 CurrentPhase == PartyPhase.RoundResults ||
                 CurrentPhase == PartyPhase.MiniGameReady)
@@ -379,13 +369,24 @@ namespace CosmicShore.Game.Arcade.Party
 
         #region Ready System
 
-        /// <summary>
-        /// Called when a player clicks the Ready button in the party panel.
-        /// </summary>
         public void OnLocalPlayerReady()
         {
-            if (gameData.LocalPlayer == null) return;
-            OnPlayerReady_ServerRpc(gameData.LocalPlayer.Name);
+            string name = gameData.LocalPlayer?.Name;
+
+            if (string.IsNullOrEmpty(name))
+            {
+                var human = _playerStates.FirstOrDefault(p => !p.IsAIReplacement);
+                name = human?.PlayerName;
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                CSDebug.LogWarning("[PartyGame] OnLocalPlayerReady: no player found!");
+                return;
+            }
+
+            CSDebug.Log($"[PartyGame] OnLocalPlayerReady: '{name}', phase={CurrentPhase}");
+            OnPlayerReady_ServerRpc(name);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -393,45 +394,51 @@ namespace CosmicShore.Game.Arcade.Party
         {
             string name = playerName.ToString();
             var state = _playerStates.FirstOrDefault(p => p.PlayerName == name);
-            if (state == null) return;
+            if (state == null)
+            {
+                CSDebug.LogWarning($"[PartyGame] OnPlayerReady_ServerRpc: '{name}' not found!");
+                return;
+            }
+
+            if (state.IsReady) return;
 
             state.IsReady = true;
-            _readyPlayerCount++;
-
-            BroadcastPlayerReady_ClientRpc(new FixedString128Bytes(name));
-            CSDebug.Log($"[PartyGame] Player '{name}' ready. ({_readyPlayerCount}/{_playerStates.Count})");
+            int readyCount = _playerStates.Count(p => p.IsReady);
+            BroadcastPlayerReady_ClientRpc(new FixedString128Bytes(name), readyCount, _playerStates.Count);
+            CSDebug.Log($"[PartyGame] '{name}' ready ({readyCount}/{_playerStates.Count}), phase={CurrentPhase}");
 
             CheckAllPlayersReady();
         }
 
         void CheckAllPlayersReady()
         {
-            if (!_playerStates.All(p => p.IsReady)) return;
+            bool allReady = _playerStates.Count > 0 && _playerStates.All(p => p.IsReady);
+            if (!allReady) return;
 
-            if (CurrentPhase == PartyPhase.RoundResults)
+            switch (CurrentPhase)
             {
-                // Between rounds — pick the next game
-                StartNextRound().Forget();
-            }
-            else if (CurrentPhase == PartyPhase.WaitingForReady)
-            {
-                // Game announced — load the environment
-                LoadMiniGameEnvironment().Forget();
-            }
-            else if (CurrentPhase == PartyPhase.MiniGameReady)
-            {
-                // Environment loaded — start gameplay with countdown
-                BeginMiniGamePlay().Forget();
+                case PartyPhase.WaitingForReady:
+                    if (_netSelectedMiniGameIndex.Value < 0)
+                        StartNextRound().Forget();
+                    else
+                        LoadMiniGameEnvironment().Forget();
+                    break;
+                case PartyPhase.MiniGameReady:
+                    BeginMiniGamePlay().Forget();
+                    break;
+                case PartyPhase.RoundResults:
+                    StartNextRound().Forget();
+                    break;
             }
         }
 
         void ResetReadyStates()
         {
-            _readyPlayerCount = 0;
             foreach (var state in _playerStates)
-            {
-                state.IsReady = state.IsAIReplacement; // AI is always ready
-            }
+                state.IsReady = state.IsAIReplacement;
+
+            ResetReadyStates_ClientRpc();
+            CheckAllPlayersReady();
         }
 
         #endregion
@@ -449,15 +456,14 @@ namespace CosmicShore.Game.Arcade.Party
             try
             {
                 int roundIndex = _netCurrentRound.Value;
+                CSDebug.Log($"[PartyGame] StartNextRound: {roundIndex + 1}/{config.TotalRounds}");
 
-                // Phase: Randomizing — pick and announce the game
                 SetPhase(PartyPhase.Randomizing);
                 BroadcastGameStateText_ClientRpc("Randomizing game...");
 
                 int miniGameIndex = PickRandomMiniGame();
                 _netSelectedMiniGameIndex.Value = miniGameIndex;
                 var selectedMode = config.AvailableMiniGames[miniGameIndex];
-
                 _roundResults[roundIndex].MiniGameMode = selectedMode;
 
                 await UniTask.Delay(TimeSpan.FromSeconds(1.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
@@ -467,21 +473,14 @@ namespace CosmicShore.Game.Arcade.Party
 
                 await UniTask.Delay(TimeSpan.FromSeconds(1.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
-                // Phase: WaitingForReady — show panel with game name, ready button.
-                // Environment is NOT loaded yet; it loads after all players ready up.
                 SetPhase(PartyPhase.WaitingForReady);
                 ResetReadyStates();
-                ForceShowPartyPanel_ClientRpc();
-                BroadcastGameStateText_ClientRpc("Ready up!");
+                ShowPanel_ClientRpc();
+                BroadcastGameStateText_ClientRpc($"Round {roundIndex + 1}: {modeName} — Ready up!");
             }
             catch (OperationCanceledException) { }
         }
 
-        /// <summary>
-        /// Called when all players ready during WaitingForReady.
-        /// Shows a loading transition, activates the mini-game environment,
-        /// positions players, then enters MiniGameReady for the gameplay-start ready.
-        /// </summary>
         async UniTaskVoid LoadMiniGameEnvironment()
         {
             if (!IsServer) return;
@@ -496,33 +495,73 @@ namespace CosmicShore.Game.Arcade.Party
                 int roundIndex = _netCurrentRound.Value;
                 var selectedMode = config.AvailableMiniGames[miniGameIndex];
 
-                // Connecting / loading transition
+                CSDebug.Log($"[PartyGame] LoadMiniGameEnvironment: envIndex={miniGameIndex}, mode={selectedMode}, vesselsExist={_vesselsSpawned}");
+
                 BroadcastGameStateText_ClientRpc("Loading...");
-
-                // Activate the mini-game environment and position players
                 gameData.GameMode = selectedMode;
-                ActivateMiniGameEnvironment_ClientRpc(miniGameIndex);
-                ResetGameDataForRound_ClientRpc((int)selectedMode);
 
-                // Notify listeners
+                // Determine SPVI mode: SpawnMode for first round, InertMode for subsequent
+                bool isFirstRound = !_vesselsSpawned;
+                var spviMode = isFirstRound
+                    ? ServerPlayerVesselInitializer.PartyModeState.SpawnMode
+                    : ServerPlayerVesselInitializer.PartyModeState.InertMode;
+
+                ActivateMiniGameEnvironment_ClientRpc(miniGameIndex, (int)spviMode);
+                ResetGameDataForRound_ClientRpc((int)selectedMode);
                 OnRoundStarting?.Invoke(roundIndex, selectedMode);
 
-                // Wait for environment activation to settle
-                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                if (isFirstRound)
+                {
+                    // Trigger vessel spawning on the first-round environment's SPVI
+                    TriggerVesselSpawning(miniGameIndex);
 
-                // Phase: MiniGameReady — env is live, ready to start gameplay
+                    // Wait for vessels to spawn and initialize
+                    BroadcastGameStateText_ClientRpc("Spawning vessels...");
+                    await UniTask.Delay(TimeSpan.FromSeconds(3f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+
+                    _vesselsSpawned = true;
+                    SetVesselsSpawned_ClientRpc();
+                }
+                else
+                {
+                    // Vessels already exist — reposition them to this environment's spawn points
+                    RepositionPlayersToEnvironment_ClientRpc(miniGameIndex);
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                }
+
                 SetPhase(PartyPhase.MiniGameReady);
                 ResetReadyStates();
-                ForceShowPartyPanel_ClientRpc();
-                BroadcastGameStateText_ClientRpc("Ready up!");
+                ShowPanel_ClientRpc();
+
+                string modeName = GetMiniGameDisplayName(selectedMode);
+                BroadcastGameStateText_ClientRpc($"{modeName} — Ready to play!");
             }
             catch (OperationCanceledException) { }
         }
 
         /// <summary>
-        /// Called when all players are ready during MiniGameReady phase.
-        /// Hides the panel, runs the in-game countdown, and starts gameplay.
+        /// Server-only: finds the SPVI on the given environment and triggers vessel spawning.
         /// </summary>
+        void TriggerVesselSpawning(int envIndex)
+        {
+            if (!IsServer) return;
+            if (envIndex < 0 || envIndex >= miniGameEnvironments.Count) return;
+
+            var env = miniGameEnvironments[envIndex];
+            if (!env) return;
+
+            var spvi = env.GetComponentInChildren<ServerPlayerVesselInitializer>(true);
+            if (spvi != null)
+            {
+                spvi.SpawnVesselsForParty();
+                CSDebug.Log($"[PartyGame] Triggered SpawnVesselsForParty on '{env.name}'");
+            }
+            else
+            {
+                CSDebug.LogError($"[PartyGame] No SPVI found on '{env.name}' for vessel spawning!");
+            }
+        }
+
         async UniTaskVoid BeginMiniGamePlay()
         {
             if (!IsServer) return;
@@ -533,19 +572,17 @@ namespace CosmicShore.Game.Arcade.Party
 
             try
             {
-                // Hide the party panel
-                HideMiniGameHUD_ClientRpc();
+                CSDebug.Log("[PartyGame] BeginMiniGamePlay");
+                HidePanel_ClientRpc();
+                DisableSceneCamera_ClientRpc();
 
                 await UniTask.Delay(
                     TimeSpan.FromSeconds(config.PostCountdownDelaySeconds),
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // Phase: Playing
                 SetPhase(PartyPhase.Playing);
                 StartGameplay_ClientRpc();
-
-                // Start a round timer as a fallback end condition
                 RunRoundTimer(ct).Forget();
             }
             catch (OperationCanceledException) { }
@@ -556,7 +593,6 @@ namespace CosmicShore.Game.Arcade.Party
             var available = config.AvailableMiniGames;
             if (available.Count == 0) return 0;
 
-            // Avoid repeating the last game if possible
             var candidates = new List<int>();
             for (int i = 0; i < available.Count; i++)
             {
@@ -570,14 +606,9 @@ namespace CosmicShore.Game.Arcade.Party
 
             int chosen = candidates[UnityEngine.Random.Range(0, candidates.Count)];
             _recentMiniGames.Add(available[chosen]);
-
             return chosen;
         }
 
-        /// <summary>
-        /// Fallback round timer. If the game-specific end condition doesn't fire
-        /// within the configured duration, the server forces the round to end.
-        /// </summary>
         async UniTaskVoid RunRoundTimer(CancellationToken ct)
         {
             try
@@ -587,10 +618,9 @@ namespace CosmicShore.Game.Arcade.Party
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // Timer expired and we're still playing — force end
                 if (IsServer && CurrentPhase == PartyPhase.Playing)
                 {
-                    CSDebug.Log("[PartyGame] Round timer expired. Forcing round end.");
+                    CSDebug.Log("[PartyGame] Round timer expired.");
                     ForceEndRound_ClientRpc();
                 }
             }
@@ -612,18 +642,15 @@ namespace CosmicShore.Game.Arcade.Party
             if (!IsServer) return;
             if (CurrentPhase != PartyPhase.Playing) return;
 
-            // Capture results from gameData
             int roundIndex = _netCurrentRound.Value;
             var result = _roundResults[roundIndex];
 
-            // Determine winner (first in sorted stats)
             if (gameData.RoundStatsList.Count > 0)
             {
                 result.WinnerName = gameData.RoundStatsList[0].Name;
                 result.WinnerDomain = gameData.RoundStatsList[0].Domain;
             }
 
-            // Capture per-player scores
             result.PlayerScores.Clear();
             foreach (var stats in gameData.RoundStatsList)
             {
@@ -637,9 +664,8 @@ namespace CosmicShore.Game.Arcade.Party
                 });
             }
 
-            // Update wins — only count non-AI-replacement players
             var winnerState = _playerStates.FirstOrDefault(p => p.PlayerName == result.WinnerName);
-            if (winnerState != null && !winnerState.IsAIReplacement)
+            if (winnerState != null)
                 winnerState.GamesWon++;
 
             CSDebug.Log($"[PartyGame] Round {roundIndex + 1} winner: {result.WinnerName}");
@@ -650,6 +676,7 @@ namespace CosmicShore.Game.Arcade.Party
             if (!IsServer) return;
             if (CurrentPhase != PartyPhase.Playing) return;
 
+            CSDebug.Log("[PartyGame] OnMiniGameEnded → CompleteRound");
             CompleteRound().Forget();
         }
 
@@ -666,19 +693,17 @@ namespace CosmicShore.Game.Arcade.Party
                 int roundIndex = _netCurrentRound.Value;
                 var result = _roundResults[roundIndex];
 
-                // Wait for end-game cinematic to play (but we skip the scoreboard)
                 await UniTask.Delay(
                     TimeSpan.FromSeconds(config.PostRoundDelaySeconds),
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // Deactivate mini-game environment
-                DeactivateAllMiniGameEnvironments_ClientRpc();
-
-                // Sync round results to all clients
+                // Deactivate mini-game controller, then environment, then re-enable scene camera
+                DeactivateCurrentMiniGame_ClientRpc();
+                DeactivateAllEnvironments_ClientRpc();
+                EnableSceneCamera_ClientRpc();
                 SyncRoundResult(roundIndex, result);
 
-                // Check if party is complete
                 if (roundIndex + 1 >= config.TotalRounds)
                 {
                     SetPhase(PartyPhase.FinalResults);
@@ -688,8 +713,8 @@ namespace CosmicShore.Game.Arcade.Party
                 }
                 else
                 {
-                    // Move to next round
                     _netCurrentRound.Value = roundIndex + 1;
+                    _netSelectedMiniGameIndex.Value = -1;
                     SetPhase(PartyPhase.RoundResults);
                     ResetReadyStates();
 
@@ -697,11 +722,10 @@ namespace CosmicShore.Game.Arcade.Party
                         ? "Round complete!"
                         : $"{result.WinnerName} wins!";
                     BroadcastGameStateText_ClientRpc(winnerText);
-
-                    // PartyEndGameHandler shows the party panel after the cinematic finishes
-
                     OnRoundCompleted?.Invoke(roundIndex, result);
                 }
+
+                ShowPanel_ClientRpc();
             }
             catch (OperationCanceledException) { }
         }
@@ -727,22 +751,16 @@ namespace CosmicShore.Game.Arcade.Party
             SyncRoundResult_ClientRpc(
                 roundIndex,
                 (int)result.MiniGameMode,
-                new FixedString64Bytes(result.WinnerName),
+                new FixedString64Bytes(result.WinnerName ?? ""),
                 (int)result.WinnerDomain,
-                names,
-                scores,
-                domains);
+                names, scores, domains);
         }
 
         [ClientRpc]
         void SyncRoundResult_ClientRpc(
-            int roundIndex,
-            int miniGameMode,
-            FixedString64Bytes winnerName,
-            int winnerDomain,
-            FixedString64Bytes[] playerNames,
-            float[] playerScores,
-            int[] playerDomains)
+            int roundIndex, int miniGameMode,
+            FixedString64Bytes winnerName, int winnerDomain,
+            FixedString64Bytes[] playerNames, float[] playerScores, int[] playerDomains)
         {
             if (roundIndex < 0 || roundIndex >= _roundResults.Count) return;
 
@@ -786,10 +804,7 @@ namespace CosmicShore.Game.Arcade.Party
         }
 
         [ClientRpc]
-        void SyncFinalResults_ClientRpc(
-            FixedString64Bytes[] names,
-            int[] wins,
-            int[] domains)
+        void SyncFinalResults_ClientRpc(FixedString64Bytes[] names, int[] wins, int[] domains)
         {
             _playerStates.Clear();
             for (int i = 0; i < names.Length; i++)
@@ -802,7 +817,6 @@ namespace CosmicShore.Game.Arcade.Party
                 });
             }
 
-            // Sort by wins descending
             _playerStates.Sort((a, b) => b.GamesWon.CompareTo(a.GamesWon));
 
             if (partyPausePanel)
@@ -813,34 +827,37 @@ namespace CosmicShore.Game.Arcade.Party
 
         #endregion
 
-        #region Client RPCs — UI & Environment
+        #region Client RPCs
 
         [ClientRpc]
         void BroadcastGameStateText_ClientRpc(FixedString128Bytes text)
         {
             string msg = text.ToString();
             OnGameStateTextChanged?.Invoke(msg);
-
-            if (partyPausePanel)
-                partyPausePanel.SetGameStateText(msg);
+            if (partyPausePanel) partyPausePanel.SetGameStateText(msg);
         }
 
         [ClientRpc]
-        void BroadcastPlayerReady_ClientRpc(FixedString128Bytes playerName)
+        void BroadcastPlayerReady_ClientRpc(FixedString128Bytes playerName, int readyCount, int totalCount)
         {
             string name = playerName.ToString();
             var state = _playerStates.FirstOrDefault(p => p.PlayerName == name);
             if (state != null) state.IsReady = true;
+            if (partyPausePanel) partyPausePanel.OnPlayerReadyChanged(name, true, readyCount, totalCount);
+        }
 
-            if (partyPausePanel)
-                partyPausePanel.OnPlayerReadyChanged(name, true);
+        [ClientRpc]
+        void ResetReadyStates_ClientRpc()
+        {
+            foreach (var state in _playerStates)
+                state.IsReady = state.IsAIReplacement;
+            if (partyPausePanel) partyPausePanel.OnReadyStatesReset();
         }
 
         [ClientRpc]
         void SyncPlayerJoined_ClientRpc(FixedString128Bytes playerName, int domain, bool isAI)
         {
-            if (IsServer) return; // Server already has this state
-
+            if (IsServer) return;
             string name = playerName.ToString();
             if (_playerStates.Any(p => p.PlayerName == name)) return;
 
@@ -853,8 +870,7 @@ namespace CosmicShore.Game.Arcade.Party
                 IsReady = isAI,
             });
 
-            if (partyPausePanel)
-                partyPausePanel.OnPlayerJoined(name, (Domains)domain, isAI);
+            if (partyPausePanel) partyPausePanel.OnPlayerJoined(name, (Domains)domain, isAI);
         }
 
         [ClientRpc]
@@ -867,51 +883,51 @@ namespace CosmicShore.Game.Arcade.Party
                 state.IsAIReplacement = true;
                 state.IsReady = true;
             }
-
-            if (partyPausePanel)
-                partyPausePanel.OnPlayerLeft(name);
-        }
-
-        /// <summary>
-        /// Enables vessel movement so players can fly freely in the lobby
-        /// while the first round is being selected.
-        /// </summary>
-        [ClientRpc]
-        void EnableFreeFlightForLobby_ClientRpc()
-        {
-            PauseSystem.TogglePauseGame(false);
-            gameData.SetPlayersActive();
+            if (partyPausePanel) partyPausePanel.OnPlayerLeft(name);
         }
 
         [ClientRpc]
-        void ForceShowPartyPanel_ClientRpc()
+        void ReinitializePanelWithPlayers_ClientRpc()
         {
-            if (partyPausePanel)
-                partyPausePanel.ForceShow();
+            if (partyPausePanel) partyPausePanel.Initialize(config.TotalRounds, _playerStates);
         }
 
         [ClientRpc]
-        void HideMiniGameHUD_ClientRpc()
+        void ShowPanel_ClientRpc()
         {
-            // The party scene should subscribe to this via the panel
-            if (partyPausePanel)
-                partyPausePanel.Hide();
+            if (partyPausePanel) partyPausePanel.ForceShow();
+        }
+
+        [ClientRpc]
+        void HidePanel_ClientRpc()
+        {
+            if (partyPausePanel) partyPausePanel.Hide();
+        }
+
+        [ClientRpc]
+        void DisableSceneCamera_ClientRpc()
+        {
+            if (sceneCamera) sceneCamera.enabled = false;
+        }
+
+        [ClientRpc]
+        void EnableSceneCamera_ClientRpc()
+        {
+            if (sceneCamera) sceneCamera.enabled = true;
+        }
+
+        [ClientRpc]
+        void SetVesselsSpawned_ClientRpc()
+        {
+            _vesselsSpawned = true;
         }
 
         [ClientRpc]
         void StartGameplay_ClientRpc()
         {
-            // Ensure the game is unpaused — PauseSystem is static and may carry
-            // over a paused state from menu navigation (ScreenSwitcher).
-            // Also restores Time.timeScale = 1 so physics/movement work.
             PauseSystem.TogglePauseGame(false);
-
             gameData.InitializeGame();
 
-            // Use the active mini-game environment's CountdownTimer for the
-            // in-game 3-2-1-GO visual, then enable vessels. This replicates the
-            // standalone controller flow (OnReadyClicked → countdown → SetPlayersActive)
-            // without requiring the controller's NetworkObject to be spawned.
             var countdownTimer = FindActiveCountdownTimer();
             if (countdownTimer)
             {
@@ -923,69 +939,62 @@ namespace CosmicShore.Game.Arcade.Party
             }
             else
             {
-                // No countdown timer in this env — start immediately.
                 gameData.SetPlayersActive();
                 gameData.StartTurn();
             }
         }
 
-        /// <summary>
-        /// Finds the CountdownTimer component in the currently active mini-game environment.
-        /// </summary>
-        CountdownTimer FindActiveCountdownTimer()
-        {
-            if (_activeMiniGameIndex < 0 || _activeMiniGameIndex >= miniGameEnvironments.Count)
-                return null;
-
-            var env = miniGameEnvironments[_activeMiniGameIndex];
-            if (!env || !env.activeSelf) return null;
-
-            return env.GetComponentInChildren<CountdownTimer>();
-        }
-
         [ClientRpc]
-        void ActivateMiniGameEnvironment_ClientRpc(int miniGameIndex)
+        void ActivateMiniGameEnvironment_ClientRpc(int miniGameIndex, int spviMode)
         {
             DeactivateAllEnvironments();
-
             _activeMiniGameIndex = miniGameIndex;
 
-            if (miniGameIndex < 0 || miniGameIndex >= miniGameEnvironments.Count) return;
+            if (miniGameIndex < 0 || miniGameIndex >= miniGameEnvironments.Count)
+            {
+                CSDebug.LogWarning($"[PartyGame] ActivateEnv: index {miniGameIndex} out of range");
+                return;
+            }
 
             var env = miniGameEnvironments[miniGameIndex];
             if (!env) return;
 
-            env.SetActive(true);
+            // Set party mode BEFORE activation triggers OnNetworkSpawn
+            var partyModeState = (ServerPlayerVesselInitializer.PartyModeState)spviMode;
+            SetPartyModeOnEnvironment(env, partyModeState);
 
-            // Initialize SegmentSpawners each round (Start only fires once,
-            // so subsequent rounds need an explicit Initialize call).
+            env.SetActive(true);
+            DisableEnvironmentCanvases(env);
+            CSDebug.Log($"[PartyGame] Activated: '{env.name}' (SPVI={partyModeState}, canvases disabled)");
+
+            // Initialize segment spawner if present
             var spawner = env.GetComponentInChildren<SegmentSpawner>();
             if (spawner) spawner.Initialize();
 
-            // Update spawn positions from this game mode's environment.
-            // Each env prefab has a ServerPlayerVesselInitializer with _playerOrigins
-            // configured for that game mode's specific spawn layout.
             UpdateSpawnPositionsFromEnv(env);
-        }
 
-        /// <summary>
-        /// Finds the ServerPlayerVesselInitializer in the activated environment
-        /// and updates gameData spawn positions to that game mode's layout.
-        /// Then repositions all players to the new spawn points.
-        /// </summary>
-        void UpdateSpawnPositionsFromEnv(GameObject env)
-        {
-            var spvi = env.GetComponentInChildren<ServerPlayerVesselInitializer>(true);
-            if (spvi && spvi.PlayerOrigins is { Length: > 0 })
+            // Tell the mini-game controller it's time to set up for gameplay
+            _activeMiniGameController = env.GetComponentInChildren<MultiplayerMiniGameControllerBase>(true);
+            if (_activeMiniGameController != null)
             {
-                gameData.SetSpawnPositions(spvi.PlayerOrigins);
-                gameData.ResetPlayers();
-                CSDebug.Log($"[PartyGame] Updated spawn positions from '{env.name}' ({spvi.PlayerOrigins.Length} origins)");
+                _activeMiniGameController.PartyMode_Activate();
+                CSDebug.Log($"[PartyGame] PartyMode_Activate on {_activeMiniGameController.GetType().Name}");
             }
         }
 
         [ClientRpc]
-        void DeactivateAllMiniGameEnvironments_ClientRpc()
+        void DeactivateCurrentMiniGame_ClientRpc()
+        {
+            if (_activeMiniGameController != null)
+            {
+                _activeMiniGameController.PartyMode_Deactivate();
+                CSDebug.Log($"[PartyGame] PartyMode_Deactivate on {_activeMiniGameController.GetType().Name}");
+                _activeMiniGameController = null;
+            }
+        }
+
+        [ClientRpc]
+        void DeactivateAllEnvironments_ClientRpc()
         {
             DeactivateAllEnvironments();
         }
@@ -994,56 +1003,112 @@ namespace CosmicShore.Game.Arcade.Party
         void ResetGameDataForRound_ClientRpc(int gameMode)
         {
             gameData.GameMode = (GameModes)gameMode;
-            gameData.ResetStatsDataForReplay();
+            if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0)
+                gameData.ResetStatsDataForReplay();
+        }
+
+        /// <summary>
+        /// Repositions existing player vessels to the spawn points of the given environment.
+        /// Used on rounds 2+ where vessels already exist.
+        /// </summary>
+        [ClientRpc]
+        void RepositionPlayersToEnvironment_ClientRpc(int envIndex)
+        {
+            if (envIndex < 0 || envIndex >= miniGameEnvironments.Count) return;
+            var env = miniGameEnvironments[envIndex];
+            if (!env) return;
+
+            var spvi = env.GetComponentInChildren<ServerPlayerVesselInitializer>(true);
+            if (spvi == null || spvi.PlayerOrigins == null || spvi.PlayerOrigins.Length == 0)
+            {
+                CSDebug.LogWarning($"[PartyGame] No spawn origins on '{env.name}' for repositioning.");
+                return;
+            }
+
+            gameData.SetSpawnPositions(spvi.PlayerOrigins);
+            gameData.ResetPlayers();
+
+            // Snap camera to new position
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
+
+            CSDebug.Log($"[PartyGame] Repositioned players to '{env.name}' spawn points.");
+        }
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// Sets IsPartyMode on all controllers and PartyMode on all SPVIs within an environment.
+        /// Called BEFORE env.SetActive(true) so OnNetworkSpawn sees the flags.
+        /// </summary>
+        void SetPartyModeOnEnvironment(GameObject env, ServerPlayerVesselInitializer.PartyModeState spviMode)
+        {
+            var controllers = env.GetComponentsInChildren<MiniGameControllerBase>(true);
+            foreach (var ctrl in controllers)
+            {
+                ctrl.IsPartyMode = true;
+            }
+
+            var spvis = env.GetComponentsInChildren<ServerPlayerVesselInitializer>(true);
+            foreach (var spvi in spvis)
+            {
+                spvi.PartyMode = spviMode;
+                CSDebug.Log($"[PartyGame] Set SPVI PartyMode={spviMode} on '{env.name}'");
+            }
+        }
+
+        void DisableEnvironmentCanvases(GameObject env)
+        {
+            var canvases = env.GetComponentsInChildren<Canvas>(true);
+            foreach (var canvas in canvases)
+            {
+                canvas.enabled = false;
+            }
+        }
+
+        CountdownTimer FindActiveCountdownTimer()
+        {
+            if (_activeMiniGameIndex < 0 || _activeMiniGameIndex >= miniGameEnvironments.Count)
+                return null;
+            var env = miniGameEnvironments[_activeMiniGameIndex];
+            if (!env || !env.activeSelf) return null;
+            return env.GetComponentInChildren<CountdownTimer>();
+        }
+
+        void UpdateSpawnPositionsFromEnv(GameObject env)
+        {
+            var spvi = env.GetComponentInChildren<ServerPlayerVesselInitializer>(true);
+            if (spvi && spvi.PlayerOrigins is { Length: > 0 })
+            {
+                gameData.SetSpawnPositions(spvi.PlayerOrigins);
+                CSDebug.Log($"[PartyGame] Spawn positions from '{env.name}' ({spvi.PlayerOrigins.Length} origins)");
+            }
+            else
+            {
+                CSDebug.LogWarning($"[PartyGame] No PlayerOrigins found in '{env.name}'");
+            }
         }
 
         void DeactivateAllEnvironments()
         {
             _activeMiniGameIndex = -1;
+            _activeMiniGameController = null;
             foreach (var env in miniGameEnvironments)
                 if (env) env.SetActive(false);
         }
 
         #endregion
 
-        #region Public API for UI
+        #region Public API
 
-        /// <summary>
-        /// Toggle the party pause panel visibility.
-        /// Wire this to the volume/pause button's OnClick in the inspector.
-        /// </summary>
-        public void TogglePartyPanel()
-        {
-            if (!partyPausePanel) return;
-
-            if (partyPausePanel.IsVisible)
-                partyPausePanel.Hide();
-            else
-                partyPausePanel.ForceShow();
-        }
-
-        /// <summary>
-        /// Show the party pause panel. Useful for external callers that
-        /// always want to open (not toggle).
-        /// </summary>
-        public void ShowPartyPanel()
-        {
-            if (partyPausePanel)
-                partyPausePanel.ForceShow();
-        }
-
-        /// <summary>
-        /// Called from the Quit button on the party pause panel.
-        /// </summary>
         public void OnQuitParty()
         {
             if (multiplayerSetup)
                 multiplayerSetup.LeaveSession().Forget();
         }
 
-        /// <summary>
-        /// Gets the display name for a mini-game mode.
-        /// </summary>
         public static string GetMiniGameDisplayName(GameModes mode)
         {
             return mode switch
@@ -1055,9 +1120,6 @@ namespace CosmicShore.Game.Arcade.Party
             };
         }
 
-        /// <summary>
-        /// Gets the overall party winner (most games won).
-        /// </summary>
         public PartyPlayerState GetPartyWinner()
         {
             return _playerStates

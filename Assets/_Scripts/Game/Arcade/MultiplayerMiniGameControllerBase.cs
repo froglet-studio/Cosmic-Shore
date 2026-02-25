@@ -24,6 +24,14 @@ namespace CosmicShore.Game.Arcade
         {
             base.OnNetworkSpawn();
 
+            // In party mode, skip all autonomous lifecycle management.
+            // The PartyGameController will call into us when needed.
+            if (IsPartyMode)
+            {
+                CSDebug.Log($"[{GetType().Name}] OnNetworkSpawn — PARTY MODE, skipping autonomous init.");
+                return;
+            }
+
             if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
@@ -45,7 +53,44 @@ namespace CosmicShore.Game.Arcade
             base.OnNetworkDespawn();
         }
 
-        // ---------------- Session Management ----------------
+        // ==================== Party Mode API ====================
+        // These methods are called by PartyGameController to drive gameplay
+        // without the controller's own lifecycle getting in the way.
+
+        /// <summary>
+        /// Called by PartyGameController when this mini-game's environment is activated.
+        /// Subscribes to turn-end events so gameplay mechanics work,
+        /// but does NOT call InitializeGame or SetupNewRound.
+        /// </summary>
+        public virtual void PartyMode_Activate()
+        {
+            if (!IsPartyMode) return;
+
+            if (IsServer)
+            {
+                gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
+            }
+
+            CSDebug.Log($"[{GetType().Name}] PartyMode_Activate — subscribed to turn events.");
+        }
+
+        /// <summary>
+        /// Called by PartyGameController when this mini-game's round is complete.
+        /// Unsubscribes from events to prevent stale callbacks.
+        /// </summary>
+        public virtual void PartyMode_Deactivate()
+        {
+            if (!IsPartyMode) return;
+
+            if (IsServer)
+            {
+                gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
+            }
+
+            CSDebug.Log($"[{GetType().Name}] PartyMode_Deactivate — unsubscribed from turn events.");
+        }
+
+        // ==================== Session Management ================
 
         void SubscribeToSessionEvents()
         {
@@ -75,7 +120,7 @@ namespace CosmicShore.Game.Arcade
             catch (OperationCanceledException) { }
         }
 
-        // ---------------- Turn & Round Flow ----------------
+        // ==================== Turn & Round Flow ================
 
         protected override void OnCountdownTimerEnded()
         {
@@ -145,6 +190,15 @@ namespace CosmicShore.Game.Arcade
         void ExecuteServerGameEnd()
         {
             if (!IsServer) return;
+
+            // In party mode, don't run the mini-game's own end sequence.
+            // The PartyGameController listens for gameData events and handles transitions.
+            if (IsPartyMode)
+            {
+                CSDebug.Log($"[{GetType().Name}] ExecuteServerGameEnd — party mode, skipping SyncGameEnd.");
+                return;
+            }
+
             SyncGameEnd_ClientRpc();
         }
 
@@ -161,12 +215,18 @@ namespace CosmicShore.Game.Arcade
         protected override void SetupNewTurn()
         {
             base.SetupNewTurn();
+
+            // In party mode, don't show the mini-game's ready button
+            if (IsPartyMode) return;
             if (IsServer) ShowReadyButton_ClientRpc();
         }
 
         protected override void SetupNewRound()
         {
             base.SetupNewRound();
+
+            // In party mode, don't show the mini-game's ready button
+            if (IsPartyMode) return;
             if (IsServer) ShowReadyButton_ClientRpc();
         }
 
@@ -176,7 +236,7 @@ namespace CosmicShore.Game.Arcade
             RaiseToggleReadyButtonEvent(true);
         }
 
-        // ---------------- Reset / Replay ----------------
+        // ==================== Reset / Replay ====================
 
         protected override void OnResetForReplay() { }
 
@@ -233,7 +293,7 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnResetForReplayCustom() { }
 
-        // ---------------- Rematch ----------------
+        // ==================== Rematch ====================
 
         /// <summary>
         /// Called by Scoreboard when local player presses Play Again.

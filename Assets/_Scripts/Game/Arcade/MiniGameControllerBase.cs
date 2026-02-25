@@ -26,9 +26,18 @@ namespace CosmicShore.Game.Arcade
         protected virtual bool ShouldResetPlayersOnTurnEnd => false;
         protected virtual bool ShowEndGameSequence => true;
         protected virtual bool UseGolfRules => false;
+
+        /// <summary>
+        /// When true, this controller is being orchestrated by PartyGameController.
+        /// All autonomous lifecycle management (init, ready, countdown, end-game sequence)
+        /// is suppressed. The party controller calls into specific methods as needed.
+        /// Gameplay mechanics (collision tracking, race finishing, crystal counting) still run.
+        /// </summary>
+        public bool IsPartyMode { get; set; }
         
         public void OnReadyClicked()
         {
+            if (!enabled) return;
             OnReadyClicked_();
         }
         
@@ -46,6 +55,9 @@ namespace CosmicShore.Game.Arcade
         
         protected void RaiseToggleReadyButtonEvent(bool enable)
         {
+            // In party mode, don't raise the mini-game's own ready button events —
+            // the party panel handles all UI.
+            if (IsPartyMode) return;
             _onToggleReadyButton?.Raise(enable);
         }
         

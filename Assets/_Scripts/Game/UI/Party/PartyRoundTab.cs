@@ -121,13 +121,21 @@ namespace CosmicShore.Game.UI.Party
         }
 
         /// <summary>
-        /// Update ready indicator for a specific player.
+        /// Set the ready count directly from the server-authoritative count.
         /// </summary>
-        public void SetPlayerReady(string playerName, bool isReady)
+        public void SetReadyCount(int readyCount, int totalCount)
         {
-            if (isReady)
-                _readyCount = Mathf.Min(_readyCount + 1, _totalPlayers);
+            _readyCount = readyCount;
+            _totalPlayers = totalCount;
+            UpdateReadyCountText();
+        }
 
+        /// <summary>
+        /// Reset ready count when transitioning between ready phases.
+        /// </summary>
+        public void ResetReadyCount()
+        {
+            _readyCount = 0;
             UpdateReadyCountText();
         }
 

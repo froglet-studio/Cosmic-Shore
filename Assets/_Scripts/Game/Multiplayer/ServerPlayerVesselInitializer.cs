@@ -14,10 +14,14 @@ namespace CosmicShore.Game
     /// <summary>
     /// Server-side system:
     /// - Spawns networked vessels for connecting clients
-    /// - Keeps late-join sync via client RPCs (new client gets all clones; existing clients get just the new clone)
-    /// - In solo mode (IsMultiplayerMode == false), spawns AI opponents after the host player connects
+    /// - Keeps late-join sync via client RPCs
+    /// - In solo mode, spawns AI opponents after the host player connects
     ///
-    /// Designed as an inheritance-friendly base class (protected virtual hooks).
+    /// PARTY MODE has two states:
+    /// - SpawnMode: First round — spawns vessels + AI when triggered by party controller.
+    ///   Does NOT subscribe to OnClientConnected. Does NOT shutdown on despawn.
+    /// - InertMode: Subsequent rounds — fully inert. Vessels already exist.
+    ///   Does NOT shutdown on despawn.
     /// </summary>
     [RequireComponent(typeof(NetcodeHooks))]
     public class ServerPlayerVesselInitializer : MonoBehaviour
@@ -51,6 +55,25 @@ namespace CosmicShore.Game
 
         public Action OnAllPlayersSpawned;
 
+        public enum PartyModeState
+        {
+            /// <summary>Not in party mode — normal standalone behavior.</summary>
+            Off,
+            /// <summary>Party mode first round — spawns vessels when triggered by party controller.</summary>
+            SpawnMode,
+            /// <summary>Party mode subsequent rounds — fully inert, vessels already exist.</summary>
+            InertMode
+        }
+
+        /// <summary>
+        /// Controls how this SPVI behaves in party mode.
+        /// Set by PartyGameController before the environment is activated.
+        /// </summary>
+        public PartyModeState PartyMode { get; set; } = PartyModeState.Off;
+
+        /// <summary>Convenience check.</summary>
+        public bool IsInPartyMode => PartyMode != PartyModeState.Off;
+
         bool IsSoloWithAI => !gameData.IsMultiplayerMode;
 
         protected virtual void Awake()
@@ -69,14 +92,48 @@ namespace CosmicShore.Game
             }
         }
 
-        /// <summary>
-        /// Called when the NetworkObject lifecycle spawns (hooked via NetcodeHooks).
-        /// Override allowed; call base.OnNetworkSpawn().
-        /// </summary>
         protected virtual void OnNetworkSpawn()
         {
+            // Party InertMode: skip everything — vessels already exist from a previous round
+            if (PartyMode == PartyModeState.InertMode)
+            {
+                CSDebug.Log($"[SPVI] OnNetworkSpawn — PARTY INERT on '{gameObject.name}', skipping all.");
+                enabled = false;
+                return;
+            }
+
+            // Party SpawnMode: set spawn positions but DON'T subscribe to OnClientConnected.
+            // The party controller will call SpawnVesselsForParty() explicitly.
+            if (PartyMode == PartyModeState.SpawnMode)
+            {
+                if (!NetworkManager.Singleton.IsServer)
+                {
+                    enabled = false;
+                    return;
+                }
+
+                if (_playerOrigins is not { Length: > 0 } || _playerOrigins[0] == null)
+                {
+                    CSDebug.LogWarning($"[SPVI] PARTY SPAWN on '{gameObject.name}' but no _playerOrigins!");
+                    enabled = false;
+                    return;
+                }
+
+                gameData.SetSpawnPositions(_playerOrigins);
+                CSDebug.Log($"[SPVI] OnNetworkSpawn — PARTY SPAWN on '{gameObject.name}', positions set. Waiting for trigger.");
+                return;
+            }
+
+            // Normal standalone mode
             if (!NetworkManager.Singleton.IsServer)
             {
+                enabled = false;
+                return;
+            }
+
+            if (_playerOrigins is not { Length: > 0 } || _playerOrigins[0] == null)
+            {
+                CSDebug.LogWarning($"[SPVI] _playerOrigins not assigned on '{gameObject.name}', skipping initialization.");
                 enabled = false;
                 return;
             }
@@ -87,12 +144,15 @@ namespace CosmicShore.Game
             NetworkVesselClientCache.OnNewInstanceAdded += OnNewVesselClientAdded;
         }
 
-        /// <summary>
-        /// Called when the NetworkObject lifecycle despawns (hooked via NetcodeHooks).
-        /// Override allowed; call base.OnNetworkDespawn().
-        /// </summary>
         protected virtual void OnNetworkDespawn()
         {
+            // CRITICAL: In party mode (any state), do NOT shut down NetworkManager.
+            if (IsInPartyMode)
+            {
+                CSDebug.Log($"[SPVI] OnNetworkDespawn — PARTY MODE on '{gameObject.name}', skipping shutdown.");
+                return;
+            }
+
             if (NetworkManager.Singleton)
                 NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
 
@@ -102,12 +162,46 @@ namespace CosmicShore.Game
                 NetworkManager.Singleton.Shutdown();
         }
 
-        // ----------------------------
-        // Hook points for derived classes
+        // ==================== Party Mode API ====================
 
-        // ----------------------------
-        // Lobby full check (human vessels)
-        // ----------------------------
+        /// <summary>
+        /// Called by PartyGameController on the first round to spawn vessels + AI.
+        /// Only runs when PartyMode == SpawnMode.
+        /// </summary>
+        public void SpawnVesselsForParty()
+        {
+            if (PartyMode != PartyModeState.SpawnMode) return;
+            if (!NetworkManager.Singleton || !NetworkManager.Singleton.IsServer) return;
+
+            CSDebug.Log($"[SPVI] SpawnVesselsForParty on '{gameObject.name}'");
+
+            ulong hostClientId = NetworkManager.Singleton.LocalClientId;
+            SpawnPlayerThenAIForParty(hostClientId).Forget();
+        }
+
+        async UniTaskVoid SpawnPlayerThenAIForParty(ulong clientId)
+        {
+            await DelayedSpawnVesselForPlayerAsync(clientId);
+            await UniTask.WaitForSeconds(1f, true);
+
+            SpawnAIOpponents();
+
+            await UniTask.WaitForSeconds(0.5f, true);
+
+            var target = new ClientRpcSendParams
+            {
+                TargetClientIds = new[] { clientId }
+            };
+            clientPlayerVesselInitializer.InitializeAllPlayersAndVesselsInThisNewClient_ClientRpc(
+                new ClientRpcParams { Send = target }
+            );
+
+            OnAllPlayersSpawned?.Invoke();
+            CSDebug.Log($"[SPVI] Party vessel spawning complete on '{gameObject.name}'");
+        }
+
+        // ==================== Standard Hooks ====================
+
         protected virtual void OnNewVesselClientAdded(IVessel _)
         {
             var session = gameData.ActiveSession;
@@ -117,9 +211,6 @@ namespace CosmicShore.Game
             }
         }
 
-        // ----------------------------
-        // New client connected
-        // ----------------------------
         protected virtual void OnClientConnected(ulong clientId)
         {
             if (IsSoloWithAI && clientId == NetworkManager.Singleton.LocalClientId)
@@ -132,21 +223,13 @@ namespace CosmicShore.Game
             }
         }
 
-        // ----------------------------
-        // Solo mode: spawn the human player's vessel, then spawn AI opponents
-        // ----------------------------
         async UniTaskVoid SpawnPlayerThenAI(ulong clientId)
         {
-            // First, spawn the human player's vessel normally
             await DelayedSpawnVesselForPlayerAsync(clientId);
-
-            // Wait for human player initialization to complete
             await UniTask.WaitForSeconds(1f, true);
 
-            // Spawn AI opponents
             SpawnAIOpponents();
 
-            // Allow a moment for AI network objects to propagate, then initialize all
             await UniTask.WaitForSeconds(0.5f, true);
 
             var target = new ClientRpcSendParams
@@ -163,62 +246,55 @@ namespace CosmicShore.Game
             if (!NetworkManager.Singleton || !NetworkManager.Singleton.IsServer)
                 return;
 
-            // Get the player prefab from NetworkManager to use for AI
             var playerPrefabGO = NetworkManager.Singleton.NetworkConfig.PlayerPrefab;
             if (!playerPrefabGO)
             {
-                CSDebug.LogError("[ServerPlayerVesselInitializer] No player prefab configured in NetworkManager.");
+                CSDebug.LogError("[SPVI] No player prefab configured in NetworkManager.");
                 return;
             }
 
             var playerPrefabNO = playerPrefabGO.GetComponent<NetworkObject>();
             if (!playerPrefabNO)
             {
-                CSDebug.LogError("[ServerPlayerVesselInitializer] Player prefab missing NetworkObject component.");
+                CSDebug.LogError("[SPVI] Player prefab missing NetworkObject component.");
                 return;
             }
 
-            // Determine how many AI opponents to spawn (fill remaining slots up to MaxPlayers)
             int aiCount = 1;
             var game = FindGameByMode(gameData.GameMode);
             if (game != null && game.MaxPlayers > 1)
                 aiCount = game.MaxPlayers - 1;
 
-            // Pick AI profiles for unique names
             var pickedProfiles = aiProfileList != null ? aiProfileList.PickRandom(aiCount) : null;
 
             for (int i = 0; i < aiCount; i++)
             {
                 var aiPlayerNO = Instantiate(playerPrefabNO);
 
-                // Position AI at successive spawn points (index 1, 2, ...)
                 if (_playerOrigins != null && _playerOrigins.Length > 0)
                 {
                     int spawnIndex = 1 + i;
                     if (spawnIndex >= _playerOrigins.Length)
                     {
-                        CSDebug.LogWarning($"[ServerPlayerVesselInitializer] Not enough spawn origins for AI {i} " +
-                                         $"(need index {spawnIndex}, have {_playerOrigins.Length}). Wrapping with modulo.");
+                        CSDebug.LogWarning($"[SPVI] Not enough spawn origins for AI {i}, wrapping with modulo.");
                         spawnIndex = spawnIndex % _playerOrigins.Length;
                     }
                     aiPlayerNO.transform.SetPositionAndRotation(_playerOrigins[spawnIndex].position, _playerOrigins[spawnIndex].rotation);
                 }
 
-                aiPlayerNO.Spawn(true); // server-owned
+                aiPlayerNO.Spawn(true);
 
                 var aiPlayer = aiPlayerNO.GetComponent<Player>();
                 if (!aiPlayer)
                 {
-                    CSDebug.LogError("[ServerPlayerVesselInitializer] AI Player prefab missing Player component.");
+                    CSDebug.LogError("[SPVI] AI Player prefab missing Player component.");
                     aiPlayerNO.Despawn(true);
                     continue;
                 }
 
-                // Configure AI player
                 var aiDomain = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
                 var aiVesselType = PickAIVesselType();
 
-                // Use AI profile name if available, otherwise fall back to generic name
                 string aiName = (pickedProfiles != null && i < pickedProfiles.Count && !string.IsNullOrEmpty(pickedProfiles[i].Name))
                     ? pickedProfiles[i].Name
                     : $"AI Pilot {i + 1}";
@@ -228,23 +304,19 @@ namespace CosmicShore.Game
                 aiPlayer.NetDomain.Value = aiDomain;
                 aiPlayer.NetIsAI.Value = true;
 
-                // Spawn AI vessel (server-owned)
                 if (!TrySpawnVesselForAI(aiPlayer, out var aiVesselNO))
                 {
                     aiPlayerNO.Despawn(true);
                     continue;
                 }
 
-                // Configure the AI pilot on the spawned vessel
                 ConfigureAIPilot(aiVesselNO);
-
-                CSDebug.Log($"[ServerPlayerVesselInitializer] Spawned AI opponent {i + 1}/{aiCount}: domain={aiDomain}, vessel={aiVesselType}");
+                CSDebug.Log($"[SPVI] Spawned AI opponent {i + 1}/{aiCount}: domain={aiDomain}, vessel={aiVesselType}");
             }
         }
 
         protected VesselClassType PickAIVesselType()
         {
-            // Try to pick a random ship from the game's available captains
             if (gameList != null)
             {
                 var game = FindGameByMode(gameData.GameMode);
@@ -254,17 +326,15 @@ namespace CosmicShore.Game
                     if (captain != null && captain.Ship != null)
                     {
                         var shipType = captain.Ship.Class;
-                        // Validate the prefab container can spawn this type
                         if (vesselPrefabContainer.TryGetShipPrefab(shipType, out _))
                         {
-                            CSDebug.Log($"[ServerPlayerVesselInitializer] AI picking ship {shipType} from captain {captain.Name}");
+                            CSDebug.Log($"[SPVI] AI picking ship {shipType} from captain {captain.Name}");
                             return shipType;
                         }
-                        CSDebug.LogWarning($"[ServerPlayerVesselInitializer] No prefab for {shipType}, falling back to Sparrow");
+                        CSDebug.LogWarning($"[SPVI] No prefab for {shipType}, falling back to Sparrow");
                     }
                 }
             }
-
             return VesselClassType.Sparrow;
         }
 
@@ -272,7 +342,6 @@ namespace CosmicShore.Game
         {
             if (gameList == null || gameList.Games == null)
                 return null;
-
             foreach (var game in gameList.Games)
             {
                 if (game.Mode == mode)
@@ -284,15 +353,10 @@ namespace CosmicShore.Game
         protected void ConfigureAIPilot(NetworkObject aiVesselNO)
         {
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
-            if (aiPilot == null)
-                return;
+            if (aiPilot == null) return;
 
-            // Determine if this game mode needs player-seeking behavior (Joust)
             bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
-
-            // Scale AI skill with intensity (0.25 per intensity level, capped at 1)
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
-
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
 
@@ -303,91 +367,73 @@ namespace CosmicShore.Game
 
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] No prefab for AI vessel type {vesselType}");
+                CSDebug.LogError($"[SPVI] No prefab for AI vessel type {vesselType}");
                 return false;
             }
 
             if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} missing NetworkObject");
+                CSDebug.LogError($"[SPVI] Prefab {shipPrefabTransform.name} missing NetworkObject");
                 return false;
             }
 
             vesselNO = Instantiate(shipNetworkObject);
             vesselNO.transform.SetPositionAndRotation(aiPlayer.transform.position, aiPlayer.transform.rotation);
-            vesselNO.Spawn(true); // server-owned
+            vesselNO.Spawn(true);
             aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
             return true;
         }
 
-        // ----------------------------
-        // Spawn vessel for a new client after short delay
-        // ----------------------------
         protected async UniTaskVoid DelayedSpawnVesselForPlayer(ulong clientId)
         {
             try
             {
                 await DelayedSpawnVesselForPlayerAsync(clientId);
-
                 await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
 
                 foreach (var clientPair in NetworkManager.Singleton.ConnectedClientsList)
                 {
-                    // Existing clients: initialize just the NEW joined client's clone (Player) in the existing clients.
                     if (clientPair.ClientId != clientId)
                     {
-                        var target = new ClientRpcSendParams
-                        {
-                            TargetClientIds = new[] { clientPair.ClientId }
-                        };
-
+                        var target = new ClientRpcSendParams { TargetClientIds = new[] { clientPair.ClientId } };
                         clientPlayerVesselInitializer.InitializeNewClientsOwnerPlayerAndVesselInExistingClient_ClientRpc(
-                            clientId,
-                            new ClientRpcParams { Send = target }
-                        );
+                            clientId, new ClientRpcParams { Send = target });
                     }
-                    // New client: initialize ALL existing clones (Players and AIs) in the new client.
                     else
                     {
-                        var target = new ClientRpcSendParams
-                        {
-                            TargetClientIds = new[] { clientId }
-                        };
-
+                        var target = new ClientRpcSendParams { TargetClientIds = new[] { clientId } };
                         clientPlayerVesselInitializer.InitializeAllPlayersAndVesselsInThisNewClient_ClientRpc(
-                            new ClientRpcParams { Send = target }
-                        );
+                            new ClientRpcParams { Send = target });
                     }
                 }
             }
             catch (Exception ex)
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Error in DelayedSpawnVesselForPlayer: {ex}");
+                CSDebug.LogError($"[SPVI] Error in DelayedSpawnVesselForPlayer: {ex}");
             }
         }
 
-        async UniTask DelayedSpawnVesselForPlayerAsync(ulong clientId)
+        protected async UniTask DelayedSpawnVesselForPlayerAsync(ulong clientId)
         {
             await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
 
             var playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
             if (!playerNetObj)
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player object not found for client {clientId}");
+                CSDebug.LogError($"[SPVI] Player object not found for client {clientId}");
                 return;
             }
 
             var player = playerNetObj.GetComponent<Player>();
             if (!player)
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Player component missing on {clientId}");
+                CSDebug.LogError($"[SPVI] Player component missing on {clientId}");
                 return;
             }
 
             player.NetDomain.Value = DomainAssigner.GetDomainsByGameModes(gameData.GameMode);
             player.NetIsAI.Value = false;
 
-            // Spawn initial vessel if type already chosen
             if (player.NetDefaultVesselType.Value == VesselClassType.Random)
             {
                 CSDebug.LogWarning("Vessel type not set, setting default dolphin");
@@ -396,22 +442,19 @@ namespace CosmicShore.Game
             SpawnVesselForPlayer(clientId, player);
         }
 
-        // ----------------------------
-        // Vessel spawning logic
-        // ----------------------------
         void SpawnVesselForPlayer(ulong clientId, Player networkPlayer)
         {
             VesselClassType vesselTypeToSpawn = networkPlayer.NetDefaultVesselType.Value;
 
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselTypeToSpawn, out Transform shipPrefabTransform))
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] No prefab for vessel type {vesselTypeToSpawn}");
+                CSDebug.LogError($"[SPVI] No prefab for vessel type {vesselTypeToSpawn}");
                 return;
             }
 
             if (!shipPrefabTransform.TryGetComponent(out NetworkObject shipNetworkObject))
             {
-                CSDebug.LogError($"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} missing NetworkObject");
+                CSDebug.LogError($"[SPVI] Prefab {shipPrefabTransform.name} missing NetworkObject");
                 return;
             }
 
