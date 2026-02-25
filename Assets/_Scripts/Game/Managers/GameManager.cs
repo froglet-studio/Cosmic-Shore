@@ -26,7 +26,7 @@ namespace CosmicShore.Core
         private void OnEnable()
         {
             PauseSystem.TogglePauseGame(false);
-            if (gameData && gameData.OnLaunchGame) gameData.OnLaunchGame.OnRaised += LaunchGame;
+            gameData.OnLaunchGame.OnRaised += LaunchGame;
         }
 
         private void Start()
@@ -36,7 +36,7 @@ namespace CosmicShore.Core
 
         private void OnDisable()
         {
-            if (gameData && gameData.OnLaunchGame) gameData.OnLaunchGame.OnRaised -= LaunchGame;
+            gameData.OnLaunchGame.OnRaised -= LaunchGame;
         }
         
         public virtual void RestartGame()

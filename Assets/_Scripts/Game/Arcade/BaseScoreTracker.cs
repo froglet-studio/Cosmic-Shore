@@ -25,10 +25,10 @@ namespace CosmicShore.Game.Arcade
         {
             if (gameData == null) return;
 
-            if (gameData.OnInitializeGame) gameData.OnInitializeGame.OnRaised += InitializeScoringMode;
-            if (gameData.OnMiniGameTurnStarted) gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-            if (gameData.OnMiniGameTurnEnd) gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
-            if (gameData.OnMiniGameEnd) gameData.OnMiniGameEnd.OnRaised += CalculateWinnerAndInvokeEvent;
+            gameData.OnInitializeGame.OnRaised += InitializeScoringMode;
+            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
+            gameData.OnMiniGameEnd.OnRaised += CalculateWinnerAndInvokeEvent;
             if (OnClickToMainMenu) OnClickToMainMenu.OnRaised += OnTurnEnded;
         }
 
@@ -36,10 +36,10 @@ namespace CosmicShore.Game.Arcade
         {
             if (gameData == null) return;
 
-            if (gameData.OnInitializeGame) gameData.OnInitializeGame.OnRaised -= InitializeScoringMode;
-            if (gameData.OnMiniGameTurnStarted) gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
-            if (gameData.OnMiniGameTurnEnd) gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
-            if (gameData.OnMiniGameEnd) gameData.OnMiniGameEnd.OnRaised -= CalculateWinnerAndInvokeEvent;
+            gameData.OnInitializeGame.OnRaised -= InitializeScoringMode;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
+            gameData.OnMiniGameEnd.OnRaised -= CalculateWinnerAndInvokeEvent;
             if (OnClickToMainMenu) OnClickToMainMenu.OnRaised -= OnTurnEnded;
         }
         #endregion
