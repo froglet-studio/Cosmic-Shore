@@ -10,31 +10,73 @@ using CosmicShore.Utilities;
 namespace CosmicShore.Game
 {
     /// <summary>
-    /// Tightly-packed prism data for Burst-compiled AOE spatial queries.
-    /// 32 bytes — two entries fit in a single 64-byte cache line.
+    /// Bit flags for prism status, packed into a single byte.
+    /// The Burst job only checks bits 0-1 (IsActive + Destroyed).
+    /// Bits 2-3 (shields) are only read on the main thread for the small hit set.
     /// </summary>
-    public struct PrismAOEData
+    public static class PrismFlags
     {
-        public float3 Position;       // 12B
-        public float Volume;          // 4B
-        public int Domain;            // 4B
-        public byte IsShielded;       // 1B
-        public byte IsSuperShielded;  // 1B
-        public byte Destroyed;        // 1B
-        public byte IsActive;         // 1B
-        // 8B implicit padding → 32B total
+        public const byte IsActive       = 1 << 0; // bit 0
+        public const byte Destroyed      = 1 << 1; // bit 1
+        public const byte IsShielded     = 1 << 2; // bit 2
+        public const byte IsSuperShielded = 1 << 3; // bit 3
+
+        // Mask for the Burst job's early-exit check:
+        // Active (bit 0 set) AND not destroyed (bit 1 clear) → value == 0x01
+        public const byte JobSkipMask    = IsActive | Destroyed;
+        public const byte JobPassValue   = IsActive; // exactly active, not destroyed
     }
 
     /// <summary>
-    /// Burst-compiled spatial query: filters prisms within an AOE radius.
-    /// Runs over contiguous cache-friendly memory instead of scattered MonoBehaviours.
-    /// The hot loop touches only Position (12B) + 2 status bytes per prism,
-    /// giving ~2.6 prisms per L1 cache line vs ~0 with MonoBehaviour pointer chasing.
+    /// HOT data: read by every Execute() call in the Burst spatial query job.
+    /// 16 bytes — exactly 4 prisms per 64-byte cache line, zero waste.
+    ///
+    /// Layout:
+    ///   offset 0:  Position.x  (4B)
+    ///   offset 4:  Position.y  (4B)
+    ///   offset 8:  Position.z  (4B)
+    ///   offset 12: Flags       (1B)  bit-packed status
+    ///   offset 13: _pad        (3B)  alignment to 16B
+    ///
+    /// For 3000 prisms: 48 KB — fits comfortably in L2,
+    /// and on devices with 64KB+ L1D (Snapdragon 8 Gen 2, Apple M-series), in L1.
+    /// </summary>
+    public struct PrismSpatialData
+    {
+        public float3 Position; // 12B
+        public byte Flags;      // 1B (see PrismFlags)
+        public byte _pad0;      // 1B
+        public byte _pad1;      // 1B
+        public byte _pad2;      // 1B
+        // Total: 16B — exactly 4 per 64B cache line
+    }
+
+    /// <summary>
+    /// COLD data: only read on the main thread for prisms that pass the spatial filter.
+    /// Typically a few dozen per frame as the AOE sphere grows — not a cache concern.
+    ///
+    /// Layout:
+    ///   offset 0: Volume  (4B)
+    ///   offset 4: Domain  (4B)
+    ///   Total: 8B
+    /// </summary>
+    public struct PrismDamageData
+    {
+        public float Volume; // 4B
+        public int Domain;   // 4B
+        // Total: 8B
+    }
+
+    /// <summary>
+    /// Burst-compiled spatial query over cache-line-packed PrismSpatialData.
+    /// Each Execute() reads exactly 16B (one PrismSpatialData entry).
+    /// With 4 entries per cache line, a sequential scan of 3000 prisms
+    /// touches only 750 cache lines (48KB).
     /// </summary>
     [BurstCompile]
     public struct AOESpatialQueryJob : IJobParallelFor
     {
-        [ReadOnly] public NativeArray<PrismAOEData> Prisms;
+        [ReadOnly] public NativeArray<PrismSpatialData> Prisms;
         [ReadOnly] public float3 Center;
         [ReadOnly] public float RadiusSq;
 
@@ -43,7 +85,9 @@ namespace CosmicShore.Game
         public void Execute(int index)
         {
             var p = Prisms[index];
-            if (p.IsActive == 0 || p.Destroyed != 0) return;
+
+            // Single byte check: must be active (bit 0) and not destroyed (bit 1)
+            if ((p.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) return;
 
             float distSq = math.lengthsq(p.Position - Center);
             if (distSq > RadiusSq) return;
@@ -53,9 +97,16 @@ namespace CosmicShore.Game
     }
 
     /// <summary>
-    /// Maintains a cache-friendly NativeArray of prism data for Burst-compiled AOE damage.
-    /// Replaces the per-prism Physics OnTriggerEnter → GetComponent → AcceptImpactee chain
-    /// with a single Burst job over contiguous memory.
+    /// Maintains hot/cold split NativeArrays of prism data for Burst-compiled AOE damage.
+    ///
+    /// Data layout (hot/cold split):
+    ///   _spatial[i] — PrismSpatialData (16B) — read by Burst job for ALL prisms
+    ///   _damage[i]  — PrismDamageData  (8B)  — read on main thread for HIT prisms only
+    ///   _prisms[i]  — Prism reference         — managed array for applying damage
+    ///
+    /// The Burst job scans only _spatial, keeping the working set tight.
+    /// Domain/shield/volume data in _damage is never loaded into cache during the scan —
+    /// it's only touched for the small set of prisms that actually got hit.
     ///
     /// Registration lifecycle:
     ///   Prism.Initialize()   → Register(prism) → stores index on Prism
@@ -67,13 +118,20 @@ namespace CosmicShore.Game
         private const int INITIAL_CAPACITY = 4096;
         private const int JOB_BATCH_SIZE = 256;
 
-        private NativeArray<PrismAOEData> _data;
+        // Hot: scanned by Burst job every frame during AOE
+        private NativeArray<PrismSpatialData> _spatial;
+
+        // Cold: read only for hit prisms on main thread
+        private NativeArray<PrismDamageData> _damage;
+
+        // Managed: Prism references for applying damage callbacks
         private Prism[] _prisms;
+
         private int _highWaterMark;
         private readonly Stack<int> _freeList = new(256);
         private NativeList<int> _hitIndices;
 
-        public bool IsAvailable => _data.IsCreated;
+        public bool IsAvailable => _spatial.IsCreated;
 
         public static PrismAOERegistry EnsureInstance()
         {
@@ -86,7 +144,8 @@ namespace CosmicShore.Game
         public override void Awake()
         {
             base.Awake();
-            _data = new NativeArray<PrismAOEData>(INITIAL_CAPACITY, Allocator.Persistent);
+            _spatial = new NativeArray<PrismSpatialData>(INITIAL_CAPACITY, Allocator.Persistent);
+            _damage = new NativeArray<PrismDamageData>(INITIAL_CAPACITY, Allocator.Persistent);
             _prisms = new Prism[INITIAL_CAPACITY];
             _hitIndices = new NativeList<int>(512, Allocator.Persistent);
         }
@@ -111,15 +170,22 @@ namespace CosmicShore.Game
             }
 
             _prisms[index] = prism;
-            _data[index] = new PrismAOEData
+
+            // Build flags byte
+            byte flags = PrismFlags.IsActive;
+            if (prism.prismProperties is { IsShielded: true }) flags |= PrismFlags.IsShielded;
+            if (prism.prismProperties is { IsSuperShielded: true }) flags |= PrismFlags.IsSuperShielded;
+
+            _spatial[index] = new PrismSpatialData
             {
                 Position = (float3)(Vector3)prism.transform.position,
+                Flags = flags
+            };
+
+            _damage[index] = new PrismDamageData
+            {
                 Volume = Mathf.Max(prism.prismProperties?.volume ?? 1f, 1f),
-                Domain = (int)prism.Domain,
-                IsShielded = (byte)(prism.prismProperties is { IsShielded: true } ? 1 : 0),
-                IsSuperShielded = (byte)(prism.prismProperties is { IsSuperShielded: true } ? 1 : 0),
-                Destroyed = 0,
-                IsActive = 1
+                Domain = (int)prism.Domain
             };
 
             return index;
@@ -128,9 +194,9 @@ namespace CosmicShore.Game
         public void Unregister(int index)
         {
             if (index < 0 || index >= _highWaterMark) return;
-            var d = _data[index];
-            d.IsActive = 0;
-            _data[index] = d;
+            var s = _spatial[index];
+            s.Flags = 0; // clear all flags including IsActive
+            _spatial[index] = s;
             _prisms[index] = null;
             _freeList.Push(index);
         }
@@ -138,26 +204,28 @@ namespace CosmicShore.Game
         public void MarkDestroyed(int index)
         {
             if (index < 0 || index >= _highWaterMark) return;
-            var d = _data[index];
-            d.Destroyed = 1;
-            _data[index] = d;
+            var s = _spatial[index];
+            s.Flags |= PrismFlags.Destroyed;
+            _spatial[index] = s;
         }
 
         public void UpdateShieldState(int index, bool shielded, bool superShielded)
         {
             if (index < 0 || index >= _highWaterMark) return;
-            var d = _data[index];
-            d.IsShielded = (byte)(shielded ? 1 : 0);
-            d.IsSuperShielded = (byte)(superShielded ? 1 : 0);
-            _data[index] = d;
+            var s = _spatial[index];
+            // Clear shield bits, then set
+            s.Flags = (byte)(s.Flags & ~(PrismFlags.IsShielded | PrismFlags.IsSuperShielded));
+            if (shielded) s.Flags |= PrismFlags.IsShielded;
+            if (superShielded) s.Flags |= PrismFlags.IsSuperShielded;
+            _spatial[index] = s;
         }
 
         public void UpdateDomain(int index, int domain)
         {
             if (index < 0 || index >= _highWaterMark) return;
-            var d = _data[index];
+            var d = _damage[index];
             d.Domain = domain;
-            _data[index] = d;
+            _damage[index] = d;
         }
 
         /// <summary>
@@ -166,9 +234,9 @@ namespace CosmicShore.Game
         public void UpdateVolume(int index, float volume)
         {
             if (index < 0 || index >= _highWaterMark) return;
-            var d = _data[index];
+            var d = _damage[index];
             d.Volume = volume;
-            _data[index] = d;
+            _damage[index] = d;
         }
 
         #endregion
@@ -176,23 +244,17 @@ namespace CosmicShore.Game
         #region AOE Processing
 
         /// <summary>
-        /// Processes one frame of AOE explosion damage using a Burst-compiled spatial query.
-        /// The job runs over contiguous PrismAOEData (cache-line packed), then domain/shield
-        /// logic is applied on the main thread for the much smaller hit set.
+        /// Processes one frame of AOE explosion damage.
+        ///
+        /// Phase 1 (Burst job): Scans _spatial array (16B/prism, 4 per cache line).
+        ///   - Checks Flags byte + distance² against all registered prisms.
+        ///   - Outputs indices of prisms within radius to _hitIndices.
+        ///
+        /// Phase 2 (main thread): For each hit index (typically dozens, not thousands):
+        ///   - Reads _damage[idx] for domain/shield info (cold data, not in Burst working set).
+        ///   - Applies domain logic, shield activation/deactivation, or damage.
+        ///   - Syncs results back to registry.
         /// </summary>
-        /// <param name="center">Explosion world position</param>
-        /// <param name="radius">Current explosion radius this frame</param>
-        /// <param name="speed">Explosion speed (MaxScale / Duration)</param>
-        /// <param name="inertia">Explosion inertia multiplier</param>
-        /// <param name="explosionDomain">Team that owns the explosion</param>
-        /// <param name="affectSelf">Should explosion damage same-team prisms?</param>
-        /// <param name="destructive">Should explosion destroy prisms?</param>
-        /// <param name="devastating">Should explosion ignore shields?</param>
-        /// <param name="shielding">Should explosion shield same-team prisms?</param>
-        /// <param name="anonymous">Is this an anonymous explosion (no vessel)?</param>
-        /// <param name="vessel">The vessel that caused the explosion (null if anonymous)</param>
-        /// <param name="alreadyHit">Per-explosion set tracking which prism indices were already processed</param>
-        /// <returns>Number of newly-hit prisms this frame</returns>
         public int ProcessExplosionFrame(
             Vector3 center,
             float radius,
@@ -209,12 +271,12 @@ namespace CosmicShore.Game
         {
             if (_highWaterMark == 0) return 0;
 
-            // --- Burst job: spatial filter over contiguous memory ---
+            // --- Phase 1: Burst job over hot spatial data ---
             _hitIndices.Clear();
 
             var job = new AOESpatialQueryJob
             {
-                Prisms = _data,
+                Prisms = _spatial,
                 Center = (float3)center,
                 RadiusSq = radius * radius,
                 HitIndices = _hitIndices.AsParallelWriter()
@@ -223,8 +285,7 @@ namespace CosmicShore.Game
             var handle = job.Schedule(_highWaterMark, JOB_BATCH_SIZE);
             handle.Complete();
 
-            // --- Main thread: apply domain/shield/damage logic to hit prisms ---
-            // This is the small set (typically a few dozen new hits per frame as the sphere grows).
+            // --- Phase 2: Main thread damage logic over cold data + managed refs ---
             int newHits = 0;
             int expDomain = (int)explosionDomain;
 
@@ -248,11 +309,13 @@ namespace CosmicShore.Game
                 var prism = _prisms[idx];
                 if (prism == null || prism.destroyed) continue;
 
-                var data = _data[idx];
-                int prismDomain = data.Domain;
+                // Read cold data — only for hit prisms, never pollutes the Burst job's cache
+                var flags = _spatial[idx].Flags;
+                var dmg = _damage[idx];
+                int prismDomain = dmg.Domain;
 
                 // Super-shielded + different team: deactivate super shield only
-                if ((prismDomain != expDomain || affectSelf) && data.IsSuperShielded != 0)
+                if ((prismDomain != expDomain || affectSelf) && (flags & PrismFlags.IsSuperShielded) != 0)
                 {
                     prism.DeactivateShields();
                     UpdateShieldState(idx, false, false);
@@ -273,7 +336,8 @@ namespace CosmicShore.Game
                 }
 
                 // Compute impact vector (same formula as AOEExplosion.CalculateImpactVector)
-                Vector3 direction = ((Vector3)data.Position - center).normalized;
+                Vector3 prismPos = (Vector3)_spatial[idx].Position;
+                Vector3 direction = (prismPos - center).normalized;
                 Vector3 impactVector = direction * speed * inertia;
 
                 // Deal damage
@@ -302,15 +366,23 @@ namespace CosmicShore.Game
 
         private void EnsureCapacity(int requiredIndex)
         {
-            if (requiredIndex < _data.Length) return;
+            if (requiredIndex < _spatial.Length) return;
 
             int newSize = Mathf.NextPowerOfTwo(requiredIndex + 1);
 
-            var newData = new NativeArray<PrismAOEData>(newSize, Allocator.Persistent);
-            NativeArray<PrismAOEData>.Copy(_data, newData, _data.Length);
-            _data.Dispose();
-            _data = newData;
+            // Grow hot array
+            var newSpatial = new NativeArray<PrismSpatialData>(newSize, Allocator.Persistent);
+            NativeArray<PrismSpatialData>.Copy(_spatial, newSpatial, _spatial.Length);
+            _spatial.Dispose();
+            _spatial = newSpatial;
 
+            // Grow cold array
+            var newDamage = new NativeArray<PrismDamageData>(newSize, Allocator.Persistent);
+            NativeArray<PrismDamageData>.Copy(_damage, newDamage, _damage.Length);
+            _damage.Dispose();
+            _damage = newDamage;
+
+            // Grow managed array
             var newPrisms = new Prism[newSize];
             System.Array.Copy(_prisms, newPrisms, _prisms.Length);
             _prisms = newPrisms;
@@ -322,7 +394,8 @@ namespace CosmicShore.Game
 
         private void OnDestroy()
         {
-            if (_data.IsCreated) _data.Dispose();
+            if (_spatial.IsCreated) _spatial.Dispose();
+            if (_damage.IsCreated) _damage.Dispose();
             if (_hitIndices.IsCreated) _hitIndices.Dispose();
         }
 
