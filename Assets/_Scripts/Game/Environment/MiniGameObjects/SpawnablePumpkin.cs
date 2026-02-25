@@ -55,7 +55,7 @@ namespace CosmicShore.Environment.MiniGameObjects
                     var position = new Vector3(rotatedX, rotatedY, z);
                     var lookPosition = block == 0 ? position : points[block - 1].Position;
                     var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
-                    var blockScale = sizeMultiplier * pumpkinWidth * prism.transform.localScale * Mathf.Sin(t);
+                    var blockScale = sizeMultiplier * pumpkinWidth * PrismScale * Mathf.Sin(t);
 
                     points[block] = new SpawnPoint(position, rotation, blockScale);
                 }

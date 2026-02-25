@@ -19,6 +19,13 @@ public class SpawnableEllipsoid : SpawnableBase
     protected float width;
     protected float height;
 
+    /// <summary>
+    /// Safe accessor for the prism prefab's localScale.
+    /// Returns Vector3.one when prism is null (internal-node mode with children),
+    /// producing uniform point scales that avoid shearing nested child geometry.
+    /// </summary>
+    protected Vector3 PrismScale => prism ? prism.transform.localScale : Vector3.one;
+
     protected override SpawnTrailData[] GenerateTrailData()
     {
         length = (float)rng.Next(1, 100) / 100f * maxlength;
@@ -37,7 +44,7 @@ public class SpawnableEllipsoid : SpawnableBase
             var position = new Vector3(x, y, 0);
             var lookPosition = block == 0 ? position : points1[block - 1].Position;
             var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
-            points1[block] = new SpawnPoint(position, rotation, prism.transform.localScale);
+            points1[block] = new SpawnPoint(position, rotation, PrismScale);
         }
 
         // Ring 2: XZ plane (Ruby)
@@ -50,7 +57,7 @@ public class SpawnableEllipsoid : SpawnableBase
             var position = new Vector3(x, 0, z);
             var lookPosition = block == 0 ? position : points2[block - 1].Position;
             var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
-            points2[block] = new SpawnPoint(position, rotation, prism.transform.localScale);
+            points2[block] = new SpawnPoint(position, rotation, PrismScale);
         }
 
         // Ring 3: YZ plane (Gold)
@@ -63,7 +70,7 @@ public class SpawnableEllipsoid : SpawnableBase
             var position = new Vector3(0, y, z);
             var lookPosition = block == 0 ? position : points3[block - 1].Position;
             var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
-            points3[block] = new SpawnPoint(position, rotation, prism.transform.localScale);
+            points3[block] = new SpawnPoint(position, rotation, PrismScale);
         }
 
         return new[]

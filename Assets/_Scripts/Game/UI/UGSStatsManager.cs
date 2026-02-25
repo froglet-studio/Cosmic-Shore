@@ -8,7 +8,7 @@ using Unity.Services.CloudSave;
 using Unity.Services.Leaderboards;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Analytics
 {
@@ -31,7 +31,7 @@ namespace CosmicShore.Game.Analytics
         private const float SAVE_DEBOUNCE_SECONDS = 2f;
         private bool _saveDirty;
         private bool _saveInFlight;
-        
+
         private void OnEnable()
         {
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
@@ -202,7 +202,7 @@ namespace CosmicShore.Game.Analytics
         #endregion
 
         #region Internal
-        
+
         void OnAuthenticationSignedIn()
         {
             _isReady = true;
