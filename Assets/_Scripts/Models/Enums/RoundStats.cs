@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Models.Enums;
 using Unity.Netcode;
 using Unity.Collections;
 using UnityEngine;
