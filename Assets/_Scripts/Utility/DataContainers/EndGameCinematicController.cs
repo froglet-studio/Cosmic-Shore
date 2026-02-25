@@ -19,6 +19,10 @@ namespace CosmicShore.Game.Cinematics
         [Header("View")]
         [SerializeField] protected EndGameCinematicView view;
 
+        [Header("Party Mode")]
+        [Tooltip("Set by PartyGameController. Skips connecting panel and ResetGameForNewRound.")]
+        public bool IsPartyMode;
+
         protected bool isRunning;
         protected bool localPlayerWon;
         protected Coroutine runningRoutine;
@@ -110,7 +114,7 @@ namespace CosmicShore.Game.Cinematics
                 yield return new WaitUntil(() => !view.IsContinueButtonActive());
             }
             
-            if (view && cinematic)
+            if (view && cinematic && !IsPartyMode)
             {
                 view.ShowConnectingPanel();
                 yield return new WaitForSeconds(cinematic.connectingPanelDuration);

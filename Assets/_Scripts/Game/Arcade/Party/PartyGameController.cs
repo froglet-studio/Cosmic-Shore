@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using CosmicShore.Game.Cinematics;
 using CosmicShore.Game.UI;
 using CosmicShore.Game.UI.Party;
 using CosmicShore.Soap;
@@ -97,6 +98,9 @@ namespace CosmicShore.Game.Arcade.Party
             gameData.OnMiniGameEnd += OnMiniGameEnded;
             gameData.OnPlayerAdded += HandlePlayerAdded;
 
+            if (gameData.OnShowGameEndScreen != null)
+                gameData.OnShowGameEndScreen.OnRaised += OnShowGameEndScreen;
+
             // Auto-resolve vesselSpawner if not assigned in Inspector
             if (!vesselSpawner)
             {
@@ -160,6 +164,9 @@ namespace CosmicShore.Game.Arcade.Party
             gameData.OnWinnerCalculated -= OnMiniGameWinnerCalculated;
             gameData.OnMiniGameEnd -= OnMiniGameEnded;
             gameData.OnPlayerAdded -= HandlePlayerAdded;
+
+            if (gameData.OnShowGameEndScreen != null)
+                gameData.OnShowGameEndScreen.OnRaised -= OnShowGameEndScreen;
 
             _lobbyCts?.Cancel();
             _lobbyCts?.Dispose();
@@ -688,6 +695,20 @@ namespace CosmicShore.Game.Arcade.Party
                 {
                     CSDebug.Log("[PartyGame] Round timer expired.");
                     ForceEndRound_ClientRpc();
+
+                    // Safety fallback: if OnShowGameEndScreen never fires (e.g., no
+                    // cinematic controller on this environment), force CompleteRound
+                    // after a generous timeout so the party doesn't get stuck.
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(60),
+                        DelayType.UnscaledDeltaTime,
+                        cancellationToken: ct);
+
+                    if (IsServer && CurrentPhase == PartyPhase.Playing)
+                    {
+                        CSDebug.LogWarning("[PartyGame] Cinematic timeout — forcing CompleteRound.");
+                        gameData.InvokeMiniGameEnd();
+                    }
                 }
             }
             catch (OperationCanceledException) { }
@@ -700,7 +721,10 @@ namespace CosmicShore.Game.Arcade.Party
             gameData.SortRoundStats(false);
             gameData.CalculateDomainStats(false);
             gameData.InvokeWinnerCalculated();
-            gameData.InvokeMiniGameEnd();
+            // DO NOT fire InvokeMiniGameEnd here — the EndGameCinematicController
+            // needs to run its full sequence first (score reveal → Continue button).
+            // OnShowGameEndScreen fires when the cinematic finishes, which triggers
+            // CompleteRound via OnShowGameEndScreen handler below.
         }
 
         void OnMiniGameWinnerCalculated()
@@ -744,6 +768,21 @@ namespace CosmicShore.Game.Arcade.Party
 
             CSDebug.Log("[PartyGame] OnMiniGameEnded → CompleteRound");
             CompleteRound().Forget();
+        }
+
+        /// <summary>
+        /// Called after the EndGameCinematicController finishes its full sequence
+        /// (score reveal → Continue button → hide). This is the signal to transition
+        /// to the next round. We fire InvokeMiniGameEnd so other systems (score trackers,
+        /// etc.) get notified, and OnMiniGameEnded triggers CompleteRound.
+        /// </summary>
+        void OnShowGameEndScreen()
+        {
+            if (!IsServer) return;
+            if (CurrentPhase != PartyPhase.Playing) return;
+
+            CSDebug.Log("[PartyGame] OnShowGameEndScreen → triggering mini-game end");
+            gameData.InvokeMiniGameEnd();
         }
 
         async UniTaskVoid CompleteRound()
@@ -1127,6 +1166,12 @@ namespace CosmicShore.Game.Arcade.Party
             foreach (var ctrl in controllers)
             {
                 ctrl.IsPartyMode = true;
+            }
+
+            var cinematicControllers = env.GetComponentsInChildren<EndGameCinematicController>(true);
+            foreach (var cc in cinematicControllers)
+            {
+                cc.IsPartyMode = true;
             }
 
             var spvis = env.GetComponentsInChildren<ServerPlayerVesselInitializer>(true);
