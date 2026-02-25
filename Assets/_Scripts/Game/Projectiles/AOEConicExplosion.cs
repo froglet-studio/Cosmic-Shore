@@ -8,7 +8,7 @@ namespace CosmicShore.Game.Projectiles
     public class AOEConicExplosion : AOEExplosion
     {
         [SerializeField] private float height = 800f;
-        [SerializeField] private GameObject coneContainer;
+        [SerializeField] protected GameObject coneContainer;
 
         public override void Initialize(InitializeStruct initStruct)
         {
@@ -40,11 +40,14 @@ namespace CosmicShore.Game.Projectiles
 
             coneContainer.transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);
 
-            // Parent our object to the container and reset local transform
-            // so it sits at the container's origin (the spawn position)
+            // Parent our object to the container.
+            // Euler(-90,0,0) rotates the cone mesh so its apex (mesh +Y)
+            // points along -Z in container space. The Z+0.5 offset then
+            // places the apex at the container origin (the spawn point),
+            // with the cone opening forward along +Z.
             transform.SetParent(coneContainer.transform, false);
-            transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.identity;
+            transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            transform.localPosition = new Vector3(0f, 0f, 0.5f);
 
             // create CTS for explosion
             explosionCts = new CancellationTokenSource();
