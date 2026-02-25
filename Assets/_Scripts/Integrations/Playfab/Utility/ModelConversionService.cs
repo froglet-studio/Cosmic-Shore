@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using CosmicShore.Utility;
 
-namespace CosmicShore.Integrations.Playfab.Utility
+namespace CosmicShore.Integrations.PlayFab.Utility
 {
     public class ModelConversionService
     {

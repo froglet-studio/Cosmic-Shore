@@ -7,260 +7,263 @@ using CosmicShore.Soap;
 using CosmicShore.Utility;
 using UnityEngine.Serialization;
 
-[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
-public struct Entity
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
-    public int type;
-    public Vector3 position;
-    public Vector3 velocity;
-    public Vector3 goalDirection;
-    public int explodeFlag;
-    public int team; // Team of the TrailBlock
-    public Vector4 teamWeights; // Weights for each team
-
-    // Constants for entity types
-    public const int ENTITY_TYPE_BOID = 0;
-    public const int ENTITY_TYPE_BLOCK = 1;
-    public const int ENTITY_TYPE_FAUNA = 2;
-}
-
-public class BoidSImulationController : MonoBehaviour
-{
-    [FormerlySerializedAs("miniGameData")] [SerializeField]
-    GameDataSO gameData;
-    
-    [SerializeField]
-    CellRuntimeDataSO cellData;
-    
-    public ComputeShader boidSimulationShader;
-    public Prism boidPrefab;
-    public int numberOfBoids = 100;
-    public float spawnRadius = 50.0f;
-    public Transform globalGoal;
-
-    private ComputeBuffer readBuffer;
-    private ComputeBuffer writeBuffer;
-    public List<Entity> entities = new List<Entity>();
-    private Entity[] entityArray;
-    private Prism[] boids; // Array to keep track of boid game objects
-
-    int kernel;
-
-    private void Start()
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
+    public struct Entity
     {
-        kernel = boidSimulationShader.FindKernel("CSMain");
+        public int type;
+        public Vector3 position;
+        public Vector3 velocity;
+        public Vector3 goalDirection;
+        public int explodeFlag;
+        public int team; // Team of the TrailBlock
+        public Vector4 teamWeights; // Weights for each team
 
-        InitializeEntities();
-        entityArray = entities.ToArray();
-
-        InitializeTrailBlocks();
-        InitializeComputeShader();
-        StartCoroutine(UpdateWeightsCoroutine());
+        // Constants for entity types
+        public const int ENTITY_TYPE_BOID = 0;
+        public const int ENTITY_TYPE_BLOCK = 1;
+        public const int ENTITY_TYPE_FAUNA = 2;
     }
 
-    private void InitializeTrailBlocks()
+    public class BoidSImulationController : MonoBehaviour
     {
-        // Assuming you have a method or a way to get all non-boid trail blocks in the scene
-        Prism[] trailBlocks = FindObjectsByType<Prism>(FindObjectsSortMode.None);
-        foreach (var block in trailBlocks)
-        {
-            if (!block.CompareTag("FaunaPrefab")) // Assuming "FaunaPrefab" is the tag for boid trail blocks
-            {
-                Entity blockEntity = new Entity
-                {
-                    type = Entity.ENTITY_TYPE_BLOCK,
-                    position = block.transform.position,
-                    velocity = Vector3.zero, // Trail blocks don't move on their own
-                    goalDirection = Vector3.zero,
-                    team = (int)block.Domain
-                };
-                CSDebug.Log($"team {(int)block.Domain}");
+        [FormerlySerializedAs("miniGameData")] [SerializeField]
+        GameDataSO gameData;
 
-                // Add blockEntity to the entities list
-                entities.Add(blockEntity);
+        [SerializeField]
+        CellRuntimeDataSO cellData;
+
+        public ComputeShader boidSimulationShader;
+        public Prism boidPrefab;
+        public int numberOfBoids = 100;
+        public float spawnRadius = 50.0f;
+        public Transform globalGoal;
+
+        private ComputeBuffer readBuffer;
+        private ComputeBuffer writeBuffer;
+        public List<Entity> entities = new List<Entity>();
+        private Entity[] entityArray;
+        private Prism[] boids; // Array to keep track of boid game objects
+
+        int kernel;
+
+        private void Start()
+        {
+            kernel = boidSimulationShader.FindKernel("CSMain");
+
+            InitializeEntities();
+            entityArray = entities.ToArray();
+
+            InitializeTrailBlocks();
+            InitializeComputeShader();
+            StartCoroutine(UpdateWeightsCoroutine());
+        }
+
+        private void InitializeTrailBlocks()
+        {
+            // Assuming you have a method or a way to get all non-boid trail blocks in the scene
+            Prism[] trailBlocks = FindObjectsByType<Prism>(FindObjectsSortMode.None);
+            foreach (var block in trailBlocks)
+            {
+                if (!block.CompareTag("FaunaPrefab")) // Assuming "FaunaPrefab" is the tag for boid trail blocks
+                {
+                    Entity blockEntity = new Entity
+                    {
+                        type = Entity.ENTITY_TYPE_BLOCK,
+                        position = block.transform.position,
+                        velocity = Vector3.zero, // Trail blocks don't move on their own
+                        goalDirection = Vector3.zero,
+                        team = (int)block.Domain
+                    };
+                    CSDebug.Log($"team {(int)block.Domain}");
+
+                    // Add blockEntity to the entities list
+                    entities.Add(blockEntity);
+                }
             }
         }
-    }
 
 
-    private void InitializeEntities()
-    {
-        entities = new List<Entity>(numberOfBoids);
-
-        boids = new Prism[numberOfBoids]; // Initialize the boids array
-
-        // Initialize boids
-        for (int i = 0; i < numberOfBoids; i++)
+        private void InitializeEntities()
         {
-            Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-            CSDebug.Log("Instantiating boid number: " + i);
-            Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
+            entities = new List<Entity>(numberOfBoids);
+
+            boids = new Prism[numberOfBoids]; // Initialize the boids array
+
+            // Initialize boids
+            for (int i = 0; i < numberOfBoids; i++)
+            {
+                Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
+                CSDebug.Log("Instantiating boid number: " + i);
+                Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
+                newBoid.transform.SetParent(transform);
+                newBoid.Initialize();
+
+                boids[i] = newBoid; // Store the boid game object reference
+
+                Entity newEntity = new Entity
+                {
+                    type = Entity.ENTITY_TYPE_BOID,
+                    position = spawnPosition,
+                    velocity = newBoid.transform.forward,
+                    goalDirection = globalGoal.position - spawnPosition,
+                    teamWeights = new Vector4(1.0f, 1.0f, 1.0f, 1.0f), // Example weights for 4 teams
+                    team = (int)Domains.Blue
+                };
+
+                entities.Add(newEntity);
+
+            }
+            entityArray = entities.ToArray();
+            // TODO: Initialize trail blocks in the entities array
+        }
+
+        private void InitializeComputeShader()
+        {
+            readBuffer = new ComputeBuffer(entities.Count, 64);
+            writeBuffer = new ComputeBuffer(entities.Count, 64);
+
+            readBuffer.SetData(entities);
+
+            boidSimulationShader.SetBuffer(kernel, "entityBufferRead", readBuffer);
+            boidSimulationShader.SetBuffer(kernel, "entityBufferWrite", writeBuffer);
+        }
+
+        private void Update()
+        {
+            int groups = Mathf.CeilToInt((float)entityArray.Length / 32);
+            boidSimulationShader.Dispatch(kernel, groups, 1, 1);
+
+            SwapBuffers();
+
+            readBuffer.GetData(entityArray);
+
+            for (int i = 0; i < entityArray.Length; i++)
+            {
+                Entity entity = entityArray[i];
+
+                if (entity.position == new Vector3(9999.0f, 9999.0f, 9999.0f))
+                {
+                    CSDebug.LogError("NaN detected by shader for entity at index: " + i);
+                }
+
+                if (entity.type == Entity.ENTITY_TYPE_BOID)
+                {
+                    boids[i].transform.position = entity.position;
+                    SafeLookRotation.TrySet(boids[i].transform, entity.velocity, boids[i], logError: false);
+                }
+            }
+        }
+
+        private void SwapBuffers()
+        {
+            (readBuffer, writeBuffer) = (writeBuffer, readBuffer);
+
+            boidSimulationShader.SetBuffer(kernel, "entityBufferRead", readBuffer);
+            boidSimulationShader.SetBuffer(kernel, "entityBufferWrite", writeBuffer);
+        }
+
+
+
+        private IEnumerator UpdateWeightsCoroutine()
+        {
+            while (true)
+            {
+                Vector4 currentWeights = CalculateTeamWeights();
+                for (int i = 0; i < entityArray.Length; i++)
+                {
+                    if (entityArray[i].type == Entity.ENTITY_TYPE_BOID)
+                    {
+                        Entity entity = entityArray[i];
+                        entity.teamWeights = currentWeights;
+                        entityArray[i] = entity;
+                        CSDebug.Log($"BoidManager.entityArray[{i}].position {entityArray[i].position}");
+                    }
+                }
+
+                readBuffer.SetData(entityArray);
+
+                yield return new WaitForSeconds(.05f);
+            }
+        }
+
+
+        private Vector4 CalculateTeamWeights()
+        {
+            Vector4 teamVolumes = gameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
+            float totalVolume = teamVolumes.x + teamVolumes.y + teamVolumes.z + teamVolumes.w;
+            return new Vector4(
+                totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero
+                totalVolume / (teamVolumes.y + 1),
+                totalVolume / (teamVolumes.z + 1),
+                totalVolume / (teamVolumes.w + 1)
+            );
+        }
+
+        private Prism FindBlockByPosition(Vector3 position)
+        {
+            // Get the node that contains the position
+            Cell containingNode = cellData.Cell;
+
+            // If there's no node that contains the position, return null
+            if (containingNode == null)
+            {
+                return null;
+            }
+
+            // Iterate through all NodeItems in the node to find the closest TrailBlock
+            IList<CellItem> cellItems = cellData.CellItems;  // containingNode.CellItems;
+            Prism closestBlock = null;
+            float closestDistance = float.MaxValue;
+
+            foreach (var item in cellItems)
+            {
+                if (item.GetComponent<Prism>() && !item.CompareTag("FaunaPrefab"))
+                {
+                    float distance = Vector3.Distance(position, item.transform.position);
+                    if (distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestBlock = item.GetComponent<Prism>();
+                    }
+                }
+            }
+
+            return closestBlock;
+        }
+
+
+        public void CreateBoid(Vector3 position, Vector3 direction)
+        {
+            SafeLookRotation.TryGet(direction, out var initialRotation, boidPrefab);
+            Prism newBoid = Instantiate(boidPrefab, position, initialRotation);
             newBoid.transform.SetParent(transform);
             newBoid.Initialize();
-            
-            boids[i] = newBoid; // Store the boid game object reference
 
             Entity newEntity = new Entity
             {
                 type = Entity.ENTITY_TYPE_BOID,
-                position = spawnPosition,
-                velocity = newBoid.transform.forward,
-                goalDirection = globalGoal.position - spawnPosition,
-                teamWeights = new Vector4(1.0f, 1.0f, 1.0f, 1.0f), // Example weights for 4 teams
-                team = (int)Domains.Blue
+                position = position,
+                velocity = direction,
+                goalDirection = globalGoal.position - position,
+                team = (int)Domains.None
             };
 
             entities.Add(newEntity);
+            boids = new List<Prism>(boids) { newBoid }.ToArray();
 
-        }
-        entityArray = entities.ToArray();
-        // TODO: Initialize trail blocks in the entities array
-    }
-
-    private void InitializeComputeShader()
-    {
-        readBuffer = new ComputeBuffer(entities.Count, 64);
-        writeBuffer = new ComputeBuffer(entities.Count, 64);
-
-        readBuffer.SetData(entities);
-
-        boidSimulationShader.SetBuffer(kernel, "entityBufferRead", readBuffer);
-        boidSimulationShader.SetBuffer(kernel, "entityBufferWrite", writeBuffer);
-    }
-
-    private void Update()
-    {
-        int groups = Mathf.CeilToInt((float)entityArray.Length / 32);
-        boidSimulationShader.Dispatch(kernel, groups, 1, 1);
-
-        SwapBuffers();
-
-        readBuffer.GetData(entityArray);
-
-        for (int i = 0; i < entityArray.Length; i++)
-        {
-            Entity entity = entityArray[i];
-
-            if (entity.position == new Vector3(9999.0f, 9999.0f, 9999.0f))
-            {
-                CSDebug.LogError("NaN detected by shader for entity at index: " + i);
-            }
-
-            if (entity.type == Entity.ENTITY_TYPE_BOID)
-            {
-                boids[i].transform.position = entity.position;
-                SafeLookRotation.TrySet(boids[i].transform, entity.velocity, boids[i], logError: false);
-            }
-        }
-    }
-
-    private void SwapBuffers()
-    {
-        (readBuffer, writeBuffer) = (writeBuffer, readBuffer);
-
-        boidSimulationShader.SetBuffer(kernel, "entityBufferRead", readBuffer);
-        boidSimulationShader.SetBuffer(kernel, "entityBufferWrite", writeBuffer);
-    }
-
-
-
-    private IEnumerator UpdateWeightsCoroutine()
-    {
-        while (true)
-        {
-            Vector4 currentWeights = CalculateTeamWeights();
-            for (int i = 0; i < entityArray.Length; i++)
-            {
-                if (entityArray[i].type == Entity.ENTITY_TYPE_BOID)
-                {
-                    Entity entity = entityArray[i];
-                    entity.teamWeights = currentWeights;
-                    entityArray[i] = entity;
-                    CSDebug.Log($"BoidManager.entityArray[{i}].position {entityArray[i].position}");
-                }
-            }
-
-            readBuffer.SetData(entityArray);
-
-            yield return new WaitForSeconds(.05f);
-        }
-    }
-
-
-    private Vector4 CalculateTeamWeights()
-    {
-        Vector4 teamVolumes = gameData.GetTeamVolumes(); // StatsManager.Instance.GetTeamVolumes();
-        float totalVolume = teamVolumes.x + teamVolumes.y + teamVolumes.z + teamVolumes.w;
-        return new Vector4(
-            totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero
-            totalVolume / (teamVolumes.y + 1),
-            totalVolume / (teamVolumes.z + 1),
-            totalVolume / (teamVolumes.w + 1)
-        );
-    }
-
-    private Prism FindBlockByPosition(Vector3 position)
-    {
-        // Get the node that contains the position
-        Cell containingNode = cellData.Cell;
-
-        // If there's no node that contains the position, return null
-        if (containingNode == null)
-        {
-            return null;
+            readBuffer.Release();
+            writeBuffer.Release();
+            readBuffer = new ComputeBuffer(entities.Count, 64);
+            writeBuffer = new ComputeBuffer(entities.Count, 64);
+            readBuffer.SetData(entities);
         }
 
-        // Iterate through all NodeItems in the node to find the closest TrailBlock
-        IList<CellItem> cellItems = cellData.CellItems;  // containingNode.CellItems;
-        Prism closestBlock = null;
-        float closestDistance = float.MaxValue;
-
-        foreach (var item in cellItems)
+        private void OnDestroy()
         {
-            if (item.GetComponent<Prism>() && !item.CompareTag("FaunaPrefab"))
-            {
-                float distance = Vector3.Distance(position, item.transform.position);
-                if (distance < closestDistance)
-                {
-                    closestDistance = distance;
-                    closestBlock = item.GetComponent<Prism>();
-                }
-            }
+            readBuffer.Release();
+            writeBuffer.Release();
         }
-
-        return closestBlock;
-    }
-
-
-    public void CreateBoid(Vector3 position, Vector3 direction)
-    {
-        SafeLookRotation.TryGet(direction, out var initialRotation, boidPrefab);
-        Prism newBoid = Instantiate(boidPrefab, position, initialRotation);
-        newBoid.transform.SetParent(transform);
-        newBoid.Initialize();
-
-        Entity newEntity = new Entity
-        {
-            type = Entity.ENTITY_TYPE_BOID,
-            position = position,
-            velocity = direction,
-            goalDirection = globalGoal.position - position,
-            team = (int)Domains.None
-        };
-
-        entities.Add(newEntity);
-        boids = new List<Prism>(boids) { newBoid }.ToArray();
-
-        readBuffer.Release();
-        writeBuffer.Release();
-        readBuffer = new ComputeBuffer(entities.Count, 64);
-        writeBuffer = new ComputeBuffer(entities.Count, 64);
-        readBuffer.SetData(entities);
-    }
-
-    private void OnDestroy()
-    {
-        readBuffer.Release();
-        writeBuffer.Release();
     }
 }

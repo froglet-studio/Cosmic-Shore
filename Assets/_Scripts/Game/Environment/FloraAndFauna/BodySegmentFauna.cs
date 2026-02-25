@@ -1,32 +1,35 @@
 using CosmicShore;
 using CosmicShore.Game;
 
-/// <summary>
-/// Individual segment of a <see cref="Worm"/> creature.
-/// Handles segment-specific death logic (splitting, head/tail status).
-/// </summary>
-public class BodySegmentFauna : Fauna
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
-    public Worm ParentWorm { get; set; }
-    public BodySegmentFauna PreviousSegment { get; set; }
-    public BodySegmentFauna NextSegment { get; set; }
-    public bool IsHead;
-    public bool IsTail;
-
-    protected override void Die(string killerName = "")
+    /// <summary>
+    /// Individual segment of a <see cref="Worm"/> creature.
+    /// Handles segment-specific death logic (splitting, head/tail status).
+    /// </summary>
+    public class BodySegmentFauna : Fauna
     {
-        if (!IsHead && !IsTail)
+        public Worm ParentWorm { get; set; }
+        public BodySegmentFauna PreviousSegment { get; set; }
+        public BodySegmentFauna NextSegment { get; set; }
+        public bool IsHead;
+        public bool IsTail;
+
+        protected override void Die(string killerName = "")
         {
-            ParentWorm.SplitWorm(this);
+            if (!IsHead && !IsTail)
+            {
+                ParentWorm.SplitWorm(this);
+            }
+            else if (IsHead)
+            {
+                ParentWorm.UpdateHeadStatus(false);
+            }
+            else if (IsTail)
+            {
+                ParentWorm.UpdateTailStatus(false);
+            }
+            ParentWorm.RemoveSegment(this);
         }
-        else if (IsHead)
-        {
-            ParentWorm.UpdateHeadStatus(false);
-        }
-        else if (IsTail)
-        {
-            ParentWorm.UpdateTailStatus(false);
-        }
-        ParentWorm.RemoveSegment(this);
     }
 }

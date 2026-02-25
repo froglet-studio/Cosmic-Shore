@@ -1,6 +1,6 @@
 using PlayFab.GroupsModels;
 
-namespace CosmicShore.Integrations.PlayFab.Event_Models
+namespace CosmicShore.Integrations.PlayFab.EventModels
 {
     public class GroupModel
     {

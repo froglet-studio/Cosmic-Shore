@@ -1,5 +1,4 @@
-using CosmicShore.Systems.CTA;
-using CosmicShore.Systems.UserActions;
+using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using UnityEngine;
 

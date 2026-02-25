@@ -1,0 +1,20 @@
+{
+    "name": "CosmicShore.DialogueSystem.Editor",
+    "rootNamespace": "CosmicShore.DialogueSystem.Editor",
+    "references": [
+        "CosmicShore.DialogueSystem",
+        "CosmicShore.Core",
+        "CosmicShore.Utility"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

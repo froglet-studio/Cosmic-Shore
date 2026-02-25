@@ -7,7 +7,7 @@ using Firebase.Analytics;
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore._Scripts.Integrations.Instrumentation.Firebase
+namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
     public class CSTrainingDataCollectorFirebase : ITrainingAnalyzable
     {
