@@ -6,7 +6,11 @@
         "UniTask",
         "Unity.Netcode.Runtime",
         "Unity.Netcode.Components",
-        "Unity.Collections"
+        "Unity.Collections",
+        "Unity.InputSystem",
+        "Unity.TextMeshPro",
+        "Unity.Timeline",
+        "Obvious.Soap"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
