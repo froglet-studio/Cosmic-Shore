@@ -11,6 +11,7 @@
         "Unity.TextMeshPro",
         "Unity.Timeline",
         "Obvious.Soap",
+        "NativeShare.Runtime",
         "Reflex",
         "Unity.Cinemachine",
         "Unity.Services.Multiplayer",
