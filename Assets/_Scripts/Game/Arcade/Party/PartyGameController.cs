@@ -542,19 +542,16 @@ namespace CosmicShore.Game.Arcade.Party
                 }
 
                 string modeName = GetMiniGameDisplayName(selectedMode);
-                BroadcastGameStateText_ClientRpc($"{modeName} — Starting...");
+                BroadcastGameStateText_ClientRpc($"{modeName} — Ready up!");
 
-                // Hide panel and go straight to gameplay — no extra ready step
+                // Hide party panel and disable scene camera so the mini-game's
+                // own UI (GameCanvas) takes over. The mini-game's ready button
+                // handles countdown + start via its normal flow.
                 HidePanel_ClientRpc();
                 DisableSceneCamera_ClientRpc();
-
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(config.PostCountdownDelaySeconds),
-                    DelayType.UnscaledDeltaTime,
-                    cancellationToken: ct);
+                UnpauseGame_ClientRpc();
 
                 SetPhase(PartyPhase.Playing);
-                StartGameplay_ClientRpc();
                 RunRoundTimer(ct).Forget();
             }
             catch (OperationCanceledException) { }
@@ -931,6 +928,12 @@ namespace CosmicShore.Game.Arcade.Party
         void SetVesselsSpawned_ClientRpc()
         {
             _vesselsSpawned = true;
+        }
+
+        [ClientRpc]
+        void UnpauseGame_ClientRpc()
+        {
+            PauseSystem.TogglePauseGame(false);
         }
 
         [ClientRpc]

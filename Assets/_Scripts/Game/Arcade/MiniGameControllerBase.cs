@@ -55,9 +55,6 @@ namespace CosmicShore.Game.Arcade
         
         protected void RaiseToggleReadyButtonEvent(bool enable)
         {
-            // In party mode, don't raise the mini-game's own ready button events —
-            // the party panel handles all UI.
-            if (IsPartyMode) return;
             _onToggleReadyButton?.Raise(enable);
         }
         

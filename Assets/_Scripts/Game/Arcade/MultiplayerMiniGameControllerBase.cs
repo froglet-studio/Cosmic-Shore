@@ -71,7 +71,11 @@ namespace CosmicShore.Game.Arcade
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
             }
 
-            CSDebug.Log($"[{GetType().Name}] PartyMode_Activate — subscribed to turn events.");
+            // Initialize the mini-game and show its ready button so the
+            // player can click Ready to start the countdown + gameplay.
+            InitializeAfterDelay().Forget();
+
+            CSDebug.Log($"[{GetType().Name}] PartyMode_Activate — subscribed to turn events, initializing.");
         }
 
         /// <summary>
@@ -215,18 +219,12 @@ namespace CosmicShore.Game.Arcade
         protected override void SetupNewTurn()
         {
             base.SetupNewTurn();
-
-            // In party mode, don't show the mini-game's ready button
-            if (IsPartyMode) return;
             if (IsServer) ShowReadyButton_ClientRpc();
         }
 
         protected override void SetupNewRound()
         {
             base.SetupNewRound();
-
-            // In party mode, don't show the mini-game's ready button
-            if (IsPartyMode) return;
             if (IsServer) ShowReadyButton_ClientRpc();
         }
 
