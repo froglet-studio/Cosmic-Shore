@@ -156,8 +156,17 @@ namespace CosmicShore.Game.Projectiles
                     // Batch AOE damage via Burst job over cache-packed prism data
                     // Effective radius = collider radius (local) * localScale
                     float currentRadius = _colliderRadius * MaxScale * ease;
-                    impactor?.ProcessBatchFrame(
-                        cachedTransform.position, currentRadius, speed, Inertia);
+                    bool shouldContinue = impactor?.ProcessBatchFrame(
+                        cachedTransform.position, currentRadius, speed, Inertia) ?? true;
+
+                    if (!shouldContinue)
+                    {
+                        // Super-shielded enemy hit — mirrors original Destroy(gameObject) in
+                        // ExecuteCommonPrismCommands. Stop explosion immediately.
+                        impactor?.EndBatchProcessing();
+                        if (this) Destroy(gameObject);
+                        return;
+                    }
 
                     if (Material != null) Material.SetFloat("_Opacity", 1 - ease);
 
@@ -170,6 +179,15 @@ namespace CosmicShore.Game.Projectiles
             catch (OperationCanceledException)
             {
                 impactor?.EndBatchProcessing();
+            }
+            catch (System.Exception e)
+            {
+                // Safety net: any unexpected exception (e.g. NativeList overflow) must still
+                // clean up batch processing and destroy the explosion — otherwise it stays
+                // stuck at max scale with _useBatchProcessing permanently true.
+                Debug.LogException(e);
+                impactor?.EndBatchProcessing();
+                if (this) Destroy(gameObject);
             }
         }
 

@@ -47,14 +47,16 @@ namespace CosmicShore.Game
         /// <summary>
         /// Processes one frame of batch AOE damage via the PrismAOERegistry.
         /// Called from AOEExplosion.ExplodeAsync each frame instead of relying on Physics.
+        /// Returns true if the explosion should continue, false if it should be destroyed
+        /// (e.g. hit a super-shielded enemy prism).
         /// </summary>
-        public void ProcessBatchFrame(Vector3 center, float radius, float speed, float inertia)
+        public bool ProcessBatchFrame(Vector3 center, float radius, float speed, float inertia)
         {
-            if (!_useBatchProcessing) return;
+            if (!_useBatchProcessing) return true;
             var registry = PrismAOERegistry.Instance;
-            if (registry == null) return;
+            if (registry == null) return true;
 
-            registry.ProcessExplosionFrame(
+            return registry.ProcessExplosionFrame(
                 center, radius, speed, inertia,
                 explosion.Domain,
                 affectSelf, destructive, devastating, shielding,

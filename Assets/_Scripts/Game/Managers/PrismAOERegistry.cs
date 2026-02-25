@@ -254,8 +254,11 @@ namespace CosmicShore.Game
         ///   - Reads _damage[idx] for domain/shield info (cold data, not in Burst working set).
         ///   - Applies domain logic, shield activation/deactivation, or damage.
         ///   - Syncs results back to registry.
+        ///
+        /// Returns true if the explosion should continue, false if it should be destroyed
+        /// (e.g. hit a super-shielded enemy prism — mirrors original Destroy(gameObject) behavior).
         /// </summary>
-        public int ProcessExplosionFrame(
+        public bool ProcessExplosionFrame(
             Vector3 center,
             float radius,
             float speed,
@@ -269,10 +272,16 @@ namespace CosmicShore.Game
             IVessel vessel,
             HashSet<int> alreadyHit)
         {
-            if (_highWaterMark == 0) return 0;
+            if (_highWaterMark == 0) return true;
 
             // --- Phase 1: Burst job over hot spatial data ---
             _hitIndices.Clear();
+
+            // Ensure NativeList capacity can hold all prisms — AddNoResize in
+            // ParallelWriter will throw if capacity < count, killing the async loop
+            // and leaving the explosion stuck at max scale.
+            if (_hitIndices.Capacity < _highWaterMark)
+                _hitIndices.Capacity = _highWaterMark;
 
             var job = new AOESpatialQueryJob
             {
@@ -286,7 +295,7 @@ namespace CosmicShore.Game
             handle.Complete();
 
             // --- Phase 2: Main thread damage logic over cold data + managed refs ---
-            int newHits = 0;
+            bool shouldContinue = true;
             int expDomain = (int)explosionDomain;
 
             // Cache vessel info to avoid repeated interface property access
@@ -314,13 +323,15 @@ namespace CosmicShore.Game
                 var dmg = _damage[idx];
                 int prismDomain = dmg.Domain;
 
-                // Super-shielded + different team: deactivate super shield only
+                // Super-shielded + different team: deactivate super shield and destroy explosion.
+                // Mirrors original ExecuteCommonPrismCommands which calls Destroy(gameObject)
+                // and intentionally falls through to the damage/shield logic below.
                 if ((prismDomain != expDomain || affectSelf) && (flags & PrismFlags.IsSuperShielded) != 0)
                 {
                     prism.DeactivateShields();
                     UpdateShieldState(idx, false, false);
-                    newHits++;
-                    continue;
+                    shouldContinue = false;
+                    // Fall through — original code does NOT return/continue here
                 }
 
                 // Same team (and not affectSelf) or non-destructive: shield the prism
@@ -331,7 +342,6 @@ namespace CosmicShore.Game
                     else
                         prism.ActivateShield(2f);
                     UpdateShieldState(idx, true, false);
-                    newHits++;
                     continue;
                 }
 
@@ -353,11 +363,9 @@ namespace CosmicShore.Game
                     UpdateShieldState(idx,
                         prism.prismProperties.IsShielded,
                         prism.prismProperties.IsSuperShielded);
-
-                newHits++;
             }
 
-            return newHits;
+            return shouldContinue;
         }
 
         #endregion
