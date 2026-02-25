@@ -155,9 +155,29 @@ namespace CosmicShore.Game.Spawning
 
         /// <summary>
         /// Internal node: spawn children at each generated point.
+        /// Normalizes point scales so any spawnable can serve as a parent —
+        /// leaf-mode spawnables produce absolute block scales (e.g., pumpkinWidth * sin(t) ≈ 100)
+        /// that would make child containers absurdly large without normalization.
+        /// Generators designed for nesting (e.g., ConcentricLayersGenerator) already produce
+        /// scales in the 0-1 range and pass through unchanged.
         /// </summary>
         private void SpawnChildren(SpawnTrailData[] trailData, GameObject container, int intensity)
         {
+            // Find maximum scale component across all points.
+            // Used to normalize scales into a sane range for child containers.
+            float maxScaleComponent = 0f;
+            foreach (var td in trailData)
+                foreach (var point in td.Points)
+                {
+                    maxScaleComponent = Mathf.Max(maxScaleComponent,
+                        Mathf.Max(Mathf.Abs(point.Scale.x),
+                            Mathf.Max(Mathf.Abs(point.Scale.y), Mathf.Abs(point.Scale.z))));
+                }
+
+            // Only normalize when scales exceed 1 — preserves behavior for generators
+            // that already produce normalized scales (ConcentricLayersGenerator etc.)
+            float scaleNormalizer = maxScaleComponent > 1f ? maxScaleComponent : 1f;
+
             foreach (var td in trailData)
             {
                 foreach (var point in td.Points)
@@ -168,7 +188,7 @@ namespace CosmicShore.Game.Spawning
                         childObj.transform.SetParent(container.transform, false);
                         childObj.transform.localPosition = point.Position;
                         childObj.transform.localRotation = point.Rotation;
-                        childObj.transform.localScale = point.Scale;
+                        childObj.transform.localScale = point.Scale / scaleNormalizer;
                         trails.AddRange(child.GetTrails());
                     }
                 }
