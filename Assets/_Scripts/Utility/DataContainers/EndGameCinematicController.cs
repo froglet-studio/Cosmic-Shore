@@ -118,8 +118,12 @@ namespace CosmicShore.Game.Cinematics
             {
                 view.ShowConnectingPanel();
                 yield return new WaitForSeconds(cinematic.connectingPanelDuration);
-                ResetGameForNewRound();
             }
+
+            // Always reset vessel state (AI, input, camera, boost) between rounds.
+            // In party mode the connecting panel is skipped but the reset is still
+            // needed so the player regains input control on the next round.
+            ResetGameForNewRound();
 
             if (view)
             {

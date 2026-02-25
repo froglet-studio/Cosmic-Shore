@@ -608,6 +608,11 @@ namespace CosmicShore.Game.Arcade.Party
                     // Vessels already exist — reposition via PartyVesselSpawner
                     RepositionPlayersViaSpawner_ClientRpc(miniGameIndex);
                     await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+
+                    // Signal client-ready so MultiplayerHUD (RequireClientReady=true)
+                    // proceeds past its wait loop and shows the ready button.
+                    // For round 1, PartyVesselSpawner.DelayInvokeClientReady handles this.
+                    InvokeClientReady_ClientRpc();
                 }
 
                 string modeName = GetMiniGameDisplayName(selectedMode);
@@ -1111,8 +1116,27 @@ namespace CosmicShore.Game.Arcade.Party
         void ResetGameDataForRound_ClientRpc(int gameMode)
         {
             gameData.GameMode = (GameModes)gameMode;
+
+            // Reset per-minigame counters so the new round starts fresh.
+            // Without this, CrystalCapture (numberOfRounds=1) would immediately
+            // trigger ExecuteServerGameEnd on its second play.
+            gameData.TurnsTakenThisRound = 0;
+            gameData.RoundsPlayed = 0;
+
             if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0)
                 gameData.ResetStatsDataForReplay();
+
+            // Raise OnResetForReplay to clean up stale crystals, trails, prisms,
+            // and lifeforms from a previous play of this mini-game environment.
+            // Also starts MiniGameHUD's connecting panel → ready button flow.
+            if (gameData.OnResetForReplay != null)
+                gameData.OnResetForReplay.Raise();
+        }
+
+        [ClientRpc]
+        void InvokeClientReady_ClientRpc()
+        {
+            gameData.InvokeClientReady();
         }
 
         /// <summary>

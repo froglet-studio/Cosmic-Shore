@@ -212,11 +212,18 @@ namespace CosmicShore.Game.Arcade
         {
             if (!IsServer) return;
 
-            // In party mode, don't run the mini-game's own end sequence.
-            // The PartyGameController listens for gameData events and handles transitions.
             if (IsPartyMode)
             {
-                CSDebug.Log($"[{GetType().Name}] ExecuteServerGameEnd — party mode, skipping SyncGameEnd.");
+                // In party mode, trigger the end-game cinematic locally.
+                // InvokeWinnerCalculated starts the cinematic → score reveal → Continue.
+                // Don't fire InvokeMiniGameEnd — CompleteRound is driven by
+                // OnShowGameEndScreen after the cinematic finishes.
+                // The isRunning guard in EndGameCinematicController prevents double-starts
+                // when game-specific controllers (HexRace, Joust) fire this first.
+                gameData.SortRoundStats(UseGolfRules);
+                gameData.CalculateDomainStats(UseGolfRules);
+                gameData.InvokeWinnerCalculated();
+                CSDebug.Log($"[{GetType().Name}] ExecuteServerGameEnd — party mode, fired WinnerCalculated.");
                 return;
             }
 
