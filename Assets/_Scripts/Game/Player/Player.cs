@@ -169,6 +169,7 @@ namespace CosmicShore.Game
 
         public void StartPlayer()
         {
+            if (Vessel == null) return;
             ToggleActive(true);
             Vessel.StartVessel();
             ToggleInputIdle(false);
@@ -188,7 +189,7 @@ namespace CosmicShore.Game
 
         public void ResetForPlay()
         {
-            // Always reset the vessel and make it stationary.
+            if (Vessel == null) return;
             Vessel.ResetForPlay();
             ToggleActive(false);
             
