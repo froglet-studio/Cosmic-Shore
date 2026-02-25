@@ -169,9 +169,14 @@ namespace CosmicShore.Systems.Bootstrap
 
                 OnBootstrapComplete?.Invoke();
 
-                string targetScene = _config != null ? _config.FirstSceneName : "Menu_Main";
+                string targetScene = _config != null ? _config.FirstSceneName : "Authentication";
                 Log($"Loading scene: {targetScene}");
-                SceneManager.LoadScene(targetScene);
+
+                // Use SceneTransitionManager if available (provides fade transitions).
+                if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
+                    await transitionManager.LoadSceneAsync(targetScene);
+                else
+                    SceneManager.LoadScene(targetScene);
             }
             catch (OperationCanceledException)
             {

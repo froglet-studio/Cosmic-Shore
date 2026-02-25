@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using CosmicShore.App.Profile;
+using CosmicShore.Systems.Bootstrap;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
 using Unity.Services.Authentication;
@@ -13,7 +15,13 @@ namespace CosmicShore.Services.Auth
 {
     /// <summary>
     /// Controls the authentication scene UI flow.
-    /// Handles guest login and username setup for new players.
+    ///
+    /// On Start:
+    ///   1. Checks if the user is already signed in (cached session from Bootstrap).
+    ///   2. If signed in, auto-skips to the main menu.
+    ///   3. Otherwise, shows the auth panel for guest login / username setup.
+    ///
+    /// Uses SceneTransitionManager for fade transitions when available.
     /// </summary>
     public class AuthenticationSceneController : MonoBehaviour
     {
@@ -38,12 +46,16 @@ namespace CosmicShore.Services.Auth
         [Header("Navigation")]
         [SerializeField] private string mainMenuSceneName = "Menu_Main";
 
+        [Header("Auto-Skip")]
+        [SerializeField, Tooltip("Seconds to wait for cached auth before showing UI.")]
+        private float _cachedAuthTimeout = 3f;
+
         private bool _isProcessing;
 
         void Start()
         {
             SetupUI();
-            ShowAuthPanel();
+            RunAuthFlowAsync().Forget();
         }
 
         void SetupUI()
@@ -55,6 +67,83 @@ namespace CosmicShore.Services.Auth
                 confirmUsernameButton.onClick.AddListener(OnConfirmUsernameClicked);
 
             ClearStatusMessages();
+        }
+
+        // ----- Auto-Skip / Cached Auth -----
+
+        async UniTaskVoid RunAuthFlowAsync()
+        {
+            // Start with loading state while we check cached auth.
+            HideAllPanels();
+            ShowLoading();
+
+            try
+            {
+                // Check if Bootstrap's auto-auth already signed us in.
+                if (IsAlreadySignedIn())
+                {
+                    CSDebug.Log("[AuthScene] Already signed in from Bootstrap. Auto-skipping.");
+                    await HandlePostAuthFlowAsync();
+                    return;
+                }
+
+                // Try cached session sign-in.
+                if (authController != null)
+                {
+                    bool cached = await TrySignInCachedWithTimeoutAsync();
+                    if (cached)
+                    {
+                        CSDebug.Log("[AuthScene] Cached session valid. Auto-skipping.");
+                        await HandlePostAuthFlowAsync();
+                        return;
+                    }
+                }
+
+                // No cached auth — show the login UI.
+                HideLoading();
+                ShowAuthPanel();
+            }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Auto-skip check failed: {ex.Message}. Showing auth panel.");
+                HideLoading();
+                ShowAuthPanel();
+            }
+        }
+
+        bool IsAlreadySignedIn()
+        {
+            try
+            {
+                return AuthenticationService.Instance != null
+                    && AuthenticationService.Instance.IsSignedIn;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        async Task<bool> TrySignInCachedWithTimeoutAsync()
+        {
+            var cachedTask = authController.TrySignInCachedAsync();
+            var delayTask = Task.Delay(TimeSpan.FromSeconds(_cachedAuthTimeout));
+
+            var completed = await Task.WhenAny(cachedTask, delayTask);
+
+            if (completed == cachedTask && cachedTask.IsCompletedSuccessfully)
+                return cachedTask.Result;
+
+            return false;
+        }
+
+        // ----- Panel Management -----
+
+        void HideAllPanels()
+        {
+            if (authPanel) authPanel.SetActive(false);
+            if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
+            if (loadingPanel) loadingPanel.SetActive(false);
         }
 
         void ShowAuthPanel()
@@ -100,11 +189,12 @@ namespace CosmicShore.Services.Auth
             try
             {
                 await authController.EnsureSignedInAnonymouslyAsync();
-                await OnAuthSuccess();
+                await HandlePostAuthFlowAsync();
             }
             catch (Exception ex)
             {
                 HideLoading();
+                ShowAuthPanel();
                 if (statusText)
                     statusText.text = $"Guest login failed: {ex.Message}";
                 CSDebug.LogWarning($"[AuthScene] Guest login failed: {ex}");
@@ -117,9 +207,11 @@ namespace CosmicShore.Services.Auth
 
         // ----- Post-Auth Flow -----
 
-        async Task OnAuthSuccess()
+        async Task HandlePostAuthFlowAsync()
         {
-            // Wait for PlayerDataService to initialize after auth
+            ShowLoading();
+
+            // Wait for PlayerDataService to initialize after auth.
             if (playerDataService != null)
             {
                 float timeout = 5f;
@@ -131,20 +223,7 @@ namespace CosmicShore.Services.Auth
                 }
             }
 
-            bool needsUsername = false;
-
-            if (playerDataService != null && playerDataService.IsInitialized)
-            {
-                var profile = playerDataService.CurrentProfile;
-                needsUsername = profile == null
-                    || string.IsNullOrEmpty(profile.displayName)
-                    || profile.displayName == "Pilot";
-            }
-            else
-            {
-                // If service didn't initialize in time, prompt for username
-                needsUsername = true;
-            }
+            bool needsUsername = CheckIfUsernameNeeded();
 
             if (needsUsername)
             {
@@ -155,6 +234,17 @@ namespace CosmicShore.Services.Auth
             {
                 NavigateToMainMenu();
             }
+        }
+
+        bool CheckIfUsernameNeeded()
+        {
+            if (playerDataService == null || !playerDataService.IsInitialized)
+                return true;
+
+            var profile = playerDataService.CurrentProfile;
+            return profile == null
+                || string.IsNullOrEmpty(profile.displayName)
+                || profile.displayName == "Pilot";
         }
 
         // ----- Username Setup -----
@@ -181,7 +271,7 @@ namespace CosmicShore.Services.Auth
                     playerDataService.SetDisplayName(username);
                 }
 
-                // Also set the UGS player name for multiplayer
+                // Also set the UGS player name for multiplayer.
                 try
                 {
                     await AuthenticationService.Instance.UpdatePlayerNameAsync(username);
@@ -210,7 +300,15 @@ namespace CosmicShore.Services.Auth
         void NavigateToMainMenu()
         {
             CSDebug.Log("[AuthScene] Navigating to Main Menu...");
-            SceneManager.LoadScene(mainMenuSceneName);
+
+            if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
+            {
+                transitionManager.LoadSceneAsync(mainMenuSceneName).Forget();
+            }
+            else
+            {
+                SceneManager.LoadScene(mainMenuSceneName);
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using CosmicShore.Systems.Bootstrap;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utility;
@@ -10,6 +12,8 @@ namespace CosmicShore.Services.Auth
     /// Placed on the SplashScreen scene. After the splash finishes,
     /// checks if the user has a cached session. If so, goes directly to Menu_Main.
     /// Otherwise, loads the Authentication scene.
+    ///
+    /// Uses SceneTransitionManager for fade transitions when available.
     /// </summary>
     public class SplashToAuthFlow : MonoBehaviour
     {
@@ -27,7 +31,7 @@ namespace CosmicShore.Services.Auth
         {
             try
             {
-                // Show splash for the configured duration
+                // Show splash for the configured duration.
                 await Task.Delay(TimeSpan.FromSeconds(splashDisplayDuration));
 
                 if (authController == null)
@@ -36,28 +40,40 @@ namespace CosmicShore.Services.Auth
                 if (authController == null)
                 {
                     CSDebug.LogWarning("[SplashToAuthFlow] No AuthenticationController found. Going to auth scene.");
-                    SceneManager.LoadScene(authSceneName);
+                    await LoadSceneWithTransitionAsync(authSceneName);
                     return;
                 }
 
-                // Try to sign in with cached credentials
+                // Try to sign in with cached credentials.
                 bool signedIn = await authController.TrySignInCachedAsync();
 
                 if (signedIn)
                 {
                     CSDebug.Log("[SplashToAuthFlow] Cached session valid. Going to main menu.");
-                    SceneManager.LoadScene(mainMenuSceneName);
+                    await LoadSceneWithTransitionAsync(mainMenuSceneName);
                 }
                 else
                 {
                     CSDebug.Log("[SplashToAuthFlow] No cached session. Going to auth scene.");
-                    SceneManager.LoadScene(authSceneName);
+                    await LoadSceneWithTransitionAsync(authSceneName);
                 }
             }
             catch (Exception ex)
             {
                 CSDebug.LogWarning($"[SplashToAuthFlow] Error during splash flow: {ex.Message}. Falling back to auth scene.");
-                SceneManager.LoadScene(authSceneName);
+                await LoadSceneWithTransitionAsync(authSceneName);
+            }
+        }
+
+        async Task LoadSceneWithTransitionAsync(string sceneName)
+        {
+            if (ServiceLocator.TryGet<SceneTransitionManager>(out var transitionManager))
+            {
+                await transitionManager.LoadSceneAsync(sceneName);
+            }
+            else
+            {
+                SceneManager.LoadScene(sceneName);
             }
         }
     }

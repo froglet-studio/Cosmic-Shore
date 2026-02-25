@@ -7,9 +7,12 @@ namespace CosmicShore.Systems.Bootstrap
         menuName = "ScriptableObjects/Core/BootstrapConfig")]
     public class BootstrapConfigSO : ScriptableObject
     {
-        [Header("Scene Transition")]
-        [SerializeField, Tooltip("Scene to load after bootstrap completes successfully.")]
-        string _firstSceneName = "Menu_Main";
+        [Header("Scene Flow")]
+        [SerializeField, Tooltip("Scene to load after bootstrap completes. Typically the Authentication scene.")]
+        string _firstSceneName = "Authentication";
+
+        [SerializeField, Tooltip("Scene to load after authentication succeeds.")]
+        string _mainMenuSceneName = "Menu_Main";
 
         [Header("Timeouts")]
         [SerializeField, Tooltip("Max seconds to wait for all services to initialize before giving up.")]
@@ -33,6 +36,7 @@ namespace CosmicShore.Systems.Bootstrap
         bool _verboseLogging;
 
         public string FirstSceneName => _firstSceneName;
+        public string MainMenuSceneName => _mainMenuSceneName;
         public float ServiceInitTimeoutSeconds => _serviceInitTimeoutSeconds;
         public float MinimumSplashDuration => _minimumSplashDuration;
         public int TargetFrameRate => _targetFrameRate;
