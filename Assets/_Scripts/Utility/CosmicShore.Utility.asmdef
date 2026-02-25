@@ -10,7 +10,12 @@
         "Unity.InputSystem",
         "Unity.TextMeshPro",
         "Unity.Timeline",
-        "Obvious.Soap"
+        "Obvious.Soap",
+        "NativeShare.Runtime",
+        "Reflex",
+        "Unity.Cinemachine",
+        "Unity.Services.Multiplayer",
+        "Unity.Entities.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
