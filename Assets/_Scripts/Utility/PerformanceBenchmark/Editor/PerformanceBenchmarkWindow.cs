@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CosmicShore.Soap;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         // ── Run tab ─────────────────────────────────────
         BenchmarkConfigSO config;
+        BenchmarkDataSO benchmarkData;
         PerformanceBenchmarkRunner activeRunner;
         string lastReportPath;
 
@@ -94,10 +96,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             config = (BenchmarkConfigSO)EditorGUILayout.ObjectField(
                 "Config", config, typeof(BenchmarkConfigSO), false);
 
+            benchmarkData = (BenchmarkDataSO)EditorGUILayout.ObjectField(
+                "Data Container", benchmarkData, typeof(BenchmarkDataSO), false);
+
             if (config == null)
             {
                 EditorGUILayout.HelpBox("Assign a BenchmarkConfigSO to get started.\nCreate one via: Assets > Create > CosmicShore > Tools > Benchmark Config", MessageType.Info);
                 return;
+            }
+
+            if (benchmarkData == null)
+            {
+                EditorGUILayout.HelpBox("Assign a BenchmarkDataSO for SOAP event integration.\nCreate one via: Assets > Create > ScriptableObjects > DataContainers > Benchmark Data", MessageType.Warning);
             }
 
             EditorGUILayout.Space(4);
@@ -120,6 +130,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 float progress = activeRunner.Progress;
                 var rect = EditorGUILayout.GetControlRect(false, 20);
                 EditorGUI.ProgressBar(rect, progress, $"Benchmarking... {progress * 100:F0}%");
+
+                // Live stats from SOAP data container
+                if (benchmarkData != null && benchmarkData.IsSampling)
+                {
+                    EditorGUILayout.LabelField(
+                        $"Frames: {benchmarkData.FramesCaptured}  |  Label: {benchmarkData.ActiveLabel}",
+                        EditorStyles.miniLabel);
+                }
 
                 EditorGUILayout.Space(4);
                 if (GUILayout.Button("Stop Early"))
@@ -174,19 +192,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 activeRunner = go.AddComponent<PerformanceBenchmarkRunner>();
             }
 
-            // Inject config via serialized field
+            // Inject config and SOAP data container via serialized fields
             var so = new SerializedObject(activeRunner);
             so.FindProperty("config").objectReferenceValue = config;
+            so.FindProperty("benchmarkData").objectReferenceValue = benchmarkData;
             so.ApplyModifiedProperties();
 
-            activeRunner.OnBenchmarkComplete += OnRunFinished;
+            // Subscribe to SOAP completion event if available
+            if (benchmarkData != null && benchmarkData.OnBenchmarkCompleted != null)
+                benchmarkData.OnBenchmarkCompleted.OnRaised += OnRunFinishedSOAP;
+
             activeRunner.StartBenchmark();
         }
 
-        void OnRunFinished(string reportPath)
+        void OnRunFinishedSOAP(BenchmarkStateData stateData)
         {
-            lastReportPath = reportPath;
-            activeRunner.OnBenchmarkComplete -= OnRunFinished;
+            lastReportPath = stateData.ReportFilePath;
+
+            if (benchmarkData != null && benchmarkData.OnBenchmarkCompleted != null)
+                benchmarkData.OnBenchmarkCompleted.OnRaised -= OnRunFinishedSOAP;
+
             RefreshReportsList();
             Repaint();
         }
