@@ -6,7 +6,8 @@ namespace CosmicShore.Game.Arcade.AstroLeague
     /// <summary>
     /// Physics-driven ball for Astro League.
     /// Ships collide with it to push it toward goals.
-    /// Self-illuminates with a point light and leaves a speed trail.
+    /// Self-illuminates with a point light, animated emission, and a speed trail.
+    /// Designed as a "special payload" — visually distinctive and satisfying to hit.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SphereCollider))]
@@ -14,25 +15,37 @@ namespace CosmicShore.Game.Arcade.AstroLeague
     {
         [Header("Physics")]
         [SerializeField] float maxSpeed = 120f;
-        [SerializeField] float hitForceMultiplier = 2f;
-        [SerializeField] float drag = 0.3f;
-        [SerializeField] float bounciness = 0.8f;
+        [SerializeField] float hitForceMultiplier = 8f;
+        [SerializeField] float drag = 0.01f;
+        [SerializeField] float angularDrag = 0.02f;
+        [SerializeField] float ballBounciness = 0.95f;
+        [SerializeField] float mass = 2f;
 
         [Header("Reset")]
         [SerializeField] float resetDelay = 1.5f;
 
         [Header("Visuals")]
-        [SerializeField] Color ballColor = new(1f, 0.85f, 0.3f, 1f);
-        [SerializeField] float lightRange = 40f;
-        [SerializeField] float lightIntensity = 2f;
-        [SerializeField] float trailTime = 0.4f;
-        [SerializeField] float trailWidth = 2f;
+        [SerializeField] Color primaryColor = new(1f, 0.6f, 0.1f, 1f);
+        [SerializeField] Color secondaryColor = new(0.2f, 0.5f, 1f, 1f);
+        [SerializeField] Color tertiaryColor = new(1f, 0.15f, 0.6f, 1f);
+        [SerializeField] float emissionIntensity = 4f;
+        [SerializeField] float pulseSpeed = 1.2f;
+        [SerializeField] float lightRange = 50f;
+        [SerializeField] float lightIntensity = 3f;
+        [SerializeField] float trailTime = 0.6f;
+        [SerializeField] float trailWidth = 3f;
+
+        static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+        static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
         Rigidbody rb;
         Vector3 spawnPosition;
         bool isResetting;
         Light ballLight;
         TrailRenderer trail;
+        Material ballMat;
+        Renderer ballRenderer;
+        ParticleSystem auraParticles;
 
         public event Action<Domains> OnGoalScored;
 
@@ -43,9 +56,21 @@ namespace CosmicShore.Game.Arcade.AstroLeague
             rb = GetComponent<Rigidbody>();
             rb.useGravity = false;
             rb.linearDamping = drag;
-            rb.angularDamping = 0.5f;
+            rb.angularDamping = angularDrag;
+            rb.mass = mass;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+            // Zero-friction, high-bounce physics material so the ball glides and ricochets
+            var sphereCol = GetComponent<SphereCollider>();
+            sphereCol.material = new PhysicsMaterial("PayloadPhysics")
+            {
+                bounciness = ballBounciness,
+                bounceCombine = PhysicsMaterialCombine.Maximum,
+                frictionCombine = PhysicsMaterialCombine.Minimum,
+                dynamicFriction = 0f,
+                staticFriction = 0f
+            };
 
             spawnPosition = transform.position;
 
@@ -54,37 +79,137 @@ namespace CosmicShore.Game.Arcade.AstroLeague
 
         void SetupVisuals()
         {
-            // Emissive ball material
-            var renderer = GetComponent<Renderer>();
-            if (renderer != null)
+            ballRenderer = GetComponent<Renderer>();
+            if (ballRenderer != null)
             {
-                var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                mat.color = ballColor;
-                mat.SetColor("_EmissionColor", ballColor * 2f);
-                mat.EnableKeyword("_EMISSION");
-                renderer.material = mat;
+                ballMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                ballMat.SetFloat("_Metallic", 0.9f);
+                ballMat.SetFloat("_Smoothness", 0.95f);
+                ballMat.SetColor(BaseColorId, primaryColor);
+                ballMat.EnableKeyword("_EMISSION");
+                ballMat.SetColor(EmissionColorId, primaryColor * emissionIntensity);
+                ballRenderer.material = ballMat;
             }
 
-            // Point light so the ball illuminates surroundings
+            // Point light — color syncs with emission in Update
             ballLight = gameObject.AddComponent<Light>();
             ballLight.type = LightType.Point;
-            ballLight.color = ballColor;
+            ballLight.color = primaryColor;
             ballLight.range = lightRange;
             ballLight.intensity = lightIntensity;
             ballLight.shadows = LightShadows.None;
 
-            // Speed trail
+            // Speed trail — wider, more vivid
             trail = gameObject.AddComponent<TrailRenderer>();
             trail.time = trailTime;
             trail.startWidth = trailWidth;
-            trail.endWidth = 0.1f;
-            trail.material = new Material(Shader.Find("Sprites/Default")) { color = ballColor };
-            trail.startColor = ballColor;
-            trail.endColor = new Color(ballColor.r, ballColor.g, ballColor.b, 0f);
+            trail.endWidth = 0.2f;
+            trail.numCapVertices = 4;
+            trail.material = new Material(Shader.Find("Universal Render Pipeline/Unlit"))
+            {
+                color = primaryColor
+            };
+            SetTrailTransparent(trail.material);
+            trail.startColor = primaryColor;
+            trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
             trail.minVertexDistance = 0.5f;
             trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             trail.receiveShadows = false;
             trail.generateLightingData = false;
+
+            SetupAuraParticles();
+        }
+
+        void SetTrailTransparent(Material mat)
+        {
+            mat.SetFloat("_Surface", 1);
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", 0);
+            mat.EnableKeyword("_ALPHABLEND_ON");
+            mat.renderQueue = 3000;
+        }
+
+        void SetupAuraParticles()
+        {
+            var auraGO = new GameObject("PayloadAura");
+            auraGO.transform.SetParent(transform, false);
+
+            auraParticles = auraGO.AddComponent<ParticleSystem>();
+            var main = auraParticles.main;
+            main.startLifetime = 0.8f;
+            main.startSpeed = 2f;
+            main.startSize = 0.6f;
+            main.maxParticles = 30;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startColor = new ParticleSystem.MinMaxGradient(primaryColor, secondaryColor);
+            main.gravityModifier = 0f;
+
+            var emission = auraParticles.emission;
+            emission.rateOverTime = 20f;
+
+            var shape = auraParticles.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 1.5f;
+
+            var velocityOverLifetime = auraParticles.velocityOverLifetime;
+            velocityOverLifetime.enabled = true;
+            velocityOverLifetime.orbitalX = 3f;
+            velocityOverLifetime.orbitalY = 2f;
+            velocityOverLifetime.orbitalZ = 1.5f;
+            velocityOverLifetime.radial = -1f;
+
+            var sizeOverLifetime = auraParticles.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, 0f));
+
+            var colorOverLifetime = auraParticles.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(primaryColor, 0f), new GradientColorKey(secondaryColor, 1f) },
+                new[] { new GradientAlphaKey(0.8f, 0f), new GradientAlphaKey(0f, 1f) }
+            );
+            colorOverLifetime.color = gradient;
+
+            // Additive particle material
+            var particleRenderer = auraGO.GetComponent<ParticleSystemRenderer>();
+            var particleMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            particleMat.SetFloat("_Surface", 1);
+            particleMat.SetInt("_Blend", 1); // Additive
+            particleMat.SetColor(BaseColorId, Color.white);
+            particleMat.renderQueue = 3100;
+            particleRenderer.material = particleMat;
+            particleRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        void Update()
+        {
+            if (ballMat == null) return;
+
+            // Three-way color cycle: primary → secondary → tertiary → primary
+            float t = Time.time * pulseSpeed;
+            float phase = t % 3f;
+            Color emissionColor;
+
+            if (phase < 1f)
+                emissionColor = Color.Lerp(primaryColor, secondaryColor, phase);
+            else if (phase < 2f)
+                emissionColor = Color.Lerp(secondaryColor, tertiaryColor, phase - 1f);
+            else
+                emissionColor = Color.Lerp(tertiaryColor, primaryColor, phase - 2f);
+
+            // Breath pulse on top of the color cycle
+            float breath = 0.8f + 0.2f * Mathf.Sin(Time.time * 4f);
+            Color finalEmission = emissionColor * emissionIntensity * breath;
+
+            ballMat.SetColor(EmissionColorId, finalEmission);
+
+            if (ballLight != null)
+            {
+                ballLight.color = emissionColor;
+                ballLight.intensity = lightIntensity * breath;
+            }
         }
 
         void FixedUpdate()

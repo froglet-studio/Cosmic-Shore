@@ -55,6 +55,10 @@ namespace CosmicShore.Game.Arcade.AstroLeague
             _jadeGoalMat = CreateTransparentMat(shader, jadeGoalColor);
             _rubyGoalMat = CreateTransparentMat(shader, rubyGoalColor);
             _centerLineMat = CreateTransparentMat(shader, centerLineColor);
+
+            // Goal markers must be visible from both sides of the quad
+            _jadeGoalMat.SetFloat("_Cull", 0);
+            _rubyGoalMat.SetFloat("_Cull", 0);
         }
 
         static Material CreateTransparentMat(Shader shader, Color color)
