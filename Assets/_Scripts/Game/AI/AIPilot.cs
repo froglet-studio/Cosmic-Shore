@@ -169,7 +169,10 @@ namespace CosmicShore.Game.AI
                 }
             }
 
-            _targetPosition = !closestItem ? activeCell.transform.position : closestItem.transform.position;
+            if (closestItem)
+                _targetPosition = closestItem.transform.position;
+            else if (activeCell != null)
+                _targetPosition = activeCell.transform.position;
         }
 
         IEnumerator UpdatePlayerTarget()
