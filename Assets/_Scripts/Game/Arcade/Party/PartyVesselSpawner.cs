@@ -225,6 +225,11 @@ namespace CosmicShore.Game.Arcade.Party
             return VesselClassType.Sparrow;
         }
 
+        public string GetSceneNameForMode(GameModes mode)
+        {
+            return FindGameByMode(mode)?.SceneName;
+        }
+
         SO_ArcadeGame FindGameByMode(GameModes mode)
         {
             if (gameList?.Games == null) return null;

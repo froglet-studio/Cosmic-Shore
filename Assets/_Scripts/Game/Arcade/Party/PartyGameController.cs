@@ -576,6 +576,12 @@ namespace CosmicShore.Game.Arcade.Party
                 BroadcastGameStateText_ClientRpc("Loading...");
                 gameData.GameMode = selectedMode;
 
+                // Set SceneName so EndGameCinematicController can resolve the correct
+                // cinematic definition (it normally uses the active scene name, but in
+                // party mode the active scene is always the party scene).
+                if (vesselSpawner)
+                    gameData.SceneName = vesselSpawner.GetSceneNameForMode(selectedMode) ?? "";
+
                 // SPVI is always InertMode — PartyVesselSpawner handles spawning
                 bool isFirstRound = !_vesselsSpawned;
                 var spviMode = ServerPlayerVesselInitializer.PartyModeState.InertMode;

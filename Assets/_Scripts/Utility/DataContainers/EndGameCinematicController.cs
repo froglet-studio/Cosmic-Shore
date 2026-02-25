@@ -340,7 +340,16 @@ namespace CosmicShore.Game.Cinematics
                 CSDebug.Log($"Found cinematic definition for scene: {sceneName}");
                 return fromLibrary;
             }
-            
+
+            // In party mode the active scene is the party scene, not the mini-game.
+            // Fall back to gameData.SceneName which the party controller sets per round.
+            if (IsPartyMode && gameData && !string.IsNullOrEmpty(gameData.SceneName) &&
+                sceneCinematicLibrary && sceneCinematicLibrary.TryGet(gameData.SceneName, out var fromGameData))
+            {
+                CSDebug.Log($"Found cinematic definition via gameData.SceneName: {gameData.SceneName}");
+                return fromGameData;
+            }
+
             CSDebug.LogWarning($"No cinematic definition found for scene: {sceneName}");
             return null;
         }
