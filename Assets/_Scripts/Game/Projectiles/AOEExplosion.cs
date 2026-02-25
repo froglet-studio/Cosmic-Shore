@@ -22,7 +22,7 @@ namespace CosmicShore.Game.Projectiles
         [FormerlySerializedAs("renderer")] [SerializeField] MeshRenderer meshRenderer;
 
         protected Vector3 MaxScaleVector;
-        protected float Inertia = 70;
+        protected float Inertia = 1;
         protected float speed;
 
         protected CancellationTokenSource explosionCts;
