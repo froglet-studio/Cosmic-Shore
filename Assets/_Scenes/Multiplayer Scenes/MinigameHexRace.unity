@@ -173,59 +173,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1556114762}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &217176981
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 217176983}
-  - component: {fileID: 217176982}
-  m_Layer: 0
-  m_Name: HyperseaSkyboxController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &217176982
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217176981}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0d6e4f8a1b2579013468ace5d7b9f23, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  hyperSeaSkyboxMaterial: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01,
-    type: 2}
-  animateCoreDirection: 0
-  coreOrbitSpeed: 0.01
-  andromedaResolution: 256
-  syncWithMembrane: 1
-  membraneMaterialReference: {fileID: 2100000, guid: 5af840b058042b249a1be17a070a7492,
-    type: 2}
-  membraneTintInfluence: 0.137
---- !u!4 &217176983
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217176981}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 974.5491, y: 19.235231, z: -244.87454}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
@@ -2929,4 +2876,3 @@ SceneRoots:
   - {fileID: 420213768}
   - {fileID: 1300603918}
   - {fileID: 1488072648}
-  - {fileID: 217176983}

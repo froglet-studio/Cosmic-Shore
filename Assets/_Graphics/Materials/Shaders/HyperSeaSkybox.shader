@@ -47,7 +47,6 @@ Shader "CosmicShore/HyperSeaSkybox"
         [HDR]_AndromedaNucleusColor ("Nucleus Color", Color) = (0.6, 0.55, 0.4, 1)
         _AndromedaBrightness ("Brightness", Range(0, 3)) = 1.0
         _AndromedaSize ("Angular Size", Range(0.02, 0.4)) = 0.1
-        [HideInInspector]_AndromedaTex ("Andromeda (Baked)", 2D) = "black" {}
 
         [Header(Cellular Overlay)]
         _CellOverlayStrength ("Cell Overlay Strength", Range(0, 0.5)) = 0.12
@@ -113,7 +112,6 @@ Shader "CosmicShore/HyperSeaSkybox"
     half4 _AndromedaNucleusColor;
     half _AndromedaBrightness;
     half _AndromedaSize;
-    sampler2D _AndromedaTex;
 
     half _CellOverlayStrength;
     half _CellOverlayScale;
@@ -525,12 +523,11 @@ Shader "CosmicShore/HyperSeaSkybox"
     }
 
     // ================================================================
-    // ANDROMEDA GALAXY — sampled from pre-baked texture
-    // Baked at startup by HyperSeaSkyboxController to eliminate
-    // per-pixel noise computation and rastering artifacts.
+    // ANDROMEDA GALAXY — computed inline
+    // Inclined elliptical disk with spiral arms and dust lane.
     // ================================================================
 
-    half3 sampleAndromeda(float3 dir)
+    half3 computeAndromeda(float3 dir)
     {
         float3 androDir = normalize(_AndromedaDirection.xyz);
         float3 up = normalize(cross(androDir, float3(0.13, 1.0, 0.24)));
@@ -540,19 +537,40 @@ Shader "CosmicShore/HyperSeaSkybox"
         float v = dot(dir, up);
         float w = dot(dir, androDir);
 
-        // Smooth facing ramp (no hard branch — fixes warp divergence artifacts)
+        // Only compute for pixels roughly facing Andromeda
         float facing = saturate((w - 0.7) * 5.0);
+        if (facing < 0.001) return 0;
 
-        // Map to texture UV
-        float extent = _AndromedaSize * 1.5;
-        float2 uv = float2(u, v) / (extent * 2.0) + 0.5;
+        // Inclined elliptical disk (~77 deg tilt)
+        float eu = u;
+        float ev = v * 3.2;
+        float r2 = eu * eu + ev * ev;
+        float size2 = _AndromedaSize * _AndromedaSize;
 
-        // Smooth edge fade to avoid clamping artifacts
-        float edgeFade = smoothstep(0.0, 0.05, uv.x) * smoothstep(1.0, 0.95, uv.x)
-                       * smoothstep(0.0, 0.05, uv.y) * smoothstep(1.0, 0.95, uv.y);
+        // Outer disk with smooth falloff
+        float disk = exp(-r2 / (size2 * 0.25));
 
-        half4 texColor = tex2D(_AndromedaTex, uv);
-        return texColor.rgb * facing * edgeFade;
+        // Bright compact nucleus
+        float nucleus = exp(-r2 / (size2 * 0.008));
+
+        // Spiral arms via log-spiral coordinates
+        float r = sqrt(r2);
+        float spiralPhase = atan2(ev, eu) * 2.0 + r * 15.0 / _AndromedaSize;
+        float spiral = valueNoise(float3(
+            sin(spiralPhase),
+            cos(spiralPhase),
+            r * 10.0 / _AndromedaSize + 3.7
+        ));
+        disk *= (0.4 + spiral * 0.6);
+
+        // Dust lane across the minor axis
+        float dustLane = 1.0 - 0.35 * exp(-ev * ev / (size2 * 0.003));
+        disk *= dustLane;
+
+        half3 color = disk * _AndromedaDiskColor.rgb
+                    + nucleus * _AndromedaNucleusColor.rgb;
+
+        return color * _AndromedaBrightness * facing;
     }
 
     // ================================================================
@@ -684,8 +702,8 @@ Shader "CosmicShore/HyperSeaSkybox"
         // 6. Galactic core - brightness enhancement graded into the plane
         color += computeCore(dir);
 
-        // 7. Andromeda - sampled from pre-baked texture
-        color += sampleAndromeda(dir);
+        // 7. Andromeda - inline procedural computation
+        color += computeAndromeda(dir);
 
         // 8. Cellular overlay — geometric Voronoi pattern bridging membrane aesthetic
         color += computeCellOverlay(dir, time);
