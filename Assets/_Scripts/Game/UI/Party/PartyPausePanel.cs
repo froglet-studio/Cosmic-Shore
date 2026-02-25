@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Game.Arcade.Party;
 using CosmicShore.Soap;
+using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -44,7 +45,7 @@ namespace CosmicShore.Game.UI.Party
 
         void Awake()
         {
-            // Ensure initial state is hidden
+            // Start hidden — controller will call ForceShow after OnNetworkSpawn
             _isVisible = true; // So Hide() doesn't early-return
             Hide();
         }
@@ -70,16 +71,14 @@ namespace CosmicShore.Game.UI.Party
         #region Initialization
 
         /// <summary>
-        /// Called once at the start of the party to create round tabs.
+        /// Called at the start of the party (and again when all players are known).
         /// </summary>
         public void Initialize(int totalRounds, IReadOnlyList<PartyPlayerState> players)
         {
-            // Clear existing tabs
             foreach (var tab in _roundTabs)
                 if (tab) Destroy(tab.gameObject);
             _roundTabs.Clear();
 
-            // Create round tabs
             for (int i = 0; i < totalRounds; i++)
             {
                 if (!roundTabPrefab || !roundTabContainer) break;
@@ -90,11 +89,14 @@ namespace CosmicShore.Game.UI.Party
                 _roundTabs.Add(tab);
             }
 
-            // Highlight the first round as active
             _activeRoundIndex = 0;
             SetActiveRound(0);
 
+            // Ready button disabled at start
             SetReadyButtonInteractable(false);
+            if (readyButtonText) readyButtonText.text = "WAITING...";
+
+            CSDebug.Log($"[PartyPanel] Initialized: {totalRounds} rounds, {players.Count} players");
         }
 
         #endregion
@@ -114,8 +116,6 @@ namespace CosmicShore.Game.UI.Party
             }
 
             gameObject.SetActive(true);
-
-            // Auto-scroll to the current active round
             ScrollToActiveRound();
         }
 
@@ -134,12 +134,9 @@ namespace CosmicShore.Game.UI.Party
             gameObject.SetActive(false);
         }
 
-        /// <summary>
-        /// Forces the panel visible regardless of current state.
-        /// </summary>
         public void ForceShow()
         {
-            _isVisible = false; // Reset so Show() doesn't early-return
+            _isVisible = false;
             Show();
         }
 
@@ -192,12 +189,12 @@ namespace CosmicShore.Game.UI.Party
                     break;
 
                 case PartyPhase.FinalResults:
-                    // Button state is set here but the panel is shown by
-                    // PartyEndGameHandler after the cinematic finishes
                     SetReadyButtonInteractable(true);
                     if (readyButtonText) readyButtonText.text = "NEXT";
                     break;
             }
+
+            CSDebug.Log($"[PartyPanel] Phase → {phase}, button interactable={readyButton && readyButton.interactable}");
         }
 
         #endregion
@@ -208,7 +205,6 @@ namespace CosmicShore.Game.UI.Party
         {
             if (gameStateText) gameStateText.text = text;
 
-            // Also update the active round tab's game state text
             if (_activeRoundIndex >= 0 && _activeRoundIndex < _roundTabs.Count)
                 _roundTabs[_activeRoundIndex].SetGameStateText(text);
         }
@@ -219,49 +215,51 @@ namespace CosmicShore.Game.UI.Party
 
         public void OnPlayerJoined(string playerName, Domains domain, bool isAI)
         {
-            // Update round tabs with new player list — tabs will be refreshed
-            // when the controller provides the full player list
+            // Tabs are refreshed when the controller re-initializes via ReinitializePanelWithPlayers
         }
 
         public void OnPlayerLeft(string playerName)
         {
-            // Could show a notification that the player was replaced by AI
         }
 
-        public void OnPlayerReadyChanged(string playerName, bool isReady)
+        /// <summary>
+        /// Called when a player readies up. Updates the active round tab's ready count.
+        /// </summary>
+        public void OnPlayerReadyChanged(string playerName, bool isReady, int readyCount, int totalCount)
         {
-            // Update the current active round tab's ready indicator
             if (_activeRoundIndex >= 0 && _activeRoundIndex < _roundTabs.Count)
-                _roundTabs[_activeRoundIndex].SetPlayerReady(playerName, isReady);
+                _roundTabs[_activeRoundIndex].SetReadyCount(readyCount, totalCount);
+        }
+
+        /// <summary>
+        /// Called when ready states are reset between phases (e.g., 1st ready → 2nd ready).
+        /// Resets the ready count display on the active round tab.
+        /// </summary>
+        public void OnReadyStatesReset()
+        {
+            if (_activeRoundIndex >= 0 && _activeRoundIndex < _roundTabs.Count)
+                _roundTabs[_activeRoundIndex].ResetReadyCount();
         }
 
         #endregion
 
         #region Round Updates
 
-        /// <summary>
-        /// Called when a round result is synced from the server.
-        /// </summary>
         public void UpdateRoundResult(int roundIndex, PartyRoundResult result)
         {
             if (roundIndex < 0 || roundIndex >= _roundTabs.Count) return;
 
             _roundTabs[roundIndex].SetRoundResult(result);
 
-            // Highlight the next round as active
             int nextRound = roundIndex + 1;
             _activeRoundIndex = nextRound;
 
             for (int i = 0; i < _roundTabs.Count; i++)
                 _roundTabs[i].SetActive(i == nextRound);
 
-            // Auto-scroll to the completed round (so user can see the result)
             ScrollToRound(roundIndex);
         }
 
-        /// <summary>
-        /// Sets the active round tab (the one currently being played).
-        /// </summary>
         public void SetActiveRound(int roundIndex)
         {
             _activeRoundIndex = roundIndex;
@@ -275,18 +273,8 @@ namespace CosmicShore.Game.UI.Party
 
         #region Auto-Scroll
 
-        /// <summary>
-        /// Scrolls the scroll view to bring the active round tab into view.
-        /// </summary>
-        void ScrollToActiveRound()
-        {
-            ScrollToRound(_activeRoundIndex);
-        }
+        void ScrollToActiveRound() => ScrollToRound(_activeRoundIndex);
 
-        /// <summary>
-        /// Scrolls the scroll view so the specified round tab is visible.
-        /// Uses normalized scroll position based on the tab's index within the list.
-        /// </summary>
         void ScrollToRound(int roundIndex)
         {
             if (!scrollRect || _roundTabs.Count <= 1) return;
@@ -295,29 +283,23 @@ namespace CosmicShore.Game.UI.Party
             var tab = _roundTabs[roundIndex];
             if (!tab) return;
 
-            // Force layout rebuild so RectTransform positions are current
             Canvas.ForceUpdateCanvases();
 
             var contentRect = scrollRect.content;
             var viewportRect = scrollRect.viewport ?? (RectTransform)scrollRect.transform;
-
             if (!contentRect) return;
 
-            // Calculate the position of the tab within the content
             var tabRect = (RectTransform)tab.transform;
             float contentHeight = contentRect.rect.height;
             float viewportHeight = viewportRect.rect.height;
+            if (contentHeight <= viewportHeight) return;
 
-            if (contentHeight <= viewportHeight) return; // No scrolling needed
-
-            // Get the tab's position relative to the content top
             float tabLocalY = contentRect.InverseTransformPoint(tabRect.position).y;
             float contentTopY = contentRect.rect.yMax;
             float distanceFromTop = contentTopY - tabLocalY;
 
-            // Center the tab in the viewport
             float targetScroll = (distanceFromTop - viewportHeight * 0.5f) / (contentHeight - viewportHeight);
-            targetScroll = Mathf.Clamp01(1f - targetScroll); // ScrollRect vertical: 1 = top, 0 = bottom
+            targetScroll = Mathf.Clamp01(1f - targetScroll);
 
             scrollRect.verticalNormalizedPosition = targetScroll;
         }
@@ -326,11 +308,6 @@ namespace CosmicShore.Game.UI.Party
 
         #region Final Results
 
-        /// <summary>
-        /// Called when final results are synced. Updates round tabs but does not
-        /// display final standings inline — the PartyScoreboard handles that
-        /// when the player clicks "Next".
-        /// </summary>
         public void OnFinalResults(IReadOnlyList<PartyPlayerState> sortedPlayers)
         {
             ForceShow();
@@ -342,9 +319,10 @@ namespace CosmicShore.Game.UI.Party
 
         void OnReadyClicked()
         {
+            CSDebug.Log($"[PartyPanel] Ready clicked. Phase={_currentPhase}, hasController={partyController != null}");
+
             if (_currentPhase == PartyPhase.FinalResults)
             {
-                // "Next" button pressed after last round — show the final scoreboard
                 SetReadyButtonInteractable(false);
                 Hide();
                 gameData.InvokeShowGameEndScreen();
@@ -354,15 +332,22 @@ namespace CosmicShore.Game.UI.Party
             if (_currentPhase != PartyPhase.WaitingForReady &&
                 _currentPhase != PartyPhase.RoundResults &&
                 _currentPhase != PartyPhase.MiniGameReady)
+            {
+                CSDebug.Log($"[PartyPanel] Ready clicked in non-ready phase {_currentPhase}, ignoring.");
                 return;
+            }
 
-            // Disable button after click to prevent double-tap
             SetReadyButtonInteractable(false);
             if (readyButtonText) readyButtonText.text = "READY!";
 
-            // Notify the controller
             if (partyController)
+            {
                 partyController.OnLocalPlayerReady();
+            }
+            else
+            {
+                CSDebug.LogWarning("[PartyPanel] partyController is null! Cannot send ready.");
+            }
         }
 
         void OnQuitClicked()
@@ -377,6 +362,5 @@ namespace CosmicShore.Game.UI.Party
         }
 
         #endregion
-
     }
 }

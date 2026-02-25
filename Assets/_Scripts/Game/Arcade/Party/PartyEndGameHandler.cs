@@ -1,5 +1,6 @@
 using CosmicShore.Game.Cinematics;
 using CosmicShore.Game.UI.Party;
+using CosmicShore.Game.XP;
 using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -18,6 +19,10 @@ namespace CosmicShore.Game.Arcade.Party
         [SerializeField] PartyGameController partyController;
         [SerializeField] PartyPausePanel partyPausePanel;
 
+        [Header("Party Components")]
+        [Tooltip("Root GameObject for party components. Re-enabled after cinematic so the panel can show.")]
+        [SerializeField] GameObject partyComponentsRoot;
+
         bool IsFinalRound => partyController != null &&
                              partyController.CurrentRound + 1 >= partyController.TotalRounds;
 
@@ -26,10 +31,12 @@ namespace CosmicShore.Game.Arcade.Party
             if (isRunning) return;
             isRunning = true;
 
+            CSDebug.Log($"[PartyEndGame] OnWinnerCalculated. Round={partyController?.CurrentRound}, IsFinal={IsFinalRound}");
+
             // Only award XP on the final round
             if (IsFinalRound)
             {
-                var xpService = Game.XP.XPRewardService.Instance;
+                var xpService = XPRewardService.Instance;
                 if (xpService != null)
                 {
                     int xp = xpService.AwardXP();
@@ -49,15 +56,12 @@ namespace CosmicShore.Game.Arcade.Party
         {
             localPlayerWon = DetermineLocalPlayerWon();
 
-            // Run victory lap if configured
             if (cinematic && cinematic.enableVictoryLap)
                 yield return StartCoroutine(RunVictoryLap(cinematic));
 
-            // Set local vessel to AI during cinematic
             if (cinematic && cinematic.setLocalVesselToAI)
                 SetLocalVesselAI(true, cinematic.aiCinematicBehavior);
 
-            // Camera sequence
             if (cinematic && cinematic.cameraSetups is { Count: > 0 })
                 yield return StartCoroutine(RunCameraSequence(cinematic));
             else
@@ -66,21 +70,17 @@ namespace CosmicShore.Game.Arcade.Party
                 yield return new WaitForSeconds(delay);
             }
 
-            // Score reveal animation
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
 
-            // Show XP only on the final round
             if (IsFinalRound && view)
                 view.ShowXPEarned();
 
-            // Show continue button, wait for tap
             if (view)
             {
                 view.ShowContinueButton();
                 yield return new WaitUntil(() => !view.IsContinueButtonActive());
             }
 
-            // Reset game state and clean up cinematic UI
             ResetGameForNewRound();
 
             if (view)
@@ -89,10 +89,15 @@ namespace CosmicShore.Game.Arcade.Party
                 view.HideScoreRevealPanel();
             }
 
-            // Show party pause panel — it will display either "Ready" (mid-party)
-            // or "Next" (final round) based on the phase set by PartyGameController
+            // Re-enable party components (they were disabled during gameplay)
+            if (partyComponentsRoot)
+                partyComponentsRoot.SetActive(true);
+
+            // Show party pause panel — "Ready" (mid-party) or "Next" (final round)
             if (partyPausePanel)
                 partyPausePanel.ForceShow();
+
+            CSDebug.Log("[PartyEndGame] Cinematic sequence complete, party panel shown.");
 
             runningRoutine = null;
             isRunning = false;
