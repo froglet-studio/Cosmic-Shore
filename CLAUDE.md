@@ -28,6 +28,47 @@ All tunable gameplay parameters live in ScriptableObjects, not in MonoBehaviours
 - `VesselExplosionByCrystalEffectSO` (config) → defines explosion parameters for crystal impacts
 - Use `[CreateAssetMenu]` with organized menu paths: `ScriptableObjects/Impact Effects/[Category]/[Name]`
 
+### SOAP — Scriptable Object Architecture Pattern (Primary Architecture)
+
+This project uses the **SOAP asset** (Obvious.Soap v2.7.0, installed at `Assets/Plugins/Obvious/Soap/`) as the backbone for modular, event-driven, and data-container-based architecture. **Use SOAP whenever possible** for cross-system communication and shared state — do not introduce singletons, static events, or direct references between systems when a SOAP variable or event can do the job.
+
+#### Core SOAP Primitives
+
+- **`ScriptableVariable<T>`** — Persistent data containers that live as assets. Any system can read/write to them without knowing about other consumers. Use these for shared state (player health, score, vessel class, authentication data, etc.).
+- **`ScriptableEvent<T>` / `ScriptableEventNoParam`** — Decoupled event channels. Raise events from any system; listeners subscribe via inspector-wired `EventListener` components or code. Use these for one-to-many notifications (game over, boost changed, crystal collected, etc.).
+- **`EventListener<T>`** — MonoBehaviour that subscribes to a `ScriptableEvent` and exposes `UnityEvent` responses in the inspector. Preferred for UI and scene-bound reactions.
+
+#### When to Use SOAP
+
+| Scenario | SOAP Solution |
+|---|---|
+| Sharing state between unrelated systems | `ScriptableVariable<T>` asset |
+| Broadcasting an event to multiple listeners | `ScriptableEvent<T>` asset |
+| UI needs to react to gameplay changes | `EventListener<T>` on the UI GameObject |
+| New system needs data from another system | Reference the existing `ScriptableVariable` — do not add a direct dependency |
+| Request/response pattern between systems | `GenericEventChannelWithReturnSO<T, Y>` (custom extension at `Assets/_Scripts/Utility/SOAP/ScriptableEventWithReturn/`) |
+
+#### Creating New SOAP Types
+
+Custom SOAP types live in `Assets/_Scripts/Utility/SOAP/` organized by data type. When you need a new type:
+
+1. Create a folder: `Assets/_Scripts/Utility/SOAP/Scriptable[TypeName]/`
+2. Create the variable class: `[TypeName]Variable : ScriptableVariable<[TypeName]>`
+3. Create the event class: `ScriptableEvent[TypeName] : ScriptableEvent<[TypeName]>`
+4. Create the listener class: `EventListener[TypeName] : EventListenerGeneric<[TypeName]>`
+5. Use namespace `CosmicShore.Soap` for all custom SOAP types
+
+Existing custom SOAP types include: `AbilityStats`, `CrystalStats`, `InputEvents`, `PipData`, `PrismStats`, `Quaternion`, `ShipHUDData`, `SilhouetteData`, `Transform`, `ShipClassType`, `AuthenticationData`, `NetworkMonitorData`, `VesselClassType`, and more.
+
+#### SOAP Anti-Patterns
+
+- **Do not** use singletons or static events for cross-system communication — use `ScriptableEvent` instead
+- **Do not** add direct MonoBehaviour-to-MonoBehaviour references for data sharing — use `ScriptableVariable` instead
+- **Do not** use `FindObjectOfType` or service locators to get shared data — wire a `ScriptableVariable` in the inspector
+- **Do not** create C# events or `Action` delegates on MonoBehaviours for things that multiple unrelated systems need to observe — use `ScriptableEvent`
+- **Do not** duplicate SOAP types — check `Assets/_Scripts/Utility/SOAP/` for existing types before creating new ones
+- **Do not** put gameplay logic inside ScriptableVariable/ScriptableEvent classes — they are data containers and channels, not controllers
+
 ### Namespace Convention
 
 All game code lives under `CosmicShore.*`:
@@ -56,6 +97,8 @@ All game code lives under `CosmicShore.*`:
 - `Instantiate`/`Destroy` in gameplay loops — use object pooling
 - Excessive `GetComponent` calls — cache references
 - Mixed coroutine/async patterns in the same system
+- Singletons, static events, or direct references for cross-system communication — use SOAP `ScriptableVariable` and `ScriptableEvent` instead
+- C# `event Action` / delegates on MonoBehaviours for broadcast patterns — use SOAP `ScriptableEvent` channels
 
 ## Shader & Visual Development
 
