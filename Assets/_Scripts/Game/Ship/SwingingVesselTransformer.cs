@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utility;
@@ -46,10 +47,11 @@ public class SwingingVesselTransformer : VesselTransformer
     [Header("Free Flight")]
     [SerializeField] float cruiseSpeed = 25f;
 
-    [Header("Cursor")]
+    [Header("Crosshair")]
     [SerializeField] float cursorDistance = 8f;
-    [SerializeField] float cursorSize = 0.5f;
-    [SerializeField] Material cursorMaterial;
+    [SerializeField] float crosshairSize = 32f;
+    [SerializeField] float crosshairThickness = 3f;
+    [SerializeField] Color crosshairColor = new Color(0f, 1f, 1f, 0.85f);
 
     [Header("Anchor Prism")]
     [SerializeField] Vector3 anchorPrismScale = new(6f, 6f, 6f);
@@ -113,9 +115,10 @@ public class SwingingVesselTransformer : VesselTransformer
     // Only tethers (swing momentum) change this; joystick rotation does not.
     Vector3 freeFlightCourse;
 
-    // Cursors
-    Transform leftCursor;
-    Transform rightCursor;
+    // Screen-space crosshair UI
+    Canvas crosshairCanvas;
+    RectTransform leftCrosshair;
+    RectTransform rightCrosshair;
 
     // Deferred anchor spawns (spread prism creation across frames)
     Vector3? pendingLeftSpawnPos;
@@ -141,8 +144,7 @@ public class SwingingVesselTransformer : VesselTransformer
         CreateTetherCapsule("LeftTether", ref leftTether);
         CreateTetherCapsule("RightTether", ref rightTether);
 
-        leftCursor = CreateCursor("LeftCursor");
-        rightCursor = CreateCursor("RightCursor");
+        CreateCrosshairUI();
 
         // Initialize course to forward so there is a sane default.
         // freeFlightCourse is the authoritative direction during free flight —
@@ -173,8 +175,7 @@ public class SwingingVesselTransformer : VesselTransformer
     {
         if (leftTether.capsule) Destroy(leftTether.capsule.gameObject);
         if (rightTether.capsule) Destroy(rightTether.capsule.gameObject);
-        if (leftCursor) Destroy(leftCursor.gameObject);
-        if (rightCursor) Destroy(rightCursor.gameObject);
+        if (crosshairCanvas) Destroy(crosshairCanvas.gameObject);
     }
 
     void CreateTetherCapsule(string childName, ref TetherState tether)
@@ -189,27 +190,67 @@ public class SwingingVesselTransformer : VesselTransformer
         var mr = go.GetComponent<MeshRenderer>();
         if (tetherMaterial != null)
             mr.sharedMaterial = tetherMaterial;
+        else
+        {
+            // Bright unlit default so tethers are clearly visible without a material assigned
+            var shader = Shader.Find("Universal Render Pipeline/Unlit")
+                      ?? Shader.Find("Unlit/Color");
+            if (shader != null)
+            {
+                var mat = new Material(shader);
+                var bright = new Color(0f, 1f, 1f, 1f);
+                mat.color = bright;
+                mat.SetColor("_BaseColor", bright);
+                mr.material = mat;
+            }
+        }
 
         mr.enabled = false;
         tether.capsule = go.transform;
         tether.capsuleRenderer = mr;
     }
 
-    Transform CreateCursor(string cursorName)
+    void CreateCrosshairUI()
     {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        go.name = cursorName;
-        go.transform.localScale = Vector3.one * cursorSize;
+        var canvasGo = new GameObject("SpiderCrosshairs");
+        crosshairCanvas = canvasGo.AddComponent<Canvas>();
+        crosshairCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        crosshairCanvas.sortingOrder = 100;
+        canvasGo.AddComponent<CanvasScaler>();
 
-        // Remove collider — cursor is visual only
-        var col = go.GetComponent<Collider>();
-        if (col) Destroy(col);
+        leftCrosshair = CreateCrosshairElement("LeftCrosshair");
+        rightCrosshair = CreateCrosshairElement("RightCrosshair");
+    }
 
-        var mr = go.GetComponent<MeshRenderer>();
-        if (cursorMaterial != null)
-            mr.sharedMaterial = cursorMaterial;
+    RectTransform CreateCrosshairElement(string elementName)
+    {
+        var go = new GameObject(elementName);
+        go.transform.SetParent(crosshairCanvas.transform, false);
 
-        return go.transform;
+        var rect = go.AddComponent<RectTransform>();
+        rect.sizeDelta = Vector2.zero;
+
+        // Horizontal bar
+        CreateCrosshairLine(rect, new Vector2(crosshairSize, crosshairThickness));
+        // Vertical bar
+        CreateCrosshairLine(rect, new Vector2(crosshairThickness, crosshairSize));
+        // Centre dot
+        CreateCrosshairLine(rect, Vector2.one * (crosshairThickness * 2f));
+
+        return rect;
+    }
+
+    void CreateCrosshairLine(RectTransform parent, Vector2 size)
+    {
+        var go = new GameObject("Line");
+        go.transform.SetParent(parent, false);
+
+        var rect = go.AddComponent<RectTransform>();
+        rect.sizeDelta = size;
+
+        var img = go.AddComponent<Image>();
+        img.color = crosshairColor;
+        img.raycastTarget = false;
     }
 
     // ==================================================================
@@ -457,17 +498,31 @@ public class SwingingVesselTransformer : VesselTransformer
 
     void UpdateCursors()
     {
-        bool show = currentState == SwingState.FreeFlight;
+        if (crosshairCanvas == null) return;
 
-        if (leftCursor) leftCursor.gameObject.SetActive(show);
-        if (rightCursor) rightCursor.gameObject.SetActive(show);
+        // Show each crosshair only while that side has no active tether
+        bool showLeft = !leftTether.isFiring && !leftTether.isAnchored;
+        bool showRight = !rightTether.isFiring && !rightTether.isAnchored;
 
-        if (!show) return;
+        if (leftCrosshair) leftCrosshair.gameObject.SetActive(showLeft);
+        if (rightCrosshair) rightCrosshair.gameObject.SetActive(showRight);
 
-        if (leftCursor)
-            leftCursor.position = transform.position + GetCursorDirection(true) * cursorDistance;
-        if (rightCursor)
-            rightCursor.position = transform.position + GetCursorDirection(false) * cursorDistance;
+        var cam = Camera.main;
+        if (cam == null) return;
+
+        if (showLeft && leftCrosshair)
+        {
+            Vector3 worldPos = transform.position + GetCursorDirection(true) * cursorDistance;
+            Vector3 sp = cam.WorldToScreenPoint(worldPos);
+            if (sp.z > 0f) leftCrosshair.position = new Vector3(sp.x, sp.y, 0f);
+        }
+
+        if (showRight && rightCrosshair)
+        {
+            Vector3 worldPos = transform.position + GetCursorDirection(false) * cursorDistance;
+            Vector3 sp = cam.WorldToScreenPoint(worldPos);
+            if (sp.z > 0f) rightCrosshair.position = new Vector3(sp.x, sp.y, 0f);
+        }
     }
 
     // ==================================================================
