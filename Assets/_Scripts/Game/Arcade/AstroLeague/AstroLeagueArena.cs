@@ -109,11 +109,11 @@ namespace CosmicShore.Game.Arcade.AstroLeague
             col.isTrigger = false;
             col.material = new PhysicsMaterial("ArenaBounce")
             {
-                bounciness = 0.9f,
+                bounciness = 1f,
                 bounceCombine = PhysicsMaterialCombine.Maximum,
                 frictionCombine = PhysicsMaterialCombine.Minimum,
-                dynamicFriction = 0.05f,
-                staticFriction = 0.05f
+                dynamicFriction = 0f,
+                staticFriction = 0f
             };
         }
 

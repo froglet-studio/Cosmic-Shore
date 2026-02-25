@@ -23,6 +23,11 @@ namespace CosmicShore.Game.CameraSystem
         public bool adaptiveZoomEnabled;
         private float _neutralOffsetZ;
 
+        // --- Camera Shake ---
+        private float _shakeTimeRemaining;
+        private float _shakeDuration;
+        private float _shakeIntensity;
+
         private void Awake()
         {
             Camera = GetComponent<Camera>();
@@ -73,6 +78,18 @@ namespace CosmicShore.Game.CameraSystem
             }
 
             _lastTargetPos = _followTarget.position;
+
+            // Apply camera shake offset (decaying random displacement)
+            if (_shakeTimeRemaining > 0f)
+            {
+                _shakeTimeRemaining -= Time.unscaledDeltaTime;
+                float decay = Mathf.Clamp01(_shakeTimeRemaining / _shakeDuration);
+                // Perlin-based shake for smoother motion than pure random
+                float x = (Mathf.PerlinNoise(Time.unscaledTime * 25f, 0f) - 0.5f) * 2f;
+                float y = (Mathf.PerlinNoise(0f, Time.unscaledTime * 25f) - 0.5f) * 2f;
+                float z = (Mathf.PerlinNoise(Time.unscaledTime * 25f, Time.unscaledTime * 25f) - 0.5f) * 2f;
+                transform.position += new Vector3(x, y, z) * (_shakeIntensity * decay);
+            }
         }
 
         public void ApplySettings(CameraSettingsSO settings)
@@ -186,6 +203,23 @@ namespace CosmicShore.Game.CameraSystem
         {
             Camera.orthographic = ortho;
             if (ortho) Camera.orthographicSize = size;
+        }
+
+        /// <summary>
+        /// Triggers a decaying camera shake. Subsequent calls override the current shake
+        /// only if the new intensity is stronger.
+        /// </summary>
+        public void Shake(float intensity, float duration)
+        {
+            if (intensity <= 0f || duration <= 0f) return;
+
+            // Only override if this shake is stronger than what's already playing
+            if (_shakeTimeRemaining > 0f && intensity < _shakeIntensity * (_shakeTimeRemaining / _shakeDuration))
+                return;
+
+            _shakeIntensity = intensity;
+            _shakeDuration = duration;
+            _shakeTimeRemaining = duration;
         }
     }
 }
