@@ -219,7 +219,7 @@ namespace CosmicShore.App.Profile
         static string GenerateDefaultDisplayName()
         {
             int suffix = UnityEngine.Random.Range(1000, 10000);
-            return $"Pilot#{suffix}";
+            return $"Pilot{suffix}";
         }
 
         int GetDefaultAvatarId()
