@@ -1,4 +1,5 @@
 using System.Collections;
+using CosmicShore.Game.Cinematics;
 using CosmicShore.Soap;
 using Obvious.Soap;
 using UnityEngine;
@@ -8,6 +9,8 @@ namespace CosmicShore.Game.AI
     /// <summary>
     /// Fully automated spectator training mode.
     /// Runs AI-only races in a loop with no human input required.
+    /// Bypasses the standard EndGame → cinematic flow entirely so races
+    /// can loop indefinitely for overnight unattended training.
     ///
     /// Setup:
     /// 1. Use TrainingPlayerSpawnerAdapter with 3 AI entries (IsAI=true).
@@ -27,12 +30,16 @@ namespace CosmicShore.Game.AI
         [SerializeField] ScriptableEventBool toggleReadyButtonEvent;
 
         [Header("Training Config")]
-        [SerializeField] int maxRaces = 10000;
-        [SerializeField] float delayBetweenRaces = 1f;
-        [SerializeField] float raceTimeoutSeconds = 120f;
+        [SerializeField] int maxRaces = 100000;
+        [SerializeField] float delayBetweenRaces = 0.5f;
+        [SerializeField] float raceTimeoutSeconds = 180f;
         [SerializeField, Range(1, 4)] int trainingIntensity = 4;
         [SerializeField] float cameraShowOthersInterval = 4f;
         [SerializeField] float cameraShowOthersDuration = 1.5f;
+
+        [Header("Stability")]
+        [Tooltip("Run GC.Collect every N races to prevent memory pressure during overnight runs.")]
+        [SerializeField] int gcCollectInterval = 50;
 
         int _racesCompleted;
         float _raceStartTime;
@@ -41,47 +48,42 @@ namespace CosmicShore.Game.AI
         int _crystalTarget;
         float _nextShowOtherTime;
         int _currentShowOtherIndex;
+        float _sessionStartTime;
 
         void OnEnable()
         {
             if (gameData.SelectedIntensity != null)
                 gameData.SelectedIntensity.Value = trainingIntensity;
 
-            gameData.OnMiniGameEnd += OnRaceEnd;
             gameData.OnMiniGameRoundStarted.OnRaised += OnRoundStarted;
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-            gameData.OnWinnerCalculated += SkipEndGameScreen;
-            gameData.OnShowGameEndScreen.OnRaised += SkipScoreboard;
+
+            _sessionStartTime = Time.realtimeSinceStartup;
         }
 
         void OnDisable()
         {
-            gameData.OnMiniGameEnd -= OnRaceEnd;
             gameData.OnMiniGameRoundStarted.OnRaised -= OnRoundStarted;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
-            gameData.OnWinnerCalculated -= SkipEndGameScreen;
-            gameData.OnShowGameEndScreen.OnRaised -= SkipScoreboard;
         }
 
-        void SkipEndGameScreen()
+        void Start()
         {
-            // Prevent victory lap and cinematic sequence
-            Debug.Log("[AITraining] Skipping end game cinematic");
-        }
-
-        void SkipScoreboard()
-        {
-            // Prevent scoreboard from showing
-            Debug.Log("[AITraining] Skipping scoreboard display");
+            // Disable any end-game cinematic controllers in the scene.
+            // These block forever waiting for a Continue button press in AI-only mode.
+            var cinematicControllers = FindObjectsByType<EndGameCinematicController>(FindObjectsSortMode.None);
+            foreach (var controller in cinematicControllers)
+            {
+                controller.enabled = false;
+                Debug.Log($"[AITraining] Disabled {controller.GetType().Name} to prevent end-game blocking");
+            }
         }
 
         void OnRoundStarted()
         {
-            // Suppress the Ready button during training
             if (toggleReadyButtonEvent != null)
                 toggleReadyButtonEvent.Raise(false);
 
-            // Auto-click Ready after one frame so SetupNewTurn completes first.
             StartCoroutine(AutoClickReady());
         }
 
@@ -98,14 +100,12 @@ namespace CosmicShore.Game.AI
             _nextShowOtherTime = Time.time + cameraShowOthersInterval;
             _currentShowOtherIndex = 0;
 
-            // Cache the crystal target from the turn monitor (set during StartMonitor)
             if (turnMonitor != null)
             {
                 if (int.TryParse(turnMonitor.GetRemainingCrystalsCountToCollect(), out int remaining))
                     _crystalTarget = remaining;
             }
 
-            // Point camera at the first AI vessel on the first turn
             if (!_cameraInitialized && gameData.Players.Count > 0)
             {
                 SetupSpectatorCamera(0);
@@ -122,48 +122,67 @@ namespace CosmicShore.Game.AI
             if (vessel == null) return;
 
             vessel.VesselStatus.VesselCameraCustomizer.Initialize(vessel);
-
-            // Display genome index for this pilot
-            var aiPilot = vessel.VesselStatus.AIPilot;
-            if (aiPilot != null)
-            {
-                int genomeIndex = aiPilot.CurrentGenomeIndex;
-                Debug.Log($"[AITraining] Camera on {vessel.VesselStatus.PlayerName} (Genome #{genomeIndex})");
-            }
         }
 
         void Update()
         {
             if (!_raceActive) return;
 
-            // Switch camera to show other racers briefly
+            // Rotate spectator camera between racers
             if (Time.time > _nextShowOtherTime && gameData.Players.Count > 1)
             {
                 _currentShowOtherIndex = (_currentShowOtherIndex + 1) % gameData.Players.Count;
                 SetupSpectatorCamera(_currentShowOtherIndex);
                 _nextShowOtherTime = Time.time + cameraShowOthersInterval;
-
-                // After showing others for brief duration, switch back to leader
                 StartCoroutine(ReturnToLeaderCamera());
             }
 
-            // Check if any AI has collected enough crystals to finish the race.
-            // The standard CrystalCollisionTurnMonitor only watches LocalPlayer,
-            // which doesn't exist in all-AI mode, so we check all players here.
+            // Check if any AI has collected enough crystals to finish.
+            // We bypass the standard TurnMonitor → EndTurn → EndRound → EndGame chain
+            // entirely, because EndGame triggers a cinematic that blocks forever
+            // waiting for a Continue button press in AI-only mode.
             if (_crystalTarget > 0 && CheckAnyPlayerFinished())
             {
-                Debug.Log($"[AITraining] Race finished!");
                 _raceActive = false;
-                gameData.InvokeGameTurnConditionsMet();
+                HandleRaceComplete(timedOut: false);
                 return;
             }
 
-            // Safety timeout
             if (Time.time - _raceStartTime > raceTimeoutSeconds)
             {
-                Debug.LogWarning($"[AITraining] Race timed out after {raceTimeoutSeconds}s, forcing turn end");
                 _raceActive = false;
-                gameData.InvokeGameTurnConditionsMet();
+                HandleRaceComplete(timedOut: true);
+            }
+        }
+
+        void HandleRaceComplete(bool timedOut)
+        {
+            float elapsed = Time.time - _raceStartTime;
+            _racesCompleted++;
+
+            if (timedOut)
+                Debug.LogWarning($"[AITraining] Race {_racesCompleted} timed out after {elapsed:F1}s");
+
+            LogProgress();
+
+            // Periodic GC to prevent memory pressure during overnight runs
+            if (_racesCompleted % gcCollectInterval == 0)
+            {
+                System.GC.Collect();
+                Debug.Log($"[AITraining] GC.Collect after {_racesCompleted} races");
+            }
+
+            if (_racesCompleted < maxRaces)
+            {
+                StartCoroutine(RestartRace());
+            }
+            else
+            {
+                float sessionHours = (Time.realtimeSinceStartup - _sessionStartTime) / 3600f;
+                Debug.Log($"[AITraining] === TRAINING COMPLETE === " +
+                    $"{_racesCompleted} races | {evolution.Generation} generations | " +
+                    $"{sessionHours:F1} hours");
+                LogBestGenome();
             }
         }
 
@@ -185,25 +204,17 @@ namespace CosmicShore.Game.AI
             return false;
         }
 
-        void OnRaceEnd()
-        {
-            _raceActive = false;
-            _racesCompleted++;
-            LogProgress();
-
-            if (_racesCompleted < maxRaces)
-                StartCoroutine(RestartRace());
-            else
-            {
-                Debug.Log($"[AITraining] === TRAINING COMPLETE === " +
-                    $"{_racesCompleted} races over {evolution.Generation} generations");
-                LogBestGenome();
-            }
-        }
-
         IEnumerator RestartRace()
         {
             yield return new WaitForSeconds(delayBetweenRaces);
+
+            // ResetForReplay handles everything:
+            // 1. ResetStatsDataForReplay — cleans up round stats
+            // 2. ResetPlayers — calls player.ResetForPlay() which stops AI pilots
+            //    (triggering PilotFitnessTracker.StopTracking → ReportFitness)
+            // 3. ResetRuntimeDataForReplay — resets RoundsPlayed, TurnsTakenThisRound
+            // 4. Raises OnResetForReplay → SetupNewRound → SetupNewTurn
+            //    which rebuilds the track and queues the next race start
             gameData.ResetForReplay();
         }
 
@@ -211,12 +222,13 @@ namespace CosmicShore.Game.AI
         {
             var best = evolution.BestGenome;
             string bestFitness = best != null ? best.fitness.ToString("F1") : "N/A";
+            float sessionMinutes = (Time.realtimeSinceStartup - _sessionStartTime) / 60f;
 
             if (_racesCompleted % 10 == 0 || _racesCompleted <= 5)
             {
                 Debug.Log($"[AITraining] Race {_racesCompleted}/{maxRaces} | " +
                     $"Gen {evolution.Generation} | Pop {evolution.PopulationSize} | " +
-                    $"Best fitness: {bestFitness}");
+                    $"Best fitness: {bestFitness} | Session: {sessionMinutes:F0}min");
             }
         }
 
