@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Soap
 {

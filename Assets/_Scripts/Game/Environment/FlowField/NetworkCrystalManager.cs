@@ -50,9 +50,13 @@ namespace CosmicShore.Game
 
         void OnResetForReplay()
         {
+            // Reset base class spawn state on ALL clients — destroys old crystals,
+            // clears anchor/position tracking so spawning starts fresh from index 0.
+            ResetSpawnState();
+
             if (!IsServer) return;
             serverBatchAnchorIndex = 0;
-            
+
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = Vector3.zero;
             CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index and positions cleared.");

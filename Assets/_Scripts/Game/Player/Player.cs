@@ -10,6 +10,7 @@ using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game
 {

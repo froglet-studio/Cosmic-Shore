@@ -4,6 +4,7 @@ using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore
 {

@@ -4,6 +4,7 @@ using UnityEngine;
 using CosmicShore.Events;
 using CosmicShore.FTUE;
 using UnityEngine.SceneManagement;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore
 {

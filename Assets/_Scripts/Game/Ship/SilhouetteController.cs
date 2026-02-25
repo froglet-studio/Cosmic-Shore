@@ -2,6 +2,7 @@
 using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Core;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore
 {

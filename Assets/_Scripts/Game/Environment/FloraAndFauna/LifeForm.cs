@@ -8,6 +8,7 @@ using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore
 {

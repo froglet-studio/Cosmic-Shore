@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Environment.MiniGameObjects
 {

@@ -5,6 +5,7 @@ using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Core
 {

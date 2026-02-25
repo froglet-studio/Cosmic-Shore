@@ -3,6 +3,7 @@ using System.Collections;
 using CosmicShore.Game;
 using CosmicShore.Soap;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 /// <summary>
 /// Used for testing only (scene TestHarnessOctree).  Prints coordinates for three target sets (one for each color).

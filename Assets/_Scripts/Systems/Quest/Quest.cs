@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Systems.UserActions;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Systems.Quests
 {

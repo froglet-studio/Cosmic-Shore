@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore;
 using CosmicShore.Core;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 public class Worm : MonoBehaviour
 {

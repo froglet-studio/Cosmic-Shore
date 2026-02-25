@@ -4,6 +4,7 @@ using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Soap;
 using CosmicShore.Utilities;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Core

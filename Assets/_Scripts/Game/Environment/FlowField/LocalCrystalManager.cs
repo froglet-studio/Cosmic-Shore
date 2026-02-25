@@ -16,6 +16,7 @@ namespace CosmicShore.Game
                 gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStarted;
 
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
+            gameData.OnResetForReplay.OnRaised += OnResetForReplay;
         }
 
         private void OnDisable()
@@ -26,6 +27,12 @@ namespace CosmicShore.Game
                 gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStarted;
 
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
+            gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
+        }
+
+        private void OnResetForReplay()
+        {
+            ResetSpawnState();
         }
 
         public override void RespawnCrystal(int crystalId)

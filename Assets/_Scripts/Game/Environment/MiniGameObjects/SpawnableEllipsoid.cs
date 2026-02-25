@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Game.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 public class SpawnableEllipsoid : SpawnableBase
 {

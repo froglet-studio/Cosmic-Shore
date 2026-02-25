@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 [CreateAssetMenu(fileName = "Color Set", menuName = "CosmicShore/ColorSet")]
 [System.Serializable]

@@ -5,6 +5,7 @@ using UnityEngine;
 using CosmicShore.Systems.CTA;
 using CosmicShore.App.UI;
 using CosmicShore.FTUE;
+using CosmicShore.Models.Enums;
 
 [AddComponentMenu("FTUE/Adapters/TutorialExecutorAdapter")]
 public class TutorialExecutorAdapter : MonoBehaviour, ITutorialExecutor

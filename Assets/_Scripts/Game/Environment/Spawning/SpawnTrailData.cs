@@ -1,3 +1,5 @@
+using CosmicShore.Models.Enums;
+
 namespace CosmicShore.Game.Spawning
 {
     /// <summary>

@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Systems.Xp
 {

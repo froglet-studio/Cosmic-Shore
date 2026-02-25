@@ -5,6 +5,7 @@ using CosmicShore.Soap;
 using UnityEngine;
 using Obvious.Soap;
 using CosmicShore.Core;
+using CosmicShore.Models.Enums;
 
 public class SegmentSpawner : MonoBehaviour
 {
