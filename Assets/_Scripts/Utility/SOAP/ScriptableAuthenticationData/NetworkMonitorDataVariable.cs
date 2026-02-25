@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Utilities
 {
-    [CreateAssetMenu(fileName = "scriptable_variable_" + nameof(NetworkMonitorData), menuName = "Soap/ScriptableVariables/"+ nameof(NetworkMonitorData))]
+    [CreateAssetMenu(fileName = "Variable_" + nameof(NetworkMonitorData), menuName = "ScriptableObjects/SOAP/Variables/"+ nameof(NetworkMonitorData))]
     public class NetworkMonitorDataVariable : ScriptableVariable<NetworkMonitorData>
     {
             

@@ -3,7 +3,7 @@ using Obvious.Soap;
 
 namespace CosmicShore.Utilities
 {
-    [CreateAssetMenu(fileName = "scriptable_event_" + nameof(ShipHUDData), menuName = "Soap/ScriptableEvents/"+ nameof(ShipHUDData))]
+    [CreateAssetMenu(fileName = "Event_" + nameof(ShipHUDData), menuName = "ScriptableObjects/SOAP/Events/"+ nameof(ShipHUDData))]
     public class ScriptableEventShipHUDData : ScriptableEvent<ShipHUDData>
     {
         
