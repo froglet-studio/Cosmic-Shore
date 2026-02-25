@@ -1,27 +1,35 @@
-﻿using System;
-using CosmicShore.Game.Party;
+using System;
+using CosmicShore.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Panels
 {
+    /// <summary>
+    /// Individual row in the <see cref="OnlinePlayersPanel"/>.
+    /// Shows an online player's avatar + name and a "+" invite button.
+    /// Uses <see cref="PartyPlayerData"/> (SOAP struct) as its data model.
+    /// </summary>
     public class OnlinePlayerEntry : MonoBehaviour
     {
-        [SerializeField] private Image    avatarImage;
+        [SerializeField] private Image avatarImage;
         [SerializeField] private TMP_Text displayNameText;
-        [SerializeField] private Button   inviteButton;
+        [SerializeField] private Button inviteButton;
         [SerializeField] private GameObject inviteSentIndicator;
 
-        private PartyManager.OnlinePlayerInfo            _info;
-        private Action<PartyManager.OnlinePlayerInfo>    _onInvite;
+        private PartyPlayerData _info;
+        private Action<PartyPlayerData> _onInvite;
 
-        // -----------------------------------------------------------------------------------------
+        public string PlayerId => _info.PlayerId;
+
+        // ─────────────────────────────────────────────────────────────────────
         // Setup
+        // ─────────────────────────────────────────────────────────────────────
 
-        public void Populate(PartyManager.OnlinePlayerInfo info, Sprite avatar, Action<PartyManager.OnlinePlayerInfo> onInvite)
+        public void Populate(PartyPlayerData info, Sprite avatar, Action<PartyPlayerData> onInvite)
         {
-            _info     = info;
+            _info = info;
             _onInvite = onInvite;
 
             displayNameText.text = info.DisplayName;
@@ -35,14 +43,14 @@ namespace CosmicShore.App.UI.Panels
             inviteSentIndicator?.SetActive(false);
         }
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Events
+        // ─────────────────────────────────────────────────────────────────────
 
         private void OnInvitePressed()
         {
             _onInvite?.Invoke(_info);
 
-            // Visual feedback — disable invite button, show sent indicator
             if (inviteButton != null)
                 inviteButton.interactable = false;
 

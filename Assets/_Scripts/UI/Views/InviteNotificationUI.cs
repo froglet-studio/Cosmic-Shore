@@ -1,25 +1,35 @@
-﻿using CosmicShore.Game.Party;
+using CosmicShore.Game.Party;
+using CosmicShore.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Panels
 {
+    /// <summary>
+    /// Toast popup for incoming party invitations.
+    /// Subscribes to <see cref="HostConnectionDataSO.OnInviteReceived"/> (SOAP event)
+    /// and calls <see cref="HostConnectionService"/> to accept or decline.
+    /// </summary>
     public class InviteNotificationUI : MonoBehaviour
     {
+        [Header("SOAP Data")]
+        [SerializeField] private HostConnectionDataSO connectionData;
+
         [Header("UI References")]
-        [SerializeField] private Image          hostAvatarImage;
-        [SerializeField] private TMP_Text       hostNameText;
-        [SerializeField] private Button         acceptButton;
-        [SerializeField] private Button         declineButton;
+        [SerializeField] private Image hostAvatarImage;
+        [SerializeField] private TMP_Text hostNameText;
+        [SerializeField] private Button acceptButton;
+        [SerializeField] private Button declineButton;
 
         [Header("Data")]
         [SerializeField] private SO_ProfileIconList profileIcons;
 
-        private PartyManager.PartyInvite _pendingInvite;
+        private PartyInviteData _pendingInvite;
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
+        // ─────────────────────────────────────────────────────────────────────
 
         void Awake()
         {
@@ -30,20 +40,21 @@ namespace CosmicShore.App.UI.Panels
 
         void OnEnable()
         {
-            if (PartyManager.Instance != null)
-                PartyManager.Instance.OnInviteReceived += ShowInvite;
+            if (connectionData?.OnInviteReceived != null)
+                connectionData.OnInviteReceived.OnRaised += ShowInvite;
         }
 
         void OnDisable()
         {
-            if (PartyManager.Instance != null)
-                PartyManager.Instance.OnInviteReceived -= ShowInvite;
+            if (connectionData?.OnInviteReceived != null)
+                connectionData.OnInviteReceived.OnRaised -= ShowInvite;
         }
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Show / Hide
+        // ─────────────────────────────────────────────────────────────────────
 
-        private void ShowInvite(PartyManager.PartyInvite invite)
+        private void ShowInvite(PartyInviteData invite)
         {
             _pendingInvite = invite;
 
@@ -61,27 +72,29 @@ namespace CosmicShore.App.UI.Panels
             gameObject.SetActive(false);
         }
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Button Handlers
+        // ─────────────────────────────────────────────────────────────────────
 
         private async void OnAccept()
         {
             HidePopup();
 
-            if (PartyManager.Instance != null)
-                await PartyManager.Instance.AcceptInviteAsync(_pendingInvite);
+            if (HostConnectionService.Instance != null)
+                await HostConnectionService.Instance.AcceptInviteAsync(_pendingInvite);
         }
 
         private async void OnDecline()
         {
             HidePopup();
 
-            if (PartyManager.Instance != null)
-                await PartyManager.Instance.DeclineInviteAsync();
+            if (HostConnectionService.Instance != null)
+                await HostConnectionService.Instance.DeclineInviteAsync();
         }
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Helpers
+        // ─────────────────────────────────────────────────────────────────────
 
         private Sprite ResolveAvatarSprite(int avatarId)
         {
