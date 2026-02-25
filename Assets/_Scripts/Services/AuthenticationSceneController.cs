@@ -54,8 +54,30 @@ namespace CosmicShore.Services.Auth
 
         void Start()
         {
+            EnsureAuthController();
             SetupUI();
             RunAuthFlowAsync().Forget();
+        }
+
+        void EnsureAuthController()
+        {
+            if (authController != null) return;
+
+#if UNITY_2023_1_OR_NEWER
+            authController = FindAnyObjectByType<AuthenticationController>();
+#else
+            authController = FindObjectOfType<AuthenticationController>();
+#endif
+
+            if (authController != null)
+            {
+                CSDebug.Log("[AuthScene] Found existing AuthenticationController in scene.");
+                return;
+            }
+
+            CSDebug.Log("[AuthScene] No AuthenticationController found. Creating one.");
+            var go = new GameObject("[AuthenticationController]");
+            authController = go.AddComponent<AuthenticationController>();
         }
 
         void SetupUI()
@@ -238,8 +260,10 @@ namespace CosmicShore.Services.Auth
 
         bool CheckIfUsernameNeeded()
         {
+            // If PlayerDataService isn't available (e.g. Reflex injection not ready),
+            // skip username check and proceed to main menu. Username can be set later.
             if (playerDataService == null || !playerDataService.IsInitialized)
-                return true;
+                return false;
 
             var profile = playerDataService.CurrentProfile;
             return profile == null
