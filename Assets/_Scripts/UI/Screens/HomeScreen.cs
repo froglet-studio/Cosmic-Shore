@@ -1,4 +1,5 @@
 using CosmicShore.App.Profile;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,7 +19,7 @@ namespace CosmicShore.App.UI.Screens
         [Header("Profile Display")]
         [SerializeField] private TMP_Text usernameText;
         [SerializeField] private Image avatarImage;
-        [SerializeField] private PlayerDataService playerDataService;
+        [Inject] private PlayerDataService playerDataService;
 
         enum PlayerPrefKeys
         {
@@ -34,10 +35,6 @@ namespace CosmicShore.App.UI.Screens
                 FirstAppLaunchScreen.SetActive(true);
                 NavBar.SetActive(false);
             }
-
-            // Prefer the Inspector reference; fall back to singleton (survives scene reload via DontDestroyOnLoad)
-            if (playerDataService == null)
-                playerDataService = PlayerDataService.Instance;
 
             if (playerDataService != null)
             {

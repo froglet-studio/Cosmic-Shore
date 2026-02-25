@@ -1,4 +1,5 @@
 using CosmicShore.App.Profile;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,23 +17,23 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private TMP_Text displayNameText;
         [SerializeField] private Image avatarImage;
 
+        [Inject] private PlayerDataService playerDataService;
+
         void OnEnable()
         {
-            var service = PlayerDataService.Instance;
-            if (service != null)
+            if (playerDataService != null)
             {
-                service.OnProfileChanged += RefreshUI;
+                playerDataService.OnProfileChanged += RefreshUI;
 
-                if (service.CurrentProfile != null)
-                    RefreshUI(service.CurrentProfile);
+                if (playerDataService.CurrentProfile != null)
+                    RefreshUI(playerDataService.CurrentProfile);
             }
         }
 
         void OnDisable()
         {
-            var service = PlayerDataService.Instance;
-            if (service != null)
-                service.OnProfileChanged -= RefreshUI;
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= RefreshUI;
         }
 
         void RefreshUI(PlayerProfileData data)
@@ -42,8 +43,7 @@ namespace CosmicShore.App.UI.Views
 
             if (avatarImage != null)
             {
-                var service = PlayerDataService.Instance;
-                var sprite = service != null ? service.GetAvatarSprite(data.avatarId) : null;
+                var sprite = playerDataService != null ? playerDataService.GetAvatarSprite(data.avatarId) : null;
                 avatarImage.sprite = sprite;
                 avatarImage.enabled = sprite != null;
             }

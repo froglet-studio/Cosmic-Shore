@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.App.Profile;
 using CosmicShore.Models;
 using CosmicShore.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -20,6 +21,8 @@ namespace CosmicShore.Game.XP
 
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
+
+        [Inject] private PlayerDataService playerDataService;
 
         public int LastXPEarned { get; private set; }
         public List<XPMilestone> LastUnlockedMilestones { get; private set; } = new();
@@ -92,20 +95,19 @@ namespace CosmicShore.Game.XP
                 return 0;
             }
 
-            var profileService = PlayerDataService.Instance;
-            if (profileService == null)
+            if (playerDataService == null)
             {
-                CSDebug.LogWarning("[XPRewardService] PlayerDataService.Instance is null, cannot award XP.");
+                CSDebug.LogWarning("[XPRewardService] PlayerDataService is null, cannot award XP.");
                 return xpAmount;
             }
 
-            if (profileService.CurrentProfile == null)
+            if (playerDataService.CurrentProfile == null)
             {
                 CSDebug.LogWarning("[XPRewardService] CurrentProfile is null, cannot award XP.");
                 return xpAmount;
             }
 
-            PreviousXP = profileService.GetXP();
+            PreviousXP = playerDataService.GetXP();
             int newXP = PreviousXP + xpAmount;
 
             // Check for newly unlocked milestones
@@ -117,13 +119,13 @@ namespace CosmicShore.Game.XP
                 {
                     if (milestone.reward != null && !string.IsNullOrEmpty(milestone.reward.rewardId))
                     {
-                        profileService.UnlockReward(milestone.reward.rewardId);
+                        playerDataService.UnlockReward(milestone.reward.rewardId);
                         CSDebug.Log($"[XPRewardService] Unlocked reward: {milestone.reward.rewardName}");
                     }
                 }
             }
 
-            profileService.AddXP(xpAmount);
+            playerDataService.AddXP(xpAmount);
 
             CSDebug.Log($"[XPRewardService] Awarded {xpAmount} XP. Previous: {PreviousXP}, New: {newXP}");
             return xpAmount;
