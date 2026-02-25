@@ -222,7 +222,12 @@ namespace CosmicShore.Game.Arcade.Party
                 {
                     FillWithAI();
                     ReinitializePanelWithPlayers_ClientRpc();
-                    StartNextRound().Forget();
+
+                    // Wait for host to click Ready before starting rounds.
+                    SetPhase(PartyPhase.WaitingForReady);
+                    ResetReadyStates();
+                    ShowPanel_ClientRpc();
+                    BroadcastGameStateText_ClientRpc("Ready to party!");
                 }
             }
             catch (OperationCanceledException) { }
@@ -260,8 +265,11 @@ namespace CosmicShore.Game.Arcade.Party
 
                 ReinitializePanelWithPlayers_ClientRpc();
 
-                if (CurrentPhase == PartyPhase.Lobby)
-                    StartNextRound().Forget();
+                // Wait for the player to click Ready before starting rounds.
+                SetPhase(PartyPhase.WaitingForReady);
+                ResetReadyStates();
+                ShowPanel_ClientRpc();
+                BroadcastGameStateText_ClientRpc("Ready to party!");
             }
             catch (OperationCanceledException) { }
         }
@@ -413,7 +421,12 @@ namespace CosmicShore.Game.Arcade.Party
             switch (CurrentPhase)
             {
                 case PartyPhase.WaitingForReady:
-                    LoadMiniGameEnvironment().Forget();
+                    // First Ready (no game selected yet) → randomize and pick a game.
+                    // Subsequent Ready (game already selected) → load the environment.
+                    if (_netSelectedMiniGameIndex.Value < 0)
+                        StartNextRound().Forget();
+                    else
+                        LoadMiniGameEnvironment().Forget();
                     break;
                 case PartyPhase.MiniGameReady:
                     BeginMiniGamePlay().Forget();
@@ -888,7 +901,8 @@ namespace CosmicShore.Game.Arcade.Party
 
             env.SetActive(true);
             DisableMiniGameControllers(env);
-            CSDebug.Log($"[PartyGame] Activated: '{env.name}' (controllers disabled)");
+            DisableEnvironmentCanvases(env);
+            CSDebug.Log($"[PartyGame] Activated: '{env.name}' (controllers + canvases disabled)");
 
             var spawner = env.GetComponentInChildren<SegmentSpawner>();
             if (spawner) spawner.Initialize();
@@ -927,6 +941,22 @@ namespace CosmicShore.Game.Arcade.Party
             }
         }
 
+        /// <summary>
+        /// Disable the environment's own GameCanvas children to prevent its Ready button,
+        /// cameras, and scoreboard from interfering with the party UI.
+        /// The CountdownTimer is found via GetComponentInChildren on the environment root,
+        /// so it works even if its parent Canvas is disabled.
+        /// </summary>
+        void DisableEnvironmentCanvases(GameObject env)
+        {
+            var canvases = env.GetComponentsInChildren<Canvas>(true);
+            foreach (var canvas in canvases)
+            {
+                canvas.enabled = false;
+                CSDebug.Log($"[PartyGame] Disabled canvas: '{canvas.gameObject.name}' on '{env.name}'");
+            }
+        }
+
         CountdownTimer FindActiveCountdownTimer()
         {
             if (_activeMiniGameIndex < 0 || _activeMiniGameIndex >= miniGameEnvironments.Count)
@@ -942,7 +972,8 @@ namespace CosmicShore.Game.Arcade.Party
             if (spvi && spvi.PlayerOrigins is { Length: > 0 })
             {
                 gameData.SetSpawnPositions(spvi.PlayerOrigins);
-                gameData.ResetPlayers();
+                // Don't call gameData.ResetPlayers() here — in party mode, players
+                // spawned by environment SPVIs may lack vessels and will NPE on ResetForPlay.
                 CSDebug.Log($"[PartyGame] Spawn positions from '{env.name}' ({spvi.PlayerOrigins.Length} origins)");
             }
             else

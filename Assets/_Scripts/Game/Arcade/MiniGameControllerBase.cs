@@ -29,6 +29,7 @@ namespace CosmicShore.Game.Arcade
         
         public void OnReadyClicked()
         {
+            if (!enabled) return;
             OnReadyClicked_();
         }
         
