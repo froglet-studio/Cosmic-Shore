@@ -1,4 +1,4 @@
-﻿using CosmicShore.Utilities;
+﻿using CosmicShore.Models.ScriptableObjects;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
