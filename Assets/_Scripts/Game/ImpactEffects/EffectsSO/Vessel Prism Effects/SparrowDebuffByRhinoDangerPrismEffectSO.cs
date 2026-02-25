@@ -1,5 +1,4 @@
-﻿using CosmicShore.Soap;
-using UnityEngine;
+﻿using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
 using CosmicShore.Game.ImpactEffects.Impactors;

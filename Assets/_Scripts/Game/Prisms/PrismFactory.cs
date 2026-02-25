@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 using CosmicShore.Game.Managers;
-using CosmicShore.Utilities; // for PrismEventChannelWithReturnSO
+using CosmicShore.Utility.SOAP.ScriptableEventWithReturn;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
