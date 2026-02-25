@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Game;
@@ -12,34 +11,52 @@ using Random = UnityEngine.Random;
 
 namespace CosmicShore
 {
-    public abstract class LifeForm : MonoBehaviour, ITeamAssignable
+    /// <summary>
+    /// Abstract base for all lifeforms with health/spindle infrastructure (primarily Flora).
+    /// Delegates health block tracking to <see cref="HealthBlockTracker"/> and
+    /// spindle tracking to <see cref="SpindleTracker"/> for SRP compliance.
+    /// </summary>
+    public abstract class LifeForm : MonoBehaviour, ILifeFormEntity
     {
+        [Header("Data References")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] protected CellRuntimeDataSO cellData;
+
+        [Header("Health & Visuals")]
         [FormerlySerializedAs("healthBlock")]
         [SerializeField] protected HealthPrism healthPrism;
         [SerializeField] protected Spindle spindle;
+
+        [Header("Lifecycle")]
         [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
+        [SerializeField] private bool autoInitialize = true;
+
+        [Header("Team")]
         [FormerlySerializedAs("Team")]
         public Domains domain;
 
-        protected HashSet<Spindle> spindles = new HashSet<Spindle>();
-        protected Crystal crystal;
-        protected Cell cell;
-
-        bool mature = false;
-        bool dying = false;
-        bool isCleaningUp = false;
-        
-        HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
-
+        [Header("Events")]
         [SerializeField] ScriptableEventInt onLifeFormCreated;
         [SerializeField] ScriptableEventInt onLifeFormDestroyed;
+
+        // --- Public contract (ILifeFormEntity) ---
+        public Domains Domain => domain;
         public static event Action<string, int> OnLifeFormDeath;
-        [SerializeField] private bool autoInitialize = true;
-        private bool initialized;
+
+        // --- Composition: extracted trackers (SRP) ---
+        protected HealthBlockTracker healthTracker;
+        protected SpindleTracker spindleTracker;
+
+        // --- Internal state ---
+        protected Crystal crystal;
+        protected Cell cell;
+        bool dying;
+        bool isCleaningUp;
+        bool initialized;
+
+        // --- Lifecycle: Enable / Disable ---
 
         protected virtual void OnEnable()
         {
@@ -52,7 +69,9 @@ namespace CosmicShore
             if (gameData != null)
                 gameData.OnShowGameEndScreen.OnRaised -= HandleTurnEnded;
         }
-        
+
+        // --- Lifecycle: Start / Initialize ---
+
         protected virtual void Start()
         {
             if (!autoInitialize || initialized) return;
@@ -66,115 +85,103 @@ namespace CosmicShore
             if (initialized) return;
             initialized = true;
 
-            if (shieldPeriod > 0)
-                StartCoroutine(ShieldRegen());
+            healthTracker = new HealthBlockTracker(healthBlocksForMaturity, minHealthBlocks);
+            spindleTracker = new SpindleTracker();
 
             crystal = GetComponentInChildren<Crystal>();
             this.cell = cell;
 
             BindEmbeddedParts();
 
+            if (shieldPeriod > 0)
+                StartCoroutine(ShieldRegenCoroutine());
+
             if (cell != null)
                 onLifeFormCreated?.Raise(cell.ID);
         }
 
-        private void BindEmbeddedParts()
+        void BindEmbeddedParts()
         {
-            var embeddedSpindles = GetComponentsInChildren<Spindle>(true);
-            foreach (var sp in embeddedSpindles)
+            foreach (var sp in GetComponentsInChildren<Spindle>(true))
             {
                 if (!sp) continue;
                 AddSpindle(sp);
             }
 
-            var embeddedHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
-            foreach (var hp in embeddedHealthPrisms)
+            foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
             {
                 if (!hp) continue;
                 hp.LifeForm = this;
                 hp.ChangeTeam(domain);
                 hp.Initialize("FaunaPrefab");
-                AddHealthBlock(hp); // [Visual Note] Ensure we explicitly add it to tracking
+                AddHealthBlock(hp);
             }
         }
+
+        // --- Health Block Management (delegates to HealthBlockTracker) ---
 
         public virtual void AddHealthBlock(HealthPrism healthPrism)
         {
             if (!healthPrism) return;
-            healthBlocks.Add(healthPrism);
-            healthPrism.ChangeTeam(domain);
-            healthPrism.LifeForm = this;
-            healthPrism.ownerID = $"{this} + {healthPrism} + {healthBlocks.Count}";
-            CheckIfMature();
-        }
-        
-        public void AddSpindle(Spindle spindle)
-        {
-            if (!spindle) return;
-            spindles.Add(spindle);
-            spindle.LifeForm = this;
-        }
-
-        public Spindle AddSpindle()
-        {
-            Spindle newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
-            AddSpindle(newSpindle);
-            return newSpindle;
-        }
-
-        public virtual void RemoveSpindle(Spindle spindle)
-        {
-            if (!spindle) return;
-            spindles.Remove(spindle);
-            CleanupDeadRefs();
-            CheckIfDead();
+            healthTracker.Add(healthPrism, this, domain);
         }
 
         public virtual void RemoveHealthBlock(HealthPrism healthPrism, string killerName = "")
         {
             if (!healthPrism) return;
-    
-            healthBlocks.Remove(healthPrism);
-            CleanupDeadRefs();
+            healthTracker.Remove(healthPrism, killerName);
+            spindleTracker.CleanupDeadRefs();
             CheckIfDead(killerName);
         }
-        
-        void CleanupDeadRefs()
+
+        // --- Spindle Management (delegates to SpindleTracker) ---
+
+        public void AddSpindle(Spindle spindle)
         {
-            spindles.RemoveWhere(s => !s);
-            healthBlocks.RemoveWhere(h => !h);
+            spindleTracker.Add(spindle, this);
         }
+
+        public Spindle AddSpindle()
+        {
+            Spindle newSpindle = spindleTracker.Instantiate(spindle, transform);
+            spindleTracker.Add(newSpindle, this);
+            return newSpindle;
+        }
+
+        public virtual void RemoveSpindle(Spindle spindle)
+        {
+            spindleTracker.Remove(spindle);
+            CheckIfDead();
+        }
+
+        // --- Death / Lifecycle ---
 
         public void CheckIfDead(string killerName = "")
         {
-            // [Visual Note] Safety: If we are already destroyed/cleaning up, don't run logic
             if (dying) return;
 
-            CleanupDeadRefs();
+            healthTracker.CleanupDeadRefs();
+            spindleTracker.CleanupDeadRefs();
 
-            if(healthBlocks.Count <= minHealthBlocks)
+            if (healthTracker.IsLethal())
             {
                 dying = true;
                 Die(killerName);
                 return;
             }
 
-            if (spindles.Count != 0) return;
-            dying = true;
-            Die();
-        }
-
-        void CheckIfMature()
-        {
-            if (healthBlocks.Count >= healthBlocksForMaturity)
-                mature = true;
+            if (spindleTracker.IsEmpty())
+            {
+                dying = true;
+                Die();
+            }
         }
 
         protected virtual void Die(string killerName = "")
         {
             if (isCleaningUp) return;
-            
-            if (crystal && crystal.gameObject.activeInHierarchy && !isCleaningUp) 
+
+            if (crystal && crystal.gameObject.activeInHierarchy)
                 crystal.ActivateCrystal();
 
             int cellId = cell ? cell.ID : -1;
@@ -182,66 +189,62 @@ namespace CosmicShore
             if (!string.IsNullOrEmpty(killerName))
                 OnLifeFormDeath?.Invoke(killerName, cellId);
 
-            foreach (var healthBlock in healthBlocks.ToArray())
-            {
-                if (!healthBlock) continue;
-                healthBlock.Damage(Random.onUnitSphere, Domains.None, "Guy Fawkes", true);
-            }
+            healthTracker.DamageAll(Domains.None);
+            spindleTracker.ForceWitherAll(gameObject);
 
-            var allSpindles = GetComponentsInChildren<Spindle>(true);
-            foreach (var sp in allSpindles)
-            {
-                if (sp) sp.ForceWither();
-            }
             if (cell)
-            {
                 cell.UnregisterSpawnedObject(gameObject);
-            }
+
             StopAllCoroutines();
+
             if (gameObject.activeInHierarchy)
                 StartCoroutine(DieCoroutine(cellId));
             else if (!isCleaningUp)
-                Destroy(gameObject); // Instant destroy if inactive
+                Destroy(gameObject);
         }
 
-        private IEnumerator DieCoroutine(int cellId)
+        IEnumerator DieCoroutine(int cellId)
         {
             while (true)
             {
-                CleanupDeadRefs();
-                if (spindles.Count == 0) break;
+                spindleTracker.CleanupDeadRefs();
+                if (spindleTracker.IsEmpty()) break;
                 yield return null;
             }
-            
-            if(!isCleaningUp)
+
+            if (!isCleaningUp)
             {
-                // [Visual Note] Use the cached ID, don't access cell.ID here as cell might be dead by now
                 onLifeFormDestroyed?.Raise(cellId);
                 Destroy(gameObject);
             }
         }
-        
+
+        // --- Team Assignment ---
+
         public GameObject GetGameObject() => gameObject;
 
         public void SetTeam(Domains domain)
         {
             this.domain = domain;
+            healthTracker?.SetTeam(domain);
+
             var allHealthPrisms = GetComponentsInChildren<HealthPrism>(true);
             foreach (var hp in allHealthPrisms)
                 if (hp) hp.ChangeTeam(domain);
         }
 
-        IEnumerator ShieldRegen()
+        // --- Shield Regeneration ---
+
+        IEnumerator ShieldRegenCoroutine()
         {
             while (shieldPeriod > 0)
             {
-                List<HealthPrism> currentBlocks = new List<HealthPrism>(healthBlocks);
-                if (currentBlocks.Count > 0)
+                var blocks = healthTracker.All.ToList();
+                if (blocks.Count > 0)
                 {
-                    foreach (HealthPrism healthBlock in currentBlocks)
+                    foreach (var block in blocks)
                     {
-                        if (healthBlocks.Contains(healthBlock) && healthBlock)
-                            healthBlock.ActivateShield();
+                        if (block) block.ActivateShield();
                         yield return new WaitForSeconds(shieldPeriod);
                     }
                 }
@@ -251,13 +254,14 @@ namespace CosmicShore
                 }
             }
         }
-        
+
+        // --- Turn End Cleanup ---
+
         protected virtual void HandleTurnEnded()
         {
             isCleaningUp = true;
             StopAllCoroutines();
-            // [Visual Note] Don't trigger death logic, just vanish
-            if(gameObject) Destroy(gameObject);
+            if (gameObject) Destroy(gameObject);
         }
     }
 }

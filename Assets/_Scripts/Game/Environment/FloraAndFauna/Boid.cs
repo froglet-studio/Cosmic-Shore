@@ -208,10 +208,11 @@ public class Boid : Fauna
         desiredRotation = SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this) ? desiredRot : transform.rotation;
     }
 
-    protected override void Spawn() { }
-    protected override void Die(string killername = "")
+    protected override void Die(string killerName = "")
     {
-        throw new System.NotImplementedException();
+        isKilled = true;
+        StopAllCoroutines();
+        Destroy(gameObject);
     }
 
     IEnumerator AddToMoundCoroutine()
