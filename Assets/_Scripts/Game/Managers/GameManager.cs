@@ -29,7 +29,10 @@ namespace CosmicShore.Core
             gameData.OnLaunchGame.OnRaised += LaunchGame;
         }
 
-        private void Start() => _onSceneTransition.Raise(true);
+        private void Start()
+        {
+            _onSceneTransition.Raise(true);
+        }
 
         private void OnDisable()
         {

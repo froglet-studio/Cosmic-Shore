@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using Unity.Collections;
 using UnityEngine;
 
@@ -22,6 +23,8 @@ namespace CosmicShore.Game
 
     public class Crystal : CellItem
     {
+        [Inject] AudioSystem audioSystem;
+
         #region Inspector Fields
         [SerializeField]
         CellRuntimeDataSO cellData;
@@ -168,7 +171,8 @@ namespace CosmicShore.Game
         void PlayExplosionAudio()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
-            AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
+            if (audioSystem != null)
+                audioSystem.PlaySFXClip(audioSource.clip, audioSource);
         }
 
         public void ActivateCrystal()

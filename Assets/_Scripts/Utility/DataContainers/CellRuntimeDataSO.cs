@@ -49,7 +49,7 @@ namespace CosmicShore.Soap
             CellItems.Add(crystal);
             Crystals.Add(crystal);
 
-            OnCellItemsUpdated?.Raise();
+            OnCellItemsUpdated.Raise();
         }
         
         public bool TryRemoveItem(CellItem item)
