@@ -9,7 +9,7 @@ namespace CosmicShore.Game.Projectiles
     public class AOEConicExplosion : AOEExplosion
     {
         [SerializeField] private float height = 800f;
-        [SerializeField] private GameObject coneContainer;
+        [SerializeField] protected GameObject coneContainer;
 
         public override void Initialize(InitializeStruct initStruct)
         {
@@ -36,13 +36,19 @@ namespace CosmicShore.Game.Projectiles
             if (!Material)
                 Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);
 
-            if (!coneContainer)
-                coneContainer = new GameObject("AOEContainer");
-
+            // Always create a fresh container – the serialised field may
+            // reference the prefab's own root (self-parenting is a no-op).
+            coneContainer = new GameObject("AOEContainer");
             coneContainer.transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);
 
-            // Parent our object to the container
+            // Parent our object to the container.
+            // Euler(-90,0,0) rotates the cone mesh so its apex (mesh +Y)
+            // points along -Z in container space. The Z+0.5 offset then
+            // places the apex at the container origin (the spawn point),
+            // with the cone opening forward along +Z.
             transform.SetParent(coneContainer.transform, false);
+            transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            transform.localPosition = new Vector3(0f, 0f, 0.5f);
 
             // create CTS for explosion
             explosionCts = new CancellationTokenSource();
@@ -93,9 +99,28 @@ namespace CosmicShore.Game.Projectiles
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+
+                // Clean up when the animation finishes
+                DestroyContainer();
+                if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException)
             {
+            }
+        }
+
+        protected override void PerformResetCleanup()
+        {
+            DestroyContainer();
+            base.PerformResetCleanup();
+        }
+
+        private void DestroyContainer()
+        {
+            if (coneContainer != null)
+            {
+                Destroy(coneContainer);
+                coneContainer = null;
             }
         }
     }
