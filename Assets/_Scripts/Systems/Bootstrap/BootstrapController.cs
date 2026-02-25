@@ -147,8 +147,11 @@ namespace CosmicShore.Systems.Bootstrap
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
                 // Phase 3: Enforce minimum splash duration.
+                // When auto-created (no config), use a short default so existing
+                // services like AppManager and UGS auth have time to start.
+                const float DefaultMinSplash = 0.5f;
                 float elapsed = (float)stopwatch.Elapsed.TotalSeconds;
-                float remaining = _config != null ? _config.MinimumSplashDuration - elapsed : 0f;
+                float remaining = (_config != null ? _config.MinimumSplashDuration : DefaultMinSplash) - elapsed;
                 if (remaining > 0f)
                 {
                     Log($"Holding splash for {remaining:F2}s");
@@ -288,6 +291,38 @@ namespace CosmicShore.Systems.Bootstrap
         {
             // Reset between domain reloads in the editor.
             _hasBootstrapped = false;
+        }
+
+        /// <summary>
+        /// Auto-creates the bootstrap flow objects in the Bootstrap scene when they
+        /// are not already placed in the scene hierarchy. This bridges the gap between
+        /// the code-defined flow and scenes that haven't been manually updated yet.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void AutoCreateBootstrapFlow()
+        {
+            if (_hasBootstrapped) return;
+
+            var activeScene = SceneManager.GetActiveScene();
+            if (activeScene.buildIndex != 0) return;
+
+#if UNITY_2023_1_OR_NEWER
+            if (FindAnyObjectByType<BootstrapController>() != null) return;
+#else
+            if (FindObjectOfType<BootstrapController>() != null) return;
+#endif
+
+            Debug.Log("[Bootstrap] No BootstrapController found in Bootstrap scene. Auto-creating flow objects.");
+
+            var go = new GameObject("[BootstrapFlow]");
+
+            // SceneTransitionManager must be added first so it registers in
+            // ServiceLocator before BootstrapController.Start() runs.
+            go.AddComponent<SceneTransitionManager>();
+            go.AddComponent<ApplicationLifecycleManager>();
+            go.AddComponent<BootstrapController>();
+
+            // BootstrapController.Awake() handles DontDestroyOnLoad.
         }
 
         #endregion
