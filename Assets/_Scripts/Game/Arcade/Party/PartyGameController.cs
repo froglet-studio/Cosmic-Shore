@@ -16,17 +16,21 @@ namespace CosmicShore.Game.Arcade.Party
     /// <summary>
     /// Orchestrates a full Party Game session: lobby, 5 randomized mini-game rounds,
     /// scoring, and final results. Lives in the party scene for the entire session.
-    /// Mini-game environments are child GameObjects that get enabled/disabled per round.
+    /// Mini-game environments are sibling GameObjects that get enabled/disabled per round.
     ///
-    /// Flow:
-    ///   Enter → PartyGame_Components enabled, ready button disabled
-    ///   → Cinematic → free flight (vessels active)
-    ///   → Lobby fills → Randomizing → "Round 1: Joust"
+    /// Option B (simplified) flow:
+    ///   Enter → PartyGame_Components enabled, party panel shown (UI-only, no free flight)
+    ///   → Wait for players (10s offline / host ready in multiplayer)
+    ///   → Randomizing → "Round 1: Joust"
     ///   → WaitingForReady → READY button (1st ready — accept the game)
-    ///   → "Loading..." → activate env → position players
+    ///   → "Loading..." → activate env (controllers disabled) → position players
     ///   → MiniGameReady → READY button (2nd ready — start playing)
     ///   → Hide panel → 3-2-1-GO countdown → SetPlayersActive + StartTurn
-    ///   → Playing → game ends → RoundResults → ready → next round...
+    ///   → Playing → game ends → cinematic → intercept scoreboard → party panel
+    ///   → RoundResults → ready → next round... (5 total)
+    ///
+    /// Mini-game controllers (MiniGameControllerBase) on environments are DISABLED
+    /// during party mode. PartyGameController drives all game flow instead.
     /// </summary>
     public class PartyGameController : NetworkBehaviour
     {
@@ -98,9 +102,15 @@ namespace CosmicShore.Game.Arcade.Party
             for (int i = 0; i < config.TotalRounds; i++)
                 _roundResults.Add(new PartyRoundResult { RoundIndex = i });
 
-            // Disable all mini-game environments at start
+            // Disable all mini-game environments and their controllers at start.
+            // Controllers must be disabled BEFORE SetActive(false) to prevent their
+            // OnNetworkSpawn → InitializeAfterDelay from interfering with party flow.
             foreach (var env in miniGameEnvironments)
-                if (env) env.SetActive(false);
+            {
+                if (!env) continue;
+                DisableMiniGameControllers(env);
+                env.SetActive(false);
+            }
 
             // Keep party components enabled (user's scene has them on by default)
             if (partyComponentsRoot)
@@ -229,7 +239,6 @@ namespace CosmicShore.Game.Arcade.Party
                 {
                     FillWithAI();
                     ReinitializePanelWithPlayers_ClientRpc();
-                    EnableFreeFlightForLobby_ClientRpc();
                     StartNextRound().Forget();
                 }
             }
@@ -265,7 +274,6 @@ namespace CosmicShore.Game.Arcade.Party
 
                 if (CurrentPhase == PartyPhase.Lobby)
                 {
-                    EnableFreeFlightForLobby_ClientRpc();
                     StartNextRound().Forget();
                 }
             }
@@ -314,7 +322,6 @@ namespace CosmicShore.Game.Arcade.Party
 
                 _lobbyCts?.Cancel();
                 ReinitializePanelWithPlayers_ClientRpc();
-                EnableFreeFlightForLobby_ClientRpc();
                 StartNextRound().Forget();
             }
         }
@@ -905,11 +912,22 @@ namespace CosmicShore.Game.Arcade.Party
                 partyPausePanel.Initialize(config.TotalRounds, _playerStates);
         }
 
-        [ClientRpc]
-        void EnableFreeFlightForLobby_ClientRpc()
+        /// <summary>
+        /// Finds and disables all MiniGameControllerBase components on an environment GameObject.
+        /// This prevents the controllers from sending RPCs, subscribing to events, or running
+        /// InitializeAfterDelay — all of which conflict with PartyGameController's orchestration.
+        /// </summary>
+        void DisableMiniGameControllers(GameObject env)
         {
-            PauseSystem.TogglePauseGame(false);
-            gameData.SetPlayersActive();
+            var controllers = env.GetComponentsInChildren<MiniGameControllerBase>(true);
+            foreach (var ctrl in controllers)
+            {
+                if (ctrl.enabled)
+                {
+                    ctrl.enabled = false;
+                    CSDebug.Log($"[PartyGame] Disabled controller: {ctrl.GetType().Name} on '{env.name}'");
+                }
+            }
         }
 
         [ClientRpc]
@@ -1005,7 +1023,13 @@ namespace CosmicShore.Game.Arcade.Party
             }
 
             env.SetActive(true);
-            CSDebug.Log($"[PartyGame] Activated environment: '{env.name}'");
+
+            // Disable mini-game controllers so they don't interfere with party flow.
+            // Their OnNetworkSpawn already fired (or will fire on re-enable), and they'd
+            // try to send RPCs (KeyNotFoundException) or call InitializeAfterDelay.
+            DisableMiniGameControllers(env);
+
+            CSDebug.Log($"[PartyGame] Activated environment: '{env.name}' (controllers disabled)");
 
             var spawner = env.GetComponentInChildren<SegmentSpawner>();
             if (spawner) spawner.Initialize();

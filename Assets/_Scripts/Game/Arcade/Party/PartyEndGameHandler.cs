@@ -89,15 +89,15 @@ namespace CosmicShore.Game.Arcade.Party
                 view.HideScoreRevealPanel();
             }
 
-            // Re-enable party components (they were disabled during gameplay)
+            // Intercept the normal scoreboard: re-enable party components and show
+            // the party panel instead of calling gameData.InvokeShowGameEndScreen().
             if (partyComponentsRoot)
                 partyComponentsRoot.SetActive(true);
 
-            // Show party pause panel — "Ready" (mid-party) or "Next" (final round)
             if (partyPausePanel)
                 partyPausePanel.ForceShow();
 
-            CSDebug.Log("[PartyEndGame] Cinematic sequence complete, party panel shown.");
+            CSDebug.Log($"[PartyEndGame] Cinematic complete → party panel shown (isFinal={IsFinalRound}).");
 
             runningRoutine = null;
             isRunning = false;
