@@ -62,13 +62,21 @@ namespace CosmicShore.Game.Arcade
         }
 
         /// <summary>
-        /// Ready button clicked. If in shape-prep state, start drawing
-        /// instead of the normal countdown flow.
+        /// Ready button always starts the countdown timer.
+        /// OnCountdownTimerEnded checks state to decide what happens next.
         /// </summary>
         protected override void OnReadyClicked_()
         {
             RaiseToggleReadyButtonEvent(false);
+            StartCountdownTimer();
+        }
 
+        /// <summary>
+        /// Countdown finished. If in shape-prep, begin drawing.
+        /// Otherwise, do initial game start (SetPlayersActive + EnterLobby).
+        /// </summary>
+        protected override void OnCountdownTimerEnded()
+        {
             if (_isShapePrep)
             {
                 _isShapePrep = false;
@@ -76,7 +84,9 @@ namespace CosmicShore.Game.Arcade
             }
             else
             {
-                StartCountdownTimer();
+                gameData.SetPlayersActive();
+                ClearPlayerTrails();
+                EnterLobby();
             }
         }
 
@@ -98,19 +108,6 @@ namespace CosmicShore.Game.Arcade
             var vessel = gameData.LocalPlayer?.Vessel;
             if (vessel?.Transform && lobbyOrigin)
                 vessel.Transform.SetPositionAndRotation(lobbyOrigin.position, lobbyOrigin.rotation);
-        }
-
-        // ── Game Start ──────────────────────────────────────────────────────
-
-        protected override void OnCountdownTimerEnded()
-        {
-            gameData.SetPlayersActive();
-
-            // SetPlayersActive starts vessel trail spawners — kill them immediately.
-            // Trails must stay off until the first crystal hit in shape drawing mode.
-            ClearPlayerTrails();
-
-            EnterLobby();
         }
 
         // ── Lobby ───────────────────────────────────────────────────────────
@@ -135,7 +132,6 @@ namespace CosmicShore.Game.Arcade
 
             ClearPlayerTrails();
 
-            // Position mode triggers in front of the player
             var playerTransform = gameData.LocalPlayer?.Vessel?.Transform;
             var center = playerTransform ? playerTransform.position : lobbyOrigin.position;
             var forward = playerTransform ? playerTransform.forward : Vector3.forward;

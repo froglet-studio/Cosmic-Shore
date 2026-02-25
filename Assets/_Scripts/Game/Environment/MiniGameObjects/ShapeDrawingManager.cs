@@ -18,6 +18,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] GameDataSO gameData;
         [SerializeField] CellRuntimeDataSO cellData;
 
+        [Header("SnowChanger")]
+        [Tooltip("SnowChanger prefab that spawns directional shards pointing at the current crystal.")]
+        [SerializeField] SnowChanger snowChangerPrefab;
+
         [Header("Visuals")]
         [SerializeField] LineRenderer guideLine;
         [SerializeField] LineRenderer ghostLine;
@@ -73,8 +77,9 @@ namespace CosmicShore.Game.ShapeDrawing
         bool _isActive;
         bool _waitingForNext;
         bool _drawingStarted;
-        VesselStatus _vesselStatus;
+        IVesselStatus _vesselStatus;
         CustomCameraController _panCameraController;
+        SnowChanger _snowChangerInstance;
 
         // Scoring state
         float _shapeStartTime;
@@ -92,10 +97,38 @@ namespace CosmicShore.Game.ShapeDrawing
             return _shapeOrigin + ShapeRotation * (_activeShape.waypoints[index] * shapeScale);
         }
 
+        /// <summary>
+        /// Places the player just behind the first crystal, facing toward it.
+        /// </summary>
         Vector3 GetWorldPlayerStart()
         {
-            // playerStartOffset is in world orientation (not rotated with shape)
-            return _shapeOrigin + _activeShape.playerStartOffset * shapeScale;
+            Vector3 wp0 = GetWorldWaypoint(0);
+
+            if (_activeShape.waypoints.Count > 1)
+            {
+                // Direction the player will fly: from wp0 toward wp1
+                Vector3 wp1 = GetWorldWaypoint(1);
+                Vector3 pathDir = (wp0 - wp1).normalized;
+                if (pathDir.sqrMagnitude < 0.001f) pathDir = Vector3.back;
+                return wp0 + pathDir * 30f;
+            }
+
+            // Fallback: offset from origin toward wp0
+            Vector3 dir = (_shapeOrigin - wp0).normalized;
+            if (dir.sqrMagnitude < 0.001f) dir = Vector3.back;
+            return wp0 + dir * 30f;
+        }
+
+        /// <summary>
+        /// Player faces the first crystal from the start position.
+        /// </summary>
+        Quaternion GetPlayerStartRotation()
+        {
+            Vector3 playerPos = GetWorldPlayerStart();
+            Vector3 wp0 = GetWorldWaypoint(0);
+            Vector3 lookDir = (wp0 - playerPos).normalized;
+            if (lookDir.sqrMagnitude < 0.001f) return Quaternion.identity;
+            return Quaternion.LookRotation(lookDir, Vector3.up);
         }
 
         Vector3[] GetAllWorldWaypoints()
@@ -137,7 +170,6 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void Update()
         {
-            // Screenshot key works at any time (during drawing, reveal, etc.)
             if (Keyboard.current != null && Keyboard.current[screenshotKey].wasPressedThisFrame)
                 TakeDebugScreenshot();
 
@@ -169,9 +201,9 @@ namespace CosmicShore.Game.ShapeDrawing
             _playerPathSamples.Clear();
             _trackingPath = false;
 
-            // Cache vessel status and immediately stop trail spawning
-            _vesselStatus = gameData.LocalPlayer?.Vessel?.Transform?.GetComponent<VesselStatus>();
-            if (_vesselStatus)
+            // Cache vessel status via the vessel interface (NOT GetComponent)
+            _vesselStatus = gameData.LocalPlayer?.Vessel?.VesselStatus;
+            if (_vesselStatus != null)
             {
                 _vesselStatus.VesselPrismController.StopSpawn();
                 _vesselStatus.VesselPrismController.ClearTrails();
@@ -191,7 +223,7 @@ namespace CosmicShore.Game.ShapeDrawing
         }
 
         /// <summary>
-        /// Phase 2: Called by the controller when the player clicks Ready.
+        /// Phase 2: Called by the controller after countdown ends.
         /// Releases input and begins the actual crystal-chasing drawing.
         /// </summary>
         public void BeginDrawing()
@@ -200,12 +232,18 @@ namespace CosmicShore.Game.ShapeDrawing
             _drawingStarted = true;
 
             // Release input
-            if (_vesselStatus)
+            if (_vesselStatus != null)
                 _vesselStatus.IsStationary = false;
 
             _shapeStartTime = Time.time;
             SpawnCrystal(_currentWaypointIndex);
+
+            // Spawn SnowChanger shards after the first crystal exists
+            SpawnSnowChanger();
+
             if (guideLine) guideLine.enabled = true;
+
+            Debug.Log($"[ShapeDrawing] Drawing started. VesselStatus: {(_vesselStatus != null ? "OK" : "NULL")}");
         }
 
         /// <summary>
@@ -216,8 +254,7 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             if (!_waitingForNext) return;
 
-            // Clear player trails (prisms return to pool)
-            if (_vesselStatus)
+            if (_vesselStatus != null)
                 _vesselStatus.VesselPrismController.ClearTrails();
 
             ExitShapeMode();
@@ -232,6 +269,9 @@ namespace CosmicShore.Game.ShapeDrawing
             _activeShape = null;
             _trackingPath = false;
             _waitingForNext = false;
+
+            // Destroy SnowChanger instance
+            DestroySnowChanger();
 
             // Restore the player camera if we took it over
             if (_panCameraController)
@@ -269,10 +309,10 @@ namespace CosmicShore.Game.ShapeDrawing
 
         IEnumerator PlacePlayer()
         {
-            if (!_vesselStatus) yield break;
+            if (_vesselStatus == null) yield break;
 
             Vector3 startPos = GetWorldPlayerStart();
-            Quaternion startRot = Quaternion.Euler(_activeShape.playerStartEuler);
+            Quaternion startRot = GetPlayerStartRotation();
 
             _vesselStatus.IsStationary = true;
             _vesselStatus.Vessel.Transform.SetPositionAndRotation(startPos, startRot);
@@ -282,14 +322,12 @@ namespace CosmicShore.Game.ShapeDrawing
 
         IEnumerator ShapePreviewCinematic()
         {
-            // Acquire camera
             Transform camTransform = AcquireCamera();
             if (!camTransform) yield break;
 
             Vector3 camStart = camTransform.position;
             Quaternion rotStart = camTransform.rotation;
 
-            // Target: reveal camera position (top-down view of the shape)
             Vector3 revealPos = GetRevealCameraPosition();
             Quaternion revealRot = Quaternion.Euler(_activeShape.revealCameraEuler);
 
@@ -308,10 +346,10 @@ namespace CosmicShore.Game.ShapeDrawing
             yield return new WaitForSeconds(previewHoldTime);
 
             // Transition back to behind the player
-            Vector3 playerPos = _vesselStatus
+            Vector3 playerPos = _vesselStatus != null
                 ? _vesselStatus.Vessel.Transform.position
                 : GetWorldPlayerStart();
-            Vector3 playerFwd = _vesselStatus
+            Vector3 playerFwd = _vesselStatus != null
                 ? _vesselStatus.Vessel.Transform.forward
                 : Vector3.forward;
             Vector3 behindPlayer = playerPos - playerFwd * 30f + Vector3.up * 10f;
@@ -327,8 +365,7 @@ namespace CosmicShore.Game.ShapeDrawing
                 elapsed += Time.deltaTime;
                 float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / previewTransitionTime));
 
-                // Recalculate target each frame
-                if (_vesselStatus)
+                if (_vesselStatus != null)
                 {
                     playerPos = _vesselStatus.Vessel.Transform.position;
                     playerFwd = _vesselStatus.Vessel.Transform.forward;
@@ -343,7 +380,6 @@ namespace CosmicShore.Game.ShapeDrawing
                 yield return null;
             }
 
-            // Release camera back to player controller
             ReleaseCamera();
         }
 
@@ -371,28 +407,53 @@ namespace CosmicShore.Game.ShapeDrawing
             if (waypointIndex != _currentWaypointIndex) return;
 
             // Start trails and path tracking after hitting the first crystal
-            if (_currentWaypointIndex == 0 && _vesselStatus)
+            if (_currentWaypointIndex == 0 && _vesselStatus != null)
             {
                 _vesselStatus.VesselPrismController.StartSpawn();
                 _trackingPath = true;
                 _nextSampleTime = Time.time;
+                Debug.Log("[ShapeDrawing] First crystal hit — tracking started.");
             }
 
             // Toggle trail based on shape data
-            if (_activeShape.IsTrailEnabledForSegment(_currentWaypointIndex))
-                _vesselStatus.VesselPrismController.StartSpawn();
-            else
-                _vesselStatus.VesselPrismController.StopSpawn();
+            if (_vesselStatus != null)
+            {
+                if (_activeShape.IsTrailEnabledForSegment(_currentWaypointIndex))
+                    _vesselStatus.VesselPrismController.StartSpawn();
+                else
+                    _vesselStatus.VesselPrismController.StopSpawn();
+            }
 
             _currentWaypointIndex++;
             SpawnCrystal(_currentWaypointIndex);
+        }
+
+        // ── SnowChanger ─────────────────────────────────────────────────────
+
+        void SpawnSnowChanger()
+        {
+            if (!snowChangerPrefab) return;
+
+            DestroySnowChanger();
+
+            _snowChangerInstance = Instantiate(snowChangerPrefab, _shapeOrigin, Quaternion.identity);
+            _snowChangerInstance.Initialize();
+        }
+
+        void DestroySnowChanger()
+        {
+            if (_snowChangerInstance)
+            {
+                Destroy(_snowChangerInstance.gameObject);
+                _snowChangerInstance = null;
+            }
         }
 
         // ── Guide Line ──────────────────────────────────────────────────────
 
         void UpdateGuideLine()
         {
-            if (!guideLine || !_vesselStatus || _currentWaypointIndex >= _activeShape.waypoints.Count)
+            if (!guideLine || _vesselStatus == null || _currentWaypointIndex >= _activeShape.waypoints.Count)
             {
                 if (guideLine) guideLine.enabled = false;
                 return;
@@ -469,8 +530,6 @@ namespace CosmicShore.Game.ShapeDrawing
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
 
-            // Use Sprites/Default — included in URP as compatibility shader.
-            // If missing, fall back to URP Unlit.
             var shader = Shader.Find("Sprites/Default")
                       ?? Shader.Find("Universal Render Pipeline/Unlit");
             if (shader)
@@ -518,7 +577,7 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void SamplePlayerPosition()
         {
-            if (!_trackingPath || !_vesselStatus) return;
+            if (!_trackingPath || _vesselStatus == null) return;
             if (Time.time < _nextSampleTime) return;
 
             _nextSampleTime = Time.time + positionSampleInterval;
@@ -542,7 +601,6 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             if (_playerPathSamples.Count == 0 || _activeShape.waypoints.Count < 2) return 0f;
 
-            // Build the ideal path segments in world space (with rotation applied)
             var worldWaypoints = GetAllWorldWaypoints();
 
             float totalAccuracy = 0f;
@@ -598,7 +656,7 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             _trackingPath = false;
             if (guideLine) guideLine.enabled = false;
-            if (_vesselStatus) _vesselStatus.VesselPrismController.StopSpawn();
+            if (_vesselStatus != null) _vesselStatus.VesselPrismController.StopSpawn();
 
             var score = CalculateScore();
 
@@ -619,10 +677,9 @@ namespace CosmicShore.Game.ShapeDrawing
             OnShapeCompleted?.Invoke();
             OnScoreCalculated?.Invoke(score);
 
-            // Hide the ghost shape — the player's trail IS the shape now
             HideGhostShape();
+            DestroySnowChanger();
 
-            // Take over the player camera for a smooth pan to the reveal viewpoint
             Transform camTransform = AcquireCamera();
 
             if (camTransform && _activeShape != null)
@@ -644,7 +701,6 @@ namespace CosmicShore.Game.ShapeDrawing
                 }
             }
 
-            // Stay in reveal view — wait for ContinueFromReveal (Next button)
             _waitingForNext = true;
             OnRevealStarted?.Invoke();
         }
