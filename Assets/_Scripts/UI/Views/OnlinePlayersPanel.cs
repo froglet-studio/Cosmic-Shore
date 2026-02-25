@@ -1,16 +1,26 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CosmicShore.Game.Party;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Panels
 {
+    /// <summary>
+    /// Modal panel that lists all online players from the presence lobby.
+    /// Reads from <see cref="HostConnectionDataSO.OnlinePlayers"/> (SOAP ScriptableList)
+    /// and instantiates <see cref="OnlinePlayerEntry"/> prefabs.
+    /// Pressing the "+" on an entry triggers an invite via <see cref="HostConnectionService"/>.
+    /// </summary>
     public class OnlinePlayersPanel : MonoBehaviour
     {
+        [Header("SOAP Data")]
+        [SerializeField] private HostConnectionDataSO connectionData;
+
         [Header("References")]
-        [SerializeField] private GameObject         playerEntryPrefab;
-        [SerializeField] private Transform          entryContainer;
-        [SerializeField] private Button             closeButton;
+        [SerializeField] private GameObject playerEntryPrefab;
+        [SerializeField] private Transform entryContainer;
+        [SerializeField] private Button closeButton;
         [SerializeField] private SO_ProfileIconList profileIcons;
 
         [Header("State")]
@@ -18,8 +28,9 @@ namespace CosmicShore.App.UI.Panels
 
         private readonly List<OnlinePlayerEntry> _activeEntries = new();
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
+        // ─────────────────────────────────────────────────────────────────────
 
         void Awake()
         {
@@ -28,18 +39,29 @@ namespace CosmicShore.App.UI.Panels
 
         void OnEnable()
         {
-            if (PartyManager.Instance != null)
-                PartyManager.Instance.OnOnlinePlayersUpdated += Refresh;
+            if (connectionData?.OnlinePlayers != null)
+            {
+                connectionData.OnlinePlayers.OnItemAdded += OnPlayerAdded;
+                connectionData.OnlinePlayers.OnItemRemoved += OnPlayerRemoved;
+                connectionData.OnlinePlayers.OnCleared += OnPlayersCleared;
+            }
+
+            RebuildFromList();
         }
 
         void OnDisable()
         {
-            if (PartyManager.Instance != null)
-                PartyManager.Instance.OnOnlinePlayersUpdated -= Refresh;
+            if (connectionData?.OnlinePlayers != null)
+            {
+                connectionData.OnlinePlayers.OnItemAdded -= OnPlayerAdded;
+                connectionData.OnlinePlayers.OnItemRemoved -= OnPlayerRemoved;
+                connectionData.OnlinePlayers.OnCleared -= OnPlayersCleared;
+            }
         }
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Public API
+        // ─────────────────────────────────────────────────────────────────────
 
         public void Show()
         {
@@ -51,45 +73,89 @@ namespace CosmicShore.App.UI.Panels
             gameObject.SetActive(false);
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Refresh
+        // ─────────────────────────────────────────────────────────────────────
+        // List Sync
+        // ─────────────────────────────────────────────────────────────────────
 
-        private void Refresh(IReadOnlyList<PartyManager.OnlinePlayerInfo> onlinePlayers)
+        private void RebuildFromList()
         {
-            // Clear existing entries
+            ClearEntries();
+
+            if (connectionData?.OnlinePlayers == null || connectionData.OnlinePlayers.Count == 0)
+            {
+                emptyStateLabel?.SetActive(true);
+                return;
+            }
+
+            emptyStateLabel?.SetActive(false);
+
+            foreach (var info in connectionData.OnlinePlayers)
+                SpawnEntry(info);
+        }
+
+        private void OnPlayerAdded(PartyPlayerData player)
+        {
+            emptyStateLabel?.SetActive(false);
+            SpawnEntry(player);
+        }
+
+        private void OnPlayerRemoved(PartyPlayerData player)
+        {
+            for (int i = _activeEntries.Count - 1; i >= 0; i--)
+            {
+                if (_activeEntries[i].PlayerId == player.PlayerId)
+                {
+                    Destroy(_activeEntries[i].gameObject);
+                    _activeEntries.RemoveAt(i);
+                    break;
+                }
+            }
+
+            if (_activeEntries.Count == 0)
+                emptyStateLabel?.SetActive(true);
+        }
+
+        private void OnPlayersCleared()
+        {
+            ClearEntries();
+            emptyStateLabel?.SetActive(true);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Entry Management
+        // ─────────────────────────────────────────────────────────────────────
+
+        private void SpawnEntry(PartyPlayerData info)
+        {
+            var go = Instantiate(playerEntryPrefab, entryContainer);
+            var entry = go.GetComponent<OnlinePlayerEntry>();
+            if (entry == null) return;
+
+            var avatarSprite = ResolveAvatarSprite(info.AvatarId);
+            entry.Populate(info, avatarSprite, OnInviteClicked);
+            _activeEntries.Add(entry);
+        }
+
+        private void ClearEntries()
+        {
             foreach (var entry in _activeEntries)
                 Destroy(entry.gameObject);
             _activeEntries.Clear();
-
-            bool anyPlayers = onlinePlayers != null && onlinePlayers.Count > 0;
-            emptyStateLabel?.SetActive(!anyPlayers);
-
-            if (!anyPlayers) return;
-
-            foreach (var info in onlinePlayers)
-            {
-                var go = Instantiate(playerEntryPrefab, entryContainer);
-                var entry = go.GetComponent<OnlinePlayerEntry>();
-                if (entry == null) continue;
-
-                var avatarSprite = ResolveAvatarSprite(info.AvatarId);
-                entry.Populate(info, avatarSprite, OnInviteClicked);
-                _activeEntries.Add(entry);
-            }
         }
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Invite
+        // ─────────────────────────────────────────────────────────────────────
 
-        private async void OnInviteClicked(PartyManager.OnlinePlayerInfo target)
+        private async void OnInviteClicked(PartyPlayerData target)
         {
-            if (PartyManager.Instance == null) return;
-            await PartyManager.Instance.SendInviteAsync(target.PlayerId);
-            // Optionally: show a "Invite Sent" toast here
+            if (HostConnectionService.Instance == null) return;
+            await HostConnectionService.Instance.SendInviteAsync(target.PlayerId);
         }
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Helpers
+        // ─────────────────────────────────────────────────────────────────────
 
         private Sprite ResolveAvatarSprite(int avatarId)
         {
