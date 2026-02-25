@@ -45,7 +45,24 @@ namespace CosmicShore.Game.Arcade
 
         void OnShapeDrawingFinished()
         {
+            // Teleport player back to lobby spawn point
+            TeleportPlayerToLobby();
+
+            // Restore player camera after the reveal pan
+            if (CameraManager.Instance)
+            {
+                CameraManager.Instance.SetCloseCameraActive();
+                CameraManager.Instance.SnapPlayerCameraToTarget();
+            }
+
             EnterLobby();
+        }
+
+        void TeleportPlayerToLobby()
+        {
+            var vessel = gameData.LocalPlayer?.Vessel;
+            if (vessel?.Transform && lobbyOrigin)
+                vessel.Transform.SetPositionAndRotation(lobbyOrigin.position, lobbyOrigin.rotation);
         }
 
         protected override void OnCountdownTimerEnded()
@@ -103,9 +120,9 @@ namespace CosmicShore.Game.Arcade
                     trigger.transform.rotation = Quaternion.LookRotation(dirToPlayer, Vector3.up);
             }
 
-            // Show shape sign spawner (button-based signs) near the player
+            // Show shape sign spawner (button-based signs) near the player, facing the player
             if (shapeSignSpawner)
-                shapeSignSpawner.ShowSigns(triggerCenter);
+                shapeSignSpawner.ShowSigns(triggerCenter, center);
         }
 
         void ExitLobby()

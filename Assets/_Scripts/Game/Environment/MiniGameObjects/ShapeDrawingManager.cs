@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using CosmicShore.Game.CameraSystem;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Events;
@@ -38,19 +39,23 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] float zeroAccuracyDistance = 80f;
 
         [Header("Reveal")]
-        [Tooltip("How long the reveal camera stays active before returning to lobby.")]
-        [SerializeField] float revealDuration = 5f;
+        [Tooltip("Duration of the camera pan from player to the reveal viewpoint.")]
+        [SerializeField] float cameraPanDuration = 2f;
 
         [Header("Events")]
         public UnityEvent OnShapeCompleted;
         public UnityEvent OnFreestyleResumed;
         public UnityEvent<ShapeScoreData> OnScoreCalculated;
+        [Tooltip("Fired after the camera pan completes. UI should show accuracy + Next button.")]
+        public UnityEvent OnRevealStarted;
 
         ShapeDefinition _activeShape;
         Vector3 _shapeOrigin;
         int _currentWaypointIndex;
         bool _isActive;
+        bool _waitingForNext;
         VesselStatus _vesselStatus;
+        CustomCameraController _panCameraController;
 
         // Scoring state
         float _shapeStartTime;
@@ -93,10 +98,19 @@ namespace CosmicShore.Game.ShapeDrawing
             _shapeOrigin = origin;
             _isActive = true;
             _currentWaypointIndex = 0;
+            _waitingForNext = false;
 
             // Reset scoring
             _playerPathSamples.Clear();
             _trackingPath = false;
+
+            // Cache vessel status and immediately stop trail spawning
+            _vesselStatus = gameData.LocalPlayer?.Vessel?.Transform?.GetComponent<VesselStatus>();
+            if (_vesselStatus)
+            {
+                _vesselStatus.VesselPrismController.StopSpawn();
+                _vesselStatus.VesselPrismController.ClearTrails();
+            }
 
             // Disable Cell to stop Lifeforms
             if (cellScript) cellScript.enabled = false;
@@ -113,15 +127,8 @@ namespace CosmicShore.Game.ShapeDrawing
 
         IEnumerator SequenceRoutine()
         {
-            // Get Vessel
-            _vesselStatus = gameData.LocalPlayer?.Vessel?.Transform?.GetComponent<VesselStatus>();
-
             if (_vesselStatus)
-            {
                 _vesselStatus.IsStationary = false;
-                _vesselStatus.VesselPrismController.StopSpawn();
-                _vesselStatus.VesselPrismController.ClearTrails();
-            }
 
             // Draw ghost shape outline
             DrawGhostShape();
@@ -388,24 +395,80 @@ namespace CosmicShore.Game.ShapeDrawing
             // Hide the ghost shape — the player's trail IS the shape now
             HideGhostShape();
 
-            if (revealCamera)
+            // Take over the player camera for a smooth pan to the reveal viewpoint
+            Transform camTransform = null;
+            _panCameraController = null;
+
+            if (CameraManager.Instance)
             {
-                // Position camera for a top-down view of the completed shape
-                revealCamera.transform.position = _shapeOrigin +
-                    Quaternion.Euler(_activeShape.revealCameraEuler) * (Vector3.back * _activeShape.revealCameraDistance);
-                revealCamera.transform.rotation = Quaternion.Euler(_activeShape.revealCameraEuler);
-                revealCamera.gameObject.SetActive(true);
+                var ctrl = CameraManager.Instance.GetActiveController();
+                if (ctrl is CustomCameraController pcc)
+                {
+                    _panCameraController = pcc;
+                    camTransform = pcc.transform;
+                    pcc.enabled = false; // Stop follow logic so we can drive the transform
+                }
             }
 
-            yield return new WaitForSeconds(revealDuration);
+            if (camTransform == null && Camera.main)
+                camTransform = Camera.main.transform;
+
+            if (camTransform && _activeShape != null)
+            {
+                Vector3 startPos = camTransform.position;
+                Quaternion startRot = camTransform.rotation;
+
+                Vector3 targetPos = _shapeOrigin +
+                    Quaternion.Euler(_activeShape.revealCameraEuler) *
+                    (Vector3.back * _activeShape.revealCameraDistance);
+                Quaternion targetRot = Quaternion.Euler(_activeShape.revealCameraEuler);
+
+                float elapsed = 0f;
+                while (elapsed < cameraPanDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / cameraPanDuration));
+                    camTransform.position = Vector3.Lerp(startPos, targetPos, t);
+                    camTransform.rotation = Quaternion.Slerp(startRot, targetRot, t);
+                    yield return null;
+                }
+            }
+
+            // Stay in reveal view — wait for ContinueFromReveal (Next button)
+            _waitingForNext = true;
+            OnRevealStarted?.Invoke();
+        }
+
+        /// <summary>
+        /// Call from the UI Next button to clear trails, restore the camera,
+        /// and return to the lobby.
+        /// </summary>
+        public void ContinueFromReveal()
+        {
+            if (!_waitingForNext) return;
+
+            // Clear player trails (prisms return to pool)
+            if (_vesselStatus)
+                _vesselStatus.VesselPrismController.ClearTrails();
+
             ExitShapeMode();
         }
 
         public void ExitShapeMode()
         {
+            StopAllCoroutines();
+
             _isActive = false;
             _activeShape = null;
             _trackingPath = false;
+            _waitingForNext = false;
+
+            // Restore the player camera if we took it over for the pan
+            if (_panCameraController)
+            {
+                _panCameraController.enabled = true;
+                _panCameraController = null;
+            }
 
             if (revealCamera) revealCamera.gameObject.SetActive(false);
             if (guideLine) guideLine.enabled = false;

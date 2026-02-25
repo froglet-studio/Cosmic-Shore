@@ -46,7 +46,9 @@ namespace CosmicShore.Game.ShapeDrawing
             // Don't auto-spawn at Start — controller calls ShowSigns with player position
         }
 
-        public void SpawnSigns(Vector3 center)
+        public void SpawnSigns(Vector3 center) => SpawnSigns(center, center);
+
+        public void SpawnSigns(Vector3 center, Vector3 faceTarget)
         {
             // Clean up any existing signs first
             foreach (var s in _spawnedSigns)
@@ -72,12 +74,12 @@ namespace CosmicShore.Game.ShapeDrawing
                 var go = Instantiate(entry.signPrefab, pos, Quaternion.identity, transform);
                 go.transform.localScale *= signScale;
 
-                // Optionally face the center
+                // Face the specified target (typically the player position)
                 if (faceCenter)
                 {
-                    Vector3 dirToCenter = (center - pos).normalized;
-                    if (dirToCenter != Vector3.zero)
-                        go.transform.rotation = Quaternion.LookRotation(dirToCenter, Vector3.up);
+                    Vector3 dirToFace = (faceTarget - pos).normalized;
+                    if (dirToFace != Vector3.zero)
+                        go.transform.rotation = Quaternion.LookRotation(dirToFace, Vector3.up);
                 }
 
                 // Inject the shape definition
@@ -106,10 +108,12 @@ namespace CosmicShore.Game.ShapeDrawing
         /// Respawn signs around the given center (typically the player position).
         /// Destroys old signs and creates fresh ones.
         /// </summary>
-        public void ShowSigns(Vector3 center)
-        {
-            SpawnSigns(center);
-        }
+        public void ShowSigns(Vector3 center) => SpawnSigns(center);
+
+        /// <summary>
+        /// Respawn signs around center, with all signs rotated to face faceTarget.
+        /// </summary>
+        public void ShowSigns(Vector3 center, Vector3 faceTarget) => SpawnSigns(center, faceTarget);
 
         /// <summary>
         /// Show existing signs without repositioning.
