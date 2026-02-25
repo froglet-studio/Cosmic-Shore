@@ -20,9 +20,9 @@ namespace CosmicShore.Game.Arcade.Party
     /// KEY DESIGN:
     /// - Mini-game controllers have IsPartyMode = true → suppresses autonomous lifecycle,
     ///   but gameplay mechanics (collisions, race finish, crystals) still work.
-    /// - Environment SPVIs use a 3-state PartyMode:
-    ///     SpawnMode (first round) → spawns vessels + AI when triggered
-    ///     InertMode (subsequent rounds) → fully inert, vessels repositioned
+    /// - PartyVesselSpawner (on always-active PartyGameManager) handles vessel spawning
+    ///   so ClientRpcs are never called on NetworkBehaviours from disabled GameObjects.
+    /// - Environment SPVIs are always InertMode — they only provide spawn origin data.
     /// - Environment canvases are disabled to prevent UI conflicts.
     /// - Scene camera is disabled during gameplay, re-enabled between rounds.
     /// </summary>
@@ -37,6 +37,10 @@ namespace CosmicShore.Game.Arcade.Party
 
         [Header("UI")]
         [SerializeField] PartyPausePanel partyPausePanel;
+
+        [Header("Vessel Spawning")]
+        [Tooltip("Lives on PartyGameManager (always active). Handles vessel spawning so RPCs are safe.")]
+        [SerializeField] PartyVesselSpawner vesselSpawner;
 
         [Header("Camera")]
         [Tooltip("The scene-level camera (Mini Game Main Camera). Disabled during gameplay so the vessel camera takes over.")]
@@ -500,11 +504,9 @@ namespace CosmicShore.Game.Arcade.Party
                 BroadcastGameStateText_ClientRpc("Loading...");
                 gameData.GameMode = selectedMode;
 
-                // Determine SPVI mode: SpawnMode for first round, InertMode for subsequent
+                // SPVI is always InertMode — PartyVesselSpawner handles spawning
                 bool isFirstRound = !_vesselsSpawned;
-                var spviMode = isFirstRound
-                    ? ServerPlayerVesselInitializer.PartyModeState.SpawnMode
-                    : ServerPlayerVesselInitializer.PartyModeState.InertMode;
+                var spviMode = ServerPlayerVesselInitializer.PartyModeState.InertMode;
 
                 ActivateMiniGameEnvironment_ClientRpc(miniGameIndex, (int)spviMode);
                 ResetGameDataForRound_ClientRpc((int)selectedMode);
@@ -512,10 +514,17 @@ namespace CosmicShore.Game.Arcade.Party
 
                 if (isFirstRound)
                 {
-                    // Trigger vessel spawning on the first-round environment's SPVI
-                    TriggerVesselSpawning(miniGameIndex);
+                    // Spawn vessels via PartyVesselSpawner (on always-active GameObject — safe RPCs)
+                    var spawnOrigins = GetSpawnOriginsFromEnv(miniGameIndex);
+                    if (vesselSpawner && spawnOrigins is { Length: > 0 })
+                    {
+                        vesselSpawner.SpawnVesselsForParty(spawnOrigins);
+                    }
+                    else
+                    {
+                        CSDebug.LogError($"[PartyGame] Cannot spawn vessels — vesselSpawner={vesselSpawner != null}, origins={spawnOrigins?.Length ?? 0}");
+                    }
 
-                    // Wait for vessels to spawn and initialize
                     BroadcastGameStateText_ClientRpc("Spawning vessels...");
                     await UniTask.Delay(TimeSpan.FromSeconds(3f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
@@ -524,8 +533,8 @@ namespace CosmicShore.Game.Arcade.Party
                 }
                 else
                 {
-                    // Vessels already exist — reposition them to this environment's spawn points
-                    RepositionPlayersToEnvironment_ClientRpc(miniGameIndex);
+                    // Vessels already exist — reposition via PartyVesselSpawner
+                    RepositionPlayersViaSpawner_ClientRpc(miniGameIndex);
                     await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
                 }
 
@@ -540,26 +549,16 @@ namespace CosmicShore.Game.Arcade.Party
         }
 
         /// <summary>
-        /// Server-only: finds the SPVI on the given environment and triggers vessel spawning.
+        /// Returns spawn origin transforms from the SPVI on the given environment.
         /// </summary>
-        void TriggerVesselSpawning(int envIndex)
+        Transform[] GetSpawnOriginsFromEnv(int envIndex)
         {
-            if (!IsServer) return;
-            if (envIndex < 0 || envIndex >= miniGameEnvironments.Count) return;
-
+            if (envIndex < 0 || envIndex >= miniGameEnvironments.Count) return null;
             var env = miniGameEnvironments[envIndex];
-            if (!env) return;
+            if (!env) return null;
 
             var spvi = env.GetComponentInChildren<ServerPlayerVesselInitializer>(true);
-            if (spvi != null)
-            {
-                spvi.SpawnVesselsForParty();
-                CSDebug.Log($"[PartyGame] Triggered SpawnVesselsForParty on '{env.name}'");
-            }
-            else
-            {
-                CSDebug.LogError($"[PartyGame] No SPVI found on '{env.name}' for vessel spawning!");
-            }
+            return spvi != null ? spvi.PlayerOrigins : null;
         }
 
         async UniTaskVoid BeginMiniGamePlay()
@@ -1009,10 +1008,10 @@ namespace CosmicShore.Game.Arcade.Party
 
         /// <summary>
         /// Repositions existing player vessels to the spawn points of the given environment.
-        /// Used on rounds 2+ where vessels already exist.
+        /// Uses PartyVesselSpawner which is on an always-active GameObject (safe RPCs).
         /// </summary>
         [ClientRpc]
-        void RepositionPlayersToEnvironment_ClientRpc(int envIndex)
+        void RepositionPlayersViaSpawner_ClientRpc(int envIndex)
         {
             if (envIndex < 0 || envIndex >= miniGameEnvironments.Count) return;
             var env = miniGameEnvironments[envIndex];
@@ -1025,12 +1024,18 @@ namespace CosmicShore.Game.Arcade.Party
                 return;
             }
 
-            gameData.SetSpawnPositions(spvi.PlayerOrigins);
-            gameData.ResetPlayers();
-
-            // Snap camera to new position
-            if (CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (vesselSpawner)
+            {
+                vesselSpawner.RepositionForNewRound(spvi.PlayerOrigins);
+            }
+            else
+            {
+                // Fallback: do it inline if spawner not assigned
+                gameData.SetSpawnPositions(spvi.PlayerOrigins);
+                gameData.ResetPlayers();
+                if (CameraManager.Instance)
+                    CameraManager.Instance.SnapPlayerCameraToTarget();
+            }
 
             CSDebug.Log($"[PartyGame] Repositioned players to '{env.name}' spawn points.");
         }

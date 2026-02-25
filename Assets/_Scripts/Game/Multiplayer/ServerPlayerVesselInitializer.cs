@@ -162,44 +162,6 @@ namespace CosmicShore.Game
                 NetworkManager.Singleton.Shutdown();
         }
 
-        // ==================== Party Mode API ====================
-
-        /// <summary>
-        /// Called by PartyGameController on the first round to spawn vessels + AI.
-        /// Only runs when PartyMode == SpawnMode.
-        /// </summary>
-        public void SpawnVesselsForParty()
-        {
-            if (PartyMode != PartyModeState.SpawnMode) return;
-            if (!NetworkManager.Singleton || !NetworkManager.Singleton.IsServer) return;
-
-            CSDebug.Log($"[SPVI] SpawnVesselsForParty on '{gameObject.name}'");
-
-            ulong hostClientId = NetworkManager.Singleton.LocalClientId;
-            SpawnPlayerThenAIForParty(hostClientId).Forget();
-        }
-
-        async UniTaskVoid SpawnPlayerThenAIForParty(ulong clientId)
-        {
-            await DelayedSpawnVesselForPlayerAsync(clientId);
-            await UniTask.WaitForSeconds(1f, true);
-
-            SpawnAIOpponents();
-
-            await UniTask.WaitForSeconds(0.5f, true);
-
-            var target = new ClientRpcSendParams
-            {
-                TargetClientIds = new[] { clientId }
-            };
-            clientPlayerVesselInitializer.InitializeAllPlayersAndVesselsInThisNewClient_ClientRpc(
-                new ClientRpcParams { Send = target }
-            );
-
-            OnAllPlayersSpawned?.Invoke();
-            CSDebug.Log($"[SPVI] Party vessel spawning complete on '{gameObject.name}'");
-        }
-
         // ==================== Standard Hooks ====================
 
         protected virtual void OnNewVesselClientAdded(IVessel _)
