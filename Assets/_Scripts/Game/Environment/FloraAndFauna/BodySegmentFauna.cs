@@ -3,6 +3,10 @@ using CosmicShore.Game;
 
 namespace CosmicShore.Game.Environment.FloraAndFauna
 {
+    /// <summary>
+    /// Individual segment of a <see cref="Worm"/> creature.
+    /// Handles segment-specific death logic (splitting, head/tail status).
+    /// </summary>
     public class BodySegmentFauna : Fauna
     {
         public Worm ParentWorm { get; set; }
@@ -11,7 +15,7 @@ namespace CosmicShore.Game.Environment.FloraAndFauna
         public bool IsHead;
         public bool IsTail;
 
-        protected override void Die(string killername = "")
+        protected override void Die(string killerName = "")
         {
             if (!IsHead && !IsTail)
             {
@@ -26,16 +30,6 @@ namespace CosmicShore.Game.Environment.FloraAndFauna
                 ParentWorm.UpdateTailStatus(false);
             }
             ParentWorm.RemoveSegment(this);
-        }
-
-        public override void Initialize(Cell cell)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        protected override void Spawn()
-        {
-
         }
     }
 }

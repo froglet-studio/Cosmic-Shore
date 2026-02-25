@@ -3,6 +3,6 @@ using Obvious.Soap;
 using UnityEngine;
 
 [CreateAssetMenu(
-    fileName = "scriptable_event_GameFeedPayload",
-    menuName = "Soap/ScriptableEvents/GameFeedPayload")]
+    fileName = "Event_GameFeedPayload",
+    menuName = "ScriptableObjects/SOAP/Events/GameFeedPayload")]
 public class ScriptableEventGameFeedPayload : ScriptableEvent<GameFeedPayload> { }

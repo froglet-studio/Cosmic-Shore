@@ -3,8 +3,8 @@ using UnityEngine;
 
 
     [CreateAssetMenu(
-        fileName = "ArcadeGameConfigEvent",
-        menuName = "ScriptableObjects/Events/Arcade/ArcadeGameConfigEvent")]
+        fileName = "Event_ArcadeGameConfig",
+        menuName = "ScriptableObjects/SOAP/Events/ArcadeGameConfig")]
     public class ScriptableEventArcadeGameConfig : ScriptableEvent<ArcadeGameConfigSO>
     {
     }

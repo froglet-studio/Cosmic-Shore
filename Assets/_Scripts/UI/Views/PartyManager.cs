@@ -1,23 +1,38 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.App.Profile;
+using CosmicShore.Soap;
 using CosmicShore.Utilities;
 using Reflex.Attributes;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.Game.Party
 {
+    /// <summary>
+    /// Backward-compatible facade that delegates to <see cref="HostConnectionService"/>
+    /// and <see cref="HostConnectionDataSO"/>.
+    ///
+    /// Existing code that references PartyManager.Instance, OnlinePlayerInfo, PartyInvite,
+    /// or the C# events will continue to compile.  New code should prefer the SOAP data
+    /// container (<see cref="HostConnectionDataSO"/>) directly.
+    /// </summary>
     public class PartyManager : MonoBehaviour
     {
+        // ─────────────────────────────────────────────────────────────────────
+        // Legacy types kept for backward compat
+        // ─────────────────────────────────────────────────────────────────────
+
         [Serializable]
         public struct OnlinePlayerInfo
         {
             public string PlayerId;
             public string DisplayName;
             public int AvatarId;
+
+            public static OnlinePlayerInfo FromSOAP(PartyPlayerData d) =>
+                new() { PlayerId = d.PlayerId, DisplayName = d.DisplayName, AvatarId = d.AvatarId };
         }
 
         [Serializable]
@@ -27,76 +42,54 @@ namespace CosmicShore.Game.Party
             public string PartySessionId;
             public string HostDisplayName;
             public int HostAvatarId;
+
+            public static PartyInvite FromSOAP(PartyInviteData d) =>
+                new() { HostPlayerId = d.HostPlayerId, PartySessionId = d.PartySessionId,
+                         HostDisplayName = d.HostDisplayName, HostAvatarId = d.HostAvatarId };
         }
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Static access
+        // ─────────────────────────────────────────────────────────────────────
 
         public static PartyManager Instance { get; private set; }
 
-        // -----------------------------------------------------------------------------------------
-        // Events
+        // ─────────────────────────────────────────────────────────────────────
+        // Legacy events (bridged from SOAP)
+        // ─────────────────────────────────────────────────────────────────────
 
-        /// <summary>Fired whenever the online player list refreshes.</summary>
         public event Action<IReadOnlyList<OnlinePlayerInfo>> OnOnlinePlayersUpdated;
-
-        /// <summary>Fired when this local player receives an invite.</summary>
         public event Action<PartyInvite> OnInviteReceived;
-
-        /// <summary>Fired when local player successfully joins a party (as client).</summary>
         public event Action<string> OnJoinedParty;
-
-        /// <summary>Fired when a remote player accepts the local player's invite (host view).</summary>
         public event Action<string> OnPartyMemberJoined;
 
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Inspector
+        // ─────────────────────────────────────────────────────────────────────
+
+        [Header("SOAP Data Container")]
+        [SerializeField] private HostConnectionDataSO connectionData;
 
         [Header("Auth (Source of Truth)")]
         [SerializeField] AuthenticationDataVariable authenticationDataVariable;
-        AuthenticationData authenticationData => authenticationDataVariable.Value;
-
-        [Header("Presence Lobby")]
-        [Tooltip("Max simultaneous players in the global presence lobby.")]
-        [SerializeField] private int presenceLobbyMaxPlayers = 100;
-
-        [Tooltip("How often (seconds) to refresh the online player list and check for invites.")]
-        [SerializeField] private float refreshIntervalSeconds = 3f;
 
         [Inject] private PlayerDataService playerDataService;
 
-        // -----------------------------------------------------------------------------------------
-        // Public state
+        // ─────────────────────────────────────────────────────────────────────
+        // Public state (delegates to connectionData)
+        // ─────────────────────────────────────────────────────────────────────
 
-        public bool IsInPresenceLobby => _presenceLobby != null;
-        public bool IsHost { get; private set; }
-        public ISession PartySession { get; private set; }
-        public ISession PresenceLobby => _presenceLobby;
+        public bool IsInPresenceLobby => connectionData != null && connectionData.IsConnected;
+        public bool IsHost => connectionData != null && connectionData.IsHost;
+        public ISession PartySession => HostConnectionService.Instance?.PartySession;
+        public ISession PresenceLobby => null; // Session ref now internal to HostConnectionService
+        public string LocalPlayerId => connectionData?.LocalPlayerId ?? string.Empty;
+        public string LocalDisplayName => connectionData?.LocalDisplayName ?? string.Empty;
+        public int LocalAvatarId => connectionData != null ? connectionData.LocalAvatarId : 0;
 
-        public string LocalPlayerId { get; private set; }
-        public string LocalDisplayName { get; private set; }
-        public int LocalAvatarId { get; private set; }
-
-        // -----------------------------------------------------------------------------------------
-        // Private state
-
-        private ISession _presenceLobby;
-        private float _refreshTimer;
-        private bool _initialized;
-        private bool _leaving;
-        private bool _joining;
-        private PartyInvite? _lastFiredInvite; // prevents re-firing the same invite every tick
-
-        // -----------------------------------------------------------------------------------------
-        // Constants
-
-        private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
-        private const string DISPLAY_NAME_KEY = "displayName";
-        private const string AVATAR_ID_KEY = "avatarId";
-        private const string INVITE_PREFIX = "invite_"; // session property key prefix: invite_{targetPlayerId}
-
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
+        // ─────────────────────────────────────────────────────────────────────
 
         void Awake()
         {
@@ -105,396 +98,102 @@ namespace CosmicShore.Game.Party
             DontDestroyOnLoad(gameObject);
         }
 
-        async void Start()
+        void OnEnable()
         {
-            // If you wire HandleSignedInEvent() via Soap listener, this Start loop is still safe.
-            // It just ensures PartyManager works even if it starts before auth completes.
-            while (!IsAuthSignedInAndHasId())
-                await Task.Delay(300);
+            if (connectionData == null) return;
 
-            LocalPlayerId = authenticationData.PlayerId;
+            if (connectionData.OnlinePlayers != null)
+                connectionData.OnlinePlayers.OnItemCountChanged += BridgeOnlinePlayersUpdated;
 
-            // Profile might load a bit after auth; we try now and keep using SyncProfileFromPlayerDataService() later.
-            SyncProfileFromPlayerDataService();
+            if (connectionData.OnInviteReceived != null)
+                connectionData.OnInviteReceived.OnRaised += BridgeInviteReceived;
 
-            await JoinPresenceLobbyAsync();
-            _initialized = true;
+            if (connectionData.OnPartyMemberJoined != null)
+                connectionData.OnPartyMemberJoined.OnRaised += BridgePartyMemberJoined;
         }
 
-        void Update()
+        void OnDisable()
         {
-            if (!_initialized || _presenceLobby == null) return;
+            if (connectionData == null) return;
 
-            _refreshTimer += Time.deltaTime;
-            if (_refreshTimer >= refreshIntervalSeconds)
-            {
-                _refreshTimer = 0f;
-                RefreshAsync().Forget();
-            }
+            if (connectionData.OnlinePlayers != null)
+                connectionData.OnlinePlayers.OnItemCountChanged -= BridgeOnlinePlayersUpdated;
+
+            if (connectionData.OnInviteReceived != null)
+                connectionData.OnInviteReceived.OnRaised -= BridgeInviteReceived;
+
+            if (connectionData.OnPartyMemberJoined != null)
+                connectionData.OnPartyMemberJoined.OnRaised -= BridgePartyMemberJoined;
         }
 
-        async void OnDestroy()
-        {
-            await LeavePresenceLobbyAsync();
-        }
+        // ─────────────────────────────────────────────────────────────────────
+        // Legacy API — delegates to HostConnectionService
+        // ─────────────────────────────────────────────────────────────────────
 
-        // -----------------------------------------------------------------------------------------
-        // Optional: Hook these to AuthenticationData.OnSignedIn / OnSignedOut via Soap listeners
-
-        public async void HandleSignedInEvent()
-        {
-            // If Start already initialized, don't double-join.
-            if (_initialized || _joining) return;
-
-            if (!IsAuthSignedInAndHasId())
-                return;
-
-            LocalPlayerId = authenticationData.PlayerId;
-            SyncProfileFromPlayerDataService();
-
-            _joining = true;
-            try
-            {
-                await JoinPresenceLobbyAsync();
-                _initialized = true;
-            }
-            finally
-            {
-                _joining = false;
-            }
-        }
-
-        public async void HandleSignedOutEvent()
-        {
-            _initialized = false;
-            LocalPlayerId = string.Empty;
-            LocalDisplayName = string.Empty;
-            LocalAvatarId = 0;
-
-            await LeavePresenceLobbyAsync();
-        }
-
-        // -----------------------------------------------------------------------------------------
-        // Profile sync
-
-        /// <summary>Pull display name and avatar from PlayerDataService into local cache.</summary>
         public void SyncProfileFromPlayerDataService()
         {
-            if (playerDataService?.CurrentProfile == null) return;
-            LocalDisplayName = playerDataService.CurrentProfile.displayName;
-            LocalAvatarId = playerDataService.CurrentProfile.avatarId;
+            // No-op: HostConnectionService handles this internally.
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Presence Lobby
-
-        private async Task JoinPresenceLobbyAsync()
+        public void HandleSignedInEvent()
         {
-            if (_presenceLobby != null) return;
-
-            try
-            {
-                var queryOptions = new QuerySessionsOptions();
-                queryOptions.FilterOptions.Add(
-                    new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
-
-                var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-
-                if (results.Sessions.Count > 0)
-                {
-                    _presenceLobby = await MultiplayerService.Instance.JoinSessionByIdAsync(
-                        results.Sessions[0].Id,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
-
-                    IsHost = false;
-                    Debug.Log($"[PartyManager] Joined presence lobby {_presenceLobby.Id}");
-                }
-                else
-                {
-                    await CreatePresenceLobbyAsync();
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PartyManager] Join failed, creating new lobby: {e.Message}");
-                await CreatePresenceLobbyAsync();
-            }
+            HostConnectionService.Instance?.HandleSignedInEvent();
         }
 
-        private async Task CreatePresenceLobbyAsync()
+        public void HandleSignedOutEvent()
         {
-            try
-            {
-                var opts = new SessionOptions
-                {
-                    MaxPlayers = presenceLobbyMaxPlayers,
-                    IsLocked = false,
-                    IsPrivate = false,
-                    PlayerProperties = BuildLocalPlayerProperties(),
-                    SessionProperties = new Dictionary<string, SessionProperty>
-                    {
-                        {
-                            "gameMode",
-                            new SessionProperty(PRESENCE_LOBBY_GAME_MODE,
-                                VisibilityPropertyOptions.Public,
-                                PropertyIndex.String1)
-                        }
-                    }
-                }.WithRelayNetwork();
-
-                _presenceLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                IsHost = true;
-                Debug.Log($"[PartyManager] Created presence lobby {_presenceLobby.Id}");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[PartyManager] Could not create presence lobby: {e.Message}");
-            }
+            HostConnectionService.Instance?.HandleSignedOutEvent();
         }
 
-        private async Task LeavePresenceLobbyAsync()
+        public Task SendInviteAsync(string targetPlayerId)
         {
-            if (_presenceLobby == null || _leaving) return;
-            _leaving = true;
-            try
-            {
-                if (_presenceLobby.IsHost)
-                    await _presenceLobby.AsHost().DeleteAsync();
-                else
-                    await _presenceLobby.LeaveAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PartyManager] Leave error: {e.Message}");
-            }
-            finally
-            {
-                _presenceLobby = null;
-                _leaving = false;
-            }
+            if (HostConnectionService.Instance == null) return Task.CompletedTask;
+            return HostConnectionService.Instance.SendInviteAsync(targetPlayerId);
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Refresh — player list + incoming invite check
-
-        private async UniTaskVoid RefreshAsync()
+        public Task AcceptInviteAsync(PartyInvite invite)
         {
-            if (_presenceLobby == null) return;
-
-            try
-            {
-                await _presenceLobby.RefreshAsync();
-
-                // ── Online player list ──────────────────────────────────────────────
-                var onlinePlayers = new List<OnlinePlayerInfo>();
-
-                foreach (var p in _presenceLobby.Players)
-                {
-                    if (p.Id == LocalPlayerId) continue;
-
-                    string displayName = "Unknown Pilot";
-                    int avatarId = 0;
-
-                    if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn))
-                        displayName = dn.Value;
-
-                    if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
-                        int.TryParse(av.Value, out int parsed))
-                        avatarId = parsed;
-
-                    onlinePlayers.Add(new OnlinePlayerInfo
-                    {
-                        PlayerId = p.Id,
-                        DisplayName = displayName,
-                        AvatarId = avatarId
-                    });
-                }
-
-                OnOnlinePlayersUpdated?.Invoke(onlinePlayers);
-
-                // ── Invite check — read session property keyed to this player's ID ──
-                string inviteKey = $"{INVITE_PREFIX}{LocalPlayerId}";
-                if (_presenceLobby.Properties.TryGetValue(inviteKey, out var inviteProp))
-                {
-                    var invite = ParseInvite(inviteProp.Value);
-                    if (invite.HasValue)
-                    {
-                        // Don't re-fire the same invite every tick
-                        if (!_lastFiredInvite.HasValue ||
-                            _lastFiredInvite.Value.PartySessionId != invite.Value.PartySessionId)
-                        {
-                            _lastFiredInvite = invite;
-                            OnInviteReceived?.Invoke(invite.Value);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PartyManager] Refresh error: {e.Message}");
-            }
+            if (HostConnectionService.Instance == null) return Task.CompletedTask;
+            var soapInvite = new PartyInviteData(
+                invite.HostPlayerId, invite.PartySessionId,
+                invite.HostDisplayName, invite.HostAvatarId);
+            return HostConnectionService.Instance.AcceptInviteAsync(soapInvite);
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Invite — Send (host of presence lobby only)
-
-        public async Task SendInviteAsync(string targetPlayerId)
+        public Task DeclineInviteAsync()
         {
-            if (_presenceLobby == null)
-            {
-                Debug.LogWarning("[PartyManager] Not in presence lobby.");
-                return;
-            }
-
-            if (!_presenceLobby.IsHost)
-            {
-                Debug.LogWarning("[PartyManager] Only the presence lobby host can send invites.");
-                return;
-            }
-
-            try
-            {
-                // Ensure latest profile values before sending
-                SyncProfileFromPlayerDataService();
-
-                if (PartySession == null)
-                    await CreatePartySessionAsync();
-
-                string inviteKey = $"{INVITE_PREFIX}{targetPlayerId}";
-                string inviteValue = $"{LocalPlayerId}|{PartySession.Id}|{LocalDisplayName}|{LocalAvatarId}";
-
-                var hostSession = _presenceLobby.AsHost();
-                hostSession.SetProperty(inviteKey, new SessionProperty(inviteValue, VisibilityPropertyOptions.Public));
-                await hostSession.SavePropertiesAsync();
-
-                Debug.Log($"[PartyManager] Invite sent to {targetPlayerId}");
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PartyManager] SendInvite error: {e.Message}");
-            }
-        }
-
-        // -----------------------------------------------------------------------------------------
-        // Invite — Accept / Decline
-
-        public async Task AcceptInviteAsync(PartyInvite invite)
-        {
-            try
-            {
-                // Ensure latest profile values before joining
-                SyncProfileFromPlayerDataService();
-
-                PartySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
-                    invite.PartySessionId,
-                    new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
-
-                IsHost = false;
-                Debug.Log($"[PartyManager] Joined party {PartySession.Id}");
-                OnJoinedParty?.Invoke(invite.HostDisplayName);
-
-                await RequestClearInviteAsync(invite.HostPlayerId);
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PartyManager] AcceptInvite error: {e.Message}");
-            }
-        }
-
-        public async Task DeclineInviteAsync()
-        {
-            _lastFiredInvite = null;
-            await RequestClearInviteAsync(LocalPlayerId);
-        }
-
-        private async Task RequestClearInviteAsync(string hostPlayerId)
-        {
-            if (_presenceLobby == null) return;
-
-            try
-            {
-                _lastFiredInvite = null;
-
-                if (_presenceLobby.IsHost)
-                {
-                    string inviteKey = $"{INVITE_PREFIX}{LocalPlayerId}";
-                    var hostSession = _presenceLobby.AsHost();
-                    hostSession.SetProperty(inviteKey, new SessionProperty(string.Empty, VisibilityPropertyOptions.Public));
-                    await hostSession.SavePropertiesAsync();
-                }
-                else
-                {
-                    Debug.Log("[PartyManager] Invite cleared locally (host will expire it naturally).");
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PartyManager] ClearInvite error: {e.Message}");
-            }
-        }
-
-        // -----------------------------------------------------------------------------------------
-        // Party Session (host side)
-
-        private async Task CreatePartySessionAsync()
-        {
-            var opts = new SessionOptions
-            {
-                MaxPlayers = 8,
-                IsLocked = false,
-                IsPrivate = true,
-                PlayerProperties = BuildLocalPlayerProperties()
-            }.WithRelayNetwork();
-
-            PartySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
-            IsHost = true;
-            Debug.Log($"[PartyManager] Created party session {PartySession.Id}");
+            if (HostConnectionService.Instance == null) return Task.CompletedTask;
+            return HostConnectionService.Instance.DeclineInviteAsync();
         }
 
         public void HandOffToMultiplayerSetup(CosmicShore.Soap.GameDataSO gameData)
         {
-            if (PartySession != null)
-                gameData.ActiveSession = PartySession;
+            HostConnectionService.Instance?.HandOffToMultiplayerSetup(gameData);
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Helpers
+        // ─────────────────────────────────────────────────────────────────────
+        // SOAP → Legacy bridges
+        // ─────────────────────────────────────────────────────────────────────
 
-        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
+        private void BridgeOnlinePlayersUpdated()
         {
-            return new Dictionary<string, PlayerProperty>
-            {
-                { DISPLAY_NAME_KEY, new PlayerProperty(LocalDisplayName ?? "Pilot", VisibilityPropertyOptions.Public) },
-                { AVATAR_ID_KEY,    new PlayerProperty(LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) }
-            };
+            if (connectionData?.OnlinePlayers == null) return;
+
+            var legacyList = new List<OnlinePlayerInfo>();
+            foreach (var p in connectionData.OnlinePlayers)
+                legacyList.Add(OnlinePlayerInfo.FromSOAP(p));
+
+            OnOnlinePlayersUpdated?.Invoke(legacyList);
         }
 
-        private static PartyInvite? ParseInvite(string raw)
+        private void BridgeInviteReceived(PartyInviteData data)
         {
-            if (string.IsNullOrEmpty(raw)) return null;
-            var parts = raw.Split('|');
-            if (parts.Length < 4) return null;
-            if (!int.TryParse(parts[3], out int avatarId)) return null;
-
-            return new PartyInvite
-            {
-                HostPlayerId = parts[0],
-                PartySessionId = parts[1],
-                HostDisplayName = parts[2],
-                HostAvatarId = avatarId
-            };
+            OnInviteReceived?.Invoke(PartyInvite.FromSOAP(data));
         }
 
-        private bool IsAuthSignedInAndHasId()
+        private void BridgePartyMemberJoined(PartyPlayerData data)
         {
-            if (authenticationData == null)
-                return false;
-
-            bool signedIn =
-                authenticationData.IsSignedIn ||
-                authenticationData.State == AuthenticationData.AuthState.SignedIn;
-
-            return signedIn && !string.IsNullOrEmpty(authenticationData.PlayerId);
+            OnPartyMemberJoined?.Invoke(data.DisplayName);
         }
     }
 }

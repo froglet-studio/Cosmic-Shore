@@ -4,7 +4,7 @@ using Obvious.Soap;
 
 namespace CosmicShore.Utilities
 {
-    [CreateAssetMenu(fileName = "scriptable_event_" + nameof(CrystalStats), menuName = "Soap/ScriptableEvents/"+ nameof(CrystalStats))]
+    [CreateAssetMenu(fileName = "Event_" + nameof(CrystalStats), menuName = "ScriptableObjects/SOAP/Events/"+ nameof(CrystalStats))]
     public class ScriptableEventCrystalStats : ScriptableEvent<CrystalStats>
     {
         

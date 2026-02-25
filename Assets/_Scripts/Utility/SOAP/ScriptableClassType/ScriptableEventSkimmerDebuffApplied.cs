@@ -19,8 +19,8 @@ namespace CosmicShore.Game
     }
     
     [CreateAssetMenu(
-        fileName = "SkimmerDebuffAppliedEvent",
-        menuName = "ScriptableObjects/Events/Vessel/SkimmerDebuffAppliedEvent")]
+        fileName = "Event_SkimmerDebuffApplied",
+        menuName = "ScriptableObjects/SOAP/Events/SkimmerDebuffApplied")]
     public class ScriptableEventSkimmerDebuffApplied : ScriptableEvent<SkimmerDebuffPayload>
     {
     }

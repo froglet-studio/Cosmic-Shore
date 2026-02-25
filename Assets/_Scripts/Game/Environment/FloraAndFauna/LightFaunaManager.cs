@@ -5,35 +5,26 @@ using CosmicShore.Utility;
 
 namespace CosmicShore
 {
+    /// <summary>
+    /// Manages a group of <see cref="LightFauna"/> creatures.
+    /// Handles spawning, formation layout, and population maintenance.
+    /// Extends Fauna for domain/goal propagation from the spawning system (LSP-compliant:
+    /// lifecycle methods use base defaults instead of throwing NotImplementedException).
+    /// </summary>
     public class LightFaunaManager : Fauna
     {
-        [Header("Prefab (keep here)")]
+        [Header("Prefab")]
         [SerializeField] LightFauna lightFaunaPrefab;
 
-        [Header("Data (all tuning lives here)")]
+        [Header("Data")]
         [SerializeField] LightFaunaManagerDataSO managerData;
 
-        private readonly List<LightFauna> activeFauna = new List<LightFauna>();
+        private readonly List<LightFauna> activeFauna = new();
 
         protected override void Start()
         {
             base.Start();
             SpawnGroup();
-        }
-
-        public override void Initialize(Cell cell)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        protected override void Spawn()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        protected override void Die(string killername = "")
-        {
-            throw new System.NotImplementedException();
         }
 
         void SpawnGroup()
@@ -69,22 +60,25 @@ namespace CosmicShore
                 activeFauna.Add(fauna);
             }
 
-            // Formation
-            if (activeFauna.Count > 0)
+            ApplyFormation();
+        }
+
+        void ApplyFormation()
+        {
+            if (activeFauna.Count == 0) return;
+
+            float spread = Mathf.Max(0f, managerData.formationSpread);
+
+            for (int i = 0; i < activeFauna.Count; i++)
             {
-                float spread = Mathf.Max(0f, managerData.formationSpread);
+                float angle = (i * 360f / activeFauna.Count) * Mathf.Deg2Rad;
+                Vector3 formationOffset = new Vector3(
+                    Mathf.Cos(angle) * spread,
+                    0f,
+                    Mathf.Sin(angle) * spread
+                );
 
-                for (int i = 0; i < activeFauna.Count; i++)
-                {
-                    float angle = (i * 360f / activeFauna.Count) * Mathf.Deg2Rad;
-                    Vector3 formationOffset = new Vector3(
-                        Mathf.Cos(angle) * spread,
-                        0f,
-                        Mathf.Sin(angle) * spread
-                    );
-
-                    activeFauna[i].transform.position = transform.position + formationOffset;
-                }
+                activeFauna[i].transform.position = transform.position + formationOffset;
             }
         }
 
@@ -96,11 +90,8 @@ namespace CosmicShore
                 Destroy(fauna.gameObject);
             }
 
-            // Optional: Respawn if count gets too low (kept behavior)
             if (managerData && activeFauna.Count < Mathf.Max(0, managerData.spawnCount / 2))
-            {
                 SpawnGroup();
-            }
         }
     }
 }
