@@ -68,6 +68,11 @@ namespace CosmicShore.Game.Arcade
         protected override void OnCountdownTimerEnded()
         {
             gameData.SetPlayersActive();
+
+            // SetPlayersActive starts vessel trail spawners — kill them immediately.
+            // Trails must stay off until the first crystal hit in shape drawing mode.
+            ClearPlayerTrails();
+
             EnterLobby();
         }
 
@@ -120,9 +125,9 @@ namespace CosmicShore.Game.Arcade
                     trigger.transform.rotation = Quaternion.LookRotation(dirToPlayer, Vector3.up);
             }
 
-            // Show shape sign spawner (button-based signs) near the player, facing the player
+            // Show pre-placed shape signs
             if (shapeSignSpawner)
-                shapeSignSpawner.ShowSigns(triggerCenter, center);
+                shapeSignSpawner.ShowSigns();
         }
 
         void ExitLobby()

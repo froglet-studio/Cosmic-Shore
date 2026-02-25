@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Soap;
 using UnityEngine;
@@ -42,6 +43,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [Tooltip("Duration of the camera pan from player to the reveal viewpoint.")]
         [SerializeField] float cameraPanDuration = 2f;
 
+        [Header("Debug")]
+        [Tooltip("Press this key to save a screenshot (PC only).")]
+        [SerializeField] KeyCode screenshotKey = KeyCode.F12;
+
         [Header("Events")]
         public UnityEvent OnShapeCompleted;
         public UnityEvent OnFreestyleResumed;
@@ -83,6 +88,10 @@ namespace CosmicShore.Game.ShapeDrawing
 
         void Update()
         {
+            // Screenshot key works at any time (during drawing, reveal, etc.)
+            if (Input.GetKeyDown(screenshotKey))
+                TakeDebugScreenshot();
+
             if (!_isActive || _activeShape == null) return;
             UpdateGuideLine();
             SamplePlayerPosition();
@@ -380,9 +389,14 @@ namespace CosmicShore.Game.ShapeDrawing
 
             var score = CalculateScore();
 
-            Debug.Log($"[ShapeDrawing] Shape '{score.ShapeName}' completed! " +
-                      $"Time: {score.ElapsedTime:F1}s, Accuracy: {score.AccuracyPercent:F0}%, " +
-                      $"Stars: {score.StarRating}/5");
+            Debug.Log($"[ShapeDrawing] ── Shape Complete ──────────────────────\n" +
+                      $"  Shape:        {score.ShapeName}\n" +
+                      $"  Elapsed:      {score.ElapsedTime:F2}s  (par {_activeShape.parTime:F1}s)\n" +
+                      $"  Accuracy:     {score.AccuracyPercent:F1}%\n" +
+                      $"  Stars:        {score.StarRating}/5\n" +
+                      $"  Path samples: {_playerPathSamples.Count}\n" +
+                      $"  Waypoints:    {_activeShape.waypoints.Count}\n" +
+                      $"───────────────────────────────────────────");
 
             StartCoroutine(RevealSequence(score));
         }
@@ -437,6 +451,22 @@ namespace CosmicShore.Game.ShapeDrawing
             // Stay in reveal view — wait for ContinueFromReveal (Next button)
             _waitingForNext = true;
             OnRevealStarted?.Invoke();
+        }
+
+        // ── Debug Screenshot ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Captures a screenshot and saves it to the persistent data path.
+        /// Wire to a UI button or press the screenshotKey (default F12).
+        /// </summary>
+        public void TakeDebugScreenshot()
+        {
+            string folder = Path.Combine(Application.persistentDataPath, "Screenshots");
+            Directory.CreateDirectory(folder);
+            string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            string filePath = Path.Combine(folder, $"Shape_{timestamp}.png");
+            ScreenCapture.CaptureScreenshot(filePath);
+            Debug.Log($"[ShapeDrawing] Screenshot saved: {filePath}");
         }
 
         /// <summary>

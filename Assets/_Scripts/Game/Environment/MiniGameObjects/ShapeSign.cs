@@ -34,11 +34,27 @@ namespace CosmicShore.Game.ShapeDrawing
         Vector3 _basePosition;
         bool    _selected;
         float   _time;
+        bool    _awakeRan;
 
         void Awake()
         {
             _basePosition = transform.position;
+            _awakeRan = true;
             ApplyDisplayData();
+        }
+
+        void OnEnable()
+        {
+            // Reset selection so the sign can be pressed again after re-entering lobby
+            _selected = false;
+            _time = 0f;
+
+            // Snap back to the original placed position (undo any bob offset)
+            if (_awakeRan)
+                transform.position = _basePosition;
+
+            var btn = GetComponentInChildren<UnityEngine.UI.Button>();
+            if (btn) btn.interactable = true;
         }
 
         void Update()
