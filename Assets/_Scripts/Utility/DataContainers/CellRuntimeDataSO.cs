@@ -9,8 +9,8 @@ using CosmicShore.Utility;
 namespace CosmicShore.Soap
 {
     [CreateAssetMenu(
-        fileName = "scriptable_variable_" + nameof(CellRuntimeDataSO),
-        menuName = "ScriptableObjects/DataContainers/" + nameof(CellRuntimeDataSO))]
+        fileName = "DataContainer_" + nameof(CellRuntimeDataSO),
+        menuName = "ScriptableObjects/SOAP/Data Containers/" + nameof(CellRuntimeDataSO))]
     public class CellRuntimeDataSO : ScriptableObject
     {
         // ---------------------------------------------------------------------

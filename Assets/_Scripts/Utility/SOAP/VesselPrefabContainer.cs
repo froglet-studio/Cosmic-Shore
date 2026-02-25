@@ -5,7 +5,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Soap
 {
     [System.Serializable]
-    [CreateAssetMenu(fileName = "ShipPrefabContainer", menuName = "ScriptableObjects/Data Containers/Vessel Prefab Container")]
+    [CreateAssetMenu(fileName = "DataContainer_VesselPrefab", menuName = "ScriptableObjects/SOAP/Data Containers/VesselPrefabContainer")]
     public class VesselPrefabContainer : ScriptableObject
     {
         [SerializeField]

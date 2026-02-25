@@ -4,8 +4,8 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(
-        fileName = "VesselImpactorEvent",
-        menuName = "ScriptableObjects/Events/Vessel/VesselImpactorEvent")]
+        fileName = "Event_VesselImpactor",
+        menuName = "ScriptableObjects/SOAP/Events/VesselImpactor")]
     public class ScriptableEventVesselImpactor : ScriptableEvent<VesselImpactor>
     {
     }
