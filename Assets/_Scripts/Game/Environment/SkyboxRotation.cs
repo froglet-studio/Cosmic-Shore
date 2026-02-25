@@ -2,11 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SkyboxRotation : MonoBehaviour
+namespace CosmicShore.Game.Environment
 {
-    // Rotate the Skybox Model Geobox on the z axis
-    void Update()
+    public class SkyboxRotation : MonoBehaviour
     {
-        transform.Rotate(new Vector3(.02f, 0f, .03f));
+        // Rotate the Skybox Model Geobox on the z axis
+        void Update()
+        {
+            transform.Rotate(new Vector3(.02f, 0f, .03f));
+        }
     }
 }

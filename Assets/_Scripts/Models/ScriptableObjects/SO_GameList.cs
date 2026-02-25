@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace CosmicShore
+namespace CosmicShore.Models.ScriptableObjects
 {
     [CreateAssetMenu(fileName = "New Game List", menuName = "CosmicShore/Game/GameList", order = 21)]
     [System.Serializable]

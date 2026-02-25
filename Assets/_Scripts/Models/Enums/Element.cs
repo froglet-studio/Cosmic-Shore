@@ -1,4 +1,5 @@
-﻿namespace CosmicShore.Models.Enums
+
+namespace CosmicShore.Models.Enums
 {
     public enum Element
     {

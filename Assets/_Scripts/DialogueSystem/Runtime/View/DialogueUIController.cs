@@ -1,11 +1,11 @@
-using CosmicShore.DialogueSystem.Models;
+using CosmicShore.DialogueSystem.Runtime.Models;
 using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.DialogueSystem.View
+namespace CosmicShore.DialogueSystem.Runtime.View
 {
     public class DialogueUIController : MonoBehaviour
     {
@@ -231,7 +231,6 @@ namespace CosmicShore.DialogueSystem.View
 
             _animator.Play(wasMonologue ? "MonologuePopIn" : "DialoguePopIn");
         }
-
 
 
         // Plug in your typewriter, or use this stub

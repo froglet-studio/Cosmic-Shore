@@ -1,7 +1,10 @@
 using System;
 
-public interface ITutorialUIView
+namespace CosmicShore.FTUE.Interfaces
 {
-    void ShowStep(string text, Action onComplete);
-    void ToggleCanvas(bool visible);
+    public interface ITutorialUIView
+    {
+        void ShowStep(string text, Action onComplete);
+        void ToggleCanvas(bool visible);
+    }
 }

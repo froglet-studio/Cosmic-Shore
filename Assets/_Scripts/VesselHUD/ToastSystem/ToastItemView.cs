@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Game.UI.Toast
+namespace CosmicShore.VesselHUD.ToastSystem
 {
     public sealed class ToastItemView : MonoBehaviour
     {

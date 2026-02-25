@@ -4,9 +4,11 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Game.Environment.Prisms;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Managers
 {
     public class MaterialStateManager : AdaptiveAnimationManager<MaterialStateManager, MaterialPropertyAnimator, MaterialAnimationData>
     {
@@ -118,7 +120,6 @@ namespace CosmicShore.Core
                     }
                 }
             }
-
 
 
             // Validate all remaining active animators are actually animating

@@ -1,12 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Environment
 {
     public abstract class CellLifeSpawnerBase : ICellLifeSpawner
     {

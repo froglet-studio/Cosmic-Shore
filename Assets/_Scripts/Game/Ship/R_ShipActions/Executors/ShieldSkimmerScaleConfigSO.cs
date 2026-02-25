@@ -1,8 +1,9 @@
 ﻿using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
     [CreateAssetMenu(
         fileName = "ShieldSkimmerScaleConfig",

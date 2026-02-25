@@ -1,10 +1,10 @@
-using CosmicShore.Core;
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Environment.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.FlowField;
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
     public class SpawnableWall : SpawnableBase
     {

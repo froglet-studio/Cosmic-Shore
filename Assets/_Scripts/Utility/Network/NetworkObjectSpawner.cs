@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Unity.Multiplayer.Samples.Utilities
+namespace CosmicShore.Utility.Network
 {
     public class NetworkObjectSpawner : MonoBehaviour
     {

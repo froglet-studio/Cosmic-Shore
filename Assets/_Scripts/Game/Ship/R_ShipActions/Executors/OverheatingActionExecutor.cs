@@ -2,227 +2,231 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using Obvious.Soap;
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-public sealed class OverheatingActionExecutor : ShipActionExecutorBase
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
-    public event Action OnHeatBuildStarted;
-    public event Action OnOverheated;
-    public event Action OnHeatDecayStarted;
-    public event Action OnHeatDecayCompleted;
+    public sealed class OverheatingActionExecutor : ShipActionExecutorBase
+    {
+        public event Action OnHeatBuildStarted;
+        public event Action OnOverheated;
+        public event Action OnHeatDecayStarted;
+        public event Action OnHeatDecayCompleted;
 
-    [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
-    [SerializeField] private ScriptableEventBool StationaryModeChanged;
-    bool HasHeatResource => _heatResource != null && _resources != null;
+        [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
+        [SerializeField] private ScriptableEventBool StationaryModeChanged;
+        bool HasHeatResource => _heatResource != null && _resources != null;
     
-    IVesselStatus _status;
-    ResourceSystem _resources;
-    Resource _heatResource;
-    ActionExecutorRegistry _registry;
+        IVesselStatus _status;
+        ResourceSystem _resources;
+        Resource _heatResource;
+        ActionExecutorRegistry _registry;
 
-    CancellationTokenSource _cts;
-    bool _isOverheating;
+        CancellationTokenSource _cts;
+        bool _isOverheating;
 
-    void OnEnable()
-    {
-        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
-        StationaryModeChanged.OnRaised += HandleStationaryModeChanged;
-    }
+        void OnEnable()
+        {
+            OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+            StationaryModeChanged.OnRaised += HandleStationaryModeChanged;
+        }
 
-    void OnDisable()
-    {
-        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
-        StationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
-    }
+        void OnDisable()
+        {
+            OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+            StationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
+        }
     
-    void OnTurnEndOfMiniGame()
-    {
-        End();
-
-        if (_heatResource != null)
-            _heatResource.CurrentAmount = 0f;
-
-        _isOverheating = false;
-        if (_status != null) _status.IsOverheating = false;
-
-        OnHeatDecayCompleted?.Invoke();
-    }
-
-    public override void Initialize(IVesselStatus shipStatus)
-    {
-        _status = shipStatus;
-        _resources = shipStatus.ResourceSystem;
-    }
-
-    public float Heat01 => (_heatResource == null || _heatResource.MaxAmount <= 0f)
-        ? 0f
-        : Mathf.Clamp01(_heatResource.CurrentAmount / _heatResource.MaxAmount);
-
-    public bool IsOverheating => _isOverheating;
-
-    public void StartOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
-    {
-        _registry = registry;
-        if (_isOverheating) return;
-
-        // IMPORTANT: do NOT block here based on IsTranslationRestricted anymore.
-        // We always want to register that boost is "held"; heat generation
-        // itself is now gated per-tick inside BuildHeatRoutineAsync.
-        _heatResource = _resources.Resources[so.HeatResourceIndex];
-
-        End();
-        so.WrappedAction?.StartAction(_registry, status);
-
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-        BuildHeatRoutineAsync(so, _cts.Token).Forget();
-    }
-
-    public void StopOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
-    {
-        _registry = registry;
-
-        if (!HasHeatResource)
+        void OnTurnEndOfMiniGame()
         {
-            so.WrappedAction?.StopAction(_registry, status);
-            return;
-        }
-        
-        if (_isOverheating)
-            return;
+            End();
 
-        End();
-
-        so.WrappedAction?.StopAction(_registry, status);
-
-        if (_heatResource.CurrentAmount <= 0f)
-        {
-            _heatResource.CurrentAmount = 0f;
-            return;
-        }
-
-        OnHeatDecayStarted?.Invoke();
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-        DecayHeatRoutineAsync(so, _cts.Token).Forget();
-    }
-    
-    private void HandleStationaryModeChanged(bool isStationary)
-    {
-        if (!isStationary || _status == null) return;
-
-        float s = _status.Speed;
-        if (s > 0.01f)
-        {
-            _status.VesselTransformer?.ModifyVelocity(_status.Course, 1f);
-        }
-    }
-
-    void End()
-    {
-        if (_cts == null) return;
-        try
-        {
-            _cts.Cancel();
-        }
-        catch
-        {
-        }
-
-        _cts.Dispose();
-        _cts = null;
-    }
-
-    async UniTaskVoid BuildHeatRoutineAsync(OverheatingActionSO so, CancellationToken token)
-    {
-        OnHeatBuildStarted?.Invoke();
-
-        try
-        {
-            while (_heatResource.CurrentAmount < _heatResource.MaxAmount)
-            {
-                if (_status is not { IsTranslationRestricted: true })
-                {
-                    _resources.ChangeResourceAmount(so.HeatResourceIndex, so.HeatBuildRate);
-                }
-
-                await UniTask.Delay(TimeSpan.FromSeconds(0.1f),
-                    DelayType.DeltaTime,
-                    PlayerLoopTiming.Update,
-                    token);
-            }
-
-            _isOverheating = true;
-            _status.IsOverheating = true;
-            _heatResource.CurrentAmount = _heatResource.MaxAmount;
-            OnOverheated?.Invoke();
-
-            var ctrl = _status?.VesselPrismController;
-            if (ctrl)
-            {
-                ctrl.EnableDangerMode(
-                    so.DangerPrismMaterial,
-                    so.OverheatScaleMultiplier,
-                    so.ScaleLerpSeconds,
-                    blendSeconds: .4f,
-                    append: true
-                );
-            }
-
-            so.WrappedAction?.StopAction(_registry, _status);
-
-            await UniTask.Delay(TimeSpan.FromSeconds(so.OverheatDuration),
-                DelayType.DeltaTime,
-                PlayerLoopTiming.Update,
-                token);
+            if (_heatResource != null)
+                _heatResource.CurrentAmount = 0f;
 
             _isOverheating = false;
             if (_status != null) _status.IsOverheating = false;
 
-            if (ctrl) ctrl.DisableDangerMode(so.ScaleLerpSeconds);
+            OnHeatDecayCompleted?.Invoke();
+        }
 
-            OnHeatDecayStarted?.Invoke();
-            await DecayHeatRoutineAsync(so, token);
-        }
-        catch (OperationCanceledException)
+        public override void Initialize(IVesselStatus shipStatus)
         {
+            _status = shipStatus;
+            _resources = shipStatus.ResourceSystem;
         }
-        catch (Exception e)
-        {
-            CSDebug.LogError($"[Overheating] BuildHeat error: {e}");
-        }
-    }
 
-    async UniTask DecayHeatRoutineAsync(OverheatingActionSO so, CancellationToken token)
-    {
-        try
+        public float Heat01 => (_heatResource == null || _heatResource.MaxAmount <= 0f)
+            ? 0f
+            : Mathf.Clamp01(_heatResource.CurrentAmount / _heatResource.MaxAmount);
+
+        public bool IsOverheating => _isOverheating;
+
+        public void StartOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
         {
+            _registry = registry;
+            if (_isOverheating) return;
+
+            // IMPORTANT: do NOT block here based on IsTranslationRestricted anymore.
+            // We always want to register that boost is "held"; heat generation
+            // itself is now gated per-tick inside BuildHeatRoutineAsync.
+            _heatResource = _resources.Resources[so.HeatResourceIndex];
+
+            End();
+            so.WrappedAction?.StartAction(_registry, status);
+
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            BuildHeatRoutineAsync(so, _cts.Token).Forget();
+        }
+
+        public void StopOverheat(OverheatingActionSO so, IVesselStatus status, ActionExecutorRegistry registry)
+        {
+            _registry = registry;
+
             if (!HasHeatResource)
             {
-                OnHeatDecayCompleted?.Invoke();
+                so.WrappedAction?.StopAction(_registry, status);
+                return;
+            }
+        
+            if (_isOverheating)
+                return;
+
+            End();
+
+            so.WrappedAction?.StopAction(_registry, status);
+
+            if (_heatResource.CurrentAmount <= 0f)
+            {
+                _heatResource.CurrentAmount = 0f;
                 return;
             }
 
-            while (_heatResource.CurrentAmount > 0)
-            {
-                _resources.ChangeResourceAmount(so.HeatResourceIndex, -so.HeatDecayRate.Value);
+            OnHeatDecayStarted?.Invoke();
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            DecayHeatRoutineAsync(so, _cts.Token).Forget();
+        }
+    
+        private void HandleStationaryModeChanged(bool isStationary)
+        {
+            if (!isStationary || _status == null) return;
 
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(0.1f),
+            float s = _status.Speed;
+            if (s > 0.01f)
+            {
+                _status.VesselTransformer?.ModifyVelocity(_status.Course, 1f);
+            }
+        }
+
+        void End()
+        {
+            if (_cts == null) return;
+            try
+            {
+                _cts.Cancel();
+            }
+            catch
+            {
+            }
+
+            _cts.Dispose();
+            _cts = null;
+        }
+
+        async UniTaskVoid BuildHeatRoutineAsync(OverheatingActionSO so, CancellationToken token)
+        {
+            OnHeatBuildStarted?.Invoke();
+
+            try
+            {
+                while (_heatResource.CurrentAmount < _heatResource.MaxAmount)
+                {
+                    if (_status is not { IsTranslationRestricted: true })
+                    {
+                        _resources.ChangeResourceAmount(so.HeatResourceIndex, so.HeatBuildRate);
+                    }
+
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.1f),
+                        DelayType.DeltaTime,
+                        PlayerLoopTiming.Update,
+                        token);
+                }
+
+                _isOverheating = true;
+                _status.IsOverheating = true;
+                _heatResource.CurrentAmount = _heatResource.MaxAmount;
+                OnOverheated?.Invoke();
+
+                var ctrl = _status?.VesselPrismController;
+                if (ctrl)
+                {
+                    ctrl.EnableDangerMode(
+                        so.DangerPrismMaterial,
+                        so.OverheatScaleMultiplier,
+                        so.ScaleLerpSeconds,
+                        blendSeconds: .4f,
+                        append: true
+                    );
+                }
+
+                so.WrappedAction?.StopAction(_registry, _status);
+
+                await UniTask.Delay(TimeSpan.FromSeconds(so.OverheatDuration),
                     DelayType.DeltaTime,
                     PlayerLoopTiming.Update,
                     token);
+
+                _isOverheating = false;
+                if (_status != null) _status.IsOverheating = false;
+
+                if (ctrl) ctrl.DisableDangerMode(so.ScaleLerpSeconds);
+
+                OnHeatDecayStarted?.Invoke();
+                await DecayHeatRoutineAsync(so, token);
             }
-
-            _heatResource.CurrentAmount = 0;
-            OnHeatDecayCompleted?.Invoke();
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[Overheating] BuildHeat error: {e}");
+            }
         }
-        catch (OperationCanceledException) { }
-        catch (Exception e)
+
+        async UniTask DecayHeatRoutineAsync(OverheatingActionSO so, CancellationToken token)
         {
-            CSDebug.LogError($"[Overheating] DecayHeat error: {e}");
-        }
-    }
+            try
+            {
+                if (!HasHeatResource)
+                {
+                    OnHeatDecayCompleted?.Invoke();
+                    return;
+                }
 
+                while (_heatResource.CurrentAmount > 0)
+                {
+                    _resources.ChangeResourceAmount(so.HeatResourceIndex, -so.HeatDecayRate.Value);
+
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(0.1f),
+                        DelayType.DeltaTime,
+                        PlayerLoopTiming.Update,
+                        token);
+                }
+
+                _heatResource.CurrentAmount = 0;
+                OnHeatDecayCompleted?.Invoke();
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[Overheating] DecayHeat error: {e}");
+            }
+        }
+
+    }
 }

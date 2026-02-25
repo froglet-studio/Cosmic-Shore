@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Screens
+namespace CosmicShore.IAP
 {
     /// <summary>
     /// Manages Unity IAP for the "Support Us" feature.

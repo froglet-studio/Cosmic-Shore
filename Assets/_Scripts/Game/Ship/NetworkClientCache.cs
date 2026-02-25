@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using Unity.Multiplayer.Samples.Utilities;
+using CosmicShore.Utility.Network;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Generic base class that caches all active networked instances of type T.

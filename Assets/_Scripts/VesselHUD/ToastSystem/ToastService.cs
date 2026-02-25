@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI.Toast
+namespace CosmicShore.VesselHUD.ToastSystem
 {
     /// Attach to a chat container under your HUD Canvas (use a VerticalLayoutGroup).
     /// New items are added at the end → visually push older items upward (chat feel).

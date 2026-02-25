@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.ImpactEffects.Containers
 {
     [CreateAssetMenu(fileName = "SkimmerImpactorDataContainer",
         menuName = "ScriptableObjects/Impact Effects/Skimmer - Container/SkimmerImpactorDataContainerSO")]

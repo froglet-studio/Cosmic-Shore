@@ -1,11 +1,11 @@
-using CosmicShore.App.Profile;
+using CosmicShore.UI.Views;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Screens
+namespace CosmicShore.UI.Screens
 {
     /// <summary>
     /// Provides high level functionality to panels in the main menu scene

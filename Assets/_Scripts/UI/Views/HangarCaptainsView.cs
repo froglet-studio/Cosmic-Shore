@@ -1,15 +1,15 @@
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Models;
-using CosmicShore.App.UI.Modals;
-using CosmicShore.App.UI.Screens;
+using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.UI.Modals;
+using CosmicShore.UI.Screens;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI.Views
 {
     public class HangarCaptainsView : View
     {

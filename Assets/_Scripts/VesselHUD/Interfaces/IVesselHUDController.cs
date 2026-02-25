@@ -1,4 +1,4 @@
-namespace CosmicShore.Game
+namespace CosmicShore.VesselHUD.Interfaces
 {
     public interface IVesselHUDController
     {

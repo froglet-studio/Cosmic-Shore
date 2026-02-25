@@ -2,10 +2,12 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using CosmicShore.Core;
+using CosmicShore.Game.Settings;
 using Reflex.Attributes;
 using System;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.UI
 {

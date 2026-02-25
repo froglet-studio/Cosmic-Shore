@@ -1,6 +1,6 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Environment;
 using UnityEngine;
-
+using CosmicShore.Game.Ship;
 namespace CosmicShore.Game.UI
 {
     public class Minimap : MonoBehaviour

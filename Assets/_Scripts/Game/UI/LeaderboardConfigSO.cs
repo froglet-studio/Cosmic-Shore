@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Analytics
+namespace CosmicShore.Game.UI
 {
     [CreateAssetMenu(fileName = "LeaderboardConfig", menuName = "CosmicShore/Analytics/LeaderboardConfig")]
     public class LeaderboardConfigSO : ScriptableObject

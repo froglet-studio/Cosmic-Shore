@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SpriteShadersUltimate
+namespace CosmicShore.SSUScripts.Editor
 {
     [CreateAssetMenu(fileName = "ShaderName", menuName = "Shader/SSU Shader Hint (ignore this)")]
     public class ShaderHintSSU : ScriptableObject

@@ -1,7 +1,8 @@
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.Game.FX
 {
     public class ParticleEffectModifier : MonoBehaviour
     {

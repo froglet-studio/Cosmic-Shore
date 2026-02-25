@@ -1,7 +1,6 @@
 using UnityEngine;
-
-
-namespace CosmicShore.Game
+using CosmicShore.Game.IO;
+namespace CosmicShore.Game.Ship
 {
     public class SingleStickVesselTransformer : VesselTransformer
     {

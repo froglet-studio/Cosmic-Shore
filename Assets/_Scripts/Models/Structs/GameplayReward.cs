@@ -1,12 +1,15 @@
 using CosmicShore.Models.Enums;
 
-﻿using System;
-
-[Serializable]
-public struct GameplayReward
+namespace CosmicShore.Models.Structs
 {
-    public int ScoreRequirement;
-    public int Value;
-    public Element Element;
-    public GameModes GameMode;
+    ﻿using System;
+
+    [Serializable]
+    public struct GameplayReward
+    {
+        public int ScoreRequirement;
+        public int Value;
+        public Element Element;
+        public GameModes GameMode;
+    }
 }

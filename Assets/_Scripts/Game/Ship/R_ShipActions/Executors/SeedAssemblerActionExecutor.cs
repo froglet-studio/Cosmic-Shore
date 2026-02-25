@@ -1,11 +1,11 @@
 ﻿using System;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
-
-namespace CosmicShore
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
+using CosmicShore.Game.Assemblers;
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
     /// <summary>
     /// Runtime executor for seeding/bonding trail blocks into a wall.

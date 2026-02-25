@@ -1,4 +1,5 @@
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
+
 // using UnityEngine;
 // using CosmicShore.DialogueSystem.Models;
 // using UnityEditor;

@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Effects;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Projectiles
 {
     [System.Serializable]
     public class MineModelData

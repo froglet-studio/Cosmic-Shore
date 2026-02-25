@@ -1,6 +1,6 @@
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class DisableTrailAction : ShipAction
     {

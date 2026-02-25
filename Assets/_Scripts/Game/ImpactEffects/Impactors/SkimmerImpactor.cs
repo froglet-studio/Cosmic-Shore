@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.FlowField;
+using CosmicShore.Game.ImpactEffects.Containers;
+using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+namespace CosmicShore.Game.ImpactEffects.Impactors
 {
     public class SkimmerImpactor : ImpactorBase
     {

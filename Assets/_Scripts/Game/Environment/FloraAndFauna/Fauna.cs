@@ -1,12 +1,12 @@
 using System.Collections;
-using CosmicShore.Game;
-using CosmicShore.Soap;
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore
+using CosmicShore.Utility;
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     /// <summary>
     /// Abstract base for animal-like lifeforms and their managers.

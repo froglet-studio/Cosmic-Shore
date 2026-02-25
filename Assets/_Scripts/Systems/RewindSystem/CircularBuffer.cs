@@ -1,6 +1,6 @@
 ﻿using System;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Systems.RewindSystem
 {

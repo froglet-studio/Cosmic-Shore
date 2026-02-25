@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore
+namespace CosmicShore.Models
 {
     public interface ITeamAssignable
     {

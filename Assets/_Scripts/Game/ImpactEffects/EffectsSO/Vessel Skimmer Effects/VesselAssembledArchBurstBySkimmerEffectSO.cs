@@ -1,8 +1,14 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Ship.ShipActions;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.Effects;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects
 {
     [CreateAssetMenu(fileName = "VesselAssembledArchBurstBySkimmerEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselAssembledArchBurstBySkimmerEffectSO")]
     public class VesselAssembledArchBurstBySkimmerEffectSO : VesselSkimmerEffectsSO

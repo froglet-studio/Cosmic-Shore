@@ -1,8 +1,7 @@
-using CosmicShore.Systems.UserActions;
-using CosmicShore.Utilities;
-
+using CosmicShore.Systems.UserAction;
+using CosmicShore.Utility;
 #if !UNITY_WEBGL
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Firebase;
 using Firebase.Analytics;
 #endif
@@ -10,10 +9,10 @@ using System;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Integrations.Firebase.Controller
+namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
     public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {

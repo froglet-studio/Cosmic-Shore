@@ -3,13 +3,13 @@ using PlayFab;
 using PlayFab.ClientModels;
 using System.Collections.Generic;
 using CosmicShore.Systems.Xp;
-using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Integrations.PlayFab.Utility;
+using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab.Utility;
 using UnityEngine;
-using CosmicShore.Utilities;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.PlayFab.PlayerData
+namespace CosmicShore.Integrations.Playfab.PlayerData
 {
     public class PlayerDataController : SingletonPersistent<PlayerDataController>
     {

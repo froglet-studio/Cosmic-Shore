@@ -1,6 +1,6 @@
 using System;
 using CosmicShore.Game.Arcade.Scoring;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 
 namespace CosmicShore.Game.Arcade
 {

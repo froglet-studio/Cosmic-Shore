@@ -5,14 +5,18 @@ using CosmicShore.Game.IO;
 using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections.Generic;
-using CosmicShore.Game.Cinematics;
+using CosmicShore.Utility.DataContainers;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
+using CosmicShore.Game.Player;
+using CosmicShore.Models.Enums;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.VesselHUD.Controller;
+using CosmicShore.VesselHUD.Interfaces;
+using CosmicShore.Utility.Recording;
 
-
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     /// <remarks>
     /// Keep this class as monobehaviour, 

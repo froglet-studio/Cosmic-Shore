@@ -1,7 +1,7 @@
 using Unity.Collections;
 using Unity.Netcode;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Game.Arcade.TurnMonitors
 {
     public class NetworkTimeBasedTurnMonitor : TimeBasedTurnMonitor
     {

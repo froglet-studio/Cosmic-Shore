@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore
+using CosmicShore.Game.Managers;
+namespace CosmicShore.UI.Elements
 {
     public class PlayerCountButton : MonoBehaviour
     {

@@ -1,9 +1,12 @@
 using UnityEngine;
 using System;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.SOAP.ScriptablePrismStats;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Environment.Prisms
 {
     [RequireComponent(typeof(Prism))]
     public class PrismScaleAnimator : MonoBehaviour

@@ -1,8 +1,9 @@
-using CosmicShore.App.UI.Views;
+using CosmicShore.UI.Views;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore
+using CosmicShore.Game.Managers;
+using CosmicShore.Models.ScriptableObjects;
+namespace CosmicShore.UI.Elements
 {
     public class ProfileIconSelectButton : MonoBehaviour
     {

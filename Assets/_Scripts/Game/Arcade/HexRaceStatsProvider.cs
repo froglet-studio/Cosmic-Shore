@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using CosmicShore.Game.Arcade;
+using CosmicShore.Game.UI;
 using UnityEngine;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.Arcade
 {
     public class HexRaceStatsProvider : ScoreboardStatsProvider
     {

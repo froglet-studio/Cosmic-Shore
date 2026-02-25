@@ -1,11 +1,11 @@
 using System;
 using System.Collections;
-using CosmicShore.Game.CameraSystem;
+using CosmicShore.Game.Camera;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.UI.PreGameCinematic
 {
     /// <summary>
     /// Controls a pre-game cinematic flythrough that shows the level/map

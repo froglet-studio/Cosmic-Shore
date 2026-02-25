@@ -1,13 +1,16 @@
 using UnityEngine;
 
-public class DependencySpawner : MonoBehaviour
+namespace CosmicShore.Utility.Tools
 {
-    [SerializeField] GameObject[] _items;
-
-    void Awake()
+    public class DependencySpawner : MonoBehaviour
     {
-        if (_items == null) return;
-        foreach (var item in _items)
-            Instantiate(item);
+        [SerializeField] GameObject[] _items;
+
+        void Awake()
+        {
+            if (_items == null) return;
+            foreach (var item in _items)
+                Instantiate(item);
+        }
     }
 }

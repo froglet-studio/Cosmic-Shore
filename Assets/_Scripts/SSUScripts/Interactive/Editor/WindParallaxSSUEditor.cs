@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts.Interactive;
+namespace CosmicShore.SSUScripts.Interactive.Editor
 {
     [CustomEditor(typeof(WindParallaxSSU))]
     public class WindParallaxSSUEditor : Editor

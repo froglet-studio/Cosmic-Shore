@@ -1,8 +1,11 @@
 using UnityEngine;
 using System;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Environment.Prisms
 {
     public class MaterialPropertyAnimator : MonoBehaviour
     {

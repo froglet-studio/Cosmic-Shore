@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Ship
 {
     public class SilhouetteView : MonoBehaviour
     {

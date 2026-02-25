@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Integrations.PlayFab.PlayerData;
-using CosmicShore.Models;
+using CosmicShore.Integrations.Playfab.PlayerData;
+using CosmicShore.Models.ScriptableObjects;
 using Newtonsoft.Json;
 using PlayFab.ClientModels;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Models.Structs;
 namespace CosmicShore.Systems.Xp
 {
     /// <summary>

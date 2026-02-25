@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+namespace CosmicShore.VesselHUD.Controller
 {
     public sealed class TrailPool
     {

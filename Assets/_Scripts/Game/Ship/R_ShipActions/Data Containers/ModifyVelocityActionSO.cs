@@ -1,22 +1,25 @@
 using UnityEngine;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
+using CosmicShore.Game.Ship;
 
-[CreateAssetMenu(fileName = "ModifyForwardVelocityAction", menuName = "ScriptableObjects/Vessel Actions/Modify Forward Velocity")]
-public class ModifyVelocityActionSO
-    : ShipActionSO
+namespace CosmicShore.Game.Ship.R_ShipActions.DataContainers
 {
-    [SerializeField] float magnitude;
-    [SerializeField] float duration;
-
-    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+    [CreateAssetMenu(fileName = "ModifyForwardVelocityAction", menuName = "ScriptableObjects/Vessel Actions/Modify Forward Velocity")]
+    public class ModifyVelocityActionSO
+        : ShipActionSO
     {
-        vesselStatus.VesselTransformer.ModifyVelocity(vesselStatus.Vessel.Transform.forward * magnitude, duration);
-    }
+        [SerializeField] float magnitude;
+        [SerializeField] float duration;
 
-    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-    {
-        // No action needed on stop
-    }
+        public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        {
+            vesselStatus.VesselTransformer.ModifyVelocity(vesselStatus.Vessel.Transform.forward * magnitude, duration);
+        }
+
+        public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        {
+            // No action needed on stop
+        }
     
+    }
 }
-

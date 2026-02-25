@@ -1,11 +1,12 @@
 #if !LINUX_BUILD
-using CosmicShore.DialogueSystem.Models;
+using CosmicShore.DialogueSystem.Runtime.Models;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.DialogueSystem.Runtime.Helpers;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.DialogueSystem.Editor
 {
@@ -268,8 +269,6 @@ namespace CosmicShore.DialogueSystem.Editor
         }
 
 
-
-
         // -------------------------------------------------------------------
         // Center Panel: Edit set ID, mode, and lines (or reward)
         // -------------------------------------------------------------------
@@ -454,7 +453,6 @@ namespace CosmicShore.DialogueSystem.Editor
             set.rewardData.customScript = EditorGUILayout.TextField("Custom Script/Callback", set.rewardData.customScript);
             if (EditorGUI.EndChangeCheck()) _hasUnsavedChanges = true;
         }
-
 
 
         // -------------------------------------------------------------------

@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Models.Enums;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Models.ScriptableObjects;
 namespace CosmicShore.Models
 {
     public class Captain

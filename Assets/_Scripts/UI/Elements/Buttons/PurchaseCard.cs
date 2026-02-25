@@ -1,9 +1,9 @@
-using CosmicShore.App.UI.Modals;
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.UI.Modals;
+using CosmicShore.Integrations.Playfab.Economy;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore
+using CosmicShore.Game.Managers;
+namespace CosmicShore.UI.Elements.Buttons
 {
     public abstract class PurchaseCard : MonoBehaviour
     {

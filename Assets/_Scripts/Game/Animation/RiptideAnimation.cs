@@ -1,8 +1,8 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using System.Collections.Generic;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
-
+using CosmicShore.Utility;
 namespace CosmicShore.Game.Animation
 {
     public class RiptideAnimation : VesselAnimation

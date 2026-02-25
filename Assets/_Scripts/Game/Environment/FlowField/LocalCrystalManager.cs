@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Environment.FlowField
 {
     public class LocalCrystalManager : CrystalManager
     {

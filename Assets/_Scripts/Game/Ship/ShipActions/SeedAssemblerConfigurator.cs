@@ -1,11 +1,11 @@
 using System;
 using System.Collections;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Models.Enums;
+using CosmicShore.Game.Assemblers;
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class SeedAssemblerConfigurator : MonoBehaviour
     {

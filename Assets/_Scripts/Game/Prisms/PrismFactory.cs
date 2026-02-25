@@ -1,11 +1,13 @@
 using System;
 using UnityEngine;
-using CosmicShore.Core;
+using CosmicShore.Game.Managers;
 using CosmicShore.Utilities; // for PrismEventChannelWithReturnSO
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility;
+using CosmicShore.Utility.Effects;
+namespace CosmicShore.Game.Prisms
 {
     public enum PrismType
     {

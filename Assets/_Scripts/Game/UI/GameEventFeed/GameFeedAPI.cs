@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.UI.GameEventFeed
 {
     public static class GameFeedAPI
     {

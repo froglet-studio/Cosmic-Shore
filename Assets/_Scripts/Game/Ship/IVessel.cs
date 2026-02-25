@@ -1,11 +1,11 @@
 ﻿using CosmicShore.Core;
 using CosmicShore.Models.Enums;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using System;
 using UnityEngine;
-
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Player;
+using CosmicShore.Models.ScriptableObjects;
+namespace CosmicShore.Game.Ship
 {
     public interface IVessel : ITransform
     {

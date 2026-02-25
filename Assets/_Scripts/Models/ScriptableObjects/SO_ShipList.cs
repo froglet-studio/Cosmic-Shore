@@ -1,22 +1,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-[CreateAssetMenu(fileName = "New Vessel List", menuName = "CosmicShore/Vessel/ShipList", order = 12)]
-[System.Serializable]
-public class SO_ShipList : ScriptableObject
+namespace CosmicShore.Models.ScriptableObjects
 {
-    public List<SO_Ship> ShipList;
-
-    public bool TryGetShipSOByShipType(VesselClassType vesselClass, out SO_Ship shipSO)
+    [CreateAssetMenu(fileName = "New Vessel List", menuName = "CosmicShore/Vessel/ShipList", order = 12)]
+    [System.Serializable]
+    public class SO_ShipList : ScriptableObject
     {
-        shipSO = ShipList.FirstOrDefault(x => x.Class == vesselClass);
-        if (shipSO == null)
+        public List<SO_Ship> ShipList;
+
+        public bool TryGetShipSOByShipType(VesselClassType vesselClass, out SO_Ship shipSO)
         {
-            CSDebug.LogWarning($"Vessel of type {vesselClass} not found in ShipList.");
-            return false;
+            shipSO = ShipList.FirstOrDefault(x => x.Class == vesselClass);
+            if (shipSO == null)
+            {
+                CSDebug.LogWarning($"Vessel of type {vesselClass} not found in ShipList.");
+                return false;
+            }
+            return true;
         }
-        return true;
     }
 }

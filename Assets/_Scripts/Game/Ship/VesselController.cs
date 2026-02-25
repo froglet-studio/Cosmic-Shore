@@ -1,11 +1,15 @@
 using System;
 using CosmicShore.Models.Enums;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Game.Player;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.VesselHUD.Controller;
+using CosmicShore.VesselHUD.View;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Combines behaviour of R_LocalVessel and R_NetworkVessel. Behaviour is

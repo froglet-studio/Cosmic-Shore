@@ -1,6 +1,6 @@
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.UI.GameEventFeed
 {
     public enum GameFeedType
     {

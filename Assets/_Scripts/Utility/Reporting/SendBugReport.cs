@@ -3,7 +3,7 @@ using CosmicShore.Utility.Email;
 using UnityEngine.UI;
 using TMPro;
 
-namespace CosmicShore.Utility.Reports
+namespace CosmicShore.Utility.Reporting
 {
     public class SendBugReport : MonoBehaviour
     {

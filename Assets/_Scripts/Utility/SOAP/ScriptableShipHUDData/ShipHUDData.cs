@@ -1,7 +1,7 @@
 ﻿using System;
-using CosmicShore.Game.UI;
+using CosmicShore.Game.Ship;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility.SOAP.ScriptableShipHUDData
 {
     [Serializable]
     public struct ShipHUDData

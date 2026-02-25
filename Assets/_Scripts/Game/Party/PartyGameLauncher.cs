@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Models.Enums;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using UnityEngine;
 

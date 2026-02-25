@@ -1,7 +1,8 @@
-using CosmicShore.Soap;
+using CosmicShore.Utility.SOAP.ScriptablePipData;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Player;
+using CosmicShore.Game.UI;
+namespace CosmicShore.Game.Ship
 {
     [RequireComponent(typeof(IVesselStatus))]
     public class Pip : MonoBehaviour

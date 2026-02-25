@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.App.UI.Views;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.UI.Views;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.IO;
 using UnityEngine;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Game.Player;
+using CosmicShore.Game.Ship;
+using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-
-namespace CosmicShore.App.UI.Controllers
+namespace CosmicShore.Game.UI
 {
     public sealed class OverviewPanelController : MonoBehaviour
     {

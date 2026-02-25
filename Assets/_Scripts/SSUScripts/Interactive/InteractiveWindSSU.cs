@@ -1,8 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts.Internal;
+namespace CosmicShore.SSUScripts.Interactive
 {
     public class InteractiveWindSSU : InstancerSSU
     {

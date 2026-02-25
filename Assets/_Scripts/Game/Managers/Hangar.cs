@@ -1,13 +1,13 @@
-using CosmicShore.Game;
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Models;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Ship;
+using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Utility;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Managers
 {
     /// <summary>
     /// DEPRECATED - Try remove all dependencies to this script

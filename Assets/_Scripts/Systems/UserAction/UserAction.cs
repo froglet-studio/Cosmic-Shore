@@ -1,8 +1,8 @@
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Systems.UserActions
+namespace CosmicShore.Systems.UserAction
 {
     [System.Serializable]
     public class UserAction

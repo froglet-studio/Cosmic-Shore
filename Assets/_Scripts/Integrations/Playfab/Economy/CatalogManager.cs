@@ -1,22 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Integrations.PlayFab.CloudScripts;
-using CosmicShore.Integrations.PlayFab.Utility;
-using CosmicShore.Models;
+using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab.CloudScripts;
+using CosmicShore.Integrations.Playfab.Utility;
+using CosmicShore.Models.ScriptableObjects;
 using Newtonsoft.Json;
 using PlayFab;
 using PlayFab.CloudScriptModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
-using CosmicShore.Utilities;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-
-namespace CosmicShore.Integrations.PlayFab.Economy
+using CosmicShore.Models.Structs;
+using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+namespace CosmicShore.Integrations.Playfab.Economy
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {

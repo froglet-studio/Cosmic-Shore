@@ -1,9 +1,9 @@
-using CosmicShore.App.Profile;
+using CosmicShore.UI.Views;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Player
 {
     public class MiniGamePlayerSpawnerAdapter : PlayerSpawnerAdapterBase
     {

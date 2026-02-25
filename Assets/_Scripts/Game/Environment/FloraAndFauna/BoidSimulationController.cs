@@ -1,13 +1,15 @@
 using UnityEngine;
-using CosmicShore.Core;
+using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using System.Collections;
-using CosmicShore.Game;
-using CosmicShore.Soap;
-using CosmicShore.Utility;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility.Recording;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Game.Environment.MiniGameObjects;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility;
 namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
@@ -164,7 +166,6 @@ namespace CosmicShore.Game.Environment.FloraAndFauna
             boidSimulationShader.SetBuffer(kernel, "entityBufferRead", readBuffer);
             boidSimulationShader.SetBuffer(kernel, "entityBufferWrite", writeBuffer);
         }
-
 
 
         private IEnumerator UpdateWeightsCoroutine()

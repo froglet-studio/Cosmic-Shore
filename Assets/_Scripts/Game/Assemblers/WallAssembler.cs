@@ -1,10 +1,12 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Environment;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Ship;
+using CosmicShore.Utility;
+using CosmicShore.Game.Environment.FloraAndFauna;
+namespace CosmicShore.Game.Assemblers
 {
     public class WallAssembler : Assembler
     {

@@ -1,6 +1,11 @@
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.Ship;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.Effects;
+namespace CosmicShore.Game.ImpactEffects.EffectsSO.VesselProjectileEffects
 {
     [CreateAssetMenu(fileName = "VesselSpinByProjectileEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Projectile/VesselSpinByProjectileEffectSO")]
     public class VesselSpinByProjectileEffectSO : VesselProjectileEffectSO

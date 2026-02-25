@@ -1,15 +1,14 @@
-using CosmicShore.Events;
-using CosmicShore.FTUE;
-using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Integrations.PlayFab.PlayerData;
+using CosmicShore.FTUE.Helpers;
+using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.Playfab.PlayerData;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Modals
+namespace CosmicShore.UI.Modals
 {
     public class AppInitializationModal : MonoBehaviour
     {

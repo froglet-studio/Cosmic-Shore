@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.Events;
 using Obvious.Soap;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Soap
+using CosmicShore.Utility.SOAP.ScriptablePartyData;
+using CosmicShore.Utility.SOAP.ScriptablePipData;
+namespace CosmicShore.Utility.SOAP.ScriptableInputEvents
 {
     [AddComponentMenu("Soap/EventListeners/EventListener"+nameof(InputEvents))]
     public class EventListenerInputEvents : EventListenerGeneric<InputEvents>

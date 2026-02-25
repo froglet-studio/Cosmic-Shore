@@ -1,4 +1,8 @@
-public interface IFlowController
+
+namespace CosmicShore.FTUE.Interfaces
 {
-    void StepCompleted();
+    public interface IFlowController
+    {
+        void StepCompleted();
+    }
 }

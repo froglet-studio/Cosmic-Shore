@@ -1,13 +1,12 @@
 using System;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-
-namespace CosmicShore
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class FullAutoAction : ShipAction
     {

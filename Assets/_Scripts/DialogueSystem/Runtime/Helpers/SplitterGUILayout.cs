@@ -54,3 +54,7 @@ public static class SplitterGUILayout
     }
 }
 #endif
+
+namespace CosmicShore.DialogueSystem.Runtime.Helpers
+{
+}

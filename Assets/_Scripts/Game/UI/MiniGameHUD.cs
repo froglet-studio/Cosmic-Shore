@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
-using CosmicShore.Soap;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Utility.SOAP.ScriptablePipData;
+using CosmicShore.Utility.SOAP.ScriptableShipHUDData;
+using CosmicShore.Utility.SOAP.ScriptableSilhouetteData;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.UI.PreGameCinematic;
+using CosmicShore.MinigameHUD.View;
 namespace CosmicShore.Game.UI
 {
     [RequireComponent(typeof(MiniGameHUDView))]

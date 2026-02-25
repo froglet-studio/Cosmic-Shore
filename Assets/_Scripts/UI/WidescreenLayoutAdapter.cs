@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI
 {
     /// <summary>
     /// Constrains a RectTransform to a maximum aspect ratio, adding pillarboxing

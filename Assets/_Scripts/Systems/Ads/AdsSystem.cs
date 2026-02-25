@@ -1,10 +1,10 @@
 using System;
 #if !UNITY_WEBGL
-using CosmicShore.Integrations.Firebase.Controller;
+using CosmicShore.Integrations.Instrumentation.Firebase;
 #endif
 using UnityEngine;
 using UnityEngine.Advertisements;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Systems.Ads
 {

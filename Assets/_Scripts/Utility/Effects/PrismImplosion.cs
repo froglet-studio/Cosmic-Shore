@@ -1,9 +1,11 @@
 using System;
 using UnityEngine;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Ship.R_ShipActions.Executors;
 using CosmicShore.Utility.ClassExtensions; // if you still need it elsewhere
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Utility.Effects
 {
     /// <summary>
     /// Handles prism implosion/grow VFX. Managed by PrismImplosionPoolManager.

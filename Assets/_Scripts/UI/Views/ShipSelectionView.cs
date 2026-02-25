@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI.Views
 {
     [Serializable]
     public struct ShipSelectionSlot

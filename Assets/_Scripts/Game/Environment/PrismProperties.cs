@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
-
-namespace CosmicShore.Core
+using CosmicShore.Game.Ship;
+namespace CosmicShore.Game.Environment
 {
     [System.Serializable]
     public class PrismProperties

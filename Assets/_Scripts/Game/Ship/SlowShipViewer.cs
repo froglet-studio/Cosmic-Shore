@@ -1,9 +1,14 @@
 using System.Collections.Generic;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Environment;
+using CosmicShore.Utility.SOAP.ScriptableClassType;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Settings;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Utility.PoolsAndBuffers;
+namespace CosmicShore.Game.Ship
 {
     public class SlowShipViewer : MonoBehaviour
     {

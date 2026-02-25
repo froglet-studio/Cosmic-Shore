@@ -1,61 +1,64 @@
 ﻿using CosmicShore.Game;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
 {
-    [Header("Bus (required)")]
-    [SerializeField] private ShardFieldBus shardFieldBus;
-
-    [SerializeField] private CellRuntimeDataSO cellData;
-
-    [Header("Events")]
-    [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
-
-    bool _redirectActive;
-
-    void OnEnable()
+    public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
     {
-        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
-    }
+        [Header("Bus (required)")]
+        [SerializeField] private ShardFieldBus shardFieldBus;
 
-    void OnDisable()
-    {
-        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
-    }
+        [SerializeField] private CellRuntimeDataSO cellData;
 
-    void OnTurnEndOfMiniGame() => End();
+        [Header("Events")]
+        [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
 
-    public override void Initialize(IVesselStatus shipStatus) { }
+        bool _redirectActive;
 
-    public void Toggle(ShardToggleActionSO so,  IVesselStatus status)
-    {
-        if (!cellData)
+        void OnEnable()
         {
-            CSDebug.LogError("No Cell data found!");
-            return;
+            OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
         }
+
+        void OnDisable()
+        {
+            OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        }
+
+        void OnTurnEndOfMiniGame() => End();
+
+        public override void Initialize(IVesselStatus shipStatus) { }
+
+        public void Toggle(ShardToggleActionSO so,  IVesselStatus status)
+        {
+            if (!cellData)
+            {
+                CSDebug.LogError("No Cell data found!");
+                return;
+            }
         
-        if (!_redirectActive)
-        {
-            var cell = cellData.Cell;
-            Vector3 highDensityPosition = cell.GetExplosionTarget(so.Domain);
-            shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
-            _redirectActive = true;
+            if (!_redirectActive)
+            {
+                var cell = cellData.Cell;
+                Vector3 highDensityPosition = cell.GetExplosionTarget(so.Domain);
+                shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
+                _redirectActive = true;
+            }
+            else
+            {
+                shardFieldBus.BroadcastRestoreToCrystal();
+                _redirectActive = false;
+            }
         }
-        else
-        {
-            shardFieldBus.BroadcastRestoreToCrystal();
-            _redirectActive = false;
-        }
-    }
 
-     void End()
-     {
-         if (!_redirectActive) return;
-         shardFieldBus.BroadcastRestoreToCrystal();
-         _redirectActive = false;
-     }
+         void End()
+         {
+             if (!_redirectActive) return;
+             shardFieldBus.BroadcastRestoreToCrystal();
+             _redirectActive = false;
+         }
+    }
 }

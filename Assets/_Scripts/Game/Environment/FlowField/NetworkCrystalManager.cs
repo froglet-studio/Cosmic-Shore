@@ -2,9 +2,9 @@
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Environment.FlowField
 {
     public class NetworkCrystalManager : CrystalManager
     {

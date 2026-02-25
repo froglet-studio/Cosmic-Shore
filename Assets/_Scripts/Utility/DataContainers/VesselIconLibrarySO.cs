@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility.DataContainers
 {
     /// <summary>
     /// Stores sprite/icon references for all vessel types in the game.

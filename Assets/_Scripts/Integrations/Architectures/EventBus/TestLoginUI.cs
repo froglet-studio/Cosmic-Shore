@@ -1,5 +1,5 @@
 using System;
-using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.Playfab.Authentication;
 using UnityEngine;
 using UnityEngine.Events;
 

@@ -1,25 +1,27 @@
-using CosmicShore.Game;
 using CosmicShore.Game.IO;
 using UnityEngine;
-
-
-public class ToggleGyroAction : ShipAction
+using CosmicShore.Game.Ship;
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    InputController inputController;
-
-    public override void Initialize(IVessel vessel)
+    public class ToggleGyroAction : ShipAction
     {
-        base.Initialize(vessel);
-        if (Vessel != null) inputController = Vessel.VesselStatus.InputController;
-    }
+        InputController inputController;
 
-    public override void StartAction()
-    {
-        inputController.OnToggleGyro(true);
-    }
+        public override void Initialize(IVessel vessel)
+        {
+            base.Initialize(vessel);
+            if (Vessel != null) inputController = Vessel.VesselStatus.InputController;
+        }
 
-    public override void StopAction()
-    {
-        inputController.OnToggleGyro(false);
+        public override void StartAction()
+        {
+            inputController.OnToggleGyro(true);
+        }
+
+        public override void StopAction()
+        {
+            inputController.OnToggleGyro(false);
+        }
     }
 }

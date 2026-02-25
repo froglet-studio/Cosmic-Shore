@@ -1,11 +1,13 @@
-using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Integrations.Playfab.Economy;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Game.Managers;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.UI.Elements.Buttons
 {
     public abstract class PurchaseItemCard : PurchaseCard
     {

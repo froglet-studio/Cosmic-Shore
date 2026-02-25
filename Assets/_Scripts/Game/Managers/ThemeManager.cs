@@ -2,7 +2,7 @@ using UnityEngine;
 using CosmicShore.Models.Enums;
 
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Managers
 {
 
     public class ThemeManager : MonoBehaviour

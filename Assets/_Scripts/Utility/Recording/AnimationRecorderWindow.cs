@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using System;
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Utility.Recording
 {
     /// <summary>
     /// A utility for tracking the transform of specific objects and save them as

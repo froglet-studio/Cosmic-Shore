@@ -1,8 +1,8 @@
-using CosmicShore.Systems;
-using CosmicShore.App.UI.Modals;
+using CosmicShore.Game.Multiplayer;
+using CosmicShore.UI.Modals;
 using UnityEngine;
-using CosmicShore.Core;
-using CosmicShore.Soap;
+using CosmicShore.Game.Settings;
+using CosmicShore.Utility.DataContainers;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
@@ -13,7 +13,7 @@ using UnityEngine.Serialization;
 /// </summary>
 
 // TODO: P1 - Need to unify this menu code with Main Menu Code
-namespace CosmicShore.App.UI.Screens
+namespace CosmicShore.Game.UI
 {
     public class PauseMenu : MonoBehaviour
     {

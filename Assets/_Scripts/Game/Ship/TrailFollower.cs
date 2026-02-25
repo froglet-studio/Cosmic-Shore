@@ -1,10 +1,10 @@
 
-using CosmicShore.Game;
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Core
+using CosmicShore.Utility;
+namespace CosmicShore.Game.Ship
 {
     // TODO: move to enum folder
     public enum TrailFollowerDirection

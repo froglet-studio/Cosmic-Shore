@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CosmicShore.Models
+namespace CosmicShore.Models.Structs
 {
     [Serializable]
     public struct TrainingGameProgress

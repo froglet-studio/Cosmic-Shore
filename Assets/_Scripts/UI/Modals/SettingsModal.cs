@@ -1,9 +1,8 @@
-using CosmicShore.Core;
-using CosmicShore.Utility;
+using CosmicShore.Game.Settings;
+using CosmicShore.Utility.Recording;
 using Reflex.Attributes;
-
-
-namespace CosmicShore.App.UI.Modals
+using CosmicShore.Utility;
+namespace CosmicShore.UI.Modals
 {
     public class SettingsModal : ModalWindowManager
     {

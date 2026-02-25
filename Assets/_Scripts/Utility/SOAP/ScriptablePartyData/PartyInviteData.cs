@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility.SOAP.ScriptablePartyData
 {
     /// <summary>
     /// Data payload for a party invite received from another player.

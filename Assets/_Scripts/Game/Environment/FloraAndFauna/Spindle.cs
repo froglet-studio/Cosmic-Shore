@@ -2,9 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Game.Environment;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
     public class Spindle : MonoBehaviour
     {

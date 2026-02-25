@@ -1,7 +1,7 @@
 using Unity.Collections;
 using Unity.Netcode;
 
-namespace CosmicShore.Utilities.Network
+namespace CosmicShore.Utility.Network
 {
     /// <summary>
     /// Wrapping FixedString so that if we want to change player name max size in the future, we only do it once here.

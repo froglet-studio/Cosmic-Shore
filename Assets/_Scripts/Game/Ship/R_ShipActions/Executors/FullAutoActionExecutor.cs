@@ -2,11 +2,13 @@
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
 using Obvious.Soap;
+using CosmicShore.Game.Ship.R_ShipActions.DataContainers;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 {
@@ -213,4 +215,8 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         }
     }
     #endregion
+
+namespace CosmicShore.Game.Ship.R_ShipActions.Executors
+{
+    }
 }

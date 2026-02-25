@@ -4,9 +4,10 @@ using CosmicShore.Systems.Bootstrap;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.Utility;
+using CosmicShore.App.Systems.Authentication;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Services.Auth
+namespace CosmicShore.Services
 {
     /// <summary>
     /// Placed on the SplashScreen scene. After the splash finishes,

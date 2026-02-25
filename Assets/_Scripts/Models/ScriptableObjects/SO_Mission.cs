@@ -1,7 +1,7 @@
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore
+using CosmicShore.Models;
+namespace CosmicShore.Models.ScriptableObjects
 {
     [CreateAssetMenu(fileName = "New Mission", menuName = "CosmicShore/Game/Mission", order = 2)]
     [System.Serializable]

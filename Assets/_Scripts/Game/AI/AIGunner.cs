@@ -1,4 +1,4 @@
-using CosmicShore.Game.Projectiles;
+using CosmicShore.Game.ImpactEffects.EffectsSO.VesselSkimmerEffects;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Models.Enums;

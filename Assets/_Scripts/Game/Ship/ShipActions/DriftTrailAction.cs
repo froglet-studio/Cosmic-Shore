@@ -1,7 +1,7 @@
-using CosmicShore.Core;
-using CosmicShore.Game;
+using CosmicShore.Game.Ship;
 using System.Collections;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 public class DriftTrailAction : ShipAction
 {
     #region Events
@@ -9,34 +9,37 @@ public class DriftTrailAction : ShipAction
     public event ChangeDriftAltitude OnChangeDriftAltitude;
     #endregion
 
-    VesselPrismController VesselPrismController => VesselStatus.VesselPrismController;
+namespace CosmicShore.Game.Ship.ShipActions
+{
+        VesselPrismController VesselPrismController => VesselStatus.VesselPrismController;
 
-    public override void Initialize(IVessel vessel)
-    {
-        base.Initialize(vessel);
-    }
-
-    public override void StartAction()
-    {
-        StartCoroutine(UpdateDotProductCoroutine());
-    }
-
-    public override void StopAction()
-    {
-        StopAllCoroutines();
-        VesselPrismController.SetDotProduct(1);
-        if (!Vessel.VesselStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1);
-    }
-
-
-    IEnumerator UpdateDotProductCoroutine()
-    {
-        while (true) 
+        public override void Initialize(IVessel vessel)
         {
-            var driftAltitude = Vector3.Dot(Vessel.VesselStatus.Course, Vessel.Transform.forward);
-            if (!Vessel.VesselStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
-            VesselPrismController.SetDotProduct(driftAltitude);
-            yield return new WaitForSeconds(.05f);
+            base.Initialize(vessel);
+        }
+
+        public override void StartAction()
+        {
+            StartCoroutine(UpdateDotProductCoroutine());
+        }
+
+        public override void StopAction()
+        {
+            StopAllCoroutines();
+            VesselPrismController.SetDotProduct(1);
+            if (!Vessel.VesselStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1);
+        }
+
+
+        IEnumerator UpdateDotProductCoroutine()
+        {
+            while (true) 
+            {
+                var driftAltitude = Vector3.Dot(Vessel.VesselStatus.Course, Vessel.Transform.forward);
+                if (!Vessel.VesselStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
+                VesselPrismController.SetDotProduct(driftAltitude);
+                yield return new WaitForSeconds(.05f);
+            }
         }
     }
 }

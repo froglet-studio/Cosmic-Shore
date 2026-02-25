@@ -1,4 +1,4 @@
-namespace CosmicShore.Game.UI
+namespace CosmicShore.Game.UI.NotificationSystem.Payload
 {
     [System.Serializable]
     public struct NotificationPayload

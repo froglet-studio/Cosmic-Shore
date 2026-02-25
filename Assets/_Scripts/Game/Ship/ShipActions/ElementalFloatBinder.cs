@@ -1,33 +1,37 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
-using CosmicShore.Game;
+using CosmicShore.Models.Enums;
+using CosmicShore.Game.Ship;
 
-public static class ElementalFloatBinder
+namespace CosmicShore.Game.Ship.ShipActions
 {
-    static readonly BindingFlags BF = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-    static readonly System.Collections.Generic.Dictionary<Type, FieldInfo[]> Cache = new();
-
-    public static void BindAndClone(object target, IVessel ship, string prefix)
+    public static class ElementalFloatBinder
     {
-        if (target == null || ship == null) return;
-        var t = target.GetType();
+        static readonly BindingFlags BF = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        static readonly System.Collections.Generic.Dictionary<Type, FieldInfo[]> Cache = new();
 
-        if (!Cache.TryGetValue(t, out var fields))
+        public static void BindAndClone(object target, IVessel ship, string prefix)
         {
-            fields = t.GetFields(BF).Where(f => f.FieldType == typeof(ElementalFloat)).ToArray();
-            Cache[t] = fields;
-        }
+            if (target == null || ship == null) return;
+            var t = target.GetType();
 
-        foreach (var f in fields)
-        {
-            var original = (ElementalFloat) f.GetValue(target);
-            if (original == null) continue;
+            if (!Cache.TryGetValue(t, out var fields))
+            {
+                fields = t.GetFields(BF).Where(f => f.FieldType == typeof(ElementalFloat)).ToArray();
+                Cache[t] = fields;
+            }
 
-            var clone = new ElementalFloat(original.Value);
-            typeof(ElementalFloat).GetProperty("Name")?.SetValue(clone, $"{prefix}.{f.Name}");
-            typeof(ElementalFloat).GetProperty("Ship")?.SetValue(clone, ship);
-            f.SetValue(target, clone);
+            foreach (var f in fields)
+            {
+                var original = (ElementalFloat) f.GetValue(target);
+                if (original == null) continue;
+
+                var clone = new ElementalFloat(original.Value);
+                typeof(ElementalFloat).GetProperty("Name")?.SetValue(clone, $"{prefix}.{f.Name}");
+                typeof(ElementalFloat).GetProperty("Ship")?.SetValue(clone, ship);
+                f.SetValue(target, clone);
+            }
         }
     }
 }

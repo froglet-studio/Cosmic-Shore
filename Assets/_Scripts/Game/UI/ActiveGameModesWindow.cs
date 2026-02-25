@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Analytics
+namespace CosmicShore.Game.UI
 {
     public class ActiveGameModesWindow : EditorWindow
     {

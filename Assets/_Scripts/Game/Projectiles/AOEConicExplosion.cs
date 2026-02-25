@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Threading;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Projectiles

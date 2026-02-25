@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Arcade
+namespace CosmicShore.Models.ScriptableObjects
 {
     /// <summary>
     /// Defines how elemental buffs are applied to vessels as a comeback mechanism in a minigame.

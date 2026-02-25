@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Child class controlling prism spawning only for Sparrow

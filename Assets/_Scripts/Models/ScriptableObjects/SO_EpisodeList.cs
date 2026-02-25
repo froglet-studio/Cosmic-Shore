@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.Models
+namespace CosmicShore.Models.ScriptableObjects
 {
     /// <summary>
     /// Collection of all episodes for the Episode Screen.

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.ImpactEffects.Containers
 {
     [CreateAssetMenu(fileName = "ProjectileImpactorDataContainer",
         menuName = "ScriptableObjects/Impact Effects/Mine - Container/ProjectileImpactorDataContainerSO")]

@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Soap;
+using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game.UI
+using CosmicShore.MinigameHUD.View;
+namespace CosmicShore.Game.UI.GameEventFeed
 {
     public class GameEventFeed : MonoBehaviour
     {

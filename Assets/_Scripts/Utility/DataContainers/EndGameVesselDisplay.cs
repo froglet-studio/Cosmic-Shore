@@ -2,9 +2,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility.DataContainers
 {
     /// <summary>
     /// Individual vessel display component for end-game screen.

@@ -1,6 +1,12 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Environment;
 using UnityEngine;
-
+using CosmicShore.Game.Environment.Prisms;
+using CosmicShore.Game.Managers;
+using CosmicShore.Game.Settings;
+using CosmicShore.Game.Ship;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility;
+using CosmicShore.Utility.PoolsAndBuffers;
 namespace CosmicShore.Game.IO
 {
     public interface IInputStrategy

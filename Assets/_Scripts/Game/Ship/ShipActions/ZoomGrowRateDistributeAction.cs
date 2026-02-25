@@ -1,7 +1,9 @@
 using UnityEngine;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class ZoomGrowRateDistributeAction : ShipAction
     {

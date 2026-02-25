@@ -2,10 +2,10 @@
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Game.Analytics
+namespace CosmicShore.Game.UI
 {
     [CustomEditor(typeof(LeaderboardConfigSO))]
     public class LeaderboardConfigSOEditor : Editor

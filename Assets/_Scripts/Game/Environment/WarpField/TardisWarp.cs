@@ -1,28 +1,31 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "TardisWarpData", menuName = "CosmicShore/Warp/TardisWarp", order = 30)]
-[System.Serializable] public class TardisWarp : WarpFieldSO
+namespace CosmicShore.Game.Environment.WarpField
 {
-    [SerializeField] float minRadius = 10;
-
-    public TardisWarp()
+    [CreateAssetMenu(fileName = "TardisWarpData", menuName = "CosmicShore/Warp/TardisWarp", order = 30)]
+    [System.Serializable] public class TardisWarp : WarpFieldSO
     {
-        fieldThickness = 200;
-        fieldWidth = 200;
-        fieldHeight = 200;
-        fieldMax = 500f;
-    }
+        [SerializeField] float minRadius = 10;
 
-    override public Vector3 HybridVector(Transform node)
-    {
-        return new Vector3(sigmoid(node.position.x),
-                           sigmoid(node.position.y),
-                           sigmoid(node.position.z));
-    }
+        public TardisWarp()
+        {
+            fieldThickness = 200;
+            fieldWidth = 200;
+            fieldHeight = 200;
+            fieldMax = 500f;
+        }
 
-    float sigmoid(float position)
-    {
-        if (position > 0) return 3 * Mathf.Atan(position - minRadius) / fieldMax;
-        else return 3 * Mathf.Atan(position + minRadius) / fieldMax;
+        override public Vector3 HybridVector(Transform node)
+        {
+            return new Vector3(sigmoid(node.position.x),
+                               sigmoid(node.position.y),
+                               sigmoid(node.position.z));
+        }
+
+        float sigmoid(float position)
+        {
+            if (position > 0) return 3 * Mathf.Atan(position - minRadius) / fieldMax;
+            else return 3 * Mathf.Atan(position + minRadius) / fieldMax;
+        }
     }
 }

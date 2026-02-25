@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Scenes.TestInput
+namespace CosmicShore.Scenes.TestInput
 {
     public class ControlsManager : MonoBehaviour
     {

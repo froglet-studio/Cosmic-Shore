@@ -1,12 +1,12 @@
-using CosmicShore.Utilities;
+using CosmicShore.Utility;
 using System.Collections.Generic;
-using CosmicShore.Systems.CTA;
-using CosmicShore.Systems.UserActions;
+using CosmicShore.Systems.CallToAction;
+using CosmicShore.Systems.UserAction;
 using CosmicShore.Models.Enums;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Systems.Quests
+namespace CosmicShore.Systems.Quest
 {
     public class QuestSystem : SingletonPersistent<QuestSystem>
     {

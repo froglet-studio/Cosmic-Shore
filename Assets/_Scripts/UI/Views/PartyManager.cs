@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CosmicShore.App.Profile;
-using CosmicShore.Soap;
-using CosmicShore.Utilities;
+using CosmicShore.Utility.DataContainers;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-
-namespace CosmicShore.Game.Party
+using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.SOAP.ScriptablePartyData;
+namespace CosmicShore.UI.Views
 {
     /// <summary>
     /// Backward-compatible facade that delegates to <see cref="HostConnectionService"/>

@@ -4,8 +4,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-
-namespace SpriteShadersUltimate
+using CosmicShore.SSUScripts;
+namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(UnscaledTimeSSU))]
     [CanEditMultipleObjects]

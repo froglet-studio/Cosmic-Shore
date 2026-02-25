@@ -1,7 +1,9 @@
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Ship;
+using CosmicShore.VesselHUD.Interfaces;
+using CosmicShore.VesselHUD.View;
+namespace CosmicShore.VesselHUD.Controller
 {
     public class VesselHUDController : MonoBehaviour, IVesselHUDController
     {

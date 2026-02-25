@@ -1,7 +1,7 @@
-using CosmicShore.Core;
+using CosmicShore.Utility.PoolsAndBuffers;
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.Cytoplasm;
+namespace CosmicShore.Game.Environment
 {
     public class NudgeShardPoolManager : GenericPoolManager<NudgeShard>
     {

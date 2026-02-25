@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
-using CosmicShore.Utilities;
+using CosmicShore.Utility;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Managers
 {
     /// <summary>
     /// Centralized timer manager that replaces per-object coroutines for timed

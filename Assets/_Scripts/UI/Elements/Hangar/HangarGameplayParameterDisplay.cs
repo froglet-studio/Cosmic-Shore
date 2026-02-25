@@ -1,8 +1,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace CosmicShore
+using CosmicShore.Game.Managers;
+using CosmicShore.Models.ScriptableObjects;
+namespace CosmicShore.UI.Elements.Hangar
 {
     public class HangarGameplayParameterDisplay : MonoBehaviour
     {

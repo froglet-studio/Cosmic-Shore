@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.VesselHUD.Controller
 {
 
     [CreateAssetMenu(fileName = "Event_InputEventBlock",

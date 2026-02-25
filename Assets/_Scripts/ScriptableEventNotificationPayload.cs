@@ -1,8 +1,11 @@
-using CosmicShore.Game.UI;
+using CosmicShore.Game.UI.NotificationSystem.Payload;
 using UnityEngine;
 using Obvious.Soap;
 
-[CreateAssetMenu(
-    fileName = "Event_" + nameof(NotificationPayload),
-    menuName = "ScriptableObjects/SOAP/Events/NotificationPayload")]
-public class ScriptableEventNotificationPayload : ScriptableEvent<NotificationPayload> { }
+namespace CosmicShore
+{
+    [CreateAssetMenu(
+        fileName = "Event_" + nameof(NotificationPayload),
+        menuName = "ScriptableObjects/SOAP/Events/NotificationPayload")]
+    public class ScriptableEventNotificationPayload : ScriptableEvent<NotificationPayload> { }
+}

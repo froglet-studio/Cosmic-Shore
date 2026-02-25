@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore
+namespace CosmicShore.Models.ScriptableObjects
 {
     /// <summary>
     /// Represents an element for the purpose of displaying  in the UI

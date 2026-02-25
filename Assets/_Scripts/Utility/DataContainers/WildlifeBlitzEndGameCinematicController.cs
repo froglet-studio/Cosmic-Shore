@@ -1,14 +1,13 @@
 ﻿using System.Collections;
-using CosmicShore.Core;
-using CosmicShore.Game.Analytics;
-using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Ship;
 using CosmicShore.Game.Arcade.Scoring;
 using Reflex.Attributes;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game.Cinematics
+using CosmicShore.Game.UI;
+using CosmicShore.Utility;
+namespace CosmicShore.Utility.DataContainers
 {
     public class WildlifeBlitzEndGameCinematicController : EndGameCinematicController
     {

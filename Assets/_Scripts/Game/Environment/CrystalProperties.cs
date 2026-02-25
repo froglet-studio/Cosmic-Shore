@@ -1,7 +1,7 @@
 using CosmicShore.Models.Enums;
-
+using CosmicShore.Game.Environment.FlowField;
 ﻿
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Environment
 {
     [System.Serializable]
     public struct CrystalProperties

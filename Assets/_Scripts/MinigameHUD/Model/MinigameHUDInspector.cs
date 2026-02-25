@@ -1,8 +1,8 @@
 #if false // UNITY_EDITOR
-using CosmicShore.Game.UI;
+using CosmicShore.Game.Ship;
 using UnityEditor;
 using UnityEngine;
-
+using CosmicShore.MinigameHUD.View;
 [CustomEditor(typeof(MiniGameHUDView), true)]
 public class MiniGameHUDViewInspector : Editor
 {
@@ -104,3 +104,7 @@ public class MiniGameHUDViewInspector : Editor
     }
 }
 #endif
+
+namespace CosmicShore.MinigameHUD.Model
+{
+}

@@ -1,6 +1,7 @@
 using UnityEngine;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.Impactors;
+using CosmicShore.Models.Enums;
+namespace CosmicShore.Game.ImpactEffects
 {
     /// <summary>
     /// Separating this component from R_IImpactor lets us to get colliders

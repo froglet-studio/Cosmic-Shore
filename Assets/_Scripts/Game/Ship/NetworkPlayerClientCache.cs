@@ -1,9 +1,9 @@
 ﻿using System.Linq;
-using Unity.Multiplayer.Samples.Utilities;
+using CosmicShore.Utility.Network;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Player;
+namespace CosmicShore.Game.Ship
 {
     /// <summary>
     /// Caches all active NetworkPlayer instances; must reside on the same GameObject as a NetworkPlayer and NetcodeHooks.

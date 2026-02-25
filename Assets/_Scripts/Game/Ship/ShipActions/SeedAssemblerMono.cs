@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
-
-namespace CosmicShore
+using CosmicShore.Game.Assemblers;
+namespace CosmicShore.Game.Ship.ShipActions
 {
     public class SeedAssemblerMono : ShipAction
     {

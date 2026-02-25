@@ -2,7 +2,7 @@ using DG.Tweening;
 using System;
 using UnityEngine;
 
-namespace CosmicShore.DialogueSystem.View
+namespace CosmicShore.DialogueSystem.Runtime.Helpers
 {
     public static class DialogueUIAnimator
     {

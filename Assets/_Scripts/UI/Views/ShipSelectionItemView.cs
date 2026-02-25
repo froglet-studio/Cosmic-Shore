@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Views
+namespace CosmicShore.UI.Views
 {
     public class ShipSelectionItemView : MonoBehaviour
     {

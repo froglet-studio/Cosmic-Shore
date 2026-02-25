@@ -1,14 +1,14 @@
 using System.Collections;
 using System.Security;
-using CosmicShore.Integrations.PlayFab.PlayerData;
+using CosmicShore.Integrations.Playfab.PlayerData;
 using PlayFab;
 using PlayFab.ClientModels;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Integrations.PlayFab.Authentication
+namespace CosmicShore.Integrations.Playfab.Authentication
 {
     public class AuthenticationView : MonoBehaviour
     {

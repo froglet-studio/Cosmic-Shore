@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Game.Player
 {
     public class MainMenuPlayerSpawnerAdapter : PlayerSpawnerAdapterBase
     {

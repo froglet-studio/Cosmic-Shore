@@ -1,9 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.UI.Elements
 {
     public enum NavGroupType
     {

@@ -1,7 +1,10 @@
-using CosmicShore.Core;
+using CosmicShore.Game.Environment;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Game.Ship;
+using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Game.Projectiles
 {

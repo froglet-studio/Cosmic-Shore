@@ -1,8 +1,8 @@
 ﻿using CosmicShore.Game;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Soap
+namespace CosmicShore.Utility.SOAP
 {
     [System.Serializable]
     [CreateAssetMenu(fileName = "DataContainer_VesselPrefab", menuName = "ScriptableObjects/SOAP/Data Containers/VesselPrefabContainer")]

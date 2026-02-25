@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.Serialization;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.ImpactEffects.EffectsSO.AbstractEffectTypes;
+using CosmicShore.Models.Enums;
+using CosmicShore.Utility.Effects;
+namespace CosmicShore.Game.ImpactEffects.Containers
 {
     [CreateAssetMenu(fileName = "VesselImpactorDataContainer",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Container/VesselImpactorDataContainerSO")]

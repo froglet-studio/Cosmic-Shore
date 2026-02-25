@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using CosmicShore.Core;
-using CosmicShore.Utilities;
+using CosmicShore.Game.Settings;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
-using CosmicShore.Utility;
+using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Systems.Audio
 {

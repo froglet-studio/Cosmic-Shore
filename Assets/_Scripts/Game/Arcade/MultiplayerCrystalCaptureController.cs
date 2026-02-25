@@ -1,4 +1,5 @@
-﻿namespace CosmicShore.Game.Arcade
+
+namespace CosmicShore.Game.Arcade
 {
     public class MultiplayerCrystalCaptureController : MultiplayerDomainGamesController
     {

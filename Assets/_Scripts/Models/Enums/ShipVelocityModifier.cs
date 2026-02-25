@@ -1,15 +1,18 @@
 using UnityEngine;
 
-public struct ShipVelocityModifier
+namespace CosmicShore.Models.Enums
 {
-    public Vector3 initialValue;
-    public float duration;
-    public float elapsedTime;
-
-    public ShipVelocityModifier(Vector3 initialValue, float duration, float elapsedTime)
+    public struct ShipVelocityModifier
     {
-        this.initialValue = initialValue;
-        this.duration = duration;
-        this.elapsedTime = elapsedTime;
+        public Vector3 initialValue;
+        public float duration;
+        public float elapsedTime;
+
+        public ShipVelocityModifier(Vector3 initialValue, float duration, float elapsedTime)
+        {
+            this.initialValue = initialValue;
+            this.duration = duration;
+            this.elapsedTime = elapsedTime;
+        }
     }
 }

@@ -1,7 +1,7 @@
-using CosmicShore.Utilities;
+using CosmicShore.Utility;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore.Systems.UserActions
+namespace CosmicShore.Systems.UserAction
 {
     public class UserActionSystem : SingletonPersistent<UserActionSystem>
     {

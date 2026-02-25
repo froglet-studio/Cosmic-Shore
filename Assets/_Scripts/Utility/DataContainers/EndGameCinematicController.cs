@@ -1,13 +1,19 @@
 ﻿using System;
 using System.Collections;
-using CosmicShore.Game.Arcade;
+using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.Game.XP;
-using CosmicShore.Soap;
+using CosmicShore.Utility.SOAP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.Utility;
+using CosmicShore.Game.Arcade.TurnMonitors;
+using CosmicShore.Game.UI;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Utility.SOAP.ScriptableInputEvents;
+using CosmicShore.Utility.SOAP.ScriptablePartyData;
+using CosmicShore.Utility.SOAP.ScriptablePipData;
+using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility.DataContainers
 {
     public class EndGameCinematicController : MonoBehaviour
     {

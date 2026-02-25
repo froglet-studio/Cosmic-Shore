@@ -1,10 +1,10 @@
-using CosmicShore.Core;
-using CosmicShore.Game.Spawning;
+using CosmicShore.Game.Ship;
+using CosmicShore.Game.Environment.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 
-namespace CosmicShore
+namespace CosmicShore.Game.Environment.MiniGameObjects
 {
     /// <summary>
     /// Spawns prisms along the edges of a geodesic polyhedron — a spherene.

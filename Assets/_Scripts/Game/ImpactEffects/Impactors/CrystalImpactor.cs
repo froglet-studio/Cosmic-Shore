@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 using CosmicShore.Models.Enums;
-
-namespace CosmicShore.Game
+using CosmicShore.Game.Environment.FlowField;
+namespace CosmicShore.Game.ImpactEffects.Impactors
 {
     [RequireComponent((typeof(Crystal)))]
     public abstract class CrystalImpactor : ImpactorBase
