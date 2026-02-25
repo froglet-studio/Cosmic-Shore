@@ -23,7 +23,7 @@ namespace CosmicShore.Game
         public override void OnNetworkSpawn()
         {
             if (spawnOnClientReady)
-                gameData.OnClientReady += OnClientReadySpawn;
+                gameData.OnClientReady.OnRaised += OnClientReadySpawn;
             else
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
 
@@ -34,7 +34,7 @@ namespace CosmicShore.Game
         public override void OnNetworkDespawn()
         {
             if (spawnOnClientReady)
-                gameData.OnClientReady -= OnClientReadySpawn;
+                gameData.OnClientReady.OnRaised -= OnClientReadySpawn;
             else
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
 
