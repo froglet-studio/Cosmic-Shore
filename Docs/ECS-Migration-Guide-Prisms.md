@@ -245,3 +245,76 @@ Start with **Phase 0 (hybrid bridge)**. It's low-risk because:
 4. If anything breaks, the Physics fallback path still works
 
 Once Phase 0 proves stable, Phases 1-2 are mechanical — each singleton manager becomes an `ISystem` with almost identical job code. Phase 3 is the real cutover where you drop the MonoBehaviour entirely.
+
+---
+
+## Phase 0 Implementation (Completed)
+
+### New Files
+
+| File | Path | Purpose |
+|------|------|---------|
+| `AOEComponents.cs` | `Assets/_Scripts/Game/ECS/Components/AOEComponents.cs` | `AOESpatial` (16B, matches `PrismSpatialData`), `AOEDamage` (8B, matches `PrismDamageData`), `AOEManagedRef` (maps entity hits back to `Prism[]`) |
+| `PrismEntityBridge.cs` | `Assets/_Scripts/Game/ECS/Bridge/PrismEntityBridge.cs` | Creates/destroys companion entity per prism, syncs state changes from MonoBehaviour to ECS |
+
+### Modified Files
+
+| File | Changes |
+|------|---------|
+| `PrismAOERegistry.cs` | `_bridges[]` parallel array for bridge refs, companion entity creation in `Register()`, bridge sync in all state update methods, `ProcessExplosionFrameECS()` path with `EntityQuery`-sourced data |
+
+### Architecture
+
+```
+Prism (MonoBehaviour)
+  |
+  |-- PrismAOERegistry.Register(this)
+  |     |
+  |     |-- TryGetComponent<PrismEntityBridge>() -> cache in _bridges[]
+  |     |-- bridge.CreateCompanionEntity(spatial, damage, managedIndex)
+  |     |     |
+  |     |     +-- EntityManager.CreateEntity(AOESpatial, AOEDamage, AOEManagedRef)
+  |     |
+  |     +-- stores in _spatial[], _damage[], _prisms[] (legacy arrays, kept in parallel)
+  |
+  |-- State changes (shield, destroy, domain, volume)
+  |     |
+  |     |-- PrismAOERegistry.UpdateShieldState/MarkDestroyed/UpdateDomain/UpdateVolume
+  |     |     |
+  |     |     |-- updates _spatial[] / _damage[] (legacy)
+  |     |     +-- calls _bridges[index].UpdateFlags/MarkDestroyed/UpdateDamageData (ECS)
+  |
+  +-- PrismAOERegistry.Unregister()
+        |
+        |-- bridge.DestroyCompanionEntity()
+        +-- clears _spatial[], _damage[], _prisms[], _bridges[]
+```
+
+### Toggle
+
+```csharp
+PrismEntityBridge.UseECS = true;  // Switch to ECS query path
+PrismEntityBridge.UseECS = false; // Legacy NativeArray path (default)
+```
+
+When `UseECS` is true:
+1. `PrismAOERegistry.Register()` creates companion entities via bridge
+2. `ProcessExplosionFrame()` delegates to `ProcessExplosionFrameECS()`
+3. ECS path: `EntityQuery.ToComponentDataArray<AOESpatial>()` -> `Reinterpret<PrismSpatialData>()` -> same `AOESpatialQueryJob`
+4. Hit resolution maps ECS indices back to `_prisms[]` via `AOEManagedRef.ManagedIndex`
+
+When `UseECS` is false:
+- Everything works exactly as before. The bridge is inert, no entities are created.
+
+### Activating for testing
+
+1. Add `PrismEntityBridge` component to prism prefabs (or batch-add via editor script)
+2. Set `PrismEntityBridge.UseECS = true` in a bootstrap/configuration script
+3. Both paths can coexist — toggle at runtime for A/B profiling
+
+### Key design decisions
+
+- **Separate AOE components** (`AOESpatial`, `AOEDamage`) rather than using the monolithic `PrismData` from `PrismComponents.cs`. Preserves the 16B/8B hot-cold split that makes the Burst job cache-efficient.
+- **`NativeArray.Reinterpret<PrismSpatialData>()`** on the `AOESpatial` array — zero-cost since both are exactly 16 bytes with identical field layout. The existing `AOESpatialQueryJob` works unmodified.
+- **Legacy arrays kept in parallel** with ECS entities. Both are always updated. This means switching the toggle mid-session is safe, and the fallback path is always warm.
+- **No changes to Prism.cs, PrismStateManager.cs, or PrismTeamManager.cs**. All bridge wiring is in `PrismAOERegistry`, making the integration minimally invasive.
