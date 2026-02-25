@@ -63,10 +63,10 @@ namespace CosmicShore.App.UI.Elements
 
             FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType);
 
-            if (game.CallToActionTargetType == Systems.CTA.CallToActionTargetType.PlayGameFreestyle)
+            /*if (game.CallToActionTargetType == Systems.CTA.CallToActionTargetType.PlayGameFreestyle)
             {
                 GetComponent<Button>().onClick.AddListener(delegate { FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType); });
-            }
+            }*/
 
         }
 
