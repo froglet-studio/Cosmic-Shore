@@ -18,7 +18,8 @@ namespace CosmicShore.Game
 
         void OnDisable()
         {
-            _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
+            if (_netcodeHooks != null)
+                _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
         }
 
         private void OnNetworkSpawn()

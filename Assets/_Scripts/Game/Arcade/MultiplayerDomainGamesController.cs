@@ -41,6 +41,28 @@ namespace CosmicShore.Game.Arcade
         protected override void OnReadyClicked_()
         {
             RaiseToggleReadyButtonEvent(false);
+
+            if (IsPartyMode)
+            {
+                // Mini-game env was deactivated during network spawn — RPCs
+                // are not registered. Start countdown directly since the host
+                // is both client and server in party mode.
+                if (countdownTimer != null)
+                {
+                    countdownTimer.BeginCountdown(() =>
+                    {
+                        gameData.SetPlayersActive();
+                        gameData.StartTurn();
+                    });
+                }
+                else
+                {
+                    gameData.SetPlayersActive();
+                    gameData.StartTurn();
+                }
+                return;
+            }
+
             OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
         }
 

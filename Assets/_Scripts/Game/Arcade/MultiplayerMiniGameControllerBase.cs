@@ -142,7 +142,20 @@ namespace CosmicShore.Game.Arcade
         void HandleTurnEnd()
         {
             if (!IsServer) return;
-            SyncTurnEnd_ClientRpc();
+
+            if (IsPartyMode)
+            {
+                // RPCs not registered — do turn-end work locally.
+                // Host is the only human client in party mode.
+                if (ShouldResetPlayersOnTurnEnd)
+                    gameData.ResetPlayers();
+                OnTurnEndedCustom();
+            }
+            else
+            {
+                SyncTurnEnd_ClientRpc();
+            }
+
             ExecuteServerTurnEnd();
         }
 
@@ -171,7 +184,11 @@ namespace CosmicShore.Game.Arcade
         void ExecuteServerRoundEnd()
         {
             if (!IsServer) return;
-            SyncRoundEnd_ClientRpc();
+
+            // Sync to remote clients (not needed in party mode — RPCs not registered)
+            if (!IsPartyMode)
+                SyncRoundEnd_ClientRpc();
+
             gameData.RoundsPlayed++;
             gameData.InvokeMiniGameRoundEnd();
             OnRoundEndedCustom();
@@ -219,13 +236,21 @@ namespace CosmicShore.Game.Arcade
         protected override void SetupNewTurn()
         {
             base.SetupNewTurn();
-            if (IsServer) ShowReadyButton_ClientRpc();
+
+            if (IsPartyMode)
+                RaiseToggleReadyButtonEvent(true);
+            else if (IsServer)
+                ShowReadyButton_ClientRpc();
         }
 
         protected override void SetupNewRound()
         {
             base.SetupNewRound();
-            if (IsServer) ShowReadyButton_ClientRpc();
+
+            if (IsPartyMode)
+                RaiseToggleReadyButtonEvent(true);
+            else if (IsServer)
+                ShowReadyButton_ClientRpc();
         }
 
         [ClientRpc]
