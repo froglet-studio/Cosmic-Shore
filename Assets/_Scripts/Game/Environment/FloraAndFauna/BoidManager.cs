@@ -1,11 +1,16 @@
 using UnityEngine;
-using System.Collections;
-using CosmicShore.Core;
 using System.Collections.Generic;
 using CosmicShore;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utility;
 
+/// <summary>
+/// Manages a group of <see cref="Boid"/> creatures.
+/// Handles spawning, trail registration, and mound target assignment.
+/// Extends Fauna for domain/goal propagation from the spawning system (LSP-compliant:
+/// lifecycle methods use base defaults instead of throwing NotImplementedException).
+/// </summary>
 public class BoidManager : Fauna
 {
     [Header("Boid Settings")]
@@ -17,13 +22,16 @@ public class BoidManager : Fauna
     public Transform Mound;
 
     public List<Boid> Boids;
-    
     public Trail boidTrail = new();
 
     protected override void Start()
     {
         base.Start();
+        SpawnBoids();
+    }
 
+    void SpawnBoids()
+    {
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
@@ -33,7 +41,6 @@ public class BoidManager : Fauna
             newBoid.BoidManager = this;
             newBoid.domain = domain;
             newBoid.normalizedIndex = (float)i / numberOfBoids;
-
             newBoid.Initialize(cell);
 
             Boids.Add(newBoid);
@@ -49,20 +56,5 @@ public class BoidManager : Fauna
             if (Mound)
                 newBoid.Mound = Mound;
         }
-    }
-
-    public override void Initialize(Cell cell)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    protected override void Spawn()
-    {
-        throw new System.NotImplementedException();
-    }
-
-    protected override void Die(string killername = "")
-    {
-        throw new System.NotImplementedException();
     }
 }
