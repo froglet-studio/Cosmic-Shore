@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using CosmicShore.Game.UI;
 using CosmicShore.Game.UI.Party;
 using CosmicShore.Soap;
 using Cysharp.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace CosmicShore.Game.Arcade.Party
     /// - PartyVesselSpawner (on always-active PartyGameManager) handles vessel spawning
     ///   so ClientRpcs are never called on NetworkBehaviours from disabled GameObjects.
     /// - Environment SPVIs are always InertMode — they only provide spawn origin data.
-    /// - Environment canvases are disabled to prevent UI conflicts.
+    /// - Environment GameCanvas stays enabled for HUD; IsPartyMode suppresses mini-game UI.
     /// - Scene camera is disabled during gameplay, re-enabled between rounds.
     /// </summary>
     public class PartyGameController : NetworkBehaviour
@@ -963,8 +964,8 @@ namespace CosmicShore.Game.Arcade.Party
             SetPartyModeOnEnvironment(env, partyModeState);
 
             env.SetActive(true);
-            DisableEnvironmentCanvases(env);
-            CSDebug.Log($"[PartyGame] Activated: '{env.name}' (SPVI={partyModeState}, canvases disabled)");
+            EnableGameCanvas(env);
+            CSDebug.Log($"[PartyGame] Activated: '{env.name}' (SPVI={partyModeState}, GameCanvas enabled)");
 
             // Initialize segment spawner if present
             var spawner = env.GetComponentInChildren<SegmentSpawner>();
@@ -1064,12 +1065,20 @@ namespace CosmicShore.Game.Arcade.Party
             }
         }
 
-        void DisableEnvironmentCanvases(GameObject env)
+        /// <summary>
+        /// Re-enables the GameCanvas in the environment so the MiniGameHUD, countdown timer,
+        /// and gameplay UI are visible. The IsPartyMode flag on the controller already
+        /// suppresses the mini-game's own ready button and lifecycle UI.
+        /// </summary>
+        void EnableGameCanvas(GameObject env)
         {
-            var canvases = env.GetComponentsInChildren<Canvas>(true);
-            foreach (var canvas in canvases)
+            var gameCanvas = env.GetComponentInChildren<GameCanvas>(true);
+            if (gameCanvas)
             {
-                canvas.enabled = false;
+                var canvas = gameCanvas.GetComponent<Canvas>();
+                if (canvas) canvas.enabled = true;
+                gameCanvas.gameObject.SetActive(true);
+                CSDebug.Log($"[PartyGame] GameCanvas enabled on '{env.name}'");
             }
         }
 
