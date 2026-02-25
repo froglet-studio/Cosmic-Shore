@@ -46,9 +46,11 @@ Material:
     - _GalacticWidth: 0.047
     - _NebulaScale: 2.5
     - _NebulaStrength: 0.4
-    - _StarBrightness: 0.34
-    - _StarConcentration: 100
-    - _StarDensity: 41
+    - _StarBaseProb: 0
+    - _StarBrightness: 0.24
+    - _StarConcentration: 2
+    - _StarDensity: 67.3
+    - _StarGalacticBoost: 0.089
     - _TwinkleSpeed: 1.06
     m_Colors:
     - _AmbientColor: {r: 0.03, g: 0.025, b: 0.08, a: 1}
