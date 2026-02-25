@@ -73,26 +73,38 @@ namespace CosmicShore.Core
         {
             var instance = pool.Get();
             if (!instance) return default;
-            
+
             // [Optimization] Add to tracking set
             _activeObjects.Add(instance);
 
+            // Parent first with worldPositionStays=false to prevent shearing.
+            // Non-uniform scale combined with rotation at different hierarchy levels
+            // causes transform decomposition artifacts when worldPositionStays=true,
+            // producing sheared (non-rectilinear) children that no longer match
+            // their BoxColliders.
+            if (parent) instance.transform.SetParent(parent, false);
             instance.transform.SetPositionAndRotation(position, rotation);
-            if (parent) instance.transform.SetParent(parent, worldPositionStays);
-            
+
+            // Reset localScale to identity so no shearing carries over from
+            // previous pool cycles. Individual systems (e.g. PrismScaleAnimator)
+            // are responsible for setting the actual scale.
+            instance.transform.localScale = Vector3.one;
+
             return instance;
         }
 
         protected void Release_(T instance)
         {
             if (!instance) return;
-            
+
             // [Optimization] Remove from tracking set
             if (_activeObjects.Contains(instance))
                 _activeObjects.Remove(instance);
 
-            // Clean hierarchy before disabling
-            instance.transform.SetParent(transform); 
+            // Reset scale to identity before reparenting to prevent shearing
+            // accumulation across pool cycles.
+            instance.transform.localScale = Vector3.one;
+            instance.transform.SetParent(transform, false);
             pool.Release(instance);
         }
 
@@ -111,7 +123,8 @@ namespace CosmicShore.Core
                 if (item)
                 {
                     // Direct release to pool (bypass _activeObjects check since we already cleared it)
-                    item.transform.SetParent(transform);
+                    item.transform.localScale = Vector3.one;
+                    item.transform.SetParent(transform, false);
                     pool.Release(item);
                 }
 

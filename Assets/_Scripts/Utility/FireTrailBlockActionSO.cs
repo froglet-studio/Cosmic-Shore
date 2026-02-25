@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game;
+﻿using CosmicShore.Core;
+using CosmicShore.Game;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "FireTrailBlockAction", menuName = "ScriptableObjects/Vessel Actions/Fire Trail Block")]
@@ -11,8 +12,8 @@ public class FireTrailBlockActionSO : ShipActionSO
     [SerializeField] float projectileSpeed = 10f;
 
     [Header("Block Settings")]
-    [Tooltip("Should trail blocks fired be shielded?")]
-    [SerializeField] bool shielded = true;
+    [Tooltip("Initial block state: Normal, Shielded, SuperShielded, or Dangerous.")]
+    [SerializeField] BlockState initialBlockState = BlockState.Shielded;
     [Tooltip("Allow friendly fire?")]
     [SerializeField] bool friendlyFire = true;
 
@@ -20,7 +21,7 @@ public class FireTrailBlockActionSO : ShipActionSO
     public float ProjectileTime => projectileTime;
     public float ProjectileScale => projectileScale;
     public float ProjectileSpeed => projectileSpeed;
-    public bool Shielded => shielded;
+    public BlockState InitialBlockState => initialBlockState;
     public bool FriendlyFire => friendlyFire;
 
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus status)

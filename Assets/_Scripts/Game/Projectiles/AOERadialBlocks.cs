@@ -23,7 +23,7 @@ namespace CosmicShore.Game.Projectiles
         #region Block Creation
         [Header("Block Creation")]
         [SerializeField] private Vector3 baseBlockScale = new Vector3(10f, 5f, 5f);
-        [SerializeField] private bool shielded = true;
+        [SerializeField] private BlockState initialBlockState = BlockState.Shielded;
         #endregion
 
         #region Explosion Parameters
@@ -169,8 +169,18 @@ namespace CosmicShore.Game.Projectiles
             prism.ownerID = OwnerIdBase + blockId + position;
             prism.Domain = Domain;
 
-            if (shielded)
-                prism.prismProperties.IsShielded = true;
+            switch (initialBlockState)
+            {
+                case BlockState.Shielded:
+                    prism.prismProperties.IsShielded = true;
+                    break;
+                case BlockState.SuperShielded:
+                    prism.prismProperties.IsSuperShielded = true;
+                    break;
+                case BlockState.Dangerous:
+                    prism.prismProperties.IsDangerous = true;
+                    break;
+            }
 
             // Start at zero scale
             prism.transform.localScale = Vector3.zero;

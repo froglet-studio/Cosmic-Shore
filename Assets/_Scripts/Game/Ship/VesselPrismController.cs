@@ -37,7 +37,10 @@ namespace CosmicShore.Game
 
         [Header("Runtime Toggles")]
         [SerializeField] bool waitTillOutsideSkimmer = true;
-        [SerializeField] bool shielded = false;
+
+        [Header("Initial Prism State")]
+        [Tooltip("State applied to every spawned prism (Shielded, SuperShielded, Dangerous, or Normal). Danger mode override still applies on top.")]
+        [SerializeField] BlockState initialBlockState = BlockState.Normal;
 
         [Header("Gap Settings")]
         public float offset;
@@ -74,6 +77,7 @@ namespace CosmicShore.Game
         public float MinWaveLength => minWavelength;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
+        public BlockState InitialBlockState { get => initialBlockState; set => initialBlockState = value; }
         public event Action<Prism> OnBlockSpawned;
         /// <summary>Static event: fired each time a danger block is created during overheat. Param = owner player name.</summary>
         public static event Action<string> OnDangerBlockCreated;
@@ -236,9 +240,24 @@ namespace CosmicShore.Game
                 ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
                 : waitTime;
 
+            // Apply configured initial block state (shielded, super-shielded, dangerous)
+            switch (initialBlockState)
+            {
+                case BlockState.Shielded:
+                    prism.prismProperties.IsShielded = true;
+                    break;
+                case BlockState.SuperShielded:
+                    prism.prismProperties.IsSuperShielded = true;
+                    break;
+                case BlockState.Dangerous:
+                    prism.prismProperties.IsDangerous = true;
+                    break;
+            }
+
+            // Danger mode override (dynamic toggle takes priority)
             if (_dangerMode)
             {
-                try { prism.prismProperties.IsDangerous = true; } catch { /* ignore */ }
+                prism.prismProperties.IsDangerous = true;
 
                 if (_dangerMaterial && prism.TryGetComponent<Renderer>(out var rend))
                 {
@@ -250,11 +269,6 @@ namespace CosmicShore.Game
 
                 OnDangerBlockCreated?.Invoke(vesselStatus.PlayerName);
             }
-
-            
-            // Shield
-            if (shielded)
-                prism.prismProperties.IsShielded = true;
 
             // Add to trail & initialize
             trail.Add(prism);

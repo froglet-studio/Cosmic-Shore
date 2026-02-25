@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Projectiles
     {
         [Header("Block Creation")]
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
-        [SerializeField] protected bool shielded = true;
+        [SerializeField] protected BlockState initialBlockState = BlockState.Shielded;
 
         [Header("Events")]
         [SerializeField] private PrismEventChannelWithReturnSO _prismSpawnEvent;
@@ -133,9 +133,19 @@ namespace CosmicShore.Game.Projectiles
             block.ownerID = OwnerIdBase + ownerSuffix + position;
             block.TargetScale = blockScale;
 
-            if (shielded)
-                block.prismProperties.IsShielded = true;
-            
+            switch (initialBlockState)
+            {
+                case BlockState.Shielded:
+                    block.prismProperties.IsShielded = true;
+                    break;
+                case BlockState.SuperShielded:
+                    block.prismProperties.IsSuperShielded = true;
+                    break;
+                case BlockState.Dangerous:
+                    block.prismProperties.IsDangerous = true;
+                    break;
+            }
+
             block.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
             trail.Add(block);
             return block;

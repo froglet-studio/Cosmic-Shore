@@ -124,13 +124,18 @@ namespace CosmicShore.Core
 
             var authoredTargetScale = scaleAnimator ? scaleAnimator.TargetScale : transform.localScale;
             if (authoredTargetScale == Vector3.zero)
-                authoredTargetScale = transform.localScale;
+                authoredTargetScale = scaleAnimator ? scaleAnimator.AuthoredTargetScale : Vector3.one;
+
+            // Reset to zero so prisms grow from nothing — prevents any shearing
+            // artifacts that may have accumulated during pool reparenting.
+            transform.localScale = Vector3.zero;
 
             scaleAnimator.Initialize();
             scaleAnimator.SetTargetScale(authoredTargetScale);
             StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
 
-            if (prismProperties.IsShielded) ActivateShield();
+            if (prismProperties.IsSuperShielded) ActivateSuperShield();
+            else if (prismProperties.IsShielded) ActivateShield();
             if (prismProperties.IsDangerous) MakeDangerous();
         }
 
