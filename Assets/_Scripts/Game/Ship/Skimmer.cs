@@ -70,7 +70,7 @@ namespace CosmicShore.Game
 
         public void ExecuteImpactOnShip(IVessel vessel)
         {
-            onSkimmerShipImpact.Raise(VesselStatus.PlayerName);
+            if (onSkimmerShipImpact) onSkimmerShipImpact.Raise(VesselStatus.PlayerName);
         }
 
         public void ExecuteImpactOnPrism(Prism prism)

@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using Lofelt.NiceVibrations;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -21,6 +22,11 @@ namespace CosmicShore.Game.IO
 
     public class HapticController : MonoBehaviour
     {
+        [Inject] GameSetting injectedGameSetting;
+        static GameSetting s_gameSetting;
+
+        void Awake() => s_gameSetting = injectedGameSetting;
+
         /// <summary>
         /// Play Haptic
         /// Play haptic pattern presets when haptics are enabled.
@@ -28,30 +34,19 @@ namespace CosmicShore.Game.IO
         /// <param name="type">Haptic type</param>
         public static void PlayHaptic(HapticType type)
         {
-            if (!GameSetting.Instance.HapticsEnabled || GameSetting.Instance.HapticsLevel == 0)
+            if (s_gameSetting == null || !s_gameSetting.HapticsEnabled || s_gameSetting.HapticsLevel == 0)
                 return;
 
-            Lofelt.NiceVibrations.HapticController.outputLevel = GameSetting.Instance.HapticsLevel;
+            Lofelt.NiceVibrations.HapticController.outputLevel = s_gameSetting.HapticsLevel;
 
             var pattern = GetPatternForHapticType(type);
-            
+
             HapticPatterns.PlayPreset(pattern);
-            /*
-            haptic preset notes:
-
-            0, 1, 4, 8  = would good for UI use - feedback for correct input on tutorial
-            2, 5, 7 - might be good for running through stuff (positive)
-            3 - Not in use (negative) crash? odd pattern - I wouldn't use it unless its going to match an animation cause it might seem out of place otherwise
-
-            5 - Crystal
-            4 - UI
-            6 - crash into blocks - intense (negative feedback)
-            */
         }
 
         public static void PlayConstant(float amplitude, float frequency, float duration)
         {
-            if (!GameSetting.Instance.HapticsEnabled)
+            if (s_gameSetting == null || !s_gameSetting.HapticsEnabled)
                 return;
             HapticPatterns.PlayConstant(amplitude, frequency, duration);
         }

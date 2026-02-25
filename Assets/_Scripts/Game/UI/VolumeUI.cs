@@ -24,13 +24,13 @@ namespace CosmicShore.Game.UI
 
         void OnEnable()
         {
-            OnResetForReplay.OnRaised += ResetForReplay;
+            if (OnResetForReplay) OnResetForReplay.OnRaised += ResetForReplay;
             ResetForReplay();
         }
 
         void OnDisable()
         {
-            OnResetForReplay.OnRaised -= ResetForReplay;
+            if (OnResetForReplay) OnResetForReplay.OnRaised -= ResetForReplay;
         }
 
         private void ResetForReplay()

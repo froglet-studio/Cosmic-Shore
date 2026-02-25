@@ -19,12 +19,12 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            _onPlayGame.OnRaised += ResetTimer;
+            if (_onPlayGame) _onPlayGame.OnRaised += ResetTimer;
         }
 
         private void OnDisable()
         {
-            _onPlayGame.OnRaised -= ResetTimer;
+            if (_onPlayGame) _onPlayGame.OnRaised -= ResetTimer;
         }
 
         private void Start() => _timeRemaining = timeRemaining;
@@ -40,7 +40,7 @@ namespace CosmicShore.Game
             {
                 _timeRemaining = 0;
                 _timerEnded = true;
-                _onTimerEnded.Raise();
+                if (_onTimerEnded) _onTimerEnded.Raise();
             }
 
             textMeshPro.text = Mathf.Round(_timeRemaining).ToString();

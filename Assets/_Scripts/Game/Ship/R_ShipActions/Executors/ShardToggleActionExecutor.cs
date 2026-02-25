@@ -18,12 +18,12 @@ public sealed class ShardToggleActionExecutor : ShipActionExecutorBase
 
     void OnEnable()
     {
-        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
     }
 
     void OnDisable()
     {
-        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
 
     void OnTurnEndOfMiniGame() => End();

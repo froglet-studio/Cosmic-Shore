@@ -43,7 +43,7 @@ namespace CosmicShore
 
                 // TODO - Remove MiniGameHUD dependency
                 // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
-                onQueenDroneSpawned.Raise(queenDrones.Count);
+                if (onQueenDroneSpawned) onQueenDroneSpawned.Raise(queenDrones.Count);
             }
             else
             {
@@ -51,7 +51,7 @@ namespace CosmicShore
 
                 // TODO - Remove MiniGameHUD dependency
                 // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
-                onMoundDroneSpawned.Raise(moundDrones.Count);
+                if (onMoundDroneSpawned) onMoundDroneSpawned.Raise(moundDrones.Count);
             }
         }
 
@@ -65,9 +65,9 @@ namespace CosmicShore
                 queenDrones.Add(drone);
 
                 // TODO - Remove MiniGameHUD dependency
-                onMoundDroneSpawned.Raise(moundDrones.Count);
+                if (onMoundDroneSpawned) onMoundDroneSpawned.Raise(moundDrones.Count);
                 // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
-                onQueenDroneSpawned.Raise(queenDrones.Count);
+                if (onQueenDroneSpawned) onQueenDroneSpawned.Raise(queenDrones.Count);
                 // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
             }
             else if (!toQueen && queenDrones.Count > 0)
@@ -78,9 +78,9 @@ namespace CosmicShore
                 moundDrones.Add(drone);
 
                 // TODO - Remove MiniGameHUD dependency
-                onQueenDroneSpawned.Raise(queenDrones.Count);
+                if (onQueenDroneSpawned) onQueenDroneSpawned.Raise(queenDrones.Count);
                 // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
-                onMoundDroneSpawned.Raise(moundDrones.Count);
+                if (onMoundDroneSpawned) onMoundDroneSpawned.Raise(moundDrones.Count);
                 // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
             }
             else

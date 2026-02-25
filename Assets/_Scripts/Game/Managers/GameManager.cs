@@ -26,14 +26,17 @@ namespace CosmicShore.Core
         private void OnEnable()
         {
             PauseSystem.TogglePauseGame(false);
-            gameData.OnLaunchGame.OnRaised += LaunchGame;
+            if (gameData && gameData.OnLaunchGame) gameData.OnLaunchGame.OnRaised += LaunchGame;
         }
 
-        private void Start() => _onSceneTransition.Raise(true);
+        private void Start()
+        {
+            if (_onSceneTransition) _onSceneTransition.Raise(true);
+        }
 
         private void OnDisable()
         {
-            gameData.OnLaunchGame.OnRaised -= LaunchGame;
+            if (gameData && gameData.OnLaunchGame) gameData.OnLaunchGame.OnRaised -= LaunchGame;
         }
         
         public virtual void RestartGame()
@@ -59,7 +62,7 @@ namespace CosmicShore.Core
 
         private async UniTaskVoid LoadSceneAsync(string sceneName)
         {
-            _onSceneTransition.Raise(false);
+            if (_onSceneTransition) _onSceneTransition.Raise(false);
 
             gameData.ResetRuntimeData();
             

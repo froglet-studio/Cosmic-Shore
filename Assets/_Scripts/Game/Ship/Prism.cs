@@ -189,7 +189,7 @@ namespace CosmicShore.Core
 
             scaleAnimator.BeginGrowthAnimation();
 
-            _onTrailBlockCreatedEventChannel.Raise(new PrismStats
+            if (_onTrailBlockCreatedEventChannel) _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,
                 Volume = prismProperties.volume,
@@ -245,7 +245,7 @@ namespace CosmicShore.Core
             destroyed = true;
             devastated = devastate;
 
-            _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
+            if (_onTrailBlockDestroyedEventChannel) _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,
                 Volume = prismProperties.volume,
@@ -336,7 +336,7 @@ namespace CosmicShore.Core
             prismProperties.volume   = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
             gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
-            _onTrailBlockCreatedEventChannel.Raise(new PrismStats
+            if (_onTrailBlockCreatedEventChannel) _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,
                 Volume     = prismProperties.volume,
@@ -348,7 +348,7 @@ namespace CosmicShore.Core
         {
             if (!devastated)
             {
-                _onTrailBlockRestoredEventChannel.Raise(new PrismStats
+                if (_onTrailBlockRestoredEventChannel) _onTrailBlockRestoredEventChannel.Raise(new PrismStats
                 {
                     OwnName = PlayerName,
                     Volume = prismProperties.volume,

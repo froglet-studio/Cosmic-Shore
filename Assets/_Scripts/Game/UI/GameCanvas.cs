@@ -31,13 +31,13 @@ namespace CosmicShore.Game.UI
 
         private void OnEnable()
         {
-            onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
+            if (onShipHUDInitialized) onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
         }
 
 
         private void OnDisable()
         {
-            onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
+            if (onShipHUDInitialized) onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
         }
         private void OnShipHUDInitialized(ShipHUDData data)
         {

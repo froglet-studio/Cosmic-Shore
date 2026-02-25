@@ -60,7 +60,7 @@ namespace CosmicShore.Soap
             CellItems.Remove(item);
             if (item is Crystal crystal)
                 Crystals.Remove(crystal);
-            OnCellItemsUpdated.Raise();
+            OnCellItemsUpdated?.Raise();
             return true;
         }
 

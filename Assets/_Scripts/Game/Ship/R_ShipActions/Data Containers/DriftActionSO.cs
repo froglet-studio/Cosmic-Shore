@@ -26,11 +26,11 @@ public class DriftActionSO : ShipActionSO
 
         if (isSharpDrifting)
         {
-            OnDoubleDriftingStarted.Raise();
+            if (OnDoubleDriftingStarted) OnDoubleDriftingStarted.Raise();
         }
         else
         {
-            OnDriftingStarted.Raise();
+            if (OnDriftingStarted) OnDriftingStarted.Raise();
         }
     }
 
@@ -41,6 +41,6 @@ public class DriftActionSO : ShipActionSO
         t.YawScaler = savedRotations.y;
         t.RollScaler = savedRotations.z;
         vesselStatus.IsDrifting = false;
-        OnDriftEnded.Raise();
+        if (OnDriftEnded) OnDriftEnded.Raise();
     }
 }

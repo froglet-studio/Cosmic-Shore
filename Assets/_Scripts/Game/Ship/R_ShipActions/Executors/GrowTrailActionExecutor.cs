@@ -23,12 +23,12 @@ public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider
 
     void OnEnable()
     {
-        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
     }
 
     void OnDisable()
     {
-        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
 
     void OnTurnEndOfMiniGame() => End();

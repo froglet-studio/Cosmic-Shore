@@ -74,7 +74,7 @@ namespace CosmicShore.Core
 
             // TODO - Raise events about steal.
                 
-            onPrismStolen.Raise(
+            if (onPrismStolen) onPrismStolen.Raise(
                 new PrismStats
                 {
                     OwnName = playerName,

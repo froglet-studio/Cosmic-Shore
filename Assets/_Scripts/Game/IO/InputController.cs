@@ -105,22 +105,19 @@ namespace CosmicShore.Game.IO
         /// </summary>
         private void SyncInvertSettings()
         {
-            var gameSetting = GameSetting.Instance;
             if (gameSetting != null)
             {
-                // Initialize InputStatus with current settings
                 InputStatus.InvertYEnabled = gameSetting.InvertYEnabled;
                 InputStatus.InvertThrottleEnabled = gameSetting.InvertThrottleEnabled;
-                
-                // Also apply to current strategy
+
                 currentStrategy?.SetInvertY(gameSetting.InvertYEnabled);
                 currentStrategy?.SetInvertThrottle(gameSetting.InvertThrottleEnabled);
-                
+
                 CSDebug.Log($"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
             }
             else
             {
-                CSDebug.LogWarning("[InputController] GameSetting.Instance is null, cannot sync invert settings!");
+                CSDebug.LogWarning("[InputController] Injected GameSetting is null, cannot sync invert settings!");
             }
         }
 

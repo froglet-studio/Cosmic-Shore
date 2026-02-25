@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Arcade
         void UpdateUI()
         {
             var message = ""; //TEMP - ((int)((hostileShip.Vessel.Transform.position - Game.LocalPlayer.Vessel.Transform.position).magnitude/10f)).ToString();
-            onUpdateTurnMonitorDisplay.Raise(message);
+            if (onUpdateTurnMonitorDisplay) onUpdateTurnMonitorDisplay.Raise(message);
         }
     }
 }

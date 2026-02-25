@@ -27,7 +27,7 @@ namespace CosmicShore
         public void Initialize(IVessel vessel)
         {
             this.vessel = vessel;
-            OnInitializePlayerCamera.Raise(this.vessel.VesselStatus.CameraFollowTarget);
+            if (OnInitializePlayerCamera) OnInitializePlayerCamera.Raise(this.vessel.VesselStatus.CameraFollowTarget);
         }
 
         public void Configure(ICameraController controller)

@@ -33,14 +33,14 @@ public sealed class YawsteryActionExecutor : ShipActionExecutorBase
 
     void OnEnable()
     {
-        OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
     }
 
     void OnDisable()
     {
         // hard cancel on disable
         if (_cts != null) { try { _cts.Cancel(); } catch { } _cts.Dispose(); _cts = null; }
-        OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
     }
 
     void OnTurnEndOfMiniGame() => End();
