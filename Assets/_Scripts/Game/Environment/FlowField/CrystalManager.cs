@@ -287,6 +287,38 @@ namespace CosmicShore.Game
         }
 
         // ------------------------------------------------------------
+        // Reset
+        // ------------------------------------------------------------
+
+        /// <summary>
+        /// Resets all runtime spawn-tracking state so crystals start from anchor 0 on replay.
+        /// Destroys existing crystal GameObjects and clears cellData lists.
+        /// Call this from subclass replay handlers before the next turn spawns new crystals.
+        /// </summary>
+        protected void ResetSpawnState()
+        {
+            // Destroy existing crystal GameObjects
+            if (cellData.Crystals != null)
+            {
+                for (int i = cellData.Crystals.Count - 1; i >= 0; i--)
+                {
+                    var crystal = cellData.Crystals[i];
+                    if (crystal && crystal.gameObject)
+                        Destroy(crystal.gameObject);
+                }
+                cellData.Crystals.Clear();
+            }
+
+            cellData.CellItems?.Clear();
+
+            // Clear anchor/position tracking so spawning starts fresh from index 0
+            lastSpawnPosById.Clear();
+            lastAnchorIndexByCrystalId.Clear();
+            batchAnchorIndex = 0;
+            itemsAdded = 0;
+        }
+
+        // ------------------------------------------------------------
         // Abstract API used by gameplay code
         // ------------------------------------------------------------
 
