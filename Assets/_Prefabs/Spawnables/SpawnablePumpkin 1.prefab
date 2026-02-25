@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7873659401186851540}
   - component: {fileID: 7021355307236778}
   m_Layer: 0
-  m_Name: SpawnablePumpkin
+  m_Name: SpawnablePumpkin 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -46,10 +46,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   seed: 0
   domain: 3
-  children: []
+  children:
+  - {fileID: 4496723737295881431, guid: 2012da5b2a1b824459cafdd2959f61b6, type: 3}
   leafPrefab: {fileID: 0}
   intensityLevel: 1
-  prism: {fileID: 4563009547826722997, guid: ed6f72639ff50df48a391f3a7b926042, type: 3}
-  maxlength: 20
-  maxwidth: 20
-  maxheight: 20
+  prism: {fileID: 0}
+  maxlength: 200
+  maxwidth: 200
+  maxheight: 200
