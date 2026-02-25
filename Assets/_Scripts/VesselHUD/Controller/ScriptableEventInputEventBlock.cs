@@ -4,8 +4,8 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
 
-    [CreateAssetMenu(fileName = "ScriptableEventInputEventBlock",
-        menuName = "ScriptableObjects/Events/Input Event Block")]
+    [CreateAssetMenu(fileName = "Event_InputEventBlock",
+        menuName = "ScriptableObjects/SOAP/Events/InputEventBlock")]
     public sealed class ScriptableEventInputEventBlock : ScriptableObject
     {
         public event Action<InputEventBlockPayload> OnRaised;

@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [CreateAssetMenu(
-        fileName = "scriptable_event_" + nameof(BoostChangedPayload),
-        menuName = "Soap/ScriptableEvents/" + nameof(BoostChangedPayload))]
+        fileName = "Event_" + nameof(BoostChangedPayload),
+        menuName = "ScriptableObjects/SOAP/Events/" + nameof(BoostChangedPayload))]
     public sealed class ScriptableEventBoostChanged : ScriptableEvent<BoostChangedPayload> { }
 }

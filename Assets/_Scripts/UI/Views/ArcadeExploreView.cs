@@ -1,4 +1,5 @@
 using CosmicShore.Systems.CTA;
+using CosmicShore.Models.Enums;
 using CosmicShore.Systems.Favorites;
 using CosmicShore.Systems.Loadout;
 using CosmicShore.App.UI.Elements;

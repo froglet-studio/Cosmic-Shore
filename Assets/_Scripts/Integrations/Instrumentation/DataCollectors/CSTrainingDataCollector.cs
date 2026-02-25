@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CosmicShore._Scripts.Integrations.Instrumentation.Firebase;
+using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using UnityEngine;
 using CosmicShore.Utility;

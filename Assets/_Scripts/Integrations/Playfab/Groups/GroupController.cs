@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Integrations.PlayFab.Event_Models;
+using CosmicShore.Integrations.PlayFab.EventModels;
 using CosmicShore.Utilities;
 using PlayFab;
 using PlayFab.GroupsModels;

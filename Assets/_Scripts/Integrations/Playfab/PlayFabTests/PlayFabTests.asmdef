@@ -1,9 +1,24 @@
 {
     "name": "PlayFabTests",
+    "rootNamespace": "CosmicShore.Integrations.PlayFab.PlayFabTests",
+    "references": [
+        "CosmicShore.Core",
+        "CosmicShore.Utility",
+        "CosmicShore.Runtime",
+        "PlayFab"
+    ],
     "optionalUnityReferences": [
         "TestAssemblies"
     ],
     "includePlatforms": [
         "Editor"
-    ]
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

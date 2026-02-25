@@ -1,5 +1,8 @@
-public enum ResourceEvents
+namespace CosmicShore.Models.Enums
 {
-    AboveThreeQuartersAmmo = 0,
-    AboveHalfAmmo = 1,
+    public enum ResourceEvents
+    {
+        AboveThreeQuartersAmmo = 0,
+        AboveHalfAmmo = 1,
+    }
 }

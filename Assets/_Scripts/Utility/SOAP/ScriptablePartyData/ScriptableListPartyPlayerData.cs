@@ -4,8 +4,8 @@ using Obvious.Soap;
 namespace CosmicShore.Soap
 {
     [CreateAssetMenu(
-        fileName = "scriptable_list_" + nameof(PartyPlayerData),
-        menuName = "Soap/ScriptableLists/" + nameof(PartyPlayerData))]
+        fileName = "List_" + nameof(PartyPlayerData),
+        menuName = "ScriptableObjects/SOAP/Lists/" + nameof(PartyPlayerData))]
     public class ScriptableListPartyPlayerData : ScriptableList<PartyPlayerData>
     {
     }
