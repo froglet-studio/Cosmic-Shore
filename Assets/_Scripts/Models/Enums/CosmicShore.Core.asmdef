@@ -1,7 +1,10 @@
 {
     "name": "CosmicShore.Core",
     "rootNamespace": "CosmicShore",
-    "references": [],
+    "references": [
+        "Unity.Netcode.Runtime",
+        "Unity.Collections"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
