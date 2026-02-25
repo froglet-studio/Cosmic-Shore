@@ -31,6 +31,12 @@ namespace CosmicShore.Game
         // If you want minimum distance of 25 units, set this to 25f * 25f = 625.
         private const float MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS = 25f;
 
+        /// <summary>
+        /// When true, this crystal manager is being orchestrated by PartyGameController.
+        /// Network-based spawning is bypassed since the host is both server and client.
+        /// </summary>
+        public bool IsPartyMode { get; set; }
+
         [Header("Dependencies")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] protected CellRuntimeDataSO cellData;

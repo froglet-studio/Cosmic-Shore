@@ -34,10 +34,13 @@ namespace CosmicShore.Game
         /// Re-subscribe when the environment is reactivated (party mode SetActive
         /// toggling). OnDisable already unsubscribes so events from inactive
         /// environments don't fire and spawn invisible crystals.
+        /// In party mode, subscribe even when IsSpawned is false — the environment
+        /// was deactivated during network spawn so IsSpawned may be unreliable,
+        /// but the host is both server and client so direct spawning works.
         /// </summary>
         private void OnEnable()
         {
-            if (IsSpawned)
+            if (IsSpawned || IsPartyMode)
                 SubscribeToCrystalEvents();
         }
 
@@ -54,6 +57,7 @@ namespace CosmicShore.Game
                 gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
 
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
+            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
 
             if (n_Positions != null)
                 n_Positions.OnListChanged += OnPositionsChanged;
@@ -67,6 +71,7 @@ namespace CosmicShore.Game
                 gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
 
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
+            gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
 
             if (n_Positions != null)
                 n_Positions.OnListChanged -= OnPositionsChanged;
@@ -78,12 +83,40 @@ namespace CosmicShore.Game
 
         void OnResetForReplay()
         {
+            // In party mode without a working NetworkObject, clear crystals directly.
+            if (IsPartyMode && !IsSpawned)
+            {
+                DestroyCrystals();
+                CSDebug.Log("[NetworkCrystalManager] Party mode reset — crystals destroyed.");
+                return;
+            }
+
             if (!IsServer) return;
             serverBatchAnchorIndex = 0;
-            
+
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = Vector3.zero;
             CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index and positions cleared.");
+        }
+
+        void OnTurnEnded()
+        {
+            // In party mode without a working NetworkObject, destroy crystals
+            // so they can be freshly spawned next round (matching LocalCrystalManager).
+            if (IsPartyMode && !IsSpawned)
+            {
+                DestroyCrystals();
+            }
+        }
+
+        void DestroyCrystals()
+        {
+            var crystals = cellData.Crystals;
+            for (int i = crystals.Count - 1; i >= 0; i--)
+            {
+                var crystal = crystals[i];
+                if (crystal) crystal.DestroyCrystal();
+            }
         }
 
         // ---------------- Server Turn Start ----------------
@@ -101,6 +134,15 @@ namespace CosmicShore.Game
 
         private void OnTurnStarted()
         {
+            // In party mode, IsSpawned may be false after environment
+            // deactivation/reactivation, making IsServer also false.
+            // Fall back to direct local spawning since host = server = client.
+            if (IsPartyMode && !IsSpawned)
+            {
+                SpawnBatchIfMissing();
+                return;
+            }
+
             if (!IsServer) return;
 
             EnsureListSizedToSelectedPlayerCount();
@@ -170,6 +212,14 @@ namespace CosmicShore.Game
 
         public override void RespawnCrystal(int crystalId)
         {
+            // In party mode without network, respawn directly.
+            if (IsPartyMode && !IsSpawned)
+            {
+                var newPos = CalculateNewSpawnPos(crystalId);
+                UpdateCrystalPos(crystalId, newPos);
+                return;
+            }
+
             RespawnCrystal_ServerRpc(crystalId);
         }
 
@@ -183,8 +233,18 @@ namespace CosmicShore.Game
             n_Positions[idx] = newPos;
         }
 
-        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams) =>
+        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
+        {
+            // In party mode without network, explode directly.
+            if (IsPartyMode && !IsSpawned)
+            {
+                if (cellData.TryGetCrystalById(crystalId, out var crystal))
+                    crystal.Explode(explodeParams);
+                return;
+            }
+
             ExplodeCrystal_ServerRpc(crystalId, NetworkExplodeParams.FromExplodeParams(explodeParams));
+        }
 
         [ServerRpc(RequireOwnership = false)]
         private void ExplodeCrystal_ServerRpc(int crystalId, NetworkExplodeParams explodeParams)

@@ -1201,6 +1201,12 @@ namespace CosmicShore.Game.Arcade.Party
                 cc.IsPartyMode = true;
             }
 
+            var crystalManagers = env.GetComponentsInChildren<CrystalManager>(true);
+            foreach (var cm in crystalManagers)
+            {
+                cm.IsPartyMode = true;
+            }
+
             // Disable MiniGamePlayerSpawnerAdapter — in party mode, PartyVesselSpawner
             // handles player/vessel spawning. The adapter would spawn duplicates when
             // gameData.InitializeGame() fires OnInitializeGame.
