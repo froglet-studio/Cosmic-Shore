@@ -28,27 +28,62 @@ namespace CosmicShore.Game.Arcade
         protected override bool ShowEndGameSequence => false;
 
         bool _isInLobby;
+        bool _isShapePrep; // true while waiting for Ready after shape cinematic
 
         protected override void OnEnable()
         {
             base.OnEnable();
             ShapeSignEvents.OnShapeSelected += HandleShapeSignSelected;
-            if (shapeDrawingManager) shapeDrawingManager.OnFreestyleResumed.AddListener(OnShapeDrawingFinished);
+            if (shapeDrawingManager)
+            {
+                shapeDrawingManager.OnFreestyleResumed.AddListener(OnShapeDrawingFinished);
+                shapeDrawingManager.OnPreviewComplete.AddListener(OnShapePreviewComplete);
+            }
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
             ShapeSignEvents.OnShapeSelected -= HandleShapeSignSelected;
-            if (shapeDrawingManager) shapeDrawingManager.OnFreestyleResumed.RemoveListener(OnShapeDrawingFinished);
+            if (shapeDrawingManager)
+            {
+                shapeDrawingManager.OnFreestyleResumed.RemoveListener(OnShapeDrawingFinished);
+                shapeDrawingManager.OnPreviewComplete.RemoveListener(OnShapePreviewComplete);
+            }
+        }
+
+        // ── Shape Drawing Callbacks ──────────────────────────────────────────
+
+        /// <summary>Preview cinematic finished — show the Ready button.</summary>
+        void OnShapePreviewComplete()
+        {
+            _isShapePrep = true;
+            RaiseToggleReadyButtonEvent(true);
+        }
+
+        /// <summary>
+        /// Ready button clicked. If in shape-prep state, start drawing
+        /// instead of the normal countdown flow.
+        /// </summary>
+        protected override void OnReadyClicked_()
+        {
+            RaiseToggleReadyButtonEvent(false);
+
+            if (_isShapePrep)
+            {
+                _isShapePrep = false;
+                shapeDrawingManager.BeginDrawing();
+            }
+            else
+            {
+                StartCountdownTimer();
+            }
         }
 
         void OnShapeDrawingFinished()
         {
-            // Teleport player back to lobby spawn point
             TeleportPlayerToLobby();
 
-            // Restore player camera after the reveal pan
             if (CameraManager.Instance)
             {
                 CameraManager.Instance.SetCloseCameraActive();
@@ -65,6 +100,8 @@ namespace CosmicShore.Game.Arcade
                 vessel.Transform.SetPositionAndRotation(lobbyOrigin.position, lobbyOrigin.rotation);
         }
 
+        // ── Game Start ──────────────────────────────────────────────────────
+
         protected override void OnCountdownTimerEnded()
         {
             gameData.SetPlayersActive();
@@ -76,11 +113,12 @@ namespace CosmicShore.Game.Arcade
             EnterLobby();
         }
 
+        // ── Lobby ───────────────────────────────────────────────────────────
+
         void EnterLobby()
         {
             _isInLobby = true;
 
-            // Disable environment systems — player flies freely in the lobby
             if (cellScript) cellScript.enabled = false;
 
             if (segmentSpawner)
@@ -95,7 +133,6 @@ namespace CosmicShore.Game.Arcade
                 localCrystalManager.enabled = false;
             }
 
-            // Clear existing player trails so the lobby is clean
             ClearPlayerTrails();
 
             // Position mode triggers in front of the player
@@ -113,19 +150,16 @@ namespace CosmicShore.Game.Arcade
                 trigger.OnModeSelected.RemoveListener(HandleModeSelection);
                 trigger.OnModeSelected.AddListener(HandleModeSelection);
 
-                // Arrange in a small arc in front of the player
                 float angle = ((i - (activeTriggers.Count - 1) * 0.5f) / Mathf.Max(1, activeTriggers.Count - 1)) * Mathf.PI * 0.5f;
                 var offset = new Vector3(Mathf.Sin(angle) * triggerRingRadius, 0f, Mathf.Cos(angle) * triggerRingRadius);
                 trigger.transform.position = triggerCenter + offset;
                 trigger.transform.localScale = Vector3.one * triggerScale;
 
-                // Face the player
                 var dirToPlayer = (center - trigger.transform.position).normalized;
                 if (dirToPlayer != Vector3.zero)
                     trigger.transform.rotation = Quaternion.LookRotation(dirToPlayer, Vector3.up);
             }
 
-            // Show pre-placed shape signs
             if (shapeSignSpawner)
                 shapeSignSpawner.ShowSigns();
         }
@@ -134,10 +168,8 @@ namespace CosmicShore.Game.Arcade
         {
             _isInLobby = false;
 
-            // Hide triggers
             foreach (var trigger in modeTriggers.Where(trigger => trigger)) trigger.gameObject.SetActive(false);
 
-            // Hide signs
             if (shapeSignSpawner) shapeSignSpawner.HideSigns();
 
             gameData.StartTurn();
@@ -145,7 +177,6 @@ namespace CosmicShore.Game.Arcade
 
         // ── Mode Selection Handlers ─────────────────────────────────────────
 
-        /// <summary>Called by ModeSelectTrigger (collider-based selection).</summary>
         void HandleModeSelection(ShapeDefinition shapeDef)
         {
             if (!_isInLobby) return;
@@ -157,7 +188,6 @@ namespace CosmicShore.Game.Arcade
                 StartShapeMode(shapeDef);
         }
 
-        /// <summary>Called by ShapeSignEvents (button-based sign selection).</summary>
         void HandleShapeSignSelected(ShapeDefinition shapeDef, Vector3 signWorldPos)
         {
             if (!_isInLobby) return;
@@ -192,14 +222,15 @@ namespace CosmicShore.Game.Arcade
             Debug.Log($"[Controller] Starting Shape Mode: {shapeDef.shapeName}");
             if (cellScript) cellScript.enabled = false;
 
-            // Clear any leftover player trails before entering shape drawing
             ClearPlayerTrails();
 
+            // Phase 1: setup + cinematic. OnPreviewComplete → show Ready button.
             shapeDrawingManager.StartShapeSequence(shapeDef, lobbyOrigin.position);
         }
 
         public void ReturnToLobby()
         {
+            _isShapePrep = false;
             shapeDrawingManager.ExitShapeMode();
             EnterLobby();
         }

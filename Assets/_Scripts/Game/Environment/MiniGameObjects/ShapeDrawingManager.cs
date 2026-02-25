@@ -5,6 +5,7 @@ using CosmicShore.Game.CameraSystem;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem;
 
 namespace CosmicShore.Game.ShapeDrawing
 {
@@ -21,7 +22,11 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] LineRenderer guideLine;
         [SerializeField] LineRenderer ghostLine;
         [SerializeField] Camera revealCamera;
-        [SerializeField] float shapeScale = 1f;
+        [SerializeField] float shapeScale = 3f;
+
+        [Header("Shape Orientation")]
+        [Tooltip("Rotation applied to shape waypoints. Default (-90,0,0) rotates XY-defined shapes to the horizontal XZ plane.")]
+        [SerializeField] Vector3 shapeOrientationEuler = new Vector3(-90f, 0f, 0f);
 
         [Header("Guide Line Style")]
         [SerializeField] float guideLineWidth = 1.5f;
@@ -39,13 +44,19 @@ namespace CosmicShore.Game.ShapeDrawing
         [Tooltip("Distance at which accuracy drops to 0% for that sample.")]
         [SerializeField] float zeroAccuracyDistance = 80f;
 
+        [Header("Preview Cinematic")]
+        [Tooltip("Seconds the camera holds on the top-down shape view.")]
+        [SerializeField] float previewHoldTime = 2f;
+        [Tooltip("Seconds for each camera transition (to overview and back to player).")]
+        [SerializeField] float previewTransitionTime = 1.5f;
+
         [Header("Reveal")]
         [Tooltip("Duration of the camera pan from player to the reveal viewpoint.")]
         [SerializeField] float cameraPanDuration = 2f;
 
         [Header("Debug")]
         [Tooltip("Press this key to save a screenshot (PC only).")]
-        [SerializeField] KeyCode screenshotKey = KeyCode.F12;
+        [SerializeField] Key screenshotKey = Key.F12;
 
         [Header("Events")]
         public UnityEvent OnShapeCompleted;
@@ -53,12 +64,15 @@ namespace CosmicShore.Game.ShapeDrawing
         public UnityEvent<ShapeScoreData> OnScoreCalculated;
         [Tooltip("Fired after the camera pan completes. UI should show accuracy + Next button.")]
         public UnityEvent OnRevealStarted;
+        [Tooltip("Fired after the shape preview cinematic finishes. Controller should show the Ready button.")]
+        public UnityEvent OnPreviewComplete;
 
         ShapeDefinition _activeShape;
         Vector3 _shapeOrigin;
         int _currentWaypointIndex;
         bool _isActive;
         bool _waitingForNext;
+        bool _drawingStarted;
         VesselStatus _vesselStatus;
         CustomCameraController _panCameraController;
 
@@ -67,6 +81,41 @@ namespace CosmicShore.Game.ShapeDrawing
         readonly List<Vector3> _playerPathSamples = new();
         float _nextSampleTime;
         bool _trackingPath;
+
+        // ── Shape Orientation Helpers ────────────────────────────────────────
+
+        Quaternion ShapeRotation => Quaternion.Euler(shapeOrientationEuler);
+
+        Vector3 GetWorldWaypoint(int index)
+        {
+            if (index < 0 || index >= _activeShape.waypoints.Count) return _shapeOrigin;
+            return _shapeOrigin + ShapeRotation * (_activeShape.waypoints[index] * shapeScale);
+        }
+
+        Vector3 GetWorldPlayerStart()
+        {
+            // playerStartOffset is in world orientation (not rotated with shape)
+            return _shapeOrigin + _activeShape.playerStartOffset * shapeScale;
+        }
+
+        Vector3[] GetAllWorldWaypoints()
+        {
+            _activeShape.EnsureWaypoints();
+            var rot = ShapeRotation;
+            var result = new Vector3[_activeShape.waypoints.Count];
+            for (int i = 0; i < _activeShape.waypoints.Count; i++)
+                result[i] = _shapeOrigin + rot * (_activeShape.waypoints[i] * shapeScale);
+            return result;
+        }
+
+        Vector3 GetRevealCameraPosition()
+        {
+            return _shapeOrigin +
+                Quaternion.Euler(_activeShape.revealCameraEuler) *
+                (Vector3.back * _activeShape.revealCameraDistance);
+        }
+
+        // ── Lifecycle ────────────────────────────────────────────────────────
 
         void Awake()
         {
@@ -89,16 +138,22 @@ namespace CosmicShore.Game.ShapeDrawing
         void Update()
         {
             // Screenshot key works at any time (during drawing, reveal, etc.)
-            if (Input.GetKeyDown(screenshotKey))
+            if (Keyboard.current != null && Keyboard.current[screenshotKey].wasPressedThisFrame)
                 TakeDebugScreenshot();
 
-            if (!_isActive || _activeShape == null) return;
+            if (!_isActive || _activeShape == null || !_drawingStarted) return;
             UpdateGuideLine();
             SamplePlayerPosition();
         }
 
+        // ── Public API ───────────────────────────────────────────────────────
+
         public bool IsInShapeMode => _isActive;
 
+        /// <summary>
+        /// Phase 1: Setup, place player, play preview cinematic, then fire OnPreviewComplete.
+        /// The controller should show the Ready button when OnPreviewComplete fires.
+        /// </summary>
         public void StartShapeSequence(ShapeDefinition def, Vector3 origin)
         {
             def.EnsureWaypoints();
@@ -106,6 +161,7 @@ namespace CosmicShore.Game.ShapeDrawing
             _activeShape = def;
             _shapeOrigin = origin;
             _isActive = true;
+            _drawingStarted = false;
             _currentWaypointIndex = 0;
             _waitingForNext = false;
 
@@ -131,44 +187,167 @@ namespace CosmicShore.Game.ShapeDrawing
             if (shapeCrystalManager) shapeCrystalManager.enabled = true;
             shapeCrystalManager.DestroyAllCrystals();
 
-            StartCoroutine(SequenceRoutine());
+            StartCoroutine(PreviewSequence());
         }
 
-        IEnumerator SequenceRoutine()
+        /// <summary>
+        /// Phase 2: Called by the controller when the player clicks Ready.
+        /// Releases input and begins the actual crystal-chasing drawing.
+        /// </summary>
+        public void BeginDrawing()
         {
+            if (!_isActive || _drawingStarted) return;
+            _drawingStarted = true;
+
+            // Release input
             if (_vesselStatus)
                 _vesselStatus.IsStationary = false;
+
+            _shapeStartTime = Time.time;
+            SpawnCrystal(_currentWaypointIndex);
+            if (guideLine) guideLine.enabled = true;
+        }
+
+        /// <summary>
+        /// Call from the UI Next button to clear trails, restore the camera,
+        /// and return to the lobby.
+        /// </summary>
+        public void ContinueFromReveal()
+        {
+            if (!_waitingForNext) return;
+
+            // Clear player trails (prisms return to pool)
+            if (_vesselStatus)
+                _vesselStatus.VesselPrismController.ClearTrails();
+
+            ExitShapeMode();
+        }
+
+        public void ExitShapeMode()
+        {
+            StopAllCoroutines();
+
+            _isActive = false;
+            _drawingStarted = false;
+            _activeShape = null;
+            _trackingPath = false;
+            _waitingForNext = false;
+
+            // Restore the player camera if we took it over
+            if (_panCameraController)
+            {
+                _panCameraController.enabled = true;
+                _panCameraController = null;
+            }
+
+            if (revealCamera) revealCamera.gameObject.SetActive(false);
+            if (guideLine) guideLine.enabled = false;
+            HideGhostShape();
+
+            shapeCrystalManager.DestroyAllCrystals();
+            shapeCrystalManager.enabled = false;
+
+            OnFreestyleResumed?.Invoke();
+        }
+
+        // ── Preview Sequence (Phase 1) ───────────────────────────────────────
+
+        IEnumerator PreviewSequence()
+        {
+            // Place player at shape start position, lock input
+            yield return StartCoroutine(PlacePlayer());
 
             // Draw ghost shape outline
             DrawGhostShape();
 
-            // Position Player
-            yield return StartCoroutine(PlacePlayer());
+            // Camera flies to shape overview, holds, then returns to player
+            yield return StartCoroutine(ShapePreviewCinematic());
 
-            // Start timing
-            _shapeStartTime = Time.time;
-
-            // Spawn First Crystal
-            SpawnCrystal(_currentWaypointIndex);
-
-            // Enable Line Renderer
-            if (guideLine) guideLine.enabled = true;
+            // Fire event — controller shows ready button
+            OnPreviewComplete?.Invoke();
         }
 
         IEnumerator PlacePlayer()
         {
             if (!_vesselStatus) yield break;
 
-            Vector3 startPos = _activeShape.GetWorldPlayerStart(_shapeOrigin, shapeScale);
+            Vector3 startPos = GetWorldPlayerStart();
             Quaternion startRot = Quaternion.Euler(_activeShape.playerStartEuler);
 
             _vesselStatus.IsStationary = true;
             _vesselStatus.Vessel.Transform.SetPositionAndRotation(startPos, startRot);
 
-            yield return new WaitForSeconds(0.5f);
-
-            _vesselStatus.IsStationary = false;
+            yield return new WaitForSeconds(0.3f);
         }
+
+        IEnumerator ShapePreviewCinematic()
+        {
+            // Acquire camera
+            Transform camTransform = AcquireCamera();
+            if (!camTransform) yield break;
+
+            Vector3 camStart = camTransform.position;
+            Quaternion rotStart = camTransform.rotation;
+
+            // Target: reveal camera position (top-down view of the shape)
+            Vector3 revealPos = GetRevealCameraPosition();
+            Quaternion revealRot = Quaternion.Euler(_activeShape.revealCameraEuler);
+
+            // Fly to shape overview
+            float elapsed = 0f;
+            while (elapsed < previewTransitionTime)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / previewTransitionTime));
+                camTransform.position = Vector3.Lerp(camStart, revealPos, t);
+                camTransform.rotation = Quaternion.Slerp(rotStart, revealRot, t);
+                yield return null;
+            }
+
+            // Hold on the shape overview
+            yield return new WaitForSeconds(previewHoldTime);
+
+            // Transition back to behind the player
+            Vector3 playerPos = _vesselStatus
+                ? _vesselStatus.Vessel.Transform.position
+                : GetWorldPlayerStart();
+            Vector3 playerFwd = _vesselStatus
+                ? _vesselStatus.Vessel.Transform.forward
+                : Vector3.forward;
+            Vector3 behindPlayer = playerPos - playerFwd * 30f + Vector3.up * 10f;
+
+            Vector3 lookDir = playerPos - behindPlayer;
+            Quaternion behindRot = lookDir.sqrMagnitude > 0.001f
+                ? Quaternion.LookRotation(lookDir, Vector3.up)
+                : revealRot;
+
+            elapsed = 0f;
+            while (elapsed < previewTransitionTime)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / previewTransitionTime));
+
+                // Recalculate target each frame
+                if (_vesselStatus)
+                {
+                    playerPos = _vesselStatus.Vessel.Transform.position;
+                    playerFwd = _vesselStatus.Vessel.Transform.forward;
+                    behindPlayer = playerPos - playerFwd * 30f + Vector3.up * 10f;
+                    lookDir = playerPos - behindPlayer;
+                    if (lookDir.sqrMagnitude > 0.001f)
+                        behindRot = Quaternion.LookRotation(lookDir, Vector3.up);
+                }
+
+                camTransform.position = Vector3.Lerp(revealPos, behindPlayer, t);
+                camTransform.rotation = Quaternion.Slerp(revealRot, behindRot, t);
+                yield return null;
+            }
+
+            // Release camera back to player controller
+            ReleaseCamera();
+        }
+
+        // ── Drawing Logic ────────────────────────────────────────────────────
 
         void SpawnCrystal(int index)
         {
@@ -179,14 +358,14 @@ namespace CosmicShore.Game.ShapeDrawing
             }
 
             int crystalId = index + 1;
-            Vector3 pos = _activeShape.GetWorldWaypoint(index, _shapeOrigin, shapeScale);
+            Vector3 pos = GetWorldWaypoint(index);
 
             shapeCrystalManager.SpawnAtPosition(crystalId, pos);
         }
 
         void HandleCrystalHit(int crystalId)
         {
-            if (!_isActive) return;
+            if (!_isActive || !_drawingStarted) return;
 
             int waypointIndex = crystalId - 1;
             if (waypointIndex != _currentWaypointIndex) return;
@@ -238,11 +417,8 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             if (!ghostLine || _activeShape == null) return;
 
-            var worldPoints = _activeShape.GetAllWorldWaypoints(_shapeOrigin, shapeScale);
+            var worldPoints = GetAllWorldWaypoints();
 
-            // Build a continuous polyline, but handle pen-up segments by inserting breaks.
-            // For simplicity, draw all waypoints as one polyline — pen-up segments still show
-            // as faint dashed connections (the ghost is just a guide).
             ghostLine.positionCount = worldPoints.Length;
             ghostLine.SetPositions(worldPoints);
             ghostLine.enabled = true;
@@ -293,9 +469,49 @@ namespace CosmicShore.Game.ShapeDrawing
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
 
-            // Use a default sprite material so it shows up without a custom material
-            lr.material = new Material(Shader.Find("Sprites/Default"));
-            lr.material.color = color;
+            // Use Sprites/Default — included in URP as compatibility shader.
+            // If missing, fall back to URP Unlit.
+            var shader = Shader.Find("Sprites/Default")
+                      ?? Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader)
+            {
+                lr.material = new Material(shader);
+                lr.material.color = color;
+            }
+        }
+
+        // ── Camera Helpers ──────────────────────────────────────────────────
+
+        Transform AcquireCamera()
+        {
+            _panCameraController = null;
+            Transform camTransform = null;
+
+            if (CameraManager.Instance)
+            {
+                var ctrl = CameraManager.Instance.GetActiveController();
+                if (ctrl is CustomCameraController pcc)
+                {
+                    _panCameraController = pcc;
+                    camTransform = pcc.transform;
+                    pcc.enabled = false;
+                }
+            }
+
+            if (camTransform == null && Camera.main)
+                camTransform = Camera.main.transform;
+
+            return camTransform;
+        }
+
+        void ReleaseCamera()
+        {
+            if (_panCameraController)
+            {
+                _panCameraController.enabled = true;
+                _panCameraController.SnapToTarget();
+                _panCameraController = null;
+            }
         }
 
         // ── Scoring ─────────────────────────────────────────────────────────
@@ -326,20 +542,18 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             if (_playerPathSamples.Count == 0 || _activeShape.waypoints.Count < 2) return 0f;
 
-            // Build the ideal path segments in world space
-            var worldWaypoints = _activeShape.GetAllWorldWaypoints(_shapeOrigin, shapeScale);
+            // Build the ideal path segments in world space (with rotation applied)
+            var worldWaypoints = GetAllWorldWaypoints();
 
             float totalAccuracy = 0f;
             int validSamples = 0;
 
             foreach (var sample in _playerPathSamples)
             {
-                // Find minimum distance from sample to any ideal path segment
                 float minDist = float.MaxValue;
 
                 for (int i = 0; i < worldWaypoints.Length - 1; i++)
                 {
-                    // Skip pen-up segments (trail disabled while moving to next)
                     if (!_activeShape.IsTrailEnabledForSegment(i + 1) &&
                         !_activeShape.IsTrailEnabledForSegment(i))
                         continue;
@@ -350,7 +564,6 @@ namespace CosmicShore.Game.ShapeDrawing
 
                 if (minDist < float.MaxValue)
                 {
-                    // Map distance to 0-1 accuracy score
                     float sampleAccuracy;
                     if (minDist <= perfectDistanceThreshold)
                         sampleAccuracy = 1f;
@@ -410,31 +623,14 @@ namespace CosmicShore.Game.ShapeDrawing
             HideGhostShape();
 
             // Take over the player camera for a smooth pan to the reveal viewpoint
-            Transform camTransform = null;
-            _panCameraController = null;
-
-            if (CameraManager.Instance)
-            {
-                var ctrl = CameraManager.Instance.GetActiveController();
-                if (ctrl is CustomCameraController pcc)
-                {
-                    _panCameraController = pcc;
-                    camTransform = pcc.transform;
-                    pcc.enabled = false; // Stop follow logic so we can drive the transform
-                }
-            }
-
-            if (camTransform == null && Camera.main)
-                camTransform = Camera.main.transform;
+            Transform camTransform = AcquireCamera();
 
             if (camTransform && _activeShape != null)
             {
                 Vector3 startPos = camTransform.position;
                 Quaternion startRot = camTransform.rotation;
 
-                Vector3 targetPos = _shapeOrigin +
-                    Quaternion.Euler(_activeShape.revealCameraEuler) *
-                    (Vector3.back * _activeShape.revealCameraDistance);
+                Vector3 targetPos = GetRevealCameraPosition();
                 Quaternion targetRot = Quaternion.Euler(_activeShape.revealCameraEuler);
 
                 float elapsed = 0f;
@@ -457,7 +653,7 @@ namespace CosmicShore.Game.ShapeDrawing
 
         /// <summary>
         /// Captures a screenshot and saves it to the persistent data path.
-        /// Wire to a UI button or press the screenshotKey (default F12).
+        /// Wire to a UI button or press screenshotKey (default F12).
         /// </summary>
         public void TakeDebugScreenshot()
         {
@@ -467,47 +663,6 @@ namespace CosmicShore.Game.ShapeDrawing
             string filePath = Path.Combine(folder, $"Shape_{timestamp}.png");
             ScreenCapture.CaptureScreenshot(filePath);
             Debug.Log($"[ShapeDrawing] Screenshot saved: {filePath}");
-        }
-
-        /// <summary>
-        /// Call from the UI Next button to clear trails, restore the camera,
-        /// and return to the lobby.
-        /// </summary>
-        public void ContinueFromReveal()
-        {
-            if (!_waitingForNext) return;
-
-            // Clear player trails (prisms return to pool)
-            if (_vesselStatus)
-                _vesselStatus.VesselPrismController.ClearTrails();
-
-            ExitShapeMode();
-        }
-
-        public void ExitShapeMode()
-        {
-            StopAllCoroutines();
-
-            _isActive = false;
-            _activeShape = null;
-            _trackingPath = false;
-            _waitingForNext = false;
-
-            // Restore the player camera if we took it over for the pan
-            if (_panCameraController)
-            {
-                _panCameraController.enabled = true;
-                _panCameraController = null;
-            }
-
-            if (revealCamera) revealCamera.gameObject.SetActive(false);
-            if (guideLine) guideLine.enabled = false;
-            HideGhostShape();
-
-            shapeCrystalManager.DestroyAllCrystals();
-            shapeCrystalManager.enabled = false;
-
-            OnFreestyleResumed?.Invoke();
         }
     }
 }
