@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Core.Visuals;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game
 {

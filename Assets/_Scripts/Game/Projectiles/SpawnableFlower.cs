@@ -4,6 +4,7 @@ using CosmicShore.Game.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Projectiles
 {

@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Game;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Ship.ShipActions.DataContainers
 {

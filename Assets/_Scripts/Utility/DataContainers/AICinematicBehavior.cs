@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Game.AI;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Cinematics
 {

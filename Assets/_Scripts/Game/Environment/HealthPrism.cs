@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utilities;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore
 {

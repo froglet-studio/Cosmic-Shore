@@ -11,6 +11,7 @@ using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {

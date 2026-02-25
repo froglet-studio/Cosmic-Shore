@@ -1,4 +1,5 @@
 using CosmicShore.Utilities;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Systems.UserActions
 {

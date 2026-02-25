@@ -1,6 +1,7 @@
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Game.AI

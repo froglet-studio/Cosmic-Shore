@@ -4,6 +4,7 @@ using TMPro;
 using CosmicShore.Core;
 using CosmicShore.Soap;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.UI
 {

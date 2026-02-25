@@ -4,6 +4,7 @@ using System.Collections;
 using System;
 using CosmicShore.Soap;
 using Obvious.Soap;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.AI
 {

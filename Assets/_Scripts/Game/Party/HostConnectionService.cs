@@ -212,6 +212,41 @@ namespace CosmicShore.Game.Party
         }
 
         /// <summary>
+        /// Kicks a remote player from the party. Host-only.
+        /// Removes from the local PartyMembers list and fires OnPartyMemberKicked.
+        /// </summary>
+        public async Task KickPartyMemberAsync(string playerId)
+        {
+            if (!connectionData.IsHost)
+            {
+                Debug.LogWarning("[HostConnectionService] Only the host can kick party members.");
+                return;
+            }
+
+            if (playerId == connectionData.LocalPlayerId)
+            {
+                Debug.LogWarning("[HostConnectionService] Cannot kick yourself from the party.");
+                return;
+            }
+
+            connectionData.RemovePartyMember(playerId);
+
+            // If we have a party session, attempt to remove the player from it
+            if (_partySession != null)
+            {
+                try
+                {
+                    await _partySession.AsHost().RemovePlayerAsync(playerId);
+                    Debug.Log($"[HostConnectionService] Kicked {playerId} from party session.");
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[HostConnectionService] KickPartyMember session error: {e.Message}");
+                }
+            }
+        }
+
+        /// <summary>
         /// Hands the active party session off to GameDataSO for game launch.
         /// </summary>
         public void HandOffToMultiplayerSetup(GameDataSO gameData)

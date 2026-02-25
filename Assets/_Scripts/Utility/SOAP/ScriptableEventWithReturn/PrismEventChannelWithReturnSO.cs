@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using CosmicShore.Game;
 using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Utilities

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Linq;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Arcade
 {

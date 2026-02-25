@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.FTUE
 {

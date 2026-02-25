@@ -2,6 +2,7 @@
 using CosmicShore.Game;
 using System;
 using UnityEngine;
+using CosmicShore.Models.Enums;
 
 [Serializable]
 public class ElementalFloat

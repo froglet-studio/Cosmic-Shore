@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using CosmicShore.Models.Enums;
 
 /// <summary>
 /// Custom Property Drawer for elemental floats. Only shows 'Min', 'Max', and 'Element' values if 'Enabled' is set to true.

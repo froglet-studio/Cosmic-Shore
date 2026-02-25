@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 
 namespace CosmicShore.Game.Animation

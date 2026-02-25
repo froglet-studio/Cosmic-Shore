@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Game.AI;
+using CosmicShore.Models.Enums;
 using CosmicShore.Soap;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Multiplayer.Samples.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -116,8 +117,15 @@ namespace CosmicShore.Game
         // ----------------------------
         protected virtual void OnClientConnected(ulong clientId)
         {
-            if (IsSoloWithAI && clientId == NetworkManager.Singleton.LocalClientId)
+            bool isLocalHost = clientId == NetworkManager.Singleton.LocalClientId;
+
+            if (IsSoloWithAI && isLocalHost)
             {
+                SpawnPlayerThenAI(clientId).Forget();
+            }
+            else if (NeedsAIBackfill && isLocalHost)
+            {
+                // Multiplayer with AI backfill (party has fewer humans than player count)
                 SpawnPlayerThenAI(clientId).Forget();
             }
             else
@@ -125,6 +133,12 @@ namespace CosmicShore.Game
                 DelayedSpawnVesselForPlayer(clientId).Forget();
             }
         }
+
+        /// <summary>
+        /// True when PartyGameLauncher requested AI backfill for multiplayer
+        /// (not enough human players to fill the selected player count).
+        /// </summary>
+        bool NeedsAIBackfill => gameData.IsMultiplayerMode && gameData.RequestedAIBackfillCount > 0;
 
         // ----------------------------
         // Solo mode: spawn the human player's vessel, then spawn AI opponents
@@ -172,11 +186,21 @@ namespace CosmicShore.Game
                 return;
             }
 
-            // Determine how many AI opponents to spawn (fill remaining slots up to MaxPlayers)
-            int aiCount = 1;
-            var game = FindGameByMode(gameData.GameMode);
-            if (game != null && game.MaxPlayers > 1)
-                aiCount = game.MaxPlayers - 1;
+            // Determine how many AI opponents to spawn
+            int aiCount;
+            if (gameData.RequestedAIBackfillCount > 0)
+            {
+                // PartyGameLauncher calculated the exact backfill count
+                aiCount = gameData.RequestedAIBackfillCount;
+            }
+            else
+            {
+                // Solo mode: fill remaining slots up to MaxPlayers
+                aiCount = 1;
+                var game = FindGameByMode(gameData.GameMode);
+                if (game != null && game.MaxPlayers > 1)
+                    aiCount = game.MaxPlayers - 1;
+            }
 
             // Pick AI profiles for unique names
             var pickedProfiles = aiProfileList != null ? aiProfileList.PickRandom(aiCount) : null;

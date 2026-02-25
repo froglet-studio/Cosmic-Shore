@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using CosmicShore.Models.Enums;
 using CosmicShore.Soap; // Required for GameDataSO
 
 namespace CosmicShore.Game.Projectiles

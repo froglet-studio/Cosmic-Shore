@@ -1,5 +1,6 @@
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Systems.CTA
 {

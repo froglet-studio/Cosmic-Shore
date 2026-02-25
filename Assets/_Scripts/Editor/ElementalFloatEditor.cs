@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 public class ElementalFloatEditor : EditorWindow
 {

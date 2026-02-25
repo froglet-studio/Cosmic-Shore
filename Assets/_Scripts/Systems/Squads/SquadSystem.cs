@@ -1,6 +1,7 @@
 using CosmicShore.Integrations.PlayFab.Economy;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Systems.Squads
 {

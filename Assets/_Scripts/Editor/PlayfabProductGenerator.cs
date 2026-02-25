@@ -5,6 +5,7 @@ using System;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Utility;
+using CosmicShore.Models.Enums;
 
 public class PlayFabProductGenerator : EditorWindow
 {
