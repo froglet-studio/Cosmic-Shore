@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: c0d6e4f8a1b2579013468ace5d7b9f23
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - hyperSeaSkyboxMaterial: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData:
+  assetBundleName:
+  assetBundleVariant:
