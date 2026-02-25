@@ -1,5 +1,6 @@
 using System.Collections;
 using CosmicShore.Soap;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Game.AI
