@@ -5,6 +5,7 @@ using CosmicShore.Models;
 using Newtonsoft.Json;
 using PlayFab.ClientModels;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems.Xp
 {
@@ -73,7 +74,7 @@ namespace CosmicShore.Systems.Xp
 
         public static void IssueXP(Captain captain, int amount)
         {
-            Debug.Log($"XPHandler.IssueXP {captain.Name}, {amount}");
+            CSDebug.Log($"XPHandler.IssueXP {captain.Name}, {amount}");
 
             if (!ClassXpData.ContainsKey(captain.Ship.Class))
                 ClassXpData.Add(captain.Ship.Class, new XpData (0, 0, 0, 0));
@@ -93,7 +94,7 @@ namespace CosmicShore.Systems.Xp
 
             PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
-            Debug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
+            CSDebug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
         }
 
         public static void EncounterCaptain(Captain captain)
@@ -117,7 +118,7 @@ namespace CosmicShore.Systems.Xp
 
             PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
-            Debug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
+            CSDebug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
         }
 
 
@@ -146,9 +147,9 @@ namespace CosmicShore.Systems.Xp
             EncounteredCaptainsData = ConvertResultToEncounteredCaptainData(result);
 
             foreach (var key in ClassXpData.Keys)
-                Debug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
+                CSDebug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
             
-            Debug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
+            CSDebug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
 
             OnCaptainDataLoaded?.Invoke();
         }

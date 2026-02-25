@@ -1,6 +1,7 @@
 using CosmicShore.Core;
+using CosmicShore.Utility;
 using Reflex.Attributes;
-using UnityEngine;
+
 
 namespace CosmicShore.App.UI.Modals
 {
@@ -14,7 +15,7 @@ namespace CosmicShore.App.UI.Modals
         }
         public void AdjustMusicLevel(float level)
         {
-            Debug.Log($"Music Level: {level}");
+            CSDebug.Log($"Music Level: {level}");
             gameSetting.SetMusicLevel(level);
         }
         public void AdjustSFXLevel(float level)

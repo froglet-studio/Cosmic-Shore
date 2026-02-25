@@ -10,6 +10,7 @@ using System;
 using Obvious.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {
@@ -74,12 +75,12 @@ namespace CosmicShore.Integrations.Firebase.Controller
                     _dependencyStatus = fixTask.Result;
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
-                        Debug.Log("Dependency resolved for Android, now proceed with Firebase");
+                        CSDebug.Log("Dependency resolved for Android, now proceed with Firebase");
                         _dependencyResolved?.Invoke();
                     }
                     else
                     {
-                        Debug.LogErrorFormat("Firebase dependency not resolved for Android. {0}", _dependencyStatus);
+                        CSDebug.LogErrorFormat("Firebase dependency not resolved for Android. {0}", _dependencyStatus);
                     }
                 });
         }
@@ -96,12 +97,12 @@ namespace CosmicShore.Integrations.Firebase.Controller
                     _dependencyStatus = fixTask.Result;
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
-                        Debug.Log("Dependency resolved for IOS, now proceed with Firebase");
+                        CSDebug.Log("Dependency resolved for IOS, now proceed with Firebase");
                         _dependencyResolved?.Invoke();
                     }
                     else
                     {
-                        Debug.LogErrorFormat("Firebase dependency not resolved for IOS. {0}", _dependencyStatus);
+                        CSDebug.LogErrorFormat("Firebase dependency not resolved for IOS. {0}", _dependencyStatus);
                     }
                 });
         }
@@ -125,7 +126,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             
             //Also log app open upon initialization
             LogEventAppOpen();
-            Debug.Log("Firebase Analytics Controller running...");
+            CSDebug.Log("Firebase Analytics Controller running...");
         }
         
         #endregion
@@ -140,7 +141,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             if (!_analyticsEnabled) return;
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAdImpression);
-            Debug.Log("Firebase logged add impression.");
+            CSDebug.Log("Firebase logged add impression.");
         }
 
         #endregion
@@ -154,7 +155,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             if (!_analyticsEnabled) return;
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
-            Debug.Log("Firebase logged App Open.");
+            CSDebug.Log("Firebase logged App Open.");
         }
 
         /// <summary>
@@ -166,7 +167,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             if (!_analyticsEnabled) return;
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView); 
-            Debug.Log("Firebase logged Screen View Event");
+            CSDebug.Log("Firebase logged Screen View Event");
         }
 
         #endregion
@@ -185,7 +186,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             };
             
             FirebaseAnalytics.LogEvent("user_ui_action", parameters);
-            Debug.LogFormat("{0} - {1} - event: {2} logged.", nameof(FirebaseAnalyticsController), nameof(LogEventUserCompleteAction), action.Label);
+            CSDebug.LogFormat("{0} - {1} - event: {2} logged.", nameof(FirebaseAnalyticsController), nameof(LogEventUserCompleteAction), action.Label);
         }
 
         #endregion
@@ -217,11 +218,11 @@ namespace CosmicShore.Integrations.Firebase.Controller
             
             // Log event in Firebase
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart, parameters);
-            Debug.LogFormat("{0} - {1} - Firebase logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
+            CSDebug.LogFormat("{0} - {1} - Firebase logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
             
             // Log event in Unity Analytics
             // UnityAnalytics.Instance.LogFirebaseEvents(FirebaseAnalytics.EventLevelStart, dict);
-            // Debug.LogFormat("{0} - {1} - Unity Service logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
+            // CSDebug.LogFormat("{0} - {1} - Unity Service logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
             
         }
         
@@ -240,7 +241,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             };
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);
-            Debug.Log("Firebase logged mini game end stats.");
+            CSDebug.Log("Firebase logged mini game end stats.");
         }
 
         #endregion

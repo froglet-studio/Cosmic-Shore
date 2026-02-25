@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -56,18 +57,18 @@ namespace CosmicShore.Game.Arcade
         {
             if (gameData == null)
             {
-                Debug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
+                CSDebug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
                 return;
             }
             if (comebackProfile == null)
-                Debug.LogWarning("[ElementalComebackSystem] No comeback profile assigned. System will be inactive.");
+                CSDebug.LogWarning("[ElementalComebackSystem] No comeback profile assigned. System will be inactive.");
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
 
             if (debugLogging)
-                Debug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
+                CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
         }
 
         void OnDisable()
@@ -81,7 +82,7 @@ namespace CosmicShore.Game.Arcade
         void OnTurnStarted()
         {
             if (debugLogging)
-                Debug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
+                CSDebug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
                           $"Profile={(comebackProfile != null ? comebackProfile.name : "NULL")}, " +
                           $"Players={gameData.Players?.Count ?? 0}, " +
                           $"Source={differenceSource}");
@@ -97,7 +98,7 @@ namespace CosmicShore.Game.Arcade
                 if (rs == null)
                 {
                     if (debugLogging)
-                        Debug.LogWarning($"[ElementalComebackSystem] Player '{player?.Name}' has no ResourceSystem. Skipping.");
+                        CSDebug.LogWarning($"[ElementalComebackSystem] Player '{player?.Name}' has no ResourceSystem. Skipping.");
                     continue;
                 }
 
@@ -113,7 +114,7 @@ namespace CosmicShore.Game.Arcade
                 _baselines[player.Name] = baseline;
 
                 if (debugLogging)
-                    Debug.Log($"[ElementalComebackSystem] Baseline for {player.Name} ({vesselType}): " +
+                    CSDebug.Log($"[ElementalComebackSystem] Baseline for {player.Name} ({vesselType}): " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }
@@ -122,7 +123,7 @@ namespace CosmicShore.Game.Arcade
         void OnTurnEnded()
         {
             if (debugLogging && _isActive)
-                Debug.Log("[ElementalComebackSystem] Turn ended. Deactivating.");
+                CSDebug.Log("[ElementalComebackSystem] Turn ended. Deactivating.");
             _isActive = false;
         }
 
@@ -171,7 +172,7 @@ namespace CosmicShore.Game.Arcade
                 }
 
                 if (debugLogging)
-                    Debug.Log($"[ElementalComebackSystem] {player.Name} ({vesselType}): " +
+                    CSDebug.Log($"[ElementalComebackSystem] {player.Name} ({vesselType}): " +
                               $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1} → " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");

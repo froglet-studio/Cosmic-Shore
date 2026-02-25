@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Utilities;
 using Reflex.Attributes;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems.Audio
 {
@@ -77,7 +78,7 @@ namespace CosmicShore.Systems.Audio
             {
                 Song song = new Song(so);
                 Playlist.Add(song.Title, song);
-                Debug.Log("Song " + song.Title + " added to Playlist");
+                CSDebug.Log("Song " + song.Title + " added to Playlist");
             }
         }
 

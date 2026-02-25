@@ -4,6 +4,7 @@ using CosmicShore.Game.UI;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -49,7 +50,7 @@ namespace CosmicShore.Game.Arcade
             readyClientCount++;
 
             // Debug log to help track this state if issues persist
-            Debug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}");
+            CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}");
 
             // Broadcast which player is ready to all clients
             NotifyPlayerReady_ClientRpc(playerName);

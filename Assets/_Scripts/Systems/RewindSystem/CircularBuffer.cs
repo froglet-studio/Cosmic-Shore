@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems.RewindSystem
 {
@@ -24,7 +25,7 @@ namespace CosmicShore.Systems.RewindSystem
             }
             catch
             {
-                Debug.LogError("Circular buffer cannot use field initialization (Time.fixedDeltaTime is unknown yet). Initialize Circular buffer in Start() method!");
+                CSDebug.LogError("Circular buffer cannot use field initialization (Time.fixedDeltaTime is unknown yet). Initialize Circular buffer in Start() method!");
             }        
         }
         

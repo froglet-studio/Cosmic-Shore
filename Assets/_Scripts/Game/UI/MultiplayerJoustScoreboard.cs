@@ -2,6 +2,7 @@
 using System;
 using CosmicShore.Game.Arcade;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -12,10 +13,12 @@ namespace CosmicShore.Game.UI
 
         protected override void ShowMultiplayerView()
         {
-            gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
-            
-            var winner = gameData.RoundStatsList[0];
-            SetBannerForDomain(winner.Domain);
+            if (gameData.RoundStatsList is { Count: > 0 })
+            {
+                gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
+                SetBannerForDomain(gameData.RoundStatsList[0].Domain);
+            }
+            else if (BannerText) BannerText.text = "GAME OVER";
 
             FormatMultiplayerJoustScores();
 
@@ -27,7 +30,7 @@ namespace CosmicShore.Game.UI
         {
             if (!joustController || !joustController.joustTurnMonitor)
             {
-                Debug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
+                CSDebug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
                 return;
             }
 

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 
 [CreateAssetMenu(fileName = "FloraCollection", menuName = "ScriptableObjects/FloraCollection")]
 public class FloraCollection : ScriptableObject
@@ -10,7 +11,7 @@ public class FloraCollection : ScriptableObject
     {
         if (prefabs == null || prefabs.Count == 0)
         {
-            Debug.LogWarning("No prefabs in the collection.");
+            CSDebug.LogWarning("No prefabs in the collection.");
             return null;
         }
 

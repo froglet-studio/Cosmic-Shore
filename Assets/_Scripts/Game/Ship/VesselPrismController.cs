@@ -6,6 +6,7 @@ using CosmicShore.Core.Visuals;
 using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -74,6 +75,8 @@ namespace CosmicShore.Game
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
         public event Action<Prism> OnBlockSpawned;
+        /// <summary>Static event: fired each time a danger block is created during overheat. Param = owner player name.</summary>
+        public static event Action<string> OnDangerBlockCreated;
 
         private void OnDisable()
         {
@@ -188,7 +191,7 @@ namespace CosmicShore.Game
         {
             if (!_onPrismSpawnedEventChannel)
             {
-                Debug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
+                CSDebug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
                 return;
             }
 
@@ -216,7 +219,7 @@ namespace CosmicShore.Game
 
             if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism))
             {
-                Debug.LogError("[PrismSpawner] Factory returned null or missing Prism component.");
+                CSDebug.LogError("[PrismSpawner] Factory returned null or missing Prism component.");
                 return;
             }
 
@@ -242,8 +245,10 @@ namespace CosmicShore.Game
                     if (_dangerBlendSeconds > 0f)
                         MaterialBlendUtility.BeginBlend(rend, _dangerMaterial, _dangerBlendSeconds, _dangerAppend);
                     else
-                        rend.sharedMaterial = _dangerMaterial; 
+                        rend.sharedMaterial = _dangerMaterial;
                 }
+
+                OnDangerBlockCreated?.Invoke(vesselStatus.PlayerName);
             }
 
             

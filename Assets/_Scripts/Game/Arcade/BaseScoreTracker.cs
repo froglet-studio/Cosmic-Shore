@@ -6,6 +6,7 @@ using Obvious.Soap;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -76,7 +77,7 @@ namespace CosmicShore.Game.Arcade
 
             if (scoringConfigs == null || scoringConfigs.Length == 0)
             {
-                Debug.LogError("No Scoring Configs were provided.");
+                CSDebug.LogError("No Scoring Configs were provided.");
                 return;
             }
 

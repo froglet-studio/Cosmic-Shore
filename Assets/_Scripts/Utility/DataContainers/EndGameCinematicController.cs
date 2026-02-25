@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Game.XP;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -57,6 +59,18 @@ namespace CosmicShore.Game.Cinematics
             if (isRunning) return;
             isRunning = true;
 
+            // Award XP based on placement
+            if (XPRewardService.Instance != null)
+            {
+                int xp = XPRewardService.Instance.AwardXP();
+                CSDebug.Log($"[EndGameCinematic] XP awarded: {xp}");
+            }
+            else
+            {
+                CSDebug.LogWarning("[EndGameCinematic] XPRewardService.Instance is null - XP not awarded. " +
+                                 "Ensure XPRewardService exists in the game scene.");
+            }
+
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel?.VesselStatus != null)
             {
@@ -85,6 +99,11 @@ namespace CosmicShore.Game.Cinematics
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
+
+            // Show XP earned after score reveal
+            if (view)
+                view.ShowXPEarned();
+
             if (view)
             {
                 view.ShowContinueButton();
@@ -99,7 +118,10 @@ namespace CosmicShore.Game.Cinematics
             }
 
             if (view)
+            {
+                view.HideXPEarned();
                 view.HideScoreRevealPanel();
+            }
 
             gameData.InvokeShowGameEndScreen();
 
@@ -114,7 +136,7 @@ namespace CosmicShore.Game.Cinematics
         /// </summary>
         protected virtual void ResetGameForNewRound()
         {
-            Debug.Log("[EndGameCinematic] Resetting Game State...");
+            CSDebug.Log("[EndGameCinematic] Resetting Game State...");
 
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer == null && gameData.Players.Count > 0)
@@ -307,11 +329,11 @@ namespace CosmicShore.Game.Cinematics
 
             if (sceneCinematicLibrary && sceneCinematicLibrary.TryGet(sceneName, out var fromLibrary))
             {
-                Debug.Log($"Found cinematic definition for scene: {sceneName}");
+                CSDebug.Log($"Found cinematic definition for scene: {sceneName}");
                 return fromLibrary;
             }
             
-            Debug.LogWarning($"No cinematic definition found for scene: {sceneName}");
+            CSDebug.LogWarning($"No cinematic definition found for scene: {sceneName}");
             return null;
         }
         

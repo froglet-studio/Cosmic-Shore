@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems.RewindSystem
 {
@@ -46,12 +47,12 @@ namespace CosmicShore.Systems.RewindSystem
         {
             if(seconds>AvailableSeconds)
             {
-                Debug.LogError("Not enough stored tracked value!!! Reaching on wrong index. Called rewind should be less than HowManySecondsAvailableForRewind property");
+                CSDebug.LogError("Not enough stored tracked value!!! Reaching on wrong index. Called rewind should be less than HowManySecondsAvailableForRewind property");
                 return;
             }
             if(seconds<0)
             {
-                Debug.LogError("Parameter in RewindTimeBySeconds() must have positive value!!!");
+                CSDebug.LogError("Parameter in RewindTimeBySeconds() must have positive value!!!");
                 return;
             }
             _rewoundObjects.ForEach(x => x.Rewind(seconds));
@@ -66,7 +67,7 @@ namespace CosmicShore.Systems.RewindSystem
         public void StartRewindTimeBySeconds(float seconds)
         {
             if (IsRewound)
-                Debug.LogError("The previous rewind must be stopped by calling StopRewindTimeBySeconds() before you start another rewind");
+                CSDebug.LogError("The previous rewind must be stopped by calling StopRewindTimeBySeconds() before you start another rewind");
 
             if (CheckReachingOutOfBounds(seconds))
             {
@@ -92,7 +93,7 @@ namespace CosmicShore.Systems.RewindSystem
         public void StopRewindTimeBySeconds()
         {
             if (!IsRewound)
-                Debug.LogError("Rewind must be started before you try to stop it. StartRewindTimeBySeconds() must be called first");
+                CSDebug.LogError("Rewind must be started before you try to stop it. StartRewindTimeBySeconds() must be called first");
 
             AvailableSeconds -= _rewindSeconds;
             BuffersRestore?.Invoke(_rewindSeconds);
@@ -113,12 +114,12 @@ namespace CosmicShore.Systems.RewindSystem
         {
             if (Mathf.Round(seconds*100) > Mathf.Round(AvailableSeconds*100))
             {
-                Debug.LogError("Not enough stored tracked value!!! Reaching on wrong index. Called rewind should be less than HowManySecondsAvailableForRewind property");
+                CSDebug.LogError("Not enough stored tracked value!!! Reaching on wrong index. Called rewind should be less than HowManySecondsAvailableForRewind property");
                 return false;
             }
             if (seconds < 0)
             {
-                Debug.LogError("Parameter in StartRewindTimeBySeconds() must have positive value!!!");
+                CSDebug.LogError("Parameter in StartRewindTimeBySeconds() must have positive value!!!");
                 return false;
             }
 

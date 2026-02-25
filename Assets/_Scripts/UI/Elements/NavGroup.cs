@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI
 {
@@ -32,7 +33,7 @@ namespace CosmicShore.App.UI
                             link.view.Select(selectionIndex);
                         break;
                     default:
-                        Debug.LogWarning("NavGroup - ActivateLink: Unknown NavGroup Link Type.");
+                        CSDebug.LogWarning("NavGroup - ActivateLink: Unknown NavGroup Link Type.");
                         break;
                 }
                 selectionIndex++;

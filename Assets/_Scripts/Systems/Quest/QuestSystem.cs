@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Systems.CTA;
 using CosmicShore.Systems.UserActions;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems.Quests
 {
@@ -25,7 +26,7 @@ namespace CosmicShore.Systems.Quests
 
         public void CompleteQuest(Quest quest)
         {
-            Debug.Log($"{nameof(QuestSystem)}.{nameof(CompleteQuest)} - Quest Completed - Shards to issue: {quest.ShardValue}");
+            CSDebug.Log($"{nameof(QuestSystem)}.{nameof(CompleteQuest)} - Quest Completed - Shards to issue: {quest.ShardValue}");
 
             // Grant Reward
             // TODO: Look for PlayerDataController
@@ -69,10 +70,10 @@ namespace CosmicShore.Systems.Quests
         /// <param name="action"></param>
         void UpdateQuestProgressOnUserActionCompleted(UserAction action)
         {
-            Debug.Log($"{nameof(UpdateQuestProgressOnUserActionCompleted)}: {action.ActionType}");
-            Debug.Log($"ActiveQuests.Count:{ActiveQuests.Count}, ActiveQuests.ContainsKey(action): {ActiveQuests.ContainsKey(action.Label)}");
+            CSDebug.Log($"{nameof(UpdateQuestProgressOnUserActionCompleted)}: {action.ActionType}");
+            CSDebug.Log($"ActiveQuests.Count:{ActiveQuests.Count}, ActiveQuests.ContainsKey(action): {ActiveQuests.ContainsKey(action.Label)}");
             foreach (var quest in ActiveQuests)
-                Debug.Log($"ActiveQuests.Key: {quest.Key}");
+                CSDebug.Log($"ActiveQuests.Key: {quest.Key}");
 
             if (ActiveQuests.Count <= 0) return;
             if (!ActiveQuests.ContainsKey(action.Label)) return;
@@ -88,7 +89,7 @@ namespace CosmicShore.Systems.Quests
                     if (TestQuest.CompletionAction.Value <= action.Value)
                         CompleteQuest(TestQuest);
                     else
-                        Debug.Log($"Score not high enough: {action.Value}");
+                        CSDebug.Log($"Score not high enough: {action.Value}");
 
                 }
                 else

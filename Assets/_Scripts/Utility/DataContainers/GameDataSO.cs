@@ -9,6 +9,7 @@ using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using IPlayer = CosmicShore.Game.IPlayer;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Soap
 {
@@ -54,6 +55,8 @@ namespace CosmicShore.Soap
         public string SceneName;
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
+        public int LocalPlayerAvatarId;
+        public int LocalPlayerXP;
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
@@ -84,15 +87,20 @@ namespace CosmicShore.Soap
 
         public void DestroyPlayerAndVessel()
         {
+            // Ensure the domain pool is fresh for the new session so every
+            // player gets a unique domain.  Without this, leftover state from
+            // a previous session could cause duplicate or swapped domains.
+            DomainAssigner.Initialize();
+
             if (Players == null || Players.Count == 0)
                 return;
-            
+
             for (int i = Players.Count - 1; i >= 0; i--)
             {
                 Players[i].Vessel?.DestroyVessel();
                 Players[i].DestroyPlayer();
             }
-            
+
             Players.Clear();
         }
 
@@ -160,7 +168,7 @@ namespace CosmicShore.Soap
         {
             if (RoundStatsList == null || RoundStatsList.Count == 0)
             {
-                Debug.LogError("Cannot Replay game mode, no round stats data found!");
+                CSDebug.LogError("Cannot Replay game mode, no round stats data found!");
                 return;
             }
             
@@ -185,24 +193,24 @@ namespace CosmicShore.Soap
 
         public void AddPlayer(IPlayer p)
         {
-            if (p == null) 
+            if (p == null)
                 return;
 
             // Avoid duplicates by Name
             if (Players.All(player => player.Name != p.Name))
                 Players.Add(p);
-            
-            if (RoundStatsList.All(rs => rs.Name != p.Name)) 
+
+            if (RoundStatsList.All(rs => rs.Name != p.Name))
                 RoundStatsList.Add(p.RoundStats);
-            
+
             if (p.IsLocalUser)
             {
                 LocalPlayer = p;
                 LocalRoundStats = p.RoundStats;
             }
-            
+
             p.ResetForPlay();
-            
+
             if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
 
@@ -393,13 +401,13 @@ namespace CosmicShore.Soap
             won = false;
             if (RoundStatsList is null || RoundStatsList.Count == 0)
             {
-                Debug.LogError("No round stats found to calculate winner!");
+                CSDebug.LogError("No round stats found to calculate winner!");
                 return false;
             }
 
             if (!TryGetLocalPlayerStats(out IPlayer _, out roundStats))
             {
-                Debug.LogError("No round stats of active player found!");
+                CSDebug.LogError("No round stats of active player found!");
                 return false;   
             }
             
@@ -413,7 +421,7 @@ namespace CosmicShore.Soap
         {
             if (spawnTransforms == null)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
                 return;
             }
             
@@ -429,7 +437,7 @@ namespace CosmicShore.Soap
             
             if (SpawnPoses == null || SpawnPoses.Length == 0)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
                 return;
             }
 
@@ -450,7 +458,7 @@ namespace CosmicShore.Soap
                 }
             }
 
-            Debug.LogError($"No player found {clientId}");
+            CSDebug.LogError($"No player found {clientId}");
             return false;
         }
 

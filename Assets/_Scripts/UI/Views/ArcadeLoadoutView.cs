@@ -9,6 +9,7 @@ using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -67,7 +68,7 @@ namespace CosmicShore.App.UI.Views
 
             var loadout = CardList[index].GetLoadout();
 
-            Debug.Log($"LoadoutMenu - SelectLoadout - loadout:{loadout}");
+            CSDebug.Log($"LoadoutMenu - SelectLoadout - loadout:{loadout}");
 
             // Default load out for building a new one
             if (!loadout.Initialized)
@@ -100,7 +101,7 @@ namespace CosmicShore.App.UI.Views
             selectedShipIndex = availableShips.IndexOf(AllShips.ShipList.Where(x => x.Class == activeVesselType).FirstOrDefault());
             UpdateShipClass();
 
-            Debug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
+            CSDebug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
 
             LoadoutSystem.SetActiveLoadoutIndex(index);
         }
@@ -128,7 +129,7 @@ namespace CosmicShore.App.UI.Views
 
         void UpdateShipClass()
         {
-            Debug.Log("SelectedShipIndex is " + selectedShipIndex);
+            CSDebug.Log("SelectedShipIndex is " + selectedShipIndex);
 
             if (selectedShipIndex < 0) selectedShipIndex = availableShips.Count() - 1;
             if (selectedShipIndex >= availableShips.Count()) selectedShipIndex = 0;
@@ -137,7 +138,7 @@ namespace CosmicShore.App.UI.Views
             ShipTitle.text = availableShips[selectedShipIndex].Name;
             ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutteInactive;
 
-            Debug.Log("Active Vessel Type is " + activeVesselType);
+            CSDebug.Log("Active Vessel Type is " + activeVesselType);
         }
 
         // Sets MiniGames
@@ -174,13 +175,13 @@ namespace CosmicShore.App.UI.Views
 
             UpdatePlayerCountColors();
 
-            Debug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
+            CSDebug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
         }
 
         // Sets Intensity
         public void OnClickedChangeActiveIntensity(int newIntensity)
         {
-            Debug.Log("LoadoutMenu - OnClickedChangeActiveIntensity - Intensity changed to " + newIntensity);
+            CSDebug.Log("LoadoutMenu - OnClickedChangeActiveIntensity - Intensity changed to " + newIntensity);
 
             activeIntensity = newIntensity;
 
@@ -204,7 +205,7 @@ namespace CosmicShore.App.UI.Views
         // Sets Player Count
         public void OnClickChangeActivePlayerCount(int newPlayerCount)
         {
-            Debug.Log("LoadoutMenu - OnClickChangeActivePlayerCount - PlayerCount changed to " + newPlayerCount);
+            CSDebug.Log("LoadoutMenu - OnClickChangeActivePlayerCount - PlayerCount changed to " + newPlayerCount);
 
             activePlayerCount = newPlayerCount;
 

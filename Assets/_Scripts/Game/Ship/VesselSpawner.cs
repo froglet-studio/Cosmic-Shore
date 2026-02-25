@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -23,7 +24,7 @@ namespace CosmicShore.Game
             
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefab))
             {
-                Debug.LogError($"Could not find vessel prefab for {vesselType}");
+                CSDebug.LogError($"Could not find vessel prefab for {vesselType}");
                 return false;
             }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems.Loadout
 {
@@ -118,7 +119,7 @@ namespace CosmicShore.Systems.Loadout
         
         public static void SetActiveLoadoutIndex(int index) 
         {
-            Debug.Log("Loadout Index changed to " + index);
+            CSDebug.Log("Loadout Index changed to " + index);
 
             index = Mathf.Clamp(index, 0, loadouts.Count-1);
             ActiveLoadoutIndex = index;

@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Models;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems
 {
@@ -99,9 +100,9 @@ namespace CosmicShore.Systems
 
             if (!Progress.ContainsKey(mode))
             {
-                Debug.LogWarning($"GetGameProgress did not contain mode:{mode} ");
+                CSDebug.LogWarning($"GetGameProgress did not contain mode:{mode} ");
                 var progress = new TrainingGameProgress(0,null);
-                Debug.LogWarning($"GetGameProgress new progress - currentIntensity:{progress.CurrentIntensity}, progress:{progress.Progress} ");
+                CSDebug.LogWarning($"GetGameProgress new progress - currentIntensity:{progress.CurrentIntensity}, progress:{progress.Progress} ");
                 SaveProgress(mode, progress);
             }
 

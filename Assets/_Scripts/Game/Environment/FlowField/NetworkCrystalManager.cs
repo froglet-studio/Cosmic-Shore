@@ -2,11 +2,16 @@
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
     public class NetworkCrystalManager : CrystalManager
     {
+        [Header("Early Spawn")]
+        [Tooltip("When true, crystals spawn once all players are ready (before the ready button) instead of on turn start.")]
+        [SerializeField] private bool spawnOnClientReady;
+
         private NetworkList<Vector3> n_Positions;
 
         protected override void Awake()
@@ -17,19 +22,29 @@ namespace CosmicShore.Game
 
         public override void OnNetworkSpawn()
         {
-            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
+            if (spawnOnClientReady)
+                gameData.OnClientReady += OnClientReadySpawn;
+            else
+                gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
+
             gameData.OnResetForReplay.OnRaised += OnResetForReplay;
             n_Positions.OnListChanged += OnPositionsChanged;
         }
 
         public override void OnNetworkDespawn()
         {
-            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            if (spawnOnClientReady)
+                gameData.OnClientReady -= OnClientReadySpawn;
+            else
+                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+
             gameData.OnResetForReplay.OnRaised -= OnResetForReplay;
 
             if (n_Positions != null)
                 n_Positions.OnListChanged -= OnPositionsChanged;
         }
+
+        private void OnClientReadySpawn() => OnTurnStarted();
 
         // ---------------- Replay Reset ----------------
 
@@ -40,7 +55,7 @@ namespace CosmicShore.Game
             
             for (int i = 0; i < n_Positions.Count; i++)
                 n_Positions[i] = Vector3.zero;
-            Debug.Log("[NetworkCrystalManager] Reset for replay — anchor index and positions cleared.");
+            CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index and positions cleared.");
         }
 
         // ---------------- Server Turn Start ----------------

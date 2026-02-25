@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -10,9 +11,9 @@ namespace CosmicShore
 
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
-            Debug.Log($"SetVirtualItem - Name:{virtualItem.Name}");
-            game = null; // Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
-            Debug.Log($"SetVirtualItem - game:{game}");
+            CSDebug.Log($"SetVirtualItem - Name:{virtualItem.Name}");
+            game = Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
+            CSDebug.Log($"SetVirtualItem - game:{game}");
             ItemImage.sprite = game.CardBackground;
             ItemNameLabel.text = game.DisplayName;
             ItemDescriptionLabel.text = game.Description;

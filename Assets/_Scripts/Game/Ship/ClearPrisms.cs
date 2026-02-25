@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -31,7 +32,7 @@ namespace CosmicShore
         {
             if (Vessel == null)
             {
-                Debug.LogError("Vessel instance is not set or does not implement IVessel interface.");
+                CSDebug.LogError("Vessel instance is not set or does not implement IVessel interface.");
                 enabled = false;
                 return;
             }
@@ -55,7 +56,7 @@ namespace CosmicShore
             mainCamera = cameraManager.GetCloseCamera();
             if (mainCamera == null)
             {
-                Debug.LogError("Close main camera not found! This should not happen!");
+                CSDebug.LogError("Close main camera not found! This should not happen!");
                 return;
             }
             

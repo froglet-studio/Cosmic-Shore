@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Systems.UserActions;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems.CTA
 {
@@ -95,7 +96,7 @@ namespace CosmicShore.Systems.CTA
         /// <param name="action"></param>
         void ResolveCallsToActionOnUserActionCompleted(UserAction action)
         {
-            Debug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: {action}");
+            CSDebug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: {action}");
             List<CallToAction> matchingCalls = new();
             foreach (var call in ActiveCallsToAction)
             {
@@ -103,7 +104,7 @@ namespace CosmicShore.Systems.CTA
                 {
                     matchingCalls.Add(call);
 
-                    Debug.Log($"{nameof(CallToActionSystem)} - " +
+                    CSDebug.Log($"{nameof(CallToActionSystem)} - " +
                               $"{nameof(ResolveCallsToActionOnUserActionCompleted)}: " +
                               $"CompletionActionMatch - action:{action}, targetId:{call.CallToActionTargetID}");
 
@@ -118,7 +119,7 @@ namespace CosmicShore.Systems.CTA
                     // 2) Decrement Dependency Counter if necessary and Notify DependencyTarget if counter reaches zero
                     foreach (var targetId in call.DependencyTargetIDs)
                     {
-                        Debug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: " +
+                        CSDebug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: " +
                                   $"DependencyActionMatch - action:{action}, targetId:{targetId}");
 
                         ActiveDependencyTargets[targetId]--;
@@ -134,7 +135,7 @@ namespace CosmicShore.Systems.CTA
                                 }
                                 else
                                 {
-                                    Debug.LogWarningFormat("{0} - {1} {2} is not registered in {3}",
+                                    CSDebug.LogWarningFormat("{0} - {1} {2} is not registered in {3}",
                                         nameof(CallToActionSystem),
                                         nameof(ResolveCallsToActionOnUserActionCompleted),
                                         targetId, nameof(CallToActionDismissedCallbacks));

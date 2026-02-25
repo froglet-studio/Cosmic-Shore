@@ -1,6 +1,6 @@
+using CosmicShore.Utilities;
 using System;
 using System.Threading;
-using CosmicShore.Utilities;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 

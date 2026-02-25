@@ -2084,6 +2084,7 @@ GameObject:
   - component: {fileID: 3477502592268722062}
   - component: {fileID: 9121591686382397393}
   - component: {fileID: 7965853245772039612}
+  - component: {fileID: 9900976137657699045}
   m_Layer: 0
   m_Name: Serpent
   m_TagString: Player_Ship
@@ -5430,3 +5431,16 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 8968102816825443992}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &9900976137657699045
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fab110608eb487ca8eecd838ff90f3f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

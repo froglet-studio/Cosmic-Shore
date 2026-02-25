@@ -2,6 +2,7 @@ using CosmicShore.Utilities;
 using System.Collections.Generic;
 using CosmicShore.Systems.Quests;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Systems.UserJourney
 {
@@ -17,7 +18,7 @@ namespace CosmicShore.Systems.UserJourney
 
             foreach (var quest in quests)
             {
-                Debug.Log($"quest.OnQuestCompleted.length: {quest.GetInvocationCount()}");
+                CSDebug.Log($"quest.OnQuestCompleted.length: {quest.GetInvocationCount()}");
                 quest.OnQuestCompleted += CompleteQuest;
             }
         }

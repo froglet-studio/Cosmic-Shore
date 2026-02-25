@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -61,7 +62,7 @@ namespace CosmicShore.Core
             
             if (MeshRenderer == null)
             {
-                Debug.LogError($"MeshRenderer missing on {gameObject.name}");
+                CSDebug.LogError($"MeshRenderer missing on {gameObject.name}");
                 enabled = false;
                 return;
             }
@@ -128,7 +129,7 @@ namespace CosmicShore.Core
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error validating materials: {e.Message}");
+                CSDebug.LogError($"Error validating materials: {e.Message}");
                 return false;
             }
         }
@@ -139,7 +140,7 @@ namespace CosmicShore.Core
 
             if (transparentMaterial == null || opaqueMaterial == null)
             {
-                Debug.LogError($"Invalid materials provided to {gameObject.name}");
+                CSDebug.LogError($"Invalid materials provided to {gameObject.name}");
                 return;
             }
 

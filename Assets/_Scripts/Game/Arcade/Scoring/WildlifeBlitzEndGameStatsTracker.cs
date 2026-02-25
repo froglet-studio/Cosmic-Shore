@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -28,7 +29,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (!blitzMonitor || !timeMonitor || !scoreTracker)
             {
-                Debug.LogError("[BlitzStats] Missing references!");
+                CSDebug.LogError("[BlitzStats] Missing references!");
                 return;
             }
 
@@ -45,12 +46,12 @@ namespace CosmicShore.Game.Arcade
 
         void LogFinalStats(bool didWin, float elapsedTime, float finalScore)
         {
-            Debug.Log("========================================");
-            Debug.Log($"<color=cyan>📊 WILDLIFE BLITZ - FINAL STATS</color>");
-            Debug.Log($"<color=yellow>⏱️  Time Taken:</color> {FormatTime(elapsedTime)}");
-            Debug.Log(didWin ? $"<color=green>🏆 VICTORY!</color>" : $"<color=red>❌ DEFEAT</color>");
-            Debug.Log($"<color=white>🎯 Final Ranked Score:</color> {finalScore}");
-            Debug.Log("========================================");
+            CSDebug.Log("========================================");
+            CSDebug.Log($"<color=cyan>📊 WILDLIFE BLITZ - FINAL STATS</color>");
+            CSDebug.Log($"<color=yellow>⏱️  Time Taken:</color> {FormatTime(elapsedTime)}");
+            CSDebug.Log(didWin ? $"<color=green>🏆 VICTORY!</color>" : $"<color=red>❌ DEFEAT</color>");
+            CSDebug.Log($"<color=white>🎯 Final Ranked Score:</color> {finalScore}");
+            CSDebug.Log("========================================");
         }
         
         public static string FormatTime(float seconds)

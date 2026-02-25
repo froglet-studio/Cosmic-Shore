@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace CosmicShore.App.Profile
 {
@@ -8,5 +9,7 @@ namespace CosmicShore.App.Profile
         public string userId;
         public string displayName;
         public int avatarId;
+        public int xp;
+        public List<string> unlockedRewardIds = new();
     }
 }

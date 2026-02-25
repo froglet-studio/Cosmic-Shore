@@ -4,6 +4,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Elements
 {
@@ -52,12 +53,12 @@ namespace CosmicShore.App.UI.Elements
 
         void UpdateCardView()
         {
-            Debug.Log($"LoadoutCard.UpdateCardView - loadout: {loadout}");
+            CSDebug.Log($"LoadoutCard.UpdateCardView - loadout: {loadout}");
 
             if (!loadout.Initialized)
             {
                 // Show the + icon background
-                Debug.Log($"No loadout for card: {Index}");
+                CSDebug.Log($"No loadout for card: {Index}");
                 BackgroundImage.sprite = PlusIconBackground;
                 GameTitle.gameObject.SetActive(false);
                 ShipImage.gameObject.SetActive(false);

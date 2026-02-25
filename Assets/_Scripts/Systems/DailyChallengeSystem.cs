@@ -9,6 +9,7 @@ using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Utilities;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Systems
@@ -170,13 +171,13 @@ namespace CosmicShore.Systems
             var remainingAttempts = CatalogManager.Instance.GetDailyChallengeTicketBalance();//PlayerPrefs.GetInt(TicketBalancePrefKey);
             if (remainingAttempts > 0)
             {
-                Debug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
+                CSDebug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
                 CatalogManager.Instance.UseDailyChallengeTicket();
                 // Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Ship.Class, ShipResources, dailyChallenge.Intensity, 1, true);
             }
             else
             {
-                Debug.LogError("Attempt to play Daily Challenge without remaining tickets");
+                CSDebug.LogError("Attempt to play Daily Challenge without remaining tickets");
             }
         }
 
@@ -198,7 +199,7 @@ namespace CosmicShore.Systems
 
         public bool ClaimReward(int tier)
         {
-            Debug.Log($"ClaimRewardTierOne - dailyGame:{DailyGame}, tier:{tier}");
+            CSDebug.Log($"ClaimRewardTierOne - dailyGame:{DailyGame}, tier:{tier}");
             switch (tier)
             {
                 case 1:
