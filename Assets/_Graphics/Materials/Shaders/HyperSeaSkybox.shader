@@ -49,6 +49,18 @@ Shader "CosmicShore/HyperSeaSkybox"
         _AndromedaSize ("Angular Size", Range(0.02, 0.4)) = 0.1
         [HideInInspector]_AndromedaTex ("Andromeda (Baked)", 2D) = "black" {}
 
+        [Header(Cellular Overlay)]
+        _CellOverlayStrength ("Cell Overlay Strength", Range(0, 0.5)) = 0.12
+        _CellOverlayScale ("Cell Overlay Scale", Range(1, 40)) = 8.0
+        _CellOverlayColor ("Cell Overlay Color", Color) = (0.14, 0.21, 0.62, 1)
+        _CellEdgeSharpness ("Cell Edge Sharpness", Range(1, 20)) = 8.0
+
+        [Header(Membrane Atmosphere Bridge)]
+        _AtmosphereColor ("Atmosphere Color", Color) = (0.02, 0.04, 0.18, 1)
+        _AtmosphereStrength ("Atmosphere Strength", Range(0, 1)) = 0.25
+        _AtmosphereHeight ("Atmosphere Height Bias", Range(-1, 1)) = -0.3
+        _AtmosphereFalloff ("Atmosphere Falloff", Range(0.5, 8)) = 2.5
+
         [Header(Animation)]
         _DriftSpeed ("Drift Speed", Range(0, 0.1)) = 0.008
     }
@@ -102,6 +114,16 @@ Shader "CosmicShore/HyperSeaSkybox"
     half _AndromedaBrightness;
     half _AndromedaSize;
     sampler2D _AndromedaTex;
+
+    half _CellOverlayStrength;
+    half _CellOverlayScale;
+    half4 _CellOverlayColor;
+    half _CellEdgeSharpness;
+
+    half4 _AtmosphereColor;
+    half _AtmosphereStrength;
+    half _AtmosphereHeight;
+    half _AtmosphereFalloff;
 
     half _DriftSpeed;
 
@@ -534,6 +556,87 @@ Shader "CosmicShore/HyperSeaSkybox"
     }
 
     // ================================================================
+    // CELLULAR OVERLAY
+    // Voronoi cell pattern projected onto the sky sphere — echoes the
+    // membrane's faceted geometric language at low opacity.
+    // Uses 3D Voronoi so the pattern is seamless on the sphere.
+    // ================================================================
+
+    half3 computeCellOverlay(float3 dir, float time)
+    {
+        if (_CellOverlayStrength < 0.001) return 0;
+
+        float3 p = dir * _CellOverlayScale;
+        float3 drift = float3(time * _DriftSpeed * 0.3, 0, time * _DriftSpeed * 0.2);
+        p += drift;
+
+        float3 i = floor(p);
+        float3 f = frac(p);
+
+        float minDist1 = 10.0;
+        float minDist2 = 10.0;
+
+        // 3D Voronoi — find two nearest cell centers
+        for (int x = -1; x <= 1; x++)
+        for (int y = -1; y <= 1; y++)
+        for (int z = -1; z <= 1; z++)
+        {
+            float3 neighbor = float3(x, y, z);
+            float3 cellCenter = hash33(i + neighbor);
+            float3 diff = neighbor + cellCenter - f;
+            float d = dot(diff, diff);
+
+            if (d < minDist1)
+            {
+                minDist2 = minDist1;
+                minDist1 = d;
+            }
+            else if (d < minDist2)
+            {
+                minDist2 = d;
+            }
+        }
+
+        minDist1 = sqrt(minDist1);
+        minDist2 = sqrt(minDist2);
+
+        // Edge detection: where two cells are nearly equidistant
+        float edge = 1.0 - smoothstep(0.0, 1.0 / _CellEdgeSharpness, minDist2 - minDist1);
+
+        // Subtle interior gradient for depth
+        float interior = smoothstep(0.0, 0.5, minDist1) * 0.15;
+
+        float pattern = edge + interior;
+        return pattern * _CellOverlayColor.rgb * _CellOverlayStrength;
+    }
+
+    // ================================================================
+    // MEMBRANE ATMOSPHERE BRIDGE
+    // A directional atmospheric haze that uses the membrane's palette
+    // to create visual continuity between the geometric cell boundary
+    // and the photorealistic deep space.
+    // ================================================================
+
+    half3 computeAtmosphereBridge(float3 dir)
+    {
+        if (_AtmosphereStrength < 0.001) return 0;
+
+        // Hemisphere bias — thicker atmosphere in one direction
+        // (typically below the galactic plane, toward where the membrane sits)
+        float heightFactor = dot(dir, float3(0, 1, 0));
+        float biasedHeight = heightFactor - _AtmosphereHeight;
+
+        // Exponential falloff from the bias direction
+        float atmo = exp(-abs(biasedHeight) * _AtmosphereFalloff);
+
+        // Add noise so it feels organic, not a clean gradient
+        float noiseVal = valueNoise(dir * 3.0 + float3(17.3, 0, 41.7));
+        atmo *= (0.7 + 0.3 * noiseVal);
+
+        return _AtmosphereColor.rgb * atmo * _AtmosphereStrength;
+    }
+
+    // ================================================================
     // AMBIENT ATMOSPHERE
     // Subtle living glow - the "translucent medium" feel
     // ================================================================
@@ -583,6 +686,12 @@ Shader "CosmicShore/HyperSeaSkybox"
 
         // 7. Andromeda - sampled from pre-baked texture
         color += sampleAndromeda(dir);
+
+        // 8. Cellular overlay — geometric Voronoi pattern bridging membrane aesthetic
+        color += computeCellOverlay(dir, time);
+
+        // 9. Atmosphere bridge — directional haze in membrane palette
+        color += computeAtmosphereBridge(dir);
 
         return half4(color, 1.0);
     }
