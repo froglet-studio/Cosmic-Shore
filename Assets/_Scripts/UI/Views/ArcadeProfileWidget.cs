@@ -1,5 +1,6 @@
 using CosmicShore.App.Profile;
 using CosmicShore.App.UI.Views;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,7 +27,7 @@ namespace CosmicShore.App.UI
         [SerializeField] private SO_ProfileIconList profileIconList;
 
         [Header("Dependencies")]
-        [SerializeField] private PlayerDataService playerDataService;
+        [Inject] private PlayerDataService playerDataService;
         [SerializeField] private ProfileIconSelectView profileIconSelectView;
 
         private bool _isEditing;

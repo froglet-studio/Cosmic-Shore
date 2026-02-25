@@ -1,4 +1,5 @@
 using CosmicShore.App.Profile;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 
@@ -11,20 +12,21 @@ namespace CosmicShore.App.UI.Elements
     public class ProfileXPDisplay : MonoBehaviour
     {
         [SerializeField] private TMP_Text xpText;
+        [Inject] private PlayerDataService playerDataService;
 
         void OnEnable()
         {
-            if (PlayerDataService.Instance != null)
+            if (playerDataService != null)
             {
-                PlayerDataService.Instance.OnProfileChanged += OnProfileChanged;
-                UpdateDisplay(PlayerDataService.Instance.GetXP());
+                playerDataService.OnProfileChanged += OnProfileChanged;
+                UpdateDisplay(playerDataService.GetXP());
             }
         }
 
         void OnDisable()
         {
-            if (PlayerDataService.Instance != null)
-                PlayerDataService.Instance.OnProfileChanged -= OnProfileChanged;
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= OnProfileChanged;
         }
 
         void OnProfileChanged(PlayerProfileData data)

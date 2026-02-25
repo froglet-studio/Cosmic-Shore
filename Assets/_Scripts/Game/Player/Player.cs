@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.App.Profile;
 using CosmicShore.Game.IO;
 using CosmicShore.Soap;
 using CosmicShore.Utility.ClassExtensions;
+using Reflex.Attributes;
 using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -15,7 +17,9 @@ namespace CosmicShore.Game
     {
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
-        
+
+        [Inject] private PlayerDataService playerDataService;
+
         public NetworkVariable<VesselClassType> NetDefaultVesselType = new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<Domains> NetDomain = new();
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -128,11 +132,10 @@ namespace CosmicShore.Game
             // 1. PlayerDataService (live profile from Cloud Save)
             // 2. GameDataSO cached values (set by PlayerDataService.HandleProfileChanged earlier)
             // 3. UGS PlayerName with suffix stripped (last resort)
-            var profileService = App.Profile.PlayerDataService.Instance;
-            if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
+            if (playerDataService != null && playerDataService.IsInitialized && playerDataService.CurrentProfile != null)
             {
-                NetName.Value = profileService.CurrentProfile.displayName;
-                NetAvatarId.Value = profileService.CurrentProfile.avatarId;
+                NetName.Value = playerDataService.CurrentProfile.displayName;
+                NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
             }
             else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
             {

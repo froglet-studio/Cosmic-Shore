@@ -2,6 +2,7 @@
 using CosmicShore.App.Profile;
 using CosmicShore.App.UI.Panels;
 using CosmicShore.Game.Party;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,6 +25,8 @@ namespace CosmicShore.App.UI.Views
 
         [Header("Data")]
         [SerializeField] private SO_ProfileIconList profileIcons;
+
+        [Inject] private PlayerDataService playerDataService;
 
         private readonly List<GameObject> _memberRows = new();
 
@@ -64,8 +67,8 @@ namespace CosmicShore.App.UI.Views
         /// <summary>Call this after profile changes to update the local player display.</summary>
         public void RefreshLocalPlayerDisplay()
         {
-            if (PlayerDataService.Instance == null) return;
-            var profile = PlayerDataService.Instance.CurrentProfile;
+            if (playerDataService == null) return;
+            var profile = playerDataService.CurrentProfile;
             if (profile == null) return;
 
             if (localDisplayNameText != null)

@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.App.Profile;       // UgsPlayerProfileService
+using CosmicShore.App.Profile;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -36,7 +37,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private GameObject avatarPanelRoot;
 
         [Header("Profile / UGS")]
-        [SerializeField] private PlayerDataService dataService; 
+        [Inject] private PlayerDataService dataService;
         [SerializeField] private GameDataSO gameData;
 
         // Internal state

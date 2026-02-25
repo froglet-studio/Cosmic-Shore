@@ -1,10 +1,12 @@
 using CosmicShore.App.Profile;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Game
 {
     public class MiniGamePlayerSpawnerAdapter : PlayerSpawnerAdapterBase
     {
+        [Inject] private PlayerDataService playerDataService;
         [SerializeField] private bool _spawnAIAtStart = false;
 
         private void OnEnable()
@@ -36,11 +38,10 @@ namespace CosmicShore.Game
             string displayName = "HumanJade";
             int avatarId = 0;
 
-            var profileService = PlayerDataService.Instance;
-            if (profileService != null && profileService.IsInitialized && profileService.CurrentProfile != null)
+            if (playerDataService != null && playerDataService.IsInitialized && playerDataService.CurrentProfile != null)
             {
-                displayName = profileService.CurrentProfile.displayName;
-                avatarId = profileService.CurrentProfile.avatarId;
+                displayName = playerDataService.CurrentProfile.displayName;
+                avatarId = playerDataService.CurrentProfile.avatarId;
             }
             else
             {

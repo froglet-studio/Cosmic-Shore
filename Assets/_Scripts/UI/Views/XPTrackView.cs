@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.App.Profile;
 using CosmicShore.Models;
 using DG.Tweening;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,6 +32,8 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] private float sliderAnimDuration = 1f;
         [SerializeField] private Ease sliderEase = Ease.OutCubic;
 
+        [Inject] private PlayerDataService playerDataService;
+
         private readonly List<GameObject> _spawnedItems = new();
         private readonly List<GameObject> _spawnedLevels = new();
         private Tween _sliderTween;
@@ -39,14 +42,14 @@ namespace CosmicShore.App.UI.Views
         {
             LoadTrack();
 
-            if (PlayerDataService.Instance != null)
-                PlayerDataService.Instance.OnProfileChanged += OnProfileChanged;
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged += OnProfileChanged;
         }
 
         void OnDisable()
         {
-            if (PlayerDataService.Instance != null)
-                PlayerDataService.Instance.OnProfileChanged -= OnProfileChanged;
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= OnProfileChanged;
 
             KillTween();
         }
@@ -59,7 +62,7 @@ namespace CosmicShore.App.UI.Views
         public void LoadTrack()
         {
             SpawnMilestones();
-            int currentXP = PlayerDataService.Instance != null ? PlayerDataService.Instance.GetXP() : 0;
+            int currentXP = playerDataService != null ? playerDataService.GetXP() : 0;
             SetXPImmediate(currentXP);
         }
 
@@ -71,9 +74,9 @@ namespace CosmicShore.App.UI.Views
 
             int totalMilestones = xpTrackData.milestones.Count;
             int xpPerMilestone = xpTrackData.xpPerMilestone;
-            bool hasProfile = PlayerDataService.Instance != null &&
-                              PlayerDataService.Instance.CurrentProfile != null;
-            int currentXP = hasProfile ? PlayerDataService.Instance.GetXP() : 0;
+            bool hasProfile = playerDataService != null &&
+                              playerDataService.CurrentProfile != null;
+            int currentXP = hasProfile ? playerDataService.GetXP() : 0;
 
             for (int i = 0; i < totalMilestones; i++)
             {

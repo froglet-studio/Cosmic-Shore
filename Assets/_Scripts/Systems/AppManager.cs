@@ -1,3 +1,4 @@
+using CosmicShore.App.Profile;
 using CosmicShore.Core;
 using CosmicShore.Services;
 using CosmicShore.Soap;
@@ -27,6 +28,7 @@ namespace CosmicShore.Systems
         [Header("Persistent Systems")]
         [SerializeField] GameSetting gameSetting;
         [SerializeField] AudioSystem audioSystem;
+        [SerializeField] PlayerDataService playerDataService;
 
         [SerializeField]
         string Main_Menu_Name = "MainMenuFreestyle";
@@ -61,6 +63,7 @@ namespace CosmicShore.Systems
             // Persistent MonoBehaviour systems: register existing scene instances
             builder.RegisterValue(gameSetting);
             builder.RegisterValue(audioSystem);
+            builder.RegisterValue(playerDataService);
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             builder.RegisterFactory(

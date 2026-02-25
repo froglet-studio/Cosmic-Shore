@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CosmicShore.App.Profile;
+using Reflex.Attributes;
 using TMPro;
 using Unity.Services.Authentication;
 using UnityEngine;
@@ -32,7 +33,7 @@ namespace CosmicShore.Services.Auth
 
         [Header("Dependencies")]
         [SerializeField] private AuthenticationController authController;
-        [SerializeField] private PlayerDataService playerDataService;
+        [Inject] private PlayerDataService playerDataService;
 
         [Header("Navigation")]
         [SerializeField] private string mainMenuSceneName = "Menu_Main";
