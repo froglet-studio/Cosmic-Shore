@@ -1,26 +1,28 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CosmicShore.App.Profile;
 using CosmicShore.App.UI.Panels;
-using CosmicShore.Game.Party;
+using CosmicShore.Soap;
 using Reflex.Attributes;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Views
 {
+    /// <summary>
+    /// Drives the Players Info area on the left side of the Arcade Panel.
+    /// Renders N <see cref="PartySlotView"/> slots sourced from
+    /// <see cref="HostConnectionDataSO"/>.  Slot 0 is always the local player.
+    /// Empty slots show a "+" button that opens the <see cref="OnlinePlayersPanel"/>.
+    /// </summary>
     public class PartyArcadeView : MonoBehaviour
     {
-        [Header("Local Player")]
-        [SerializeField] private Image    localAvatarImage;
-        [SerializeField] private TMP_Text localDisplayNameText;
+        [Header("SOAP Data")]
+        [SerializeField] private HostConnectionDataSO connectionData;
 
-        [Header("Party Members")]
-        [SerializeField] private Transform  partyMemberContainer;
-        [SerializeField] private GameObject partyMemberPrefab;
+        [Header("Slots")]
+        [Tooltip("Pre-placed slot views in the hierarchy (index 0 = local player).")]
+        [SerializeField] private List<PartySlotView> partySlots;
 
-        [Header("Actions")]
-        [SerializeField] private Button            addPlayerButton;
+        [Header("Online Players Panel")]
         [SerializeField] private OnlinePlayersPanel onlinePlayersPanel;
 
         [Header("Data")]
@@ -28,94 +30,146 @@ namespace CosmicShore.App.UI.Views
 
         [Inject] private PlayerDataService playerDataService;
 
-        private readonly List<GameObject> _memberRows = new();
-
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Unity Lifecycle
+        // ─────────────────────────────────────────────────────────────────────
 
         void Awake()
         {
-            addPlayerButton?.onClick.AddListener(OpenOnlinePlayers);
+            foreach (var slot in partySlots)
+                slot.Initialize(OpenOnlinePlayers);
         }
 
         void OnEnable()
         {
-            if (PartyManager.Instance != null)
+            if (connectionData != null)
             {
-                PartyManager.Instance.OnPartyMemberJoined += OnPartyMemberJoined;
-                PartyManager.Instance.OnJoinedParty        += OnJoinedParty;
+                if (connectionData.PartyMembers != null)
+                {
+                    connectionData.PartyMembers.OnItemAdded += OnPartyMemberAdded;
+                    connectionData.PartyMembers.OnItemRemoved += OnPartyMemberRemoved;
+                    connectionData.PartyMembers.OnCleared += OnPartyCleared;
+                }
+
+                if (connectionData.OnHostConnectionEstablished != null)
+                    connectionData.OnHostConnectionEstablished.OnRaised += RefreshAllSlots;
             }
+
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged += OnLocalProfileChanged;
+
+            RefreshAllSlots();
         }
 
         void OnDisable()
         {
-            if (PartyManager.Instance != null)
+            if (connectionData != null)
             {
-                PartyManager.Instance.OnPartyMemberJoined -= OnPartyMemberJoined;
-                PartyManager.Instance.OnJoinedParty        -= OnJoinedParty;
+                if (connectionData.PartyMembers != null)
+                {
+                    connectionData.PartyMembers.OnItemAdded -= OnPartyMemberAdded;
+                    connectionData.PartyMembers.OnItemRemoved -= OnPartyMemberRemoved;
+                    connectionData.PartyMembers.OnCleared -= OnPartyCleared;
+                }
+
+                if (connectionData.OnHostConnectionEstablished != null)
+                    connectionData.OnHostConnectionEstablished.OnRaised -= RefreshAllSlots;
+            }
+
+            if (playerDataService != null)
+                playerDataService.OnProfileChanged -= OnLocalProfileChanged;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Public
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Full rebuild of all slot visuals from <see cref="HostConnectionDataSO.PartyMembers"/>.
+        /// </summary>
+        public void RefreshAllSlots()
+        {
+            RefreshLocalPlayerSlot();
+
+            int memberIndex = 0;
+            for (int slotIndex = 1; slotIndex < partySlots.Count; slotIndex++)
+            {
+                var slot = partySlots[slotIndex];
+
+                PartyPlayerData? remoteMember = null;
+                while (memberIndex < (connectionData?.PartyMembers?.Count ?? 0))
+                {
+                    var candidate = connectionData.PartyMembers[memberIndex];
+                    memberIndex++;
+
+                    if (candidate.PlayerId == connectionData?.LocalPlayerId)
+                        continue;
+
+                    remoteMember = candidate;
+                    break;
+                }
+
+                if (remoteMember.HasValue)
+                    slot.SetPlayer(remoteMember.Value);
+                else
+                    slot.ClearSlot();
             }
         }
 
-        void Start()
+        // ─────────────────────────────────────────────────────────────────────
+        // SOAP Callbacks
+        // ─────────────────────────────────────────────────────────────────────
+
+        private void OnPartyMemberAdded(PartyPlayerData member)
         {
-            RefreshLocalPlayerDisplay();
+            RefreshAllSlots();
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Public
-
-        /// <summary>Call this after profile changes to update the local player display.</summary>
-        public void RefreshLocalPlayerDisplay()
+        private void OnPartyMemberRemoved(PartyPlayerData member)
         {
-            if (playerDataService == null) return;
-            var profile = playerDataService.CurrentProfile;
-            if (profile == null) return;
-
-            if (localDisplayNameText != null)
-                localDisplayNameText.text = profile.displayName;
-
-            var sprite = ResolveAvatarSprite(profile.avatarId);
-            if (sprite != null && localAvatarImage != null)
-                localAvatarImage.sprite = sprite;
+            RefreshAllSlots();
         }
 
-        // -----------------------------------------------------------------------------------------
+        private void OnPartyCleared()
+        {
+            foreach (var slot in partySlots)
+                slot.ClearSlot();
+        }
+
+        private void OnLocalProfileChanged(PlayerProfileData profileData)
+        {
+            RefreshLocalPlayerSlot();
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // Panel
+        // ─────────────────────────────────────────────────────────────────────
 
         private void OpenOnlinePlayers()
         {
             onlinePlayersPanel?.Show();
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Party member list
-
-        private void OnPartyMemberJoined(string displayName)
-        {
-            // For now just log; in a full impl you'd query their avatar from the party session
-            Debug.Log($"[PartyArcadeView] Party member joined: {displayName}");
-            // TODO: spawn a partyMemberPrefab row with their avatar + name
-            //       You'd get the full OnlinePlayerInfo from PartyManager.PartySession.Players
-        }
-
-        private void OnJoinedParty(string hostDisplayName)
-        {
-            Debug.Log($"[PartyArcadeView] Joined party hosted by {hostDisplayName}");
-            // TODO: update panel to show host + self in the party list
-        }
-
-        // -----------------------------------------------------------------------------------------
+        // ─────────────────────────────────────────────────────────────────────
         // Helpers
+        // ─────────────────────────────────────────────────────────────────────
 
-        private Sprite ResolveAvatarSprite(int avatarId)
+        private void RefreshLocalPlayerSlot()
         {
-            if (profileIcons == null) return null;
-            foreach (var icon in profileIcons.profileIcons)
+            if (partySlots.Count == 0) return;
+
+            var slot0 = partySlots[0];
+
+            if (connectionData != null && !string.IsNullOrEmpty(connectionData.LocalPlayerId))
             {
-                if (icon.Id == avatarId)
-                    return icon.IconSprite;
+                slot0.SetPlayer(connectionData.LocalPlayerData);
             }
-            return null;
+            else if (playerDataService?.CurrentProfile != null)
+            {
+                var profile = playerDataService.CurrentProfile;
+                slot0.SetPlayer(new PartyPlayerData(
+                    profile.userId, profile.displayName, profile.avatarId));
+            }
         }
     }
 }
