@@ -19,7 +19,9 @@ Shader "CosmicShore/HyperSeaSkybox"
         [Header(Star Field)]
         _StarDensity ("Star Density", Range(20, 200)) = 80
         _StarBrightness ("Star Brightness", Range(0, 5)) = 2.5
-        _StarConcentration ("Star Galactic Concentration", Range(0, 1000)) = 1.2
+        _StarBaseProb ("Star Base Probability", Range(0, 1)) = 0.25
+        _StarGalacticBoost ("Star Galactic Plane Boost", Range(0, 1)) = 0.35
+        _StarConcentration ("Star Galactic Concentration", Range(0, 100)) = 1.2
         _TwinkleSpeed ("Twinkle Speed", Range(0, 5)) = 1.5
 
         [Header(Nebulae)]
@@ -88,6 +90,8 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     half _StarDensity;
     half _StarBrightness;
+    half _StarBaseProb;
+    half _StarGalacticBoost;
     half _StarConcentration;
     half _TwinkleSpeed;
 
@@ -262,7 +266,7 @@ Shader "CosmicShore/HyperSeaSkybox"
             // Increase probability near galactic plane
             float3 cellDir = normalize((cellId + 0.5) / scale);
             float galDist = abs(dot(cellDir, galNorm));
-            float probability = 0.25 + 0.35 * pow(1.0 - galDist, _StarConcentration);
+            float probability = _StarBaseProb + _StarGalacticBoost * pow(1.0 - galDist, _StarConcentration);
 
             if (h > probability)
                 continue;
