@@ -3,7 +3,10 @@
     "rootNamespace": "CosmicShore.Utility",
     "references": [
         "CosmicShore.Core",
-        "UniTask"
+        "UniTask",
+        "Unity.Netcode.Runtime",
+        "Unity.Netcode.Components",
+        "Unity.Collections"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
