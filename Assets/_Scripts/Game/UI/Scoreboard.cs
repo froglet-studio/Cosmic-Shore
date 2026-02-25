@@ -3,6 +3,7 @@ using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
 using Obvious.Soap;
+using Reflex.Attributes;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -20,6 +21,8 @@ namespace CosmicShore.Game.UI
         [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
+
+        [Inject] UGSStatsManager ugsStatsManager;
 
         [Header("References")]
         [SerializeField] private MultiplayerMiniGameControllerBase multiplayerController;
@@ -176,10 +179,10 @@ namespace CosmicShore.Game.UI
             if (SinglePlayerHighscoreTextField)
             {
                 float highScore = playerScore;
-                if (UGSStatsManager.Instance &&
+                if (ugsStatsManager &&
                     Enum.TryParse(gameData.GameMode.ToString(), out GameModes modeEnum))
                 {
-                    highScore = UGSStatsManager.Instance.GetEvaluatedHighScore(
+                    highScore = ugsStatsManager.GetEvaluatedHighScore(
                         modeEnum, gameData.SelectedIntensity.Value, playerScore);
                 }
                 SinglePlayerHighscoreTextField.text = ((int)highScore).ToString();
@@ -279,8 +282,8 @@ namespace CosmicShore.Game.UI
 
         public void OnPlayAgainButtonPressed()
         {
-            if (UGSStatsManager.Instance != null)
-                UGSStatsManager.Instance.TrackPlayAgain();
+            if (ugsStatsManager != null)
+                ugsStatsManager.TrackPlayAgain();
 
             if (gameData.IsMultiplayerMode)
             {

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Game.UI;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -21,6 +22,8 @@ namespace CosmicShore.Game.Arcade
         [Header("Settings")]
         [SerializeField] float penaltyScoreBase = 10000f;
         [SerializeField] bool showDebugLogs = true;
+
+        [Inject] UGSStatsManager ugsStatsManager;
 
         private float _elapsedRaceTime;
         private IVesselStatus _observedVessel;
@@ -106,9 +109,9 @@ namespace CosmicShore.Game.Arcade
                 // If the vessel type doesn't have those stats, they'll just be 0.
                 var squirrelTelemetry = _vesselTelemetry as SquirrelVesselTelemetry;
 
-                if (UGSStatsManager.Instance && _vesselTelemetry != null)
+                if (ugsStatsManager && _vesselTelemetry != null)
                 {
-                    UGSStatsManager.Instance.ReportHexRaceStats(
+                    ugsStatsManager.ReportHexRaceStats(
                         GameModes.HexRace,
                         gameData.SelectedIntensity.Value,
                         squirrelTelemetry?.MaxCleanStreak ?? 0,
@@ -119,8 +122,8 @@ namespace CosmicShore.Game.Arcade
                 }
 
                 // Report per-vessel telemetry to UGS
-                if (UGSStatsManager.Instance && _vesselTelemetry != null && _observedVessel != null)
-                    UGSStatsManager.Instance.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
+                if (ugsStatsManager && _vesselTelemetry != null && _observedVessel != null)
+                    ugsStatsManager.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
 
                 if (controller) controller.ReportLocalPlayerFinished(finalScore);
             }

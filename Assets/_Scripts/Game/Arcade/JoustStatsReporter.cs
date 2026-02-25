@@ -2,6 +2,7 @@
 using System.Linq;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -16,6 +17,8 @@ namespace CosmicShore.Game.Arcade
         [Header("Settings")]
         [SerializeField] private GameModes gameMode = GameModes.MultiplayerJoust;
 
+        [Inject] UGSStatsManager ugsStatsManager;
+
         void OnEnable()
         {
             if (gameData != null) gameData.OnMiniGameEnd.OnRaised += ReportStats;
@@ -28,7 +31,7 @@ namespace CosmicShore.Game.Arcade
 
         void ReportStats()
         {
-            if (!UGSStatsManager.Instance) return;
+            if (!ugsStatsManager) return;
             if (!joustController || !joustController.joustTurnMonitor) return;
 
             var localName = gameData.LocalPlayer?.Name;
@@ -41,7 +44,7 @@ namespace CosmicShore.Game.Arcade
 
             if (!isWinner) return;
             float raceTime = localStats.Score;
-            UGSStatsManager.Instance.ReportJoustStats(
+            ugsStatsManager.ReportJoustStats(
                 gameMode,
                 gameData.SelectedIntensity.Value,
                 localStats.JoustCollisions,
@@ -52,7 +55,7 @@ namespace CosmicShore.Game.Arcade
             if (gameData.LocalPlayer?.Vessel is Component vc
                 && vc.TryGetComponent<VesselTelemetry>(out var vt))
             {
-                UGSStatsManager.Instance.ReportVesselTelemetry(
+                ugsStatsManager.ReportVesselTelemetry(
                     vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
             }
 

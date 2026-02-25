@@ -2,6 +2,7 @@
 using CosmicShore.Game.Analytics;
 using CosmicShore.Game.Arcade.Scoring;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -15,6 +16,8 @@ namespace CosmicShore.Game.Arcade
         
         [Header("Events")]
         [SerializeField] ScriptableEventNoParam eventOnScoreChanged;
+
+        [Inject] UGSStatsManager ugsStatsManager;
 
         private bool isTracking = false;
 
@@ -79,7 +82,7 @@ namespace CosmicShore.Game.Arcade
              float winTime = timeMonitor ? timeMonitor.ElapsedTime : 0f;
              gameData.LocalRoundStats.Score = didWin ? winTime : 999f;
 
-             if (UGSStatsManager.Instance)
+             if (ugsStatsManager)
              {
                  var lifeScoring = GetScoring<LifeFormsKilledScoring>();
                  var crystalScoring = GetScoring<ElementalCrystalsCollectedBlitzScoring>();
@@ -88,7 +91,7 @@ namespace CosmicShore.Game.Arcade
                  int crystals = crystalScoring?.GetTotalCrystalsCollected() ?? 0;
                  int finalScore = (int)gameData.LocalRoundStats.Score;
 
-                 UGSStatsManager.Instance.ReportBlitzStats(
+                 ugsStatsManager.ReportBlitzStats(
                      GameModes.WildlifeBlitz,
                      gameData.SelectedIntensity.Value,
                      crystals,
@@ -100,7 +103,7 @@ namespace CosmicShore.Game.Arcade
                  if (gameData.LocalPlayer?.Vessel is Component vc
                      && vc.TryGetComponent<VesselTelemetry>(out var vt))
                  {
-                     UGSStatsManager.Instance.ReportVesselTelemetry(
+                     ugsStatsManager.ReportVesselTelemetry(
                          vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
                  }
              }

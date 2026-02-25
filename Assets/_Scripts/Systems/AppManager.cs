@@ -1,5 +1,6 @@
 using CosmicShore.App.Profile;
 using CosmicShore.Core;
+using CosmicShore.Game.Analytics;
 using CosmicShore.Services;
 using CosmicShore.Soap;
 using CosmicShore.Systems.Audio;
@@ -29,6 +30,7 @@ namespace CosmicShore.Systems
         [SerializeField] GameSetting gameSetting;
         [SerializeField] AudioSystem audioSystem;
         [SerializeField] PlayerDataService playerDataService;
+        [SerializeField] UGSStatsManager ugsStatsManager;
 
         [SerializeField]
         string Main_Menu_Name = "MainMenuFreestyle";
@@ -64,6 +66,7 @@ namespace CosmicShore.Systems
             builder.RegisterValue(gameSetting);
             builder.RegisterValue(audioSystem);
             builder.RegisterValue(playerDataService);
+            builder.RegisterValue(ugsStatsManager);
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             builder.RegisterFactory(

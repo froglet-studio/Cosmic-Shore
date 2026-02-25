@@ -2,6 +2,7 @@
 using System.Linq;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -10,6 +11,8 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] private GameDataSO gameData;
         [SerializeField] private GameModes gameMode = GameModes.MultiplayerCrystalCapture;
+
+        [Inject] UGSStatsManager ugsStatsManager;
 
         void OnEnable()
         {
@@ -23,7 +26,7 @@ namespace CosmicShore.Game.Arcade
 
         void ReportStats()
         {
-            if (!UGSStatsManager.Instance) return;
+            if (!ugsStatsManager) return;
 
             var localName = gameData.LocalPlayer?.Name;
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
@@ -35,7 +38,7 @@ namespace CosmicShore.Game.Arcade
 
             if (isWinner)
             {
-                UGSStatsManager.Instance.ReportCrystalCaptureStats(
+                ugsStatsManager.ReportCrystalCaptureStats(
                     gameMode,
                     gameData.SelectedIntensity.Value,
                     (int)localStats.Score
@@ -45,7 +48,7 @@ namespace CosmicShore.Game.Arcade
                 if (gameData.LocalPlayer?.Vessel is Component vc
                     && vc.TryGetComponent<VesselTelemetry>(out var vt))
                 {
-                    UGSStatsManager.Instance.ReportVesselTelemetry(
+                    ugsStatsManager.ReportVesselTelemetry(
                         vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
                 }
             }
