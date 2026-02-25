@@ -243,6 +243,16 @@ namespace CosmicShore.Game.Arcade.Party
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
+                // If no human player was registered (SPVI may not be present or failed),
+                // register one directly so the Ready button works.
+                if (!_playerStates.Any(p => !p.IsAIReplacement))
+                {
+                    string humanName = gameData.LocalPlayer?.Name ?? "Player 1";
+                    var domain = Domains.Jade;
+                    OnPlayerJoined(humanName, domain, false);
+                    CSDebug.Log($"[PartyGame] Registered human player directly: '{humanName}'");
+                }
+
                 if (_playerStates.Count < config.MaxPlayers)
                     FillWithAI();
 
@@ -354,13 +364,22 @@ namespace CosmicShore.Game.Arcade.Party
 
         public void OnLocalPlayerReady()
         {
-            if (gameData.LocalPlayer == null)
+            // Try gameData.LocalPlayer first; fall back to the human entry in _playerStates
+            // (covers party mode where SPVI may not have spawned a vessel yet).
+            string name = gameData.LocalPlayer?.Name;
+
+            if (string.IsNullOrEmpty(name))
             {
-                CSDebug.LogWarning("[PartyGame] OnLocalPlayerReady: gameData.LocalPlayer is null!");
+                var human = _playerStates.FirstOrDefault(p => !p.IsAIReplacement);
+                name = human?.PlayerName;
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                CSDebug.LogWarning("[PartyGame] OnLocalPlayerReady: no player found!");
                 return;
             }
 
-            string name = gameData.LocalPlayer.Name;
             CSDebug.Log($"[PartyGame] OnLocalPlayerReady: '{name}', phase={CurrentPhase}");
             OnPlayerReady_ServerRpc(name);
         }
@@ -411,6 +430,9 @@ namespace CosmicShore.Game.Arcade.Party
                 state.IsReady = state.IsAIReplacement;
 
             ResetReadyStates_ClientRpc();
+
+            // Auto-progress if all players are already ready (e.g., all AI or edge cases)
+            CheckAllPlayersReady();
         }
 
         #endregion

@@ -81,6 +81,13 @@ namespace CosmicShore.Game
                 return;
             }
 
+            if (_playerOrigins is not { Length: > 0 } || _playerOrigins[0] == null)
+            {
+                CSDebug.LogWarning($"[SPVI] _playerOrigins not assigned on '{gameObject.name}', skipping initialization.");
+                enabled = false;
+                return;
+            }
+
             gameData.SetSpawnPositions(_playerOrigins);
 
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
