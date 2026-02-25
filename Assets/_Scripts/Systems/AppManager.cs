@@ -32,9 +32,6 @@ namespace CosmicShore.Systems
         [SerializeField] PlayerDataService playerDataService;
         [SerializeField] UGSStatsManager ugsStatsManager;
 
-        [SerializeField]
-        string Main_Menu_Name = "MainMenuFreestyle";
-
         // ✅ Reflex will inject these from the container
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
@@ -89,10 +86,11 @@ namespace CosmicShore.Systems
         void ConfigureGameData()
         {
             gameData.ResetAllData();
-            gameData.SceneName = Main_Menu_Name;
-            gameData.GameMode = GameModes.MultiplayerFreestyle;
-            gameData.IsMultiplayerMode = true;
-            gameData.SelectedPlayerCount.Value = 4;
+
+            // Set sane defaults; the actual game mode, player count, and
+            // intensity are configured by PartyGameLauncher when the host
+            // picks a mode and presses play.
+            gameData.SelectedPlayerCount.Value = 1;
             gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
             gameData.SelectedIntensity.Value = 1;
         }

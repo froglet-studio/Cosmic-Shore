@@ -101,6 +101,15 @@ namespace CosmicShore.Systems
         
         private async UniTaskVoid ExecuteMultiplayerSetup()
         {
+            // If a party session was already handed off (e.g. from PartyGameLauncher),
+            // skip matchmaking and use the existing session directly.
+            if (gameData.ActiveSession != null)
+            {
+                CSDebug.Log($"[MultiplayerSetup] Using existing party session {gameData.ActiveSession.Id}");
+                gameData.InvokeSessionStarted();
+                return;
+            }
+
             // Query sessions for this game mode & player count
             var sessions = await QuerySessions();
 
