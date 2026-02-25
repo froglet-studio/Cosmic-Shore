@@ -1,68 +1,63 @@
 using UnityEngine;
-using System.Collections;
-using CosmicShore.Core;
 using System.Collections.Generic;
 using CosmicShore;
+using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utility;
 
-public class BoidManager : Fauna
+namespace CosmicShore.Game.Environment.FloraAndFauna
 {
-    [Header("Boid Settings")]
-    public Boid boidPrefab;
-    public int numberOfBoids = 100;
-    public float spawnRadius = 50.0f;
-
-    [Header("Global Boid Settings")]
-    public Transform Mound;
-
-    public List<Boid> Boids;
-    
-    public Trail boidTrail = new();
-
-    protected override void Start()
+    /// <summary>
+    /// Manages a group of <see cref="Boid"/> creatures.
+    /// Handles spawning, trail registration, and mound target assignment.
+    /// Extends Fauna for domain/goal propagation from the spawning system (LSP-compliant:
+    /// lifecycle methods use base defaults instead of throwing NotImplementedException).
+    /// </summary>
+    public class BoidManager : Fauna
     {
-        base.Start();
+        [Header("Boid Settings")]
+        public Boid boidPrefab;
+        public int numberOfBoids = 100;
+        public float spawnRadius = 50.0f;
 
-        for (int i = 0; i < numberOfBoids; i++)
+        [Header("Global Boid Settings")]
+        public Transform Mound;
+
+        public List<Boid> Boids;
+        public Trail boidTrail = new();
+
+        protected override void Start()
         {
-            Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
-            SafeLookRotation.TryGet(Vector3.Cross(spawnPosition, Vector3.forward), out var initialRotation, boidPrefab);
-
-            Boid newBoid = Instantiate(boidPrefab, spawnPosition, initialRotation, transform);
-            newBoid.BoidManager = this;
-            newBoid.domain = domain;
-            newBoid.normalizedIndex = (float)i / numberOfBoids;
-
-            newBoid.Initialize(cell);
-
-            Boids.Add(newBoid);
-
-            var block = newBoid.GetComponentInChildren<Prism>(true);
-            if (block)
-            {
-                boidTrail.Add(block);
-                block.ChangeTeam(domain);
-                block.Trail = boidTrail;
-            }
-
-            if (Mound)
-                newBoid.Mound = Mound;
+            base.Start();
+            SpawnBoids();
         }
-    }
 
-    public override void Initialize(Cell cell)
-    {
-        throw new System.NotImplementedException();
-    }
+        void SpawnBoids()
+        {
+            for (int i = 0; i < numberOfBoids; i++)
+            {
+                Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
+                SafeLookRotation.TryGet(Vector3.Cross(spawnPosition, Vector3.forward), out var initialRotation, boidPrefab);
 
-    protected override void Spawn()
-    {
-        throw new System.NotImplementedException();
-    }
+                Boid newBoid = Instantiate(boidPrefab, spawnPosition, initialRotation, transform);
+                newBoid.BoidManager = this;
+                newBoid.domain = domain;
+                newBoid.normalizedIndex = (float)i / numberOfBoids;
+                newBoid.Initialize(cell);
 
-    protected override void Die(string killername = "")
-    {
-        throw new System.NotImplementedException();
+                Boids.Add(newBoid);
+
+                var block = newBoid.GetComponentInChildren<Prism>(true);
+                if (block)
+                {
+                    boidTrail.Add(block);
+                    block.ChangeTeam(domain);
+                    block.Trail = boidTrail;
+                }
+
+                if (Mound)
+                    newBoid.Mound = Mound;
+            }
+        }
     }
 }

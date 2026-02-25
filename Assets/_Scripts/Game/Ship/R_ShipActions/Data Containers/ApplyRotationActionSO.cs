@@ -1,30 +1,33 @@
 ﻿using CosmicShore.Game;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ApplyRotationAction", menuName = "ScriptableObjects/Vessel Actions/ApplyRotationActionSO")]
-public class ApplyRotationActionSO : ShipActionSO
+namespace CosmicShore.Game.Ship.ShipActions.DataContainers
 {
-    [SerializeField] float rotationAmount = 45f;
-    [SerializeField] bool pitch = true;
-    [SerializeField] bool yaw   = true;
-    [SerializeField] bool roll  = true;
-
-    public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+    [CreateAssetMenu(fileName = "ApplyRotationAction", menuName = "ScriptableObjects/Vessel Actions/ApplyRotationActionSO")]
+    public class ApplyRotationActionSO : ShipActionSO
     {
- 
-        var transformer = vesselStatus.VesselTransformer;
+        [SerializeField] float rotationAmount = 45f;
+        [SerializeField] bool pitch = true;
+        [SerializeField] bool yaw   = true;
+        [SerializeField] bool roll  = true;
 
-        if (pitch)
-            transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.right);
+        public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        {
 
-        if (yaw)
-            transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.up);
+            var transformer = vesselStatus.VesselTransformer;
 
-        if (roll)
-            transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.forward);
-    }
+            if (pitch)
+                transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.right);
 
-    public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-    {
+            if (yaw)
+                transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.up);
+
+            if (roll)
+                transformer.ApplyRotation(rotationAmount, vesselStatus.Transform.forward);
+        }
+
+        public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
+        {
+        }
     }
 }

@@ -9,7 +9,7 @@ using PlayFab.EconomyModels;
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore.Integrations.Playfab.Economy
+namespace CosmicShore.Integrations.PlayFab.Economy
 {
     public class CatalogBundleHandler : MonoBehaviour
     {

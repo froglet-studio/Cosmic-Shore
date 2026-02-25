@@ -5,6 +5,10 @@ using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utility;
 
+/// <summary>
+/// Lightweight boid-like creature with separation, cohesion, and goal-seeking behaviors.
+/// Consumes enemy health prisms within range.
+/// </summary>
 public class LightFauna : Fauna
 {
     const string PLAYER_NAME = "light FaunaPrefab";
@@ -19,7 +23,7 @@ public class LightFauna : Fauna
     [HideInInspector] public float Phase;
 
     public LightFaunaManager LightFaunaManager { get; set; }
-    
+
     public override void Initialize(Cell cell)
     {
         if (!data)
@@ -33,6 +37,14 @@ public class LightFauna : Fauna
 
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         StartCoroutine(UpdateBehaviorCoroutine());
+    }
+
+    protected override void Die(string killerName = "")
+    {
+        if (LightFaunaManager)
+            LightFaunaManager.RemoveFauna(this);
+        else
+            Destroy(gameObject);
     }
 
     IEnumerator UpdateBehaviorCoroutine()
@@ -86,7 +98,7 @@ public class LightFauna : Fauna
                 continue;
             }
 
-            // Handle other FaunaPrefab/health prisms
+            // Handle other fauna/health prisms
             var otherHealthBlock = collider.GetComponent<HealthPrism>();
             if (otherHealthBlock)
             {
@@ -137,16 +149,6 @@ public class LightFauna : Fauna
         var t = Mathf.Clamp(Time.deltaTime * lerpSpeed, 0f, 0.99f);
 
         transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, t);
-    }
-
-    protected override void Spawn()
-    {
-        // Implement spawn behavior if needed
-    }
-
-    protected override void Die(string killername = "")
-    {
-        throw new System.NotImplementedException();
     }
 
     static bool IsFinite(Vector3 v) =>

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Utility;
 
-namespace CosmicShore._Scripts.Integrations.Instrumentation.Firebase
+namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
     public class CSDeviceDataCollectorFirebase : IDeviceAnalyzale
     {

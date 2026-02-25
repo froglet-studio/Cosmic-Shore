@@ -110,6 +110,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             if (captain.Unlocked)
             {
                 UnlockedShips.Add(captain.Ship);
+                captain.Ship.IsLocked = false;
                 captainData.UnlockedCaptains[captain.Name] = captain;
             }
 

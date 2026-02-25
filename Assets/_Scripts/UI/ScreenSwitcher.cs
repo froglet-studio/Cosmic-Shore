@@ -1,4 +1,5 @@
 using CosmicShore.Systems.UserActions;
+using CosmicShore.Models.Enums;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.App.UI.Screens;
 using CosmicShore.Core;

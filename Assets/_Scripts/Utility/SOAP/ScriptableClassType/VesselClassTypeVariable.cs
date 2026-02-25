@@ -1,7 +1,7 @@
 using UnityEngine;
 using Obvious.Soap;
 
-[CreateAssetMenu(fileName = "scriptable_variable_" + nameof(VesselClassType), menuName = "Soap/ScriptableVariables/"+ nameof(VesselClassType))]
+[CreateAssetMenu(fileName = "Variable_" + nameof(VesselClassType), menuName = "ScriptableObjects/SOAP/Variables/"+ nameof(VesselClassType))]
 public class VesselClassTypeVariable : ScriptableVariable<VesselClassType>
 {
         

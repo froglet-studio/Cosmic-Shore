@@ -1,53 +1,60 @@
-using CosmicShore;
 using System.Collections;
 using CosmicShore.Game;
 using UnityEngine;
 
-public abstract class Flora : LifeForm
+namespace CosmicShore
 {
-    [SerializeField] Vector3 leafSize = new Vector3(4f, 4f, 1f);
-    [SerializeField] protected float growPeriod = 3f;
-    [SerializeField] public float PlantPeriod = 15f;
-    [SerializeField] float stunDuration = 1f;
-    
-    protected bool isGrowing = true;
-
-    public abstract void Grow();
-
-    public abstract void Plant();
-
-    public override void AddHealthBlock(HealthPrism healthPrism)
+    /// <summary>
+    /// Abstract base for plant-like lifeforms.
+    /// Provides periodic growth cycles and planting behavior on top of LifeForm's
+    /// health/spindle infrastructure.
+    /// </summary>
+    public abstract class Flora : LifeForm
     {
-        base.AddHealthBlock(healthPrism);
-        healthPrism.TargetScale = leafSize;
-    }
+        [Header("Flora Settings")]
+        [SerializeField] Vector3 leafSize = new Vector3(4f, 4f, 1f);
+        [SerializeField] protected float growPeriod = 3f;
+        [SerializeField] public float PlantPeriod = 15f;
+        [SerializeField] float stunDuration = 1f;
 
-    public override void Initialize(Cell cell)
-    {
-        base.Initialize(cell);
-        Plant();
-        StartCoroutine(GrowCoroutine());
-    }
+        protected bool isGrowing = true;
 
-    public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")
-    {
-        base.RemoveHealthBlock(healthPrism);
-        isGrowing = false;
-    }
+        public abstract void Grow();
+        public abstract void Plant();
 
-    IEnumerator GrowCoroutine()
-    {
-        while (true)
+        public override void AddHealthBlock(HealthPrism healthPrism)
         {
-            if (isGrowing)
+            base.AddHealthBlock(healthPrism);
+            healthPrism.TargetScale = leafSize;
+        }
+
+        public override void Initialize(Cell cell)
+        {
+            base.Initialize(cell);
+            Plant();
+            StartCoroutine(GrowCoroutine());
+        }
+
+        public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")
+        {
+            base.RemoveHealthBlock(healthPrism);
+            isGrowing = false;
+        }
+
+        IEnumerator GrowCoroutine()
+        {
+            while (true)
             {
-                Grow();
-                yield return new WaitForSeconds(growPeriod);
-            }
-            else
-            {
-                isGrowing = true;
-                yield return new WaitForSeconds(stunDuration);
+                if (isGrowing)
+                {
+                    Grow();
+                    yield return new WaitForSeconds(growPeriod);
+                }
+                else
+                {
+                    isGrowing = true;
+                    yield return new WaitForSeconds(stunDuration);
+                }
             }
         }
     }

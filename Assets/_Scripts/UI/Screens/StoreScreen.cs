@@ -10,7 +10,7 @@ using UnityEngine.Assertions;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
-namespace CosmicShore.App.Ui.Menus
+namespace CosmicShore.App.UI.Screens
 {
     public class StoreScreen : View
     {
