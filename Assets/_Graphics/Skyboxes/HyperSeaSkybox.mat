@@ -64,8 +64,8 @@ Material:
     - _GalacticColor: {r: 0.3773585, g: 0.26409683, b: 0.11510615, a: 1}
     - _GalacticEmission: {r: 0.4, g: 0.48, b: 0.72, a: 1}
     - _GalacticNormal: {r: 0.1, g: 1, b: 0.15, a: 0}
-    - _NebulaColor1: {r: 0.35, g: 0.06, b: 0.55, a: 1}
+    - _NebulaColor1: {r: 0.023529422, g: 0.027056675, b: 0.5176471, a: 1}
     - _NebulaColor2: {r: 0.04, g: 0.25, b: 0.55, a: 1}
-    - _NebulaColor3: {r: 0.12, g: 0.08, b: 0.5, a: 1}
+    - _NebulaColor3: {r: 0.2126609, g: 0.078431375, b: 0.5019608, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

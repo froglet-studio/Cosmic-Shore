@@ -19,7 +19,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         [Header(Star Field)]
         _StarDensity ("Star Density", Range(20, 200)) = 80
         _StarBrightness ("Star Brightness", Range(0, 5)) = 2.5
-        _StarConcentration ("Star Galactic Concentration", Range(0, 100)) = 1.2
+        _StarConcentration ("Star Galactic Concentration", Range(0, 1000)) = 1.2
         _TwinkleSpeed ("Twinkle Speed", Range(0, 5)) = 1.5
 
         [Header(Nebulae)]
