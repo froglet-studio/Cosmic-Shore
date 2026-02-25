@@ -49,6 +49,14 @@ namespace CosmicShore.Game.Arcade
             // Listen for seed changes so late-joining clients can spawn the track
             _netTrackSeed.OnValueChanged += OnTrackSeedChanged;
 
+            // In party mode, skip autonomous track spawning.
+            // PartyGameController will call PartyMode_Activate → SpawnTrackForParty
+            if (IsPartyMode)
+            {
+                CSDebug.Log("[HexRace] OnNetworkSpawn — PARTY MODE, skipping autonomous track spawn.");
+                return;
+            }
+
             if (IsServer)
             {
                 // Server generates the seed after a short delay for intensity sync
@@ -66,6 +74,32 @@ namespace CosmicShore.Game.Arcade
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
             base.OnNetworkDespawn();
         }
+
+        // ==================== Party Mode API ====================
+
+        public override void PartyMode_Activate()
+        {
+            base.PartyMode_Activate();
+
+            // In party mode, spawn the track when the environment is activated
+            if (IsServer)
+            {
+                _raceEnded = false;
+                _trackSpawned = false;
+                SpawnTrackEarly().Forget();
+            }
+        }
+
+        public override void PartyMode_Deactivate()
+        {
+            base.PartyMode_Deactivate();
+            _raceEnded = false;
+            _trackSpawned = false;
+            WinnerName = "";
+            RaceResultsReady = false;
+        }
+
+        // ==================== Track Generation ====================
 
         /// <summary>
         /// Called on all clients when the server writes a new seed to the NetworkVariable.
@@ -129,6 +163,8 @@ namespace CosmicShore.Game.Arcade
             helix.firstOrderRadius = radius;
             helix.secondOrderRadius = radius;
         }
+
+        // ==================== Race Finish ====================
 
         // Only called by the winner's ScoreTracker
         public void ReportLocalPlayerFinished(float finishTimeSeconds)

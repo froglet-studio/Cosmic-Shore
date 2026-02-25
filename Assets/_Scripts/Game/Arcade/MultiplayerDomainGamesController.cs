@@ -40,6 +40,9 @@ namespace CosmicShore.Game.Arcade
 
         protected override void OnReadyClicked_()
         {
+            // In party mode, the party panel handles ready — ignore mini-game ready clicks
+            if (IsPartyMode) return;
+
             RaiseToggleReadyButtonEvent(false);
             OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
         }
@@ -47,6 +50,9 @@ namespace CosmicShore.Game.Arcade
         [ServerRpc(RequireOwnership = false)]
         void OnReadyClicked_ServerRpc(string playerName)
         {
+            // In party mode, don't process mini-game ready clicks
+            if (IsPartyMode) return;
+
             readyClientCount++;
 
             // Debug log to help track this state if issues persist
@@ -83,7 +89,10 @@ namespace CosmicShore.Game.Arcade
                 readyClientCount = 0;
             }
 
-            RaiseToggleReadyButtonEvent(true);
+            // In party mode, don't show the mini-game's ready button
+            if (!IsPartyMode)
+                RaiseToggleReadyButtonEvent(true);
+
             base.SetupNewRound();
         }
 

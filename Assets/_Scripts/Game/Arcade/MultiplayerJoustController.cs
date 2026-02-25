@@ -28,6 +28,35 @@ namespace CosmicShore.Game.Arcade
             _finalResultsSent = false;
         }
 
+        // ==================== Party Mode API ====================
+
+        public override void PartyMode_Activate()
+        {
+            base.PartyMode_Activate();
+            _finalResultsSent = false;
+            WinnerName = "";
+            ResultsReady = false;
+
+            // Reset collision tracking for the new round
+            if (joustTurnMonitor) joustTurnMonitor.ResetMonitor();
+
+            foreach (var s in gameData.RoundStatsList)
+            {
+                s.JoustCollisions = 0;
+                s.Score = 0f;
+            }
+        }
+
+        public override void PartyMode_Deactivate()
+        {
+            base.PartyMode_Deactivate();
+            _finalResultsSent = false;
+            WinnerName = "";
+            ResultsReady = false;
+        }
+
+        // ==================== Collision Tracking ====================
+
         public void NotifyCollision(string playerName, int collisionCount)
         {
             if (!IsServer) return;
@@ -61,6 +90,8 @@ namespace CosmicShore.Game.Arcade
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
             stats.JoustCollisions = collisionCount;
         }
+
+        // ==================== Turn End / Scoring ====================
 
         protected override void OnTurnEndedCustom()
         {

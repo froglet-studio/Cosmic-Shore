@@ -17,20 +17,14 @@ namespace CosmicShore.Game.Arcade.Party
     /// Orchestrates a Party Game session: lobby, randomized mini-game rounds,
     /// scoring, and final results.
     ///
-    /// Flow:
-    ///   Enter → party panel shown (UI-only, no free flight)
-    ///   → Wait for players (10s offline / host ready in multiplayer)
-    ///   → Randomizing → "Round 1: Joust"
-    ///   → WaitingForReady → READY (accept the game)
-    ///   → "Loading..." → activate env (controllers disabled) → position players
-    ///   → MiniGameReady → READY (start playing)
-    ///   → Hide panel → 3-2-1-GO → SetPlayersActive + StartTurn
-    ///   → Playing → game ends via gameData events → capture scores
-    ///   → Deactivate env → show panel with results → ready → next round
-    ///
-    /// Each environment has its own EndGameCinematicController. This controller
-    /// only listens for gameData events to capture scores and transition rounds.
-    /// Mini-game controllers on environments are disabled to prevent RPC conflicts.
+    /// KEY DESIGN:
+    /// - Mini-game controllers have IsPartyMode = true → suppresses autonomous lifecycle,
+    ///   but gameplay mechanics (collisions, race finish, crystals) still work.
+    /// - Environment SPVIs use a 3-state PartyMode:
+    ///     SpawnMode (first round) → spawns vessels + AI when triggered
+    ///     InertMode (subsequent rounds) → fully inert, vessels repositioned
+    /// - Environment canvases are disabled to prevent UI conflicts.
+    /// - Scene camera is disabled during gameplay, re-enabled between rounds.
     /// </summary>
     public class PartyGameController : NetworkBehaviour
     {
@@ -43,6 +37,10 @@ namespace CosmicShore.Game.Arcade.Party
 
         [Header("UI")]
         [SerializeField] PartyPausePanel partyPausePanel;
+
+        [Header("Camera")]
+        [Tooltip("The scene-level camera (Mini Game Main Camera). Disabled during gameplay so the vessel camera takes over.")]
+        [SerializeField] Camera sceneCamera;
 
         [Header("Mini-Game Environments")]
         [Tooltip("Root GameObjects for each mini-game environment. Index must match AvailableMiniGames order in config.")]
@@ -58,6 +56,8 @@ namespace CosmicShore.Game.Arcade.Party
         readonly List<PartyPlayerState> _playerStates = new();
         readonly List<GameModes> _recentMiniGames = new();
         int _activeMiniGameIndex = -1;
+        MultiplayerMiniGameControllerBase _activeMiniGameController;
+        bool _vesselsSpawned; // True after first round spawns vessels
         CancellationTokenSource _lobbyCts;
         CancellationTokenSource _roundCts;
 
@@ -96,13 +96,17 @@ namespace CosmicShore.Game.Arcade.Party
             for (int i = 0; i < config.TotalRounds; i++)
                 _roundResults.Add(new PartyRoundResult { RoundIndex = i });
 
-            // Disable all environments and their controllers at start
+            _vesselsSpawned = false;
+
             foreach (var env in miniGameEnvironments)
             {
                 if (!env) continue;
-                DisableMiniGameControllers(env);
+                SetPartyModeOnEnvironment(env, ServerPlayerVesselInitializer.PartyModeState.InertMode);
                 env.SetActive(false);
             }
+
+            // Scene camera stays on during lobby (shows skybox/nucleus)
+            if (sceneCamera) sceneCamera.enabled = true;
 
             if (partyPausePanel)
             {
@@ -110,7 +114,6 @@ namespace CosmicShore.Game.Arcade.Party
                 partyPausePanel.ForceShow();
             }
 
-            // NetworkVariable.OnValueChanged does NOT fire when initial value == default (Lobby = 0)
             OnNetPhaseChanged(-1, (int)PartyPhase.Lobby);
 
             if (IsServer)
@@ -223,7 +226,6 @@ namespace CosmicShore.Game.Arcade.Party
                     FillWithAI();
                     ReinitializePanelWithPlayers_ClientRpc();
 
-                    // Wait for host to click Ready before starting rounds.
                     SetPhase(PartyPhase.WaitingForReady);
                     ResetReadyStates();
                     ShowPanel_ClientRpc();
@@ -248,8 +250,6 @@ namespace CosmicShore.Game.Arcade.Party
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // If no human player was registered (SPVI may not be present or failed),
-                // register one directly so the Ready button works.
                 if (!_playerStates.Any(p => !p.IsAIReplacement))
                 {
                     string humanName = gameData.LocalPlayer?.Name ?? "Player 1";
@@ -265,7 +265,6 @@ namespace CosmicShore.Game.Arcade.Party
 
                 ReinitializePanelWithPlayers_ClientRpc();
 
-                // Wait for the player to click Ready before starting rounds.
                 SetPhase(PartyPhase.WaitingForReady);
                 ResetReadyStates();
                 ShowPanel_ClientRpc();
@@ -372,8 +371,6 @@ namespace CosmicShore.Game.Arcade.Party
 
         public void OnLocalPlayerReady()
         {
-            // Try gameData.LocalPlayer first; fall back to the human entry in _playerStates
-            // (covers party mode where SPVI may not have spawned a vessel yet).
             string name = gameData.LocalPlayer?.Name;
 
             if (string.IsNullOrEmpty(name))
@@ -421,8 +418,6 @@ namespace CosmicShore.Game.Arcade.Party
             switch (CurrentPhase)
             {
                 case PartyPhase.WaitingForReady:
-                    // First Ready (no game selected yet) → randomize and pick a game.
-                    // Subsequent Ready (game already selected) → load the environment.
                     if (_netSelectedMiniGameIndex.Value < 0)
                         StartNextRound().Forget();
                     else
@@ -443,8 +438,6 @@ namespace CosmicShore.Game.Arcade.Party
                 state.IsReady = state.IsAIReplacement;
 
             ResetReadyStates_ClientRpc();
-
-            // Auto-progress if all players are already ready (e.g., all AI or edge cases)
             CheckAllPlayersReady();
         }
 
@@ -502,16 +495,39 @@ namespace CosmicShore.Game.Arcade.Party
                 int roundIndex = _netCurrentRound.Value;
                 var selectedMode = config.AvailableMiniGames[miniGameIndex];
 
-                CSDebug.Log($"[PartyGame] LoadMiniGameEnvironment: envIndex={miniGameIndex}, mode={selectedMode}");
+                CSDebug.Log($"[PartyGame] LoadMiniGameEnvironment: envIndex={miniGameIndex}, mode={selectedMode}, vesselsExist={_vesselsSpawned}");
 
                 BroadcastGameStateText_ClientRpc("Loading...");
                 gameData.GameMode = selectedMode;
 
-                ActivateMiniGameEnvironment_ClientRpc(miniGameIndex);
+                // Determine SPVI mode: SpawnMode for first round, InertMode for subsequent
+                bool isFirstRound = !_vesselsSpawned;
+                var spviMode = isFirstRound
+                    ? ServerPlayerVesselInitializer.PartyModeState.SpawnMode
+                    : ServerPlayerVesselInitializer.PartyModeState.InertMode;
+
+                ActivateMiniGameEnvironment_ClientRpc(miniGameIndex, (int)spviMode);
                 ResetGameDataForRound_ClientRpc((int)selectedMode);
                 OnRoundStarting?.Invoke(roundIndex, selectedMode);
 
-                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                if (isFirstRound)
+                {
+                    // Trigger vessel spawning on the first-round environment's SPVI
+                    TriggerVesselSpawning(miniGameIndex);
+
+                    // Wait for vessels to spawn and initialize
+                    BroadcastGameStateText_ClientRpc("Spawning vessels...");
+                    await UniTask.Delay(TimeSpan.FromSeconds(3f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+
+                    _vesselsSpawned = true;
+                    SetVesselsSpawned_ClientRpc();
+                }
+                else
+                {
+                    // Vessels already exist — reposition them to this environment's spawn points
+                    RepositionPlayersToEnvironment_ClientRpc(miniGameIndex);
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                }
 
                 SetPhase(PartyPhase.MiniGameReady);
                 ResetReadyStates();
@@ -521,6 +537,29 @@ namespace CosmicShore.Game.Arcade.Party
                 BroadcastGameStateText_ClientRpc($"{modeName} — Ready to play!");
             }
             catch (OperationCanceledException) { }
+        }
+
+        /// <summary>
+        /// Server-only: finds the SPVI on the given environment and triggers vessel spawning.
+        /// </summary>
+        void TriggerVesselSpawning(int envIndex)
+        {
+            if (!IsServer) return;
+            if (envIndex < 0 || envIndex >= miniGameEnvironments.Count) return;
+
+            var env = miniGameEnvironments[envIndex];
+            if (!env) return;
+
+            var spvi = env.GetComponentInChildren<ServerPlayerVesselInitializer>(true);
+            if (spvi != null)
+            {
+                spvi.SpawnVesselsForParty();
+                CSDebug.Log($"[PartyGame] Triggered SpawnVesselsForParty on '{env.name}'");
+            }
+            else
+            {
+                CSDebug.LogError($"[PartyGame] No SPVI found on '{env.name}' for vessel spawning!");
+            }
         }
 
         async UniTaskVoid BeginMiniGamePlay()
@@ -535,6 +574,7 @@ namespace CosmicShore.Game.Arcade.Party
             {
                 CSDebug.Log("[PartyGame] BeginMiniGamePlay");
                 HidePanel_ClientRpc();
+                DisableSceneCamera_ClientRpc();
 
                 await UniTask.Delay(
                     TimeSpan.FromSeconds(config.PostCountdownDelaySeconds),
@@ -625,7 +665,7 @@ namespace CosmicShore.Game.Arcade.Party
             }
 
             var winnerState = _playerStates.FirstOrDefault(p => p.PlayerName == result.WinnerName);
-            if (winnerState != null && !winnerState.IsAIReplacement)
+            if (winnerState != null)
                 winnerState.GamesWon++;
 
             CSDebug.Log($"[PartyGame] Round {roundIndex + 1} winner: {result.WinnerName}");
@@ -653,14 +693,15 @@ namespace CosmicShore.Game.Arcade.Party
                 int roundIndex = _netCurrentRound.Value;
                 var result = _roundResults[roundIndex];
 
-                // Wait for the environment's own end-game cinematic to play
                 await UniTask.Delay(
                     TimeSpan.FromSeconds(config.PostRoundDelaySeconds),
                     DelayType.UnscaledDeltaTime,
                     cancellationToken: ct);
 
-                // Deactivate environment, show party panel with scores
+                // Deactivate mini-game controller, then environment, then re-enable scene camera
+                DeactivateCurrentMiniGame_ClientRpc();
                 DeactivateAllEnvironments_ClientRpc();
+                EnableSceneCamera_ClientRpc();
                 SyncRoundResult(roundIndex, result);
 
                 if (roundIndex + 1 >= config.TotalRounds)
@@ -673,6 +714,7 @@ namespace CosmicShore.Game.Arcade.Party
                 else
                 {
                     _netCurrentRound.Value = roundIndex + 1;
+                    _netSelectedMiniGameIndex.Value = -1;
                     SetPhase(PartyPhase.RoundResults);
                     ResetReadyStates();
 
@@ -863,6 +905,24 @@ namespace CosmicShore.Game.Arcade.Party
         }
 
         [ClientRpc]
+        void DisableSceneCamera_ClientRpc()
+        {
+            if (sceneCamera) sceneCamera.enabled = false;
+        }
+
+        [ClientRpc]
+        void EnableSceneCamera_ClientRpc()
+        {
+            if (sceneCamera) sceneCamera.enabled = true;
+        }
+
+        [ClientRpc]
+        void SetVesselsSpawned_ClientRpc()
+        {
+            _vesselsSpawned = true;
+        }
+
+        [ClientRpc]
         void StartGameplay_ClientRpc()
         {
             PauseSystem.TogglePauseGame(false);
@@ -885,7 +945,7 @@ namespace CosmicShore.Game.Arcade.Party
         }
 
         [ClientRpc]
-        void ActivateMiniGameEnvironment_ClientRpc(int miniGameIndex)
+        void ActivateMiniGameEnvironment_ClientRpc(int miniGameIndex, int spviMode)
         {
             DeactivateAllEnvironments();
             _activeMiniGameIndex = miniGameIndex;
@@ -899,15 +959,38 @@ namespace CosmicShore.Game.Arcade.Party
             var env = miniGameEnvironments[miniGameIndex];
             if (!env) return;
 
-            env.SetActive(true);
-            DisableMiniGameControllers(env);
-            DisableEnvironmentCanvases(env);
-            CSDebug.Log($"[PartyGame] Activated: '{env.name}' (controllers + canvases disabled)");
+            // Set party mode BEFORE activation triggers OnNetworkSpawn
+            var partyModeState = (ServerPlayerVesselInitializer.PartyModeState)spviMode;
+            SetPartyModeOnEnvironment(env, partyModeState);
 
+            env.SetActive(true);
+            DisableEnvironmentCanvases(env);
+            CSDebug.Log($"[PartyGame] Activated: '{env.name}' (SPVI={partyModeState}, canvases disabled)");
+
+            // Initialize segment spawner if present
             var spawner = env.GetComponentInChildren<SegmentSpawner>();
             if (spawner) spawner.Initialize();
 
             UpdateSpawnPositionsFromEnv(env);
+
+            // Tell the mini-game controller it's time to set up for gameplay
+            _activeMiniGameController = env.GetComponentInChildren<MultiplayerMiniGameControllerBase>(true);
+            if (_activeMiniGameController != null)
+            {
+                _activeMiniGameController.PartyMode_Activate();
+                CSDebug.Log($"[PartyGame] PartyMode_Activate on {_activeMiniGameController.GetType().Name}");
+            }
+        }
+
+        [ClientRpc]
+        void DeactivateCurrentMiniGame_ClientRpc()
+        {
+            if (_activeMiniGameController != null)
+            {
+                _activeMiniGameController.PartyMode_Deactivate();
+                CSDebug.Log($"[PartyGame] PartyMode_Deactivate on {_activeMiniGameController.GetType().Name}");
+                _activeMiniGameController = null;
+            }
         }
 
         [ClientRpc]
@@ -924,36 +1007,64 @@ namespace CosmicShore.Game.Arcade.Party
                 gameData.ResetStatsDataForReplay();
         }
 
+        /// <summary>
+        /// Repositions existing player vessels to the spawn points of the given environment.
+        /// Used on rounds 2+ where vessels already exist.
+        /// </summary>
+        [ClientRpc]
+        void RepositionPlayersToEnvironment_ClientRpc(int envIndex)
+        {
+            if (envIndex < 0 || envIndex >= miniGameEnvironments.Count) return;
+            var env = miniGameEnvironments[envIndex];
+            if (!env) return;
+
+            var spvi = env.GetComponentInChildren<ServerPlayerVesselInitializer>(true);
+            if (spvi == null || spvi.PlayerOrigins == null || spvi.PlayerOrigins.Length == 0)
+            {
+                CSDebug.LogWarning($"[PartyGame] No spawn origins on '{env.name}' for repositioning.");
+                return;
+            }
+
+            gameData.SetSpawnPositions(spvi.PlayerOrigins);
+            gameData.ResetPlayers();
+
+            // Snap camera to new position
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
+
+            CSDebug.Log($"[PartyGame] Repositioned players to '{env.name}' spawn points.");
+        }
+
         #endregion
 
         #region Helpers
 
-        void DisableMiniGameControllers(GameObject env)
+        /// <summary>
+        /// Sets IsPartyMode on all controllers and PartyMode on all SPVIs within an environment.
+        /// Called BEFORE env.SetActive(true) so OnNetworkSpawn sees the flags.
+        /// </summary>
+        void SetPartyModeOnEnvironment(GameObject env, ServerPlayerVesselInitializer.PartyModeState spviMode)
         {
             var controllers = env.GetComponentsInChildren<MiniGameControllerBase>(true);
             foreach (var ctrl in controllers)
             {
-                if (ctrl.enabled)
-                {
-                    ctrl.enabled = false;
-                    CSDebug.Log($"[PartyGame] Disabled controller: {ctrl.GetType().Name} on '{env.name}'");
-                }
+                ctrl.IsPartyMode = true;
+            }
+
+            var spvis = env.GetComponentsInChildren<ServerPlayerVesselInitializer>(true);
+            foreach (var spvi in spvis)
+            {
+                spvi.PartyMode = spviMode;
+                CSDebug.Log($"[PartyGame] Set SPVI PartyMode={spviMode} on '{env.name}'");
             }
         }
 
-        /// <summary>
-        /// Disable the environment's own GameCanvas children to prevent its Ready button,
-        /// cameras, and scoreboard from interfering with the party UI.
-        /// The CountdownTimer is found via GetComponentInChildren on the environment root,
-        /// so it works even if its parent Canvas is disabled.
-        /// </summary>
         void DisableEnvironmentCanvases(GameObject env)
         {
             var canvases = env.GetComponentsInChildren<Canvas>(true);
             foreach (var canvas in canvases)
             {
                 canvas.enabled = false;
-                CSDebug.Log($"[PartyGame] Disabled canvas: '{canvas.gameObject.name}' on '{env.name}'");
             }
         }
 
@@ -972,8 +1083,6 @@ namespace CosmicShore.Game.Arcade.Party
             if (spvi && spvi.PlayerOrigins is { Length: > 0 })
             {
                 gameData.SetSpawnPositions(spvi.PlayerOrigins);
-                // Don't call gameData.ResetPlayers() here — in party mode, players
-                // spawned by environment SPVIs may lack vessels and will NPE on ResetForPlay.
                 CSDebug.Log($"[PartyGame] Spawn positions from '{env.name}' ({spvi.PlayerOrigins.Length} origins)");
             }
             else
@@ -985,6 +1094,7 @@ namespace CosmicShore.Game.Arcade.Party
         void DeactivateAllEnvironments()
         {
             _activeMiniGameIndex = -1;
+            _activeMiniGameController = null;
             foreach (var env in miniGameEnvironments)
                 if (env) env.SetActive(false);
         }

@@ -10,5 +10,8 @@
         }
 
         protected override bool UseGolfRules => false;
+
+        // Party mode activate/deactivate use base class defaults — 
+        // Crystal Capture has no custom state to reset.
     }
 }
