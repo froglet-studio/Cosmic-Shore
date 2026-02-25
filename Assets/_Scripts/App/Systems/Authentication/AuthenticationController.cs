@@ -9,9 +9,6 @@ namespace CosmicShore.Services.Auth
 {
     public class AuthenticationController : MonoBehaviour
     {
-        // [Visual Note] Added Singleton Instance here
-        public static AuthenticationController Instance { get; private set; }
-
         public enum AuthState
         {
             NotInitialized, Initializing, Ready, SigningIn, SignedIn, Failed
@@ -38,24 +35,6 @@ namespace CosmicShore.Services.Auth
         bool _startupAttempted;
         private TaskCompletionSource<bool> _initTcs;
         private Task _signInTask;
-
-        void Awake()
-        {
-            // [Visual Note] Singleton Pattern Setup
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-
-            if (dontDestroyOnLoad)
-            {
-                // DontDestroyOnLoad only works on root GameObjects.
-                transform.SetParent(null);
-                DontDestroyOnLoad(gameObject);
-            }
-        }
 
         async void Start()
         {

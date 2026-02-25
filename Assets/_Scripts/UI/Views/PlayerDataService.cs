@@ -1,173 +1,186 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using CosmicShore.Game.Party;
-using CosmicShore.Utilities;
-using TMPro;
+using CosmicShore.App.Systems;
+using CosmicShore.Services.Auth;
+using CosmicShore.Soap;
+using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using UnityEngine;
-using UnityEngine.UI;
+using CosmicShore.Utility;
+using Reflex.Attributes;
+
 
 namespace CosmicShore.App.Profile
 {
-    /// <summary>
-    /// Loads and saves the local player's profile (displayName + avatarId).
-    /// Single source of truth for profile data — PartyManager reads from here.
-    ///
-    /// Authentication is now driven by AuthenticationDataVariable (no UGS AuthenticationService references).
-    /// </summary>
     public class PlayerDataService : MonoBehaviour
     {
-        // -----------------------------------------------------------------------------------------
-        // Singleton
-
-        public static PlayerDataService Instance { get; private set; }
-
-        // -----------------------------------------------------------------------------------------
-        // Inspector
-
-        [Header("Auth (Source of Truth)")]
-        [SerializeField] AuthenticationDataVariable authenticationDataVariable;
-        AuthenticationData authenticationData => authenticationDataVariable.Value;
-
         [Header("Cloud Save")]
-        [SerializeField] private string cloudSaveProfileKey = "player_profile";
+        [SerializeField] private string cloudSaveProfileKey = UGSKeys.PlayerProfile;
         [SerializeField] private SO_ProfileIconList profileIcons;
 
-        [Header("UI")]
-        [SerializeField] private TMP_Text displayNameText;
-        [SerializeField] private Image avatarImage;
-
-        // -----------------------------------------------------------------------------------------
-        // Public state
+        [Header("Game Data")]
+        [SerializeField] private GameDataSO gameData;
 
         public PlayerProfileData CurrentProfile { get; private set; }
-        public bool IsInitialized { get; private set; }
+        public bool              IsInitialized  { get; private set; }
 
         public event Action<PlayerProfileData> OnProfileChanged;
+        
+        [Inject] AuthenticationController authenticationController;
 
-        // -----------------------------------------------------------------------------------------
-        // Unity Lifecycle
+        // Save debouncing: coalesces rapid saves into a single cloud call
+        private const float SAVE_DEBOUNCE_SECONDS = 1.5f;
+        private bool _saveDirty;
+        private bool _saveInFlight;
 
-        void Awake()
+        private void OnEnable()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
+            OnProfileChanged += SyncProfileToGameData;
+            
+            // Subscribe to auth events via singleton (survives scene transitions)
+            authenticationController.OnSignedIn += HandleSignedInFromAuth;
         }
 
         async void Start()
         {
             try
             {
-                OnProfileChanged += HandleProfileChanged;
-
-                // If services aren't initialized, we can't use Cloud Save anyway.
-                if (UnityServices.State != ServicesInitializationState.Initialized)
-                    return;
-
-                // If already signed in (eg: auth completed before this service started), initialize now.
-                if (IsAuthSignedIn())
+                CreateLocalDefaultProfile(null);
+                
+                // If already signed in, initialize immediately
+                if (authenticationController.IsSignedIn)
+                {
                     await InitializeAfterAuth();
+                }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] Start error: {e.Message}");
+                CSDebug.LogError($"[PlayerDataService] Start failed: {e.Message}");
             }
         }
+        
+        void OnDestroy()
+        {
+            authenticationController.OnSignedIn -= HandleSignedInFromAuth;
+            OnProfileChanged -= SyncProfileToGameData;
+        }
 
-        // -----------------------------------------------------------------------------------------
-        // Hooks for Soap events (wire these via ScriptableEvent listeners in the scene)
-
-        /// <summary>
-        /// Hook this method to AuthenticationData.OnSignedIn (ScriptableEventNoParam) via a listener component.
-        /// </summary>
-        public async void HandleSignedInEvent()
+        async void HandleSignedInFromAuth(string playerId)
         {
             try
             {
-                if (IsInitialized) return;
+                if (IsInitialized)
+                    return;
+
                 await InitializeAfterAuth();
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] HandleSignedInEvent error: {e.Message}");
+                CSDebug.LogError($"[PlayerDataService] HandleSignedInFromAuth failed: {e.Message}");
             }
         }
 
-        /// <summary>
-        /// Hook this method to AuthenticationData.OnSignedOut (ScriptableEventNoParam) via a listener component.
-        /// Optional: clears state so it can re-init after next sign-in.
-        /// </summary>
-        public void HandleSignedOutEvent()
-        {
-            // Depending on your design, you may or may not want to reset.
-            // Resetting allows re-initialization after a new sign-in.
-            IsInitialized = false;
-            CurrentProfile = null;
-        }
-
-        // -----------------------------------------------------------------------------------------
-        // Initialization
-
         private async Task InitializeAfterAuth()
         {
-            if (IsInitialized) return;
+            if (IsInitialized)
+                return;
 
-            bool canUseCloudSave = CanUseCloudSave();
-            string playerId = canUseCloudSave ? authenticationData.PlayerId : null;
+            string playerId        = null;
+            bool   canUseCloudSave = false;
+
+            if (UnityServices.State == ServicesInitializationState.Initialized)
+            {
+                try
+                {
+                    canUseCloudSave = AuthenticationService.Instance != null &&
+                                      AuthenticationService.Instance.IsSignedIn;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[PlayerDataService] Auth state check failed: {ex.Message}");
+                    canUseCloudSave = false;
+                }
+            }
+
+            if (canUseCloudSave)
+            {
+                playerId = AuthenticationService.Instance.PlayerId;
+            }
 
             await LoadOrCreateProfileAsync(playerId, canUseCloudSave);
 
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
-
-            // PartyManager reads from here
-            PartyManager.Instance?.SyncProfileFromPlayerDataService();
         }
-
-        // -----------------------------------------------------------------------------------------
-        // Load / Create
 
         async Task LoadOrCreateProfileAsync(string playerId, bool canUseCloudSave)
         {
+            // Update userId now that we know the real player id
+            if (!string.IsNullOrEmpty(playerId))
+                CurrentProfile.userId = playerId;
+
             if (!canUseCloudSave)
             {
-                Debug.LogWarning("[PlayerDataService] Not signed in (via AuthenticationData). Using local-only profile.");
-                CreateLocalDefaultProfile(playerId);
+                CSDebug.LogWarning("[PlayerDataService] Not signed in. Keeping local profile.");
                 return;
             }
 
             try
             {
-                var keys = new HashSet<string> { cloudSaveProfileKey };
+                var keys   = new HashSet<string> { cloudSaveProfileKey };
                 var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
 
                 if (result.TryGetValue(cloudSaveProfileKey, out var item))
                 {
                     var json = item.Value.GetAs<string>();
-                    var data = JsonUtility.FromJson<PlayerProfileData>(json);
+                    var cloudData = JsonUtility.FromJson<PlayerProfileData>(json);
 
-                    if (data != null)
+                    if (cloudData != null)
                     {
-                        CurrentProfile = data;
+                        bool needsResync = false;
+
+                        // Merge XP: keep the higher value (local may have earned XP before cloud loaded)
+                        int localXP = CurrentProfile.xp;
+                        if (localXP > cloudData.xp)
+                        {
+                            cloudData.xp = localXP;
+                            needsResync = true;
+                        }
+
+                        // Merge unlocked rewards: union of local + cloud sets
+                        var localRewards = CurrentProfile.unlockedRewardIds ?? new List<string>();
+                        var cloudRewards = cloudData.unlockedRewardIds ?? new List<string>();
+                        foreach (var rewardId in localRewards)
+                        {
+                            if (!cloudRewards.Contains(rewardId))
+                            {
+                                cloudRewards.Add(rewardId);
+                                needsResync = true;
+                            }
+                        }
+                        cloudData.unlockedRewardIds = cloudRewards;
+
+                        CurrentProfile = cloudData;
+
+                        if (needsResync)
+                            await SaveProfileAsync(true);
+
                         return;
                     }
 
-                    Debug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Creating default.");
-                    CreateLocalDefaultProfile(playerId);
+                    CSDebug.LogWarning("[PlayerDataService] Failed to parse profile JSON. Keeping local.");
                 }
                 else
                 {
-                    CreateLocalDefaultProfile(playerId);
+                    // No cloud profile yet → upload local
                     await SaveProfileAsync(canUseCloudSave);
                 }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] Load failed: {e.Message}");
-                CreateLocalDefaultProfile(playerId);
+                CSDebug.LogWarning($"[PlayerDataService] Cloud load failed: {e.Message}. Keeping local.");
             }
         }
 
@@ -175,9 +188,9 @@ namespace CosmicShore.App.Profile
         {
             CurrentProfile = new PlayerProfileData
             {
-                userId = string.IsNullOrEmpty(playerId) ? Guid.NewGuid().ToString("N") : playerId,
+                userId      = string.IsNullOrEmpty(playerId) ? Guid.NewGuid().ToString("N") : playerId,
                 displayName = "Pilot",
-                avatarId = GetDefaultAvatarId()
+                avatarId    = GetDefaultAvatarId()
             };
         }
 
@@ -185,11 +198,9 @@ namespace CosmicShore.App.Profile
         {
             if (profileIcons != null && profileIcons.profileIcons.Count > 0)
                 return profileIcons.profileIcons[0].Id;
+
             return 0;
         }
-
-        // -----------------------------------------------------------------------------------------
-        // Save
 
         async Task SaveProfileAsync(bool canUseCloudSave)
         {
@@ -199,106 +210,168 @@ namespace CosmicShore.App.Profile
             try
             {
                 var json = JsonUtility.ToJson(CurrentProfile);
-                var data = new Dictionary<string, object> { { cloudSaveProfileKey, json } };
+                var data = new Dictionary<string, object>
+                {
+                    { cloudSaveProfileKey, json }
+                };
+
                 await CloudSaveService.Instance.Data.Player.SaveAsync(data);
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] Save failed: {e.Message}");
+                CSDebug.LogWarning($"[PlayerDataService] Save failed: {e.Message}");
             }
         }
 
-        // -----------------------------------------------------------------------------------------
-        // Public API
-
-        public async void SetAvatarId(int avatarId)
+        /// <summary>
+        /// Marks profile as dirty and schedules a debounced cloud save.
+        /// Multiple calls within SAVE_DEBOUNCE_SECONDS collapse into one save.
+        /// </summary>
+        void ScheduleDebouncedSave()
         {
+            _saveDirty = true;
+            if (!_saveInFlight)
+                RunDebouncedSave();
+        }
+
+        async void RunDebouncedSave()
+        {
+            if (_saveInFlight) return;
+            _saveInFlight = true;
+
             try
             {
-                if (CurrentProfile == null) return;
+                await Task.Delay((int)(SAVE_DEBOUNCE_SECONDS * 1000));
 
-                CurrentProfile.avatarId = avatarId;
-                OnProfileChanged?.Invoke(CurrentProfile);
+                while (_saveDirty)
+                {
+                    _saveDirty = false;
 
-                bool canUseCloudSave = CanUseCloudSave();
-                await SaveProfileAsync(canUseCloudSave);
+                    bool canSave = UnityServices.State == ServicesInitializationState.Initialized &&
+                                   AuthenticationService.Instance != null &&
+                                   AuthenticationService.Instance.IsSignedIn;
 
-                PartyManager.Instance?.SyncProfileFromPlayerDataService();
+                    await SaveProfileAsync(canSave);
+                }
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PlayerDataService] SetAvatarId failed: {e.Message}");
+                CSDebug.LogWarning($"[PlayerDataService] Debounced save failed: {e.Message}");
             }
-        }
-
-        public async Task SetDisplayNameAsync(string displayName)
-        {
-            try
+            finally
             {
-                if (CurrentProfile == null) return;
-
-                CurrentProfile.displayName = displayName;
-                OnProfileChanged?.Invoke(CurrentProfile);
-
-                bool canUseCloudSave = CanUseCloudSave();
-                await SaveProfileAsync(canUseCloudSave);
-
-                // NOTE:
-                // Previously this synced to UGS AuthenticationService.UpdatePlayerNameAsync().
-                // That responsibility now belongs to your auth layer (if you still need it).
-
-                PartyManager.Instance?.SyncProfileFromPlayerDataService();
+                _saveInFlight = false;
+                if (_saveDirty)
+                    RunDebouncedSave();
             }
-            catch (Exception e)
+        }
+
+        // ----------------- Public API -----------------
+
+        public void SetAvatarId(int avatarId)
+        {
+            if (CurrentProfile == null)
+                return;
+
+            CurrentProfile.avatarId = avatarId;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleDebouncedSave();
+        }
+
+        public void SetDisplayName(string displayName)
+        {
+            if (CurrentProfile == null)
+                return;
+
+            CurrentProfile.displayName = displayName;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleDebouncedSave();
+        }
+
+        void SyncProfileToGameData(PlayerProfileData data)
+        {
+            if (gameData != null)
             {
-                Debug.LogWarning($"[PlayerDataService] SetDisplayNameAsync failed: {e.Message}");
+                gameData.LocalPlayerDisplayName = data.displayName;
+                gameData.LocalPlayerAvatarId = data.avatarId;
+                gameData.LocalPlayerXP = data.xp;
             }
         }
 
-        // -----------------------------------------------------------------------------------------
-        // UI
-
-        void HandleProfileChanged(PlayerProfileData data)
+        public Sprite GetAvatarSprite(int avatarId)
         {
-            if (displayNameText != null)
-                displayNameText.text = data.displayName;
+            if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)
+                return null;
 
-            var sprite = ResolveAvatarSprite(data.avatarId);
-            if (avatarImage != null)
-                avatarImage.sprite = sprite;
+            for (int i = 0; i < profileIcons.profileIcons.Count; i++)
+            {
+                if (profileIcons.profileIcons[i].Id == avatarId)
+                    return profileIcons.profileIcons[i].IconSprite;
+            }
+
+            return profileIcons.profileIcons[0].IconSprite;
         }
 
-        Sprite ResolveAvatarSprite(int avatarId)
+        /// <summary>
+        /// Returns the player's current XP, or 0 if no profile is loaded.
+        /// </summary>
+        public int GetXP()
         {
-            return !profileIcons
-                ? null
-                : (from icon in profileIcons.profileIcons
-                   where icon.Id == avatarId
-                   select icon.IconSprite).FirstOrDefault();
+            return CurrentProfile?.xp ?? 0;
         }
 
+        /// <summary>
+        /// Adds XP to the player's profile and syncs to Cloud Save.
+        /// Returns the new total XP.
+        /// </summary>
+        public void AddXP(int amount)
+        {
+            if (CurrentProfile == null || amount <= 0)
+                return;
+
+            CurrentProfile.xp += amount;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleDebouncedSave();
+            CSDebug.Log($"[PlayerDataService] XP added: +{amount}, Total: {CurrentProfile.xp}");
+        }
+
+        /// <summary>
+        /// Marks a reward as unlocked in the player's profile.
+        /// </summary>
+        public void UnlockReward(string rewardId)
+        {
+            if (CurrentProfile == null || string.IsNullOrEmpty(rewardId))
+                return;
+
+            if (CurrentProfile.unlockedRewardIds == null)
+                CurrentProfile.unlockedRewardIds = new List<string>();
+
+            if (CurrentProfile.unlockedRewardIds.Contains(rewardId))
+                return;
+
+            CurrentProfile.unlockedRewardIds.Add(rewardId);
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleDebouncedSave();
+            CSDebug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
+        }
+
+        /// <summary>
+        /// Checks if a reward has been unlocked.
+        /// </summary>
+        public bool IsRewardUnlocked(string rewardId)
+        {
+            return CurrentProfile?.unlockedRewardIds != null &&
+                   CurrentProfile.unlockedRewardIds.Contains(rewardId);
+        }
+
+        /// <summary>
+        /// Forcing a UI refresh without a save (e.g. when an external system
+        /// adjusts CurrentProfile directly or after re-binding).
+        /// </summary>
         public void RefreshProfileVisuals()
         {
             if (CurrentProfile == null) return;
             OnProfileChanged?.Invoke(CurrentProfile);
-        }
-
-        // -----------------------------------------------------------------------------------------
-        // Helpers
-
-        bool IsAuthSignedIn()
-        {
-            // Treat "SignedIn" as the authoritative state.
-            // (Some flows might set IsSignedIn true slightly earlier/later — we accept either.)
-            return authenticationData != null &&
-                   (authenticationData.State == AuthenticationData.AuthState.SignedIn || authenticationData.IsSignedIn);
-        }
-
-        private bool CanUseCloudSave()
-        {
-            return UnityServices.State == ServicesInitializationState.Initialized &&
-                   IsAuthSignedIn() &&
-                   !string.IsNullOrEmpty(authenticationData.PlayerId);
         }
     }
 }
