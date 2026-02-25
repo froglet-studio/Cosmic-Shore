@@ -113,12 +113,21 @@ namespace CosmicShore.Game.Arcade.Party
 
             _vesselsSpawned = false;
 
+            // Set IsPartyMode on all environments immediately so their
+            // OnNetworkSpawn callbacks know they're in party mode.
             foreach (var env in miniGameEnvironments)
             {
                 if (!env) continue;
                 SetPartyModeOnEnvironment(env, ServerPlayerVesselInitializer.PartyModeState.InertMode);
-                env.SetActive(false);
             }
+
+            // CRITICAL: Delay deactivation by one frame so all scene-placed
+            // NetworkObjects (crystal managers, mini-game controllers, etc.)
+            // get their OnNetworkSpawn called and RPCs registered BEFORE
+            // the environments are disabled. Without this delay, OnNetworkSpawn
+            // never fires on objects inside environments, breaking crystals,
+            // RPCs, and NetworkList replication.
+            DeactivateEnvironmentsDeferred().Forget();
 
             // Scene camera stays on during lobby (shows skybox/nucleus)
             if (sceneCamera) sceneCamera.enabled = true;
@@ -158,6 +167,20 @@ namespace CosmicShore.Game.Arcade.Party
             _roundCts?.Dispose();
 
             base.OnNetworkDespawn();
+        }
+
+        async UniTaskVoid DeactivateEnvironmentsDeferred()
+        {
+            // Wait one frame so Netcode finishes its spawn sweep on all scene objects.
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+
+            foreach (var env in miniGameEnvironments)
+            {
+                if (!env) continue;
+                env.SetActive(false);
+            }
+
+            CSDebug.Log("[PartyGame] Environments deactivated (deferred — all OnNetworkSpawn complete).");
         }
 
         #endregion
@@ -217,6 +240,21 @@ namespace CosmicShore.Game.Arcade.Party
             if (player != null)
                 isAI = player.IsInitializedAsAI;
 
+            // If this is the human player but was registered under a fallback name
+            // (e.g. "Player 1" because LocalPlayer was null during solo lobby setup),
+            // update the existing entry to use the real name.
+            if (!isAI && !_playerStates.Any(p => p.PlayerName == playerName))
+            {
+                var placeholder = _playerStates.FirstOrDefault(p =>
+                    !p.IsAIReplacement && p.PlayerName != playerName);
+                if (placeholder != null)
+                {
+                    CSDebug.Log($"[PartyGame] Renaming player '{placeholder.PlayerName}' → '{playerName}'");
+                    placeholder.PlayerName = playerName;
+                    return;
+                }
+            }
+
             CSDebug.Log($"[PartyGame] HandlePlayerAdded: '{playerName}', domain={domain}, isAI={isAI}");
             OnPlayerJoined(playerName, domain, isAI);
         }
@@ -267,7 +305,11 @@ namespace CosmicShore.Game.Arcade.Party
 
                 if (!_playerStates.Any(p => !p.IsAIReplacement))
                 {
-                    string humanName = gameData.LocalPlayer?.Name ?? "Player 1";
+                    // Use LocalPlayerDisplayName (set during login/profile init)
+                    // because LocalPlayer may be null until vessels are spawned.
+                    string humanName = !string.IsNullOrEmpty(gameData.LocalPlayerDisplayName)
+                        ? gameData.LocalPlayerDisplayName
+                        : gameData.LocalPlayer?.Name ?? "Player 1";
                     var domain = Domains.Jade;
                     OnPlayerJoined(humanName, domain, false);
                     CSDebug.Log($"[PartyGame] Registered human player directly: '{humanName}'");
@@ -386,7 +428,13 @@ namespace CosmicShore.Game.Arcade.Party
 
         public void OnLocalPlayerReady()
         {
+            // Try all name sources: LocalPlayer (set after vessel spawn),
+            // then LocalPlayerDisplayName (set at login), then fallback
+            // to the first non-AI entry in _playerStates.
             string name = gameData.LocalPlayer?.Name;
+
+            if (string.IsNullOrEmpty(name))
+                name = gameData.LocalPlayerDisplayName;
 
             if (string.IsNullOrEmpty(name))
             {
