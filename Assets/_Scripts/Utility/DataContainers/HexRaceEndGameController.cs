@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Utility.Recording;
 
 namespace CosmicShore.Utility.DataContainers
