@@ -5,6 +5,7 @@ using CosmicShore.Game.Environment;
 using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
+using System.Linq;
 namespace CosmicShore.Game.ImpactEffects
 {
     public class ElementalCrystalImpactor : CrystalImpactor

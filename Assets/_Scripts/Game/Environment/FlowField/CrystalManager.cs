@@ -10,6 +10,7 @@ using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Environment;
 using CosmicShore.Game.Ship;
+using System.Linq;
 namespace CosmicShore.Game.Environment
 {
     [Serializable]

@@ -8,6 +8,7 @@ using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
+using System.Linq;
 namespace CosmicShore.Game.Assemblers
 {
 

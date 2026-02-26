@@ -7,6 +7,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Utility.SOAP;
 using CosmicShore.VesselHUD.Controller;
 using CosmicShore.VesselHUD.View;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     public sealed class SquirrelVesselHUDController : VesselHUDController

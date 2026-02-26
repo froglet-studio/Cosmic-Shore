@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Utility;
+using System.Linq;
 namespace CosmicShore.UI.Screens
 {
     [RequireComponent(typeof(MenuAudio))]

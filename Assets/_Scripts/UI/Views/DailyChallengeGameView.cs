@@ -10,6 +10,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PoolsAndBuffers;
+using System.Linq;
 namespace CosmicShore.UI.Views
 {
     public class DailyChallengeGameView : View

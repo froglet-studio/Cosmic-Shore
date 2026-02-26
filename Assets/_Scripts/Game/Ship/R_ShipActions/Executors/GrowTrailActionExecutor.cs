@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using CosmicShore.Game.Ship;
 using UnityEngine;
 using UnityEngine.Serialization;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     public class GrowTrailActionExecutor : ShipActionExecutorBase, IScaleProvider

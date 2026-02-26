@@ -2,6 +2,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.UI
 {

@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Game;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Utility.SOAP
 {

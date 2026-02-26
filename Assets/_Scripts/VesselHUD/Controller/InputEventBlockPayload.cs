@@ -1,4 +1,5 @@
 using CosmicShore.Models.Enums;
+using System;
 
 namespace CosmicShore.VesselHUD.Controller
 {

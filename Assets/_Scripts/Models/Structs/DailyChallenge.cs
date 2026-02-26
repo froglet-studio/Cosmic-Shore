@@ -1,9 +1,8 @@
+using System;
 using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Models.Structs
 {
-    ﻿using System;
-
     [Serializable]
     public struct DailyChallenge
     {

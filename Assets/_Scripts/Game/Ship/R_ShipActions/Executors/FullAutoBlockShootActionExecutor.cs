@@ -11,6 +11,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using CosmicShore.Game.Prisms;
 using CosmicShore.Game.Projectiles;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     public class FullAutoBlockShootActionExecutor : ShipActionExecutorBase

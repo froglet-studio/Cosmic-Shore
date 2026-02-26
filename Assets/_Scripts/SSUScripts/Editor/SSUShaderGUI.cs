@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using CosmicShore.SSUScripts;
 using CosmicShore.SSUScripts.Interactive;
 using CosmicShore.SSUScripts.Internal;
+using System.IO;
 namespace CosmicShore.SSUScripts.Editor
 {
     public class SSUShaderGUI : ShaderGUI

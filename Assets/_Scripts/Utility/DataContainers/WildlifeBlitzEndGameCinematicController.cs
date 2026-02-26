@@ -7,6 +7,7 @@ using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Game.UI;
 using CosmicShore.Utility;
+using System.Linq;
 namespace CosmicShore.Utility.DataContainers
 {
     public class WildlifeBlitzEndGameCinematicController : EndGameCinematicController

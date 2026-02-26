@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.SSUScripts.Internal;
+using System.Linq;
 namespace CosmicShore.SSUScripts.Interactive
 {
     public class InteractiveWindSSU : InstancerSSU

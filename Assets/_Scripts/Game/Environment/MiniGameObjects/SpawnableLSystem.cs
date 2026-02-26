@@ -4,6 +4,7 @@ using System.Text;
 using CosmicShore.Game.Ship;
 using CosmicShore.Game.Environment;
 using UnityEngine.Serialization;
+using System.Linq;
 
 namespace CosmicShore.Game.Environment
 {
