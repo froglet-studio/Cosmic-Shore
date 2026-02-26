@@ -123,6 +123,12 @@ namespace CosmicShore.Core
             InitializeMenuAudioClips();
             InitializeGameplaySFXClips();
 
+            if (gameSetting == null)
+            {
+                CSDebug.LogError("[AudioSystem] gameSetting was not injected — check AppManager DI registration.");
+                return;
+            }
+
             musicEnabled = gameSetting.MusicEnabled;
             sfxEnabled = gameSetting.SFXEnabled;
             ChangeMusicLevel(gameSetting.MusicLevel);
