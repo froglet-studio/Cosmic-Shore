@@ -120,6 +120,13 @@ namespace CosmicShore.Game.Arcade
                 gameData.InitializeGame();
                 if (!IsServer) return;
                 SetupNewRound();
+
+                // In party mode, auto-start the game — no manual ready-click required.
+                // This triggers the countdown → SetPlayersActive → StartTurn, which
+                // fires OnMiniGameTurnStarted and initialises HUD, score cards, and
+                // turn monitors.
+                if (IsPartyMode)
+                    OnReadyClicked();
             }
             catch (OperationCanceledException) { }
         }
