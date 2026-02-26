@@ -352,15 +352,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c84cc795715b8664aa69c3c613612a4f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  musicEnabled: 1
-  sfxEnabled: 1
-  hapticsEnabled: 1
-  invertYEnabled: 0
-  invertThrottleEnabled: 0
-  joystickVisualsEnabled: 1
-  musicLevel: 1
-  sfxLevel: 1
-  hapticsLevel: 1
 --- !u!1 &255207014
 GameObject:
   m_ObjectHideFlags: 0
@@ -2564,6 +2555,25 @@ MonoBehaviour:
     type: 3}
   RedeemTicketAudioClip: {fileID: 8300000, guid: 7e98ac29753d3394fb5cca39b8289e48,
     type: 3}
+  BlockDestroyAudioClip: {fileID: 0}
+  ShieldActivateAudioClip: {fileID: 0}
+  ShieldDeactivateAudioClip: {fileID: 0}
+  MineExplodeAudioClip: {fileID: 0}
+  ProjectileLaunchAudioClip: {fileID: 0}
+  CrystalCollectAudioClip: {fileID: 0}
+  VesselImpactAudioClip: {fileID: 0}
+  GameEndAudioClip: {fileID: 0}
+  ScoreRevealAudioClip: {fileID: 0}
+  PauseOpenAudioClip: {fileID: 0}
+  PauseCloseAudioClip: {fileID: 0}
+  GunFireAudioClip: {fileID: 0}
+  BoostActivateAudioClip: {fileID: 0}
+  ExplosionAudioClip: {fileID: 0}
+  CreatureDeathAudioClip: {fileID: 0}
+  DriftStartAudioClip: {fileID: 0}
+  DriftEndAudioClip: {fileID: 0}
+  EnergyGainAudioClip: {fileID: 0}
+  SpeedBurstAudioClip: {fileID: 0}
 --- !u!1 &2074583001
 GameObject:
   m_ObjectHideFlags: 0
