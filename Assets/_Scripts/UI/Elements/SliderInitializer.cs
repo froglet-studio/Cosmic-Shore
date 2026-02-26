@@ -1,8 +1,7 @@
-using CosmicShore.Game.Managers;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Game.Settings;
-namespace CosmicShore.UI.Elements
+namespace CosmicShore.UI
 {
     public class SliderInitializer : MonoBehaviour
     {

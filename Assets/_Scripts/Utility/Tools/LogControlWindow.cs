@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-namespace CosmicShore.Utility.Tools
+namespace CosmicShore.Utility
 {
     public class LogControlWindow : EditorWindow
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Utility.Tools
+namespace CosmicShore.Utility
 {
     public class AudioTester : MonoBehaviour
     {

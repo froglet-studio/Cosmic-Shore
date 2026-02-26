@@ -1,6 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
 /*
         Generic classes for the use of singleton

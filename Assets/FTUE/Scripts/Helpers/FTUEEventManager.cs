@@ -1,8 +1,8 @@
 using System;
-using CosmicShore.Systems.CallToAction;
-using CosmicShore.Models.Enums;
+using CosmicShore.Core;
+using CosmicShore.Data;
 
-namespace CosmicShore.FTUE.Helpers
+namespace CosmicShore.Core
 {
     /// <summary>
     /// Central hub for FTUE-related events.

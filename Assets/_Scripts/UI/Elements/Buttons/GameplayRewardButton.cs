@@ -1,14 +1,14 @@
-using CosmicShore.Game.Multiplayer;
-using CosmicShore.Models.Structs;
-using CosmicShore.UI.FX;
+using CosmicShore.Gameplay;
+using CosmicShore.Data;
+using CosmicShore.UI;
 using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
-namespace CosmicShore.UI.Elements
+namespace CosmicShore.UI
 {
 
     [Serializable]

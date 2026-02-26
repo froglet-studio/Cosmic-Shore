@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
-namespace CosmicShore.Utility.Recording
+namespace CosmicShore.Utility
 {
     public class FancyCamController : MonoBehaviour
     {

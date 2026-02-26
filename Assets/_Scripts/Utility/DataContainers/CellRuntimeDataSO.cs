@@ -1,14 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Game.Environment;
+using CosmicShore.Gameplay;
 using Obvious.Soap;
 using UnityEngine;
-using CosmicShore.Utility.Recording;
-using CosmicShore.Models.Enums;
-using CosmicShore.Game.Managers;
-using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
-namespace CosmicShore.Utility.DataContainers
+using CosmicShore.Data;
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(
         fileName = "DataContainer_" + nameof(CellRuntimeDataSO),

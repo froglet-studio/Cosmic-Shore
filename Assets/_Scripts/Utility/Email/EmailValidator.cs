@@ -1,5 +1,5 @@
 
-namespace CosmicShore.Utility.Email
+namespace CosmicShore.Utility
 {
     ﻿using System.Text.RegularExpressions;
 

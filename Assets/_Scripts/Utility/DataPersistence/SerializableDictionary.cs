@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
-namespace CosmicShore.Utility.DataPersistence
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// This Class provides a way to serialize a Dictionary in Json by converting Key value pairs into Lists.

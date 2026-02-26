@@ -1,9 +1,9 @@
 using UnityEngine;
-using CosmicShore.Utility.Email;
+using CosmicShore.Utility;
 using UnityEngine.UI;
 using TMPro;
 
-namespace CosmicShore.Utility.Reporting
+namespace CosmicShore.Utility
 {
     public class SendBugReport : MonoBehaviour
     {

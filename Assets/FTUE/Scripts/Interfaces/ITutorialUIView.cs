@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore.FTUE.Interfaces
+namespace CosmicShore.Core
 {
     public interface ITutorialUIView
     {

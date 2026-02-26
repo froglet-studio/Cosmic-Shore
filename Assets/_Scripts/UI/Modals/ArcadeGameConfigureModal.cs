@@ -1,18 +1,16 @@
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Systems.Favorites;
-using CosmicShore.Systems.LoadOut;
-using CosmicShore.UI.Views;
-using CosmicShore.Integrations.Playfab;
-using CosmicShore.Models.Enums;
-using CosmicShore.Utility.DataContainers;
+using CosmicShore.Core;
+using CosmicShore.UI;
+using CosmicShore.Data;
+using CosmicShore.Utility;
 using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
-namespace CosmicShore.UI.Modals
+namespace CosmicShore.UI
 {
     public class ArcadeGameConfigureModal : ModalWindowManager
     {

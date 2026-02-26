@@ -1,12 +1,12 @@
-using CosmicShore.Systems.UserAction;
-using CosmicShore.Models.Enums;
-using CosmicShore.UI.Views;
+using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.UI;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 using System.Linq;
 
-namespace CosmicShore.UI.Screens
+namespace CosmicShore.UI
 {
     public class ArcadeScreen : MonoBehaviour
     {

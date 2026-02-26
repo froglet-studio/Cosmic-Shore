@@ -1,6 +1,6 @@
-using CosmicShore.Models.Enums;
+using CosmicShore.Data;
 
-namespace CosmicShore.Utility.DataContainers
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Data structure for vessel display information

@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using UnityEditorInternal;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
-namespace CosmicShore.Editor.CopyTool
+namespace CosmicShore.Editor
 {
     /// <summary>
     /// Editor window to copy selected components from one GameObject to another.

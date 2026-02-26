@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using DG.Tweening;
-using CosmicShore.FTUE.UI;
+using CosmicShore.Core;
 
-namespace CosmicShore.FTUE.Drivers
+namespace CosmicShore.Core
 {
     public class FTUEIntroAnimator : MonoBehaviour
     {

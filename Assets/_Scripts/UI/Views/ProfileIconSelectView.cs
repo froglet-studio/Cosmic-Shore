@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.UI.Modals;
-using CosmicShore.Utility.DataContainers;
+using CosmicShore.UI;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using CosmicShore.Utility.Recording;
 
-namespace CosmicShore.UI.Views
+namespace CosmicShore.UI
 {
     public enum ProfileModalTab
     {

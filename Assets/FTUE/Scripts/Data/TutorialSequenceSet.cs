@@ -1,15 +1,10 @@
-using CosmicShore.FTUE.Adapters;
-using CosmicShore.FTUE.Drivers;
-using CosmicShore.FTUE.Handlers;
-using CosmicShore.FTUE.Helpers;
-using CosmicShore.FTUE.Interfaces;
-using CosmicShore.FTUE.UI;
+using CosmicShore.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace CosmicShore.FTUE.Data
+namespace CosmicShore.Core
 {
     [CreateAssetMenu(menuName = "CosmicShore/FTUE/Tutorial Sequence Set")]
     public class TutorialSequenceSet : ScriptableObject

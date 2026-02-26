@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using CosmicShore.Models.Enums;
+using CosmicShore.Data;
 
 /*
     get class name

@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using UnityEditor.SceneManagement;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Editor
 {

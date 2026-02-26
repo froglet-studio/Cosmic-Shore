@@ -1,12 +1,11 @@
-using CosmicShore.FTUE.Helpers;
-using CosmicShore.Integrations.Playfab;
+using CosmicShore.Core;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
-namespace CosmicShore.UI.Modals
+namespace CosmicShore.UI
 {
     public class AppInitializationModal : MonoBehaviour
     {

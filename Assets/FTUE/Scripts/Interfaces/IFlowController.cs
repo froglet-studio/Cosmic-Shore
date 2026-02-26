@@ -1,5 +1,5 @@
 
-namespace CosmicShore.FTUE.Interfaces
+namespace CosmicShore.Core
 {
     public interface IFlowController
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 using UnityEngine;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Utility
 {

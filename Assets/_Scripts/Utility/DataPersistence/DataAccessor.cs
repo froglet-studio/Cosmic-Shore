@@ -4,9 +4,9 @@ using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
 using System.Text;
 using System;
-using CosmicShore.Utility.Recording;
+using CosmicShore.Utility;
 
-namespace CosmicShore.Utility.DataPersistence
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Serializes objects to binary and saves to disk

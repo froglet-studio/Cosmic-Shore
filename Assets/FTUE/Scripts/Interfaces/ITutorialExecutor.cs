@@ -1,8 +1,8 @@
-using CosmicShore.FTUE.Data;
+using CosmicShore.Core;
 using System;
 using System.Collections;
 
-namespace CosmicShore.FTUE.Interfaces
+namespace CosmicShore.Core
 {
     public interface ITutorialExecutor
     {

@@ -2,7 +2,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace CosmicShore.Resolvers
+namespace CosmicShore.Core
 {
     public static class ObjectResolver
     {
