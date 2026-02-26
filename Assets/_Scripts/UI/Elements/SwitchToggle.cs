@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,6 +7,8 @@ namespace CosmicShore.UI
 {
     public class SwitchToggle : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [SerializeField] RectTransform handleRectTransform;
 
         Toggle toggle;
@@ -21,7 +24,7 @@ namespace CosmicShore.UI
         {
             int sign = status ? 1 : -1;
             handleRectTransform.localPosition += sign * handleDisplacement;
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
         }
 
         private void OnDestroy()

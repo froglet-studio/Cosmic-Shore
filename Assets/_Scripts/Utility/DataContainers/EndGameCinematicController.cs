@@ -3,6 +3,7 @@ using System.Collections;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CosmicShore.UI;
@@ -15,6 +16,7 @@ namespace CosmicShore.Utility
 {
     public class EndGameCinematicController : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         [Header("References")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] protected SceneCinematicLibrarySO sceneCinematicLibrary;
@@ -272,7 +274,7 @@ namespace CosmicShore.Utility
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
 
             gameData.IsLocalDomainWinner(out DomainStats stats);
             int score = Mathf.Max(0, (int)stats.Score); 

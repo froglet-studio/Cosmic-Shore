@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);
+            execs.AudioSystem.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);
             vesselStatus.VesselTransformer.ModifyVelocity(vesselStatus.Vessel.Transform.forward * magnitude, duration);
         }
 

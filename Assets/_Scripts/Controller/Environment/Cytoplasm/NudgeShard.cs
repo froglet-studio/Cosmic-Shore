@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +10,7 @@ namespace CosmicShore.Gameplay
 {
     public class NudgeShard : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         float Displacement = 40f;
         float Duration = .3f;
         [SerializeField] int energyResourceIndex = 0;
@@ -34,7 +36,7 @@ namespace CosmicShore.Gameplay
 
                 if (shipStatus.VesselType == VesselClassType.Squirrel)
                 {
-                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.EnergyGain);
+                    audioSystem.PlayGameplaySFX(GameplaySFXCategory.EnergyGain);
                     shipStatus.ResourceSystem.ChangeResourceAmount(energyResourceIndex, energyAmount);
                     foreach (var prism in Prisms)
                     {

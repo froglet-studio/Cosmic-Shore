@@ -15,6 +15,8 @@ namespace CosmicShore.UI
 {
     public class ArcadeLoadoutView : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
+
         [SerializeField] SO_GameList AllGames;
         [SerializeField] SO_ShipList AllShips;
         [SerializeField] List<LoadoutCard> CardList = new(4);
@@ -109,7 +111,7 @@ namespace CosmicShore.UI
         //  Play Button press gets loadout and sends to game
         public void OnClickPlayButton()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
             Loadout loadout = LoadoutSystem.GetActiveLoadout();
             // Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.VesselType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false, loadout.IsMultiplayer);
             gameData.InvokeGameLaunch();

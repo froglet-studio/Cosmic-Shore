@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
@@ -18,6 +19,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public abstract class LifeForm : MonoBehaviour, ILifeFormEntity
     {
+        [Inject] AudioSystem audioSystem;
         [Header("Data References")]
         [SerializeField] protected GameDataSO gameData;
         [SerializeField] protected CellRuntimeDataSO cellData;
@@ -181,7 +183,7 @@ namespace CosmicShore.Gameplay
         {
             if (isCleaningUp) return;
 
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CreatureDeath);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.CreatureDeath);
 
             if (crystal && crystal.gameObject.activeInHierarchy && !isCleaningUp)
                 crystal.ActivateCrystal();

@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
             if (vesselStatus == null) return;
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
+            execs.AudioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
             vesselStatus.IsBoosting = true;
             vesselStatus.IsStationary = false;
         }

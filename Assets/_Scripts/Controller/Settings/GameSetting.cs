@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    public class GameSetting : SingletonPersistent<GameSetting>
+    public class GameSetting : MonoBehaviour
     {
         public delegate void OnChangeMusicEnabledStatusEvent(bool status);
         public static event OnChangeMusicEnabledStatusEvent OnChangeMusicEnabledStatus;
@@ -74,10 +74,8 @@ namespace CosmicShore.Gameplay
         public float HapticsLevel { get => hapticsLevel; }
         #endregion
 
-        public override void Awake()
+        void Awake()
         {
-            base.Awake();
-
             SetPlayerPrefDefault(PlayerPrefKeys.MusicEnabled, 1);
             SetPlayerPrefDefault(PlayerPrefKeys.SFXEnabled, 1);
             SetPlayerPrefDefault(PlayerPrefKeys.HapticsEnabled, 1);

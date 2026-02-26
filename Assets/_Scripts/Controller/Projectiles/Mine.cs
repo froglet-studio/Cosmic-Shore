@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;
@@ -19,6 +20,7 @@ namespace CosmicShore.Gameplay
     
     public class Mine : MonoBehaviour
     {
+        [Inject] AudioSystem audioSystem;
         [SerializeField] private Material blueMineMaterial;
         [SerializeField] private float explodeAfterSeconds = 20f;
         [SerializeField] protected List<MineModelData> mineModels;
@@ -73,7 +75,7 @@ namespace CosmicShore.Gameplay
         private void Explode(Vector3 velocity)
         {
             mineCollider.enabled = false;
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.MineExplode);
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.MineExplode);
             foreach (var modelData in mineModels)
             {
                 _tempMaterial = new Material(modelData.explodingMaterial);
