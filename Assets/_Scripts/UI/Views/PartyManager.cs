@@ -57,10 +57,12 @@ namespace CosmicShore.UI
         // Legacy events (bridged from SOAP)
         // ─────────────────────────────────────────────────────────────────────
 
+#pragma warning disable CS0067 // Legacy backward-compat events bridged from SOAP
         public event Action<IReadOnlyList<OnlinePlayerInfo>> OnOnlinePlayersUpdated;
         public event Action<PartyInvite> OnInviteReceived;
         public event Action<string> OnJoinedParty;
         public event Action<string> OnPartyMemberJoined;
+#pragma warning restore CS0067
 
         // ─────────────────────────────────────────────────────────────────────
         // Inspector

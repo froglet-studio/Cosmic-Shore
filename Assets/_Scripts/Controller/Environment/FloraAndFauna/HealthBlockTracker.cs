@@ -18,11 +18,6 @@ namespace CosmicShore.Gameplay
         public int Count => healthBlocks.Count;
         public bool IsMature { get; private set; }
 
-        /// <summary>
-        /// Fired when health blocks drop to or below <see cref="minHealthBlocks"/>.
-        /// Parameter is the killer name (empty if no killer).
-        /// </summary>
-        public event Action<string> OnLethal;
 
         public HealthBlockTracker(int healthBlocksForMaturity, int minHealthBlocks)
         {

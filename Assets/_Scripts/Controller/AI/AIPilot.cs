@@ -49,7 +49,6 @@ namespace CosmicShore.Gameplay
         float avoidance => Mathf.Lerp(avoidanceLow, avoidanceHigh, skillLevel);
         float aggressivenessIncrease => Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, skillLevel);
 
-        float targetUpdateFrequencySeconds = 2f;
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;

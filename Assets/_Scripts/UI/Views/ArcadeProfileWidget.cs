@@ -123,19 +123,19 @@ namespace CosmicShore.UI
                 saveUsernameButton.gameObject.SetActive(true);
         }
 
-        async void OnSaveUsernameClicked()
+        void OnSaveUsernameClicked()
         {
-            await SaveUsername();
+            SaveUsername();
         }
 
         void OnUsernameInputEndEdit(string value)
         {
             // Pressing Enter also saves
             if (_isEditing && Input.GetKeyDown(KeyCode.Return))
-                SaveUsername().ConfigureAwait(false);
+                SaveUsername();
         }
 
-        async System.Threading.Tasks.Task SaveUsername()
+        void SaveUsername()
         {
             _isEditing = false;
 

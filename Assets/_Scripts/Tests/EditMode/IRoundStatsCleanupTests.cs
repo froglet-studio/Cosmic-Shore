@@ -23,6 +23,7 @@ namespace CosmicShore.Tests
         /// </summary>
         class TestRoundStats : IRoundStats
         {
+#pragma warning disable CS0067 // Interface-required events unused in test mock
             public event Action<IRoundStats> OnAnyStatChanged;
             public event Action OnScoreChanged;
             public event Action<IRoundStats> OnBlocksCreatedChanged;
@@ -55,6 +56,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnButton1AbilityActiveTimeChanged;
             public event Action<IRoundStats> OnButton2AbilityActiveTimeChanged;
             public event Action<IRoundStats> OnButton3AbilityActiveTimeChanged;
+#pragma warning restore CS0067
 
             public string Name { get; set; }
             public Domains Domain { get; set; }

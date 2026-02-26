@@ -28,9 +28,6 @@ namespace CosmicShore.Core
         private void Start()
         {
             // [PLAYFAB DISABLED] Groups will be rebuilt on UGS. Pending removal.
-            return;
-
-             AuthenticationManager.OnLoginSuccess += InitializeGroupsInstanceAPI;
         }
 
         private void OnDestroy()

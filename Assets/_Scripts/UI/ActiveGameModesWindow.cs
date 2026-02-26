@@ -160,7 +160,7 @@ namespace CosmicShore.UI
             
             if (GUILayout.Button("Save & Close", GUILayout.Height(30)))
             {
-                SaveChanges();
+                ApplyChanges();
                 Close();
             }
 
@@ -177,7 +177,7 @@ namespace CosmicShore.UI
             EditorGUILayout.Space(10);
         }
 
-        private void SaveChanges()
+        private void ApplyChanges()
         {
             if (activeGameModesProperty == null) return;
 

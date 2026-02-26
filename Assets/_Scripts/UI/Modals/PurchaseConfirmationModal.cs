@@ -1,7 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
-using CosmicShore.Core;
 using System;
 using System.Collections;
 using TMPro;
