@@ -1,4 +1,5 @@
 using CosmicShore.Game.ShapeDrawing;
+using CosmicShore.Game.UI;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -19,6 +20,9 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] List<ModeSelectTrigger> modeTriggers;
         [SerializeField] ShapeSignSpawner shapeSignSpawner;
 
+        [Header("HUD")]
+        [SerializeField] MiniGameHUD miniGameHUD;
+
         [Header("Trigger Placement")]
         [SerializeField] float triggerRingRadius = 40f;
         [SerializeField] float triggerScale = 0.4f;
@@ -28,7 +32,8 @@ namespace CosmicShore.Game.Arcade
         protected override bool ShowEndGameSequence => false;
 
         bool _isInLobby;
-        bool _isShapePrep; // true while waiting for Ready after shape cinematic
+        bool _isShapePrep;        // true while waiting for Ready after shape cinematic
+        bool _returningFromShape; // true after shape exit, waiting for Ready to re-enter lobby
 
         protected override void OnEnable()
         {
@@ -72,8 +77,7 @@ namespace CosmicShore.Game.Arcade
         }
 
         /// <summary>
-        /// Countdown finished. If in shape-prep, begin drawing.
-        /// Otherwise, do initial game start (SetPlayersActive + EnterLobby).
+        /// Countdown finished. Route to the correct flow based on current state.
         /// </summary>
         protected override void OnCountdownTimerEnded()
         {
@@ -82,8 +86,22 @@ namespace CosmicShore.Game.Arcade
                 _isShapePrep = false;
                 shapeDrawingManager.BeginDrawing();
             }
+            else if (_returningFromShape)
+            {
+                // Re-entering lobby after shape drawing — vessel is already active
+                _returningFromShape = false;
+
+                var vessel = gameData.LocalPlayer?.Vessel;
+                if (vessel?.VesselStatus != null)
+                    vessel.VesselStatus.IsStationary = false;
+
+                TeleportPlayerToLobby();
+                ClearPlayerTrails();
+                EnterLobby();
+            }
             else
             {
+                // Initial game start
                 gameData.SetPlayersActive();
                 ClearPlayerTrails();
                 EnterLobby();
@@ -92,7 +110,11 @@ namespace CosmicShore.Game.Arcade
 
         void OnShapeDrawingFinished()
         {
-            TeleportPlayerToLobby();
+            // Player was already repositioned by ShapeDrawingManager.ExitShapeMode
+            // Ensure movement is stopped
+            var vessel = gameData.LocalPlayer?.Vessel;
+            if (vessel?.VesselStatus != null)
+                vessel.VesselStatus.IsStationary = true;
 
             if (CameraManager.Instance)
             {
@@ -100,7 +122,12 @@ namespace CosmicShore.Game.Arcade
                 CameraManager.Instance.SnapPlayerCameraToTarget();
             }
 
-            EnterLobby();
+            // Mark that the next Ready press should re-enter lobby (not restart game)
+            _returningFromShape = true;
+
+            // Show connecting panel → wait → ready button → player can play again
+            if (miniGameHUD)
+                miniGameHUD.ShowConnectingFlow();
         }
 
         void TeleportPlayerToLobby()

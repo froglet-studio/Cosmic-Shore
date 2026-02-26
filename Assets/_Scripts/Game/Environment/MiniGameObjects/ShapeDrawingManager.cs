@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using CosmicShore.Game.CameraSystem;
+using CosmicShore.Game.UI;
 using CosmicShore.Soap;
 using UnityEngine;
 using Obvious.Soap;
@@ -27,7 +28,7 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] LineRenderer guideLine;
         [SerializeField] LineRenderer ghostLine;
         [SerializeField] Camera revealCamera;
-        [SerializeField] float shapeScale = 7f;
+        [SerializeField] float shapeScale = 10f;
 
         [Header("Shape Orientation")]
         [Tooltip("Rotation applied to shape waypoints. Default (-90,0,0) rotates XY-defined shapes to the horizontal XZ plane.")]
@@ -62,6 +63,10 @@ namespace CosmicShore.Game.ShapeDrawing
         [Header("Debug")]
         [Tooltip("Press this key to save a screenshot (PC only).")]
         [SerializeField] Key screenshotKey = Key.F12;
+
+        [Header("End Shape HUD")]
+        [Tooltip("UI panel shown after completing a shape. Displays stats, screenshot and exit buttons.")]
+        [SerializeField] EndShapeDetailHUD endShapeHUD;
 
         [Header("Pool Return")]
         [Tooltip("Raised when exiting shape mode. Attach EventListenerNoParam on shape prisms to call ReturnToPool.")]
@@ -165,12 +170,23 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             if (shapeCrystalManager)
                 shapeCrystalManager.OnWaypointCrystalHit += HandleCrystalHit;
+            if (endShapeHUD)
+            {
+                endShapeHUD.OnExitPressed += HandleExitFromHUD;
+                endShapeHUD.OnScreenshotPressed += TakeDebugScreenshot;
+                endShapeHUD.Hide();
+            }
         }
 
         void OnDisable()
         {
             if (shapeCrystalManager)
                 shapeCrystalManager.OnWaypointCrystalHit -= HandleCrystalHit;
+            if (endShapeHUD)
+            {
+                endShapeHUD.OnExitPressed -= HandleExitFromHUD;
+                endShapeHUD.OnScreenshotPressed -= TakeDebugScreenshot;
+            }
         }
 
         void Update()
@@ -236,6 +252,10 @@ namespace CosmicShore.Game.ShapeDrawing
             if (!_isActive || _drawingStarted) return;
             _drawingStarted = true;
 
+            // Ensure no prism spawn is running before we release the vessel
+            if (_vesselStatus != null)
+                _vesselStatus.VesselPrismController.StopSpawn();
+
             // Release input
             if (_vesselStatus != null)
                 _vesselStatus.IsStationary = false;
@@ -252,12 +272,18 @@ namespace CosmicShore.Game.ShapeDrawing
         }
 
         /// <summary>
-        /// Call from the UI Next button to clear trails, restore the camera,
-        /// and return to the lobby.
+        /// Called by EndShapeDetailHUD exit button via event.
         /// </summary>
+        void HandleExitFromHUD()
+        {
+            if (endShapeHUD) endShapeHUD.Hide();
+            ExitShapeMode();
+        }
+
         public void ContinueFromReveal()
         {
             if (!_waitingForNext) return;
+            if (endShapeHUD) endShapeHUD.Hide();
             ExitShapeMode();
         }
 
@@ -267,7 +293,6 @@ namespace CosmicShore.Game.ShapeDrawing
 
             _isActive = false;
             _drawingStarted = false;
-            _activeShape = null;
             _trackingPath = false;
             _waitingForNext = false;
 
@@ -278,6 +303,17 @@ namespace CosmicShore.Game.ShapeDrawing
             if (_vesselStatus != null)
                 _vesselStatus.VesselPrismController.ClearTrails();
 
+            // Respawn player at the shape start position and freeze
+            if (_vesselStatus != null && _activeShape != null)
+            {
+                Vector3 startPos = GetWorldPlayerStart();
+                Quaternion startRot = GetPlayerStartRotation();
+                _vesselStatus.Vessel.Transform.SetPositionAndRotation(startPos, startRot);
+                _vesselStatus.IsStationary = true;
+            }
+
+            _activeShape = null;
+
             // Destroy SnowChanger instance
             DestroySnowChanger();
 
@@ -285,6 +321,7 @@ namespace CosmicShore.Game.ShapeDrawing
             if (_panCameraController)
             {
                 _panCameraController.enabled = true;
+                _panCameraController.SnapToTarget();
                 _panCameraController = null;
             }
 
@@ -664,7 +701,13 @@ namespace CosmicShore.Game.ShapeDrawing
         {
             _trackingPath = false;
             if (guideLine) guideLine.enabled = false;
-            if (_vesselStatus != null) _vesselStatus.VesselPrismController.StopSpawn();
+
+            // Stop prism spawn and freeze the player
+            if (_vesselStatus != null)
+            {
+                _vesselStatus.VesselPrismController.StopSpawn();
+                _vesselStatus.IsStationary = true;
+            }
 
             var score = CalculateScore();
 
@@ -711,6 +754,9 @@ namespace CosmicShore.Game.ShapeDrawing
 
             _waitingForNext = true;
             OnRevealStarted?.Invoke();
+
+            // Show end-of-shape detail HUD with stats
+            if (endShapeHUD) endShapeHUD.Show(score);
         }
 
         // ── Debug Screenshot ─────────────────────────────────────────────

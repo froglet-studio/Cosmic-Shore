@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Game.ShapeDrawing
@@ -8,6 +8,9 @@ namespace CosmicShore.Game.ShapeDrawing
     ///
     /// Selection is driven by a Unity UI Button on a child World Space Canvas —
     /// no trigger collider needed.
+    ///
+    /// Positions are set manually in the scene editor. This script does NOT
+    /// modify the transform position at any point.
     ///
     /// Prefab structure:
     ///   ShapeSign (this script)
@@ -26,49 +29,19 @@ namespace CosmicShore.Game.ShapeDrawing
         [SerializeField] TMP_Text nameLabel;
         [SerializeField] TMP_Text descriptionLabel;
 
-        [Header("Bob & Rotate Animation")]
-        [SerializeField] float bobAmplitude = 3f;
-        [SerializeField] float bobFrequency = 0.5f;
-        [SerializeField] float spinSpeedDeg = 15f;
-
-        Vector3 _basePosition;
-        bool    _selected;
-        float   _time;
-        bool    _awakeRan;
+        bool _selected;
 
         void Awake()
         {
-            _basePosition = transform.position;
-            _awakeRan = true;
             ApplyDisplayData();
         }
 
         void OnEnable()
         {
-            // Reset selection so the sign can be pressed again after re-entering lobby
             _selected = false;
-            _time = 0f;
-
-            // Snap back to the original placed position (undo any bob offset)
-            if (_awakeRan)
-                transform.position = _basePosition;
 
             var btn = GetComponentInChildren<UnityEngine.UI.Button>();
             if (btn) btn.interactable = true;
-        }
-
-        void Update()
-        {
-            if (_selected) return;
-
-            _time += Time.deltaTime;
-
-            // Bob up and down
-            transform.position = _basePosition +
-                Vector3.up * (Mathf.Sin(_time * bobFrequency * Mathf.PI * 2f) * bobAmplitude);
-
-            // Gentle spin
-            transform.Rotate(Vector3.up, spinSpeedDeg * Time.deltaTime, Space.World);
         }
 
         /// <summary>Called by SpawnableShapeSign immediately after instantiation.</summary>
