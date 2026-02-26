@@ -146,6 +146,8 @@ namespace CosmicShore.Core
         {
             GameSetting.OnChangeMusicEnabledStatus -= ChangeMusicEnabledStatus;
             GameSetting.OnChangeSFXEnabledStatus -= ChangeSFXEnabledStatus;
+            GameSetting.OnChangeMusicLevel -= ChangeMusicLevel;
+            GameSetting.OnChangeSFXLevel -= ChangeSFXLevel;
         }
 
         void ChangeMusicEnabledStatus(bool status)
@@ -164,8 +166,8 @@ namespace CosmicShore.Core
         {
             CSDebug.Log($"ChangeMusicLevel: {level}, {level/5f}");
             musicVolume = level / 5f;   // max .2 -- default max volume is too high
-            musicSource1.volume = musicVolume;
-            musicSource2.volume = musicVolume;
+            if (musicSource1 != null) musicSource1.volume = musicVolume;
+            if (musicSource2 != null) musicSource2.volume = musicVolume;
         }
 
         void ChangeSFXLevel(float level)
