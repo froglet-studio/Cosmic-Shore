@@ -31,11 +31,25 @@ namespace CosmicShore.Core
         [SerializeField] PlayerDataService playerDataService;
         [SerializeField] UGSStatsManager ugsStatsManager;
 
+        [Header("Gameplay Manager Prefabs")]
+        [Tooltip("Prefabs spawned during bootstrap and made persistent (DontDestroyOnLoad). " +
+                 "If an instance of the prefab's primary component already exists in the scene, " +
+                 "that instance is reused and persisted instead of spawning a duplicate.")]
+        [SerializeField] GameObject[] _gameplayManagerPrefabs;
+
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
 
+        GameManager _gameManager;
+        ThemeManager _themeManager;
+        CameraManager _cameraManager;
+        PostProcessingManager _postProcessingManager;
+
+        bool _gameplayManagersResolved;
+
         void Awake()
         {
+            EnsureGameplayManagers();
             ResolvePersistentSystems();
         }
 
@@ -92,6 +106,7 @@ namespace CosmicShore.Core
         {
             // Guarantee services exist before registration. Reflex may call
             // InstallBindings before Awake, so we cannot rely on Awake alone.
+            EnsureGameplayManagers();
             ResolvePersistentSystems();
 
             // ScriptableObject assets / Variables
@@ -104,6 +119,12 @@ namespace CosmicShore.Core
             RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
             RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
             RegisterIfNotNull(builder, ugsStatsManager, nameof(ugsStatsManager));
+
+            // Gameplay managers (spawned from prefabs or discovered in the scene)
+            RegisterIfNotNull(builder, _gameManager, nameof(_gameManager));
+            RegisterIfNotNull(builder, _themeManager, nameof(_themeManager));
+            RegisterIfNotNull(builder, _cameraManager, nameof(_cameraManager));
+            RegisterIfNotNull(builder, _postProcessingManager, nameof(_postProcessingManager));
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             if (authenticationDataVariable != null)
@@ -124,6 +145,57 @@ namespace CosmicShore.Core
                 );
             }
         }
+
+        #region Gameplay Manager Spawning
+
+        /// <summary>
+        /// Spawns gameplay manager prefabs and makes them persistent.
+        /// For each prefab, checks if an instance of its primary component type
+        /// already exists in the scene. If so, that instance is reused and persisted.
+        /// Otherwise the prefab is instantiated and persisted.
+        /// </summary>
+        void EnsureGameplayManagers()
+        {
+            if (_gameplayManagersResolved) return;
+            _gameplayManagersResolved = true;
+
+            if (_gameplayManagerPrefabs != null)
+            {
+                foreach (var prefab in _gameplayManagerPrefabs)
+                {
+                    if (prefab == null) continue;
+                    EnsurePrefabInstance(prefab);
+                }
+            }
+
+            // Discover and cache references for DI registration.
+            _gameManager = FindFirstObjectByType<GameManager>();
+            _themeManager = FindFirstObjectByType<ThemeManager>();
+            _cameraManager = FindFirstObjectByType<CameraManager>();
+            _postProcessingManager = FindFirstObjectByType<PostProcessingManager>();
+        }
+
+        void EnsurePrefabInstance(GameObject prefab)
+        {
+            // Check if an instance of any root-level MonoBehaviour already exists.
+            foreach (var mb in prefab.GetComponents<MonoBehaviour>())
+            {
+                if (mb == null) continue;
+                var existing = FindFirstObjectByType(mb.GetType()) as Component;
+                if (existing != null)
+                {
+                    // Persist the existing instance so it survives scene transitions.
+                    DontDestroyOnLoad(existing.transform.root.gameObject);
+                    return;
+                }
+            }
+
+            // No existing instance — instantiate from prefab and persist.
+            var instance = Instantiate(prefab);
+            DontDestroyOnLoad(instance);
+        }
+
+        #endregion
 
         static void RegisterIfNotNull<T>(ContainerBuilder builder, T value, string fieldName) where T : class
         {
