@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.App.UI.FX;
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -74,6 +75,7 @@ namespace CosmicShore.App.UI.Modals
 
         public void Confirm()
         {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
             OnConfirm?.Invoke();
         }
 

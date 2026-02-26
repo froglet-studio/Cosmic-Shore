@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
   m_Name: Smiley_Shape
   m_EditorClassIdentifier: 
-  shapeName: Smiley Shape
+  shapeName: Smiley
   description: This is a Smiley Shape
   thumbnail: {fileID: 21300000, guid: 4ea3e5980c37961468e849a9691ecd58, type: 3}
   autoGeneratePreset: 0

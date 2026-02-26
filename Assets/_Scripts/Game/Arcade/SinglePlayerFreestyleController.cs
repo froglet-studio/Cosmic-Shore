@@ -1,4 +1,5 @@
 using CosmicShore.Game.ShapeDrawing;
+using CosmicShore.Game.UI;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -17,44 +18,100 @@ namespace CosmicShore.Game.Arcade
         [Header("Lobby Configuration")]
         [SerializeField] Transform lobbyOrigin;
         [SerializeField] List<ModeSelectTrigger> modeTriggers;
-        [SerializeField] ShapeSignSpawner shapeSignSpawner;
+        [SerializeField] GameObject signsParent;
 
-        [Header("Trigger Placement")]
-        [SerializeField] float triggerRingRadius = 40f;
-        [SerializeField] float triggerScale = 0.4f;
-        [SerializeField] float triggerForwardOffset = 50f;
+        [Header("HUD")]
+        [SerializeField] MiniGameHUD miniGameHUD;
 
         protected override bool HasEndGame => false;
         protected override bool ShowEndGameSequence => false;
 
         bool _isInLobby;
+        bool _isShapePrep;        // true while waiting for Ready after shape cinematic
+        bool _isFreestylePrep;    // true while waiting for Ready after freestyle sign
 
         protected override void OnEnable()
         {
             base.OnEnable();
             ShapeSignEvents.OnShapeSelected += HandleShapeSignSelected;
-            if (shapeDrawingManager) shapeDrawingManager.OnFreestyleResumed.AddListener(OnShapeDrawingFinished);
+            FreestyleSignEvents.OnFreestyleSelected += HandleFreestyleSignSelected;
+            if (shapeDrawingManager)
+            {
+                shapeDrawingManager.OnFreestyleResumed.AddListener(OnShapeDrawingFinished);
+                shapeDrawingManager.OnPreviewComplete.AddListener(OnShapePreviewComplete);
+            }
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
             ShapeSignEvents.OnShapeSelected -= HandleShapeSignSelected;
-            if (shapeDrawingManager) shapeDrawingManager.OnFreestyleResumed.RemoveListener(OnShapeDrawingFinished);
+            FreestyleSignEvents.OnFreestyleSelected -= HandleFreestyleSignSelected;
+            if (shapeDrawingManager)
+            {
+                shapeDrawingManager.OnFreestyleResumed.RemoveListener(OnShapeDrawingFinished);
+                shapeDrawingManager.OnPreviewComplete.RemoveListener(OnShapePreviewComplete);
+            }
+        }
+
+        // ── Shape Drawing Callbacks ──────────────────────────────────────────
+
+        /// <summary>Preview cinematic finished — show the Ready button.</summary>
+        void OnShapePreviewComplete()
+        {
+            _isShapePrep = true;
+            RaiseToggleReadyButtonEvent(true);
+        }
+
+        /// <summary>
+        /// Ready button always starts the countdown timer.
+        /// OnCountdownTimerEnded checks state to decide what happens next.
+        /// </summary>
+        protected override void OnReadyClicked_()
+        {
+            RaiseToggleReadyButtonEvent(false);
+            StartCountdownTimer();
+        }
+
+        /// <summary>
+        /// Countdown finished. Route to the correct flow based on current state.
+        /// </summary>
+        protected override void OnCountdownTimerEnded()
+        {
+            if (_isShapePrep)
+            {
+                _isShapePrep = false;
+                shapeDrawingManager.BeginDrawing();
+            }
+            else if (_isFreestylePrep)
+            {
+                _isFreestylePrep = false;
+                BeginFreestyle();
+            }
+            else
+            {
+                // Initial game start
+                gameData.SetPlayersActive();
+                ClearPlayerTrails();
+                EnterLobby();
+            }
         }
 
         void OnShapeDrawingFinished()
         {
-            // Teleport player back to lobby spawn point
-            TeleportPlayerToLobby();
+            var vessel = gameData.LocalPlayer?.Vessel;
 
-            // Restore player camera after the reveal pan
             if (CameraManager.Instance)
             {
                 CameraManager.Instance.SetCloseCameraActive();
                 CameraManager.Instance.SnapPlayerCameraToTarget();
             }
 
+            if (vessel?.VesselStatus != null)
+                vessel.VesselStatus.VesselHUDController?.ShowHUD();
+
+            TeleportPlayerToLobby();
+            ClearPlayerTrails();
             EnterLobby();
         }
 
@@ -65,17 +122,12 @@ namespace CosmicShore.Game.Arcade
                 vessel.Transform.SetPositionAndRotation(lobbyOrigin.position, lobbyOrigin.rotation);
         }
 
-        protected override void OnCountdownTimerEnded()
-        {
-            gameData.SetPlayersActive();
-            EnterLobby();
-        }
+        // ── Lobby ───────────────────────────────────────────────────────────
 
         void EnterLobby()
         {
             _isInLobby = true;
 
-            // Disable environment systems — player flies freely in the lobby
             if (cellScript) cellScript.enabled = false;
 
             if (segmentSpawner)
@@ -90,88 +142,104 @@ namespace CosmicShore.Game.Arcade
                 localCrystalManager.enabled = false;
             }
 
-            // Clear existing player trails so the lobby is clean
             ClearPlayerTrails();
 
-            // Position mode triggers in front of the player
-            var playerTransform = gameData.LocalPlayer?.Vessel?.Transform;
-            var center = playerTransform ? playerTransform.position : lobbyOrigin.position;
-            var forward = playerTransform ? playerTransform.forward : Vector3.forward;
-            var triggerCenter = center + forward * triggerForwardOffset;
+            if (signsParent) signsParent.SetActive(true);
 
-            var activeTriggers = modeTriggers.Where(trigger => trigger).ToList();
-            for (int i = 0; i < activeTriggers.Count; i++)
+            // Enable and reset mode triggers — positions/rotations/scales
+            // are set in the editor, never overridden at runtime.
+            foreach (var trigger in modeTriggers.Where(trigger => trigger))
             {
-                var trigger = activeTriggers[i];
                 trigger.gameObject.SetActive(true);
                 trigger.ResetTrigger();
                 trigger.OnModeSelected.RemoveListener(HandleModeSelection);
                 trigger.OnModeSelected.AddListener(HandleModeSelection);
-
-                // Arrange in a small arc in front of the player
-                float angle = ((i - (activeTriggers.Count - 1) * 0.5f) / Mathf.Max(1, activeTriggers.Count - 1)) * Mathf.PI * 0.5f;
-                var offset = new Vector3(Mathf.Sin(angle) * triggerRingRadius, 0f, Mathf.Cos(angle) * triggerRingRadius);
-                trigger.transform.position = triggerCenter + offset;
-                trigger.transform.localScale = Vector3.one * triggerScale;
-
-                // Face the player
-                var dirToPlayer = (center - trigger.transform.position).normalized;
-                if (dirToPlayer != Vector3.zero)
-                    trigger.transform.rotation = Quaternion.LookRotation(dirToPlayer, Vector3.up);
             }
-
-            // Show shape sign spawner (button-based signs) near the player, facing the player
-            if (shapeSignSpawner)
-                shapeSignSpawner.ShowSigns(triggerCenter, center);
         }
 
         void ExitLobby()
         {
             _isInLobby = false;
 
-            // Hide triggers
             foreach (var trigger in modeTriggers.Where(trigger => trigger)) trigger.gameObject.SetActive(false);
 
-            // Hide signs
-            if (shapeSignSpawner) shapeSignSpawner.HideSigns();
-
-            gameData.StartTurn();
+            if (signsParent) signsParent.SetActive(false);
         }
 
         // ── Mode Selection Handlers ─────────────────────────────────────────
 
-        /// <summary>Called by ModeSelectTrigger (collider-based selection).</summary>
         void HandleModeSelection(ShapeDefinition shapeDef)
         {
             if (!_isInLobby) return;
             ExitLobby();
 
             if (!shapeDef)
-                StartStandardFreestyle();
+                StartFreestylePrep();
             else
                 StartShapeMode(shapeDef);
         }
 
-        /// <summary>Called by ShapeSignEvents (button-based sign selection).</summary>
         void HandleShapeSignSelected(ShapeDefinition shapeDef, Vector3 signWorldPos)
         {
             if (!_isInLobby) return;
             ExitLobby();
 
             if (!shapeDef)
-                StartStandardFreestyle();
+                StartFreestylePrep();
             else
                 StartShapeMode(shapeDef);
         }
 
+        void HandleFreestyleSignSelected()
+        {
+            if (!_isInLobby) return;
+            ExitLobby();
+            StartFreestylePrep();
+        }
+
         // ── Game Modes ──────────────────────────────────────────────────────
 
-        void StartStandardFreestyle()
+        /// <summary>
+        /// Freeze player, teleport to spawn, show connecting panel → ready → countdown → BeginFreestyle.
+        /// Same flow as shape mode prep.
+        /// </summary>
+        void StartFreestylePrep()
         {
-            Debug.Log("[Controller] Starting Standard Freestyle");
+            Debug.Log("[Controller] Starting Freestyle Prep");
 
+            var vessel = gameData.LocalPlayer?.Vessel;
+            if (vessel?.VesselStatus != null)
+                vessel.VesselStatus.IsStationary = true;
+
+            TeleportPlayerToLobby();
+            ClearPlayerTrails();
+
+            _isFreestylePrep = true;
+
+            if (miniGameHUD)
+                miniGameHUD.ShowConnectingFlow();
+            else
+                RaiseToggleReadyButtonEvent(true);
+        }
+
+        /// <summary>
+        /// Called after countdown ends in freestyle prep state.
+        /// Releases player and starts actual freestyle gameplay.
+        /// </summary>
+        void BeginFreestyle()
+        {
+            Debug.Log("[Controller] Beginning Freestyle");
+
+            var vessel = gameData.LocalPlayer?.Vessel;
+            if (vessel?.VesselStatus != null)
+            {
+                vessel.VesselStatus.IsStationary = false;
+                vessel.VesselStatus.VesselHUDController?.ShowHUD();
+            }
+
+            // Enable systems BEFORE firing the turn event so their OnEnable
+            // subscriptions are active when OnMiniGameTurnStarted fires.
             if (cellScript) cellScript.enabled = true;
-
             if (localCrystalManager) localCrystalManager.enabled = true;
             if (segmentSpawner)
             {
@@ -179,7 +247,7 @@ namespace CosmicShore.Game.Arcade
                 segmentSpawner.Initialize();
             }
 
-            RaiseToggleReadyButtonEvent(true);
+            gameData.StartTurn();
         }
 
         void StartShapeMode(ShapeDefinition shapeDef)
@@ -187,14 +255,18 @@ namespace CosmicShore.Game.Arcade
             Debug.Log($"[Controller] Starting Shape Mode: {shapeDef.shapeName}");
             if (cellScript) cellScript.enabled = false;
 
-            // Clear any leftover player trails before entering shape drawing
             ClearPlayerTrails();
 
+            gameData.StartTurn();
+
+            // Phase 1: setup + cinematic. OnPreviewComplete → show Ready button.
             shapeDrawingManager.StartShapeSequence(shapeDef, lobbyOrigin.position);
         }
 
         public void ReturnToLobby()
         {
+            _isShapePrep = false;
+            _isFreestylePrep = false;
             shapeDrawingManager.ExitShapeMode();
             EnterLobby();
         }

@@ -70,6 +70,11 @@ namespace CosmicShore.App.UI.Views
                 return;
             }
 
+            // Fall back to singleton if Inspector reference is missing or was
+            // broken by PlayerDataService detaching via DontDestroyOnLoad.
+            if (dataService == null)
+                dataService = PlayerDataService.Instance;
+
             // Wire display name buttons (if present)
             if (displayNameSaveButton)
                 displayNameSaveButton.onClick.AddListener(SaveDisplayName);
@@ -134,7 +139,7 @@ namespace CosmicShore.App.UI.Views
 
             string existing = "";
 
-            if (dataService != null && dataService.IsInitialized && dataService.CurrentProfile != null)
+            if (dataService != null && dataService.CurrentProfile != null)
             {
                 existing = dataService.CurrentProfile.displayName;
             }
@@ -283,7 +288,7 @@ namespace CosmicShore.App.UI.Views
                     return;
                 }
 
-                if (dataService != null && dataService.IsInitialized)
+                if (dataService != null)
                 {
                     dataService.SetDisplayName(newName);
                 }

@@ -466,6 +466,12 @@ namespace CosmicShore.Game.UI
         public void Show() => view.ToggleView(true);
         public void Hide() => view.ToggleView(false);
         public void ToggleReadyButton(bool toggle) => view.ReadyButton.gameObject.SetActive(toggle);
+
+        /// <summary>
+        /// Shows the connecting panel flow (connecting → wait → ready button).
+        /// Called externally when re-entering the game flow after shape drawing.
+        /// </summary>
+        public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
 
