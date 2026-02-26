@@ -152,7 +152,14 @@ namespace CosmicShore.Editor
             {
                 if (!string.IsNullOrEmpty(s_previousScene))
                 {
-                    EditorSceneManager.OpenScene(s_previousScene);
+                    // Only reopen when the previous scene differs from the active one.
+                    // Reopening the same scene forces a full reload that triggers OnValidate
+                    // on all components (Cinemachine cameras, URP camera data, etc.),
+                    // which can modify serialized state and mark the scene dirty.
+                    if (EditorSceneManager.GetActiveScene().path != s_previousScene)
+                    {
+                        EditorSceneManager.OpenScene(s_previousScene);
+                    }
                 }
             }
         }
