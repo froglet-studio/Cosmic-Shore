@@ -1,4 +1,7 @@
 using System; // Required for Action
+using CosmicShore.Game.Environment;
+using CosmicShore.Game.Player;
+using CosmicShore.Models.Enums;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 

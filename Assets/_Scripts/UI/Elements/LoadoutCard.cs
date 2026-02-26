@@ -1,3 +1,4 @@
+using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Systems.LoadOut;
 using CosmicShore.UI.Views;
 using System.Linq;

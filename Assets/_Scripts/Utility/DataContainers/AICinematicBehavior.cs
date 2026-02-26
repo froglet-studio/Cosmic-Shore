@@ -1,4 +1,5 @@
 ﻿using CosmicShore.Game.AI;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;

@@ -1,6 +1,6 @@
+using CosmicShore.Game.Environment;
 using CosmicShore.Utility.Recording;
-
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
