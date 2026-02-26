@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -112,8 +111,6 @@ namespace CosmicShore.Core
         Dictionary<MenuAudioCategory, AudioClip> MenuAudioClips;
         Dictionary<GameplaySFXCategory, AudioClip> GameplaySFXClips;
 
-        [Inject] GameSetting gameSetting;
-
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
         #endregion
@@ -123,16 +120,17 @@ namespace CosmicShore.Core
             InitializeMenuAudioClips();
             InitializeGameplaySFXClips();
 
-            if (gameSetting == null)
+            var settings = GameSetting.Instance;
+            if (settings == null)
             {
-                CSDebug.LogError("[AudioSystem] gameSetting was not injected — check AppManager DI registration.");
+                CSDebug.LogError("[AudioSystem] GameSetting.Instance is null — ensure GameSetting is in the scene.");
                 return;
             }
 
-            musicEnabled = gameSetting.MusicEnabled;
-            sfxEnabled = gameSetting.SFXEnabled;
-            ChangeMusicLevel(gameSetting.MusicLevel);
-            ChangeSFXLevel(gameSetting.SFXLevel);
+            musicEnabled = settings.MusicEnabled;
+            sfxEnabled = settings.SFXEnabled;
+            ChangeMusicLevel(settings.MusicLevel);
+            ChangeSFXLevel(settings.SFXLevel);
             ChangeMusicEnabledStatus(musicEnabled);
         }
 
