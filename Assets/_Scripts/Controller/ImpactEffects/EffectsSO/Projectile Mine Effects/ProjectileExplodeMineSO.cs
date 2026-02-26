@@ -1,4 +1,3 @@
-using CosmicShore.Game.Ship;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay

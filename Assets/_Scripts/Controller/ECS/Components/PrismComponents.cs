@@ -1,4 +1,3 @@
-using CosmicShore.Game.Ship;
 using Unity.Entities;
 using Unity.Mathematics;
 

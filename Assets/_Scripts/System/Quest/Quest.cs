@@ -13,7 +13,7 @@ namespace CosmicShore.Core
         public string Title;
         public string Description;
         public int ShardValue;
-        public CTA.CallToAction CallToAction;
+        public CallToAction CallToAction;
 
         /* Satisfaction Requirements */
         public UserAction CompletionAction;

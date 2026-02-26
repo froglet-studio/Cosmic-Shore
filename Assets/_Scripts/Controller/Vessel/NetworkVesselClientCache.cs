@@ -1,4 +1,4 @@
-﻿using CosmicShore.Utility.Network;
+﻿using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay

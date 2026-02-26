@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using CosmicShore.Game.Environment;
 using UnityEngine;
 
 namespace CosmicShore.Utility

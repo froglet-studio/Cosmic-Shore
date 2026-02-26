@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Data;

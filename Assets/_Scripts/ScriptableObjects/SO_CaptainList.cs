@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using CosmicShore.Models;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects

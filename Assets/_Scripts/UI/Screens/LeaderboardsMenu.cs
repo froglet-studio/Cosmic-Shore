@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Data;
 using CosmicShore.Core;
 using System;

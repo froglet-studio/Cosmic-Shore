@@ -1,3 +1,5 @@
+using CosmicShore.Gameplay;
+
 namespace CosmicShore.UI
 {
     public interface IVesselHUDController

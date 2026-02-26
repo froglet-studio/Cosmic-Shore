@@ -1,4 +1,4 @@
-using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using System.Collections.Generic;
 using CosmicShore.Core;

@@ -1,4 +1,4 @@
-using CosmicShore.Game.Environment;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
 

@@ -1,4 +1,4 @@
-﻿using CosmicShore.Models.ScriptableObjects;
+﻿using CosmicShore.ScriptableObjects;
 using System;
 using TMPro;
 using UnityEngine;
