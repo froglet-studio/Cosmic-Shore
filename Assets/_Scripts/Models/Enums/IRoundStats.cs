@@ -1,7 +1,5 @@
 ﻿using System;
 using CosmicShore.Models.Enums;
-using CosmicShore.Game.Environment.FlowField;
-using CosmicShore.Game.Ship;
 namespace CosmicShore.Models.Enums
 {
     public interface IRoundStats

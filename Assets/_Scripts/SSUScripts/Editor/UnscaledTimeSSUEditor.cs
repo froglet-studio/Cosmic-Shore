@@ -9,7 +9,7 @@ namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(UnscaledTimeSSU))]
     [CanEditMultipleObjects]
-    public class UnscaledTimeSSUEditor : Editor
+    public class UnscaledTimeSSUEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

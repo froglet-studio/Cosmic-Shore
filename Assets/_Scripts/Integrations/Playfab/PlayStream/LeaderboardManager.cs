@@ -14,6 +14,7 @@ using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.SOAP.ScriptableAuthenticationData;
+using CosmicShore.Utility.DataPersistence;
 namespace CosmicShore.Integrations.Playfab.PlayStream
 {
     /// <summary>

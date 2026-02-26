@@ -10,7 +10,7 @@ namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(MaterialInstancerSSU))]
     [CanEditMultipleObjects]
-    public class MaterialInstancerSSUEditor : Editor
+    public class MaterialInstancerSSUEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

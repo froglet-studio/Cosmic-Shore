@@ -10,7 +10,7 @@ namespace CosmicShore.SSUScripts.Editor
 {
     [CustomEditor(typeof(SpriteSheetSSU))]
     [CanEditMultipleObjects]
-    public class SpriteSheetSSUEditor : Editor
+    public class SpriteSheetSSUEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
