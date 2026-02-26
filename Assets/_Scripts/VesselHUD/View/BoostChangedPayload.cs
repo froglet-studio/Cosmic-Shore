@@ -1,6 +1,5 @@
+using System;
 using CosmicShore.Models.Enums;
-
-﻿using System;
 
 namespace CosmicShore.VesselHUD.View
 {

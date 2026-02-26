@@ -48,7 +48,7 @@ namespace CosmicShore.Game.Multiplayer
 
             if (!gameData.TryGetPlayerByOwnerClientId(newJoinedClientId, out var player))
             {
-                CSDebug.LogError($"No player found for client Id: {player.PlayerNetId}");
+                CSDebug.LogError($"No player found for owner client Id: {newJoinedClientId}");
                 return;
             }
                 

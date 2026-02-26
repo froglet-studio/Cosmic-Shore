@@ -9,6 +9,7 @@ using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
 using CosmicShore.VesselHUD.View;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     public class ConsumeBoostActionExecutor : ShipActionExecutorBase

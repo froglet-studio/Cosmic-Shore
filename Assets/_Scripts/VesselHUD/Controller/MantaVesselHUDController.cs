@@ -3,6 +3,7 @@ using UnityEngine;
 using CosmicShore.Game.ImpactEffects;
 using CosmicShore.Game.Ship;
 using CosmicShore.VesselHUD.View;
+using System.Linq;
 namespace CosmicShore.VesselHUD.Controller
 {
     public class MantaVesselHUDController : VesselHUDController

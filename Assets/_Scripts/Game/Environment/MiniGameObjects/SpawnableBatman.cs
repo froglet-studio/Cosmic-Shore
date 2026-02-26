@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using System.Linq;
 
 namespace CosmicShore.Game.Environment
 {

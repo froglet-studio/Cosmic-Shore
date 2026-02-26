@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Game.Ship;
+using System;
 namespace CosmicShore.Game.Environment
 {
     [System.Serializable]

@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Game.Ship;
+using System.Linq;
 namespace CosmicShore.VesselHUD.View
 {
     public class SerpentVesselHUDView : VesselHUDView

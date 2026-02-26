@@ -6,6 +6,8 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
+using System.Linq;
+using System.IO;
 
 namespace CosmicShore.DialogueSystem.Editor
 {

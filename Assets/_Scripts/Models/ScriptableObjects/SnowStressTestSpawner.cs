@@ -2,6 +2,7 @@ using System.Reflection;
 using UnityEngine;
 using CosmicShore.Game.Environment;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.Models.ScriptableObjects
 {

@@ -207,7 +207,11 @@ namespace CosmicShore.Game.Party
 
         public async Task DeclineInviteAsync()
         {
-            _lastFiredInvite = null;
+            // Do NOT null _lastFiredInvite here — keeping it set prevents the
+            // refresh loop from re-firing the same invite.  Non-host players
+            // cannot clear the lobby property, so the invite key remains until
+            // the host overwrites it.  The dedup check in RefreshAsync (comparing
+            // PartySessionId) will suppress repeated notifications for this invite.
             await RequestClearInviteAsync();
         }
 
@@ -420,7 +424,14 @@ namespace CosmicShore.Game.Party
         private void RefreshPartyMembers()
         {
             if (_partySession == null) return;
+            if (connectionData.PartyMembers == null) return;
 
+            // Build a set of player IDs currently in the session
+            var sessionPlayerIds = new HashSet<string>();
+            foreach (var p in _partySession.Players)
+                sessionPlayerIds.Add(p.Id);
+
+            // Detect and add new members
             foreach (var p in _partySession.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
@@ -436,10 +447,23 @@ namespace CosmicShore.Game.Party
 
                 var memberData = new PartyPlayerData(p.Id, displayName, avatarId);
 
-                if (connectionData.PartyMembers != null && !connectionData.PartyMembers.Contains(memberData))
+                if (!connectionData.PartyMembers.Contains(memberData))
                 {
                     connectionData.PartyMembers.Add(memberData);
                     connectionData.OnPartyMemberJoined?.Raise(memberData);
+                }
+            }
+
+            // Detect and remove members who left the session
+            for (int i = connectionData.PartyMembers.Count - 1; i >= 0; i--)
+            {
+                var member = connectionData.PartyMembers[i];
+                if (member.PlayerId == connectionData.LocalPlayerId) continue;
+
+                if (!sessionPlayerIds.Contains(member.PlayerId))
+                {
+                    connectionData.PartyMembers.RemoveAt(i);
+                    connectionData.OnPartyMemberLeft?.Raise(member);
                 }
             }
         }
@@ -469,15 +493,20 @@ namespace CosmicShore.Game.Party
 
             try
             {
-                _lastFiredInvite = null;
-
                 if (_presenceLobby.IsHost)
                 {
                     string inviteKey = $"{INVITE_PREFIX}{connectionData.LocalPlayerId}";
                     var hostSession = _presenceLobby.AsHost();
                     hostSession.SetProperty(inviteKey, new SessionProperty(string.Empty, VisibilityPropertyOptions.Public));
                     await hostSession.SavePropertiesAsync();
+
+                    // Only clear the dedup guard after the property is actually
+                    // removed from the lobby so the refresh loop won't re-fire.
+                    _lastFiredInvite = null;
                 }
+                // Non-host players cannot clear lobby properties.  The dedup
+                // guard (_lastFiredInvite) stays set so RefreshAsync suppresses
+                // repeated notifications for the same invite.
             }
             catch (Exception e)
             {

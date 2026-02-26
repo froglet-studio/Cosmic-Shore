@@ -7,6 +7,7 @@ using CosmicShore.Utility.Recording;
 using CosmicShore.Models.Enums;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
+using System.Linq;
 namespace CosmicShore.Game.Arcade
 {
     /// <summary>

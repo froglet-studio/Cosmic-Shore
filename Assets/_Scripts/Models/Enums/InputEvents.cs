@@ -1,3 +1,4 @@
+using System;
 namespace CosmicShore.Models.Enums
 {
     [System.Serializable]

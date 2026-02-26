@@ -5,6 +5,7 @@ using CosmicShore.Game.Ship;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Effects;
 using CosmicShore.VesselHUD.View;
+using System.Linq;
 namespace CosmicShore.Game.ImpactEffects
 {
     [CreateAssetMenu(fileName = "SkimmerBoostPrismEffect",

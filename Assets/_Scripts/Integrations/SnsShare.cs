@@ -3,6 +3,8 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
+using System.Linq;
+using System.IO;
 
 namespace CosmicShore.Integrations
 {

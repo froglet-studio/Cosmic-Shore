@@ -9,6 +9,7 @@ using Cysharp.Threading.Tasks;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility;
 using CosmicShore.Game.Player;
+using System.Linq;
 namespace CosmicShore.Game.Ship
 {
     public class Skimmer : ElementalShipComponent

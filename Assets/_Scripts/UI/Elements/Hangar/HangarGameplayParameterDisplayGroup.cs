@@ -4,6 +4,7 @@ using CosmicShore.Game.Managers;
 using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.Recording;
+using System.Linq;
 
 namespace CosmicShore.UI.Elements
 {

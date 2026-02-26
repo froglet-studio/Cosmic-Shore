@@ -5,6 +5,7 @@ using UnityEngine;
 using CosmicShore.Game.UI;
 using CosmicShore.MinigameHUD.View;
 using CosmicShore.Utility.Recording;
+using System;
 
 namespace CosmicShore.Game.Ship
 {

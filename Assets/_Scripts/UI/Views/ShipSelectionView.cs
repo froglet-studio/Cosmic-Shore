@@ -4,6 +4,7 @@ using System.Linq;
 using CosmicShore.Utility.DataContainers;
 using UnityEngine;
 using CosmicShore.Utility.Recording;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.UI.Views
 {

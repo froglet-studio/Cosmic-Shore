@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using System.IO;
 
 namespace CosmicShore.Systems.Bootstrap
 {

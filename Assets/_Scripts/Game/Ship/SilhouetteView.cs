@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Game;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 namespace CosmicShore.Game.Ship
 {
