@@ -10,43 +10,44 @@ namespace CosmicShore.Editor
     /// <summary>
     /// Android APK builder — usable from the Editor menu or the command line.
     ///
-    /// Editor:  FrogletTools ▸ Build ▸ Android APK
+    /// Editor:  FrogletTools ▸ Build ▸ Android APK (Development)
     /// CLI:     Unity -batchmode -nographics -projectPath . -executeMethod CosmicShore.Editor.BuildAndroid.Build -quit
     ///
     /// Optional CLI args:
     ///   -outputPath path/to/output.apk
-    ///   -development        (adds Development Build flag)
+    ///   -release        (strips Development flag, requires proper keystore)
     /// </summary>
     public static class BuildAndroid
     {
         private const string DefaultOutputDir = "Builds/Android";
         private const string DefaultApkName = "CosmicShore.apk";
 
-        [MenuItem("FrogletTools/Build/Android APK")]
-        public static void BuildFromMenu()
-        {
-            var outputPath = Path.Combine(DefaultOutputDir, DefaultApkName);
-            RunBuild(outputPath, development: false);
-        }
-
         [MenuItem("FrogletTools/Build/Android APK (Development)")]
-        public static void BuildFromMenuDev()
+        public static void BuildFromMenu()
         {
             var outputPath = Path.Combine(DefaultOutputDir, DefaultApkName);
             RunBuild(outputPath, development: true);
         }
 
+        [MenuItem("FrogletTools/Build/Android APK (Release)")]
+        public static void BuildFromMenuRelease()
+        {
+            var outputPath = Path.Combine(DefaultOutputDir, DefaultApkName);
+            RunBuild(outputPath, development: false);
+        }
+
         /// <summary>
         /// Entry point for command-line builds (e.g. CI).
+        /// Defaults to development build; pass -release for production.
         /// </summary>
         public static void Build()
         {
             var args = Environment.GetCommandLineArgs();
             var outputPath = GetArgValue(args, "-outputPath")
                              ?? Path.Combine(DefaultOutputDir, DefaultApkName);
-            bool development = args.Contains("-development");
+            bool release = args.Contains("-release");
 
-            RunBuild(outputPath, development);
+            RunBuild(outputPath, development: !release);
         }
 
         private static void RunBuild(string outputPath, bool development)
@@ -79,6 +80,18 @@ namespace CosmicShore.Editor
             // Build as APK (not AAB)
             EditorUserBuildSettings.buildAppBundle = false;
 
+            // For development builds, use Unity's debug keystore so no custom
+            // keystore is required. Clear any stale production keystore path
+            // that may be baked into ProjectSettings.
+            if (development)
+            {
+                PlayerSettings.Android.useCustomKeystore = false;
+                PlayerSettings.Android.keystoreName = string.Empty;
+                PlayerSettings.Android.keystorePass = string.Empty;
+                PlayerSettings.Android.keyaliasName = string.Empty;
+                PlayerSettings.Android.keyaliasPass = string.Empty;
+            }
+
             var options = BuildOptions.None;
             if (development)
                 options |= BuildOptions.Development | BuildOptions.AllowDebugging;
@@ -105,7 +118,6 @@ namespace CosmicShore.Editor
             if (summary.result != BuildResult.Succeeded)
             {
                 Debug.LogError($"[BuildAndroid] Build failed with {summary.totalErrors} error(s).");
-                // Exit with error code for CI
                 EditorApplication.Exit(1);
             }
             else
