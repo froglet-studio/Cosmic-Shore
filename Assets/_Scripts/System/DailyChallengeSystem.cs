@@ -141,7 +141,9 @@ namespace CosmicShore.Core
 
             dailyChallenge = FetchDailyChallenge();
             DailyGame = null; // Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
-            ShipResources = LoadGameResourceCollection(DailyGame);
+
+            if (DailyGame != null)
+                ShipResources = LoadGameResourceCollection(DailyGame);
         }
 
         DailyChallenge FetchDailyChallenge()

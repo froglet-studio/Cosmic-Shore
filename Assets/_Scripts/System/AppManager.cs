@@ -30,6 +30,7 @@ namespace CosmicShore.Core
         [SerializeField] AudioSystem audioSystem;
         [SerializeField] PlayerDataService playerDataService;
         [SerializeField] UGSStatsManager ugsStatsManager;
+        [SerializeField] AuthenticationController authenticationController;
 
         // ✅ Reflex will inject these from the container
         [Inject] AuthenticationServiceFacade authenticationServiceFacade;
@@ -63,6 +64,7 @@ namespace CosmicShore.Core
             RegisterIfNotNull(builder, audioSystem, nameof(audioSystem));
             RegisterIfNotNull(builder, playerDataService, nameof(playerDataService));
             RegisterIfNotNull(builder, ugsStatsManager, nameof(ugsStatsManager));
+            RegisterIfNotNull(builder, authenticationController, nameof(authenticationController));
 
             // Persistent C# singletons (live as long as the RootScope container lives)
             if (authenticationDataVariable != null)

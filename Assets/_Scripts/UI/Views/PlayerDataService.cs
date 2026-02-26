@@ -37,9 +37,12 @@ namespace CosmicShore.UI
         private void OnEnable()
         {
             OnProfileChanged += SyncProfileToGameData;
-            
+
             // Subscribe to auth events via singleton (survives scene transitions)
-            authenticationController.OnSignedIn += HandleSignedInFromAuth;
+            if (authenticationController != null)
+                authenticationController.OnSignedIn += HandleSignedInFromAuth;
+            else
+                Debug.LogWarning("[PlayerDataService] authenticationController was not injected — auth events will not be observed.");
         }
 
         async void Start()
@@ -47,9 +50,9 @@ namespace CosmicShore.UI
             try
             {
                 CreateLocalDefaultProfile(null);
-                
+
                 // If already signed in, initialize immediately
-                if (authenticationController.IsSignedIn)
+                if (authenticationController != null && authenticationController.IsSignedIn)
                 {
                     await InitializeAfterAuth();
                 }
@@ -62,7 +65,8 @@ namespace CosmicShore.UI
         
         void OnDestroy()
         {
-            authenticationController.OnSignedIn -= HandleSignedInFromAuth;
+            if (authenticationController != null)
+                authenticationController.OnSignedIn -= HandleSignedInFromAuth;
             OnProfileChanged -= SyncProfileToGameData;
         }
 

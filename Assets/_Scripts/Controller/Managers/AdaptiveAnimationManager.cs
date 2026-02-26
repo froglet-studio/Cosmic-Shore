@@ -202,8 +202,13 @@ namespace CosmicShore.Gameplay
             CleanupResources();
         }
 
+        private bool _disposed;
+
         protected virtual void CleanupResources()
         {
+            if (_disposed) return;
+            _disposed = true;
+
             if (animationData.IsCreated)
             {
                 animationData.Dispose();

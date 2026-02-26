@@ -20,6 +20,8 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            if (shipSelectionView == null || captainSelectView == null || squadMemberCard == null) return;
+
             shipSelectionView.OnSelect += captainSelectView.AssignModel;
             shipSelectionView.OnSelect += squadMemberCard.SetShip;
 
@@ -29,6 +31,8 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
+            if (shipSelectionView == null || captainSelectView == null || squadMemberCard == null) return;
+
             shipSelectionView.OnSelect -= captainSelectView.AssignModel;
             shipSelectionView.OnSelect -= squadMemberCard.SetShip;
 
@@ -38,7 +42,8 @@ namespace CosmicShore.UI
 
         protected override void Start()
         {
-            shipSelectionView.AssignModels(PlayerShips.ShipList.ConvertAll(x => (ScriptableObject)x));
+            if (shipSelectionView != null && PlayerShips != null)
+                shipSelectionView.AssignModels(PlayerShips.ShipList.ConvertAll(x => (ScriptableObject)x));
 
             base.Start();
         }
